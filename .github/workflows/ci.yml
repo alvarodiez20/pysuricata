@@ -1,0 +1,30 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.9"
+
+      - name: Install dependencies
+        run: |
+          pip install ruff pytest pytest-cov
+          pip install -e .
+          
+      - name: Run Ruff (Static Analysis)
+        run: ruff .
+        
+      - name: Run Tests with Coverage
+        run: pytest --maxfail=1 --disable-warnings -q
+        
+      - name: Show Coverage Report
+        run: |
+          coverage run -m pytest
+          coverage report

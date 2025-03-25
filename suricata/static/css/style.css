@@ -1,0 +1,31 @@
+/* eda_tool/eda_tool/static/css/style.css */
+/* Minimalistic CSS for EDA Report */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f7f7f7;
+    margin: 20px;
+    color: #333;
+}
+h1, h2 {
+    color: #2c3e50;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-bottom: 20px;
+}
+table, th, td {
+    border: 1px solid #ddd;
+}
+th, td {
+    padding: 8px;
+    text-align: left;
+}
+.logo {
+    text-align: center;
+    margin-bottom: 20px;
+}
+.logo img {
+    max-width: 150px;
+}
+ 

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "suricata"
+version = "0.0.1"
+description = "A lightweight EDA tool inspired by the curious nature of suricates. Built just for fun 🔬."
+authors = [
+    {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
+]
+license = 'MIT'
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pandas>=1.0.0"
+]
+
+[project.urls]
+Repository = "https://github.com/alvarodiez20/suricata"
+
+[project.optional-dependencies]
+notebooks = [
+    "ipykernel>=6.29.5",
+    "scikit-learn>=1.6.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "ruff>=0.11.2",
+]
