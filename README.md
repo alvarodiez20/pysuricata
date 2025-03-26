@@ -1,9 +1,9 @@
 # `pysuricata`
-[![Build Status](https://github.com/alvarodiez20/suricata/workflows/CI/badge.svg)](https://github.com/alvarodiez20/suricata/actions)
+[![Build Status](https://github.com/alvarodiez20/suricata/workflows/CI/badge.svg)](https://github.com/alvarodiez20/pysuricata/actions)
 [![PyPI version](https://badge.fury.io/py/pysuricata.svg)](https://pypi.org/project/pysuricata/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-![suricata Logo](suricata/static/images/logo.png)
+![pysuricata Logo](pysuricata/static/images/logo.png)
 
 `pysuricata` is a lightweight Python library for exploratory data analysis (EDA) that supports multiple data formats—Pandas, Dask, and Polars DataFrames. It generates self-contained HTML reports featuring summary statistics, missing values, and correlation matrices with a clean, modern design. 
 

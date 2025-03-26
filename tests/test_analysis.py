@@ -1,5 +1,5 @@
 import pandas as pd
-from suricata.analysis import summary_statistics, missing_values, correlation_matrix
+from pysuricata.analysis import summary_statistics, missing_values, correlation_matrix
 
 
 def test_summary_statistics():
