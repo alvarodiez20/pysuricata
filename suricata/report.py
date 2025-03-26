@@ -33,7 +33,7 @@ def generate_report(
 
     # Determine the path to the static folder (relative to this module).
     module_dir = os.path.dirname(os.path.abspath(__file__))
-    static_dir = os.path.join(module_dir, "..", "static")
+    static_dir = os.path.join(module_dir, "static")
 
     # Load CSS from static/css/style.css.
     css_path = os.path.join(static_dir, "css", "style.css")
