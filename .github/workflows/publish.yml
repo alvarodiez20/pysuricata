@@ -1,6 +1,9 @@
 name: Publish Package
 
 on:
+  push:
+    tags:
+      - '*'
   release:
     types: [created]
 

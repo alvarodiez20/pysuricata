@@ -1,5 +1,5 @@
 # `pysuricata`
-[![Build Status](https://github.com/alvarodiez20/suricata/workflows/CI/badge.svg)](https://github.com/alvarodiez20/pysuricata/actions)
+[![Build Status](https://github.com/alvarodiez20/pysuricata/workflows/CI/badge.svg)](https://github.com/alvarodiez20/pysuricata/actions)
 [![PyPI version](https://badge.fury.io/py/pysuricata.svg)](https://pypi.org/project/pysuricata/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
