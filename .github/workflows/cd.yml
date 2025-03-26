@@ -68,7 +68,7 @@ jobs:
         run: pip install uv
 
       - name: Install Production Dependencies
-        run: uv sync --prod
+        run: uv sync --no-dev
 
       - name: Build Package
         run: uv build
