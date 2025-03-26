@@ -34,6 +34,7 @@ polars = [
 [dependency-groups]
 dev = [
     "aiohttp>=3.11.14",
+    "coverage>=7.7.1",
     "pytest>=8.3.5",
     "requests>=2.32.3",
     "ruff>=0.11.2",
