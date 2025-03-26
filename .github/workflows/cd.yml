@@ -1,4 +1,4 @@
-name: Create Tag and Release
+name: Tag, Release and Publish
 
 on:
   push:
@@ -53,3 +53,27 @@ jobs:
           release_name: Release ${{ steps.get_version.outputs.version }}
           draft: false
           prerelease: false
+
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.9"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install Production Dependencies
+        run: uv sync --prod
+
+      - name: Build Package
+        run: uv build
+
+      - name: Publish Package to PyPI
+        env:
+          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        run: uv publish -r pypi --token $PYPI_TOKEN
