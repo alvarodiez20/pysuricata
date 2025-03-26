@@ -19,7 +19,7 @@ jobs:
       - name: Install Dependencies with uv
         run: |
           pip install uv toml
-          uv sync --prod
+          uv sync --no-dev
 
       - name: Extract Version from pyproject.toml
         id: get_version
