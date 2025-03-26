@@ -6,6 +6,16 @@ from typing import Union, Optional, List
 from .analysis import summary_statistics, missing_values, correlation_matrix
 from .utils import to_dataframe, df_to_html
 
+try:
+    import dask.dataframe as dd
+except ImportError:
+    dd = None
+
+try:
+    import polars as pl
+except ImportError:
+    pl = None
+
 
 def generate_report(
     data: Union[pd.DataFrame, np.ndarray, "dd.DataFrame", "pl.DataFrame"],
