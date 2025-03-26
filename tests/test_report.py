@@ -1,5 +1,3 @@
-import pandas as pd
-from suricata.report import generate_report
 
 # def test_generate_report(tmp_path):
 #     """Test that generate_report returns valid HTML and saves to a file when requested."""

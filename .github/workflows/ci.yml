@@ -1,30 +1,35 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
-  lint-test:
+  test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: "3.9"
 
-      - name: Install dependencies
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install Dependencies
+        run: uv sync --dev
+
+      - name: Run Ruff (Linter)
+        run: uv run ruff .
+
+      - name: Run Tests with Pytest
+        run: uv run pytest --maxfail=1 --disable-warnings -q
+
+      - name: Run Coverage
         run: |
-          pip install ruff pytest pytest-cov
-          pip install -e .
-          
-      - name: Run Ruff (Static Analysis)
-        run: ruff .
-        
-      - name: Run Tests with Coverage
-        run: pytest --maxfail=1 --disable-warnings -q
-        
-      - name: Show Coverage Report
-        run: |
-          coverage run -m pytest
-          coverage report
+          uv run coverage run -m pytest
+          uv run coverage report
