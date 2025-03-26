@@ -24,7 +24,7 @@ jobs:
         run: uv sync --dev
 
       - name: Run Ruff (Linter)
-        run: uv run ruff .
+        run: uv run ruff check
 
       - name: Run Tests with Pytest
         run: uv run pytest --maxfail=1 --disable-warnings -q
