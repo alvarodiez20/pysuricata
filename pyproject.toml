@@ -3,7 +3,7 @@ requires = ["setuptools", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "suricata"
+name = "pysuricata"
 version = "0.0.1"
 description = "A lightweight EDA tool inspired by the curious nature of suricates. Built just for fun 🔬."
 authors = [
