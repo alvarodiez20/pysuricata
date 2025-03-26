@@ -11,9 +11,9 @@ authors = [
 ]
 license = 'MIT'
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = "==3.9.*"
 dependencies = [
-    "pandas>=1.0.0"
+    "pandas"
 ]
 
 [project.urls]
@@ -21,12 +21,20 @@ Repository = "https://github.com/alvarodiez20/suricata"
 
 [project.optional-dependencies]
 notebooks = [
-    "ipykernel>=6.29.5",
-    "scikit-learn>=1.6.1",
+    "ipykernel",
+]
+dask = [
+    "dask",
+]
+polars = [
+    "polars>=1.26.0",
+    "pyarrow>=19.0.1",
 ]
 
 [dependency-groups]
 dev = [
+    "aiohttp>=3.11.14",
     "pytest>=8.3.5",
+    "requests>=2.32.3",
     "ruff>=0.11.2",
 ]

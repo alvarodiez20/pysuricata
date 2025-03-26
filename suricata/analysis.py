@@ -1,47 +1,103 @@
-# eda_tool/eda_tool/analysis.py
+"""Analysis functions for computing summary statistics, missing values,
+and correlation matrices for Pandas, Dask, and Polars DataFrames.
+"""
+
 import pandas as pd
+from typing import Union
 from .logger import timeit
 
+# Try to import Dask and Polars.
+try:
+    import dask.dataframe as dd
+except ImportError:
+    dd = None
 
-@timeit
-def summary_statistics(df: pd.DataFrame) -> pd.DataFrame:
-    """Generate summary statistics of the DataFrame.
-
-    Args:
-        df (pd.DataFrame): Input DataFrame.
-
-    Returns:
-        pd.DataFrame: Summary statistics.
-    """
-    return df.describe()
+try:
+    import polars as pl
+except ImportError:
+    pl = None
 
 
 @timeit
-def missing_values(df: pd.DataFrame) -> pd.DataFrame:
-    """Calculate missing values per column in the DataFrame.
+def summary_statistics(
+    df: Union[pd.DataFrame, "dd.DataFrame", "pl.DataFrame"],
+) -> Union[pd.DataFrame, "pl.DataFrame"]:
+    """Compute summary statistics for numeric columns.
+
+    For Dask DataFrames the result is computed and returned as a Pandas DataFrame,
+    while for Polars the native .describe() method is used.
 
     Args:
-        df (pd.DataFrame): Input DataFrame.
+        df: A Pandas, Dask, or Polars DataFrame.
 
     Returns:
-        pd.DataFrame: DataFrame containing the count and percentage of missing values.
+        Summary statistics as a Pandas DataFrame (for Pandas/Dask) or a Polars DataFrame.
     """
-    missing_count = df.isnull().sum()
-    missing_percent = 100 * missing_count / len(df)
-    return pd.DataFrame(
-        {"missing_count": missing_count, "missing_percent": missing_percent}
-    )
+    if isinstance(df, pd.DataFrame):
+        return df.describe()
+    if dd is not None and isinstance(df, dd.DataFrame):
+        return df.describe().compute()
+    if pl is not None and isinstance(df, pl.DataFrame):
+        return df.describe()
+    raise TypeError("Unsupported data type for summary_statistics")
 
 
 @timeit
-def correlation_matrix(df: pd.DataFrame) -> pd.DataFrame:
-    """Compute the correlation matrix of numeric columns in the DataFrame.
+def missing_values(
+    df: Union[pd.DataFrame, "dd.DataFrame", "pl.DataFrame"],
+) -> pd.DataFrame:
+    """Compute missing value counts and percentages per column.
+
+    For Dask DataFrames the computation is done lazily and then computed,
+    while for Polars the missing counts are computed using native methods.
 
     Args:
-        df (pd.DataFrame): Input DataFrame.
+        df: A Pandas, Dask, or Polars DataFrame.
 
     Returns:
-        pd.DataFrame: Correlation matrix computed on numeric columns.
+        A Pandas DataFrame with 'missing_count' and 'missing_percent'.
     """
-    numeric_df = df.select_dtypes(include=["number"])
-    return numeric_df.corr()
+    if isinstance(df, pd.DataFrame):
+        counts = df.isnull().sum()
+        percent = 100 * counts / len(df)
+        return pd.DataFrame({"missing_count": counts, "missing_percent": percent})
+    if dd is not None and isinstance(df, dd.DataFrame):
+        counts = df.isnull().sum().compute()
+        percent = 100 * counts / len(df)
+        return pd.DataFrame({"missing_count": counts, "missing_percent": percent})
+    if pl is not None and isinstance(df, pl.DataFrame):
+        null_counts = df.null_count().to_dict()
+        total = df.height
+        summary = {"column": [], "missing_count": [], "missing_percent": []}
+        for col in df.columns:
+            summary["column"].append(col)
+            count = null_counts.get(col, 0)
+            summary["missing_count"].append(count)
+            summary["missing_percent"].append(100 * count / total)
+        return pd.DataFrame(summary)
+    raise TypeError("Unsupported data type for missing_values")
+
+
+@timeit
+def correlation_matrix(
+    df: Union[pd.DataFrame, "dd.DataFrame", "pl.DataFrame"],
+) -> Union[pd.DataFrame, "pl.DataFrame"]:
+    """Compute the correlation matrix for numeric columns.
+
+    For Dask DataFrames the result is computed and returned as a Pandas DataFrame,
+    while for Polars the native .corr() method is used.
+
+    Args:
+        df: A Pandas, Dask, or Polars DataFrame.
+
+    Returns:
+        The correlation matrix as a Pandas DataFrame (for Pandas/Dask) or as a Polars DataFrame.
+    """
+    if isinstance(df, pd.DataFrame):
+        return df.select_dtypes(include=["number"]).corr()
+    if dd is not None and isinstance(df, dd.DataFrame):
+        return df.select_dtypes(include=["number"]).corr().compute()
+    if pl is not None and isinstance(df, pl.DataFrame):
+        # For Polars, we use its native .corr() (assuming numeric columns)
+        return df.select(pl.all().exclude(pl.Utf8)).corr()
+    raise TypeError("Unsupported data type for correlation_matrix")
