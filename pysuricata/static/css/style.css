@@ -4,44 +4,38 @@ body {
     background-color: #f9f9f9;
     color: #333;
     transition: background-color 0.3s, color 0.3s;
-}
-
-body.dark {
+  }
+  
+  body.dark {
     background-color: #333;
     color: #f9f9f9;
-}
-
-h1 {
+  }
+  
+  h1 {
     color: inherit;
-}
-
-table {
+  }
+  
+  table {
     border-collapse: collapse;
     width: 100%;
     margin-bottom: 20px;
-}
-
-th, td {
+  }
+  
+  th, td {
     border: 1px solid #ddd;
     padding: 8px;
     text-align: left;
-}
-
-th {
+  }
+  
+  th {
     background-color: #f2f2f2;
-}
-
-body.dark th {
+  }
+  
+  body.dark th {
     background-color: #555;
-}
-
-#logo {
-    max-width: 150px;
-    margin-bottom: 20px;
-}
-
-/* Toggle button styling */
-.toggle-button {
+  }
+  
+  .toggle-button {
     position: fixed;
     top: 20px;
     right: 20px;
@@ -51,4 +45,10 @@ body.dark th {
     border: none;
     cursor: pointer;
     border-radius: 4px;
-}
+  }
+  
+  #logo {
+    max-width: 150px;
+    margin-bottom: 20px;
+  }
+  
