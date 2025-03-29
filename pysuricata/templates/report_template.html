@@ -5,14 +5,12 @@
     <title>EDA Report</title>
     {favicon}  <!-- Placeholder for favicon -->
     {css}  <!-- Placeholder for inline CSS -->
-    <script>
-      function toggleDarkMode() {{
-        document.body.classList.toggle('dark');
-      }}
-    </script>
+    <script></script>
   </head>
   <body>
-    <button class="toggle-button" onclick="toggleDarkMode()">Toggle Dark Mode</button>
+    <button id="toggle-button" class="toggle-button" onclick="toggleDarkMode()">
+      <span id="toggle-icon">☀️</span>
+    </button>
     {logo}  <!-- Placeholder for logo -->
     <h1>Summary Statistics</h1>
     {stats_table}  <!-- Placeholder for summary statistics table -->
