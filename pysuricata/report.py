@@ -16,16 +16,16 @@ try:
 except ImportError:
     pl = None
 
-
 def generate_report(
     data: Union[pd.DataFrame, np.ndarray, "dd.DataFrame", "pl.DataFrame"],
     output_file: Optional[str] = None,
     columns: Optional[List[str]] = None,
 ) -> str:
-    """Generate an HTML report containing summary statistics, missing values, and a correlation matrix.
-
-    The report automatically embeds CSS and a PNG logo from a static folder so that the
-    styling remains intact even if the report is moved.
+    """
+    Generate an HTML report containing summary statistics, missing values, and a correlation matrix.
+    
+    The report embeds CSS and a PNG logo from a static folder into the HTML template so that
+    all styling and resources remain intact even if the report is moved.
 
     Args:
         data: Input data (Pandas, Dask, Polars, or a 2D NumPy array).
@@ -35,73 +35,61 @@ def generate_report(
     Returns:
         A string containing the complete HTML report.
     """
-    # Convert the input data to a DataFrame-like object.
+    # Convert input data to a DataFrame-like object.
     df = to_dataframe(data, columns=columns)
     stats = summary_statistics(df)
     miss = missing_values(df)
     corr = correlation_matrix(df)
 
-    # Determine the path to the static folder (relative to this module).
+    # Determine the paths to the static and template folders.
     module_dir = os.path.dirname(os.path.abspath(__file__))
     static_dir = os.path.join(module_dir, "static")
+    template_dir = os.path.join(module_dir, "templates")
+    
+    # Load the HTML template.
+    template_path = os.path.join(template_dir, "report_template.html")
+    with open(template_path, "r", encoding="utf-8") as f:
+        template = f.read()
 
-    # Load CSS from static/css/style.css.
+    # Load CSS and embed it inline.
     css_path = os.path.join(static_dir, "css", "style.css")
     if os.path.exists(css_path):
         with open(css_path, "r", encoding="utf-8") as f:
             css_content = f.read()
         css_tag = f"<style>{css_content}</style>"
     else:
-        # Fallback default CSS.
-        css_tag = """
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; color: #333; transition: background-color 0.3s, color 0.3s; }
-          body.dark { background-color: #333; color: #f9f9f9; }
-          h1 { color: inherit; }
-          table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f2f2f2; }
-          body.dark th { background-color: #555; }
-          .toggle-button { position: fixed; top: 20px; right: 20px; padding: 8px 12px; background-color: #007bff; color: white; border: none; cursor: pointer; border-radius: 4px; }
-          #logo { max-width: 150px; margin-bottom: 20px; }
-        </style>
-        """
+        css_tag = ""
 
     # Load the PNG logo from static/images/logo.png and encode it as Base64.
     logo_path = os.path.join(static_dir, "images", "logo.png")
     if os.path.exists(logo_path):
         with open(logo_path, "rb") as img_file:
             encoded_logo = base64.b64encode(img_file.read()).decode("utf-8")
-        # Since the logo is a PNG image, use the appropriate MIME type.
-        logo_html = (
-            f'<img id="logo" src="data:image/png;base64,{encoded_logo}" alt="Logo">'
-        )
+        logo_html = f'<img id="logo" src="data:image/png;base64,{encoded_logo}" alt="Logo">'
     else:
         logo_html = ""
+    
+    # Load the favicon from static/images/favicon.ico and encode it as Base64.
+    favicon_path = os.path.join(static_dir, "images", "favicon.png")
+    if os.path.exists(favicon_path):
+        with open(favicon_path, "rb") as icon_file:
+            encoded_favicon = base64.b64encode(icon_file.read()).decode("utf-8")
+        # Since it's an ICO file, we use the appropriate MIME type.
+        favicon_tag = f'<link rel="icon" href="data:image/x-icon;base64,{encoded_favicon}" type="image/x-icon">'
+    else:
+        favicon_tag = ""
 
-    html = f"""
-    <html>
-      <head>
-        <title>EDA Report</title>
-        {css_tag}
-        <script>
-          function toggleDarkMode() {{
-            document.body.classList.toggle('dark');
-          }}
-        </script>
-      </head>
-      <body>
-        <button class="toggle-button" onclick="toggleDarkMode()">Toggle Dark Mode</button>
-        {logo_html}
-        <h1>Summary Statistics</h1>
-        {df_to_html(stats)}
-        <h1>Missing Values</h1>
-        {df_to_html(miss)}
-        <h1>Correlation Matrix</h1>
-        {df_to_html(corr)}
-      </body>
-    </html>
-    """
+    # Replace the placeholders in the template with the actual content.
+    html = template.format(
+        favicon=favicon_tag,
+        css=css_tag,
+        logo=logo_html,
+        stats_table=df_to_html(stats),
+        missing_table=df_to_html(miss),
+        corr_table=df_to_html(corr)
+    )
+
+    # Optionally write the report to an output file.
     if output_file:
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(html)

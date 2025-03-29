@@ -1,54 +1,67 @@
 body {
-    font-family: Arial, sans-serif;
-    margin: 20px;
-    background-color: #f9f9f9;
-    color: #333;
-    transition: background-color 0.3s, color 0.3s;
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background-color: #333;  /* Dark background */
+  color: #f9f9f9;           /* Light text */
+  transition: background-color 0.3s, color 0.3s;
 }
 
-body.dark {
-    background-color: #333;
-    color: #f9f9f9;
+/* Light mode overrides */
+body.light {
+  background-color: #f9f9f9; /* Light background */
+  color: #333;              /* Dark text */
 }
 
 h1 {
-    color: inherit;
+  color: inherit;
 }
 
 table {
-    border-collapse: collapse;
-    width: 100%;
-    margin-bottom: 20px;
+  border-collapse: collapse;
+  width: 100%;
+  margin-bottom: 20px;
 }
 
 th, td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    text-align: left;
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
 }
 
+/* Default table header style for dark mode */
 th {
-    background-color: #f2f2f2;
+  background-color: #555;
 }
 
-body.dark th {
-    background-color: #555;
+/* Table header style for light mode */
+body.light th {
+  background-color: #f2f2f2;
+}
+
+.toggle-button {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background-color: #007bff;
+  color: white;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+}
+
+.toggle-button:hover {
+  background-color: #0056b3;
+  transform: scale(1.1);
 }
 
 #logo {
-    max-width: 150px;
-    margin-bottom: 20px;
-}
-
-/* Toggle button styling */
-.toggle-button {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    padding: 8px 12px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    cursor: pointer;
-    border-radius: 4px;
+  max-width: 150px;
+  margin-bottom: 20px;
 }
