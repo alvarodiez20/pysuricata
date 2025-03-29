@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysuricata"
-version = "0.0.3"
+version = "0.0.4"
 description = "A lightweight EDA tool inspired by the curious nature of suricates. Built just for fun 🔬."
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
@@ -54,4 +54,4 @@ dev = [
 include-package-data = true
 
 [tool.setuptools.package-data]
-pysuricata = ["templates/*.html"]
+pysuricata = ["templates/*.html", "static/css/*.css", "static/images/*.png"]
