@@ -49,3 +49,6 @@ dev = [
     "requests>=2.32.3",
     "ruff>=0.11.2",
 ]
+[tool.setuptools]
+include-package-data = true
+package-data = { "pysuricata": ["templates/*.html"] }
