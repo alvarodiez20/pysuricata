@@ -68,9 +68,20 @@ def generate_report(
         logo_html = f'<img id="logo" src="data:image/png;base64,{encoded_logo}" alt="Logo">'
     else:
         logo_html = ""
+    
+    # Load the favicon from static/images/favicon.ico and encode it as Base64.
+    favicon_path = os.path.join(static_dir, "images", "favicon.png")
+    if os.path.exists(favicon_path):
+        with open(favicon_path, "rb") as icon_file:
+            encoded_favicon = base64.b64encode(icon_file.read()).decode("utf-8")
+        # Since it's an ICO file, we use the appropriate MIME type.
+        favicon_tag = f'<link rel="icon" href="data:image/x-icon;base64,{encoded_favicon}" type="image/x-icon">'
+    else:
+        favicon_tag = ""
 
     # Replace the placeholders in the template with the actual content.
     html = template.format(
+        favicon=favicon_tag,
         css=css_tag,
         logo=logo_html,
         stats_table=df_to_html(stats),
