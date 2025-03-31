@@ -46,7 +46,7 @@ body.light th {
   height: 50px;
   border-radius: 50%;
   border: none;
-  background-color: #007bff;
+  background-color: transparent;
   color: white;
   font-size: 24px;
   display: flex;
@@ -57,11 +57,57 @@ body.light th {
 }
 
 .toggle-button:hover {
-  background-color: #0056b3;
-  transform: scale(1.1);
+  background-color: transparent;
+  transform: scale(1.2);
 }
 
-#logo {
-  max-width: 150px;
-  margin-bottom: 20px;
+#header {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+  /* This ensures children (#logo-container and #header-info) share the same height */
+  align-items: stretch;  
+}
+
+/* Constrain the logo size */
+#logo-container {
+  /* Make the logo container a flex box, so the logo can be centered if needed */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#logo-container img {
+  max-height: 150px; /* Controls the overall header height */
+  width: auto;
+}
+
+/* Ensure the text section stretches to match the logo container’s height */
+#header-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Center text vertically */
+  gap: 2px;              /* reduce space between elements */
+  line-height: 1.1;      /* tighter line spacing */
+}
+
+#header-info h1,
+#header-info p {
+  margin: 0;
+  padding: 8px;
+}
+
+/* Link styling for both modes */
+a {
+  color: #1e90ff; /* DodgerBlue for light mode */
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+/* Make links more readable in dark mode */
+body.dark a {
+  color: #4ea3f1; /* Slightly brighter for dark background */
 }

@@ -1,10 +1,19 @@
 import os
-import base64
+import time
+from datetime import datetime
 import pandas as pd
 import numpy as np
 from typing import Union, Optional, List
 from .analysis import summary_statistics, missing_values, correlation_matrix
-from .utils import to_dataframe, df_to_html
+from .utils import (
+    to_dataframe,
+    df_to_html,
+    load_css,
+    load_template,
+    embed_favicon,
+    embed_image,
+    load_script,
+)
 
 try:
     import dask.dataframe as dd
@@ -16,80 +25,95 @@ try:
 except ImportError:
     pl = None
 
+
 def generate_report(
     data: Union[pd.DataFrame, np.ndarray, "dd.DataFrame", "pl.DataFrame"],
     output_file: Optional[str] = None,
+    report_title: Optional[str] = "PySuricata EDA Report",
     columns: Optional[List[str]] = None,
 ) -> str:
     """
     Generate an HTML report containing summary statistics, missing values, and a correlation matrix.
-    
-    The report embeds CSS and a PNG logo from a static folder into the HTML template so that
-    all styling and resources remain intact even if the report is moved.
+
+    This function converts the input data into a DataFrame, computes summary statistics,
+    missing values, and the correlation matrix. It then loads an HTML template and embeds
+    CSS and images (logo and favicon) using Base64 encoding so that the report is self-contained.
+    Optionally, the report can be written to an output file.
 
     Args:
-        data: Input data (Pandas, Dask, Polars, or a 2D NumPy array).
-        output_file: Optional file path to save the HTML report.
-        columns: Optional column names (for 2D NumPy arrays).
+        data (Union[pd.DataFrame, np.ndarray, dd.DataFrame, pl.DataFrame]):
+            The input data.
+        output_file (Optional[str]):
+            File path to save the HTML report. If None, the report is not written to disk.
+        report_title (Optional[str]):
+            Title of the report. Defaults to "PySuricata EDA Report" if not provided.
+        columns (Optional[List[str]]):
+            Column names (used when the data is a 2D NumPy array).
 
     Returns:
-        A string containing the complete HTML report.
+        str: A string containing the complete HTML report.
     """
-    # Convert input data to a DataFrame-like object.
+
+    start_time = time.time()
+
+    # Convert input data to a DataFrame.
     df = to_dataframe(data, columns=columns)
+
+    # Perform analyses.
     stats = summary_statistics(df)
     miss = missing_values(df)
     corr = correlation_matrix(df)
 
-    # Determine the paths to the static and template folders.
+    # Determine directory paths.
     module_dir = os.path.dirname(os.path.abspath(__file__))
     static_dir = os.path.join(module_dir, "static")
     template_dir = os.path.join(module_dir, "templates")
-    
-    # Load the HTML template.
+
+    # Load the HTML template and resource files.
     template_path = os.path.join(template_dir, "report_template.html")
-    with open(template_path, "r", encoding="utf-8") as f:
-        template = f.read()
+    template = load_template(template_path)
 
     # Load CSS and embed it inline.
     css_path = os.path.join(static_dir, "css", "style.css")
-    if os.path.exists(css_path):
-        with open(css_path, "r", encoding="utf-8") as f:
-            css_content = f.read()
-        css_tag = f"<style>{css_content}</style>"
-    else:
-        css_tag = ""
+    css_tag = load_css(css_path)
 
-    # Load the PNG logo from static/images/logo.png and encode it as Base64.
+    # Load the JavaScript for dark mode toggle.
+    script_path = os.path.join(static_dir, "js", "darkModeToggle.js")
+    script_content = load_script(script_path)
+
+    # Load and embed the PNG logo.
     logo_path = os.path.join(static_dir, "images", "logo.png")
-    if os.path.exists(logo_path):
-        with open(logo_path, "rb") as img_file:
-            encoded_logo = base64.b64encode(img_file.read()).decode("utf-8")
-        logo_html = f'<img id="logo" src="data:image/png;base64,{encoded_logo}" alt="Logo">'
-    else:
-        logo_html = ""
-    
-    # Load the favicon from static/images/favicon.ico and encode it as Base64.
-    favicon_path = os.path.join(static_dir, "images", "favicon.png")
-    if os.path.exists(favicon_path):
-        with open(favicon_path, "rb") as icon_file:
-            encoded_favicon = base64.b64encode(icon_file.read()).decode("utf-8")
-        # Since it's an ICO file, we use the appropriate MIME type.
-        favicon_tag = f'<link rel="icon" href="data:image/x-icon;base64,{encoded_favicon}" type="image/x-icon">'
-    else:
-        favicon_tag = ""
+    logo_html = embed_image(
+        logo_path, element_id="logo", alt_text="Logo", mime_type="image/png"
+    )
 
-    # Replace the placeholders in the template with the actual content.
+    # Load and embed the favicon.
+    favicon_path = os.path.join(static_dir, "images", "favicon.png")
+    favicon_tag = embed_favicon(favicon_path)
+
+    # Compute how long it took to generate the report.
+    end_time = time.time()
+    duration_seconds = end_time - start_time
+
+    # Set defaults for new information.
+    report_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    repo_url = "https://github.com/alvarodiez20/pysuricata"
+
+    # Replace placeholders in the template.
     html = template.format(
         favicon=favicon_tag,
         css=css_tag,
+        script=script_content,
         logo=logo_html,
+        report_title=report_title,
+        report_date=report_date,
+        report_duration=f"{duration_seconds:.2f}",
+        repo_url=repo_url,
         stats_table=df_to_html(stats),
         missing_table=df_to_html(miss),
-        corr_table=df_to_html(corr)
+        corr_table=df_to_html(corr),
     )
 
-    # Optionally write the report to an output file.
     if output_file:
         with open(output_file, "w", encoding="utf-8") as f:
             f.write(html)
