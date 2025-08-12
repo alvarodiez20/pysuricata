@@ -1,36 +1,112 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{report_title}</title>
-    {favicon}  <!-- Placeholder for favicon -->
-    {css}      <!-- Placeholder for inline CSS -->
+    {favicon}
+    {css}
     <script>{script}</script>
   </head>
-  <body>
-    <button id="toggle-button" class="toggle-button" onclick="toggleDarkMode()">
-      <span id="toggle-icon">☀️</span>
-    </button>
 
-    <div id="header">
-      <div id="logo-container">
-        {logo} <!-- The Base64-embedded logo -->
-      </div>
-      <div id="header-info">
-        <h1>{report_title}</h1>
-        <p>Generated on: {report_date}</p>
-        <p>Time to generate: {report_duration} seconds</p>
-        <p>Powered by <a href="{repo_url}" target="_blank">pysuricata</a>.</p>
-      </div>
+  <body class="suricata-standalone light">
+    <div id="pysuricata-report" class="light">
+      <!-- Sticky / modern header -->
+      <header class="appbar">
+        <div class="container header-grid">
+          <div class="logo" id="logo-container">
+            {logo}
+          </div>
+
+          <div class="title-nav">
+            <h1>{report_title}</h1>
+            <div class="nav-and-toggle">
+              <nav class="quick" aria-label="Quick navigation">
+                <a href="#summary">Dataset Summary</a>
+              </nav>
+              <button id="toggle-button" class="toggle-button" onclick="toggleDarkModeScoped()" aria-label="Toggle dark mode">
+                <span id="toggle-icon">🌙</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="meta">
+            <span class="chip" title="Generation date">📅 {report_date}</span>
+            <span class="chip" title="Render time">⏱ {report_duration}s</span>
+            <a class="chip" href="{repo_url}" target="_blank" rel="noreferrer">🐙 pysuricata</a>
+          </div>
+        </div>
+      </header>
+
+      <main class="container">
+        <div class="stack">
+
+          <!-- Dataset Summary -->
+          <section id="summary">
+            <h2>Dataset Summary</h2>
+
+            <div class="summary-grid">
+              <div class="summary-card">
+                <div class="label">Rows</div>
+                <div class="value">{n_rows}</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Columns</div>
+                <div class="value">{n_cols}</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Memory</div>
+                <div class="value">{memory_usage}</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Missing (overall)</div>
+                <div class="value">{missing_overall}</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Duplicates</div>
+                <div class="value">{duplicates_overall}</div>
+              </div>
+            </div>
+
+            <div class="summary-grid second-row">
+              <div class="summary-card">
+                <div class="label">Column types</div>
+                <div class="dtype-donut" style="--num:{numeric_cols}; --cat:{categorical_cols}; --dt:{datetime_cols}; --bool:{bool_cols}"></div>
+                <ul class="summary-list">
+                  <li><span>Numeric</span><span>{numeric_cols}</span></li>
+                  <li><span>Categorical</span><span>{categorical_cols}</span></li>
+                  <li><span>Datetime</span><span>{datetime_cols}</span></li>
+                  <li><span>Boolean</span><span>{bool_cols}</span></li>
+                </ul>
+              </div>
+              <div class="summary-card">
+                <div class="label">Top missing columns</div>
+                <ul class="summary-list top-missing">
+                  {top_missing_list}
+                </ul>
+              </div>
+              <div class="summary-card">
+                <div class="label">Quick insights</div>
+                <ul class="chip-wall">
+                  <li>Unique cols: {n_unique_cols}</li>
+                  <li>Constant cols: {constant_cols}</li>
+                  <li>High-card categoricals: {high_card_cols}</li>
+                  <li>Date range: {date_min} → {date_max}</li>
+                  <li>Likely IDs: {likely_id_cols}</li>
+                  <li>Text cols: {text_cols} (avg len {avg_text_len})</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <footer class="page" role="contentinfo">
+            <p>
+              Powered by <a href="{repo_url}" target="_blank" rel="noreferrer">pysuricata</a>.
+            </p>
+          </footer>
+
+        </div>
+      </main>
     </div>
-
-    <h1>Summary Statistics</h1>
-    {stats_table}  <!-- Placeholder for summary statistics table -->
-
-    <h1>Missing Values</h1>
-    {missing_table}  <!-- Placeholder for missing values table -->
-
-    <h1>Correlation Matrix</h1>
-    {corr_table}  <!-- Placeholder for correlation matrix table -->
   </body>
 </html>

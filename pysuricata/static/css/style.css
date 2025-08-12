@@ -1,113 +1,307 @@
-body {
+body.suricata-standalone {
+  margin: 0;
+  background-color: #f9f9f9; /* default to light */
+  transition: background-color 0.3s ease;
+}
+body.suricata-standalone:not(.light) {
+  background-color: #333; /* match dark theme */
+}
+
+#pysuricata-report {
+  --divider-dark: rgba(255,255,255,0.12);
+  --divider-light: rgba(0,0,0,0.08);
+  --chip-bg-dark: rgba(255,255,255,0.08);
+  --chip-bg-light: rgba(0,0,0,0.06);
+  --chip-br-dark: rgba(255,255,255,0.12);
+  --chip-br-light: rgba(0,0,0,0.08);
+}
+
+#pysuricata-report {
   font-family: Arial, sans-serif;
   margin: 20px;
-  background-color: #333;  /* Dark background */
-  color: #f9f9f9;           /* Light text */
+  background-color: #333;
+  color: #f9f9f9;
   transition: background-color 0.3s, color 0.3s;
 }
+#pysuricata-report.light { background-color: #f9f9f9; color: #333; }
 
-/* Light mode overrides */
-body.light {
-  background-color: #f9f9f9; /* Light background */
-  color: #333;              /* Dark text */
+#pysuricata-report h1 { color: inherit; margin: 0; }
+
+/* Global links (content areas). Header nav overrides these to inherit. */
+#pysuricata-report a { color: #1e90ff; text-decoration: none; }
+#pysuricata-report a:hover { text-decoration: underline; }
+#pysuricata-report:not(.light) a { color: #4ea3f1; }
+
+/* Tables */
+#pysuricata-report table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+#pysuricata-report th, #pysuricata-report td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+#pysuricata-report th { background-color: #555; }
+#pysuricata-report.light th { background-color: #f2f2f2; }
+
+/* Layout container */
+#pysuricata-report .container { max-width: 1200px; margin: 0 auto; padding: 0.75rem 1rem; }
+
+/* =============================
+   HEADER / APP BAR
+   ============================= */
+#pysuricata-report .appbar { background: transparent; border-bottom: 1px solid var(--divider-light); }
+#pysuricata-report:not(.light) .appbar { border-bottom-color: var(--divider-dark); }
+
+/* 2-row grid, logo spans both rows */
+#pysuricata-report .header-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr; /* wider for bigger logo */
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "logo title"
+    "logo meta";
+  column-gap: 1rem;
+  row-gap: 0.5rem;
+  align-items: center;
 }
 
-h1 {
-  color: inherit;
-}
+/* Logo */
+#pysuricata-report .header-grid .logo { grid-area: logo; display: flex; align-items: center; justify-content: center; }
+#pysuricata-report .header-grid .logo img { height: 96px; width: auto; display: block; }
 
-table {
-  border-collapse: collapse;
-  width: 100%;
-  margin-bottom: 20px;
-}
+/* Top row: title (left), nav + toggle (right) */
+#pysuricata-report .title-nav { grid-area: title; display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+#pysuricata-report .title-nav h1 { font-size: 1.5rem; font-weight: 700; margin: 0; }
 
-th, td {
-  border: 1px solid #ddd;
-  padding: 8px;
-  text-align: left;
-}
+#pysuricata-report .nav-and-toggle { display: flex; align-items: center; gap: 0.75rem; }
 
-/* Default table header style for dark mode */
-th {
-  background-color: #555;
+/* Quick links as neutral chips (inherit color; not blue) */
+#pysuricata-report .quick { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+#pysuricata-report .quick a,
+#pysuricata-report .quick a:visited { color: inherit !important; }
+#pysuricata-report .quick a {
+  font-weight: 600;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(0,0,0,0.05);
+  transition: background-color 0.2s, color 0.2s;
 }
+#pysuricata-report:not(.light) .quick a { background: rgba(255,255,255,0.08); }
+#pysuricata-report .quick a:hover { background: rgba(0,0,0,0.12); }
+#pysuricata-report:not(.light) .quick a:hover { background: rgba(255,255,255,0.15); }
 
-/* Table header style for light mode */
-body.light th {
-  background-color: #f2f2f2;
-}
-
-.toggle-button {
-  position: fixed;
-  top: 20px;
-  right: 20px;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+/* Toggle button (monochrome) */
+#pysuricata-report .appbar .toggle-button {
+  position: static;
   border: none;
-  background-color: transparent;
-  color: white;
-  font-size: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: transparent;
+  font-size: 1.3rem;
   cursor: pointer;
-  transition: background-color 0.3s, transform 0.3s;
+  padding: 0.3rem;
+  border-radius: 50%;
+  color: inherit;
+  transition: background-color 0.2s, transform 0.2s;
 }
+#pysuricata-report .appbar .toggle-button:hover { background-color: rgba(0,0,0,0.08); transform: scale(1.1); }
+#pysuricata-report:not(.light) .appbar .toggle-button:hover { background-color: rgba(255,255,255,0.12); }
 
-.toggle-button:hover {
-  background-color: transparent;
-  transform: scale(1.2);
-}
-
-#header {
-  display: flex;
-  flex-direction: row;
-  gap: 20px;
-  /* This ensures children (#logo-container and #header-info) share the same height */
-  align-items: stretch;  
-}
-
-/* Constrain the logo size */
-#logo-container {
-  /* Make the logo container a flex box, so the logo can be centered if needed */
+/* Bottom row: metadata left-aligned under title */
+#pysuricata-report .meta {
+  grid-area: meta;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  opacity: 0.9;
 }
 
-#logo-container img {
-  max-height: 150px; /* Controls the overall header height */
-  width: auto;
+
+#pysuricata-report .chip { padding: 0.35rem 0.6rem; border-radius: 9999px; font-size: 0.85rem; line-height: 1; background: var(--chip-bg-light); border: 1px solid var(--chip-br-light); }
+#pysuricata-report:not(.light) .chip { background: var(--chip-bg-dark); border-color: var(--chip-br-dark); }
+
+/* Responsive header tweaks */
+@media (max-width: 800px) {
+  #pysuricata-report .title-nav { flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+}
+@media (max-width: 560px) {
+  #pysuricata-report .header-grid { grid-template-columns: 88px 1fr; }
+  #pysuricata-report .header-grid .logo img { height: 76px; }
 }
 
-/* Ensure the text section stretches to match the logo container’s height */
-#header-info {
+/* =============================
+   SUMMARY SECTION (cards & lists)
+   ============================= */
+#pysuricata-report #summary { margin: 1rem 0 2rem; }
+#pysuricata-report #summary h2 { margin: 0 0 .75rem; font-size: 1.25rem; line-height: 1.25; }
+
+#pysuricata-report #summary .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+#pysuricata-report #summary .summary-grid.second-row { margin-top: 12px; }
+
+/* Auto-dense 3-column layout for second row */
+#pysuricata-report #summary .summary-grid.second-row {
+  grid-auto-flow: dense; /* allow items to backfill gaps */
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+@media (max-width: 960px){
+  #pysuricata-report #summary .summary-grid.second-row {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+#pysuricata-report #summary .summary-card { padding: 14px; border-radius: 10px; border: 1px solid var(--chip-br-light); background: rgba(0,0,0,0.02); }
+#pysuricata-report:not(.light) #summary .summary-card { border-color: var(--chip-br-dark); background: rgba(255,255,255,0.04); }
+
+#pysuricata-report #summary .summary-card .label { font-size: .8rem; opacity: .8; margin: 0 0 6px; }
+#pysuricata-report #summary .summary-card .value { font-weight: 600; font-size: 1.1rem; }
+
+/* Generic summary list (two-column rows). We EXCLUDE .top-missing here. */
+#pysuricata-report #summary .summary-list { list-style: none; padding: 0; margin: 0; display: grid; row-gap: 4px; }
+#pysuricata-report #summary .summary-list:not(.top-missing) li {
   display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#pysuricata-report #summary .summary-list:not(.top-missing) li span:first-child { overflow: hidden; text-overflow: ellipsis; }
+
+/* =============================
+   TOP MISSING COLUMNS (bars)
+   ============================= */
+/* The UL wrapper */
+#pysuricata-report #summary .summary-list.top-missing { display: flex !important; flex-direction: column; gap: clamp(32px, 3vw, 48px); row-gap: 0; margin: 0; padding: 0; }
+
+/* Each LI is a 2-row grid: info row + bar row */
+#pysuricata-report .top-missing .missing-item { display: grid !important; grid-template-rows: auto 8px; row-gap: clamp(4px, 0.6vw, 12px); list-style: none; }
+
+/* Info row: column name (left) + count/percent (right) */
+#pysuricata-report .missing-info { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0; }
+
+/* Column name chip (code-like) */
+#pysuricata-report .missing-col {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.05);
+  border: 1px solid rgba(0,0,0,0.12);
+  color: inherit;
+  max-width: 70%;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+#pysuricata-report:not(.light) .missing-col { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.18); }
+
+#pysuricata-report .missing-stats { font-weight: 500; white-space: nowrap; }
+
+/* Bar container */
+#pysuricata-report .missing-bar { position: relative; height: 8px; border-radius: 4px; background: var(--divider-light); overflow: hidden; }
+#pysuricata-report:not(.light) .missing-bar { background: var(--divider-dark); }
+
+/* Percentage fill. Width is set inline: style="width: 23.4%;" */
+#pysuricata-report .missing-fill { position: absolute; left: 0; top: 0; height: 100%; display: block; background-color: #4ea3f1; transition: width 0.3s ease; }
+#pysuricata-report .missing-fill.low    { background-color: #4ea3f1; }
+#pysuricata-report .missing-fill.medium { background-color: #f1c54e; }
+#pysuricata-report .missing-fill.high   { background-color: #f15e4e; }
+
+/* =============================
+   COLUMN TYPES (pretty tiles)
+   ============================= */
+/* Target the first card in the second summary row ("Column types") */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+/* Turn each LI into a compact tile */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li {
+  display: flex !important;          /* override default two-column row */
   flex-direction: column;
-  justify-content: center; /* Center text vertically */
-  gap: 2px;              /* reduce space between elements */
-  line-height: 1.1;      /* tighter line spacing */
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 12px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--chip-br-light);
+  background: rgba(0,0,0,0.02);
+  transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+#pysuricata-report:not(.light) #summary .summary-grid.second-row .summary-card:first-child .summary-list li {
+  border-color: var(--chip-br-dark);
+  background: rgba(255,255,255,0.04);
+}
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:hover {
+  transform: translateY(-1px);
+  background: rgba(0,0,0,0.04);
+}
+#pysuricata-report:not(.light) #summary .summary-grid.second-row .summary-card:first-child .summary-list li:hover {
+  background: rgba(255,255,255,0.06);
 }
 
-#header-info h1,
-#header-info p {
-  margin: 0;
-  padding: 8px;
+/* Color swatch before each tile (matches donut palette) */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li::before {
+  content: "";
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  margin-bottom: 6px;
+  border: 1px solid var(--chip-br-light);
+}
+#pysuricata-report:not(.light) #summary .summary-grid.second-row .summary-card:first-child .summary-list li::before {
+  border-color: var(--chip-br-dark);
+}
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(1)::before { background: #4ea3f1; } /* Numeric */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(2)::before { background: #8ac926; } /* Categorical */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(3)::before { background: #ffca3a; } /* Datetime */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(4)::before { background: #ff595e; } /* Boolean */
+
+/* Label (left span) becomes a subtle caption; value (right span) is bold/bigger */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li span:first-child {
+  order: 2;              /* place under the value */
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li span:last-child {
+  order: 1;              /* show the number on top */
+  font-weight: 700;
+  font-size: 1.2rem;
 }
 
-/* Link styling for both modes */
-a {
-  color: #1e90ff; /* DodgerBlue for light mode */
-  text-decoration: none;
+/* Responsive: stack to 2 columns on narrow screens */
+@media (max-width: 560px) {
+  #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-a:hover {
-  text-decoration: underline;
-}
+/* =============================
+   QUICK INSIGHTS (chip wall)
+   ============================= */
+#pysuricata-report .chip-wall { display:flex; flex-wrap:wrap; gap:8px; list-style:none; padding:0; margin:0; }
+#pysuricata-report .chip-wall li { padding:0.3rem 0.6rem; border-radius:9999px; background:var(--chip-bg-light); border:1px solid var(--chip-br-light); }
+#pysuricata-report:not(.light) .chip-wall li { background:var(--chip-bg-dark); border-color:var(--chip-br-dark); }
 
-/* Make links more readable in dark mode */
-body.dark a {
-  color: #4ea3f1; /* Slightly brighter for dark background */
+/* =============================
+   DTYPE DONUT (proportions)
+   ============================= */
+#pysuricata-report .dtype-donut {
+  --total: calc(var(--num) + var(--cat) + var(--dt) + var(--bool));
+  --p1: calc(var(--num) / var(--total) * 360deg);
+  --p2: calc(var(--cat) / var(--total) * 360deg);
+  --p3: calc(var(--dt)  / var(--total) * 360deg);
+  width: 120px; height: 120px; border-radius: 50%;
+  background:
+    conic-gradient(
+      #4ea3f1 0 var(--p1),
+      #8ac926 var(--p1) calc(var(--p1) + var(--p2)),
+      #ffca3a calc(var(--p1) + var(--p2)) calc(var(--p1) + var(--p2) + var(--p3)),
+      #ff595e 0
+    );
+  position: relative; margin: 12px auto 12px;
 }
+#pysuricata-report .dtype-donut::after {
+  content:""; position:absolute; inset:14px; border-radius:50%;
+  box-shadow: 0 0 0 999px var(--chip-bg-light) inset; /* creates hole */
+}
+#pysuricata-report:not(.light) .dtype-donut::after { box-shadow: 0 0 0 999px var(--chip-bg-dark) inset; }
+#pysuricata-report .dtype-legend { display: none !important; }
+
