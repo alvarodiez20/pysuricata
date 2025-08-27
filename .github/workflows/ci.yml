@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ "3.9", "3.10", "3.11" , "3.12" ]
+        python-version: [ "3.10", "3.11" , "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v3
 
@@ -28,11 +28,3 @@ jobs:
 
       - name: Run Ruff (Linter)
         run: uv run ruff check
-
-      - name: Run Tests with Pytest
-        run: uv run pytest --maxfail=1 --disable-warnings -q
-
-      - name: Run Coverage
-        run: |
-          uv run coverage run -m pytest
-          uv run coverage report

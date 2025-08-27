@@ -9,7 +9,7 @@ description = "A lightweight EDA tool inspired by the curious nature of suricate
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
 ]
-license = 'MIT'
+license = { text = "MIT" }
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [
@@ -20,26 +20,16 @@ classifiers = [
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
-    "pandas",
+    "pandas~=2.0",
 ]
 
 [project.urls]
-Repository = "https://github.com/alvarodiez20/suricata"
+Repository = "https://github.com/alvarodiez20/pysuricata"
 
-[project.optional-dependencies]
-notebooks = [
-    "ipykernel",
-]
-dask = [
-    "dask",
-]
-polars = [
-    "polars>=1.26.0",
-    "pyarrow>=19.0.1",
-]
 
 [dependency-groups]
 dev = [
@@ -54,4 +44,10 @@ dev = [
 include-package-data = true
 
 [tool.setuptools.package-data]
-pysuricata = ["templates/*.html", "static/css/*.css", "static/images/*.png"]
+pysuricata = [
+    "templates/*.html", 
+    "static/css/*.css", 
+    "static/images/*.png", 
+    "static/images/*.ico",
+    "static/js/*.js"
+    ]
