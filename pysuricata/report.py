@@ -1392,7 +1392,8 @@ def generate_report(
             tvals = tconv.dropna().astype("int64").to_numpy()
             if tvals.size == 0:
                 return f'<svg class="dt-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-            tmin = int(np.min(tvals)); tmax = int(np.max(tvals))
+            tmin = int(np.min(tvals))
+            tmax = int(np.max(tvals))
             if tmin == tmax:
                 tmax = tmin + 1
             bins = int(max(10, min(bins, max(10, min(ts.size, 180)))))
