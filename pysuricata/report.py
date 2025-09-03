@@ -27,6 +27,7 @@ except Exception:  # last resort
     class _PkgNotFound(Exception):
         pass
 
+
 def _resolve_pysuricata_version() -> str:
     # Prefer installed metadata
     if _pkg_version is not None:
@@ -45,6 +46,443 @@ def _resolve_pysuricata_version() -> str:
         pass
     # Environment override or default
     return os.getenv("PYSURICATA_VERSION", "dev")
+
+
+# === Shared helpers (deduplicated) ===
+
+def _human_bytes(n: int) -> str:
+    """Format bytes as a human‑readable string (e.g., 1.2 MB)."""
+    units = ["B", "KB", "MB", "GB", "TB", "PB"]
+    size = float(n)
+    for u in units:
+        if size < 1024.0 or u == units[-1]:
+            return f"{size:,.1f} {u}"
+        size /= 1024.0
+
+
+def _memory_usage_bytes(s: pd.Series) -> int:
+    """Robust per‑series memory usage in bytes (works across pandas versions)."""
+    try:
+        return int(s.memory_usage(index=False, deep=True))
+    except TypeError:
+        try:
+            return int(s.memory_usage(deep=True))
+        except Exception:
+            return 0
+    except Exception:
+        return 0
+
+
+
+def _missing_stats(s: pd.Series, warn_thresh: float = 5.0, crit_thresh: float = 20.0):
+    """Return (missing_count, missing_pct, css_class) for a Series.
+    css_class is 'crit' if pct>crit_thresh, 'warn' if pct>warn_thresh, else ''.
+    """
+    n_total = int(s.size)
+    miss = int(s.isna().sum())
+    pct = (miss / n_total * 100.0) if n_total else 0.0
+    cls = 'crit' if pct > crit_thresh else ('warn' if pct > warn_thresh else '')
+    return miss, pct, cls
+
+
+
+def _to_utc_naive(s: pd.Series) -> pd.Series:
+    """Coerce to datetime, convert tz-aware to UTC and drop tz, return Naive datetimes.
+    Safe across pandas versions and mixed tz/naive inputs.
+    """
+    s2 = pd.to_datetime(s, errors="coerce")
+    try:
+        if hasattr(s2.dt, "tz") and s2.dt.tz is not None:
+            s2 = s2.dt.tz_convert("UTC").dt.tz_localize(None)
+    except Exception:
+        # If tz_convert fails on partially-aware series, coerce again
+        try:
+            s2 = pd.to_datetime(s2, errors="coerce")
+            if hasattr(s2.dt, "tz") and s2.dt.tz is not None:
+                s2 = s2.dt.tz_convert("UTC").dt.tz_localize(None)
+        except Exception:
+            pass
+    return s2
+
+# === Nice ticks helpers (D3-like, shared) ===
+def _nice_num(rng: float, do_round: bool = True) -> float:
+    """Nice number helper (D3-like) used for tick generation."""
+    import math
+    if rng <= 0 or not np.isfinite(rng):
+        return 1.0
+    exp = math.floor(math.log10(rng))
+    frac = rng / (10 ** exp)
+    if do_round:
+        if frac < 1.5:
+            nice = 1
+        elif frac < 3:
+            nice = 2
+        elif frac < 7:
+            nice = 5
+        else:
+            nice = 10
+    else:
+        if frac <= 1:
+            nice = 1
+        elif frac <= 2:
+            nice = 2
+        elif frac <= 5:
+            nice = 5
+        else:
+            nice = 10
+    return nice * (10 ** exp)
+
+
+def _nice_ticks(vmin: float, vmax: float, n: int = 5):
+    """Return (ticks, step) for a nice axis between vmin and vmax with ~n ticks."""
+    import math
+    if vmax < vmin:
+        vmin, vmax = vmax, vmin
+    if vmax == vmin:
+        vmax = vmin + 1
+    rng = _nice_num(vmax - vmin, do_round=False)
+    step = _nice_num(rng / max(1, n - 1), do_round=True)
+    nice_min = math.floor(vmin / step) * step
+    nice_max = math.ceil(vmax / step) * step
+    ticks = []
+    t = nice_min
+    while t <= nice_max + step * 1e-9 and len(ticks) < 50:
+        ticks.append(t)
+        t += step
+    return ticks, step
+
+
+# === Shared SVG/numeric helpers ===
+def _svg_empty(css_class: str, width: int, height: int, aria_label: str = "no data") -> str:
+    """Return a minimal empty SVG with the desired CSS class and size."""
+    return f'<svg class="{css_class}" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="{aria_label}"></svg>'
+
+
+def _prep_numeric_vals(s: pd.Series, *, scale: str = "lin", sample_cap: Optional[int] = None) -> Optional[np.ndarray]:
+    """Common numeric pipeline: dropna, coerce to numeric, optional log10(+), and sampling.
+    Returns a numpy array or None if no usable data remains.
+    """
+    s = s.dropna()
+    if s.empty:
+        return None
+    vals = pd.to_numeric(s, errors="coerce").dropna().to_numpy()
+    if vals.size == 0:
+        return None
+    if scale == "log":
+        vals = vals[vals > 0]
+        if vals.size == 0:
+            return None
+        vals = np.log10(vals)
+    if sample_cap is not None and vals.size > sample_cap:
+        rng = np.random.default_rng(0)
+        idx = rng.choice(vals.size, size=sample_cap, replace=False)
+        vals = vals[idx]
+    return vals
+
+
+def _fmt_tick(v: float, step: float) -> str:
+    """Format tick labels based on step size (independent of _fmt)."""
+    if not np.isfinite(v):
+        return ''
+    if step >= 1:
+        return f"{int(round(v))}"
+    if step >= 0.1:
+        return f"{v:.1f}"
+    if step >= 0.01:
+        return f"{v:.2f}"
+    try:
+        return f"{v:.4g}"
+    except Exception:
+        return str(v)
+
+
+# === Module-level helpers for SVG charts (deduped from generate_report) ===
+
+def _fmt(x) -> str:
+    try:
+        if pd.isna(x):
+            return "—"
+    except Exception:
+        pass
+    try:
+        return f"{x:.4g}"
+    except Exception:
+        try:
+            return f"{float(x):.4g}"
+        except Exception:
+            return str(x)
+
+
+def _safe_col_id(name: str) -> str:
+    return "col_" + "".join(ch if ch.isalnum() else "_" for ch in str(name))
+
+
+def build_hist_svg_with_axes(
+    s: pd.Series,
+    bins: int = 20,
+    width: int = 420,
+    height: int = 160,
+    margin_left: int = 45,
+    margin_bottom: int = 36,
+    margin_top: int = 8,
+    margin_right: int = 8,
+    sample_cap: int = 200_000,
+    scale: str = "lin",
+    auto_bins: bool = True,
+) -> str:
+    """Public, testable wrapper for numeric histogram with axes."""
+    vals = _prep_numeric_vals(s, scale=scale, sample_cap=sample_cap)
+    if vals is None or vals.size == 0:
+        return _svg_empty("hist-svg", width, height)
+
+    x_min, x_max = float(np.min(vals)), float(np.max(vals))
+    if x_min == x_max:
+        x_min -= 0.5
+        x_max += 0.5
+
+    # IQR for bin-width selection (Freedman–Diaconis)
+    q1 = float(np.quantile(vals, 0.25)) if vals.size else np.nan
+    q3 = float(np.quantile(vals, 0.75)) if vals.size else np.nan
+    iqr_local = q3 - q1 if np.isfinite(q3) and np.isfinite(q1) else 0.0
+
+    if auto_bins:
+        if vals.size > 1 and iqr_local > 0:
+            h = 2.0 * iqr_local * (vals.size ** (-1.0 / 3.0))
+            if h > 0:
+                fd_bins = int(np.clip(np.ceil((x_max - x_min) / h), 10, 200))
+                bins = fd_bins
+
+    counts, edges = np.histogram(vals, bins=bins, range=(x_min, x_max))
+    y_max = int(max(1, counts.max()))
+    total_n = int(counts.sum()) if counts.size else 0
+
+    iw = width - margin_left - margin_right
+    ih = height - margin_top - margin_bottom
+
+    def sx(x):
+        return margin_left + (x - x_min) / (x_max - x_min) * iw
+
+    def sy(y):
+        return margin_top + (1 - y / y_max) * ih
+
+    x_ticks, x_step = _nice_ticks(x_min, x_max, 5)
+    y_ticks, y_step = _nice_ticks(0, y_max, 5)
+
+    parts = [
+        f'<svg class="hist-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Histogram">',
+        '<g class="plot-area">'
+    ]
+
+    for i, c in enumerate(counts):
+        x0 = edges[i]
+        x1 = edges[i + 1]
+        x = sx(x0)
+        w = max(1.0, sx(x1) - sx(x0) - 1.0)
+        y = sy(c)
+        h = (margin_top + ih) - y
+        pct = (c / total_n * 100.0) if total_n else 0.0
+        parts.append(
+            f'<rect class="bar" x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" height="{h:.2f}" rx="1" ry="1" '
+            f'data-count="{c}" data-pct="{pct:.1f}" data-x0="{_fmt(x0)}" data-x1="{_fmt(x1)}">'
+            f'<title>{c} rows ({pct:.1f}%)&#10;[{_fmt(x0)} – {_fmt(x1)}]</title>'
+            f'</rect>'
+        )
+    parts.append('</g>')
+
+    x_axis_y = margin_top + ih
+    parts.append(f'<line class="axis" x1="{margin_left}" y1="{x_axis_y}" x2="{margin_left + iw}" y2="{x_axis_y}"></line>')
+    parts.append(f'<line class="axis" x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{x_axis_y}"></line>')
+
+    for xt in x_ticks:
+        px = sx(xt)
+        parts.append(f'<line class="tick" x1="{px}" y1="{x_axis_y}" x2="{px}" y2="{x_axis_y + 4}"></line>')
+        parts.append(f'<text class="tick-label" x="{px}" y="{x_axis_y + 14}" text-anchor="middle">{_fmt_tick(xt, x_step)}</text>')
+    for yt in y_ticks:
+        py = sy(yt)
+        parts.append(f'<line class="tick" x1="{margin_left - 4}" y1="{py}" x2="{margin_left}" y2="{py}"></line>')
+        parts.append(f'<text class="tick-label" x="{margin_left - 6}" y="{py + 3}" text-anchor="end">{_fmt_tick(yt, y_step)}</text>')
+
+    base_title = str(getattr(s, "name", None)) if getattr(s, "name", None) is not None else "Value"
+    x_title = (f"log10({base_title})" if scale == "log" else base_title)
+    y_title = "Count"
+    parts.append(f'<text class="axis-title x" x="{margin_left + iw/2:.2f}" y="{x_axis_y + 28}" text-anchor="middle">{x_title}</text>')
+    parts.append(f'<text class="axis-title y" transform="translate({margin_left - 36},{margin_top + ih/2:.2f}) rotate(-90)" text-anchor="middle">Count</text>')
+
+    parts.append('</svg>')
+    return ''.join(parts)
+
+
+def build_cat_bar_svg(
+    s: pd.Series,
+    top: int = 10,
+    width: int = 420,
+    height: int = 160,
+    margin_left: int = 120,
+    margin_right: int = 12,
+    margin_top: int = 8,
+    margin_bottom: int = 8,
+    scale: str = "count",   # 'count' or 'pct'
+    include_other: bool = True,
+) -> str:
+    """Public, testable wrapper for categorical Top-N bar chart."""
+    vc = s.value_counts(dropna=False)
+    total = int(vc.sum()) if vc.size else 0
+    if total == 0:
+        return _svg_empty("cat-svg", width, height)
+
+    labels = ["(Missing)" if pd.isna(idx) else str(idx) for idx in vc.index]
+    df_counts = pd.DataFrame({"label": labels, "count": vc.values})
+    df_counts = df_counts.groupby("label", as_index=False)["count"].sum().sort_values("count", ascending=False)
+
+    if include_other and df_counts.shape[0] > top:
+        keep = max(1, top - 1)
+        top_df = df_counts.head(keep).copy()
+        other_count = int(df_counts["count"].iloc[keep:].sum())
+        top_df = pd.concat(
+            [top_df, pd.DataFrame([["Other", other_count]], columns=["label", "count"])],
+            ignore_index=True,
+        )
+    else:
+        top_df = df_counts.head(top).copy()
+    top_df["pct"] = top_df["count"] / total * 100.0
+
+    max_label_len = int(top_df["label"].map(lambda x: len(str(x))).max()) if not top_df.empty else 0
+    _char_w = 7
+    _gutter = max(60, min(180, _char_w * min(max_label_len, 28) + 16))
+    mleft = _gutter
+    mright = 6
+
+    n = len(top_df)
+    if n == 0:
+        return _svg_empty("cat-svg", width, height)
+
+    iw = width - mleft - mright
+    ih = height - margin_top - margin_bottom
+    bar_gap = 6
+    bar_h = max(4, (ih - bar_gap * (n - 1)) / max(n, 1))
+
+    if scale == "pct":
+        vmax = float(top_df["pct"].max()) or 1.0
+        vals = top_df["pct"].to_numpy()
+    else:
+        vmax = float(top_df["count"].max()) or 1.0
+        vals = top_df["count"].to_numpy()
+
+    def sx(v: float) -> float:
+        return mleft + (v / vmax) * iw
+
+    parts = [
+        f'<svg class="cat-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Top categories">'
+    ]
+    for i, (label, c, p, val) in enumerate(zip(top_df["label"], top_df["count"], top_df["pct"], vals)):
+        y = margin_top + i * (bar_h + bar_gap)
+        x0 = mleft
+        x1 = sx(float(val))
+        w = max(1.0, x1 - x0)
+        short = (label[:24] + "…") if len(label) > 24 else label
+        parts.append(
+            f'<g class="bar-row">'
+            f'<rect class="bar" x="{x0:.2f}" y="{y:.2f}" width="{w:.2f}" height="{bar_h:.2f}" rx="2" ry="2">'
+            f'<title>{label}\n{c:,} rows ({p:.1f}%)</title>'
+            f'</rect>'
+            f'<text class="bar-label" x="{mleft-6}" y="{y + bar_h/2 + 3:.2f}" text-anchor="end">{short}</text>'
+            f"<text class=\"bar-value\" x=\"{(x1 - 6 if w >= 56 else x1 + 4):.2f}\" y=\"{y + bar_h/2 + 3:.2f}\" text-anchor=\"{('end' if w >= 56 else 'start')}\">{c:,} ({p:.1f}%)</text>"
+            f'</g>'
+        )
+    parts.append("</svg>")
+    return "".join(parts)
+
+
+def build_dt_line_svg(ts: pd.Series,
+                      bins: int = 60,
+                      width: int = 420,
+                      height: int = 160,
+                      margin_left: int = 45,
+                      margin_right: int = 8,
+                      margin_top: int = 8,
+                      margin_bottom: int = 32) -> str:
+    """Public, testable wrapper for the datetime timeline SVG."""
+    ts = ts.dropna()
+    if ts.empty:
+        return _svg_empty("dt-svg", width, height)
+    tconv = _to_utc_naive(ts)
+    tvals = tconv.dropna().astype("int64").to_numpy()
+    if tvals.size == 0:
+        return _svg_empty("dt-svg", width, height)
+    tmin = int(np.min(tvals))
+    tmax = int(np.max(tvals))
+    if tmin == tmax:
+        tmax = tmin + 1
+    bins = int(max(10, min(bins, max(10, min(ts.size, 180)))))
+    counts, edges = np.histogram(tvals, bins=bins, range=(tmin, tmax))
+    y_max = int(max(1, counts.max()))
+
+    iw = width - margin_left - margin_right
+    ih = height - margin_top - margin_bottom
+    def sx(x):
+        return margin_left + (x - tmin) / (tmax - tmin) * iw
+    def sy(y):
+        return margin_top + (1 - y / y_max) * ih
+
+    centers = (edges[:-1] + edges[1:]) / 2.0
+    pts = " ".join(f"{sx(x):.2f},{sy(float(c)):.2f}" for x, c in zip(centers, counts))
+
+    y_ticks, _y_step = _nice_ticks(0, y_max, 5)
+
+    n_xt = 5
+    xt_vals = np.linspace(tmin, tmax, n_xt)
+    span_ns = tmax - tmin
+    def _fmt_xt(v):
+        try:
+            ts = pd.to_datetime(int(v))
+            if span_ns <= 3 * 24 * 3600 * 1e9:
+                return ts.strftime('%Y-%m-%d %H:%M')
+            return ts.date().isoformat()
+        except Exception:
+            return str(v)
+
+    parts = [
+        f'<svg class="dt-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Timeline">',
+        '<g class="plot-area">'
+    ]
+    for yt in y_ticks:
+        parts.append(f'<line class="grid" x1="{margin_left}" y1="{sy(yt):.2f}" x2="{margin_left + iw}" y2="{sy(yt):.2f}"></line>')
+    parts.append(f'<polyline class="line" points="{pts}"></polyline>')
+
+    parts.append('<g class="hotspots">')
+    for i, c in enumerate(counts):
+        if not np.isfinite(c):
+            continue
+        x0p = sx(edges[i])
+        x1p = sx(edges[i+1])
+        wp = max(1.0, x1p - x0p)
+        cp = (edges[i] + edges[i+1]) / 2.0
+        label = _fmt_xt(cp)
+        title = f"{int(c)} rows&#10;{label}"
+        parts.append(
+            f'<rect class="hot" x="{x0p:.2f}" y="{margin_top}" width="{wp:.2f}" height="{ih:.2f}" fill="transparent" pointer-events="all">'
+            f'<title>{title}</title>'
+            f'</rect>'
+        )
+    parts.append('</g>')
+    parts.append('</g>')
+
+    x_axis_y = margin_top + ih
+    parts.append(f'<line class="axis" x1="{margin_left}" y1="{x_axis_y}" x2="{margin_left+iw}" y2="{x_axis_y}"></line>')
+    parts.append(f'<line class="axis" x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{x_axis_y}"></line>')
+    for yt in y_ticks:
+        py = sy(yt)
+        parts.append(f'<line class="tick" x1="{margin_left - 4}" y1="{py:.2f}" x2="{margin_left}" y2="{py:.2f}"></line>')
+        lab = int(round(yt))
+        parts.append(f'<text class="tick-label" x="{margin_left - 6}" y="{py + 3:.2f}" text-anchor="end">{lab}</text>')
+    for xv in xt_vals:
+        px = sx(xv)
+        parts.append(f'<line class="tick" x1="{px:.2f}" y1="{x_axis_y}" x2="{px:.2f}" y2="{x_axis_y + 4}"></line>')
+        parts.append(f'<text class="tick-label" x="{px:.2f}" y="{x_axis_y + 14}" text-anchor="middle">{_fmt_xt(xv)}</text>')
+    parts.append(f'<text class="axis-title x" x="{margin_left + iw/2:.2f}" y="{x_axis_y + 28}" text-anchor="middle">Time</text>')
+    parts.append(f'<text class="axis-title y" transform="translate({margin_left - 36},{margin_top + ih/2:.2f}) rotate(-90)" text-anchor="middle">Count</text>')
+    parts.append('</svg>')
+    return ''.join(parts)
 
 
 def generate_report(
@@ -82,55 +520,51 @@ def generate_report(
 
     df = data
 
-    # Build a concise, modern summary section (self-contained styles)
-    def _human_bytes(n: int) -> str:
-        units = ["B", "KB", "MB", "GB", "TB"]
-        size = float(n)
-        for u in units:
-            if size < 1024.0:
-                return f"{size:,.1f} {u}"
-            size /= 1024.0
-        return f"{size:,.1f} PB"
-
     n_rows, n_cols = df.shape
     mem_bytes = int(df.memory_usage(deep=True).sum())
 
-    # Type counts
-    numeric_cols = df.select_dtypes(include=[np.number]).shape[1]
-    categorical_cols = df.select_dtypes(include=["object", "category"]).shape[1]
-    datetime_cols = df.select_dtypes(include=["datetime", "datetime64[ns]", "datetimetz"]).shape[1]
-    bool_cols = df.select_dtypes(include=["bool"]).shape[1]
+    # Precompute dtype-based column lists once (reused across sections)
+    numeric_cols_list = df.select_dtypes(include=[np.number]).columns.tolist()
+    categorical_cols_list = df.select_dtypes(include=["object", "category"]).columns.tolist()
+    datetime_cols_list = df.select_dtypes(include=["datetime", "datetime64[ns]", "datetimetz"]).columns.tolist()
+    boolean_cols_list = df.select_dtypes(include=["bool"]).columns.tolist()
+
+    # Type counts derived from the lists above
+    numeric_cols = len(numeric_cols_list)
+    categorical_cols = len(categorical_cols_list)
+    datetime_cols = len(datetime_cols_list)
+    bool_cols = len(boolean_cols_list)
 
     # Extra metrics for Quick Insights
-    n_unique_cols = df.nunique(dropna=False).count()
-    constant_cols = int((df.nunique(dropna=False) <= 1).sum())
+    try:
+        nunique_all = df.nunique(dropna=False)
+    except Exception:
+        # Fallback to an empty series if nunique fails (should be rare)
+        nunique_all = pd.Series(index=df.columns, dtype="Int64")
+    n_unique_cols = nunique_all.count()
+    constant_cols = int((nunique_all <= 1).sum())
+
     # High-cardinality categoricals: unique ratio > 0.5
-    high_card_cols = int(((df.select_dtypes(include=["object", "category"])\
-                          .nunique(dropna=False) / n_rows) > 0.5).sum())
+    if categorical_cols_list:
+        nunique_cat = df[categorical_cols_list].nunique(dropna=False)
+        high_card_cols = int(((nunique_cat / max(1, n_rows)) > 0.5).sum())
+    else:
+        high_card_cols = 0
+
     # Date range (min -> max) for any datetime col (robust to tz-aware/naive mixing)
     if datetime_cols > 0:
-        _dt_all = df.select_dtypes(include=["datetime", "datetime64[ns]", "datetimetz"])
+        _dt_all = df[datetime_cols_list]
         mins, maxs = [], []
         for _c in _dt_all.columns:
             _s = _dt_all[_c].dropna()
             if _s.empty:
                 continue
             try:
-                if hasattr(_s.dt, "tz") and _s.dt.tz is not None:
-                    _s_use = _s.dt.tz_convert("UTC").dt.tz_localize(None)
-                else:
-                    _s_use = _s
+                _s_use = _to_utc_naive(_s)
                 mins.append(_s_use.min())
                 maxs.append(_s_use.max())
             except Exception:
-                try:
-                    _s2 = pd.to_datetime(_s, errors="coerce")
-                    if hasattr(_s2.dt, "tz") and _s2.dt.tz is not None:
-                        _s2 = _s2.dt.tz_convert("UTC").dt.tz_localize(None)
-                    mins.append(_s2.min())
-                    maxs.append(_s2.max())
-                except Exception:
-                    pass
+                pass
         if mins and maxs:
             date_min = str(min(mins))
             date_max = str(max(maxs))
@@ -138,16 +572,26 @@ def generate_report(
             date_min, date_max = "—", "—"
     else:
         date_min, date_max = "—", "—"
+
     # Likely ID cols: all unique & non-null
-    likely_id_cols = df.columns[(df.nunique(dropna=False) == n_rows) & (~df.isna().any())].tolist()
+    likely_id_cols = df.columns[(nunique_all == n_rows) & (~df.isna().any())].tolist()
     if len(likely_id_cols) > 3:
         likely_id_cols = likely_id_cols[:3] + ["..."]
     likely_id_cols_str = ", ".join(likely_id_cols) if likely_id_cols else "—"
-    # Text columns & average length
-    text_cols = df.select_dtypes(include=["object"]).shape[1]
-    if text_cols > 0:
-        avg_text_len = df.select_dtypes(include=["object"]).apply(lambda s: s.dropna().astype(str).str.len().mean()).mean()
-        avg_text_len = f"{avg_text_len:.1f}"
+
+    # Text columns (object dtype only) & average length
+    text_obj_cols_list = df.select_dtypes(include=["object"]).columns.tolist()
+    text_cols = len(text_obj_cols_list)
+    if text_obj_cols_list:
+        try:
+            avg_text_len_val = (
+                df[text_obj_cols_list]
+                .apply(lambda s: s.dropna().astype(str).str.len().mean())
+                .mean()
+            )
+            avg_text_len = f"{avg_text_len_val:.1f}"
+        except Exception:
+            avg_text_len = "—"
     else:
         avg_text_len = "—"
 
@@ -258,21 +702,9 @@ def generate_report(
         scale: 'lin' or 'log' (log uses log10 on strictly positive values).
         Designed for spark-sized cells.
         """
-        s = s.dropna()
-        if s.empty:
-            return f'<svg class="spark spark-hist" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-        vals = pd.to_numeric(s, errors="coerce").dropna().to_numpy()
-        if vals.size == 0:
-            return f'<svg class="spark spark-hist" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-        if scale == "log":
-            vals = vals[vals > 0]
-            if vals.size == 0:
-                return f'<svg class="spark spark-hist" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-            vals = np.log10(vals)
-        if vals.size > sample_cap:
-            rng = np.random.default_rng(0)
-            idx = rng.choice(vals.size, size=sample_cap, replace=False)
-            vals = vals[idx]
+        vals = _prep_numeric_vals(s, scale=scale, sample_cap=sample_cap)
+        if vals is None or vals.size == 0:
+            return _svg_empty("spark spark-hist", width, height)
         counts, _edges = np.histogram(vals, bins=bins)
         max_c = counts.max() if counts.max() > 0 else 1
         bar_w = (width - 2 * pad) / bins
@@ -299,23 +731,13 @@ def generate_report(
         sample_cap: int = 200_000,
     ) -> str:
         """Return a tiny inline SVG ECDF polyline for a numeric Series (lin/log)."""
-        s = s.dropna()
-        if s.empty:
-            return f'<svg class="spark spark-ecdf" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-        vals = pd.to_numeric(s, errors="coerce").dropna().to_numpy()
-        if scale == "log":
-            vals = vals[vals > 0]
-            if vals.size == 0:
-                return f'<svg class="spark spark-ecdf" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-            vals = np.log10(vals)
-        if vals.size > sample_cap:
-            rng = np.random.default_rng(0)
-            idx = rng.choice(vals.size, size=sample_cap, replace=False)
-            vals = vals[idx]
+        vals = _prep_numeric_vals(s, scale=scale, sample_cap=sample_cap)
+        if vals is None or vals.size == 0:
+            return _svg_empty("spark spark-ecdf", width, height)
         vals = np.sort(vals)
         n = vals.size
         if n == 0:
-            return f'<svg class="spark spark-ecdf" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
+            return _svg_empty("spark spark-ecdf", width, height)
         if n > points:
             qs = np.linspace(0, 1, points)
             xs = np.quantile(vals, qs)
@@ -338,288 +760,11 @@ def generate_report(
             f"</svg>"
         )
 
-    def _hist_svg_with_axes(
-        s: pd.Series,
-        bins: int = 20,
-        width: int = 420,
-        height: int = 160,
-        margin_left: int = 45,
-        margin_bottom: int = 36,
-        margin_top: int = 8,
-        margin_right: int = 8,
-        sample_cap: int = 200_000,
-        scale: str = "lin",
-        auto_bins: bool = True,
-    ) -> str:
-        """Return an inline SVG histogram with axes for a numeric Series.
-        scale: 'lin' (default). Values are sampled for speed when very large.
-        Adds subtle quantile bands and native tooltips on bars for quick insights.
-        """
-        s = s.dropna()
-        if s.empty:
-            return f'<svg class="hist-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-        vals = pd.to_numeric(s, errors="coerce").dropna().to_numpy()
-        if vals.size == 0:
-            return f'<svg class="hist-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-        if vals.size > sample_cap:
-            rng = np.random.default_rng(0)
-            vals = vals[rng.choice(vals.size, size=sample_cap, replace=False)]
-        # Optional log10 scale
-        if scale == "log":
-            vals = vals[vals > 0]
-            if vals.size == 0:
-                return f'<svg class="hist-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-            vals = np.log10(vals)
-
-        x_min, x_max = float(np.min(vals)), float(np.max(vals))
-        if x_min == x_max:
-            x_min -= 0.5
-            x_max += 0.5
-
-        # IQR for bin-width selection (Freedman–Diaconis)
-        q1 = float(np.quantile(vals, 0.25)) if vals.size else np.nan
-        q3 = float(np.quantile(vals, 0.75)) if vals.size else np.nan
-        iqr_local = q3 - q1 if np.isfinite(q3) and np.isfinite(q1) else 0.0
-
-        # Freedman–Diaconis bin rule (keeps visuals crisp for large n)
-        if auto_bins:
-            if vals.size > 1 and iqr_local > 0:
-                h = 2.0 * iqr_local * (vals.size ** (-1.0 / 3.0))
-                if h > 0:
-                    fd_bins = int(np.clip(np.ceil((x_max - x_min) / h), 10, 200))
-                    bins = fd_bins
-
-        counts, edges = np.histogram(vals, bins=bins, range=(x_min, x_max))
-        y_max = int(max(1, counts.max()))
-
-        total_n = int(counts.sum()) if counts.size else 0
-
-        iw = width - margin_left - margin_right
-        ih = height - margin_top - margin_bottom
-
-        def sx(x):
-            return margin_left + (x - x_min) / (x_max - x_min) * iw
-
-        def sy(y):
-            return margin_top + (1 - y / y_max) * ih
-
-        # Nicer ticks (D3-like) for more representative scales
-        def _nice_num(rng, do_round=True):
-            import math
-            if rng <= 0 or not np.isfinite(rng):
-                return 1.0
-            exp = math.floor(math.log10(rng))
-            frac = rng / (10 ** exp)
-            if do_round:
-                if frac < 1.5:
-                    nice = 1
-                elif frac < 3:
-                    nice = 2
-                elif frac < 7:
-                    nice = 5
-                else:
-                    nice = 10
-            else:
-                if frac <= 1:
-                    nice = 1
-                elif frac <= 2:
-                    nice = 2
-                elif frac <= 5:
-                    nice = 5
-                else:
-                    nice = 10
-            return nice * (10 ** exp)
-
-        def _nice_ticks(vmin, vmax, n=5):
-            import math
-            if vmax < vmin:
-                vmin, vmax = vmax, vmin
-            if vmax == vmin:
-                vmax = vmin + 1
-            rng = _nice_num(vmax - vmin, do_round=False)
-            step = _nice_num(rng / (n - 1), do_round=True)
-            nice_min = math.floor(vmin / step) * step
-            nice_max = math.ceil(vmax / step) * step
-            ticks = []
-            t = nice_min
-            while t <= nice_max + step * 1e-9 and len(ticks) < 50:
-                ticks.append(t)
-                t += step
-            return ticks, step
-
-        x_ticks, x_step = _nice_ticks(x_min, x_max, 5)
-        y_ticks, y_step = _nice_ticks(0, y_max, 5)
-
-        def _fmt_tick(v, step):
-            if not np.isfinite(v):
-                return ''
-            if step >= 1:
-                return f"{int(round(v))}"
-            elif step >= 0.1:
-                return f"{v:.1f}"
-            elif step >= 0.01:
-                return f"{v:.2f}"
-            else:
-                return _fmt(v)
-
-        parts = [
-            f'<svg class="hist-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Histogram">',
-            '<g class="plot-area">'
-        ]
-
-        # Bars with native tooltips
-        for i, c in enumerate(counts):
-            x0 = edges[i]
-            x1 = edges[i + 1]
-            x = sx(x0)
-            w = max(1.0, sx(x1) - sx(x0) - 1.0)
-            y = sy(c)
-            h = (margin_top + ih) - y
-            pct = (c / total_n * 100.0) if total_n else 0.0
-            parts.append(
-                f'<rect class="bar" x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" height="{h:.2f}" rx="1" ry="1" '
-                f'data-count="{c}" data-pct="{pct:.1f}" data-x0="{_fmt(x0)}" data-x1="{_fmt(x1)}">'
-                f'<title>{c} rows ({pct:.1f}%)&#10;[{_fmt(x0)} – {_fmt(x1)}]</title>'
-                f'</rect>'
-            )
-        parts.append('</g>')
-
-        # Axes
-        x_axis_y = margin_top + ih
-        parts.append(f'<line class="axis" x1="{margin_left}" y1="{x_axis_y}" x2="{margin_left + iw}" y2="{x_axis_y}"></line>')
-        parts.append(f'<line class="axis" x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{x_axis_y}"></line>')
-
-        # (Percentile/quantile guide lines removed)
-
-        # X ticks & labels
-        for xt in x_ticks:
-            px = sx(xt)
-            parts.append(f'<line class="tick" x1="{px}" y1="{x_axis_y}" x2="{px}" y2="{x_axis_y + 4}"></line>')
-            parts.append(f'<text class="tick-label" x="{px}" y="{x_axis_y + 14}" text-anchor="middle">{_fmt_tick(xt, x_step)}</text>')
-        # Y ticks & labels
-        for yt in y_ticks:
-            py = sy(yt)
-            parts.append(f'<line class="tick" x1="{margin_left - 4}" y1="{py}" x2="{margin_left}" y2="{py}"></line>')
-            parts.append(f'<text class="tick-label" x="{margin_left - 6}" y="{py + 3}" text-anchor="end">{_fmt_tick(yt, y_step)}</text>')
-
-        # Axis titles
-        base_title = str(getattr(s, "name", None)) if getattr(s, "name", None) is not None else "Value"
-        x_title = (f"log10({base_title})" if scale == "log" else base_title)
-        y_title = "Count"
-        parts.append(f'<text class="axis-title x" x="{margin_left + iw/2:.2f}" y="{x_axis_y + 28}" text-anchor="middle">{x_title}</text>')
-        parts.append(f'<text class="axis-title y" transform="translate({margin_left - 36},{margin_top + ih/2:.2f}) rotate(-90)" text-anchor="middle">{y_title}</text>')
-
-        parts.append('</svg>')
-        return ''.join(parts)
-
-    def _safe_col_id(name: str) -> str:
-        return "col_" + "".join(ch if ch.isalnum() else "_" for ch in str(name))
-
-    def _fmt(x) -> str:
-        try:
-            if pd.isna(x):
-                return "—"
-        except Exception:
-            pass
-        try:
-            return f"{x:.4g}"
-        except Exception:
-            try:
-                return f"{float(x):.4g}"
-            except Exception:
-                return str(x)
-
-    # =============================
-    # Tiny horizontal bar chart for categorical Top-N
-    # =============================
-    def _cat_bar_svg(
-        s: pd.Series,
-        top: int = 10,
-        width: int = 420,
-        height: int = 160,
-        margin_left: int = 120,
-        margin_right: int = 12,
-        margin_top: int = 8,
-        margin_bottom: int = 8,
-        scale: str = "count",   # 'count' or 'pct'
-        include_other: bool = True,
-    ) -> str:
-        """Return an inline SVG with horizontal bars for the Top-N categories (+ optional Other).
-        - Labels are ellipsized visually; full label is available via <title>.
-        - scale='count' or 'pct' controls axis values in the tooltip; bar lengths scale to the chosen metric.
-        """
-        vc = s.value_counts(dropna=False)
-        total = int(vc.sum()) if vc.size else 0
-        if total == 0:
-            return f'<svg class="cat-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-
-        # Build display labels handling NaN
-        labels = ["(Missing)" if pd.isna(idx) else str(idx) for idx in vc.index]
-        df_counts = pd.DataFrame({"label": labels, "count": vc.values})
-        df_counts = df_counts.groupby("label", as_index=False)["count"].sum().sort_values("count", ascending=False)
-
-        if include_other and df_counts.shape[0] > top:
-            keep = max(1, top - 1)
-            top_df = df_counts.head(keep).copy()
-            other_count = int(df_counts["count"].iloc[keep:].sum())
-            top_df = pd.concat(
-                [top_df, pd.DataFrame([["Other", other_count]], columns=["label", "count"])],
-                ignore_index=True,
-            )
-        else:
-            top_df = df_counts.head(top).copy()
-        top_df["pct"] = top_df["count"] / total * 100.0
-        # Dynamically size the left label gutter so short labels don't waste horizontal space
-        max_label_len = int(top_df["label"].map(lambda x: len(str(x))).max()) if not top_df.empty else 0
-        _char_w = 7  # approx px per char for our 11px font
-        _gutter = max(60, min(180, _char_w * min(max_label_len, 28) + 16))
-        mleft = _gutter
-        mright = 6
-
-        n = len(top_df)
-        if n == 0:
-            return f'<svg class="cat-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-
-        iw = width - mleft - mright
-        ih = height - margin_top - margin_bottom
-        bar_gap = 6
-        bar_h = max(4, (ih - bar_gap * (n - 1)) / max(n, 1))
-
-        if scale == "pct":
-            vmax = float(top_df["pct"].max()) or 1.0
-            vals = top_df["pct"].to_numpy()
-        else:
-            vmax = float(top_df["count"].max()) or 1.0
-            vals = top_df["count"].to_numpy()
-
-        def sx(v: float) -> float:
-            return mleft + (v / vmax) * iw
-
-        parts = [
-            f'<svg class="cat-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Top categories">'
-        ]
-        for i, (label, c, p, val) in enumerate(zip(top_df["label"], top_df["count"], top_df["pct"], vals)):
-            y = margin_top + i * (bar_h + bar_gap)
-            x0 = mleft
-            x1 = sx(float(val))
-            w = max(1.0, x1 - x0)
-            short = (label[:24] + "…") if len(label) > 24 else label
-            parts.append(
-                f'<g class="bar-row">'
-                f'<rect class="bar" x="{x0:.2f}" y="{y:.2f}" width="{w:.2f}" height="{bar_h:.2f}" rx="2" ry="2">'
-                f'<title>{label}\n{c:,} rows ({p:.1f}%)</title>'
-                f'</rect>'
-                f'<text class="bar-label" x="{mleft-6}" y="{y + bar_h/2 + 3:.2f}" text-anchor="end">{short}</text>'
-                f"<text class=\"bar-value\" x=\"{(x1 - 6 if w >= 56 else x1 + 4):.2f}\" y=\"{y + bar_h/2 + 3:.2f}\" text-anchor=\"{('end' if w >= 56 else 'start')}\">{c:,} ({p:.1f}%)</text>"
-                f'</g>'
-            )
-        parts.append("</svg>")
-        return "".join(parts)
 
     # =============================
     # PER-COLUMN ANALYSIS (Numeric) – CARD VIEW
     # =============================
-    numeric_cols_list = df.select_dtypes(include=[np.number]).columns.tolist()
+    # numeric_cols_list already defined above
     numeric_cards = {}
 
     # Precompute correlations (lightweight cap)
@@ -635,8 +780,7 @@ def generate_report(
         s = df[_col]
         col_id = _safe_col_id(_col)
         n_total = int(s.size)
-        miss = int(s.isna().sum())
-        miss_pct = (miss / n_total * 100.0) if n_total else 0.0
+        miss, miss_pct, miss_cls = _missing_stats(s, warn_thresh=5.0, crit_thresh=20.0)
         uniq = int(s.nunique(dropna=False))
         s_nonnull = s.dropna()
         cnt = int(s_nonnull.size)
@@ -687,16 +831,7 @@ def generate_report(
             q1 = med = q3 = q5 = q95 = p1 = p10 = p90 = p99 = range_val = float("nan")
             inf_n = 0; inf_pct = 0.0
 
-        try:
-            col_mem_bytes = int(s.memory_usage(index=False, deep=True))
-        except TypeError:
-            # pandas < 1.3 fallback (index kw not supported)
-            try:
-                col_mem_bytes = int(s.memory_usage(deep=True))
-            except Exception:
-                col_mem_bytes = 0
-        except Exception:
-            col_mem_bytes = 0
+        col_mem_bytes = _memory_usage_bytes(s)
         col_mem_display = _human_bytes(col_mem_bytes)
 
         # Semantic flags & helpers
@@ -854,20 +989,19 @@ def generate_report(
                 corr_section_html = ""
 
         # Precompute linear histogram variants (fixed bin counts)
-        hist_lin_10 = _hist_svg_with_axes(s_nonnull, bins=10, auto_bins=False)
-        hist_lin_25 = _hist_svg_with_axes(s_nonnull, bins=25, auto_bins=False)
-        hist_lin_50 = _hist_svg_with_axes(s_nonnull, bins=50, auto_bins=False)
+        hist_lin_10 = build_hist_svg_with_axes(s_nonnull, bins=10, auto_bins=False)
+        hist_lin_25 = build_hist_svg_with_axes(s_nonnull, bins=25, auto_bins=False)
+        hist_lin_50 = build_hist_svg_with_axes(s_nonnull, bins=50, auto_bins=False)
         # Precompute log-scale variants when applicable (positive-only)
         if positive_only and cnt > 0:
-            hist_log_10 = _hist_svg_with_axes(s_nonnull, bins=10, auto_bins=False, scale="log")
-            hist_log_25 = _hist_svg_with_axes(s_nonnull, bins=25, auto_bins=False, scale="log")
-            hist_log_50 = _hist_svg_with_axes(s_nonnull, bins=50, auto_bins=False, scale="log")
+            hist_log_10 = build_hist_svg_with_axes(s_nonnull, bins=10, auto_bins=False, scale="log")
+            hist_log_25 = build_hist_svg_with_axes(s_nonnull, bins=25, auto_bins=False, scale="log")
+            hist_log_50 = build_hist_svg_with_axes(s_nonnull, bins=50, auto_bins=False, scale="log")
         else:
             hist_log_10 = hist_log_25 = hist_log_50 = ""
 
         zeros_cls = "warn" if zeros_pct > 30 else ""
         neg_cls = "warn" if 0 < neg_pct <= 10 else ("crit" if neg_pct > 10 else "")
-        miss_cls = "crit" if miss_pct > 20 else ("warn" if miss_pct > 5 else "")
         out_cls = "crit" if out_pct > 1 else ("warn" if out_pct > 0.3 else "")
         inf_cls = "crit" if inf_pct > 0 else ""
 
@@ -1083,15 +1217,14 @@ def generate_report(
     # =============================
     # PER-COLUMN ANALYSIS (Categorical) – CARD VIEW
     # =============================
-    categorical_cols_list = df.select_dtypes(include=["object", "category"]).columns.tolist()
+    # categorical_cols_list already defined above
     categorical_cards = {}
 
     for _col in categorical_cols_list:
         s = df[_col]
         col_id = _safe_col_id(_col)
         n_total = int(s.size)
-        miss = int(s.isna().sum())
-        miss_pct = (miss / n_total * 100.0) if n_total else 0.0
+        miss, miss_pct, miss_cls = _missing_stats(s, warn_thresh=0.0, crit_thresh=20.0)
         vc_all = s.value_counts(dropna=False)
         uniq = int(vc_all.size)
         s_nonnull = s.dropna().astype(str)
@@ -1135,15 +1268,7 @@ def generate_report(
         except Exception:
             pass
 
-        try:
-            col_mem_bytes = int(s.memory_usage(index=False, deep=True))
-        except TypeError:
-            try:
-                col_mem_bytes = int(s.memory_usage(deep=True))
-            except Exception:
-                col_mem_bytes = 0
-        except Exception:
-            col_mem_bytes = 0
+        col_mem_bytes = _memory_usage_bytes(s)
         col_mem_display = _human_bytes(col_mem_bytes)
 
         flags = []
@@ -1165,7 +1290,7 @@ def generate_report(
         quality_flags_html = f"<ul class=\"quality-flags\">{''.join(flags)}</ul>" if flags else ""
 
         # Classes for table highlights (match numeric semantics)
-        miss_cls = 'crit' if miss_pct > 20 else ('warn' if miss_pct > 0 else '')
+        miss_cls_tbl = miss_cls
         rare_cls = 'crit' if rare_cov > 60 else ('warn' if rare_cov >= 30 else '')
         top5_cls = 'good' if top5_cov >= 80 else ('warn' if top5_cov <= 40 else '')
         empty_cls = 'warn' if empty_str_n > 0 else ''
@@ -1174,7 +1299,7 @@ def generate_report(
         <table class=\"kv\"><tbody>
           <tr><th>Count</th><td class=\"num\">{cnt:,}</td></tr>
           <tr><th>Unique</th><td class=\"num\">{uniq:,}</td></tr>
-          <tr><th>Missing</th><td class=\"num {miss_cls}\">{miss:,} ({miss_pct:.1f}%)</td></tr>
+          <tr><th>Missing</th><td class=\"num {miss_cls_tbl}\">{miss:,} ({miss_pct:.1f}%)</td></tr>
           <tr><th>Mode</th><td><code>{mode_val}</code></td></tr>
           <tr><th>Mode %</th><td class=\"num\">{mode_pct:.1f}%</td></tr>
           <tr><th>Memory</th><td class=\"num\">{col_mem_display}</td></tr>
@@ -1212,7 +1337,7 @@ def generate_report(
         # Pre-render only generic variants (no Count/% scale toggle)
         variants_html_parts = []
         for n in topn_list:
-            svg = _cat_bar_svg(s, top=n, scale="count")
+            svg = build_cat_bar_svg(s, top=n, scale="count")
             style = "" if n == default_topn else "display:none"
             variants_html_parts.append(f'<div id="{col_id}-cat-top-{n}" class="cat variant" style="{style}">{svg}</div>')
         variants_html = "".join(variants_html_parts)
@@ -1281,15 +1406,13 @@ def generate_report(
     # =============================
     # PER-COLUMN ANALYSIS (Datetime) – CARD VIEW
     # =============================
-    datetime_cols_list = df.select_dtypes(include=["datetime", "datetime64[ns]", "datetimetz"]).columns.tolist()
+    # datetime_cols_list already defined above
 
     def _datetime_card(s: pd.Series, col_id: str):
         s_nn = s.dropna()
         cnt = int(s_nn.size)
-        miss = int(s.isna().sum())
         n_total = int(s.size)
-        miss_pct = (miss / n_total * 100.0) if n_total else 0.0
-        miss_cls = 'crit' if miss_pct > 20 else ('warn' if miss_pct > 0 else '')
+        miss, miss_pct, miss_cls = _missing_stats(s, warn_thresh=0.0, crit_thresh=20.0)
         tz_name = str(getattr(s_nn.dt.tz, 'zone', None)) if cnt and hasattr(s_nn.dt, 'tz') and s_nn.dt.tz is not None else ""
         dt_min = s_nn.min() if cnt else None
         dt_max = s_nn.max() if cnt else None
@@ -1342,15 +1465,7 @@ def generate_report(
             uniq = int(s.nunique(dropna=False))
         except Exception:
             uniq = int(s_nn.nunique()) if cnt else 0
-        try:
-            col_mem_bytes = int(s.memory_usage(index=False, deep=True))
-        except TypeError:
-            try:
-                col_mem_bytes = int(s.memory_usage(deep=True))
-            except Exception:
-                col_mem_bytes = 0
-        except Exception:
-            col_mem_bytes = 0
+        col_mem_bytes = _memory_usage_bytes(s)
         col_mem_display = _human_bytes(col_mem_bytes)
 
         def _fmt_td_small(td) -> str:
@@ -1374,139 +1489,7 @@ def generate_report(
             except Exception:
                 return "—"
 
-        def _dt_line_svg(ts: pd.Series,
-                         bins: int = 60,
-                         width: int = 420,
-                         height: int = 160,
-                         margin_left: int = 45,
-                         margin_right: int = 8,
-                         margin_top: int = 8,
-                         margin_bottom: int = 32) -> str:
-            ts = ts.dropna()
-            if ts.empty:
-                return f'<svg class="dt-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-            # Pandas 2.x safe conversion from datetime to int64 ns since epoch
-            tconv = pd.to_datetime(ts, errors="coerce")
-            if hasattr(tconv.dt, "tz") and tconv.dt.tz is not None:
-                tconv = tconv.dt.tz_convert("UTC").dt.tz_localize(None)
-            tvals = tconv.dropna().astype("int64").to_numpy()
-            if tvals.size == 0:
-                return f'<svg class="dt-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" aria-label="no data"></svg>'
-            tmin = int(np.min(tvals))
-            tmax = int(np.max(tvals))
-            if tmin == tmax:
-                tmax = tmin + 1
-            bins = int(max(10, min(bins, max(10, min(ts.size, 180)))))
-            counts, edges = np.histogram(tvals, bins=bins, range=(tmin, tmax))
-            y_max = int(max(1, counts.max()))
-
-            iw = width - margin_left - margin_right
-            ih = height - margin_top - margin_bottom
-            def sx(x):
-                return margin_left + (x - tmin) / (tmax - tmin) * iw
-            def sy(y):
-                return margin_top + (1 - y / y_max) * ih
-
-            centers = (edges[:-1] + edges[1:]) / 2.0
-            pts = " ".join(f"{sx(x):.2f},{sy(float(c)):.2f}" for x, c in zip(centers, counts))
-
-            # Nice ticks helpers (y-axis)
-            def _nice_num(rng, do_round=True):
-                import math
-                if rng <= 0 or not np.isfinite(rng):
-                    return 1.0
-                exp = math.floor(math.log10(rng))
-                frac = rng / (10 ** exp)
-                nice = 1 if (frac < 1.5 if do_round else frac <= 1) else (2 if (frac < 3 if do_round else frac <= 2) else (5 if (frac < 7 if do_round else frac <= 5) else 10))
-                return nice * (10 ** exp)
-            def _nice_ticks(vmin, vmax, n=5):
-                import math
-                if vmax < vmin:
-                    vmin, vmax = vmax, vmin
-                if vmax == vmin:
-                    vmax = vmin + 1
-                rng = _nice_num(vmax - vmin, do_round=False)
-                step = _nice_num(rng / max(1, n - 1), do_round=True)
-                nice_min = math.floor(vmin / step) * step
-                nice_max = math.ceil(vmax / step) * step
-                ticks = []
-                t = nice_min
-                while t <= nice_max + step * 1e-9 and len(ticks) < 50:
-                    ticks.append(t)
-                    t += step
-                return ticks, step
-
-            y_ticks, y_step = _nice_ticks(0, y_max, 5)
-
-            # X ticks: spread ~5 labels across span
-            n_xt = 5
-            xt_vals = np.linspace(tmin, tmax, n_xt)
-            span_ns = tmax - tmin
-            def _fmt_xt(v):
-                try:
-                    ts = pd.to_datetime(int(v))
-                    if span_ns <= 3 * 24 * 3600 * 1e9:
-                        return ts.strftime('%Y-%m-%d %H:%M')
-                    return ts.date().isoformat()
-                except Exception:
-                    return str(v)
-
-            parts = [
-                f'<svg class="dt-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Timeline">',
-                '<g class="plot-area">'
-            ]
-            # grid lines (y)
-            for yt in y_ticks:
-                parts.append(f'<line class="grid" x1="{margin_left}" y1="{sy(yt):.2f}" x2="{margin_left + iw}" y2="{sy(yt):.2f}"></line>')
-            # polyline
-            parts.append(f'<polyline class="line" points="{pts}"></polyline>')
-
-            # hover hotspots per bin (native title tooltips)
-            parts.append('<g class="hotspots">')
-            for i, c in enumerate(counts):
-                if not np.isfinite(c):
-                    continue
-                x0p = sx(edges[i])
-                x1p = sx(edges[i+1])
-                wp = max(1.0, x1p - x0p)
-                cp = (edges[i] + edges[i+1]) / 2.0
-                label = _fmt_xt(cp)
-                title = f"{int(c)} rows&#10;{label}"
-                parts.append(
-                    f'<rect class="hot" x="{x0p:.2f}" y="{margin_top}" width="{wp:.2f}" height="{ih:.2f}" fill="transparent" pointer-events="all">'
-                    f'<title>{title}</title>'
-                    f'</rect>'
-                )
-            parts.append('</g>')
-
-            parts.append('</g>')
-
-            # axes
-            x_axis_y = margin_top + ih
-            parts.append(f'<line class="axis" x1="{margin_left}" y1="{x_axis_y}" x2="{margin_left+iw}" y2="{x_axis_y}"></line>')
-            parts.append(f'<line class="axis" x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{x_axis_y}"></line>')
-
-            # y ticks & labels
-            for yt in y_ticks:
-                py = sy(yt)
-                parts.append(f'<line class="tick" x1="{margin_left - 4}" y1="{py:.2f}" x2="{margin_left}" y2="{py:.2f}"></line>')
-                lab = int(round(yt))
-                parts.append(f'<text class="tick-label" x="{margin_left - 6}" y="{py + 3:.2f}" text-anchor="end">{lab}</text>')
-
-            # x ticks & labels
-            for xv in xt_vals:
-                px = sx(xv)
-                parts.append(f'<line class="tick" x1="{px:.2f}" y1="{x_axis_y}" x2="{px:.2f}" y2="{x_axis_y + 4}"></line>')
-                parts.append(f'<text class="tick-label" x="{px:.2f}" y="{x_axis_y + 14}" text-anchor="middle">{_fmt_xt(xv)}</text>')
-
-            # axis titles
-            parts.append(f'<text class="axis-title x" x="{margin_left + iw/2:.2f}" y="{x_axis_y + 28}" text-anchor="middle">Time</text>')
-            parts.append(f'<text class="axis-title y" transform="translate({margin_left - 36},{margin_top + ih/2:.2f}) rotate(-90)" text-anchor="middle">Count</text>')
-
-            parts.append('</svg>')
-            return ''.join(parts)
-
-        dt_line_svg = _dt_line_svg(s_nn)
+        dt_line_svg = build_dt_line_svg(s_nn)
 
         # Summaries for lightweight charts (to be drawn by JS later)
         try:
@@ -1563,10 +1546,6 @@ def generate_report(
         meta_blob = f'<script type="application/json" id="{col_id}-dt-meta">{meta_json}</script>'
 
         # Span breakdown in multiple units
-        try:
-            span_seconds = int(span.total_seconds()) if span is not None else None
-        except Exception:
-            span_seconds = None
         span_minutes = (span_seconds / 60.0) if span_seconds is not None else None
         span_hours = (span_seconds / 3600.0) if span_seconds is not None else None
         span_days = (span_seconds / 86400.0) if span_seconds is not None else None
@@ -1712,7 +1691,7 @@ def generate_report(
     # =============================
     # PER-COLUMN ANALYSIS (Boolean) – CARD VIEW (minimal)
     # =============================
-    boolean_cols_list = df.select_dtypes(include=["bool"]).columns.tolist()
+    # boolean_cols_list already defined above
 
     def _bool_stack_svg(true_n: int, false_n: int, miss: int,
                         width: int = 420, height: int = 48, margin: int = 4) -> str:
