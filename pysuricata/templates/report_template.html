@@ -98,8 +98,8 @@
                 <div class="value">{n_cols}</div>
               </div>
               <div class="summary-card">
-                <div class="label">Memory</div>
-                <div class="value">{memory_usage}</div>
+                <div class="label" title="Total bytes processed across chunks (approximate)">Processed bytes</div>
+                <div class="value">{memory_usage} (≈)</div>
               </div>
               <div class="summary-card">
                 <div class="label">Missing (overall)</div>
@@ -135,7 +135,6 @@
                   <li>Constant cols: {constant_cols}</li>
                   <li>High-card categoricals: {high_card_cols}</li>
                   <li>Date range: {date_min} → {date_max}</li>
-                  <li>Likely IDs: {likely_id_cols}</li>
                   <li>Text cols: {text_cols} (avg len {avg_text_len})</li>
                 </ul>
               </div>

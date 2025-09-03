@@ -26,6 +26,8 @@ nav:
   - Getting started:
       - Installation: install.md
       - Usage: usage.md
+      - Numerical Analysis: numeric_var.md
+  - Internals: architecture.md
 
 markdown_extensions:
   - admonition
@@ -38,6 +40,8 @@ markdown_extensions:
   - pymdownx.superfences
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.arithmatex:
+      generic: true
 
 plugins:
   - search
@@ -58,4 +62,8 @@ plugins:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/<your-github-username>
+      link: https://github.com/alvarodiez20
+
+extra_javascript:
+  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
