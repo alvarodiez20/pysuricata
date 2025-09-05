@@ -357,6 +357,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../numeric_var/" class="md-nav__link">
         
   
@@ -547,18 +570,17 @@
 
 
 <h1 id="architecture-internals">Architecture &amp; Internals</h1>
-<p>This document explains how <code>pysuricata</code> (especially <code>report_v2</code>) profiles data efficiently and renders a self‑contained HTML report.</p>
+<p>This document explains how <code>pysuricata</code> profiles data efficiently and renders a self‑contained HTML report.</p>
 <h2 id="overview">Overview</h2>
 <div class="highlight"><pre><span></span><code>┌────────┐   ┌──────────────┐   ┌────────────────────┐   ┌──────────────┐
 │ Source │ → │ Chunk iterator│ → │ Typed accumulators │ → │ HTML template │
 └────────┘   └──────────────┘   └────────────────────┘   └──────────────┘
-     CSV / Parquet / DataFrame      numeric / categorical / datetime / boolean
+     In-memory DataFrame(s)          numeric / categorical / datetime / boolean
 </code></pre></div>
 <h2 id="chunk-ingestion">Chunk ingestion</h2>
 <ul>
-<li>CSV: uses <code>pandas.read_csv(..., chunksize=N)</code> (low‑memory mode).</li>
-<li>Parquet: uses <code>pyarrow.parquet.ParquetFile.iter_batches(batch_size=N)</code> and converts batches to pandas for normalization.</li>
-<li>DataFrame: treated as a single chunk.</li>
+<li>Iterable of pandas DataFrames: consumed as-is.</li>
+<li>Single pandas DataFrame: treated as one chunk (or sliced by rows if you pre-split it).</li>
 </ul>
 <h2 id="typed-accumulators">Typed accumulators</h2>
 <p>Each column kind is handled by a specialized accumulator with small, mergeable state:</p>

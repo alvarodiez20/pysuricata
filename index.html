@@ -323,9 +323,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#how-it-works-v2" class="md-nav__link">
+  <a href="#how-it-works" class="md-nav__link">
     <span class="md-ellipsis">
-      How it works (v2)
+      How it works
     </span>
   </a>
   
@@ -435,6 +435,29 @@
   
   
     <li class="md-nav__item">
+      <a href="api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="numeric_var/" class="md-nav__link">
         
   
@@ -502,7 +525,7 @@
 
 
 <h1 id="pysuricata">PySuricata</h1>
-<p>Generate clean, self-contained EDA reports for pandas and large CSV/Parquet files.</p>
+<p>Generate clean, self-contained EDA reports for pandas DataFrames and large in-memory chunked iterables.</p>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
 <p>Works great on small and medium datasets; for very large datasets, sample first.</p>
@@ -511,7 +534,7 @@
 <ul>
 <li>Summary stats, missingness, duplicates</li>
 <li>Numeric, categorical, datetime, and boolean cards with inline SVG charts</li>
-<li>Out-of-core streaming (CSV/Parquet) with low peak memory</li>
+<li>Out-of-core streaming for in-memory DataFrame chunks (low peak memory)</li>
 <li>Approximate distinct counts and heavy hitters for large columns</li>
 <li>Streaming correlations for numeric columns</li>
 <li>Self-contained HTML export (inline CSS/JS/images)</li>
@@ -522,31 +545,24 @@
 <li><a href="usage/">Usage</a></li>
 </ul>
 <h2 id="quick-start">Quick start</h2>
-<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Classic (in-memory)</label><label for="__tabbed_1_2">Streaming (v2)</label></div>
-<div class="tabbed-content">
-<div class="tabbed-block">
 <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata.report</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_report</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
 
 <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;/path/to/data.csv&quot;</span><span class="p">)</span>
-<span class="n">html</span> <span class="o">=</span> <span class="n">generate_report</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">report_title</span><span class="o">=</span><span class="s2">&quot;My EDA&quot;</span><span class="p">)</span>
-</code></pre></div>
-</div>
-<div class="tabbed-block">
-<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata.report_v2</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_report</span><span class="p">,</span> <span class="n">ReportConfig</span>
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">ReportConfig</span><span class="p">())</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
 
-<span class="n">html</span> <span class="o">=</span> <span class="n">generate_report</span><span class="p">(</span>
-    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;/path/to/data.parquet&quot;</span><span class="p">,</span>  <span class="c1"># or .csv</span>
-    <span class="n">config</span><span class="o">=</span><span class="n">ReportConfig</span><span class="p">(</span><span class="n">chunk_size</span><span class="o">=</span><span class="mi">250_000</span><span class="p">,</span> <span class="n">compute_correlations</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
-    <span class="n">output_file</span><span class="o">=</span><span class="s2">&quot;report.html&quot;</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="c1"># Or stream in-memory chunks you create</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">chunk_iter</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/data/part-</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">.csv&quot;</span><span class="p">)</span>
+
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">((</span><span class="n">ch</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">chunk_iter</span><span class="p">()),</span> <span class="n">config</span><span class="o">=</span><span class="n">ReportConfig</span><span class="p">())</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
 </code></pre></div>
-</div>
-</div>
-</div>
-<h2 id="how-it-works-v2">How it works (v2)</h2>
+<h2 id="how-it-works">How it works</h2>
 <ul>
-<li>Reads input in chunks (pandas for CSV, pyarrow for Parquet) and feeds type-specific accumulators.</li>
+<li>Reads input in chunks (pandas DataFrames) and feeds type-specific accumulators.</li>
 <li>Numeric accumulators maintain Welford/Pébay moments, a reservoir sample, and KMV distinct.</li>
 <li>Categorical accumulators use Misra–Gries for top-k and KMV for distinct.</li>
 <li>Datetime accumulators count by hour/day/month and keep min/max.</li>

@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/install/">
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/api/">
       
       
-        <link rel="prev" href="..">
+        <link rel="prev" href="../usage/">
       
       
-        <link rel="next" href="../usage/">
+        <link rel="next" href="../numeric_var/">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Installation - PySuricata</title>
+        <title>API - PySuricata</title>
       
     
     
@@ -78,7 +78,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#installation" class="md-skip">
+        <a href="#high-level-api" class="md-skip">
           Skip to content
         </a>
       
@@ -114,7 +114,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Installation
+              API
             
           </span>
         </div>
@@ -312,19 +312,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -335,7 +326,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -368,10 +358,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    API
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -382,6 +394,104 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#inputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Inputs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#report-object" class="md-nav__link">
+    <span class="md-ellipsis">
+      Report object
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-render" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quick render
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#stats-only-cidata-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      Stats-only (CI/data-quality)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#load-and-chunk-outside" class="md-nav__link">
+    <span class="md-ellipsis">
+      Load and chunk outside
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#common-use-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Common use cases
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#notes-and-limits" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notes and limits
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -460,9 +570,114 @@
   
 
 
-<h1 id="installation">Installation</h1>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>pysuricata
+<h1 id="high-level-api">High-level API</h1>
+<p>The unified API exposes two entry points that cover most workflows:</p>
+<ul>
+<li><code>profile(data, config=None) -&gt; Report</code>: compute + HTML</li>
+<li><code>summarize(data, config=None) -&gt; Mapping[str, Any]</code>: stats-only</li>
+</ul>
+<p>Import from the package root:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">summarize</span><span class="p">,</span> <span class="n">ReportConfig</span>
 </code></pre></div>
+<h2 id="inputs">Inputs</h2>
+<ul>
+<li>In-memory <code>pandas.DataFrame</code></li>
+<li>Iterable/generator yielding pandas or polars <code>DataFrame</code> chunks</li>
+<li><code>polars.DataFrame</code> or <code>LazyFrame</code> (processed natively; no pandas conversion)</li>
+</ul>
+<h2 id="report-object">Report object</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
+
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">ReportConfig</span><span class="p">())</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_json</span><span class="p">(</span><span class="s2">&quot;report.json&quot;</span><span class="p">)</span>
+
+<span class="c1"># In notebooks, the report displays inline</span>
+<span class="n">rep</span>
+</code></pre></div>
+<h2 id="quick-render">Quick render</h2>
+<div class="highlight"><pre><span></span><code><span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="stats-only-cidata-quality">Stats-only (CI/data-quality)</h2>
+<div class="highlight"><pre><span></span><code><span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>  <span class="c1"># compute-only fast path (skips HTML)</span>
+
+<span class="c1"># Example: assert no column has &gt; 10% missing</span>
+<span class="n">bad</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">col</span><span class="p">[</span><span class="s2">&quot;missing&quot;</span><span class="p">])</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">col</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;missing&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">col</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;count&quot;</span><span class="p">,</span> <span class="mi">0</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mf">0.10</span>
+<span class="p">]</span>
+<span class="k">assert</span> <span class="ow">not</span> <span class="n">bad</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Columns too missing: </span><span class="si">{</span><span class="n">bad</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+<h2 id="configuration">Configuration</h2>
+<p>The top-level <code>ReportConfig</code> wraps compute and render options:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReportConfig</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">(</span>
+    <span class="n">compute</span><span class="o">=</span><span class="n">ReportConfig</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+        <span class="n">chunk_size</span><span class="o">=</span><span class="mi">250_000</span><span class="p">,</span>
+        <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">],</span>
+        <span class="n">numeric_sample_size</span><span class="o">=</span><span class="mi">50_000</span><span class="p">,</span>
+        <span class="n">max_uniques</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span>
+        <span class="n">top_k</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+        <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="load-and-chunk-outside">Load and chunk outside</h3>
+<p>You can read data with any library and either pass a single DataFrame or an iterable of DataFrames you manage:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">chunk_iter</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;/data/part-</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">.parquet&quot;</span><span class="p">)</span>
+
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">((</span><span class="n">ch</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">chunk_iter</span><span class="p">()))</span>
+</code></pre></div>
+<h2 id="common-use-cases">Common use cases</h2>
+<ul>
+<li>
+<p>Small DataFrame (in-memory):
+  <div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span><span class="s2">&quot;b&quot;</span><span class="p">,</span><span class="s2">&quot;a&quot;</span><span class="p">]})</span>
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Large dataset (streaming in-memory):
+  <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReportConfig</span><span class="p">,</span> <span class="n">profile</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">250_000</span>
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">((</span><span class="n">ch</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">chunk_iter</span><span class="p">()),</span> <span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>Column selection:
+  <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReportConfig</span><span class="p">,</span> <span class="n">summarize</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="s2">&quot;ts&quot;</span><span class="p">]</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">[[</span><span class="s2">&quot;id&quot;</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="s2">&quot;ts&quot;</span><span class="p">]])</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>CI check: enforce low duplicates and missingness:
+  <div class="highlight"><pre><span></span><code><span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<span class="n">ds</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">]</span>
+<span class="k">assert</span> <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;duplicate_rows_pct_est&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+<span class="k">assert</span> <span class="n">ds</span><span class="p">[</span><span class="s2">&quot;missing_cells_pct&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">5.0</span>
+</code></pre></div></p>
+</li>
+</ul>
+<h2 id="notes-and-limits">Notes and limits</h2>
+<ul>
+<li>Current engine consumes pandas or polars DataFrames (or iterables of them). Polars eager/LazyFrames are processed natively without conversion.</li>
+<li><code>render</code> options are placeholders; the v2 template already renders a self-contained light theme.</li>
+</ul>
 
 
 
