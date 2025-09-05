@@ -26,6 +26,7 @@ nav:
   - Getting started:
       - Installation: install.md
       - Usage: usage.md
+      - API: api.md
       - Numerical Analysis: numeric_var.md
   - Internals: architecture.md
 

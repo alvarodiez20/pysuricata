@@ -5,7 +5,7 @@ description: How pysuricata generates EDA reports at scale — chunked ingestion
 
 # Architecture & Internals
 
-This document explains how `pysuricata` (especially `report_v2`) profiles data efficiently and renders a self‑contained HTML report.
+This document explains how `pysuricata` profiles data efficiently and renders a self‑contained HTML report.
 
 ## Overview
 
@@ -13,14 +13,13 @@ This document explains how `pysuricata` (especially `report_v2`) profiles data e
 ┌────────┐   ┌──────────────┐   ┌────────────────────┐   ┌──────────────┐
 │ Source │ → │ Chunk iterator│ → │ Typed accumulators │ → │ HTML template │
 └────────┘   └──────────────┘   └────────────────────┘   └──────────────┘
-     CSV / Parquet / DataFrame      numeric / categorical / datetime / boolean
+     In-memory DataFrame(s)          numeric / categorical / datetime / boolean
 ```
 
 ## Chunk ingestion
 
-- CSV: uses `pandas.read_csv(..., chunksize=N)` (low‑memory mode).
-- Parquet: uses `pyarrow.parquet.ParquetFile.iter_batches(batch_size=N)` and converts batches to pandas for normalization.
-- DataFrame: treated as a single chunk.
+- Iterable of pandas DataFrames: consumed as-is.
+- Single pandas DataFrame: treated as one chunk (or sliced by rows if you pre-split it).
 
 ## Typed accumulators
 
@@ -100,4 +99,3 @@ The report shows:
 - Add backends: polars/Arrow datasets or DuckDB scans can be plugged into the chunk iterator.
 - Add quantile sketches: t‑digest or KLL can replace the default reservoir for better tail accuracy.
 - Add new sections: drift comparisons, profile JSON export to file, CLI wrapper.
-

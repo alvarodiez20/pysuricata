@@ -1,64 +1,46 @@
 # Usage
 
-## Classic (in-memory DataFrame)
+## Basic
 
 ```python
 import pandas as pd
-from pysuricata.report import generate_report
+from pysuricata import profile
 
 df = pd.read_csv("data.csv")
-html = generate_report(df, report_title="My EDA")
-with open("report.html", "w", encoding="utf-8") as f:
-    f.write(html)
+rep = profile(df)
+rep.save_html("report.html")
 ```
 
-## Streaming (v2) for large CSV/Parquet
+## Streaming large in-memory data
 
 ```python
-from pysuricata.report_v2 import generate_report, ReportConfig
-
-cfg = ReportConfig(
-    chunk_size=250_000,
-    compute_correlations=True,  # enable streaming correlation chips for numeric columns
-)
-
-# From a file path (CSV/Parquet)
-html = generate_report("/data/big.parquet", config=cfg, output_file="report.html")
-
-# From a DataFrame in-memory (single chunk)
+from pysuricata import profile, ReportConfig
 import pandas as pd
-df = pd.read_csv("/data/sample.csv")
-html = generate_report(df, config=cfg)
+
+cfg = ReportConfig()
+
+# From an iterable/generator yielding pandas DataFrame chunks
+def chunk_iter():
+    for i in range(10):
+        yield pd.read_csv(f"/data/part-{i}.csv")  # you pre-chunk externally
+
+rep = profile((ch for ch in chunk_iter()), config=cfg)
+rep.save_html("report.html")
 ```
 
 ### Programmatic summary
 
-Ask the generator to return a compact JSON-like dictionary alongside the HTML:
+Ask for a compact JSON-like dictionary of stats:
 
 ```python
-html, summary = generate_report("/data/big.csv", config=cfg, return_summary=True)
+from pysuricata import summarize
+summary = summarize(df)
 print(summary["dataset"])           # rows_est, cols, missing_cells, duplicates, top-missing
 print(summary["columns"]["amount"]) # per-column stats by type
 ```
 
 ### Processed bytes and timing
 
-The v2 report displays:
+The report displays:
 - Processed bytes (≈): total bytes handled across chunks (not peak RSS)
 - Precise generation time in seconds (e.g., 0.02s)
-
-### Chart builder helpers
-
-You can also render the small SVGs programmatically:
-
-```python
-from pysuricata.report_v2 import (
-    build_hist_svg_with_axes,
-    build_cat_bar_svg,
-    build_dt_line_svg,
-)
-
-hist_svg = build_hist_svg_with_axes(df["amount"], bins=25)
-cat_svg = build_cat_bar_svg(df["country"], top=10)
-dt_svg = build_dt_line_svg(df["ts"], bins=60)
-```
