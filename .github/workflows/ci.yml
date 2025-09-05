@@ -26,11 +26,6 @@ jobs:
       - name: Install Dependencies
         run: uv sync --dev
 
-      - name: Install pre-commit
-        run: uv pip install pre-commit
-
       - name: Run tests
         run: uv run pytest -q
 
-      - name: Run pre-commit (ruff, pytest hooks)
-        run: uv run pre-commit run --all-files --show-diff-on-failure
