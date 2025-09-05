@@ -31,7 +31,7 @@ pip install pysuricata
 - **Portable**: Reports are standalone HTML (with inline CSS/JS/images) that can be easily shared.
 - **Customizable**: Title, sample display, and output path can be tailored to your needs.
 
-## Quick Example
+## Quick Example (classic, in-memory DataFrame)
 
 The following example demonstrates how to generate an EDA report using the Iris dataset with Pandas:
 
@@ -69,6 +69,7 @@ stats = summarize(iris_df)
 ```
 
 Highlights:
+
 - Streams data in chunks, low peak memory.
 - Shows processed bytes (≈) and precise generation time (e.g., 0.02s).
 - Approximate distinct (KMV), heavy hitters (Misra–Gries), quantiles/histograms via reservoir sampling.
@@ -77,3 +78,4 @@ Highlights:
 - Datetime details: per-hour, day-of-week, and month breakdown tables + timeline chart.
 - Correlation chips (streaming) for numeric columns.
 - Hardened HTML escaping for column names and labels.
+

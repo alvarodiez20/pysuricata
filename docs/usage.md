@@ -2,6 +2,7 @@
 
 ## Basic
 
+
 ```python
 import pandas as pd
 from pysuricata import profile
@@ -26,6 +27,7 @@ def chunk_iter():
 
 rep = profile((ch for ch in chunk_iter()), config=cfg)
 rep.save_html("report.html")
+
 ```
 
 ### Programmatic summary

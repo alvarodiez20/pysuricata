@@ -7,6 +7,7 @@ description: How pysuricata generates EDA reports at scale — chunked ingestion
 
 This document explains how `pysuricata` profiles data efficiently and renders a self‑contained HTML report.
 
+
 ## Overview
 
 ```
@@ -99,3 +100,4 @@ The report shows:
 - Add backends: polars/Arrow datasets or DuckDB scans can be plugged into the chunk iterator.
 - Add quantile sketches: t‑digest or KLL can replace the default reservoir for better tail accuracy.
 - Add new sections: drift comparisons, profile JSON export to file, CLI wrapper.
+

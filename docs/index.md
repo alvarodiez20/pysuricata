@@ -2,6 +2,7 @@
 
 Generate clean, self-contained EDA reports for pandas DataFrames and large in-memory chunked iterables.
 
+
 !!! tip
     Works great on small and medium datasets; for very large datasets, sample first.
 

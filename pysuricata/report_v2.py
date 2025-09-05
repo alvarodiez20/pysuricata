@@ -1,4 +1,5 @@
 """Unified streaming EDA report generator, designed to:
+
 - Work on datasets that do not fit into memory by consuming chunks.
 - Be backend-agnostic at the orchestration layer (pandas today; easy to add polars/arrow).
 - Keep computations testable via small, pure accumulator classes.
@@ -139,8 +140,6 @@ except Exception:  # pragma: no cover - optional
 
 # Moved to dedicated module for reuse and testability
 from .accumulators.sketches import KMV, ReservoirSampler, MisraGries
-
-
 # =============================
 # Accumulators per dtype
 # =============================
@@ -154,6 +153,7 @@ from .render.cards import render_bool_card as _render_bool_card, render_cat_card
 
 @dataclass
 class _NumericSummaryLegacy:
+
     name: str
     count: int
     missing: int
@@ -652,6 +652,7 @@ class _NumericAccumulatorLegacy:
 
 @dataclass
 class _BooleanSummaryLegacy:
+
     name: str
     count: int
     missing: int
@@ -702,6 +703,7 @@ class _BooleanAccumulatorLegacy:
 
 @dataclass
 class _CategoricalSummaryLegacy:
+
     name: str
     count: int
     missing: int
@@ -789,6 +791,7 @@ class _CategoricalAccumulatorLegacy:
 
 @dataclass
 class _DatetimeSummaryLegacy:
+
     name: str
     count: int
     missing: int
@@ -807,6 +810,7 @@ class _DatetimeSummaryLegacy:
 
 
 class _DatetimeAccumulatorLegacy:
+
     def __init__(self, name: str) -> None:
         self.name = name
         self.count = 0
@@ -919,7 +923,6 @@ from .compute.consume import (
 from .compute.consume_polars import (
     consume_chunk_polars as _consume_chunk_polars,
 )
-
 
 # === ID helper used by classic template cards ===
 
@@ -2596,6 +2599,7 @@ class _RowKMV:
                 self.rows += min(2000, df.height)
 
 
+
 # =============================
 # Lightweight streaming correlations (pairwise sums)
 # =============================
@@ -2675,6 +2679,7 @@ class _StreamingCorr:
                 st["sx"] += sx; st["sy"] += sy
                 st["sx2"] += sx2; st["sy2"] += sy2
                 st["sxy"] += sxy
+
 
     def top_map(self, *, threshold: float = 0.6, max_per_col: int = 2) -> Dict[str, List[Tuple[str, float]]]:
         res: Dict[str, List[Tuple[str, float]]] = {c: [] for c in self.cols}
@@ -2987,6 +2992,7 @@ def build_report(
     else:
         raise TypeError("Unsupported input type. Provide a pandas/polars DataFrame or an iterable of them.")
 
+
     # Build per-column accumulator map grouped by kind for metrics
     kinds_map = {
         **{name: ("numeric", accs[name]) for name in kinds.numeric},
@@ -3151,6 +3157,7 @@ def build_report(
         summary_obj = None
 
     if output_file and not compute_only:
+
         with _SectionTimer(logger, f"Write HTML to {output_file}"):
             with open(output_file, "w", encoding="utf-8") as f:
                 f.write(html)
