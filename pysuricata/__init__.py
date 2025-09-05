@@ -1,7 +1,17 @@
-"""suricata package initialization.
+"""pysuricata package exports.
 
-Allows direct import of generate_report:
-    from suricata import generate_report
+Preferred high-level API:
+    from pysuricata import profile, summarize, ReportConfig
 """
 
-from .report_v2 import generate_report as generate_report
+# High-level API wrappers
+from .api import (
+    Report,
+    ReportConfig,
+    ComputeOptions,
+    RenderOptions,
+    profile,
+    summarize,
+)
+
+# Intentionally no public generate_report; use profile()/summarize() only.

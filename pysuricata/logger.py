@@ -2,8 +2,11 @@
 import time
 import logging
 
-logging.basicConfig(level=logging.INFO)
+# Library code should not configure global logging. Attach a NullHandler so
+# users can opt-in to log output by configuring logging in their application.
 logger = logging.getLogger(__name__)
+if not logger.handlers:
+    logger.addHandler(logging.NullHandler())
 
 
 def timeit(func):

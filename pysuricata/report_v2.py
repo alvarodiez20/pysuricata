@@ -1,6 +1,5 @@
-"""pysuricata.report_v2
+"""Unified streaming EDA report generator, designed to:
 
-Out-of-core (streaming) EDA report generator, designed to:
 - Work on datasets that do not fit into memory by consuming chunks.
 - Be backend-agnostic at the orchestration layer (pandas today; easy to add polars/arrow).
 - Keep computations testable via small, pure accumulator classes.
@@ -8,16 +7,15 @@ Out-of-core (streaming) EDA report generator, designed to:
 
 Usage (programmatic):
 
-    from pysuricata.report_v2 import generate_report
-    html = generate_report("/path/to/big.csv", chunk_size=250_000)
-    with open("report.html", "w", encoding="utf-8") as f:
-        f.write(html)
+    from pysuricata import profile
+    # From a pandas DataFrame already in memory
+    rep = profile(df)
+    # Or from an iterable/generator yielding pandas DataFrame chunks
+    rep = profile((ch for ch in my_chunk_iter))
 
-This module intentionally avoids adding heavyweight dependencies. It will use:
-- pandas for CSV chunking if available
-- pyarrow for parquet batch iteration if available
-
-Later, a polars chunk iterator can be plugged in with minimal code (see TODOs).
+This module intentionally avoids heavyweight dependencies. It consumes pandas
+DataFrames and iterables of DataFrames and computes streaming stats over them.
+Later, native polars/arrow iterators can be plugged in with minimal code (see TODOs).
 """
 from __future__ import annotations
 
@@ -129,151 +127,33 @@ try:  # optional; used for chunking and type coercion
     import pandas as pd  # type: ignore
 except Exception:  # pragma: no cover - optional
     pd = None  # type: ignore
-
-try:  # optional; used for parquet batch iteration
-    import pyarrow as pa  # type: ignore
-    import pyarrow.parquet as pq  # type: ignore
+try:  # optional; enable native polars path when available
+    import polars as pl  # type: ignore
 except Exception:  # pragma: no cover - optional
-    pa = None  # type: ignore
-    pq = None  # type: ignore
+    pl = None  # type: ignore
+
+# No parquet/path-based IO here; ingestion is in-memory only.
 
 # =============================
 # Helpers: hashing & sampling
 # =============================
 
-def _u64(x: bytes) -> int:
-    """Return a 64-bit unsigned integer hash from bytes using SHA1 (fast enough, no deps)."""
-    # Take first 8 bytes of sha1 digest
-    return int.from_bytes(hashlib.sha1(x).digest()[:8], "big", signed=False)
-
-
-class KMV:
-    """K-Minimum Values distinct counter (approximate uniques) without extra deps.
-
-    Keep the k smallest 64-bit hashes of the observed values. If fewer than k items
-    have been seen, |S| is exact uniques. Otherwise, estimate uniques as (k-1)/t,
-    where t is the kth smallest hash normalized to (0,1].
-    """
-
-    __slots__ = ("k", "_values")
-
-    def __init__(self, k: int = 2048) -> None:
-        self.k = int(k)
-        self._values: List[int] = []  # store as integers in [0, 2^64)
-
-    def add(self, v: Any) -> None:
-        if v is None:
-            v = b"__NULL__"
-        elif isinstance(v, bytes):
-            pass
-        else:
-            v = str(v).encode("utf-8", "ignore")
-        h = _u64(v)
-        if len(self._values) < self.k:
-            self._values.append(h)
-            if len(self._values) == self.k:
-                self._values.sort()
-        else:
-            # maintain k-smallest set (max-heap simulation via last element after sort)
-            if h < self._values[-1]:
-                # insert in sorted order (k is small)
-                # bisect manually to avoid import
-                lo, hi = 0, self.k - 1
-                while lo < hi:
-                    mid = (lo + hi) // 2
-                    if self._values[mid] < h:
-                        lo = mid + 1
-                    else:
-                        hi = mid
-                self._values.insert(lo, h)
-                # trim to size
-                del self._values[self.k]
-
-    @property
-    def is_exact(self) -> bool:
-        return len(self._values) < self.k
-
-    def estimate(self) -> int:
-        n = len(self._values)
-        if n == 0:
-            return 0
-        if n < self.k:
-            # exact
-            return n
-        # normalize kth smallest to (0,1]
-        kth = self._values[-1]
-        t = (kth + 1) / 2**64
-        if t <= 0:
-            return n
-        return max(n, int(round((self.k - 1) / t)))
-
-
-class ReservoirSampler:
-    """Reservoir sampler for numeric/datetime values to approximate quantiles/histograms."""
-
-    __slots__ = ("k", "_buf", "_seen")
-
-    def __init__(self, k: int = 20_000) -> None:
-        self.k = int(k)
-        self._buf: List[float] = []
-        self._seen: int = 0
-
-    def add_many(self, arr: Sequence[float]) -> None:
-        for x in arr:
-            self.add(float(x))
-
-    def add(self, x: float) -> None:
-        self._seen += 1
-        if len(self._buf) < self.k:
-            self._buf.append(x)
-        else:
-            j = random.randint(1, self._seen)
-            if j <= self.k:
-                self._buf[j - 1] = x
-
-    def values(self) -> List[float]:
-        return self._buf
-
-
-class MisraGries:
-    """Heavy hitters (top-K) with deterministic memory.
-
-    Maintains up to k counters. Good for approximate top categories.
-    """
-
-    __slots__ = ("k", "counters")
-
-    def __init__(self, k: int = 50) -> None:
-        self.k = int(k)
-        self.counters: Dict[Any, int] = {}
-
-    def add(self, x: Any, w: int = 1) -> None:
-        if x in self.counters:
-            self.counters[x] += w
-            return
-        if len(self.counters) < self.k:
-            self.counters[x] = w
-            return
-        # decrement all
-        to_del = []
-        for key in list(self.counters.keys()):
-            self.counters[key] -= w
-            if self.counters[key] <= 0:
-                to_del.append(key)
-        for key in to_del:
-            del self.counters[key]
-
-    def items(self) -> List[Tuple[Any, int]]:
-        # items are approximate; a second pass could refine if needed
-        return sorted(self.counters.items(), key=lambda kv: (-kv[1], str(kv[0])[:64]))
-
-
+# Moved to dedicated module for reuse and testability
+from .accumulators.sketches import KMV, ReservoirSampler, MisraGries
 # =============================
 # Accumulators per dtype
 # =============================
 
+# New canonical implementations live in pysuricata.accumulators.numeric
+from .accumulators.numeric import NumericAccumulator, NumericSummary
+from .accumulators.datetime import DatetimeAccumulator, DatetimeSummary
+from .accumulators.boolean import BooleanAccumulator, BooleanSummary
+from .accumulators.categorical import CategoricalAccumulator, CategoricalSummary
+from .render.cards import render_bool_card as _render_bool_card, render_cat_card as _render_cat_card
+
 @dataclass
-class NumericSummary:
+class _NumericSummaryLegacy:
+
     name: str
     count: int
     missing: int
@@ -325,7 +205,7 @@ class NumericSummary:
     max_items: List[Tuple[Any, float]] = field(default_factory=list)
 
 
-class NumericAccumulator:
+class _NumericAccumulatorLegacy:
     """Streaming numeric stats + sampling for quantiles and histogram."""
 
     def __init__(self, name: str, sample_k: int = 20_000, uniques_k: int = 2048) -> None:
@@ -771,7 +651,8 @@ class NumericAccumulator:
 
 
 @dataclass
-class BooleanSummary:
+class _BooleanSummaryLegacy:
+
     name: str
     count: int
     missing: int
@@ -781,7 +662,7 @@ class BooleanSummary:
     dtype_str: str = "boolean"
 
 
-class BooleanAccumulator:
+class _BooleanAccumulatorLegacy:
     def __init__(self, name: str) -> None:
         self.name = name
         self.count = 0
@@ -821,7 +702,8 @@ class BooleanAccumulator:
 
 
 @dataclass
-class CategoricalSummary:
+class _CategoricalSummaryLegacy:
+
     name: str
     count: int
     missing: int
@@ -838,7 +720,7 @@ class CategoricalSummary:
     dtype_str: str = "categorical"
 
 
-class CategoricalAccumulator:
+class _CategoricalAccumulatorLegacy:
     def __init__(self, name: str, topk_k: int = 50, uniques_k: int = 2048) -> None:
         self.name = name
         self.count = 0
@@ -908,7 +790,8 @@ class CategoricalAccumulator:
 
 
 @dataclass
-class DatetimeSummary:
+class _DatetimeSummaryLegacy:
+
     name: str
     count: int
     missing: int
@@ -926,7 +809,8 @@ class DatetimeSummary:
     sample_scale: float = 1.0
 
 
-class DatetimeAccumulator:
+class _DatetimeAccumulatorLegacy:
+
     def __init__(self, name: str) -> None:
         self.name = name
         self.count = 0
@@ -1015,137 +899,30 @@ class DatetimeAccumulator:
 # =============================
 # Chunk iterators (sources)
 # =============================
-
 FrameLike = Any
-
-
-def _iter_chunks_from_path(path: str, *, chunk_size: int = 200_000, engine: str = "auto",
-                           csv_kwargs: Optional[Mapping[str, Any]] = None,
-                           parquet_columns: Optional[Sequence[str]] = None) -> Iterator[FrameLike]:
-    """Yield chunked frames from a file path.
-
-    Supports CSV via pandas; Parquet via pyarrow. Keeps memory bounded by chunk_size/batch_size.
-    """
-    if not os.path.exists(path):
-        raise FileNotFoundError(path)
-    ext = os.path.splitext(path)[1].lower()
-    if ext in {".csv", ".tsv", ".txt"}:
-        if pd is None:
-            raise RuntimeError("pandas is required for CSV chunking but is not installed")
-        kwargs = dict(
-            chunksize=int(chunk_size),
-            low_memory=True,
-        )
-        if csv_kwargs:
-            kwargs.update(csv_kwargs)
-        # heuristic: delimiter by extension
-        if ext == ".tsv":
-            kwargs.setdefault("sep", "\t")
-        yield from pd.read_csv(path, **kwargs)  # type: ignore[misc]
-        return
-    if ext in {".parquet", ".pq"}:
-        if pq is None:
-            raise RuntimeError("pyarrow is required for Parquet streaming but is not installed")
-        pf = pq.ParquetFile(path)
-        for batch in pf.iter_batches(batch_size=chunk_size, columns=list(parquet_columns) if parquet_columns else None):
-            # Convert to pandas DataFrame to reuse normalization functions. This keeps memory bounded.
-            yield batch.to_pandas(types_mapper=None)
-        return
-    raise ValueError(f"Unsupported file extension: {ext}")
 
 
 # =============================
 # Normalization per chunk (backend mini-adapter)
 # =============================
 
-@dataclass
-class ColumnKinds:
-    numeric: List[str] = field(default_factory=list)
-    boolean: List[str] = field(default_factory=list)
-    datetime: List[str] = field(default_factory=list)
-    categorical: List[str] = field(default_factory=list)
+from .compute.infer import (
+    ColumnKinds,
+    infer_kinds_pandas as _infer_kinds_pandas,
+    infer_kinds_polars as _infer_kinds_polars,
+)
 
 
-def _infer_kinds_pandas(df: "pd.DataFrame") -> ColumnKinds:  # type: ignore[name-defined]
-    kinds = ColumnKinds()
-    for name, s in df.items():
-        dt = str(getattr(s, "dtype", "object"))
-        if re.search("int|float|^UInt|^Int|^Float", dt, re.I):
-            kinds.numeric.append(name)
-        elif re.search("bool", dt, re.I):
-            kinds.boolean.append(name)
-        elif re.search("datetime", dt, re.I):
-            kinds.datetime.append(name)
-        else:
-            # try coercions on a small sample for robustness
-            sample = s.head(10_000)
-            if pd is not None:
-                # datetime?
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", UserWarning)
-                    try:
-                        ds = pd.to_datetime(sample, errors="coerce", utc=True, format="mixed")
-                    except TypeError:
-                        ds = pd.to_datetime(sample, errors="coerce", utc=True)
-                if ds.notna().sum() >= max(10, int(0.7 * len(sample))):
-                    kinds.datetime.append(name)
-                    continue
-                ns = pd.to_numeric(sample, errors="coerce")
-                if ns.notna().sum() >= max(10, int(0.7 * len(sample))):
-                    kinds.numeric.append(name)
-                    continue
-            # boolean-like?
-            uniq = set(map(str, sample.dropna().unique().tolist()))
-            if 1 <= len(uniq) <= 2 and uniq.issubset({"True", "False", "0", "1", "true", "false"}):
-                kinds.boolean.append(name)
-            else:
-                kinds.categorical.append(name)
-    return kinds
-
-
-def _to_numeric_array_pandas(s: "pd.Series") -> np.ndarray:  # type: ignore[name-defined]
-    ns = pd.to_numeric(s, errors="coerce")
-    # Return as float64 NumPy array with NaN for invalids to enable vectorized stats.
-    return ns.to_numpy(dtype="float64", copy=False)
-
-
-def _to_bool_array_pandas(s: "pd.Series") -> List[Optional[bool]]:  # type: ignore[name-defined]
-    # Try best-effort conversion
-    if str(s.dtype).startswith("bool"):
-        arr = s.astype("boolean").tolist()
-        return [None if x is pd.NA else bool(x) for x in arr]
-    # strings like "true"/"false"/"1"/"0"
-    def _coerce(v: Any) -> Optional[bool]:
-        if v is None or (isinstance(v, float) and math.isnan(v)):
-            return None
-        vs = str(v).strip().lower()
-        if vs in {"true", "1", "t", "yes", "y"}:
-            return True
-        if vs in {"false", "0", "f", "no", "n"}:
-            return False
-        return None
-    return [_coerce(v) for v in s.tolist()]
-
-
-def _to_datetime_ns_array_pandas(s: "pd.Series") -> List[Optional[int]]:  # type: ignore[name-defined]
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-        try:
-            ds = pd.to_datetime(s, errors="coerce", utc=True, format="mixed")
-        except TypeError:
-            ds = pd.to_datetime(s, errors="coerce", utc=True)
-    # Convert NaT to None using int64 representation
-    vals = ds.astype("int64", copy=False).tolist()
-    NAT_INT = -9223372036854775808
-    out: List[Optional[int]] = []
-    for v in vals:
-        out.append(None if v == NAT_INT else int(v))
-    return out
-
-
-def _to_categorical_iter_pandas(s: "pd.Series") -> Iterable[Any]:  # type: ignore[name-defined]
-    return s.tolist()
-
+from .compute.consume import (
+    consume_chunk_pandas as _consume_chunk_pandas,
+    _to_numeric_array_pandas,
+    _to_bool_array_pandas,
+    _to_datetime_ns_array_pandas,
+    _to_categorical_iter_pandas,
+)
+from .compute.consume_polars import (
+    consume_chunk_polars as _consume_chunk_polars,
+)
 
 # === ID helper used by classic template cards ===
 
@@ -2404,8 +2181,6 @@ class ReportConfig:
     uniques_k: int = 2048
     topk_k: int = 50
     engine: str = "auto"  # reserved for future (e.g., force polars)
-    csv_kwargs: Optional[Mapping[str, Any]] = None
-    parquet_columns: Optional[Sequence[str]] = None
     # Logging
     logger: Optional[logging.Logger] = None
     log_level: int = logging.INFO
@@ -2558,7 +2333,7 @@ def _render_html_snapshot(
         """
     if not top_missing_list:
         top_missing_list = """
-        <li class="missing-item"><div class="missing-info"><code class="missing-col">None</code><span class="missing-stats">0 (0.0%)</span></div><div class="missing-bar"><div class="missing-fill low" style="width:0%;"></div></div></li>
+        <li class="missing-item"><div class="missing-info"><code class="missing-col">None</code><span class="missing-stats">0 (0.0%)</span></div><div class="missing-bar"><div clas s="missing-fill low" style="width:0%;"></div></div></li>
         """
 
     # ---- Quick counts
@@ -2609,16 +2384,17 @@ def _render_html_snapshot(
     # ---- Variable cards (preserve first chunk order if available)
     col_order = [c for c in list(first_columns) if c in kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean] or (kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean)
     all_cards_list: List[str] = []
-    for name in col_order:
-        acc = accs[name]
-        if name in kinds.numeric:
-            all_cards_list.append(_render_numeric_card(acc.finalize()))
-        elif name in kinds.categorical:
-            all_cards_list.append(_render_cat_card(acc.finalize()))
-        elif name in kinds.datetime:
-            all_cards_list.append(_render_dt_card(acc.finalize()))
-        elif name in kinds.boolean:
-            all_cards_list.append(_render_bool_card(acc.finalize()))
+    if not compute_only:
+        for name in col_order:
+            acc = accs[name]
+            if name in kinds.numeric:
+                all_cards_list.append(_render_numeric_card(acc.finalize()))
+            elif name in kinds.categorical:
+                all_cards_list.append(_render_cat_card(acc.finalize()))
+            elif name in kinds.datetime:
+                all_cards_list.append(_render_dt_card(acc.finalize()))
+            elif name in kinds.boolean:
+                all_cards_list.append(_render_bool_card(acc.finalize()))
     variables_section_html = f"""
         <section id="vars">  
           <span id="numeric-vars" class="anchor-alias"></span>
@@ -2801,6 +2577,28 @@ class _RowKMV:
         pct = (d / self.rows * 100.0) if self.rows else 0.0
         return d, pct
 
+    def update_from_polars(self, df: "pl.DataFrame") -> None:  # type: ignore[name-defined]
+        if pl is None:
+            return
+        try:
+            h = None
+            for c in df.columns:
+                hc = df[c].hash().to_numpy()
+                h = hc if h is None else (h ^ hc)
+            if h is None:
+                return
+            self.rows += int(h.size)
+            for v in h:
+                self.kmv.add(int(v))
+        except Exception:
+            # Fallback: sample small head and reuse pandas-based path for hashing
+            try:
+                sample = df.head(min(2000, df.height)).to_pandas()
+                self.update_from_pandas(sample)
+            except Exception:
+                self.rows += min(2000, df.height)
+
+
 
 # =============================
 # Lightweight streaming correlations (pairwise sums)
@@ -2846,6 +2644,43 @@ class _StreamingCorr:
                 st["sx2"] += sx2; st["sy2"] += sy2
                 st["sxy"] += sxy
 
+    def update_from_polars(self, df: "pl.DataFrame") -> None:  # type: ignore[name-defined]
+        if pl is None:
+            return
+        use_cols = [c for c in self.cols if c in df.columns]
+        if len(use_cols) < 2:
+            return
+        arrs: Dict[str, np.ndarray] = {}
+        for c in use_cols:
+            try:
+                a = df[c].cast(pl.Float64, strict=False).to_numpy()
+            except Exception:
+                a = np.asarray(df[c].to_list(), dtype=float)
+            arrs[c] = a
+        for i in range(len(use_cols)):
+            ci = use_cols[i]
+            xi = arrs[ci]
+            for j in range(i + 1, len(use_cols)):
+                cj = use_cols[j]
+                yj = arrs[cj]
+                m = np.isfinite(xi) & np.isfinite(yj)
+                if not m.any():
+                    continue
+                x = xi[m]; y = yj[m]
+                n = float(x.size)
+                sx = float(np.sum(x)); sy = float(np.sum(y))
+                sx2 = float(np.sum(x * x)); sy2 = float(np.sum(y * y))
+                sxy = float(np.sum(x * y))
+                key = (ci, cj)
+                if key not in self.pairs:
+                    self.pairs[key] = {"n": 0.0, "sx": 0.0, "sy": 0.0, "sx2": 0.0, "sy2": 0.0, "sxy": 0.0}
+                st = self.pairs[key]
+                st["n"] += n
+                st["sx"] += sx; st["sy"] += sy
+                st["sx2"] += sx2; st["sy2"] += sy2
+                st["sxy"] += sxy
+
+
     def top_map(self, *, threshold: float = 0.6, max_per_col: int = 2) -> Dict[str, List[Tuple[str, float]]]:
         res: Dict[str, List[Tuple[str, float]]] = {c: [] for c in self.cols}
         for (ci, cj), st in self.pairs.items():
@@ -2870,21 +2705,22 @@ class _StreamingCorr:
         return res
 
 
-def generate_report(
-    source: Union[str, "pd.DataFrame"],  # type: ignore[name-defined]
+def build_report(
+    source: Any,
     *,
     config: Optional[ReportConfig] = None,
     output_file: Optional[str] = None,
     report_title: Optional[str] = None,
     return_summary: bool = False,
+    compute_only: bool = False,
 ) -> str:
-    """Generate an HTML EDA report from a big source (streaming, out-of-core).
+    """Build an HTML EDA report from in-memory sources (streaming, out-of-core).
 
     Parameters
     ----------
-    source : str | pandas.DataFrame
-        Either a file path (CSV/Parquet) or an in-memory pandas DataFrame.
-        (Later: a chunk iterator can be supported by overloading.)
+    source : pandas.DataFrame | Iterable[pandas.DataFrame]
+        Either a single in-memory pandas DataFrame or an iterable of
+        pandas DataFrames (already chunked in memory).
     config : ReportConfig, optional
         Tuning knobs for chunk sizes and approximations.
     output_file : str, optional
@@ -2901,29 +2737,30 @@ def generate_report(
     cfg = config or ReportConfig()
     start_time = time.time()
 
-    # Configure logger
+    # Configure logger (no global basicConfig in library code)
     logger = cfg.logger or logging.getLogger(__name__)
-    if not logger.handlers:
-        logging.basicConfig(level=cfg.log_level, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     logger.setLevel(cfg.log_level)
     logger.info("Starting report generation: source=%s", source if isinstance(source, str) else f"DataFrame{getattr(source, 'shape', '')}")
     logger.info("chunk_size=%d, uniques_k=%d, numeric_sample_k=%d, topk_k=%d", cfg.chunk_size, cfg.uniques_k, cfg.numeric_sample_k, cfg.topk_k)
 
     # Build chunk iterator
     with _SectionTimer(logger, "Build chunk iterator"):
-        if isinstance(source, str):
-            chunks = _iter_chunks_from_path(
-                source,
-                chunk_size=cfg.chunk_size,
-                engine=cfg.engine,
-                csv_kwargs=cfg.csv_kwargs,
-                parquet_columns=cfg.parquet_columns,
-            )
-        else:
-            if pd is None:
-                raise RuntimeError("pandas is required for DataFrame input")
-            def _one() -> Iterator["pd.DataFrame"]:  # type: ignore[name-defined]
-                yield source  # type: ignore[misc]
+        # If an iterable is supplied, use it directly; otherwise, wrap single frame
+        try:
+            is_pd = (pd is not None) and isinstance(source, pd.DataFrame)
+            is_pl = (pl is not None) and isinstance(source, pl.DataFrame)
+        except Exception:
+            is_pd = False; is_pl = False
+        try:
+            if hasattr(source, "__iter__") and not is_pd and not is_pl:
+                chunks = iter(source)
+            else:
+                def _one() -> Iterator[Any]:
+                    yield source
+                chunks = _one()
+        except Exception:
+            def _one() -> Iterator[Any]:
+                yield source
             chunks = _one()
 
     with _SectionTimer(logger, "Read first chunk"):
@@ -3039,8 +2876,122 @@ def generate_report(
                     logger.info("Checkpoint saved at %s%s", pkl_path, f" and {html_path}" if html_path else "")
                 except Exception:
                     logger.exception("Failed to write checkpoint at chunk %d", chunk_idx)
+    elif pl is not None and isinstance(first, pl.DataFrame):
+        # Polars path
+        try:
+            approx_mem_bytes = int(first.estimated_size())
+        except Exception:
+            approx_mem_bytes = 0
+        try:
+            total_missing_cells += int(first.null_count().select(pl.sum(pl.all())).to_numpy()[0][0])
+        except Exception:
+            pass
+        row_kmv.update_from_polars(first)
+        # Sample section (convert a tiny sample to pandas for rendering)
+        sample_section_html = ""
+        if cfg.include_sample:
+            try:
+                sample_section_html = _render_sample_section(first.head(cfg.sample_rows).to_pandas(), cfg.sample_rows)
+            except Exception:
+                sample_section_html = ""
+        first_columns = list(first.columns)
+        with _SectionTimer(logger, "Infer kinds & build accumulators [pl]"):
+            kinds = _infer_kinds_polars(first)
+            accs = _build_accumulators(kinds, cfg)
+            try:
+                dtypes_map = {c: str(first.schema[c]) for c in first.columns}
+                for name in kinds.numeric:
+                    if name in accs and isinstance(accs[name], NumericAccumulator):
+                        accs[name].set_dtype(dtypes_map.get(name, "numeric"))
+                for name in kinds.categorical:
+                    if name in accs and isinstance(accs[name], CategoricalAccumulator):
+                        accs[name].set_dtype(dtypes_map.get(name, "categorical"))
+                for name in kinds.boolean:
+                    if name in accs and isinstance(accs[name], BooleanAccumulator):
+                        accs[name].set_dtype(dtypes_map.get(name, "boolean"))
+                for name in kinds.datetime:
+                    if name in accs and isinstance(accs[name], DatetimeAccumulator):
+                        accs[name].set_dtype(dtypes_map.get(name, "datetime"))
+            except Exception:
+                pass
+        corr_est = None
+        if cfg.compute_correlations and len(kinds.numeric) > 1 and len(kinds.numeric) <= cfg.corr_max_cols:
+            corr_est = _StreamingCorr(kinds.numeric)
+        with _SectionTimer(logger, "Consume first chunk [pl]"):
+            _consume_chunk_polars(first, accs, kinds, logger)
+            if corr_est is not None:
+                try:
+                    corr_est.update_from_polars(first)
+                except Exception:
+                    logger.exception("Correlation update failed on first polars chunk")
+        logger.info("[pl] kinds: %d numeric, %d categorical, %d datetime, %d boolean", len(kinds.numeric), len(kinds.categorical), len(kinds.datetime), len(kinds.boolean))
+        n_rows = first.height
+        n_cols = len(first.columns)
+        chunk_idx = 1
+        ckpt_mgr = None
+        if cfg.checkpoint_every_n_chunks and cfg.checkpoint_every_n_chunks > 0:
+            base_dir = cfg.checkpoint_dir or (os.path.dirname(output_file) if output_file else os.getcwd())
+            ckpt_mgr = _CheckpointManager(base_dir, prefix=cfg.checkpoint_prefix, keep=cfg.checkpoint_max_to_keep, write_html=cfg.checkpoint_write_html)
+        for ch in chunks:
+            chunk_idx += 1
+            if (chunk_idx - 1) % max(1, cfg.log_every_n_chunks) == 0:
+                try:
+                    logger.info("[pl] processing chunk %d: %d rows", chunk_idx, ch.height)
+                except Exception:
+                    logger.info("[pl] processing chunk %d", chunk_idx)
+            _consume_chunk_polars(ch, accs, kinds, logger)
+            try:
+                approx_mem_bytes += int(ch.estimated_size())
+            except Exception:
+                pass
+            if corr_est is not None:
+                try:
+                    corr_est.update_from_polars(ch)
+                except Exception:
+                    logger.exception("Correlation update failed on polars chunk %d", chunk_idx)
+            try:
+                n_rows += int(ch.height)
+            except Exception:
+                pass
+            row_kmv.update_from_polars(ch)
+            try:
+                total_missing_cells += int(ch.null_count().select(pl.sum(pl.all())).to_numpy()[0][0])
+            except Exception:
+                pass
+            if ckpt_mgr and (chunk_idx % cfg.checkpoint_every_n_chunks == 0):
+                try:
+                    snapshot = _make_state_snapshot(
+                        kinds=kinds,
+                        accs=accs,
+                        row_kmv=row_kmv,
+                        total_missing_cells=total_missing_cells,
+                        approx_mem_bytes=approx_mem_bytes,
+                        chunk_idx=chunk_idx,
+                        first_columns=first_columns,
+                        sample_section_html=sample_section_html,
+                        cfg=cfg,
+                    )
+                    html_ckpt = None
+                    if cfg.checkpoint_write_html:
+                        html_ckpt = _render_html_snapshot(
+                            kinds=kinds,
+                            accs=accs,
+                            first_columns=first_columns,
+                            row_kmv=row_kmv,
+                            total_missing_cells=total_missing_cells,
+                            approx_mem_bytes=approx_mem_bytes,
+                            start_time=start_time,
+                            cfg=cfg,
+                            report_title=report_title,
+                            sample_section_html=sample_section_html,
+                        )
+                    pkl_path, html_path = ckpt_mgr.save(chunk_idx, snapshot, html=html_ckpt)
+                    logger.info("[pl] Checkpoint saved at %s%s", pkl_path, f" and {html_path}" if html_path else "")
+                except Exception:
+                    logger.exception("Failed to write checkpoint at polars chunk %d", chunk_idx)
     else:
-        raise TypeError("Currently only pandas DataFrame chunks are supported. Provide a CSV/Parquet path or pandas DataFrame.")
+        raise TypeError("Unsupported input type. Provide a pandas/polars DataFrame or an iterable of them.")
+
 
     # Build per-column accumulator map grouped by kind for metrics
     kinds_map = {
@@ -3161,104 +3112,52 @@ def generate_report(
         elif name in kinds.boolean:
             all_cards_list.append(_render_bool_card(acc.finalize()))
 
-    with _SectionTimer(logger, "Render Variables section"):
-        variables_section_html = f"""
-            <section id=\"vars\">  
-              <span id=\"numeric-vars\" class=\"anchor-alias\"></span>
-              <h2 class=\"section-title\">Variables</h2>
-              <p class=\"muted small\">Analyzing {len(kinds.numeric)+len(kinds.categorical)+len(kinds.datetime)+len(kinds.boolean)} variables ({len(kinds.numeric)} numeric, {len(kinds.categorical)} categorical, {len(kinds.datetime)} datetime, {len(kinds.boolean)} boolean).</p>
-              <div class=\"cards-grid\">{''.join(all_cards_list)}</div>
-            </section>
-        """
-    logger.info("rendered %d variable cards", len(all_cards_list))
-    sections_html = (sample_section_html or "") + variables_section_html
+    html = ""
+    if not compute_only:
+        with _SectionTimer(logger, "Render Variables section"):
+            variables_section_html = f"""
+                <section id=\"vars\">  
+                  <span id=\"numeric-vars\" class=\"anchor-alias\"></span>
+                  <h2 class=\"section-title\">Variables</h2>
+                  <p class=\"muted small\">Analyzing {len(kinds.numeric)+len(kinds.categorical)+len(kinds.datetime)+len(kinds.boolean)} variables ({len(kinds.numeric)} numeric, {len(kinds.categorical)} categorical, {len(kinds.datetime)} datetime, {len(kinds.boolean)} boolean).</p>
+                  <div class=\"cards-grid\">{''.join(all_cards_list)}</div>
+                </section>
+            """
+            logger.info("rendered %d variable cards", len(all_cards_list))
+            sections_html = (sample_section_html or "") + variables_section_html
 
-    with _SectionTimer(logger, "Render final HTML"):
-        html = _render_html_snapshot(
-            kinds=kinds,
-            accs=accs,
-            first_columns=first_columns,
-            row_kmv=row_kmv,
-            total_missing_cells=total_missing_cells,
-            approx_mem_bytes=approx_mem_bytes,
-            start_time=start_time,
-            cfg=cfg,
-            report_title=report_title,
-            sample_section_html=sample_section_html,
-        )
+            from .render.html import render_html_snapshot as _render_html_snapshot
+            with _SectionTimer(logger, "Render final HTML"):
+                html = _render_html_snapshot(
+                    kinds=kinds,
+                    accs=accs,
+                    first_columns=first_columns,
+                    row_kmv=row_kmv,
+                    total_missing_cells=total_missing_cells,
+                    approx_mem_bytes=approx_mem_bytes,
+                    start_time=start_time,
+                    cfg=cfg,
+                    report_title=report_title,
+                    sample_section_html=sample_section_html,
+                )
 
     # Optional minimal JSON-like summary for programmatic use
-    summary_obj = None
+    from .compute.manifest import build_summary as _build_summary
     try:
-        # dataset-level
-        dataset_summary = {
-            "rows_est": int(getattr(row_kmv, "rows", 0)),
-            "cols": int(len(kinds_map)),
-            "missing_cells": int(total_missing_cells),
-            "missing_cells_pct": (total_missing_cells / max(1, n_rows * n_cols) * 100.0) if (n_rows and n_cols) else 0.0,
-            "duplicate_rows_est": int(row_kmv.approx_duplicates()[0]),
-            "duplicate_rows_pct_est": float(row_kmv.approx_duplicates()[1]),
-            "top_missing": [
-                {"column": str(col), "pct": float(pct), "count": int(cnt)}
-                for col, pct, cnt in (miss_list[:5] if 'miss_list' in locals() else [])
-            ],
-        }
-        # per-column summaries
-        columns_summary: Dict[str, Dict[str, Any]] = {}
-        for name in col_order:
-            kind, acc = kinds_map[name]
-            if kind == "numeric":
-                s = acc.finalize()
-                columns_summary[name] = {
-                    "type": "numeric",
-                    "count": s.count,
-                    "missing": s.missing,
-                    "unique_est": s.unique_est,
-                    "mean": s.mean,
-                    "std": s.std,
-                    "min": s.min,
-                    "q1": s.q1,
-                    "median": s.median,
-                    "q3": s.q3,
-                    "max": s.max,
-                    "zeros": s.zeros,
-                    "negatives": s.negatives,
-                    "outliers_iqr_est": s.outliers_iqr,
-                    "approx": bool(s.approx),
-                }
-            elif kind == "categorical":
-                s = acc.finalize()
-                columns_summary[name] = {
-                    "type": "categorical",
-                    "count": s.count,
-                    "missing": s.missing,
-                    "unique_est": s.unique_est,
-                    "top_items": s.top_items,
-                    "approx": bool(s.approx),
-                }
-            elif kind == "datetime":
-                s = acc.finalize()
-                columns_summary[name] = {
-                    "type": "datetime",
-                    "count": s.count,
-                    "missing": s.missing,
-                    "min_ts": s.min_ts,
-                    "max_ts": s.max_ts,
-                }
-            else:  # boolean
-                s = acc.finalize()
-                columns_summary[name] = {
-                    "type": "boolean",
-                    "count": s.count,
-                    "missing": s.missing,
-                    "true": s.true_n,
-                    "false": s.false_n,
-                }
-        summary_obj = {"dataset": dataset_summary, "columns": columns_summary}
+        summary_obj = _build_summary(
+            kinds_map,
+            col_order,
+            row_kmv=row_kmv,
+            total_missing_cells=total_missing_cells,
+            n_rows=n_rows,
+            n_cols=n_cols,
+            miss_list=miss_list,
+        )
     except Exception:
         summary_obj = None
 
-    if output_file:
+    if output_file and not compute_only:
+
         with _SectionTimer(logger, f"Write HTML to {output_file}"):
             with open(output_file, "w", encoding="utf-8") as f:
                 f.write(html)
@@ -3280,90 +3179,5 @@ def _render_empty_html(title: str) -> str:
 # =============================
 # Chunk consumption for pandas
 # =============================
-def _infer_kind_for_series_pandas(s: "pd.Series") -> str:  # type: ignore[name-defined]
-    dt = str(getattr(s, "dtype", "object"))
-    if re.search("int|float|^UInt|^Int|^Float", dt, re.I):
-        return "numeric"
-    if re.search("bool", dt, re.I):
-        return "boolean"
-    if re.search("datetime", dt, re.I):
-        return "datetime"
-    sample = s.head(10_000)
-    if pd is not None:
-        ds = pd.to_datetime(sample, errors="coerce", utc=True)
-        if ds.notna().sum() >= max(10, int(0.7 * len(sample))):
-            return "datetime"
-        ns = pd.to_numeric(sample, errors="coerce")
-        if ns.notna().sum() >= max(10, int(0.7 * len(sample))):
-            return "numeric"
-    uniq = set(map(str, sample.dropna().unique().tolist()))
-    if 1 <= len(uniq) <= 2 and uniq.issubset({"True", "False", "0", "1", "true", "false"}):
-        return "boolean"
-    return "categorical"
-
-
-def _consume_chunk_pandas(df: "pd.DataFrame", accs: Dict[str, Any], kinds: ColumnKinds, logger: Optional[logging.Logger] = None) -> None:  # type: ignore[name-defined]
-    # 1) Create accumulators for columns not seen in the first chunk
-    for name in df.columns:
-        if name in accs:
-            continue
-        kind = _infer_kind_for_series_pandas(df[name])
-        if kind == "numeric":
-            accs[name] = NumericAccumulator(name)
-            kinds.numeric.append(name)
-        elif kind == "boolean":
-            accs[name] = BooleanAccumulator(name)
-            kinds.boolean.append(name)
-        elif kind == "datetime":
-            accs[name] = DatetimeAccumulator(name)
-            kinds.datetime.append(name)
-        else:
-            accs[name] = CategoricalAccumulator(name)
-            kinds.categorical.append(name)
-        if logger:
-            logger.info("➕ discovered new column '%s' inferred as %s", name, kind)
-
-    # 2) Feed accumulators for columns present in this chunk
-    for name, acc in accs.items():
-        if name not in df.columns:
-            # Column absent in this chunk (ragged files / column pruning)
-            if logger:
-                logger.debug("column '%s' not present in this chunk; skipping", name)
-            continue
-        s = df[name]
-        if isinstance(acc, NumericAccumulator):
-            arr = _to_numeric_array_pandas(s)
-            acc.update(arr)
-            # Track extremes with indices for this chunk
-            try:
-                finite = np.isfinite(arr)
-                if finite.any():
-                    vals = arr[finite]
-                    idx = s.index.to_numpy()[finite]
-                    # smallest 5
-                    if vals.size > 0:
-                        k = min(5, vals.size)
-                        part_min = np.argpartition(vals, k - 1)[:k]
-                        pairs_min = [(idx[i], float(vals[i])) for i in part_min]
-                        # largest 5
-                        part_max = np.argpartition(-vals, k - 1)[:k]
-                        pairs_max = [(idx[i], float(vals[i])) for i in part_max]
-                        acc.update_extremes(pairs_min, pairs_max)
-            except Exception:
-                pass
-        elif isinstance(acc, BooleanAccumulator):
-            arr = _to_bool_array_pandas(s)
-            acc.update(arr)
-            try:
-                acc.add_mem(int(s.memory_usage(deep=True)))
-            except Exception:
-                pass
-        elif isinstance(acc, DatetimeAccumulator):
-            arr = _to_datetime_ns_array_pandas(s)
-            acc.update(arr)
-            try:
-                acc.add_mem(int(s.memory_usage(deep=True)))
-            except Exception:
-                pass
-        elif isinstance(acc, CategoricalAccumulator):
-            acc.update(_to_categorical_iter_pandas(s))
+from .compute.infer import infer_kind_for_series_pandas as _infer_kind_for_series_pandas
+from .compute.consume import consume_chunk_pandas as _consume_chunk_pandas

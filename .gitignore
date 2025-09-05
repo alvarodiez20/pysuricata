@@ -51,3 +51,10 @@ coverage.xml
 .idea/
 
 *.DS_Store
+
+# Generated reports/data artifacts (keep repo lean)
+/hello.html
+/hello.json
+/report_*.html
+/oom_demo.csv
+*.parquet
