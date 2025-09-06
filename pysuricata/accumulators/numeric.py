@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any, List, Optional, Sequence, Tuple
 import math
 from collections import Counter
+from dataclasses import dataclass, field
+from typing import Any, List, Optional, Sequence, Tuple
 
 import numpy as np
 
-from .sketches import ReservoirSampler, KMV
+from .sketches import KMV, ReservoirSampler
 
 
 @dataclass
@@ -66,7 +66,9 @@ class NumericSummary:
 class NumericAccumulator:
     """Streaming numeric stats + sampling for quantiles and histogram."""
 
-    def __init__(self, name: str, sample_k: int = 20_000, uniques_k: int = 2048) -> None:
+    def __init__(
+        self, name: str, sample_k: int = 20_000, uniques_k: int = 2048
+    ) -> None:
         self.name = name
         self.count = 0
         self.missing = 0
@@ -105,7 +107,9 @@ class NumericAccumulator:
     def set_corr_top(self, items: List[Tuple[str, float]]) -> None:
         self._corr_top = list(items or [])
 
-    def update_extremes(self, pairs_min: List[Tuple[Any, float]], pairs_max: List[Tuple[Any, float]]) -> None:
+    def update_extremes(
+        self, pairs_min: List[Tuple[Any, float]], pairs_max: List[Tuple[Any, float]]
+    ) -> None:
         # Merge chunk minima
         for idx, v in pairs_min:
             self._min_pairs.append((idx, float(v)))
@@ -121,7 +125,9 @@ class NumericAccumulator:
         if len(self._max_pairs) > 5:
             del self._max_pairs[5:]
 
-    def _combine_moments(self, n2: int, mean2: float, M2_2: float, M3_2: float, M4_2: float) -> None:
+    def _combine_moments(
+        self, n2: int, mean2: float, M2_2: float, M3_2: float, M4_2: float
+    ) -> None:
         """Merge another group's (n2, mean2, M2_2, M3_2, M4_2) into this accumulator."""
         if n2 <= 0:
             return
@@ -142,13 +148,15 @@ class NumericAccumulator:
 
         M2 = self._m2 + M2_2 + delta2 * (n1 * n2 / n)
         M3 = (
-            self._m3 + M3_2
+            self._m3
+            + M3_2
             + delta3 * (n1 * n2 * (n1 - n2) / (n * n))
             + 3.0 * delta * (n1 * M2_2 - n2 * self._m2) / n
         )
         M4 = (
-            self._m4 + M4_2
-            + delta4 * (n1 * n2 * (n1 * n1 - n1 * n2 + n2 * n2) / (n ** 3))
+            self._m4
+            + M4_2
+            + delta4 * (n1 * n2 * (n1 * n1 - n1 * n2 + n2 * n2) / (n**3))
             + 6.0 * delta2 * (n1 * n1 * M2_2 + n2 * n2 * self._m2) / (n * n)
             + 4.0 * delta * (n1 * M3_2 - n2 * self._m3) / n
         )
@@ -292,7 +300,12 @@ class NumericAccumulator:
             m2_old = self._m2
             m3_old = self._m3
             m4_old = self._m4
-            m4 = m4_old + term1 * delta_n2 * (n * n - 3 * n + 3) + 6 * delta_n2 * m2_old - 4 * delta_n * m3_old
+            m4 = (
+                m4_old
+                + term1 * delta_n2 * (n * n - 3 * n + 3)
+                + 6 * delta_n2 * m2_old
+                - 4 * delta_n * m3_old
+            )
             m3 = m3_old + term1 * delta_n * (n - 2) - 3 * delta_n * m2_old
             m2 = m2_old + term1
             m1 = m1_old + delta_n
@@ -360,8 +373,16 @@ class NumericAccumulator:
         unique_est = self._uniques.estimate()
         approx = not self._uniques.is_exact
         # Standard error & coefficient of variation
-        se = (std / math.sqrt(self.count)) if (self.count > 1 and not math.isnan(std)) else float("nan")
-        cv = (std / self._mean) if (self.count and not math.isnan(std) and self._mean != 0) else float("nan")
+        se = (
+            (std / math.sqrt(self.count))
+            if (self.count > 1 and not math.isnan(std))
+            else float("nan")
+        )
+        cv = (
+            (std / self._mean)
+            if (self.count and not math.isnan(std) and self._mean != 0)
+            else float("nan")
+        )
         # Geometric mean (only valid for strictly positive data)
         if self._min > 0 and self.count > 0 and self._pos_count == self.count:
             gmean = math.exp(self._log_sum_pos / self.count)
@@ -369,14 +390,22 @@ class NumericAccumulator:
             gmean = float("nan")
         # Skewness, kurtosis (excess), and Jarque–Bera
         if self.count > 2 and self._m2 > 0 and math.isfinite(self._m2):
-            skew = (math.sqrt(self.count) * self._m3) / (self._m2 ** 1.5)
+            skew = (math.sqrt(self.count) * self._m3) / (self._m2**1.5)
         else:
             skew = float("nan")
         if self.count > 3 and self._m2 > 0 and math.isfinite(self._m2):
             kurt = (self.count * self._m4) / (self._m2 * self._m2) - 3.0
         else:
             kurt = float("nan")
-        if all(map(lambda v: isinstance(v, (int, float)) and not math.isnan(v), [self.count, skew, kurt])) and self.count > 3:
+        if (
+            all(
+                map(
+                    lambda v: isinstance(v, (int, float)) and not math.isnan(v),
+                    [self.count, skew, kurt],
+                )
+            )
+            and self.count > 3
+        ):
             jb = float(self.count / 6.0 * (skew * skew + 0.25 * (kurt * kurt)))
         else:
             jb = float("nan")
@@ -384,7 +413,16 @@ class NumericAccumulator:
         top_values: List[Tuple[float, int]] = []
         try:
             # Heuristic: treat as discrete if all seen are int-like and small-ish cardinality
-            is_discrete = bool(self._int_like_all and ((unique_est <= max(1, min(50, int(0.05 * max(1, self.count))))) or (sample_unique and (sample_unique <= 50 and unique_ratio_approx <= 0.05))))
+            is_discrete = bool(
+                self._int_like_all
+                and (
+                    (unique_est <= max(1, min(50, int(0.05 * max(1, self.count)))))
+                    or (
+                        sample_unique
+                        and (sample_unique <= 50 and unique_ratio_approx <= 0.05)
+                    )
+                )
+            )
             if is_discrete and svals:
                 scale = (self.count / sample_n) if sample_n else 1.0
                 ctr = Counter(svals)
@@ -398,7 +436,8 @@ class NumericAccumulator:
             ci_lo = float(self._mean - 1.96 * se)
             ci_hi = float(self._mean + 1.96 * se)
         else:
-            ci_lo = float("nan"); ci_hi = float("nan")
+            ci_lo = float("nan")
+            ci_hi = float("nan")
 
         # Heap detection heuristic (sample-based)
         heap_pct = float("nan")
@@ -414,7 +453,9 @@ class NumericAccumulator:
                     # also catch .5 rounding
                     half = [abs((v - math.floor(v)) - 0.5) for v in svals]
                     tol = 0.002
-                    hits = sum(1 for a,b in zip(frac, half) if (a <= tol) or (b <= tol))
+                    hits = sum(
+                        1 for a, b in zip(frac, half) if (a <= tol) or (b <= tol)
+                    )
                     heap_pct = hits / len(svals) * 100.0
         except Exception:
             pass
@@ -436,7 +477,9 @@ class NumericAccumulator:
                     if decs:
                         # mode
                         counts = Counter(decs)
-                        gran_decimals = int(max(counts.items(), key=lambda kv: (kv[1], -kv[0]))[0])
+                        gran_decimals = int(
+                            max(counts.items(), key=lambda kv: (kv[1], -kv[0]))[0]
+                        )
                 # step ≈ median of positive diffs between unique sorted values (rounded if we have decimals)
                 arr_g = np.unique(np.asarray(svals, dtype=float))
                 if gran_decimals is not None and gran_decimals >= 0:
@@ -456,7 +499,9 @@ class NumericAccumulator:
                 c_bi, _e_bi = np.histogram(svals, bins=nb)
                 if c_bi.size >= 3:
                     valley = (c_bi[1:-1] < c_bi[:-2]) & (c_bi[1:-1] < c_bi[2:])
-                    bimodal = bool((valley & (c_bi[1:-1] <= 0.8 * c_bi.max())).sum() >= 1)
+                    bimodal = bool(
+                        (valley & (c_bi[1:-1] <= 0.8 * c_bi.max())).sum() >= 1
+                    )
         except Exception:
             bimodal = False
 
@@ -507,4 +552,3 @@ class NumericAccumulator:
             min_items=list(self._min_pairs),
             max_items=list(self._max_pairs),
         )
-

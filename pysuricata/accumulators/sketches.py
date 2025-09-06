@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Sequence, Tuple
 import hashlib
 import random
+from typing import Any, Dict, List, Sequence, Tuple
 
 
 def _u64(x: bytes) -> int:
@@ -132,4 +132,3 @@ class MisraGries:
     def items(self) -> List[Tuple[Any, int]]:
         # items are approximate; a second pass could refine if needed
         return sorted(self.counters.items(), key=lambda kv: (-kv[1], str(kv[0])[:64]))
-

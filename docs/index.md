@@ -1,6 +1,6 @@
 # PySuricata
 
-Generate clean, self-contained EDA reports for pandas DataFrames and large in-memory chunked iterables.
+Generate clean, self-contained EDA reports for pandas/polars DataFrames and large in-memory chunked iterables.
 
 
 !!! tip
@@ -17,6 +17,8 @@ Generate clean, self-contained EDA reports for pandas DataFrames and large in-me
 ## Quick links
 - [Installation](install.md)
 - [Usage](usage.md)
+- [API](api.md)
+- [Architecture](architecture.md)
 
 ## Quick start
 
@@ -45,5 +47,6 @@ rep.save_html("report.html")
 - Datetime accumulators count by hour/day/month and keep min/max.
 - A lightweight streaming correlation estimator tracks Pearson r for numeric pairs.
 - The template renders a self-contained HTML with precise duration (e.g., 0.02s) and processed bytes (≈).
+- Deterministic visuals via `ReportConfig.compute.random_seed`.
 
 See also: Numeric analysis details in numeric_var.md.

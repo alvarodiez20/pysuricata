@@ -14,8 +14,8 @@ from pysuricata import profile, summarize, ReportConfig
 ## Inputs
 
 - In-memory `pandas.DataFrame`
-- Iterable/generator yielding pandas or polars `DataFrame` chunks
-- `polars.DataFrame` or `LazyFrame` (processed natively; no pandas conversion)
+- `polars.DataFrame` or `LazyFrame`
+- Iterable/generator yielding pandas DataFrame chunks (you control chunking)
 
 ## Report object
 
@@ -57,16 +57,13 @@ The top-level `ReportConfig` wraps compute and render options:
 ```python
 from pysuricata import ReportConfig
 
-cfg = ReportConfig(
-    compute=ReportConfig.compute.__class__(
-        chunk_size=250_000,
-        columns=["a", "b", "c"],
-        numeric_sample_size=50_000,
-        max_uniques=4096,
-        top_k=100,
-        engine="auto",
-    )
-)
+cfg = ReportConfig()
+cfg.compute.chunk_size = 250_000
+cfg.compute.columns = ["a", "b", "c"]
+cfg.compute.numeric_sample_size = 50_000
+cfg.compute.max_uniques = 4096
+cfg.compute.top_k = 100
+cfg.compute.random_seed = 42  # deterministic sampling
 
 rep = profile(df, config=cfg)
 ```
@@ -99,8 +96,7 @@ rep = profile((ch for ch in chunk_iter()))
 - Large dataset (streaming in-memory):
   ```python
   from pysuricata import ReportConfig, profile
-  cfg = ReportConfig()
-  cfg.compute.chunk_size = 250_000
+  cfg = ReportConfig(); cfg.compute.chunk_size = 250_000
   rep = profile((ch for ch in chunk_iter()), config=cfg)
   rep.save_html("report.html")
   ```
@@ -123,6 +119,10 @@ rep = profile((ch for ch in chunk_iter()))
 
 ## Notes and limits
 
-- Current engine consumes pandas or polars DataFrames (or iterables of them). Polars eager/LazyFrames are processed natively without conversion.
-- `render` options are placeholders; the v2 template already renders a self-contained light theme.
+- Current engine consumes pandas or polars DataFrames (or iterables of pandas frames). Polars eager/LazyFrames are processed natively.
+- Render options are minimal; the HTML template is self-contained (light theme).
+
+## Determinism
+
+Set `cfg.compute.random_seed` to make reservoir sampling and other RNG use deterministic. This stabilizes histogram shapes in tests and CI.
  

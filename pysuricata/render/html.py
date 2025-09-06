@@ -7,19 +7,12 @@ import html as _html
 from datetime import datetime
 
 from ..utils import load_css, load_template, embed_favicon, embed_image, load_script
+from .format_utils import human_bytes as _human_bytes
 from ..accumulators import NumericAccumulator, CategoricalAccumulator, DatetimeAccumulator, BooleanAccumulator
 from ..compute.infer import ColumnKinds
 from .cards import render_numeric_card as _render_numeric_card, render_cat_card as _render_cat_card, render_dt_card as _render_dt_card, render_bool_card as _render_bool_card
-from ..report_v2 import _resolve_pysuricata_version  # reuse version resolver
+from ..report import _resolve_pysuricata_version  # reuse version resolver
 
-
-def _human_bytes(n: int) -> str:
-    units = ["B", "KB", "MB", "GB", "TB", "PB"]
-    size = float(max(0, n))
-    for u in units:
-        if size < 1024.0 or u == units[-1]:
-            return f"{size:,.1f} {u}"
-        size /= 1024.0
 
 
 def render_html_snapshot(

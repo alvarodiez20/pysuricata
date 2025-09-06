@@ -6,12 +6,10 @@ Preferred high-level API:
 
 # High-level API wrappers
 from .api import (
-    Report,
-    ReportConfig,
     ComputeOptions,
     RenderOptions,
+    Report,
+    ReportConfig,
     profile,
     summarize,
 )
-
-# Intentionally no public generate_report; use profile()/summarize() only.

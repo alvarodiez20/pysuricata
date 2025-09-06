@@ -50,6 +50,7 @@ class CategoricalAccumulator:
             if isinstance(v, float):
                 try:
                     import math
+
                     if math.isnan(v):
                         self.missing += 1
                         continue
@@ -85,10 +86,18 @@ class CategoricalAccumulator:
             approx=not self._uniques.is_exact,
             mem_bytes=int(self._bytes_seen),
             avg_len=(self._len_sum / self._len_n) if self._len_n else None,
-            len_p90=(int(np.quantile(self._len_sample.values(), 0.90)) if self._len_sample.values() else None),
+            len_p90=(
+                int(np.quantile(self._len_sample.values(), 0.90))
+                if self._len_sample.values()
+                else None
+            ),
             empty_zero=int(self._empty_zero),
-            case_variants_est=max(0, int(self._uniques.estimate() - self._uniques_lower.estimate())),
-            trim_variants_est=max(0, int(self._uniques.estimate() - self._uniques_strip.estimate())),
+            case_variants_est=max(
+                0, int(self._uniques.estimate() - self._uniques_lower.estimate())
+            ),
+            trim_variants_est=max(
+                0, int(self._uniques.estimate() - self._uniques_strip.estimate())
+            ),
             dtype_str=self._dtype_str,
         )
 
@@ -101,4 +110,3 @@ class CategoricalAccumulator:
             self._dtype_str = str(dtype_str)
         except Exception:
             self._dtype_str = "categorical"
-

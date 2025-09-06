@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, List, Optional, Sequence
 from datetime import datetime
+from typing import Any, List, Optional, Sequence
 
 from .sketches import KMV, ReservoirSampler
 
@@ -15,8 +15,8 @@ class DatetimeSummary:
     min_ts: Optional[int]
     max_ts: Optional[int]
     by_hour: List[int]  # 24 counts
-    by_dow: List[int]   # 7 counts, Monday=0
-    by_month: List[int] # 12 counts, Jan=1 index => store 12-length
+    by_dow: List[int]  # 7 counts, Monday=0
+    by_month: List[int]  # 12 counts, Jan=1 index => store 12-length
     # v2 additions
     dtype_str: str = "datetime"
     mono_inc: bool = False
@@ -110,4 +110,3 @@ class DatetimeAccumulator:
             self._mem_bytes += int(n)
         except Exception:
             pass
-

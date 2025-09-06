@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Any, List, Optional, Sequence
-import math
 
 
 @dataclass
@@ -39,8 +39,18 @@ class BooleanAccumulator:
 
     def finalize(self) -> BooleanSummary:
         # Approximate memory: ~1 byte per boolean cell (very rough; marked as ≈ in UI)
-        mem_bytes = int(self._mem_bytes if self._mem_bytes > 0 else (self.count + self.missing))
-        return BooleanSummary(self.name, self.count, self.missing, self.true_n, self.false_n, mem_bytes, self._dtype_str)
+        mem_bytes = int(
+            self._mem_bytes if self._mem_bytes > 0 else (self.count + self.missing)
+        )
+        return BooleanSummary(
+            self.name,
+            self.count,
+            self.missing,
+            self.true_n,
+            self.false_n,
+            mem_bytes,
+            self._dtype_str,
+        )
 
     def set_dtype(self, dtype_str: str) -> None:
         try:
@@ -53,4 +63,3 @@ class BooleanAccumulator:
             self._mem_bytes += int(n)
         except Exception:
             pass
-
