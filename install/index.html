@@ -461,7 +461,18 @@
 
 
 <h1 id="installation">Installation</h1>
+<p>Install from PyPI:</p>
 <div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>pysuricata
+</code></pre></div>
+<p>Optional: install <code>polars</code> to use polars DataFrames directly:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>polars
+</code></pre></div>
+<p>Verify your installation:</p>
+<div class="highlight"><pre><span></span><code><span class="o">&gt;&gt;&gt;</span> <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]})</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="o">.</span><span class="n">html</span><span class="p">[:</span><span class="mi">15</span><span class="p">]</span>
+<span class="s1">&#39;&lt;!DOCTYPE html&gt;&#39;</span>
 </code></pre></div>
 
 

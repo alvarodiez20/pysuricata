@@ -504,6 +504,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Rendering pipeline">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#shared-helpers-deduped" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shared helpers (deduped)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -632,8 +647,17 @@
 <li>Optional dataset sample</li>
 </ol>
 <p>The template is a single file with inline CSS/JS/images to produce a portable HTML.</p>
+<h3 id="shared-helpers-deduped">Shared helpers (deduped)</h3>
+<p>Rendering utilities live in two small modules for reuse and testability:</p>
+<ul>
+<li><code>pysuricata/render/svg_utils.py</code></li>
+<li><code>safe_col_id</code>, <code>nice_ticks</code>, <code>fmt_tick</code>, <code>svg_empty</code></li>
+<li><code>pysuricata/render/format_utils.py</code></li>
+<li><code>human_bytes</code>, <code>fmt_num</code>, <code>fmt_compact</code></li>
+</ul>
+<p>These power both the main report and the individual variable cards with consistent tick/label formatting.</p>
 <h2 id="configuration">Configuration</h2>
-<p><code>ReportConfig</code> controls chunk size, sample sizes, distinct/top‑k sketch sizes, and correlation settings, plus logging and checkpointing.</p>
+<p><code>ReportConfig</code> controls chunk size, sample sizes, distinct/top‑k sketch sizes, and correlation settings, plus logging and checkpointing. It also exposes <code>random_seed</code> to make sampling deterministic for reproducible visuals.</p>
 <p>Key fields:</p>
 <ul>
 <li><code>chunk_size</code>: rows per chunk (default 200k)</li>

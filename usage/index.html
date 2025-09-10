@@ -394,6 +394,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Basic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#also-save-stats-as-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      Also save stats as JSON
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -403,17 +418,50 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Streaming large in-memory data">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-polars" class="md-nav__link">
+    <span class="md-ellipsis">
+      Streaming polars
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Streaming polars">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#streaming-with-polars-iterables-and-lazyframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      Streaming with polars iterables and LazyFrame
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deterministic-visuals-reproducible-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Deterministic visuals (reproducible sampling)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#programmatic-summary" class="md-nav__link">
     <span class="md-ellipsis">
       Programmatic summary
     </span>
   </a>
   
-</li>
+    <nav class="md-nav" aria-label="Programmatic summary">
+      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#processed-bytes-and-timing" class="md-nav__link">
@@ -426,6 +474,15 @@
         
       </ul>
     </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#end-to-end-minimal-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      End-to-end minimal example
+    </span>
+  </a>
   
 </li>
       
@@ -543,6 +600,12 @@
 <span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 <span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
 </code></pre></div>
+<h3 id="also-save-stats-as-json">Also save stats as JSON</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_json</span><span class="p">(</span><span class="s2">&quot;report.json&quot;</span><span class="p">)</span>
+</code></pre></div>
 <h2 id="streaming-large-in-memory-data">Streaming large in-memory data</h2>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
@@ -557,7 +620,56 @@
 <span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">((</span><span class="n">ch</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">chunk_iter</span><span class="p">()),</span> <span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
 <span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="programmatic-summary">Programmatic summary</h3>
+<h2 id="streaming-polars">Streaming polars</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;/data/big.parquet&quot;</span><span class="p">)</span>
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>  <span class="c1"># eager or LazyFrame supported</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="streaming-with-polars-iterables-and-lazyframe">Streaming with polars iterables and LazyFrame</h3>
+<p>Keep Polars end‑to‑end. The engine consumes either Pandas or Polars chunks.</p>
+<p>Iterable of Polars DataFrames:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">100_000</span><span class="p">)),</span>
+    <span class="s2">&quot;b&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">5</span> <span class="k">else</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100_000</span><span class="p">)],</span>
+<span class="p">})</span>
+
+<span class="n">step</span> <span class="o">=</span> <span class="mi">20_000</span>
+<span class="n">chunks</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">slice</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">height</span> <span class="o">-</span> <span class="n">i</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">df</span><span class="o">.</span><span class="n">height</span><span class="p">,</span> <span class="n">step</span><span class="p">))</span>
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">chunks</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">ReportConfig</span><span class="p">())</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;polars_iterable_report.html&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Polars LazyFrame (windowed collect under the hood):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span><span class="p">,</span> <span class="n">ComputeOptions</span>
+
+<span class="n">lf</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">pl</span><span class="o">.</span><span class="n">LazyFrame</span><span class="p">({</span>
+        <span class="s2">&quot;x&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">200_000</span><span class="p">)),</span>
+        <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">7</span> <span class="k">else</span> <span class="kc">None</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200_000</span><span class="p">)],</span>
+        <span class="s2">&quot;z&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span> <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span> <span class="k">else</span> <span class="s2">&quot;b&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">200_000</span><span class="p">)],</span>
+    <span class="p">})</span>
+    <span class="o">.</span><span class="n">with_columns</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">col</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">(</span><span class="n">compute</span><span class="o">=</span><span class="n">ComputeOptions</span><span class="p">(</span><span class="n">chunk_size</span><span class="o">=</span><span class="mi">50_000</span><span class="p">))</span>
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">lf</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;polars_lazy_report.html&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="deterministic-visuals-reproducible-sampling">Deterministic visuals (reproducible sampling)</h2>
+<p>Use <code>random_seed</code> to make histogram sampling deterministic across runs.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">random_seed</span> <span class="o">=</span> <span class="mi">42</span>
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="programmatic-summary">Programmatic summary</h2>
 <p>Ask for a compact JSON-like dictionary of stats:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
 <span class="n">summary</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
@@ -568,6 +680,24 @@
 <p>The report displays:
 - Processed bytes (≈): total bytes handled across chunks (not peak RSS)
 - Precise generation time in seconds (e.g., 0.02s)</p>
+<h2 id="end-to-end-minimal-example">End-to-end minimal example</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">,</span> <span class="mf">5.5</span><span class="p">],</span>
+        <span class="s2">&quot;country&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;US&quot;</span><span class="p">,</span> <span class="s2">&quot;US&quot;</span><span class="p">,</span> <span class="s2">&quot;DE&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;FR&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;ts&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">([</span><span class="s2">&quot;2021-01-01&quot;</span><span class="p">,</span> <span class="s2">&quot;2021-01-02&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;2021-01-04&quot;</span><span class="p">,</span> <span class="s2">&quot;2021-01-05&quot;</span><span class="p">]),</span>
+        <span class="s2">&quot;flag&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">random_seed</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
+<span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
+</code></pre></div>
 
 
 

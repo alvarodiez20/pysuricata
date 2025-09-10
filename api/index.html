@@ -488,6 +488,15 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#determinism" class="md-nav__link">
+    <span class="md-ellipsis">
+      Determinism
+    </span>
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -582,8 +591,8 @@
 <h2 id="inputs">Inputs</h2>
 <ul>
 <li>In-memory <code>pandas.DataFrame</code></li>
-<li>Iterable/generator yielding pandas or polars <code>DataFrame</code> chunks</li>
-<li><code>polars.DataFrame</code> or <code>LazyFrame</code> (processed natively; no pandas conversion)</li>
+<li><code>polars.DataFrame</code> or <code>LazyFrame</code></li>
+<li>Iterable/generator yielding pandas DataFrame chunks (you control chunking)</li>
 </ul>
 <h2 id="report-object">Report object</h2>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
@@ -613,16 +622,13 @@
 <p>The top-level <code>ReportConfig</code> wraps compute and render options:</p>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReportConfig</span>
 
-<span class="n">cfg</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">(</span>
-    <span class="n">compute</span><span class="o">=</span><span class="n">ReportConfig</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
-        <span class="n">chunk_size</span><span class="o">=</span><span class="mi">250_000</span><span class="p">,</span>
-        <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">],</span>
-        <span class="n">numeric_sample_size</span><span class="o">=</span><span class="mi">50_000</span><span class="p">,</span>
-        <span class="n">max_uniques</span><span class="o">=</span><span class="mi">4096</span><span class="p">,</span>
-        <span class="n">top_k</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
-        <span class="n">engine</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>
-    <span class="p">)</span>
-<span class="p">)</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">250_000</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="s2">&quot;c&quot;</span><span class="p">]</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">numeric_sample_size</span> <span class="o">=</span> <span class="mi">50_000</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">max_uniques</span> <span class="o">=</span> <span class="mi">4096</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">top_k</span> <span class="o">=</span> <span class="mi">100</span>
+<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">random_seed</span> <span class="o">=</span> <span class="mi">42</span>  <span class="c1"># deterministic sampling</span>
 
 <span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
 </code></pre></div>
@@ -650,8 +656,7 @@
 <li>
 <p>Large dataset (streaming in-memory):
   <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReportConfig</span><span class="p">,</span> <span class="n">profile</span>
-<span class="n">cfg</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
-<span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">250_000</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">();</span> <span class="n">cfg</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">250_000</span>
 <span class="n">rep</span> <span class="o">=</span> <span class="n">profile</span><span class="p">((</span><span class="n">ch</span> <span class="k">for</span> <span class="n">ch</span> <span class="ow">in</span> <span class="n">chunk_iter</span><span class="p">()),</span> <span class="n">config</span><span class="o">=</span><span class="n">cfg</span><span class="p">)</span>
 <span class="n">rep</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
 </code></pre></div></p>
@@ -675,9 +680,11 @@
 </ul>
 <h2 id="notes-and-limits">Notes and limits</h2>
 <ul>
-<li>Current engine consumes pandas or polars DataFrames (or iterables of them). Polars eager/LazyFrames are processed natively without conversion.</li>
-<li><code>render</code> options are placeholders; the v2 template already renders a self-contained light theme.</li>
+<li>Current engine consumes pandas or polars DataFrames (or iterables of pandas frames). Polars eager/LazyFrames are processed natively.</li>
+<li>Render options are minimal; the HTML template is self-contained (light theme).</li>
 </ul>
+<h2 id="determinism">Determinism</h2>
+<p>Set <code>cfg.compute.random_seed</code> to make reservoir sampling and other RNG use deterministic. This stabilizes histogram shapes in tests and CI.</p>
 
 
 
