@@ -256,13 +256,10 @@ class ExtremeTracker:
             for i in min_indices:
                 self._min_pairs.append((finite_indices[i], float(finite_values[i])))
 
-            # Find maximum values, excluding those already in min_pairs
+            # Find maximum values
             max_indices = np.argpartition(-finite_values, k - 1)[:k]
-            existing_min_indices = {finite_indices[i] for i in min_indices}
-
             for i in max_indices:
-                if finite_indices[i] not in existing_min_indices:
-                    self._max_pairs.append((finite_indices[i], float(finite_values[i])))
+                self._max_pairs.append((finite_indices[i], float(finite_values[i])))
 
         # Remove duplicates within each list and keep only the best extremes
         # Remove duplicates from min_pairs (keep first occurrence)
@@ -314,11 +311,20 @@ class ExtremeTracker:
         self._min_pairs = list(dict.fromkeys(self._min_pairs))  # Preserves order
         self._max_pairs = list(dict.fromkeys(self._max_pairs))  # Preserves order
 
-        # Remove items from max_pairs that are already in min_pairs
-        min_indices = {idx for idx, _ in self._min_pairs}
-        self._max_pairs = [
-            (idx, val) for idx, val in self._max_pairs if idx not in min_indices
+        # Remove items from max_pairs that are already in min_pairs (same index AND value)
+        # But only if we have enough unique max values
+        min_pairs_set = set(self._min_pairs)
+        filtered_max_pairs = [
+            (idx, val) for idx, val in self._max_pairs if (idx, val) not in min_pairs_set
         ]
+        
+        # If we don't have enough max pairs after filtering, keep some duplicates
+        if len(filtered_max_pairs) < self.max_extremes and len(self._max_pairs) > len(filtered_max_pairs):
+            # Keep the highest values from max_pairs, even if they're in min_pairs
+            self._max_pairs.sort(key=lambda x: -x[1])
+            self._max_pairs = self._max_pairs[:self.max_extremes]
+        else:
+            self._max_pairs = filtered_max_pairs
 
         # Re-sort and trim
         self._min_pairs.sort(key=lambda x: x[1])
