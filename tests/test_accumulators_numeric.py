@@ -1,4 +1,5 @@
 import math
+
 import numpy as np
 
 from pysuricata.accumulators.numeric import NumericAccumulator
@@ -20,4 +21,3 @@ def test_numeric_accumulator_basic_stats():
     # zeros/negatives tracked
     assert s.zeros >= 1
     assert s.negatives >= 1
-

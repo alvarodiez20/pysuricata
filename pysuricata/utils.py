@@ -1,7 +1,5 @@
-import os
 import base64
-
-
+import os
 
 
 def load_template(template_path: str) -> str:
@@ -21,10 +19,11 @@ def load_template(template_path: str) -> str:
 def load_css(css_path: str) -> str:
     """
     Load a CSS file and return its content wrapped in a <style> tag.
-
+    Optimized for performance - no @import resolution needed.
+    
     Args:
         css_path (str): The file path to the CSS file.
-
+        
     Returns:
         str: A string with the CSS content wrapped in a <style> tag, or an empty string if the file is not found.
     """

@@ -1,2546 +1,499 @@
-"""Unified streaming EDA report generator, designed to:
+"""Report orchestration for streaming EDA.
 
-- Work on datasets that do not fit into memory by consuming chunks.
-- Be backend-agnostic at the orchestration layer (pandas today; easy to add polars/arrow).
-- Keep computations testable via small, pure accumulator classes.
-- Produce a lightweight self-contained HTML report (no heavy deps).
+This module coordinates the end-to-end generation of a self-contained HTML EDA
+report from in-memory data. It supports both pandas and polars through a small
+engine adapter layer, enabling:
 
-Usage (programmatic):
+- Streaming computation over single DataFrames or iterables of chunks.
+- Optional in-memory chunking for large DataFrames to control peak memory.
+- Lightweight checkpointing (periodic pickle/HTML) for long-running jobs.
+- Optional correlation chips for numeric columns (thresholded, top-k).
 
-    from pysuricata import profile
-    # From a pandas DataFrame already in memory
-    rep = profile(df)
-    # Or from an iterable/generator yielding pandas DataFrame chunks
-    rep = profile((ch for ch in my_chunk_iter))
+The core computation is handled by compact accumulator objects; rendering is
+performed by the HTML renderer. This file focuses on orchestration: selecting
+the engine adapter, wiring chunks, checkpointing, and delegating to metrics and
+renderers.
 
-This module intentionally avoids heavyweight dependencies. It consumes pandas
-DataFrames and iterables of DataFrames and computes streaming stats over them.
-Later, native polars/arrow iterators can be plugged in with minimal code (see TODOs).
+Example:
+  >>> import pandas as pd
+  >>> from pysuricata.report import build_report
+  >>> df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
+  >>> html = build_report(df)
 """
 
-# NOTE: module renamed from report_v2.py to report.py
 from __future__ import annotations
 
-import glob
-import gzip
-import hashlib
-import heapq
-import html as _html
 import logging
-import math
-import os
-import pickle
-import random
 import random as _py_random
-import re
-import statistics
-
-# === Template & assets helpers (reuse from classic report) ===
 import time
-import warnings
-from collections import Counter, defaultdict
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import (
-    Any,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
-    Mapping,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from typing import Any, Optional, Tuple
 
 import numpy as np
 
-from .render.format_utils import fmt_compact as _fmt_compact
-from .render.format_utils import fmt_num as _fmt_num
+# Checkpointing imports
+from .checkpoint import maybe_make_manager as _maybe_ckpt
+
+# Processing imports
+from .compute.analysis import RowKMV
+from .compute.orchestration.engine import (
+    consume_stream,
+    get_adapter_tag,
+    maybe_corr_estimator,
+)
+from .compute.orchestration.services import (
+    ChunkingService,
+    EngineService,
+    MetricsService,
+    ProcessingService,
+    ResourceManager,
+)
+
+# Core imports
+from .config import EngineConfig
+from .logger import SectionTimer as _SectionTimer
+
+# Rendering imports
 from .render.format_utils import human_bytes as _human_bytes
-from .render.svg_utils import fmt_tick as _fmt_tick
-from .render.svg_utils import nice_ticks as _nice_ticks
-from .render.svg_utils import safe_col_id as _safe_col_id
-from .render.svg_utils import svg_empty as _svg_empty
-from .utils import (
-    embed_favicon,
-    embed_image,
-    load_css,
-    load_script,
-    load_template,
+from .render.html import (
+    render_empty_html as _render_empty_html,
+)
+from .render.html import (
+    render_html_snapshot as _render_html_snapshot,
 )
 
 # Module-level RNG seed used by public SVG helpers
 _REPORT_RANDOM_SEED: int = 0
 
-# Resolve pysuricata version (matches classic report)
-try:
-    try:
-        from importlib.metadata import PackageNotFoundError as _PkgNotFound
-        from importlib.metadata import version as _pkg_version  # Python 3.8+
-    except Exception:  # pragma: no cover
-        from importlib_metadata import (
-            PackageNotFoundError as _PkgNotFound,  # type: ignore
-        )
-        from importlib_metadata import version as _pkg_version  # type: ignore
-except Exception:  # last resort
-    _pkg_version = None
 
-    class _PkgNotFound(Exception):
-        pass
+class ReportOrchestrator:
+    """Orchestrates the end-to-end EDA report generation process.
 
-
-def _resolve_pysuricata_version() -> str:
-    if _pkg_version is not None:
-        try:
-            return _pkg_version("pysuricata")
-        except _PkgNotFound:
-            pass
-        except Exception:
-            pass
-    try:
-        from . import __version__  # type: ignore
-
-        if isinstance(__version__, str) and __version__:
-            return __version__
-    except Exception:
-        pass
-    return os.getenv("PYSURICATA_VERSION", "dev")
-
-
-def _coerce_to_dataframe(data, columns: Optional[List[str]] = None) -> pd.DataFrame:
-    """Coerce supported inputs to a pandas DataFrame.
-    - If `data` is a DataFrame, return as-is.
-    - If `data` is a 2D NumPy array, use provided `columns` or auto-generate names.
-    - Otherwise raise a TypeError.
-    """
-    if isinstance(data, pd.DataFrame):
-        return data
-    if isinstance(data, np.ndarray):
-        if data.ndim != 2:
-            raise TypeError("NumPy input must be 2D (rows, cols)")
-        n_rows, n_cols = data.shape
-        if columns is not None:
-            if len(columns) != n_cols:
-                raise ValueError("Length of `columns` must match array width")
-            col_names = list(columns)
-        else:
-            col_names = [f"col_{i}" for i in range(n_cols)]
-        return pd.DataFrame(data, columns=col_names)
-    raise TypeError("`data` must be a pandas DataFrame or a 2D NumPy array")
-
-
-# --- Section Timer for logging ---
-class _SectionTimer:
-    """Context manager to log start/end (and duration) of a named section."""
-
-    def __init__(self, logger: logging.Logger, label: str):
-        self.logger = logger
-        self.label = label
-        self.t0 = 0.0
-
-    def __enter__(self):
-        self.t0 = time.time()
-        self.logger.info("▶ %s...", self.label)
-        return self
-
-    def __exit__(self, exc_type, exc, tb):
-        dt = time.time() - self.t0
-        if exc_type is not None:
-            # Log stack trace at ERROR level
-            self.logger.exception("✖ %s failed after %.2fs", self.label, dt)
-        else:
-            self.logger.info("✓ %s done (%.2fs)", self.label, dt)
-
-
-try:  # optional; used for chunking and type coercion
-    import pandas as pd  # type: ignore
-except Exception:  # pragma: no cover - optional
-    pd = None  # type: ignore
-try:  # optional; enable native polars path when available
-    import polars as pl  # type: ignore
-except Exception:  # pragma: no cover - optional
-    pl = None  # type: ignore
-
-# No parquet/path-based IO here; ingestion is in-memory only.
-
-# =============================
-# Helpers: hashing & sampling
-# =============================
-
-# Moved to dedicated module for reuse and testability
-from .accumulators.boolean import BooleanAccumulator, BooleanSummary
-from .accumulators.categorical import CategoricalAccumulator, CategoricalSummary
-from .accumulators.datetime import DatetimeAccumulator, DatetimeSummary
-
-# =============================
-# Accumulators per dtype
-# =============================
-# New canonical implementations live in pysuricata.accumulators.numeric
-from .accumulators.numeric import NumericAccumulator, NumericSummary
-from .accumulators.sketches import KMV, MisraGries, ReservoirSampler
-from .checkpoint import CheckpointManager as _CheckpointManager
-from .config import ReportConfig
-from .render.cards import (
-    render_bool_card as _render_bool_card_new,
-)
-from .render.cards import (
-    render_cat_card as _render_cat_card_new,
-)
-from .render.cards import (
-    render_dt_card as _render_dt_card_new,
-)
-from .render.cards import (
-    render_numeric_card as _render_numeric_card_new,
-)
-
-# =============================
-# Chunk iterators (sources)
-# =============================
-FrameLike = Any
-
-
-# =============================
-# Normalization per chunk (backend mini-adapter)
-# =============================
-
-from .compute.consume import (
-    _to_bool_array_pandas,
-    _to_categorical_iter_pandas,
-    _to_datetime_ns_array_pandas,
-    _to_numeric_array_pandas,
-)
-from .compute.consume import (
-    consume_chunk_pandas as _consume_chunk_pandas,
-)
-from .compute.consume_polars import (
-    consume_chunk_polars as _consume_chunk_polars,
-)
-from .compute.infer import (
-    ColumnKinds,
-)
-from .compute.infer import (
-    infer_kinds_pandas as _infer_kinds_pandas,
-)
-from .compute.infer import (
-    infer_kinds_polars as _infer_kinds_polars,
-)
-
-# spark hist moved to pysuricata.render.cards
-
-# Histogram SVG helpers moved to pysuricata.render.cards
-
-
-# === Public builder helpers (standalone) ===
-def build_hist_svg_with_axes(*args: Any, **kwargs: Any) -> str:
-    """Moved to pysuricata.render.cards.build_hist_svg_with_axes"""
-    from .render.cards import build_hist_svg_with_axes as _impl
-
-    return _impl(*args, **kwargs)
-
-
-def build_cat_bar_svg(*args: Any, **kwargs: Any) -> str:
-    """Moved to pysuricata.render.cards.build_cat_bar_svg"""
-    from .render.cards import build_cat_bar_svg as _impl
-
-    return _impl(*args, **kwargs)
-
-
-def build_dt_line_svg(
-    ts: "pd.Series",  # type: ignore[name-defined]
-    bins: int = 60,
-    width: int = 420,
-    height: int = 160,
-    margin_left: int = 45,
-    margin_right: int = 8,
-    margin_top: int = 8,
-    margin_bottom: int = 32,
-) -> str:
-    """Public wrapper for the datetime timeline SVG."""
-    try:
-        ts2 = ts.dropna()
-        if ts2.empty:
-            return _svg_empty("dt-svg", width, height)
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", UserWarning)
-            ds = pd.to_datetime(ts2, errors="coerce", utc=True)  # type: ignore[name-defined]
-        vals = ds.dropna().astype("int64").to_numpy()
-        if vals.size == 0:
-            return _svg_empty("dt-svg", width, height)
-        tmin = int(np.min(vals))
-        tmax = int(np.max(vals))
-        if tmin == tmax:
-            tmax = tmin + 1
-        bins = int(max(10, min(bins, max(10, min(vals.size, 180)))))
-        counts, edges = np.histogram(vals, bins=bins, range=(tmin, tmax))
-        y_max = int(max(1, counts.max()))
-        iw = width - margin_left - margin_right
-        ih = height - margin_top - margin_bottom
-
-        def sx(x):
-            return margin_left + (x - tmin) / (tmax - tmin) * iw
-
-        def sy(y):
-            return margin_top + (1 - y / y_max) * ih
-
-        centers = (edges[:-1] + edges[1:]) / 2.0
-        pts = " ".join(
-            f"{sx(x):.2f},{sy(float(c)):.2f}" for x, c in zip(centers, counts)
-        )
-        y_ticks, _ = _nice_ticks(0, y_max, 5)
-        n_xt = 5
-        xt_vals = np.linspace(tmin, tmax, n_xt)
-        span_ns = tmax - tmin
-
-        def _fmt_xt(v):
-            try:
-                tsv = pd.to_datetime(int(v))  # type: ignore[name-defined]
-                if span_ns <= 3 * 24 * 3600 * 1e9:
-                    return tsv.strftime("%Y-%m-%d %H:%M")
-                return tsv.date().isoformat()
-            except Exception:
-                return str(v)
-
-        parts = [
-            f'<svg class="dt-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Timeline">',
-            '<g class="plot-area">',
-        ]
-        for yt in y_ticks:
-            parts.append(
-                f'<line class="grid" x1="{margin_left}" y1="{sy(yt):.2f}" x2="{margin_left + iw}" y2="{sy(yt):.2f}"></line>'
-            )
-        parts.append(f'<polyline class="line" points="{pts}"></polyline>')
-        parts.append('<g class="hotspots">')
-        for i, c in enumerate(counts):
-            if not np.isfinite(c):
-                continue
-            x0p = sx(edges[i])
-            x1p = sx(edges[i + 1])
-            wp = max(1.0, x1p - x0p)
-            cp = (edges[i] + edges[i + 1]) / 2.0
-            label = _fmt_xt(cp)
-            title = f"{int(c)} rows&#10;{label}"
-            parts.append(
-                f'<rect class="hot" x="{x0p:.2f}" y="{margin_top}" width="{wp:.2f}" height="{ih:.2f}" fill="transparent" pointer-events="all">'
-                f"<title>{title}</title>"
-                f"</rect>"
-            )
-        parts.append("</g>")
-        parts.append("</g>")
-        x_axis_y = margin_top + ih
-        parts.append(
-            f'<line class="axis" x1="{margin_left}" y1="{x_axis_y}" x2="{margin_left + iw}" y2="{x_axis_y}"></line>'
-        )
-        parts.append(
-            f'<line class="axis" x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{x_axis_y}"></line>'
-        )
-        for yt in y_ticks:
-            py = sy(yt)
-            parts.append(
-                f'<line class="tick" x1="{margin_left - 4}" y1="{py:.2f}" x2="{margin_left}" y2="{py:.2f}"></line>'
-            )
-            lab = int(round(yt))
-            parts.append(
-                f'<text class="tick-label" x="{margin_left - 6}" y="{py + 3:.2f}" text-anchor="end">{lab}</text>'
-            )
-        for xv in xt_vals:
-            px = sx(xv)
-            parts.append(
-                f'<line class="tick" x1="{px:.2f}" y1="{x_axis_y}" x2="{px:.2f}" y2="{x_axis_y + 4}"></line>'
-            )
-            parts.append(
-                f'<text class="tick-label" x="{px:.2f}" y="{x_axis_y + 14}" text-anchor="middle">{_fmt_xt(xv)}</text>'
-            )
-        parts.append(
-            f'<text class="axis-title x" x="{margin_left + iw / 2:.2f}" y="{x_axis_y + 28}" text-anchor="middle">Time</text>'
-        )
-        parts.append(
-            f'<text class="axis-title y" transform="translate({margin_left - 36},{margin_top + ih / 2:.2f}) rotate(-90)" text-anchor="middle">Count</text>'
-        )
-        parts.append("</svg>")
-        return "".join(parts)
-    except Exception:
-        return _svg_empty("dt-svg", width, height)
-
-
-# Category bar SVG helper moved to pysuricata.render.cards
-
-
-def _render_numeric_card(s: NumericSummary) -> str:
-    # Delegated to render.cards; legacy body below is unreachable
-    from .render.cards import render_numeric_card as _impl
-
-    return _impl(s)
-    col_id = _safe_col_id(s.name)
-    safe_name = _html.escape(str(s.name))
-    # severity classes
-    miss_pct = (s.missing / max(1, s.count + s.missing)) * 100.0
-    miss_cls = "crit" if miss_pct > 20 else ("warn" if miss_pct > 0 else "")
-    zeros_pct = (s.zeros / max(1, s.count)) * 100.0 if s.count else 0.0
-    neg_pct = (s.negatives / max(1, s.count)) * 100.0 if s.count else 0.0
-    out_pct = (s.outliers_iqr / max(1, s.count)) * 100.0 if s.count else 0.0
-    zeros_cls = "warn" if zeros_pct > 30 else ""
-    neg_cls = "warn" if 0 < neg_pct <= 10 else ("crit" if neg_pct > 10 else "")
-    out_cls = "crit" if out_pct > 1 else ("warn" if out_pct > 0.3 else "")
-    inf_cls = "crit" if s.inf else ""
-    approx_badge = '<span class="badge">approx</span>' if s.approx else ""
-
-    # Discrete heuristic (approximate)
-    discrete = False
-    try:
-        if s.int_like:
-            if (s.unique_est <= max(1, min(50, int(0.05 * max(1, s.count))))) or (
-                isinstance(s.unique_ratio_approx, float)
-                and not math.isnan(s.unique_ratio_approx)
-                and s.unique_ratio_approx <= 0.05
-            ):
-                discrete = True
-    except Exception:
-        discrete = False
-
-    # Quality flags (classic‑style)
-    flag_items = []
-    if miss_pct > 0:
-        flag_items.append(
-            f'<li class="flag {"bad" if miss_pct > 20 else "warn"}">Missing</li>'
-        )
-    if s.inf:
-        flag_items.append('<li class="flag bad">Has ∞</li>')
-    if neg_pct > 0:
-        cls = "warn" if neg_pct > 10 else ""
-        flag_items.append(
-            f'<li class="flag {cls}">Has negatives</li>'
-            if cls
-            else '<li class="flag">Has negatives</li>'
-        )
-    if zeros_pct >= 50.0:
-        flag_items.append('<li class="flag bad">Zero‑inflated</li>')
-    elif zeros_pct >= 30.0:
-        flag_items.append('<li class="flag warn">Zero‑inflated</li>')
-    if isinstance(s.min, (int, float)) and math.isfinite(s.min) and s.min > 0:
-        flag_items.append('<li class="flag good">Positive‑only</li>')
-    if isinstance(s.skew, float) and math.isfinite(s.skew):
-        if s.skew >= 1:
-            flag_items.append('<li class="flag warn">Skewed Right</li>')
-        elif s.skew <= -1:
-            flag_items.append('<li class="flag warn">Skewed Left</li>')
-    if (
-        isinstance(s.kurtosis, float)
-        and math.isfinite(s.kurtosis)
-        and abs(s.kurtosis) >= 3
-    ):
-        flag_items.append('<li class="flag bad">Heavy‑tailed</li>')
-    if isinstance(s.jb_chi2, float) and math.isfinite(s.jb_chi2) and s.jb_chi2 <= 5.99:
-        flag_items.append('<li class="flag good">≈ Normal (JB)</li>')
-    if discrete:
-        flag_items.append('<li class="flag warn">Discrete</li>')
-    # Extras: bimodality, heaping, log-scale hint
-    if (
-        isinstance(s.heap_pct, float)
-        and math.isfinite(s.heap_pct)
-        and s.heap_pct >= 30.0
-    ):
-        flag_items.append('<li class="flag">Heaping</li>')
-    if getattr(s, "bimodal", False):
-        flag_items.append('<li class="flag warn">Possibly bimodal</li>')
-    if (isinstance(s.min, (int, float)) and math.isfinite(s.min) and s.min > 0) and (
-        isinstance(s.skew, float) and math.isfinite(s.skew) and s.skew >= 1
-    ):
-        flag_items.append('<li class="flag good">Log‑scale?</li>')
-    # Alignment extras: constant/quasi‑constant/outlier flags/monotonic
-    try:
-        uniq_est = max(0, int(s.unique_est))
-        total_nonnull = max(1, int(s.count))
-        unique_ratio = (uniq_est / total_nonnull) if total_nonnull else 0.0
-        if uniq_est == 1:
-            flag_items.append('<li class="flag bad">Constant</li>')
-        elif unique_ratio <= 0.02 or uniq_est <= 2:
-            flag_items.append('<li class="flag warn">Quasi‑constant</li>')
-        if out_pct > 1.0:
-            flag_items.append('<li class="flag bad">Many outliers</li>')
-        elif out_pct > 0.3:
-            flag_items.append('<li class="flag warn">Some outliers</li>')
-        if total_nonnull > 1 and s.mono_inc:
-            flag_items.append('<li class="flag good">Monotonic ↑</li>')
-        elif total_nonnull > 1 and s.mono_dec:
-            flag_items.append('<li class="flag good">Monotonic ↓</li>')
-    except Exception:
-        pass
-    quality_flags_html = (
-        f"<ul class='quality-flags'>{''.join(flag_items)}</ul>" if flag_items else ""
-    )
-
-    mem_display = _human_bytes(int(getattr(s, "mem_bytes", 0)))
-    inf_pct = (s.inf / max(1, s.count)) * 100.0 if s.count else 0.0
-    left_tbl = f"""
-    <table class="kv"><tbody>
-      <tr><th>Count</th><td class="num">{s.count:,}</td></tr>
-      <tr><th>Unique</th><td class="num">{s.unique_est:,}{" (≈)" if s.approx else ""}</td></tr>
-      <tr><th>Missing</th><td class="num {miss_cls}">{s.missing:,} ({miss_pct:.1f}%)</td></tr>
-      <tr><th>Outliers</th><td class="num {out_cls}">{s.outliers_iqr:,} ({out_pct:.1f}%)</td></tr>
-      <tr><th>Zeros</th><td class="num {zeros_cls}">{s.zeros:,} ({zeros_pct:.1f}%)</td></tr>
-      <tr><th>Infinites</th><td class="num {inf_cls}">{s.inf:,} ({inf_pct:.1f}%)</td></tr>
-      <tr><th>Negatives</th><td class="num {neg_cls}">{s.negatives:,} ({neg_pct:.1f}%)</td></tr>
-    </tbody></table>
+    This class encapsulates the complex logic of building streaming EDA reports,
+    breaking it down into focused, testable methods.
     """
 
-    right_tbl = f"""
-    <table class="kv"><tbody>
-      <tr><th>Min</th><td class="num">{_fmt_num(s.min)}</td></tr>
-      <tr><th>Median</th><td class="num">{_fmt_num(s.median)}</td></tr>
-      <tr><th>Mean</th><td class="num">{_fmt_num(s.mean)}</td></tr>
-      <tr><th>Max</th><td class="num">{_fmt_num(s.max)}</td></tr>
-      <tr><th>Q1</th><td class="num">{_fmt_num(s.q1)}</td></tr>
-      <tr><th>Q3</th><td class="num">{_fmt_num(s.q3)}</td></tr>
-      <tr><th>Processed bytes</th><td class="num">{mem_display} (≈)</td></tr>
-    </tbody></table>
-    """
-
-    # Quantile grid (sample-based percentiles)
-    svals = getattr(s, "sample_vals", None) or []
-
-    def _q_from_sample(p: float) -> float:
-        if not svals:
-            return float("nan")
-        i = (len(svals) - 1) * p
-        lo = math.floor(i)
-        hi = math.ceil(i)
-        if lo == hi:
-            return float(svals[int(i)])
-        return float(svals[lo] * (hi - i) + svals[hi] * (i - lo))
-
-    p1 = _q_from_sample(0.01)
-    p5 = _q_from_sample(0.05)
-    p10 = _q_from_sample(0.10)
-    p90 = _q_from_sample(0.90)
-    p95 = _q_from_sample(0.95)
-    p99 = _q_from_sample(0.99)
-    range_val = (
-        (s.max - s.min)
-        if (isinstance(s.max, (int, float)) and isinstance(s.min, (int, float)))
-        else float("nan")
-    )
-
-    quant_stats_table = f"""
-    <table class=\"kv\"><tbody>
-      <tr><th>Min</th><td class=\"num\">{_fmt_num(s.min)}</td></tr>
-      <tr><th>P1</th><td class=\"num\">{_fmt_num(p1)}</td></tr>
-      <tr><th>P5</th><td class=\"num\">{_fmt_num(p5)}</td></tr>
-      <tr><th>P10</th><td class=\"num\">{_fmt_num(p10)}</td></tr>
-      <tr><th>Q1 (P25)</th><td class=\"num\">{_fmt_num(s.q1)}</td></tr>
-      <tr><th>Median (P50)</th><td class=\"num\">{_fmt_num(s.median)}</td></tr>
-      <tr><th>Q3 (P75)</th><td class=\"num\">{_fmt_num(s.q3)}</td></tr>
-      <tr><th>P90</th><td class=\"num\">{_fmt_num(p90)}</td></tr>
-      <tr><th>P95</th><td class=\"num\">{_fmt_num(p95)}</td></tr>
-      <tr><th>P99</th><td class=\"num\">{_fmt_num(p99)}</td></tr>
-      <tr><th>Max</th><td class=\"num\">{_fmt_num(s.max)}</td></tr>
-      <tr><th>Range</th><td class=\"num\">{_fmt_num(range_val)}</td></tr>
-      <tr><th>IQR</th><td class=\"num\">{_fmt_num(s.iqr)}</td></tr>
-    </tbody></table>
-    """
-
-    details_tbl = f"""
-    <table class=\"kv\"><tbody>
-      <tr><th>Mean</th><td class=\"num\">{_fmt_num(s.mean)}</td></tr>
-      <tr><th>Std</th><td class=\"num\">{_fmt_num(s.std)}</td></tr>
-      <tr><th>Variance</th><td class=\"num\">{_fmt_num(s.variance)}</td></tr>
-      <tr><th>SE (mean)</th><td class=\"num\">{_fmt_num(s.se)}</td></tr>
-      <tr><th>95% CI (mean)</th><td class=\"num\">{_fmt_num(s.ci_lo)} – {_fmt_num(s.ci_hi)}</td></tr>
-      <tr><th>Coeff. Variation</th><td class=\"num\">{_fmt_num(s.cv)}</td></tr>
-      <tr><th>Geo-Mean</th><td class=\"num\">{_fmt_num(s.gmean)}</td></tr>
-      <tr><th>MAD</th><td class=\"num\">{_fmt_num(s.mad)}</td></tr>
-      <tr><th>Skewness</th><td class=\"num\">{_fmt_num(s.skew)}</td></tr>
-      <tr><th>Kurtosis (excess)</th><td class=\"num\">{_fmt_num(s.kurtosis)}</td></tr>
-      <tr><th>Jarque–Bera χ²</th><td class=\"num\">{_fmt_num(s.jb_chi2)}</td></tr>
-      <tr><th>Heaping at round values</th><td class=\"num\">{_fmt_num(s.heap_pct)}%</td></tr>
-      <tr><th>Granularity (decimals)</th><td class=\"num\">{s.gran_decimals if s.gran_decimals is not None else "—"}</td></tr>
-      <tr><th>Step ≈</th><td class=\"num\">{_fmt_num(s.gran_step)}</td></tr>
-      <tr><th>Bimodality hint</th><td>{"Yes" if s.bimodal else "No"}</td></tr>
-    </tbody></table>
-    """
-
-    # Extremes with row indices (from tracked minima/maxima across chunks)
-    extremes_section = ""
-    try:
-        mins_pairs = getattr(s, "min_items", [])
-        maxs_pairs = getattr(s, "max_items", [])
-        if mins_pairs:
-            rows_min = "".join(
-                f'<tr><th><code>{_html.escape(str(i))}</code></th><td class="num">{_fmt_num(v)}</td></tr>'
-                for i, v in mins_pairs
-            )
-            min_table = f'<section class="subtable"><h4 class="small muted">Top 5 minima</h4><table class="kv"><tbody>{rows_min}</tbody></table></section>'
-        else:
-            min_table = ""
-        if maxs_pairs:
-            rows_max = "".join(
-                f'<tr><th><code>{_html.escape(str(i))}</code></th><td class="num">{_fmt_num(v)}</td></tr>'
-                for i, v in maxs_pairs
-            )
-            max_table = f'<section class="subtable"><h4 class="small muted">Top 5 maxima</h4><table class="kv"><tbody>{rows_max}</tbody></table></section>'
-        else:
-            max_table = ""
-        out_table = ""
-        try:
-            if math.isfinite(s.iqr):
-                lo_b = s.q1 - 1.5 * s.iqr
-                hi_b = s.q3 + 1.5 * s.iqr
-                cand = mins_pairs + maxs_pairs
-                outs = [
-                    (i, v, (lo_b - v) if v < lo_b else (v - hi_b))
-                    for (i, v) in cand
-                    if (v < lo_b or v > hi_b)
-                ]
-                outs.sort(key=lambda t: t[2], reverse=True)
-                outs = outs[:5]
-                if outs:
-                    rows_out = "".join(
-                        f'<tr><th><code>{_html.escape(str(i))}</code></th><td class="num">{_fmt_num(v)}</td></tr>'
-                        for i, v, _d in outs
-                    )
-                    out_table = f'<section class="subtable"><h4 class="small muted">Top outliers</h4><table class="kv"><tbody>{rows_out}</tbody></table></section>'
-        except Exception:
-            pass
-        extremes_section = min_table + max_table + out_table
-    except Exception:
-        extremes_section = ""
-
-    # Build classic histogram variants (from the reservoir sample)
-    sample_vals = getattr(s, "sample_vals", None) or []
-    has_sample = isinstance(sample_vals, (list, tuple)) and len(sample_vals) > 0
-
-    if has_sample:
-        scale_factor = float(s.sample_scale) if hasattr(s, "sample_scale") else 1.0
-        lin10 = _build_hist_svg_from_vals(
-            s.name,
-            sample_vals,
-            bins=10,
-            scale="lin",
-            scale_count=scale_factor,
-            x_min_override=s.min,
-            x_max_override=s.max,
-        )
-        lin25 = _build_hist_svg_from_vals(
-            s.name,
-            sample_vals,
-            bins=25,
-            scale="lin",
-            scale_count=scale_factor,
-            x_min_override=s.min,
-            x_max_override=s.max,
-        )
-        lin50 = _build_hist_svg_from_vals(
-            s.name,
-            sample_vals,
-            bins=50,
-            scale="lin",
-            scale_count=scale_factor,
-            x_min_override=s.min,
-            x_max_override=s.max,
-        )
-    else:
-        empty_svg = _svg_empty("hist-svg", 420, 160)
-        lin10 = lin25 = lin50 = empty_svg
-
-    positive_only = bool(
-        isinstance(s.min, (int, float)) and math.isfinite(s.min) and s.min > 0
-    )
-    if positive_only and has_sample:
-        scale_factor = float(s.sample_scale) if hasattr(s, "sample_scale") else 1.0
-        log10_svg = _build_hist_svg_from_vals(
-            s.name,
-            sample_vals,
-            bins=10,
-            scale="log",
-            scale_count=scale_factor,
-            x_min_override=(
-                math.log10(s.min)
-                if isinstance(s.min, (int, float)) and s.min > 0
-                else None
-            ),
-            x_max_override=(
-                math.log10(s.max)
-                if isinstance(s.max, (int, float)) and s.max > 0
-                else None
-            ),
-        )
-        log25_svg = _build_hist_svg_from_vals(
-            s.name,
-            sample_vals,
-            bins=25,
-            scale="log",
-            scale_count=scale_factor,
-            x_min_override=(
-                math.log10(s.min)
-                if isinstance(s.min, (int, float)) and s.min > 0
-                else None
-            ),
-            x_max_override=(
-                math.log10(s.max)
-                if isinstance(s.max, (int, float)) and s.max > 0
-                else None
-            ),
-        )
-        log50_svg = _build_hist_svg_from_vals(
-            s.name,
-            sample_vals,
-            bins=50,
-            scale="log",
-            scale_count=scale_factor,
-            x_min_override=(
-                math.log10(s.min)
-                if isinstance(s.min, (int, float)) and s.min > 0
-                else None
-            ),
-            x_max_override=(
-                math.log10(s.max)
-                if isinstance(s.max, (int, float)) and s.max > 0
-                else None
-            ),
-        )
-        log_variants = "".join(
-            [
-                f'<div id="{col_id}-log-bins-10" class="hist variant" style="display:none">{log10_svg}</div>',
-                f'<div id="{col_id}-log-bins-25" class="hist variant" style="display:none">{log25_svg}</div>',
-                f'<div id="{col_id}-log-bins-50" class="hist variant" style="display:none">{log50_svg}</div>',
-            ]
-        )
-        scale_group = '<div class="scale-group"><button type="button" class="btn-soft btn-scale active" data-scale="lin">Linear</button><button type="button" class="btn-soft btn-scale" data-scale="log">Log</button></div>'
-    else:
-        log_variants = ""
-        scale_group = ""
-
-    hist_variants_html = f'''
-      <div class="hist-variants">
-        <div id="{col_id}-lin-bins-10" class="hist variant" style="display:none">{lin10}</div>
-        <div id="{col_id}-lin-bins-25" class="hist variant">{lin25}</div>
-        <div id="{col_id}-lin-bins-50" class="hist variant" style="display:none">{lin50}</div>
-        {log_variants}
-      </div>
-    '''
-
-    top5_section = ""
-    try:
-        if getattr(s, "top_values", None):
-            rows = "".join(
-                f'<tr><th>{_fmt_num(v)}</th><td class="num">{c:,} ({(c / max(1, s.count) * 100):.1f}%)</td></tr>'
-                for v, c in s.top_values
-            )
-            top5_section = f'<div class="box" style="margin-top:8px;"><h4 class="small muted">Top 5 values</h4><table class="kv"><tbody>{rows}</tbody></table></div>'
-    except Exception:
-        top5_section = ""
-
-    controls_html = f'''
-      <div class="card-controls" role="group" aria-label="Column controls">
-        <div class="details-slot">
-          <button type="button" class="details-toggle btn-soft" aria-controls="{col_id}-details" aria-expanded="false">Details</button>
-        </div>
-        <div class="controls-slot">
-          <div class="hist-controls" data-col="{col_id}" data-scale="lin" data-bin="25" role="group" aria-label="Histogram controls">
-            <div class="center-controls">
-              {scale_group}
-              <div class="bin-group">
-                <button type="button" class="btn-soft btn-bins" data-bin="10">10</button>
-                <button type="button" class="btn-soft btn-bins active" data-bin="25">25</button>
-                <button type="button" class="btn-soft btn-bins" data-bin="50">50</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    '''
-
-    details_section = f'''
-      <section id="{col_id}-details" class="details-section" hidden>
-        <nav class="tabs" role="tablist" aria-label="More details">
-          <button role="tab" class="active" data-tab="stats">Statistics</button>
-          <button role="tab" data-tab="values">Common values</button>
-        </nav>
-        <div class="tab-panes">
-          <section class="tab-pane active" data-tab="stats">
-            <div class="grid-2col">{quant_stats_table}{details_tbl}</div>
-          </section>
-          <section class="tab-pane" data-tab="values">
-            {top5_section or '<p class="muted small">No common values available.</p>'}
-          </section>
-          <section class="tab-pane" data-tab="extremes">
-            {extremes_section or '<p class="muted small">No extreme values found.</p>'}
-          </section>
-        </div>
-      </section>
-    '''
-
-    # Correlation chips (optional, if provided in summary)
-    corr_section_html = ""
-    try:
-        chips = []
-        for other, r in (s.corr_top or [])[:3]:
-            cls = "good" if abs(r) >= 0.8 else "warn"
-            sign = "+" if r >= 0 else "−"
-            chips.append(
-                f'<li class="flag {cls}"><code>{_html.escape(str(other))}</code> {sign}{abs(r):.2f}</li>'
-            )
-        if chips:
-            corr_section_html = f'<section class="subtable"><h4 class="small muted">Top correlations</h4><ul class="quality-flags">{"".join(chips)}</ul></section>'
-    except Exception:
-        corr_section_html = ""
-
-    return f"""
-    <article class="var-card" id="{col_id}"> 
-      <header class="var-card__header">
-        <div class="title"><span class="colname" title="{safe_name}">{safe_name}</span>
-          <span class="badge">Numeric</span>
-          <span class="dtype chip">{s.dtype_str}</span>
-          {approx_badge}
-          {quality_flags_html}
-        </div>
-      </header>
-      <div class="var-card__body">
-        <div class="triple-row">
-          <div class="box stats-left">{left_tbl}</div>
-          <div class="box stats-right">{right_tbl}</div>
-          <div class="box chart">
-            {hist_variants_html}
-          </div>
-        </div>
-        {controls_html}
-        {details_section}
-        {corr_section_html}
-      </div>
-    </article>
-    """
-
-
-def _render_bool_card(s: BooleanSummary) -> str:
-    # Delegated to render.cards; legacy body below is unreachable
-    from .render.cards import render_bool_card as _impl
-
-    return _impl(s)
-    col_id = _safe_col_id(s.name)
-    total = int(s.true_n + s.false_n + s.missing)
-    cnt = int(s.true_n + s.false_n)
-    miss_pct = (s.missing / max(1, total)) * 100.0
-    miss_cls = "crit" if miss_pct > 20 else ("warn" if miss_pct > 0 else "")
-    true_pct_total = (s.true_n / max(1, total)) * 100.0
-    false_pct_total = (s.false_n / max(1, total)) * 100.0
-
-    mem_display = _human_bytes(getattr(s, "mem_bytes", 0)) + " (≈)"
-
-    # Flags
-    flags = []
-    if miss_pct > 0:
-        flags.append(
-            f'<li class="flag {"bad" if miss_pct > 20 else "warn"}">Missing</li>'
-        )
-    if cnt > 0 and (s.true_n == 0 or s.false_n == 0):
-        flags.append('<li class="flag bad">Constant</li>')
-    if cnt > 0:
-        p = s.true_n / cnt
-        if p <= 0.05 or p >= 0.95:
-            flags.append('<li class="flag warn">Imbalanced</li>')
-    quality_flags_html = (
-        f"<ul class='quality-flags'>{''.join(flags)}</ul>" if flags else ""
-    )
-
-    left_tbl = f"""
-    <table class=\"kv\"><tbody>
-      <tr><th>Count</th><td class=\"num\">{cnt:,}</td></tr>
-      <tr><th>Missing</th><td class=\"num {miss_cls}\">{s.missing:,} ({miss_pct:.1f}%)</td></tr>
-      <tr><th>Unique</th><td class=\"num\">{(int(s.true_n > 0) + int(s.false_n > 0))}</td></tr>
-      <tr><th>Processed bytes</th><td class=\"num\">{mem_display}</td></tr>
-    </tbody></table>
-    """
-    right_tbl = f"""
-    <table class=\"kv\"><tbody>
-      <tr><th>True</th><td class=\"num\">{s.true_n:,} ({true_pct_total:.1f}%)</td></tr>
-      <tr><th>False</th><td class=\"num\">{s.false_n:,} ({false_pct_total:.1f}%)</td></tr>
-    </tbody></table>
-    """
-
-    # Stacked boolean bar (false | true | missing)
-    def _bool_stack_svg(
-        true_n: int,
-        false_n: int,
-        miss: int,
-        width: int = 420,
-        height: int = 48,
-        margin: int = 4,
-    ) -> str:
-        total = max(1, int(true_n + false_n + miss))
-        inner_w = width - 2 * margin
-        seg_h = height - 2 * margin
-        fw = (false_n / total) * inner_w
-        tw = (true_n / total) * inner_w
-        mw = (miss / total) * inner_w
-        parts = [
-            f'<svg class="bool-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Boolean distribution">'
-        ]
-        x = float(margin)
-
-        def seg(css: str, n: int, w: float):
-            nonlocal x
-            if w <= 0 or n <= 0:
-                return
-            pct = n / total * 100.0
-            parts.append(
-                f'<rect class="seg {css}" x="{x:.2f}" y="{margin}" width="{w:.2f}" height="{seg_h:.2f}" rx="2" ry="2">'
-                f"<title>{n:,} {css.title()} ({pct:.1f}%)</title>"
-                f"</rect>"
-            )
-            label = f"{pct:.1f}%" if w >= 28 else ""
-            if w >= 80:
-                label = f"{n:,} ({pct:.1f}%)"
-            if label:
-                cx = x + w / 2.0
-                cy = margin + seg_h / 2.0 + 4
-                parts.append(
-                    f'<text class="seg-label" x="{cx:.2f}" y="{cy:.2f}" text-anchor="middle" style="fill:#fff;font-size:11px;font-weight:600;">{label}</text>'
-                )
-            x += w
-
-        seg("false", false_n, fw)
-        seg("true", true_n, tw)
-        seg("missing", miss, mw)
-        parts.append("</svg>")
-        return "".join(parts)
-
-    chart_html = _bool_stack_svg(s.true_n, s.false_n, s.missing)
-
-    # Suggestions (approx)
-    suggestions = []
-    if cnt > 0 and (s.true_n == 0 or s.false_n == 0):
-        suggestions.append("Constant boolean → consider dropping (no variance).")
-    if miss_pct > 0:
-        suggestions.append(
-            "Missing values present → consider explicit missing indicator."
-        )
-    if cnt > 0:
-        p = s.true_n / cnt
-        if p <= 0.05 or p >= 0.95:
-            suggestions.append("Severely imbalanced → consider class weighting.")
-    suggestions_html = (
-        '<ul class="suggestions">'
-        + "".join(f"<li>{x}</li>" for x in suggestions)
-        + "</ul>"
-        if suggestions
-        else '<p class="muted small">No specific suggestions.</p>'
-    )
-
-    return f"""
-    <article class=\"var-card\" id=\"{col_id}\"> 
-      <header class=\"var-card__header\"><div class=\"title\"><span class=\"colname\">{_html.escape(str(s.name))}</span>
-        <span class=\"badge\">Boolean</span>
-        <span class=\"dtype chip\">{s.dtype_str}</span>
-        {quality_flags_html}
-      </div></header>
-      <div class=\"var-card__body\">
-        <div class=\"triple-row\">
-          <div class=\"box stats-left\">{left_tbl}</div>
-          <div class=\"box stats-right\">{right_tbl}</div>
-          <div class=\"box chart\">{chart_html}</div>
-        </div>
-        <div class=\"card-controls\" role=\"group\" aria-label=\"Column controls\">
-          <div class=\"details-slot\">
-            <button type=\"button\" class=\"details-toggle btn-soft\" aria-controls=\"{col_id}-details\" aria-expanded=\"false\">Details</button>
-          </div>
-          <div class=\"controls-slot\"></div>
-        </div>
-        <section id=\"{col_id}-details\" class=\"details-section\" hidden>
-          <nav class=\"tabs\" role=\"tablist\" aria-label=\"More details\">
-            <button role=\"tab\" class=\"active\" data-tab=\"stats\">Statistics</button>
-            <button role=\"tab\" data-tab=\"suggestions\">Suggestions</button>
-          </nav>
-          <div class=\"tab-panes\">
-            <section class=\"tab-pane active\" data-tab=\"stats\"><div class=\"grid-2col\">{left_tbl}{right_tbl}</div></section>
-            <section class=\"tab-pane\" data-tab=\"suggestions\">{suggestions_html}</section>
-          </div>
-        </section>
-      </div>
-    </article>
-    """
-
-
-def _render_cat_card(s: CategoricalSummary) -> str:
-    # Delegated to render.cards; legacy body below is unreachable
-    from .render.cards import render_cat_card as _impl
-
-    return _impl(s)
-    col_id = _safe_col_id(s.name)
-    safe_name = _html.escape(str(s.name))
-    total = s.count + s.missing
-    miss_pct = (s.missing / max(1, total)) * 100.0
-    miss_cls = "crit" if miss_pct > 20 else ("warn" if miss_pct > 0 else "")
-    approx_badge = '<span class="badge">approx</span>' if s.approx else ""
-
-    # Mode and basic coverage metrics from top_items (approx)
-    mode_label, mode_n = s.top_items[0] if s.top_items else ("—", 0)
-    safe_mode_label = _html.escape(str(mode_label))
-    mode_pct = (mode_n / max(1, s.count)) * 100.0 if s.count else 0.0
-    # Entropy from top_items distribution (approx)
-    if s.count > 0 and s.top_items:
-        probs = [c / s.count for _, c in s.top_items]
-        entropy = float(-sum(p * math.log2(max(p, 1e-12)) for p in probs))
-    else:
-        entropy = float("nan")
-    # Rare levels and coverage (<1% of non-null)
-    rare_count = 0
-    rare_cov = 0.0
-    if s.count > 0:
-        for _, c in s.top_items:
-            pct = c / s.count * 100.0
-            if pct < 1.0:
-                rare_count += 1
-                rare_cov += pct
-    rare_cls = "crit" if rare_cov > 60 else ("warn" if rare_cov >= 30 else "")
-    # Top 5 coverage
-    top5_cov = 0.0
-    if s.count > 0 and s.top_items:
-        top5_cov = sum(c for _, c in s.top_items[:5]) / s.count * 100.0
-    top5_cls = "good" if top5_cov >= 80 else ("warn" if top5_cov <= 40 else "")
-    empty_cls = "warn" if s.empty_zero > 0 else ""
-
-    # Flags (align with v1; approximate where needed)
-    flags = []
-    if s.unique_est > max(200, int(0.5 * max(1, s.count))):
-        flags.append('<li class="flag warn">High cardinality</li>')
-    if mode_n >= int(0.7 * max(1, s.count)) and s.count:
-        flags.append('<li class="flag warn">Dominant category</li>')
-    if rare_cov >= 30.0:
-        flags.append('<li class="flag warn">Many rare levels</li>')
-    if s.case_variants_est > 0:
-        flags.append('<li class="flag">Case variants</li>')
-    if s.trim_variants_est > 0:
-        flags.append('<li class="flag">Trim variants</li>')
-    if s.empty_zero > 0:
-        flags.append('<li class="flag">Empty strings</li>')
-    if miss_pct > 0:
-        flags.append(
-            f'<li class="flag {"bad" if miss_pct > 20 else "warn"}">Missing</li>'
-        )
-    quality_flags_html = (
-        f'<ul class="quality-flags">{"".join(flags)}</ul>' if flags else ""
-    )
-
-    mem_display = _human_bytes(int(getattr(s, "mem_bytes", 0)))
-    left_tbl = f"""
-    <table class=\"kv\"><tbody>
-      <tr><th>Count</th><td class=\"num\">{s.count:,}</td></tr>
-      <tr><th>Unique</th><td class=\"num\">{s.unique_est:,}{" (≈)" if s.approx else ""}</td></tr>
-      <tr><th>Missing</th><td class=\"num {miss_cls}\">{s.missing:,} ({miss_pct:.1f}%)</td></tr>
-      <tr><th>Mode</th><td><code>{safe_mode_label}</code></td></tr>
-      <tr><th>Mode %</th><td class=\"num\">{mode_pct:.1f}%</td></tr>
-      <tr><th>Processed bytes</th><td class=\"num\">{mem_display} (≈)</td></tr>
-    </tbody></table>
-    """
-
-    right_tbl = f"""
-    <table class=\"kv\"><tbody>
-      <tr><th>Entropy</th><td class=\"num\">{_fmt_num(entropy)}</td></tr>
-      <tr><th>Rare levels</th><td class=\"num {rare_cls}\">{rare_count:,} ({rare_cov:.1f}%)</td></tr>
-      <tr><th>Top 5 coverage</th><td class=\"num {top5_cls}\">{top5_cov:.1f}%</td></tr>
-      <tr><th>Label length (avg)</th><td class=\"num\">{_fmt_num(s.avg_len)}</td></tr>
-      <tr><th>Length p90</th><td class=\"num\">{s.len_p90 if s.len_p90 is not None else "—"}</td></tr>
-      <tr><th>Empty strings</th><td class=\"num {empty_cls}\">{s.empty_zero:,}</td></tr>
-    </tbody></table>
-    """
-
-    # Levels table (Top 20, approximate)
-    rows = []
-    for label, c in s.top_items[:20] if s.top_items else []:
-        pct = c / max(1, s.count + s.missing) * 100.0
-        rows.append(
-            f'<tr><td><code>{_html.escape(str(label))}</code></td><td class="num">{c:,}</td><td class="num">{pct:.1f}%</td></tr>'
-        )
-    levels_table_html = f'<table class="kv"><thead><tr><th>Level</th><th>Count</th><th>%</th></tr></thead><tbody>{"".join(rows) or "<tr><td colspan=3>—</td></tr>"}</tbody></table>'
-
-    # Build Top-N bar chart variants
-    items = s.top_items or []
-    maxN = max(1, min(15, len(items)))
-    candidates = [5, 10, 15, maxN]
-    topn_list = sorted({n for n in candidates if 1 <= n <= maxN})
-    default_topn = 10 if 10 in topn_list else (max(topn_list) if topn_list else maxN)
-
-    variants_html_parts = []
-    for n in topn_list:
-        if len(items) > n:
-            keep = max(1, n - 1)
-            head = items[:keep]
-            other = sum(c for _, c in items[keep:])
-            data = head + [("Other", other)]
-        else:
-            data = items[:n]
-        svg = _build_cat_bar_svg_from_items(
-            data, total=max(1, s.count + s.missing), scale="count"
-        )
-        style = "" if n == default_topn else "display:none"
-        variants_html_parts.append(
-            f'<div id="{col_id}-cat-top-{n}" class="cat variant" style="{style}">{svg}</div>'
-        )
-    variants_html = "".join(variants_html_parts)
-    bin_buttons = "".join(
-        f'<button type="button" class="btn-soft btn-bins{(" active" if n == default_topn else "")}" data-topn="{n}">Top {n}</button>'
-        for n in topn_list
-    )
-
-    card_html = f"""
-    <article class=\"var-card\" id=\"{col_id}\">
-      <header class=\"var-card__header\"> 
-        <div class=\"title\"><span class=\"colname\" title=\"{safe_name}\">{safe_name}</span>
-        <span class=\"badge\">Categorical</span>
-        <span class=\"dtype chip\">{s.dtype_str}</span>
-        {approx_badge}
-        {quality_flags_html}
-        </div>
-      </header>
-      <div class=\"var-card__body\">
-        <div class=\"triple-row\">
-          <div class=\"box stats-left\">{left_tbl}</div>
-          <div class=\"box stats-right\">{right_tbl}</div>
-          <div class=\"box chart\"> <div class=\"hist-variants\">{variants_html}</div> </div>
-        </div>
-        <div class=\"card-controls\" role=\"group\" aria-label=\"Categorical controls\">
-          <div class=\"details-slot\">
-            <button type=\"button\" class=\"details-toggle btn-soft\" aria-controls=\"{col_id}-details\" aria-expanded=\"false\">Details</button>
-          </div>
-          <div class=\"controls-slot\">
-            <div class=\"hist-controls\" data-col=\"{col_id}\" data-topn=\"{default_topn}\" role=\"group\" aria-label=\"Categorical controls\">
-              <div class=\"center-controls\"><div class=\"bin-group\">{bin_buttons}</div></div>
-            </div>
-          </div>
-        </div>
-        <section id=\"{col_id}-details\" class=\"details-section\" hidden>
-          <nav class=\"tabs\" role=\"tablist\" aria-label=\"More details\">
-            <button role=\"tab\" class=\"active\" data-tab=\"levels\">Levels</button>
-            <button role=\"tab\" data-tab=\"quality\">Quality</button>
-          </nav>
-          <div class=\"tab-panes\">
-            <section class=\"tab-pane active\" data-tab=\"levels\">{levels_table_html}</section>
-            <section class=\"tab-pane\" data-tab=\"quality\">
-              <table class=\"kv\"><tbody>
-                <tr><th>Case variants (groups)</th><td class=\"num\">{s.case_variants_est:,}</td></tr>
-                <tr><th>Trim variants (groups)</th><td class=\"num\">{s.trim_variants_est:,}</td></tr>
-                <tr><th>Empty strings</th><td class=\"num\">{s.empty_zero:,}</td></tr>
-                <tr><th>Unique ratio</th><td class=\"num\">{(s.unique_est / max(1, s.count)):.2f}</td></tr>
-              </tbody></table>
-            </section>
-          </div>
-        </section>
-      </div>
-    </article>
-    """
-    return card_html
-
-
-def _render_dt_card(s: DatetimeSummary) -> str:
-    # Delegated to render.cards; legacy body below is unreachable
-    from .render.cards import render_dt_card as _impl
-
-    return _impl(s)
-    col_id = _safe_col_id(s.name)
-    safe_name = _html.escape(str(s.name))
-    miss_pct = (s.missing / max(1, s.count + s.missing)) * 100.0
-    miss_cls = "crit" if miss_pct > 20 else ("warn" if miss_pct > 0 else "")
-    flags = []
-    if miss_pct > 0:
-        flags.append(
-            f'<li class="flag {"bad" if miss_pct > 20 else "warn"}">Missing</li>'
-        )
-    if s.count > 1 and s.mono_inc:
-        flags.append('<li class="flag good">Monotonic ↑</li>')
-    if s.count > 1 and s.mono_dec:
-        flags.append('<li class="flag good">Monotonic ↓</li>')
-    quality_flags_html = (
-        f"<ul class='quality-flags'>{''.join(flags)}</ul>" if flags else ""
-    )
-
-    def _fmt_ts(ts: Optional[int]) -> str:
-        if ts is None:
-            return "—"
-        try:
-            return datetime.utcfromtimestamp(ts / 1_000_000_000).isoformat() + "Z"
-        except Exception:
-            return str(ts)
-
-    mem_display = _human_bytes(getattr(s, "mem_bytes", 0)) + " (≈)"
-    left_tbl = f"""
-    <table class=\"kv\"><tbody>
-      <tr><th>Count</th><td class=\"num\">{s.count:,}</td></tr>
-      <tr><th>Missing</th><td class=\"num {miss_cls}\">{s.missing:,} ({miss_pct:.1f}%)</td></tr>
-      <tr><th>Min</th><td>{_fmt_ts(s.min_ts)}</td></tr>
-      <tr><th>Max</th><td>{_fmt_ts(s.max_ts)}</td></tr>
-      <tr><th>Processed bytes</th><td class=\"num\">{mem_display}</td></tr>
-    </tbody></table>
-    """
-
-    # simple ascii sparks for hour/dow/month
-    def spark(counts: List[int]) -> str:
-        if not counts:
-            return ""
-        m = max(counts) or 1
-        blocks = "▁▂▃▄▅▆▇█"
-        levels = [
-            blocks[min(len(blocks) - 1, int(c * (len(blocks) - 1) / m))] for c in counts
-        ]
-        return "".join(levels)
-
-    right_tbl = f"""
-    <table class=\"kv\"><tbody>
-      <tr><th>Hour</th><td class=\"small\">{spark(s.by_hour)}</td></tr>
-      <tr><th>Day of week</th><td class=\"small\">{spark(s.by_dow)}</td></tr>
-      <tr><th>Month</th><td class=\"small\">{spark(s.by_month)}</td></tr>
-    </tbody></table>
-    """
-
-    # Build timeline SVG from sample (scaled to approximate counts)
-    def _dt_line_svg_from_sample(
-        sample: Optional[List[int]],
-        tmin: Optional[int],
-        tmax: Optional[int],
-        bins: int = 60,
-        scale_count: float = 1.0,
-    ) -> str:
-        if not sample or tmin is None or tmax is None:
-            return _svg_empty("dt-svg", 420, 160)
-        a = np.asarray(sample, dtype=np.int64)
-        if a.size == 0:
-            return _svg_empty("dt-svg", 420, 160)
-        if tmin == tmax:
-            tmax = tmin + 1
-        counts, edges = np.histogram(
-            a, bins=int(max(10, min(bins, 180))), range=(int(tmin), int(tmax))
-        )
-        counts = np.maximum(0, np.round(counts * max(1.0, float(scale_count)))).astype(
-            int
-        )
-        y_max = int(max(1, counts.max()))
-        width, height = 420, 160
-        margin_left, margin_right, margin_top, margin_bottom = 45, 8, 8, 32
-        iw = width - margin_left - margin_right
-        ih = height - margin_top - margin_bottom
-
-        def sx(x):
-            return margin_left + (x - tmin) / (tmax - tmin) * iw
-
-        def sy(y):
-            return margin_top + (1 - y / y_max) * ih
-
-        centers = (edges[:-1] + edges[1:]) / 2.0
-        pts = " ".join(
-            f"{sx(x):.2f},{sy(float(c)):.2f}" for x, c in zip(centers, counts)
-        )
-        y_ticks, _ = _nice_ticks(0, y_max, 5)
-        n_xt = 5
-        xt_vals = np.linspace(tmin, tmax, n_xt)
-        span_ns = tmax - tmin
-
-        def _fmt_xt(v):
-            try:
-                ts = pd.to_datetime(int(v))
-                if span_ns <= 3 * 24 * 3600 * 1e9:
-                    return ts.strftime("%Y-%m-%d %H:%M")
-                return ts.date().isoformat()
-            except Exception:
-                return str(v)
-
-        parts = [
-            f'<svg class="dt-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Timeline">',
-            '<g class="plot-area">',
-        ]
-        for yt in y_ticks:
-            parts.append(
-                f'<line class="grid" x1="{margin_left}" y1="{sy(yt):.2f}" x2="{margin_left + iw}" y2="{sy(yt):.2f}"></line>'
-            )
-        parts.append(f'<polyline class="line" points="{pts}"></polyline>')
-        parts.append('<g class="hotspots">')
-        for i, c in enumerate(counts):
-            if not np.isfinite(c):
-                continue
-            x0p = sx(edges[i])
-            x1p = sx(edges[i + 1])
-            wp = max(1.0, x1p - x0p)
-            cp = (edges[i] + edges[i + 1]) / 2.0
-            label = _fmt_xt(cp)
-            title = f"{int(c)} rows&#10;{label}"
-            parts.append(
-                f'<rect class="hot" x="{x0p:.2f}" y="{margin_top}" width="{wp:.2f}" height="{ih:.2f}" fill="transparent" pointer-events="all">'
-                f"<title>{title}</title>"
-                f"</rect>"
-            )
-        parts.append("</g>")
-        parts.append("</g>")
-        x_axis_y = margin_top + ih
-        parts.append(
-            f'<line class="axis" x1="{margin_left}" y1="{x_axis_y}" x2="{margin_left + iw}" y2="{x_axis_y}"></line>'
-        )
-        parts.append(
-            f'<line class="axis" x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{x_axis_y}"></line>'
-        )
-        for yt in y_ticks:
-            py = sy(yt)
-            parts.append(
-                f'<line class="tick" x1="{margin_left - 4}" y1="{py:.2f}" x2="{margin_left}" y2="{py:.2f}"></line>'
-            )
-            lab = int(round(yt))
-            parts.append(
-                f'<text class="tick-label" x="{margin_left - 6}" y="{py + 3:.2f}" text-anchor="end">{lab}</text>'
-            )
-        for xv in xt_vals:
-            px = sx(xv)
-            parts.append(
-                f'<line class="tick" x1="{px:.2f}" y1="{x_axis_y}" x2="{px:.2f}" y2="{x_axis_y + 4}"></line>'
-            )
-            parts.append(
-                f'<text class="tick-label" x="{px:.2f}" y="{x_axis_y + 14}" text-anchor="middle">{_fmt_xt(xv)}</text>'
-            )
-        parts.append(
-            f'<text class="axis-title x" x="{margin_left + iw / 2:.2f}" y="{x_axis_y + 28}" text-anchor="middle">Time</text>'
-        )
-        parts.append(
-            f'<text class="axis-title y" transform="translate({margin_left - 36},{margin_top + ih / 2:.2f}) rotate(-90)" text-anchor="middle">Count</text>'
-        )
-        parts.append("</svg>")
-        return "".join(parts)
-
-    chart_html = _dt_line_svg_from_sample(
-        s.sample_ts,
-        s.min_ts,
-        s.max_ts,
-        bins=60,
-        scale_count=getattr(s, "sample_scale", 1.0),
-    )
-
-    # Details: full breakdown tables
-    hours_tbl = "".join(
-        f'<tr><th>{h:02d}</th><td class="num">{c:,}</td></tr>'
-        for h, c in enumerate(s.by_hour)
-    )
-    dows = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
-    dows_tbl = "".join(
-        f'<tr><th>{dows[i]}</th><td class="num">{c:,}</td></tr>'
-        for i, c in enumerate(s.by_dow)
-    )
-    months = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-    ]
-    months_tbl = "".join(
-        f'<tr><th>{months[i]}</th><td class="num">{c:,}</td></tr>'
-        for i, c in enumerate(s.by_month)
-    )
-
-    details_html = f'''
-      <section id="{col_id}-details" class="details-section" hidden>
-        <nav class="tabs" role="tablist" aria-label="More details">
-          <button role="tab" class="active" data-tab="breakdown">Breakdown</button>
-        </nav>
-        <div class="tab-panes">
-          <section class="tab-pane active" data-tab="breakdown">
-            <div class="grid-2col">
-              <table class="kv"><thead><tr><th>Hour</th><th>Count</th></tr></thead><tbody>{hours_tbl}</tbody></table>
-              <table class="kv"><thead><tr><th>Day</th><th>Count</th></tr></thead><tbody>{dows_tbl}</tbody></table>
-            </div>
-            <div class="grid-2col" style="margin-top:8px;">
-              <table class="kv"><thead><tr><th>Month</th><th>Count</th></tr></thead><tbody>{months_tbl}</tbody></table>
-            </div>
-          </section>
-        </div>
-      </section>
-    '''
-
-    return f"""
-    <article class=\"var-card\" id=\"{col_id}\"> 
-      <header class=\"var-card__header\"><div class=\"title\"><span class=\"colname\">{safe_name}</span>
-        <span class=\"badge\">Datetime</span>
-        <span class=\"dtype chip\">{s.dtype_str}</span>
-        {quality_flags_html}
-      </div></header>
-      <div class=\"var-card__body\">
-        <div class=\"triple-row\">
-          <div class=\"box stats-left\">{left_tbl}</div>
-          <div class=\"box stats-right\">{right_tbl}</div>
-          <div class=\"box chart\">{chart_html}</div>
-        </div>
-        <div class=\"card-controls\" role=\"group\" aria-label=\"Column controls\">
-          <div class=\"details-slot\">
-            <button type=\"button\" class=\"details-toggle btn-soft\" aria-controls=\"{col_id}-details\" aria-expanded=\"false\">Details</button>
-          </div>
-          <div class=\"controls-slot\"></div>
-        </div>
-        {details_html}
-      </div>
-    </article>
-    """
-
-
-@dataclass
-class _State:
-    kinds: ColumnKinds
-    accs: Dict[str, Any]  # name -> accumulator
-
-
-def _build_accumulators(kinds: ColumnKinds, cfg: ReportConfig) -> Dict[str, Any]:
-    accs: Dict[str, Any] = {}
-    for name in kinds.numeric:
-        accs[name] = NumericAccumulator(
-            name, sample_k=cfg.numeric_sample_k, uniques_k=cfg.uniques_k
-        )
-    for name in kinds.boolean:
-        accs[name] = BooleanAccumulator(name)
-    for name in kinds.datetime:
-        accs[name] = DatetimeAccumulator(name)
-    for name in kinds.categorical:
-        accs[name] = CategoricalAccumulator(
-            name, topk_k=cfg.topk_k, uniques_k=cfg.uniques_k
-        )
-    return accs
-
-
-# === Checkpointing helpers ===
-
-
-class _CheckpointManager:
     def __init__(
         self,
-        directory: str,
-        prefix: str = "pysuricata_ckpt",
-        keep: int = 3,
-        write_html: bool = False,
-    ) -> None:
-        self.directory = directory
-        os.makedirs(self.directory, exist_ok=True)
-        self.prefix = prefix
-        self.keep = max(1, int(keep))
-        self.write_html = write_html
+        config: Optional[EngineConfig] = None,
+        # Dependency injection for testability
+        chunking_service: Optional[ChunkingService] = None,
+        engine_service: Optional[EngineService] = None,
+        metrics_service: Optional[MetricsService] = None,
+        resource_manager: Optional[ResourceManager] = None,
+    ):
+        """Initialize the report orchestrator.
 
-    def _glob(self, ext: str) -> List[str]:
-        return sorted(
-            glob.glob(os.path.join(self.directory, f"{self.prefix}_chunk*.{ext}"))
+        Args:
+            config: Engine configuration. If None, uses default configuration.
+            chunking_service: Chunking service instance for dependency injection
+            engine_service: Engine service instance for dependency injection
+            metrics_service: Metrics service instance for dependency injection
+            resource_manager: Resource manager instance for dependency injection
+        """
+        self.config = config or EngineConfig()
+        self.logger = self._setup_logger()
+        self.start_time = time.time()
+
+        # Initialize services with dependency injection
+        self.chunking_service = chunking_service or ChunkingService(self.config)
+        self.engine_service = engine_service or EngineService(self.config)
+        self.metrics_service = metrics_service or MetricsService(self.config)
+        self.resource_manager = resource_manager or ResourceManager(self.config)
+
+        # Processing state
+        self.adapter = None
+        self.kinds = None
+        self.accs = None
+        self.corr_est = None
+        self.row_kmv = RowKMV()
+
+        # Metrics tracking
+        self.total_missing_cells = 0
+        self.approx_mem_bytes = 0
+        self.n_rows = 0
+        self.n_cols = 0
+        self.chunk_idx = 0
+
+        # Data state
+        self.first_columns = []
+        self.sample_section_html = ""
+
+    def _setup_logger(self) -> logging.Logger:
+        """Configure and return the logger for this report generation."""
+        logger = self.config.logger or logging.getLogger(__name__)
+        logger.setLevel(self.config.log_level)
+        return logger
+
+    def _setup_random_seeds(self) -> None:
+        """Configure random seeds for reproducible results."""
+        if self.config.random_seed is not None:
+            try:
+                seed = int(self.config.random_seed)
+                np.random.seed(seed)
+                _py_random.seed(seed)
+                global _REPORT_RANDOM_SEED
+                _REPORT_RANDOM_SEED = seed
+            except Exception as e:
+                self.logger.warning("Failed to set random seed: %s", e)
+
+    def _log_startup_info(self, source: Any) -> None:
+        """Log startup information about the report generation."""
+        source_info = (
+            source
+            if isinstance(source, str)
+            else f"DataFrame{getattr(source, 'shape', '')}"
         )
 
-    def _path_for(self, chunk_idx: int, ext: str) -> str:
-        return os.path.join(self.directory, f"{self.prefix}_chunk{chunk_idx:06d}.{ext}")
-
-    def rotate(self) -> None:
-        # Keep only the newest `keep` checkpoint files (pkl.gz). Remove older siblings (.html too).
-        pkls = self._glob("pkl.gz")
-        if len(pkls) <= self.keep:
-            return
-        to_remove = pkls[: len(pkls) - self.keep]
-        for p in to_remove:
-            try:
-                os.remove(p)
-            except Exception:
-                pass
-            # remove matching html if present
-            html_p = p.replace(".pkl.gz", ".html")
-            try:
-                if os.path.exists(html_p):
-                    os.remove(html_p)
-            except Exception:
-                pass
-
-    def save(
-        self, chunk_idx: int, state: Mapping[str, Any], html: Optional[str] = None
-    ) -> Tuple[str, Optional[str]]:
-        pkl_path = self._path_for(chunk_idx, "pkl.gz")
-        with gzip.open(pkl_path, "wb") as f:
-            pickle.dump(state, f, protocol=pickle.HIGHEST_PROTOCOL)
-        html_path = None
-        if self.write_html and html is not None:
-            html_path = self._path_for(chunk_idx, "html")
-            with open(html_path, "w", encoding="utf-8") as hf:
-                hf.write(html)
-        self.rotate()
-        return pkl_path, html_path
-
-
-def _make_state_snapshot(
-    *,
-    kinds: ColumnKinds,
-    accs: Dict[str, Any],
-    row_kmv: "_RowKMV",
-    total_missing_cells: int,
-    approx_mem_bytes: int,
-    chunk_idx: int,
-    first_columns: List[str],
-    sample_section_html: str,
-    cfg: ReportConfig,
-) -> Dict[str, Any]:
-    # NOTE: Keep the snapshot pickle‑friendly. Avoid putting whole DataFrames here.
-    return {
-        "version": 1,
-        "timestamp": time.time(),
-        "chunk_idx": int(chunk_idx),
-        "first_columns": list(first_columns),
-        "sample_section_html": sample_section_html,
-        "kinds": kinds,
-        "accs": accs,
-        "row_kmv": row_kmv,
-        "total_missing_cells": int(total_missing_cells),
-        "approx_mem_bytes": int(approx_mem_bytes),
-        "config": {
-            "title": cfg.title,
-            "chunk_size": cfg.chunk_size,
-            "numeric_sample_k": cfg.numeric_sample_k,
-            "uniques_k": cfg.uniques_k,
-            "topk_k": cfg.topk_k,
-            "compute_correlations": cfg.compute_correlations,
-            "corr_threshold": cfg.corr_threshold,
-        },
-    }
-
-
-def _render_html_snapshot(
-    *,
-    kinds: ColumnKinds,
-    accs: Dict[str, Any],
-    first_columns: List[str],
-    row_kmv: "_RowKMV",
-    total_missing_cells: int,
-    approx_mem_bytes: int,
-    start_time: float,
-    cfg: ReportConfig,
-    report_title: Optional[str],
-    sample_section_html: str,
-) -> str:
-    # ---- Build kinds map
-    kinds_map = {
-        **{name: ("numeric", accs[name]) for name in kinds.numeric},
-        **{name: ("categorical", accs[name]) for name in kinds.categorical},
-        **{name: ("datetime", accs[name]) for name in kinds.datetime},
-        **{name: ("boolean", accs[name]) for name in kinds.boolean},
-    }
-
-    # ---- Top missing
-    miss_list: List[Tuple[str, float, int]] = []
-    for name, (kind, acc) in kinds_map.items():
-        miss = getattr(acc, "missing", 0)
-        cnt = getattr(acc, "count", 0) + miss
-        pct = (miss / cnt * 100.0) if cnt else 0.0
-        miss_list.append((name, pct, miss))
-    miss_list.sort(key=lambda t: t[1], reverse=True)
-    top_missing_list = ""
-    for col, pct, count in miss_list[:5]:
-        severity_class = "low" if pct <= 5 else ("medium" if pct <= 20 else "high")
-        top_missing_list += f"""
-        <li class="missing-item">
-          <div class="missing-info">
-            <code class="missing-col" title="{_html.escape(str(col))}">{_html.escape(str(col))}</code>
-            <span class="missing-stats">{count:,} ({pct:.1f}%)</span>
-          </div>
-          <div class="missing-bar"><div class="missing-fill {severity_class}" style="width:{pct:.1f}%;"></div></div>
-        </li>
-        """
-    if not top_missing_list:
-        top_missing_list = """
-        <li class="missing-item"><div class="missing-info"><code class="missing-col">None</code><span class="missing-stats">0 (0.0%)</span></div><div class="missing-bar"><div clas s="missing-fill low" style="width:0%;"></div></div></li>
-        """
-
-    # ---- Quick counts
-    n_rows = int(getattr(row_kmv, "rows", 0))
-    n_cols = len(kinds_map)
-    total_cells = n_rows * n_cols
-    missing_overall = f"{total_missing_cells:,} ({(total_missing_cells / max(1, total_cells) * 100):.1f}%)"
-    dup_rows, dup_pct = row_kmv.approx_duplicates()
-    duplicates_overall = f"{dup_rows:,} ({dup_pct:.1f}%)"
-
-    # ---- Other quick metrics
-    constant_cols = 0
-    high_card_cols = 0
-    for name, (kind, acc) in kinds_map.items():
-        if kind in ("numeric", "categorical"):
-            u = (
-                acc._uniques.estimate()
-                if hasattr(acc, "_uniques")
-                else getattr(acc, "unique_est", 0)
-            )
-        elif kind == "datetime":
-            u = acc.unique_est
-        else:
-            present = (acc.true_n > 0) + (acc.false_n > 0)
-            u = int(present)
-        total = getattr(acc, "count", 0) + getattr(acc, "missing", 0)
-        if u <= 1:
-            constant_cols += 1
-        if kind == "categorical" and n_rows:
-            if (u / n_rows) > 0.5:
-                high_card_cols += 1
-
-    # ---- Date range
-    if kinds.datetime:
-        mins, maxs = [], []
-        for name in kinds.datetime:
-            acc = accs[name]
-            if acc._min_ts is not None:
-                mins.append(acc._min_ts)
-            if acc._max_ts is not None:
-                maxs.append(acc._max_ts)
-        if mins and maxs:
-            date_min = (
-                datetime.utcfromtimestamp(min(mins) / 1_000_000_000).isoformat() + "Z"
-            )
-            date_max = (
-                datetime.utcfromtimestamp(max(maxs) / 1_000_000_000).isoformat() + "Z"
-            )
-        else:
-            date_min = date_max = "—"
-    else:
-        date_min = date_max = "—"
-
-    text_cols = len(kinds.categorical)
-    avg_text_len_vals = [
-        acc.avg_len
-        for name, (k, acc) in kinds_map.items()
-        if k == "categorical" and acc.avg_len is not None
-    ]
-    avg_text_len = (
-        f"{(sum(avg_text_len_vals) / len(avg_text_len_vals)):.1f}"
-        if avg_text_len_vals
-        else "—"
-    )
-
-    # ---- Variable cards (preserve first chunk order if available)
-    col_order = [
-        c
-        for c in list(first_columns)
-        if c in kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean
-    ] or (kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean)
-    all_cards_list: List[str] = []
-    if not compute_only:
-        for name in col_order:
-            acc = accs[name]
-            if name in kinds.numeric:
-                all_cards_list.append(_render_numeric_card_new(acc.finalize()))
-            elif name in kinds.categorical:
-                all_cards_list.append(_render_cat_card_new(acc.finalize()))
-            elif name in kinds.datetime:
-                all_cards_list.append(_render_dt_card_new(acc.finalize()))
-            elif name in kinds.boolean:
-                all_cards_list.append(_render_bool_card_new(acc.finalize()))
-    variables_section_html = f"""
-        <section id="vars">  
-          <span id="numeric-vars" class="anchor-alias"></span>
-          <h2 class="section-title">Variables</h2>
-          <p class="muted small">Analyzing {len(kinds.numeric) + len(kinds.categorical) + len(kinds.datetime) + len(kinds.boolean)} variables ({len(kinds.numeric)} numeric, {len(kinds.categorical)} categorical, {len(kinds.datetime)} datetime, {len(kinds.boolean)} boolean).</p>
-          <div class="cards-grid">{"".join(all_cards_list)}</div>
-        </section>
-    """
-    sections_html = (sample_section_html or "") + variables_section_html
-
-    # ---- Load template + assets (same as classic)
-    module_dir = os.path.dirname(os.path.abspath(__file__))
-    static_dir = os.path.join(module_dir, "static")
-    template_dir = os.path.join(module_dir, "templates")
-    template_path = os.path.join(template_dir, "report_template.html")
-    template = load_template(template_path)
-    css_path = os.path.join(static_dir, "css", "style.css")
-    css_tag = load_css(css_path)
-    script_path = os.path.join(static_dir, "js", "functionality.js")
-    script_content = load_script(script_path)
-    logo_light_path = os.path.join(
-        static_dir, "images", "logo_suricata_transparent.png"
-    )
-    logo_dark_path = os.path.join(
-        static_dir, "images", "logo_suricata_transparent_dark_mode.png"
-    )
-    logo_light_img = embed_image(
-        logo_light_path, element_id="logo-light", alt_text="Logo", mime_type="image/png"
-    )
-    logo_dark_img = embed_image(
-        logo_dark_path,
-        element_id="logo-dark",
-        alt_text="Logo (dark)",
-        mime_type="image/png",
-    )
-    logo_html = f'<span id="logo">{logo_light_img}{logo_dark_img}</span>'
-    favicon_path = os.path.join(static_dir, "images", "favicon.ico")
-    favicon_tag = embed_favicon(favicon_path)
-
-    end_time = time.time()
-    duration_seconds = end_time - start_time
-    report_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    pysuricata_version = _resolve_pysuricata_version()
-    repo_url = "https://github.com/alvarodiez20/pysuricata"
-
-    html = template.format(
-        favicon=favicon_tag,
-        css=css_tag,
-        script=script_content,
-        logo=logo_html,
-        report_title=report_title or cfg.title,
-        report_date=report_date,
-        pysuricata_version=pysuricata_version,
-        report_duration=f"{duration_seconds:.2f}",
-        repo_url=repo_url,
-        n_rows=f"{n_rows:,}",
-        n_cols=f"{n_cols:,}",
-        memory_usage=_human_bytes(approx_mem_bytes) if approx_mem_bytes else "—",
-        missing_overall=missing_overall,
-        duplicates_overall=duplicates_overall,
-        numeric_cols=len(kinds.numeric),
-        categorical_cols=len(kinds.categorical),
-        datetime_cols=len(kinds.datetime),
-        bool_cols=len(kinds.boolean),
-        top_missing_list=top_missing_list,
-        n_unique_cols=f"{n_cols:,}",
-        constant_cols=f"{constant_cols:,}",
-        high_card_cols=f"{high_card_cols:,}",
-        date_min=date_min,
-        date_max=date_max,
-        text_cols=f"{text_cols:,}",
-        avg_text_len=avg_text_len,
-        dataset_sample_section=sections_html,
-    )
-    return html
-
-
-# Public API
-
-
-"""Formatting helpers imported from render.format_utils"""
-
-
-# === Sample section rendering helper ===
-def _render_sample_section(df: "pd.DataFrame", sample_rows: int = 10) -> str:  # type: ignore[name-defined]
-    """Build the collapsible Sample section using a random sample from the first chunk.
-    Mirrors the styling/structure from the classic report (right‑aligned numerics, row numbers).
-    """
-    try:
-        n = min(int(sample_rows), len(df.index))
-        sample_df = df.sample(n=n) if n > 0 else df.head(0)
-        # Original positional row numbers within this chunk
-        row_pos = pd.Index(df.index).get_indexer(sample_df.index)
-        sample_df = sample_df.copy()
-        sample_df.insert(0, "", row_pos)
-
-        # Right-align numeric columns via a span
-        try:
-            num_cols = sample_df.columns.intersection(
-                df.select_dtypes(include=[np.number]).columns
-            )
-            for c in num_cols:
-                sample_df[c] = sample_df[c].map(
-                    lambda v: f'<span class="num">{v}</span>' if pd.notna(v) else ""
-                )
-        except Exception:
-            pass
-
-        sample_html_table = sample_df.to_html(
-            classes="sample-table", index=False, escape=False
+        self.logger.info("Starting report generation: source=%s", source_info)
+        self.logger.info(
+            "chunk_size=%d, uniques_k=%d, numeric_sample_k=%d, topk_k=%d",
+            self.config.chunk_size,
+            self.config.uniques_k,
+            self.config.numeric_sample_k,
+            self.config.topk_k,
         )
-    except Exception:
-        sample_html_table = "<em>Unable to render sample preview.</em>"
-        n = 0
 
-    return f"""
-    <section id="sample" class="collapsible-card">
-      <span id="dataset-sample" class="anchor-alias"></span>
-      <details class="card">
-        <summary>
-          <span>Sample</span>
-          <span class="chev" aria-hidden="true">▸</span>
-        </summary>
-        <div class="card-content">
-          <div class="sample-scroll">{sample_html_table}</div>
-          <p class="muted small">Showing {n} randomly sampled rows from the first chunk.</p>
-        </div>
-      </details>
-    </section>
-    """
+    def _process_first_chunk(self, first_chunk: Any) -> None:
+        """Process the first chunk to set up the processing pipeline.
 
+        Args:
+            first_chunk: The first data chunk to process.
 
-# Light row-wise distinct estimator for duplicates
-class _RowKMV:
-    def __init__(self, k: int = 8192) -> None:
-        self.kmv = KMV(k)
-        self.rows = 0
+        Raises:
+            TypeError: If the input type is not supported.
+        """
+        # Choose engine adapter using service
+        adapter_result = self.engine_service.select_adapter(first_chunk)
+        if not adapter_result.success:
+            raise TypeError(adapter_result.error)
+        self.adapter = adapter_result.data
 
-    def update_from_pandas(self, df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
-        if pd is None:
-            return
+        # Extract basic information from first chunk
+        self._extract_chunk_info(first_chunk)
+
+        # Infer column types and build accumulators
+        with _SectionTimer(
+            self.logger,
+            f"{get_adapter_tag(self.adapter)} Infer kinds & build accumulators",
+        ):
+            self.kinds, self.accs = self.adapter.infer_and_build(
+                first_chunk, self.config
+            )
+
+        # Set up correlation estimator
+        self.corr_est = maybe_corr_estimator(self.kinds, self.config)
+
+        # Process the first chunk
+        with _SectionTimer(
+            self.logger, f"{get_adapter_tag(self.adapter)} Consume first chunk"
+        ):
+            self.adapter.consume_chunk(first_chunk, self.accs, self.kinds, self.logger)
+            if self.corr_est is not None:
+                self.adapter.update_corr(first_chunk, self.corr_est, self.logger)
+
+        # Log column type information
+        self._log_column_types()
+
+    def _extract_chunk_info(self, chunk: Any) -> None:
+        """Extract basic information from a data chunk."""
+        self.approx_mem_bytes += int(self.adapter.estimate_mem(chunk) or 0)
+        self.adapter.update_row_kmv(chunk, self.row_kmv)
+        self.total_missing_cells += int(self.adapter.missing_cells(chunk) or 0)
+        self.first_columns = list(getattr(chunk, "columns", []))
+        self.sample_section_html = self.adapter.sample_section_html(chunk, self.config)
+
         try:
-            # fast row-hash: xor column hashes (uint64) to produce a row signature
-            h = None
-            for c in df.columns:
-                hc = pd.util.hash_pandas_object(df[c], index=False).to_numpy(
-                    dtype="uint64", copy=False
-                )
-                h = hc if h is None else (h ^ hc)
-            if h is None:
-                return
-            self.rows += int(len(h))
-            # feed as bytes
-            for v in h:
-                self.kmv.add(int(v))
+            self.n_rows = int(getattr(chunk, "height", len(chunk)))
         except Exception:
-            # conservative fallback: sample a few stringified rows
-            n = min(2000, len(df))
-            sample = df.head(n).astype(str).agg("|".join, axis=1)
-            for s in sample:
-                self.kmv.add(s)
-            self.rows += n
+            self.n_rows = 0
+        self.n_cols = len(getattr(chunk, "columns", []))
+        self.chunk_idx = 1
 
-    def approx_duplicates(self) -> Tuple[int, float]:
-        uniq = self.kmv.estimate()
-        d = max(0, self.rows - uniq)
-        pct = (d / self.rows * 100.0) if self.rows else 0.0
-        return d, pct
+    def _log_column_types(self) -> None:
+        """Log information about detected column types."""
+        tag = get_adapter_tag(self.adapter)
+        self.logger.info(
+            f"{tag} kinds: %d numeric, %d categorical, %d datetime, %d boolean",
+            len(self.kinds.numeric),
+            len(self.kinds.categorical),
+            len(self.kinds.datetime),
+            len(self.kinds.boolean),
+        )
 
-    def update_from_polars(self, df: "pl.DataFrame") -> None:  # type: ignore[name-defined]
-        if pl is None:
-            return
-        try:
-            h = None
-            for c in df.columns:
-                hc = df[c].hash().to_numpy()
-                h = hc if h is None else (h ^ hc)
-            if h is None:
-                return
-            self.rows += int(h.size)
-            for v in h:
-                self.kmv.add(int(v))
-        except Exception:
-            # Fallback: sample small head and reuse pandas-based path for hashing
+    def _process_remaining_chunks(self, chunks) -> None:
+        """Process all remaining chunks in the stream."""
+        ckpt_mgr = _maybe_ckpt(self.config, None)  # output_file handled separately
+
+        # Use engine service for stream consumption
+        result = self.engine_service.consume_stream(
+            adapter=self.adapter,
+            chunks=chunks,
+            accs=self.accs,
+            kinds=self.kinds,
+            logger=self.logger,
+            corr_est=self.corr_est,
+            row_kmv=self.row_kmv,
+            approx_mem_bytes=self.approx_mem_bytes,
+            total_missing_cells=self.total_missing_cells,
+            first_columns=self.first_columns,
+            sample_section_html=self.sample_section_html,
+            cfg=self.config,
+            ckpt_mgr=ckpt_mgr,
+            start_time=self.start_time,
+            report_title=None,  # handled separately
+            n_rows=self.n_rows,
+            chunk_idx=self.chunk_idx,
+        )
+
+        if not result.success:
+            self.logger.error("Stream processing failed: %s", result.error)
+            raise RuntimeError(result.error)
+
+        self.n_rows, self.approx_mem_bytes, self.total_missing_cells, self.chunk_idx = (
+            result.data
+        )
+
+    def _build_manifest(self) -> Tuple[Any, Any, int, int, Any]:
+        """Build the manifest for final processing."""
+        with _SectionTimer(
+            self.logger, "Compute top-missing, duplicates & quick metrics"
+        ):
+            result = self.metrics_service.build_manifest_inputs(
+                kinds=self.kinds,
+                accs=self.accs,
+                row_kmv=self.row_kmv,
+                first_columns=self.first_columns,
+            )
+
+            if not result.success:
+                self.logger.error("Manifest building failed: %s", result.error)
+                raise RuntimeError(result.error)
+
+            return result.data
+
+    def _process_correlations(self) -> None:
+        """Process correlation chips and attach to numeric accumulators."""
+        if self.corr_est is not None:
+            top_map = self.corr_est.top_map(
+                threshold=self.config.corr_threshold,
+                max_per_col=self.config.corr_max_per_col,
+            )
+
+            result = self.metrics_service.apply_correlation_chips(
+                accs=self.accs,
+                kinds=self.kinds,
+                top_map=top_map,
+            )
+
+            if not result.success:
+                self.logger.warning("Correlation processing failed: %s", result.error)
+
+    def _render_html(self, report_title: Optional[str] = None) -> str:
+        """Render the final HTML report."""
+        with _SectionTimer(
+            self.logger, f"{get_adapter_tag(self.adapter)} Render final HTML"
+        ):
+            return _render_html_snapshot(
+                kinds=self.kinds,
+                accs=self.accs,
+                first_columns=self.first_columns,
+                row_kmv=self.row_kmv,
+                total_missing_cells=self.total_missing_cells,
+                approx_mem_bytes=self.approx_mem_bytes,
+                start_time=self.start_time,
+                cfg=self.config,
+                report_title=report_title,
+                sample_section_html=self.sample_section_html,
+            )
+
+    def _build_summary(
+        self, kinds_map: Any, col_order: Any, miss_list: Any
+    ) -> Optional[dict]:
+        """Build the programmatic summary."""
+        result = self.metrics_service.build_summary(
+            kinds_map=kinds_map,
+            col_order=col_order,
+            row_kmv=self.row_kmv,
+            total_missing_cells=self.total_missing_cells,
+            n_rows=self.n_rows,
+            n_cols=self.n_cols,
+            miss_list=miss_list,
+        )
+
+        if not result.success:
+            self.logger.warning("Failed to build summary: %s", result.error)
+            return None
+
+        return result.data
+
+    def _write_output_file(self, html: str, output_file: str) -> None:
+        """Write the HTML report to a file."""
+        with _SectionTimer(
+            self.logger, f"{get_adapter_tag(self.adapter)} Write HTML to {output_file}"
+        ):
+            with open(output_file, "w", encoding="utf-8") as f:
+                f.write(html)
+
+            self.logger.info(
+                "report written: %s (%s)",
+                output_file,
+                _human_bytes(len(html.encode("utf-8"))),
+            )
+
+    def _log_completion(self) -> None:
+        """Log completion information."""
+        elapsed_time = time.time() - self.start_time
+        self.logger.info("Report generation complete in %.2fs", elapsed_time)
+
+    def build_report(
+        self,
+        source: Any,
+        *,
+        output_file: Optional[str] = None,
+        report_title: Optional[str] = None,
+        return_summary: bool = False,
+        compute_only: bool = False,
+    ) -> str | Tuple[str, dict]:
+        """Build a streaming EDA report from in-memory data.
+
+        This method orchestrates the complete report generation process:
+        1. Setup and configuration
+        2. First chunk processing and pipeline setup
+        3. Stream processing of remaining chunks
+        4. Manifest building and correlation processing
+        5. HTML rendering and summary generation
+        6. Output handling
+
+        Args:
+            source: Input data (pandas/polars DataFrame or iterable of chunks)
+            output_file: Optional path to write the final HTML document
+            report_title: Optional title for the HTML report
+            return_summary: If True, returns tuple (html, summary)
+            compute_only: If True, skips HTML rendering
+
+        Returns:
+            HTML string or tuple (html, summary) if return_summary is True
+
+        Raises:
+            TypeError: If source is not a supported type
+        """
+        # Phase 1: Setup and configuration
+        self._setup_random_seeds()
+        self._log_startup_info(source)
+
+        # Phase 2: Build chunk iterator and process first chunk
+        with _SectionTimer(self.logger, "Build chunk iterator"):
+            chunk_result = self.chunking_service.chunks_from_source(
+                source,
+                int(self.config.chunk_size),
+                bool(getattr(self.config, "force_chunk_in_memory", False)),
+            )
+
+            if not chunk_result.success:
+                self.logger.error("Chunking failed: %s", chunk_result.error)
+                raise RuntimeError(chunk_result.error)
+
+            chunks = chunk_result.data
+
+        with _SectionTimer(self.logger, "Read first chunk"):
             try:
-                sample = df.head(min(2000, df.height)).to_pandas()
-                self.update_from_pandas(sample)
-            except Exception:
-                self.rows += min(2000, df.height)
+                first_chunk = next(chunks)
+            except StopIteration:
+                self.logger.warning("Empty source; nothing to report")
+                html = _render_empty_html(self.config.title)
+                if return_summary:
+                    return html, {}
+                return html
 
+        self._process_first_chunk(first_chunk)
 
-# =============================
-# Lightweight streaming correlations (pairwise sums)
-# =============================
-class _StreamingCorr:
-    def __init__(self, columns: Sequence[str]):
-        self.cols = list(columns)
-        self.pairs: Dict[Tuple[str, str], Dict[str, float]] = {}
+        # Phase 3: Process remaining chunks
+        self._process_remaining_chunks(chunks)
 
-    def update_from_pandas(self, df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
-        if pd is None:
-            return
-        use_cols = [c for c in self.cols if c in df.columns]
-        if len(use_cols) < 2:
-            return
-        arrs: Dict[str, np.ndarray] = {}
-        for c in use_cols:
-            try:
-                a = pd.to_numeric(df[c], errors="coerce").to_numpy(
-                    dtype="float64", copy=False
-                )
-            except Exception:
-                a = np.asarray(df[c].to_numpy(), dtype=float)
-            arrs[c] = a
-        for i in range(len(use_cols)):
-            ci = use_cols[i]
-            xi = arrs[ci]
-            for j in range(i + 1, len(use_cols)):
-                cj = use_cols[j]
-                yj = arrs[cj]
-                m = np.isfinite(xi) & np.isfinite(yj)
-                if not m.any():
-                    continue
-                x = xi[m]
-                y = yj[m]
-                n = float(x.size)
-                sx = float(np.sum(x))
-                sy = float(np.sum(y))
-                sx2 = float(np.sum(x * x))
-                sy2 = float(np.sum(y * y))
-                sxy = float(np.sum(x * y))
-                key = (ci, cj)
-                if key not in self.pairs:
-                    self.pairs[key] = {
-                        "n": 0.0,
-                        "sx": 0.0,
-                        "sy": 0.0,
-                        "sx2": 0.0,
-                        "sy2": 0.0,
-                        "sxy": 0.0,
-                    }
-                st = self.pairs[key]
-                st["n"] += n
-                st["sx"] += sx
-                st["sy"] += sy
-                st["sx2"] += sx2
-                st["sy2"] += sy2
-                st["sxy"] += sxy
+        # Phase 4: Build manifest and process correlations
+        kinds_map, col_order, self.n_rows, self.n_cols, miss_list = (
+            self._build_manifest()
+        )
+        self._process_correlations()
 
-    def update_from_polars(self, df: "pl.DataFrame") -> None:  # type: ignore[name-defined]
-        if pl is None:
-            return
-        use_cols = [c for c in self.cols if c in df.columns]
-        if len(use_cols) < 2:
-            return
-        arrs: Dict[str, np.ndarray] = {}
-        for c in use_cols:
-            try:
-                a = df[c].cast(pl.Float64, strict=False).to_numpy()
-            except Exception:
-                a = np.asarray(df[c].to_list(), dtype=float)
-            arrs[c] = a
-        for i in range(len(use_cols)):
-            ci = use_cols[i]
-            xi = arrs[ci]
-            for j in range(i + 1, len(use_cols)):
-                cj = use_cols[j]
-                yj = arrs[cj]
-                m = np.isfinite(xi) & np.isfinite(yj)
-                if not m.any():
-                    continue
-                x = xi[m]
-                y = yj[m]
-                n = float(x.size)
-                sx = float(np.sum(x))
-                sy = float(np.sum(y))
-                sx2 = float(np.sum(x * x))
-                sy2 = float(np.sum(y * y))
-                sxy = float(np.sum(x * y))
-                key = (ci, cj)
-                if key not in self.pairs:
-                    self.pairs[key] = {
-                        "n": 0.0,
-                        "sx": 0.0,
-                        "sy": 0.0,
-                        "sx2": 0.0,
-                        "sy2": 0.0,
-                        "sxy": 0.0,
-                    }
-                st = self.pairs[key]
-                st["n"] += n
-                st["sx"] += sx
-                st["sy"] += sy
-                st["sx2"] += sx2
-                st["sy2"] += sy2
-                st["sxy"] += sxy
+        # Log top-missing columns
+        self.logger.info(
+            "top-missing columns: %s",
+            ", ".join([c for c, _, _ in miss_list[:5]]) or "(none)",
+        )
 
-    def top_map(
-        self, *, threshold: float = 0.6, max_per_col: int = 2
-    ) -> Dict[str, List[Tuple[str, float]]]:
-        res: Dict[str, List[Tuple[str, float]]] = {c: [] for c in self.cols}
-        for (ci, cj), st in self.pairs.items():
-            n = st["n"]
-            if n <= 1:
-                continue
-            num = n * st["sxy"] - st["sx"] * st["sy"]
-            denx = n * st["sx2"] - st["sx"] ** 2
-            deny = n * st["sy2"] - st["sy"] ** 2
-            if denx <= 0 or deny <= 0:
-                continue
-            r = float(num / math.sqrt(denx * deny))
-            if not math.isfinite(r):
-                continue
-            if abs(r) >= threshold:
-                res[ci].append((cj, r))
-                res[cj].append((ci, r))
-        for c in list(res.keys()):
-            res[c].sort(key=lambda t: -abs(t[1]))
-            if max_per_col and len(res[c]) > max_per_col:
-                res[c] = res[c][:max_per_col]
-        return res
+        # Phase 5: Render HTML and build summary
+        html = ""
+        if not compute_only:
+            html = self._render_html(report_title)
+
+        summary_obj = self._build_summary(kinds_map, col_order, miss_list)
+
+        # Phase 6: Handle output
+        if output_file and not compute_only:
+            self._write_output_file(html, output_file)
+
+        self._log_completion()
+
+        # Return results
+        if return_summary:
+            return html, (summary_obj or {})
+        return html
 
 
 def build_report(
     source: Any,
     *,
-    config: Optional[ReportConfig] = None,
+    config: Optional[EngineConfig] = None,
     output_file: Optional[str] = None,
     report_title: Optional[str] = None,
     return_summary: bool = False,
     compute_only: bool = False,
-) -> str:
-    """Build an HTML EDA report from in-memory sources (streaming, out-of-core).
+) -> str | Tuple[str, dict]:
+    """Build a streaming EDA report from in-memory data.
 
-    Parameters
-    ----------
-    source : pandas.DataFrame | Iterable[pandas.DataFrame]
-        Either a single in-memory pandas DataFrame or an iterable of
-        pandas DataFrames (already chunked in memory).
-    config : ReportConfig, optional
-        Tuning knobs for chunk sizes and approximations.
-    output_file : str, optional
-        If provided, write the HTML report to this file.
-    report_title : str, optional
-        Custom title for the report.
+    This function orchestrates the complete report generation process:
+    1. Setup and configuration
+    2. First chunk processing and pipeline setup
+    3. Stream processing of remaining chunks
+    4. Manifest building and correlation processing
+    5. HTML rendering and summary generation
+    6. Output handling
 
-    Returns
-    -------
-    html : str
-        A self-contained HTML snippet with the report.
-    When return_summary=True, returns (html, summary: dict) with dataset- and per-column stats.
+    Args:
+        source: Input data (pandas/polars DataFrame or iterable of chunks)
+        config: Engine configuration. If None, uses default configuration.
+        output_file: Optional path to write the final HTML document
+        report_title: Optional title for the HTML report
+        return_summary: If True, returns tuple (html, summary)
+        compute_only: If True, skips HTML rendering
+
+    Returns:
+        HTML string or tuple (html, summary) if return_summary is True
+
+    Raises:
+        TypeError: If source is not a supported type
+
+    Examples:
+        Basic usage with pandas::
+
+            >>> import pandas as pd
+            >>> from pysuricata.report import build_report
+            >>> df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
+            >>> html = build_report(df)
+            >>> assert "<html" in html.lower()
+
+        Custom configuration::
+
+            >>> from pysuricata.config import EngineConfig
+            >>> config = EngineConfig(chunk_size=100_000, numeric_sample_k=10_000)
+            >>> html = build_report(df, config=config)
     """
-    cfg = config or ReportConfig()
-    start_time = time.time()
-
-    # Seed global RNGs for deterministic sampling/sketches when requested
-    try:
-        if cfg.random_seed is not None:
-            np.random.seed(int(cfg.random_seed))
-            _py_random.seed(int(cfg.random_seed))
-            global _REPORT_RANDOM_SEED
-            _REPORT_RANDOM_SEED = int(cfg.random_seed)
-    except Exception:
-        pass
-
-    # Configure logger (no global basicConfig in library code)
-    logger = cfg.logger or logging.getLogger(__name__)
-    logger.setLevel(cfg.log_level)
-    logger.info(
-        "Starting report generation: source=%s",
-        source
-        if isinstance(source, str)
-        else f"DataFrame{getattr(source, 'shape', '')}",
+    orchestrator = ReportOrchestrator(config)
+    return orchestrator.build_report(
+        source=source,
+        output_file=output_file,
+        report_title=report_title,
+        return_summary=return_summary,
+        compute_only=compute_only,
     )
-    logger.info(
-        "chunk_size=%d, uniques_k=%d, numeric_sample_k=%d, topk_k=%d",
-        cfg.chunk_size,
-        cfg.uniques_k,
-        cfg.numeric_sample_k,
-        cfg.topk_k,
-    )
-
-    # Build chunk iterator
-    with _SectionTimer(logger, "Build chunk iterator"):
-        # If an iterable is supplied, use it directly; otherwise, wrap single frame
-        try:
-            is_pd = (pd is not None) and isinstance(source, pd.DataFrame)
-            is_pl = (pl is not None) and isinstance(source, pl.DataFrame)
-        except Exception:
-            is_pd = False
-            is_pl = False
-        try:
-            if hasattr(source, "__iter__") and not is_pd and not is_pl:
-                chunks = iter(source)
-            else:
-
-                def _one() -> Iterator[Any]:
-                    yield source
-
-                chunks = _one()
-        except Exception:
-
-            def _one() -> Iterator[Any]:
-                yield source
-
-            chunks = _one()
-
-    with _SectionTimer(logger, "Read first chunk"):
-        try:
-            first = next(chunks)
-        except StopIteration:
-            logger.warning("Empty source; nothing to report")
-            return _render_empty_html(cfg.title)
-    row_kmv = _RowKMV()
-    total_missing_cells = 0
-    approx_mem_bytes = 0
-    sample_section_html = ""
-    if pd is not None and isinstance(first, pd.DataFrame):
-        try:
-            approx_mem_bytes = int(first.memory_usage(deep=True).sum())
-        except Exception:
-            approx_mem_bytes = 0
-        row_kmv.update_from_pandas(first)
-        total_missing_cells += int(first.isna().sum().sum())
-        # Render sample section if enabled
-        sample_section_html = ""
-        if cfg.include_sample and pd is not None and isinstance(first, pd.DataFrame):
-            sample_section_html = _render_sample_section(first, cfg.sample_rows)
-        first_columns = list(first.columns)
-    if pd is not None and isinstance(first, pd.DataFrame):
-        with _SectionTimer(logger, "Infer kinds & build accumulators"):
-            kinds = _infer_kinds_pandas(first)
-            accs = _build_accumulators(kinds, cfg)
-            # Set dtype chip from first chunk's dtype
-            try:
-                dtypes_map = {c: str(first[c].dtype) for c in first.columns}
-                for name in kinds.numeric:
-                    if name in accs and isinstance(accs[name], NumericAccumulator):
-                        accs[name].set_dtype(dtypes_map.get(name, "numeric"))
-                for name in kinds.categorical:
-                    if name in accs and isinstance(accs[name], CategoricalAccumulator):
-                        accs[name].set_dtype(dtypes_map.get(name, "category"))
-                for name in kinds.boolean:
-                    if name in accs and isinstance(accs[name], BooleanAccumulator):
-                        accs[name].set_dtype(dtypes_map.get(name, "boolean"))
-                for name in kinds.datetime:
-                    if name in accs and isinstance(accs[name], DatetimeAccumulator):
-                        accs[name].set_dtype(dtypes_map.get(name, "datetime64[ns]"))
-            except Exception:
-                pass
-        # Optional streaming correlations
-        corr_est = None
-        if (
-            cfg.compute_correlations
-            and len(kinds.numeric) > 1
-            and len(kinds.numeric) <= cfg.corr_max_cols
-        ):
-            corr_est = _StreamingCorr(kinds.numeric)
-        with _SectionTimer(logger, "Consume first chunk"):
-            _consume_chunk_pandas(first, accs, kinds, logger)
-            if corr_est is not None:
-                try:
-                    corr_est.update_from_pandas(first)
-                except Exception:
-                    logger.exception("Correlation update failed on first chunk")
-        logger.info(
-            "kinds: %d numeric, %d categorical, %d datetime, %d boolean",
-            len(kinds.numeric),
-            len(kinds.categorical),
-            len(kinds.datetime),
-            len(kinds.boolean),
-        )
-        n_rows = len(first)
-        n_cols = len(first.columns)
-        chunk_idx = 1
-        # Checkpoint manager (optional)
-        ckpt_mgr = None
-        if cfg.checkpoint_every_n_chunks and cfg.checkpoint_every_n_chunks > 0:
-            # Decide directory
-            base_dir = cfg.checkpoint_dir or (
-                os.path.dirname(output_file) if output_file else os.getcwd()
-            )
-            ckpt_mgr = _CheckpointManager(
-                base_dir,
-                prefix=cfg.checkpoint_prefix,
-                keep=cfg.checkpoint_max_to_keep,
-                write_html=cfg.checkpoint_write_html,
-            )
-        for ch in chunks:
-            chunk_idx += 1
-            if (chunk_idx - 1) % max(1, cfg.log_every_n_chunks) == 0:
-                logger.info("processing chunk %d: %d rows", chunk_idx, len(ch))
-            _consume_chunk_pandas(ch, accs, kinds, logger)
-            try:
-                approx_mem_bytes += int(ch.memory_usage(deep=True).sum())
-            except Exception:
-                pass
-            if corr_est is not None:
-                try:
-                    corr_est.update_from_pandas(ch)
-                except Exception:
-                    logger.exception("Correlation update failed on chunk %d", chunk_idx)
-            n_rows += len(ch)
-            row_kmv.update_from_pandas(ch)
-            total_missing_cells += int(ch.isna().sum().sum())
-            # --- Checkpointing ---
-            if ckpt_mgr and (chunk_idx % cfg.checkpoint_every_n_chunks == 0):
-                try:
-                    snapshot = _make_state_snapshot(
-                        kinds=kinds,
-                        accs=accs,
-                        row_kmv=row_kmv,
-                        total_missing_cells=total_missing_cells,
-                        approx_mem_bytes=approx_mem_bytes,
-                        chunk_idx=chunk_idx,
-                        first_columns=first_columns,
-                        sample_section_html=sample_section_html,
-                        cfg=cfg,
-                    )
-                    html_ckpt = None
-                    if cfg.checkpoint_write_html:
-                        html_ckpt = _render_html_snapshot(
-                            kinds=kinds,
-                            accs=accs,
-                            first_columns=first_columns,
-                            row_kmv=row_kmv,
-                            total_missing_cells=total_missing_cells,
-                            approx_mem_bytes=approx_mem_bytes,
-                            start_time=start_time,
-                            cfg=cfg,
-                            report_title=report_title,
-                            sample_section_html=sample_section_html,
-                        )
-                    pkl_path, html_path = ckpt_mgr.save(
-                        chunk_idx, snapshot, html=html_ckpt
-                    )
-                    logger.info(
-                        "Checkpoint saved at %s%s",
-                        pkl_path,
-                        f" and {html_path}" if html_path else "",
-                    )
-                except Exception:
-                    logger.exception(
-                        "Failed to write checkpoint at chunk %d", chunk_idx
-                    )
-    elif pl is not None and isinstance(first, pl.DataFrame):
-        # Polars path
-        try:
-            approx_mem_bytes = int(first.estimated_size())
-        except Exception:
-            approx_mem_bytes = 0
-        try:
-            total_missing_cells += int(
-                first.null_count().select(pl.sum(pl.all())).to_numpy()[0][0]
-            )
-        except Exception:
-            pass
-        row_kmv.update_from_polars(first)
-        # Sample section (convert a tiny sample to pandas for rendering)
-        sample_section_html = ""
-        if cfg.include_sample:
-            try:
-                sample_section_html = _render_sample_section(
-                    first.head(cfg.sample_rows).to_pandas(), cfg.sample_rows
-                )
-            except Exception:
-                sample_section_html = ""
-        first_columns = list(first.columns)
-        with _SectionTimer(logger, "Infer kinds & build accumulators [pl]"):
-            kinds = _infer_kinds_polars(first)
-            accs = _build_accumulators(kinds, cfg)
-            try:
-                dtypes_map = {c: str(first.schema[c]) for c in first.columns}
-                for name in kinds.numeric:
-                    if name in accs and isinstance(accs[name], NumericAccumulator):
-                        accs[name].set_dtype(dtypes_map.get(name, "numeric"))
-                for name in kinds.categorical:
-                    if name in accs and isinstance(accs[name], CategoricalAccumulator):
-                        accs[name].set_dtype(dtypes_map.get(name, "categorical"))
-                for name in kinds.boolean:
-                    if name in accs and isinstance(accs[name], BooleanAccumulator):
-                        accs[name].set_dtype(dtypes_map.get(name, "boolean"))
-                for name in kinds.datetime:
-                    if name in accs and isinstance(accs[name], DatetimeAccumulator):
-                        accs[name].set_dtype(dtypes_map.get(name, "datetime"))
-            except Exception:
-                pass
-        corr_est = None
-        if (
-            cfg.compute_correlations
-            and len(kinds.numeric) > 1
-            and len(kinds.numeric) <= cfg.corr_max_cols
-        ):
-            corr_est = _StreamingCorr(kinds.numeric)
-        with _SectionTimer(logger, "Consume first chunk [pl]"):
-            _consume_chunk_polars(first, accs, kinds, logger)
-            if corr_est is not None:
-                try:
-                    corr_est.update_from_polars(first)
-                except Exception:
-                    logger.exception("Correlation update failed on first polars chunk")
-        logger.info(
-            "[pl] kinds: %d numeric, %d categorical, %d datetime, %d boolean",
-            len(kinds.numeric),
-            len(kinds.categorical),
-            len(kinds.datetime),
-            len(kinds.boolean),
-        )
-        n_rows = first.height
-        n_cols = len(first.columns)
-        chunk_idx = 1
-        ckpt_mgr = None
-        if cfg.checkpoint_every_n_chunks and cfg.checkpoint_every_n_chunks > 0:
-            base_dir = cfg.checkpoint_dir or (
-                os.path.dirname(output_file) if output_file else os.getcwd()
-            )
-            ckpt_mgr = _CheckpointManager(
-                base_dir,
-                prefix=cfg.checkpoint_prefix,
-                keep=cfg.checkpoint_max_to_keep,
-                write_html=cfg.checkpoint_write_html,
-            )
-        for ch in chunks:
-            chunk_idx += 1
-            if (chunk_idx - 1) % max(1, cfg.log_every_n_chunks) == 0:
-                try:
-                    logger.info(
-                        "[pl] processing chunk %d: %d rows", chunk_idx, ch.height
-                    )
-                except Exception:
-                    logger.info("[pl] processing chunk %d", chunk_idx)
-            _consume_chunk_polars(ch, accs, kinds, logger)
-            try:
-                approx_mem_bytes += int(ch.estimated_size())
-            except Exception:
-                pass
-            if corr_est is not None:
-                try:
-                    corr_est.update_from_polars(ch)
-                except Exception:
-                    logger.exception(
-                        "Correlation update failed on polars chunk %d", chunk_idx
-                    )
-            try:
-                n_rows += int(ch.height)
-            except Exception:
-                pass
-            row_kmv.update_from_polars(ch)
-            try:
-                total_missing_cells += int(
-                    ch.null_count().select(pl.sum(pl.all())).to_numpy()[0][0]
-                )
-            except Exception:
-                pass
-            if ckpt_mgr and (chunk_idx % cfg.checkpoint_every_n_chunks == 0):
-                try:
-                    snapshot = _make_state_snapshot(
-                        kinds=kinds,
-                        accs=accs,
-                        row_kmv=row_kmv,
-                        total_missing_cells=total_missing_cells,
-                        approx_mem_bytes=approx_mem_bytes,
-                        chunk_idx=chunk_idx,
-                        first_columns=first_columns,
-                        sample_section_html=sample_section_html,
-                        cfg=cfg,
-                    )
-                    html_ckpt = None
-                    if cfg.checkpoint_write_html:
-                        html_ckpt = _render_html_snapshot(
-                            kinds=kinds,
-                            accs=accs,
-                            first_columns=first_columns,
-                            row_kmv=row_kmv,
-                            total_missing_cells=total_missing_cells,
-                            approx_mem_bytes=approx_mem_bytes,
-                            start_time=start_time,
-                            cfg=cfg,
-                            report_title=report_title,
-                            sample_section_html=sample_section_html,
-                        )
-                    pkl_path, html_path = ckpt_mgr.save(
-                        chunk_idx, snapshot, html=html_ckpt
-                    )
-                    logger.info(
-                        "[pl] Checkpoint saved at %s%s",
-                        pkl_path,
-                        f" and {html_path}" if html_path else "",
-                    )
-                except Exception:
-                    logger.exception(
-                        "Failed to write checkpoint at polars chunk %d", chunk_idx
-                    )
-    else:
-        raise TypeError(
-            "Unsupported input type. Provide a pandas/polars DataFrame or an iterable of them."
-        )
-
-    # Build per-column accumulator map grouped by kind for metrics
-    kinds_map = {
-        **{name: ("numeric", accs[name]) for name in kinds.numeric},
-        **{name: ("categorical", accs[name]) for name in kinds.categorical},
-        **{name: ("datetime", accs[name]) for name in kinds.datetime},
-        **{name: ("boolean", accs[name]) for name in kinds.boolean},
-    }
-
-    # Finalize correlation chips and attach to numeric accumulators
-    if "corr_est" in locals() and corr_est is not None:
-        top_map = corr_est.top_map(
-            threshold=cfg.corr_threshold, max_per_col=cfg.corr_max_per_col
-        )
-        for name in kinds.numeric:
-            if name in accs and isinstance(accs[name], NumericAccumulator):
-                accs[name].set_corr_top(top_map.get(name, []))
-
-    # Top-missing list and summary metrics
-    with _SectionTimer(logger, "Compute top-missing, duplicates & quick metrics"):
-        pass  # marker for timing; actual work happens in the following lines
-    miss_list: List[Tuple[str, float, int]] = []  # (name, pct, count)
-    for name, (kind, acc) in kinds_map.items():
-        miss = getattr(acc, "missing", 0)
-        cnt = getattr(acc, "count", 0) + miss
-        pct = (miss / cnt * 100.0) if cnt else 0.0
-        miss_list.append((name, pct, miss))
-    miss_list.sort(key=lambda t: t[1], reverse=True)
-    top_missing_list = ""
-    for col, pct, count in miss_list[:5]:
-        severity_class = "low" if pct <= 5 else ("medium" if pct <= 20 else "high")
-        top_missing_list += f"""
-        <li class=\"missing-item\"> 
-          <div class=\"missing-info\"> 
-            <code class=\"missing-col\" title=\"{_html.escape(str(col))}\">{_html.escape(str(col))}</code>
-            <span class=\"missing-stats\">{count:,} ({pct:.1f}%)</span>
-          </div>
-          <div class=\"missing-bar\"><div class=\"missing-fill {severity_class}\" style=\"width:{pct:.1f}%;\"></div></div>
-        </li>
-        """
-    if not top_missing_list:
-        top_missing_list = """
-        <li class=\"missing-item\"><div class=\"missing-info\"><code class=\"missing-col\">None</code><span class=\"missing-stats\">0 (0.0%)</span></div><div class=\"missing-bar\"><div class=\"missing-fill low\" style=\"width:0%;\"></div></div></li>
-        """
-    logger.info(
-        "top-missing columns: %s",
-        ", ".join([c for c, _, _ in miss_list[:5]]) or "(none)",
-    )
-
-    # Quick counts
-    n_rows = int(getattr(row_kmv, "rows", 0))
-    n_cols = len(kinds_map)
-    total_cells = n_rows * n_cols
-    missing_overall = f"{total_missing_cells:,} ({(total_missing_cells / max(1, total_cells) * 100):.1f}%)"
-    dup_rows, dup_pct = row_kmv.approx_duplicates()
-    duplicates_overall = f"{dup_rows:,} ({dup_pct:.1f}%)"
-
-    # n_unique_cols (classic used nunique().count() which is # of columns). Keep same.
-    n_unique_cols = n_cols
-
-    # constant/high-card metrics
-    constant_cols = 0
-    high_card_cols = 0
-    likely_id_cols: List[str] = []
-    for name, (kind, acc) in kinds_map.items():
-        if kind in ("numeric", "categorical"):
-            u = (
-                acc._uniques.estimate()
-                if hasattr(acc, "_uniques")
-                else getattr(acc, "unique_est", 0)
-            )
-        elif kind == "datetime":
-            u = acc.unique_est
-        else:  # boolean
-            # boolean unique among {True, False} (ignore missing for ID heuristic)
-            present = (acc.true_n > 0) + (acc.false_n > 0)
-            u = int(present)
-        total = getattr(acc, "count", 0) + getattr(acc, "missing", 0)
-        if u <= 1:
-            constant_cols += 1
-        if kind == "categorical" and n_rows:
-            if (u / n_rows) > 0.5:
-                high_card_cols += 1
-        if total == n_rows and getattr(acc, "missing", 0) == 0 and n_rows:
-            if u >= int(0.98 * n_rows):
-                likely_id_cols.append(name)
-    if len(likely_id_cols) > 3:
-        likely_id_cols = likely_id_cols[:3] + ["..."]
-    likely_id_cols_str = ", ".join(likely_id_cols) if likely_id_cols else "—"
-
-    # Date range across datetime columns
-    if kinds.datetime:
-        mins, maxs = [], []
-        for name in kinds.datetime:
-            acc = accs[name]
-            if acc._min_ts is not None:
-                mins.append(acc._min_ts)
-            if acc._max_ts is not None:
-                maxs.append(acc._max_ts)
-        if mins and maxs:
-            date_min = (
-                datetime.utcfromtimestamp(min(mins) / 1_000_000_000).isoformat() + "Z"
-            )
-            date_max = (
-                datetime.utcfromtimestamp(max(maxs) / 1_000_000_000).isoformat() + "Z"
-            )
-        else:
-            date_min = date_max = "—"
-    else:
-        date_min = date_max = "—"
-
-    # Text columns / avg length (approx from categorical accs)
-    text_cols = len(kinds.categorical)
-    avg_text_len_vals = [
-        acc.avg_len
-        for name, (k, acc) in kinds_map.items()
-        if k == "categorical" and acc.avg_len is not None
-    ]
-    avg_text_len = (
-        f"{(sum(avg_text_len_vals) / len(avg_text_len_vals)):.1f}"
-        if avg_text_len_vals
-        else "—"
-    )
-
-    # Build Variables section using existing CSS classes, preserving original column order
-    col_order = []
-    if pd is not None and isinstance(first, pd.DataFrame):
-        col_order = [
-            c
-            for c in list(first.columns)
-            if c in kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean
-        ]
-    else:
-        col_order = kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean
-
-    all_cards_list: List[str] = []
-    for name in col_order:
-        acc = accs[name]
-        if name in kinds.numeric:
-            all_cards_list.append(_render_numeric_card_new(acc.finalize()))
-        elif name in kinds.categorical:
-            all_cards_list.append(_render_cat_card_new(acc.finalize()))
-        elif name in kinds.datetime:
-            all_cards_list.append(_render_dt_card_new(acc.finalize()))
-        elif name in kinds.boolean:
-            all_cards_list.append(_render_bool_card_new(acc.finalize()))
-
-    html = ""
-    if not compute_only:
-        with _SectionTimer(logger, "Render Variables section"):
-            variables_section_html = f"""
-                <section id=\"vars\">  
-                  <span id=\"numeric-vars\" class=\"anchor-alias\"></span>
-                  <h2 class=\"section-title\">Variables</h2>
-                  <p class=\"muted small\">Analyzing {len(kinds.numeric) + len(kinds.categorical) + len(kinds.datetime) + len(kinds.boolean)} variables ({len(kinds.numeric)} numeric, {len(kinds.categorical)} categorical, {len(kinds.datetime)} datetime, {len(kinds.boolean)} boolean).</p>
-                  <div class=\"cards-grid\">{"".join(all_cards_list)}</div>
-                </section>
-            """
-            logger.info("rendered %d variable cards", len(all_cards_list))
-            sections_html = (sample_section_html or "") + variables_section_html
-
-            from .render.html import render_html_snapshot as _render_html_snapshot
-
-            with _SectionTimer(logger, "Render final HTML"):
-                html = _render_html_snapshot(
-                    kinds=kinds,
-                    accs=accs,
-                    first_columns=first_columns,
-                    row_kmv=row_kmv,
-                    total_missing_cells=total_missing_cells,
-                    approx_mem_bytes=approx_mem_bytes,
-                    start_time=start_time,
-                    cfg=cfg,
-                    report_title=report_title,
-                    sample_section_html=sample_section_html,
-                )
-
-    # Optional minimal JSON-like summary for programmatic use
-    from .compute.manifest import build_summary as _build_summary
-
-    try:
-        summary_obj = _build_summary(
-            kinds_map,
-            col_order,
-            row_kmv=row_kmv,
-            total_missing_cells=total_missing_cells,
-            n_rows=n_rows,
-            n_cols=n_cols,
-            miss_list=miss_list,
-        )
-    except Exception:
-        summary_obj = None
-
-    if output_file and not compute_only:
-        with _SectionTimer(logger, f"Write HTML to {output_file}"):
-            with open(output_file, "w", encoding="utf-8") as f:
-                f.write(html)
-        logger.info(
-            "report written: %s (%s)",
-            output_file,
-            _human_bytes(len(html.encode("utf-8"))),
-        )
-    logger.info("Report generation complete in %.2fs", time.time() - start_time)
-    if return_summary:
-        return html, (summary_obj or {})  # type: ignore[return-value]
-    return html
-
-
-def _render_empty_html(title: str) -> str:
-    return f"""
-    <!DOCTYPE html>
-    <html lang=\"en\"><head><meta charset=\"utf-8\"><title>{title}</title></head>
-    <body><div class=\"container\"><h1>{title}</h1><p>Empty source.</p></div></body></html>
-    """
-
-
-# =============================
-# Chunk consumption for pandas (imports handled earlier)
-# =============================

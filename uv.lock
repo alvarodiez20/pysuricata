@@ -1260,7 +1260,7 @@ wheels = [
 
 [[package]]
 name = "pysuricata"
-version = "0.0.8"
+version = "0.0.9"
 source = { editable = "." }
 dependencies = [
     { name = "numpy", version = "2.3.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },

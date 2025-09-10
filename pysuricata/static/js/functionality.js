@@ -69,6 +69,29 @@ ${root.outerHTML}
   return false; // prevent default navigation
 }
 
+// --- Scroll to top functionality for logo/report icon ---
+(function(){
+  const ROOT_ID = 'pysuricata-report';
+  
+  // Add click handler for logo to scroll to top
+  document.addEventListener('click', function(e){
+    const logo = e.target.closest('#logo-container, .logo');
+    if (!logo) return;
+    
+    const root = document.getElementById(ROOT_ID);
+    if (!root || !root.contains(logo)) return;
+    
+    // Smooth scroll to top
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+    
+    e.preventDefault();
+    return false;
+  });
+})();
+
 // --- Header pin/unpin toggle (scoped to #pysuricata-report) ---
 (function(){
   const ROOT_ID = 'pysuricata-report';
@@ -148,6 +171,8 @@ ${root.outerHTML}
     if (!btn) return;
     const root = document.getElementById(ROOT_ID);
     if (!root || !root.contains(btn)) return;
+    // Ignore Details toggle buttons; handled by dedicated listener below
+    if (btn.classList && btn.classList.contains('details-toggle')) return;
 
     const controls = btn.closest('.hist-controls');
     const card = btn.closest('.var-card');
@@ -175,12 +200,16 @@ ${root.outerHTML}
 
     const scale = controls.dataset.scale || 'lin';
     const bin = controls.dataset.bin || '25';
-    const targetId = `${card.id}-${scale}-bins-${bin}`;
+    let targetId = `${card.id}-${scale}-bins-${bin}`;
 
-    // Hide all variants within this card, then show selected
-    card.querySelectorAll('.hist.variant').forEach(v => { v.style.display = 'none'; });
-    const target = document.getElementById(targetId);
-    if (target) target.style.display = '';
+    // Toggle active variant via class (CSS controls display)
+    card.querySelectorAll('.hist.variant').forEach(v => v.classList.remove('active'));
+    let target = document.getElementById(targetId);
+    if (!target) {
+      targetId = `${card.id}-${scale}-bins-25`;
+      target = document.getElementById(targetId);
+    }
+    if (target) target.classList.add('active');
   }, {passive:true});
 })();
 
@@ -264,23 +293,36 @@ ${root.outerHTML}
     const root = document.getElementById(ROOT_ID);
     if (!root || !root.contains(btn)) return;
 
+    console.log('Details toggle clicked:', btn); // Debug log
+
     const id = btn.getAttribute('aria-controls');
+    console.log('Aria-controls ID:', id); // Debug log
+    
     const panel = id && document.getElementById(id);
+    console.log('Found panel:', panel); // Debug log
+    
     if (panel) {
       const isOpen = !panel.hasAttribute('hidden');
+      console.log('Panel is currently open:', isOpen); // Debug log
+      
       if (isOpen) {
         panel.setAttribute('hidden', '');
         btn.setAttribute('aria-expanded', 'false');
+        console.log('Panel closed'); // Debug log
       } else {
         panel.removeAttribute('hidden');
         btn.setAttribute('aria-expanded', 'true');
+        console.log('Panel opened'); // Debug log
+        
         // Ask dt mini‑charts to render with actual widths now that panel is visible
         try {
           const ev = new CustomEvent('suricata:dt:render', { detail: { container: panel } });
           document.dispatchEvent(ev);
           // Run again after layout settles
           setTimeout(() => document.dispatchEvent(ev), 50);
-        } catch(e) {}
+        } catch(e) {
+          console.error('Failed to trigger chart render:', e);
+        }
       }
       // Prevent any other listeners (e.g., legacy inline) from double-toggling
       e.stopImmediatePropagation();
@@ -291,14 +333,24 @@ ${root.outerHTML}
     // Legacy fallback: inline dropdown panel inside .details
     const details = btn.closest('.details');
     const legacy = details && details.querySelector('.details-panel');
-    if (!legacy) return;
+    console.log('Legacy panel found:', legacy); // Debug log
+    
+    if (!legacy) {
+      console.log('No panel found for details toggle'); // Debug log
+      return;
+    }
+    
     const open = !legacy.hasAttribute('hidden');
+    console.log('Legacy panel is currently open:', open); // Debug log
+    
     if (open) {
       legacy.setAttribute('hidden','');
       btn.setAttribute('aria-expanded','false');
+      console.log('Legacy panel closed'); // Debug log
     } else {
       legacy.removeAttribute('hidden');
       btn.setAttribute('aria-expanded','true');
+      console.log('Legacy panel opened'); // Debug log
     }
   }, {passive: false});
 
@@ -374,9 +426,9 @@ ${root.outerHTML}
       target = document.getElementById(targetId);
     }
 
-    // Hide/show only categorical variants
-    card.querySelectorAll('.cat.variant').forEach(v => { v.style.display = 'none'; });
-    if (target) target.style.display = '';
+    // Toggle via active class to align with CSS
+    card.querySelectorAll('.cat.variant').forEach(v => v.classList.remove('active'));
+    if (target) target.classList.add('active');
   }, {passive:true});
 })();
 
@@ -494,3 +546,24 @@ ${root.outerHTML}
     document.addEventListener('DOMContentLoaded', renderAll);
   }
 })();
+
+/**
+ * Smoothly scroll to the top of the page when the logo is clicked
+ */
+function scrollToTop() {
+  window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+  });
+}
+
+function toggleSampleText(detailsElement) {
+  const textElement = document.getElementById('sample-toggle-text');
+  if (!textElement) return;
+  
+  if (detailsElement.open) {
+    textElement.textContent = 'Hide';
+  } else {
+    textElement.textContent = 'Show';
+  }
+}

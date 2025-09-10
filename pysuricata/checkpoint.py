@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Tuple, List
-import gzip
 import glob
+import gzip
 import os
 import pickle
+from typing import Any, List, Mapping, Optional, Tuple
 
 
 class CheckpointManager:
@@ -66,3 +66,63 @@ class CheckpointManager:
         self.rotate()
         return pkl_path, html_path
 
+
+def make_state_snapshot(
+    *,
+    kinds: Any,
+    accs: Mapping[str, Any],
+    row_kmv: Any,
+    total_missing_cells: int,
+    approx_mem_bytes: int,
+    chunk_idx: int,
+    first_columns: list[str],
+    sample_section_html: str,
+    cfg: Any,
+) -> dict[str, Any]:
+    """Build a pickle‑friendly snapshot dictionary for checkpointing.
+
+    Keeps only lightweight, serializable state required to resume/report.
+    """
+    return {
+        "version": 1,
+        "timestamp": __import__("time").time(),
+        "chunk_idx": int(chunk_idx),
+        "first_columns": list(first_columns),
+        "sample_section_html": sample_section_html,
+        "kinds": kinds,
+        "accs": dict(accs),
+        "row_kmv": row_kmv,
+        "total_missing_cells": int(total_missing_cells),
+        "approx_mem_bytes": int(approx_mem_bytes),
+        "config": {
+            "title": getattr(cfg, "title", None),
+            "chunk_size": getattr(cfg, "chunk_size", None),
+            "numeric_sample_k": getattr(cfg, "numeric_sample_k", None),
+            "uniques_k": getattr(cfg, "uniques_k", None),
+            "topk_k": getattr(cfg, "topk_k", None),
+            "compute_correlations": getattr(cfg, "compute_correlations", None),
+            "corr_threshold": getattr(cfg, "corr_threshold", None),
+        },
+    }
+
+
+def maybe_make_manager(cfg: Any, output_file: Optional[str]) -> Optional[CheckpointManager]:
+    """Factory for an optional checkpoint manager based on config.
+
+    Returns None when checkpointing is disabled via config.
+    """
+    try:
+        every = int(getattr(cfg, "checkpoint_every_n_chunks", 0))
+    except Exception:
+        every = 0
+    if every <= 0:
+        return None
+    base_dir = getattr(cfg, "checkpoint_dir", None) or (
+        os.path.dirname(output_file) if output_file else os.getcwd()
+    )
+    return CheckpointManager(
+        base_dir,
+        prefix=getattr(cfg, "checkpoint_prefix", "pysuricata_ckpt"),
+        keep=int(getattr(cfg, "checkpoint_max_to_keep", 3)),
+        write_html=bool(getattr(cfg, "checkpoint_write_html", False)),
+    )

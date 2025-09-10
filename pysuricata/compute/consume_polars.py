@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional
 import warnings
+from typing import Any, Dict, Iterable, List, Optional
 
 import numpy as np
 
@@ -13,18 +13,36 @@ except Exception:  # pragma: no cover
     pl = None  # type: ignore
 
 from ..accumulators import (
-    NumericAccumulator,
-    BooleanAccumulator,
-    DatetimeAccumulator,
-    CategoricalAccumulator,
+    BooleanAccumulatorV2 as BooleanAccumulator,
 )
-from .infer import ColumnKinds, infer_kind_for_series_polars
+from ..accumulators import (
+    CategoricalAccumulatorV2 as CategoricalAccumulator,
+)
+from ..accumulators import (
+    DatetimeAccumulatorV2 as DatetimeAccumulator,
+)
+from ..accumulators import (
+    NumericAccumulatorV2 as NumericAccumulator,
+)
+from .core.types import ColumnKinds
+from .processing.inference import UnifiedTypeInferrer
 
 
 def _to_numeric_array_polars(s: "pl.Series") -> np.ndarray:  # type: ignore[name-defined]
     if pl is None:
         raise RuntimeError("polars not available")
     try:
+        # Fast path for already numeric types - avoid unnecessary casting
+        if s.dtype in [
+            pl.Float64,
+            pl.Float32,
+            pl.Int64,
+            pl.Int32,
+            pl.UInt64,
+            pl.UInt32,
+        ]:
+            return s.to_numpy()
+
         # Best-effort numeric casting; keep NaN for invalid
         s2 = s.cast(pl.Float64, strict=False)
         return s2.to_numpy()
@@ -62,7 +80,11 @@ def _to_datetime_ns_array_polars(s: "pl.Series") -> List[Optional[int]]:  # type
         warnings.simplefilter("ignore", UserWarning)
         try:
             # Force ns resolution and get integer ns since epoch
-            s2 = s.dt.cast_time_unit("ns") if s.dtype == pl.Datetime else s.cast(pl.Datetime("ns"), strict=False)
+            s2 = (
+                s.dt.cast_time_unit("ns")
+                if s.dtype == pl.Datetime
+                else s.cast(pl.Datetime("ns"), strict=False)
+            )
             # Cast to Int64 to extract raw ns (None for nulls)
             s3 = s2.cast(pl.Int64, strict=False)
             return [None if v is None else int(v) for v in s3.to_list()]
@@ -74,7 +96,12 @@ def _to_categorical_iter_polars(s: "pl.Series") -> Iterable[Any]:  # type: ignor
     return s.to_list()
 
 
-def consume_chunk_polars(df: "pl.DataFrame", accs: Dict[str, Any], kinds: ColumnKinds, logger: Optional["logging.Logger"] = None) -> None:  # type: ignore[name-defined]
+def consume_chunk_polars(
+    df: "pl.DataFrame",
+    accs: Dict[str, Any],
+    kinds: ColumnKinds,
+    logger: Optional["logging.Logger"] = None,
+) -> None:  # type: ignore[name-defined]
     if pl is None:
         raise RuntimeError("polars not available")
 
@@ -82,18 +109,30 @@ def consume_chunk_polars(df: "pl.DataFrame", accs: Dict[str, Any], kinds: Column
     for name in df.columns:
         if name in accs:
             continue
-        kind = infer_kind_for_series_polars(df[name])
+        inferrer = UnifiedTypeInferrer()
+        result = inferrer.infer_series_type(df[name])
+        if result.success:
+            kind = result.data
+        else:
+            kind = "categorical"  # fallback
+        # Get the actual dtype string from the polars Series
+        actual_dtype = str(df[name].dtype)
+
         if kind == "numeric":
             accs[name] = NumericAccumulator(name)
+            accs[name].set_dtype(actual_dtype)
             kinds.numeric.append(name)
         elif kind == "boolean":
             accs[name] = BooleanAccumulator(name)
+            accs[name].set_dtype(actual_dtype)
             kinds.boolean.append(name)
         elif kind == "datetime":
             accs[name] = DatetimeAccumulator(name)
+            accs[name].set_dtype(actual_dtype)
             kinds.datetime.append(name)
         else:
             accs[name] = CategoricalAccumulator(name)
+            accs[name].set_dtype(actual_dtype)
             kinds.categorical.append(name)
         if logger:
             logger.info("➕ discovered new column '%s' inferred as %s [pl]", name, kind)
@@ -102,12 +141,19 @@ def consume_chunk_polars(df: "pl.DataFrame", accs: Dict[str, Any], kinds: Column
     for name, acc in accs.items():
         if name not in df.columns:
             if logger:
-                logger.debug("column '%s' not present in this chunk; skipping [pl]", name)
+                logger.debug(
+                    "column '%s' not present in this chunk; skipping [pl]", name
+                )
             continue
         s = df[name]
         if isinstance(acc, NumericAccumulator):
             arr = _to_numeric_array_polars(s)
             acc.update(arr)
+            # Track memory usage
+            try:
+                acc.add_mem(int(df.estimated_size()))
+            except Exception:
+                pass
             # extremes: approximate via argpartition like pandas path
             try:
                 finite = np.isfinite(arr)
@@ -126,16 +172,16 @@ def consume_chunk_polars(df: "pl.DataFrame", accs: Dict[str, Any], kinds: Column
         elif isinstance(acc, BooleanAccumulator):
             acc.update(_to_bool_array_polars(s))
             try:
-                acc.add_mem(int(df.select(pl.sum(pl.all().map_batches(lambda c: c.estimated_size()))).to_numpy()[0][0]))  # rough
+                # Optimized memory estimation - use simple estimated_size() instead of complex aggregation
+                acc.add_mem(int(df.estimated_size()))
             except Exception:
                 pass
         elif isinstance(acc, DatetimeAccumulator):
             acc.update(_to_datetime_ns_array_polars(s))
             try:
-                # rough memory accounting
+                # Optimized memory accounting - use simple estimated_size()
                 acc.add_mem(int(df.estimated_size()))
             except Exception:
                 pass
         else:  # categorical
             acc.update(_to_categorical_iter_polars(s))
-

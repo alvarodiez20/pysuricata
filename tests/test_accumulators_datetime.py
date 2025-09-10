@@ -25,4 +25,3 @@ def test_datetime_accumulator_min_max_and_buckets():
     assert len(s.by_hour) == 24
     assert len(s.by_dow) == 7
     assert len(s.by_month) == 12
-

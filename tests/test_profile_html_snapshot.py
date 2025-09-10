@@ -1,6 +1,6 @@
 import pandas as pd
 
-from pysuricata import profile, ReportConfig
+from pysuricata import ProfileConfig, profile
 
 
 def test_profile_generates_html_snapshot():
@@ -8,14 +8,14 @@ def test_profile_generates_html_snapshot():
         {
             "amount": [1.0, 2.5, None, 4.0, 5.5],
             "country": ["US", "US", "DE", None, "FR"],
-            "ts": pd.to_datetime([
-                "2021-01-01", "2021-01-02", None, "2021-01-04", "2021-01-05"
-            ]),
+            "ts": pd.to_datetime(
+                ["2021-01-01", "2021-01-02", None, "2021-01-04", "2021-01-05"]
+            ),
             "flag": [True, False, True, None, False],
         }
     )
 
-    cfg = ReportConfig()
+    cfg = ProfileConfig()
     rep = profile(df, config=cfg)
 
     html = rep.html
@@ -29,4 +29,3 @@ def test_profile_generates_html_snapshot():
     assert "amount" in html
     assert "country" in html
     assert "flag" in html
-

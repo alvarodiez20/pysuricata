@@ -197,7 +197,7 @@ body.suricata-standalone:not(.light) {
 /* =============================
    SUMMARY SECTION (cards & lists)
    ============================= */
-#pysuricata-report #summary { margin: 1rem 0 2rem; }
+#pysuricata-report #summary { margin: 0.05rem 0 0.05rem; }
 #pysuricata-report #summary h2 { margin: 0 0 .75rem; font-size: 1.25rem; line-height: 1.25; }
 
 #pysuricata-report #summary .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
@@ -387,7 +387,7 @@ body.suricata-standalone:not(.light) {
 /* =============================
    DATASET SAMPLE (collapsible card)
    ============================= */
-#pysuricata-report .collapsible-card { margin: 1rem 0 2rem; }
+#pysuricata-report .collapsible-card { margin: 0.05rem 0 0.05rem; }
 
 #pysuricata-report details.card {
   border: 1px solid var(--chip-br-light);
@@ -429,6 +429,13 @@ body.suricata-standalone:not(.light) {
   max-width: 100%;
   max-height: none; /* expand to fit content vertically */
   -webkit-overflow-scrolling: touch;
+  border: none;
+  background: white;
+  margin: 8px 0 0 0; /* Remove bottom margin to eliminate extra padding */
+}
+
+#pysuricata-report:not(.light) .sample-scroll {
+  background: #1a1a1a;
 }
 
 /* Theme-aware horizontal scrollbar styling for sample area */
@@ -447,80 +454,143 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .sample-scroll::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.45); }
 #pysuricata-report:not(.light) .sample-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.45); }
 
-/* Sample table header: match theme tokens and remove rounded corners */
+/* =============================================
+   SAMPLE TABLE - MATCHING REPORT STYLE
+   ============================================= */
+
+/* Sample table styling that matches the main report typography and design */
+#pysuricata-report table.sample-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.65rem;  /* Further reduced for better proportion */
+  line-height: 1.3;    /* Reduced from 1.4 for tighter spacing */
+  background: white;
+  border: none;        /* Removed border for cleaner look */
+}
+
+#pysuricata-report:not(.light) table.sample-table {
+  background: #1a1a1a;
+  color: #e0e0e0;
+}
+
+/* Column headers - clean table styling without chips */
 #pysuricata-report table.sample-table thead th {
   position: sticky;
   top: 0;
-  z-index: 2;
-  font-family: inherit;
-  font-size: 0.9rem;
+  z-index: 10;
+  background: rgba(0,0,0,0.02);
+  color: inherit;
   font-weight: 600;
-  letter-spacing: 0.01em;
-  padding: 6px 8px;
-  border-radius: 0;
-  background: var(--chip-bg-light);
+  font-size: 0.8rem;   /* Increased for better readability */
+  padding: 3px 8px;    /* Reduced padding for tighter spacing */
   border: 1px solid var(--chip-br-light);
-}
-#pysuricata-report:not(.light) table.sample-table thead th {
-  background: var(--chip-bg-dark);
-  border-color: var(--chip-br-dark);
+  border-bottom: 2px solid var(--chip-br-light);
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
-/* Ensure sample table borders match theme in both modes */
-#pysuricata-report table.sample-table,
-#pysuricata-report table.sample-table th,
-#pysuricata-report table.sample-table td {
-  border-color: var(--chip-br-light);
+#pysuricata-report:not(.light) table.sample-table thead th {
+  background: rgba(255,255,255,0.04);
+  border-color: var(--chip-br-dark);
+  border-bottom-color: var(--chip-br-dark);
 }
-#pysuricata-report:not(.light) table.sample-table,
-#pysuricata-report:not(.light) table.sample-table th,
+
+/* Row number column header - same styling as other headers */
+#pysuricata-report table.sample-table thead th:first-child {
+  background: rgba(0,0,0,0.02);
+  text-align: center;
+  width: 50px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report:not(.light) table.sample-table thead th:first-child {
+  background: rgba(255,255,255,0.04);
+}
+
+/* Table cells with proper spacing */
+#pysuricata-report table.sample-table td {
+  padding: 6px 12px;
+  border: 1px solid var(--chip-br-light);
+  font-size: 0.85rem;
+  line-height: 1.3;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; /* Use monospace for all cells */
+}
+
 #pysuricata-report:not(.light) table.sample-table td {
   border-color: var(--chip-br-dark);
 }
 
-/* Ensure the sample table keeps a full grid between cells */
-#pysuricata-report table.sample-table { border-collapse: collapse; }
-#pysuricata-report table.sample-table th,
+/* Numeric columns - match row number column styling */
 #pysuricata-report table.sample-table td {
-  border-style: solid;
-  border-width: 1px;
+  text-align: left; /* Default alignment */
 }
 
-/* Make Sample card title match the Summary h2 size */
-#pysuricata-report details.card > summary > span:first-child { font-size: 1.25rem; }
+#pysuricata-report table.sample-table td span.num {
+  display: inline;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+}
+
+/* Right-align cells containing numerical values */
+#pysuricata-report table.sample-table td:has(span.num) {
+  text-align: right;
+}
+
+#pysuricata-report:not(.light) table.sample-table td span.num {
+  /* Background removed - no longer needed */
+}
+
+/* Row numbering - match report styling */
+#pysuricata-report table.sample-table tbody td:first-child {
+  background: rgba(0,0,0,0.02);
+  color: #666;
+  font-weight: 500;
+  text-align: center;
+  width: 50px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+  border-right: 2px solid var(--chip-br-light);
+}
+
+#pysuricata-report:not(.light) table.sample-table tbody td:first-child {
+  background: rgba(255,255,255,0.05);
+  color: #999;
+  border-right-color: var(--chip-br-dark);
+}
 
 
-/*# Sample table zebra striping & hover */
+/* Subtle zebra striping for readability */
 #pysuricata-report table.sample-table tbody tr:nth-child(even) {
   background: rgba(0,0,0,0.02);
 }
+
 #pysuricata-report:not(.light) table.sample-table tbody tr:nth-child(even) {
   background: rgba(255,255,255,0.03);
 }
+
+/* Minimal hover effect - match report styling */
 #pysuricata-report table.sample-table tbody tr:hover {
-  background: rgba(0,0,0,0.06);
+  background: rgba(0,0,0,0.04);
 }
+
 #pysuricata-report:not(.light) table.sample-table tbody tr:hover {
   background: rgba(255,255,255,0.06);
 }
 
-/* Make sample table values smaller than headers */
-#pysuricata-report table.sample-table tbody td { font-size: 0.85rem; }
-
-/* Hide framing for the blank Row header cell */
-#pysuricata-report table.sample-table thead th:first-child {
-  background: transparent !important;
-  border: none !important;
-}
-#pysuricata-report:not(.light) table.sample-table thead th:first-child {
-  background: transparent !important;
-  border: none !important;
+/* Make Sample card title match the Summary h2 size */
+#pysuricata-report details.card > summary > span:first-child { 
+  font-size: 0.8rem; 
+  opacity: 0.8; 
+  font-weight: normal; 
 }
 /*# =============================
 #    NUMERIC VARIABLES – OUTSIDE DROPDOWNS
 #    Cards, badges, mini-viz, and CSS-only toggles
 # ============================= */
-#pysuricata-report #vars { margin: 2rem 0; }
+#pysuricata-report #vars { margin: 0.05rem 0; }
 #pysuricata-report #vars .section-title { margin: 0 0 0.75rem; font-size: 1.25rem; line-height: 1.25; font-weight: 700; }
 
 /* Toolbar: search + toggles container */
@@ -658,14 +728,7 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .var-table td.warn { background: rgba(241,197,78,0.18); }
 #pysuricata-report .var-table td.crit { background: rgba(241,94,78,0.18); font-weight: 700; }
 
-/* Sparkline sizing */
-#pysuricata-report .sparkcell { min-width: 180px; }
-#pysuricata-report svg.spark { width: 180px; height: 48px; display:block; }
-#pysuricata-report svg.spark.small { width: 160px; height: 40px; }
-
-/* Histogram bar color in theme */
-#pysuricata-report .spark-hist .bar { fill: currentColor; opacity: .45; }
-#pysuricata-report .spark-ecdf polyline { stroke: currentColor; }
+/* (Removed sparkline sizing/styles; no longer used) */
 
 
 /* Map generic tokens used by the HTML to current theme vars */
@@ -869,10 +932,6 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .meta { gap: 0.4rem; }
 
 /* Reduce space between rows/sections a bit */
-#pysuricata-report #summary { margin: 0.75rem 0 1.5rem; }
-#pysuricata-report .collapsible-card { margin: 0.75rem 0 1.5rem; }
-#pysuricata-report #vars { margin: 1.5rem 0; }
-#pysuricata-report #summary .summary-grid.second-row { margin-top: 8px; }
 
 
 /* --- Revert: use emoji-based dark/light icon (colored) --- */
@@ -916,6 +975,9 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .var-card__body .triple-row .chart .hist-variants { min-height: 260px; }
 #pysuricata-report .var-card__body .triple-row .chart .hist-variants .hist.variant { height: 100%; }
 #pysuricata-report .var-card__body .triple-row .chart .hist-variants .hist.variant > svg { width: 100% !important; height: 100% !important; display: block; }
+/* Hide all variants by default; show only the one marked active */
+#pysuricata-report .hist-variants .variant { display: none; }
+#pysuricata-report .hist-variants .variant.active { display: block; }
 #pysuricata-report .var-card__body .triple-row .chart .hist-svg {
   display: block;
   width: 100% !important;
@@ -1024,6 +1086,11 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .var-card__body .triple-row .stats-left tbody td:last-child,
 #pysuricata-report .var-card__body .triple-row .stats-right tbody td:last-child {
   text-align: right;
+  font-weight: normal;
+}
+/* Make left column labels bold in general var analysis tables */
+#pysuricata-report .var-card__body .triple-row .stats-left tbody th,
+#pysuricata-report .var-card__body .triple-row .stats-right tbody th {
   font-weight: 600;
 }
 
@@ -1044,6 +1111,7 @@ body.suricata-standalone:not(.light) {
   font-size: 11px;
   fill: var(--axis-text);
 }
+#pysuricata-report .hist-svg .tick.minor { stroke-opacity: .6; }
 #pysuricata-report .hist-svg text { font-family: inherit; }
 #pysuricata-report .hist-svg .bar { fill: var(--bar); opacity: .9; pointer-events: auto; }
 
@@ -1177,10 +1245,10 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .details-section .tab-panes .tab-pane { display: none; }
 #pysuricata-report .details-section .tab-panes .tab-pane.active { display: block; }
 
-/* Simple two-column grid helper used in Statistics tab */
-#pysuricata-report .details-section .grid-2col { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+/* Statistics + Quantiles side-by-side */
+#pysuricata-report .details-section .stats-quant { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
 @media (max-width: 720px){
-  #pysuricata-report .details-section .grid-2col { grid-template-columns: 1fr; }
+  #pysuricata-report .details-section .stats-quant { grid-template-columns: 1fr; }
 }
 
 /* =============================
@@ -1205,7 +1273,9 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .details-section tbody tr + tr > th,
 #pysuricata-report .details-section tbody tr + tr > td { border-top: 1px solid var(--divider); }
 #pysuricata-report .details-section tbody td:first-child { color: var(--axis-text); }
-#pysuricata-report .details-section tbody td:last-child { text-align: right; font-weight: 600; }
+#pysuricata-report .details-section tbody td:last-child { text-align: right; font-weight: normal; }
+/* Ensure left column labels in details tables are bold */
+#pysuricata-report .details-section tbody th { font-weight: 600; }
 
 /* =============================
    HIST CONTROL BUTTONS (Linear/Log/Bins) unified look
@@ -1469,6 +1539,11 @@ body.suricata-standalone:not(.light) {
   --bool-false:  #ef4444;  /* red-500 */
   --bool-miss:   #9ca3af;  /* gray-400 */
 }
+#pysuricata-report {
+  --bool-true:   #10b981;  /* emerald-500 */
+  --bool-false:  #ef4444;  /* red-500 */
+  --bool-miss:   #9ca3af;  /* gray-400 */
+}
 #pysuricata-report:not(.light) {
   --bool-true:   #34d399;  /* teal-400 */
   --bool-false:  #f87171;  /* red-400 */
@@ -1484,6 +1559,16 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .bool-svg .seg {
   shape-rendering: crispEdges;
   opacity: .92;
+}
+#pysuricata-report .bool-svg .label {
+  fill: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: rgba(0,0,0,.35);
+  stroke-width: 2px;
 }
 #pysuricata-report .bool-svg .seg.false   { fill: var(--bool-false); }
 #pysuricata-report .bool-svg .seg.true    { fill: var(--bool-true); }
@@ -1510,4 +1595,1244 @@ body.suricata-standalone:not(.light) {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* =============================
+   NEW SECTION DESIGN STYLES
+   ============================= */
+
+/* Stack layout for main content */
+#pysuricata-report .stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Section divider line - removed excessive spacing */
+#pysuricata-report .section-divider {
+  border: none;
+  border-top: 1px solid var(--divider);
+  margin: 0.05rem 0 0.05rem 0;
+  opacity: 0.6;
+}
+
+/* Section description text */
+#pysuricata-report .section-description {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: inherit;
+  opacity: 0.8;
+  margin: 0 0 1.5rem 0;
+  max-width: 800px;
+}
+
+/* Logo clickable styling */
+#pysuricata-report .logo a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+#pysuricata-report .logo a:hover {
+  transform: scale(1.05);
+  opacity: 0.8;
+}
+
+/* Footer divider */
+#pysuricata-report footer.page .section-divider {
+  margin: 0 0 1rem 0;
+}
+
+/* Sample content adjustments for new layout */
+#pysuricata-report .sample-scroll {
+  margin-bottom: 1rem;
+}
+
+#pysuricata-report .sample-scroll + p {
+  margin: 0;
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+/* =============================================
+   COMMON VALUES TABLE STYLING
+   ============================================= */
+
+/* Common Values Table - Professional styling matching report theme */
+#pysuricata-report .common-values-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin: 8px 0;
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+#pysuricata-report:not(.light) .common-values-table {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+}
+
+#pysuricata-report .common-values-table thead th {
+  background: rgba(0,0,0,0.05);
+  color: inherit;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report:not(.light) .common-values-table thead th {
+  background: rgba(255,255,255,0.08);
+  border-bottom-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .common-values-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report:not(.light) .common-values-table td {
+  border-bottom-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .common-values-table .common-value {
+  text-align: right;
+  font-weight: 500;
+}
+
+#pysuricata-report .common-values-table .common-count {
+  text-align: center;
+  color: #666;
+}
+
+#pysuricata-report:not(.light) .common-values-table .common-count {
+  color: #aaa;
+}
+
+#pysuricata-report .common-values-table .common-pct {
+  text-align: right;
+  font-weight: 500;
+  color: #007acc;
+}
+
+#pysuricata-report:not(.light) .common-values-table .common-pct {
+  color: #4db8ff;
+}
+
+#pysuricata-report .common-values-table tbody tr:hover {
+  background: rgba(0,0,0,0.02);
+}
+
+#pysuricata-report:not(.light) .common-values-table tbody tr:hover {
+  background: rgba(255,255,255,0.05);
+}
+
+#pysuricata-report .common-values-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* =============================================
+   HISTOGRAM TICK IMPROVEMENTS
+   ============================================= */
+
+/* =============================================
+   ENHANCED HISTOGRAM TICK STYLING
+   ============================================= */
+
+
+/* Enhanced major tick visibility */
+#pysuricata-report .tick-major {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.9;
+}
+
+/* Better tick label styling with improved readability */
+#pysuricata-report .tick-label {
+  font-size: 10px;
+  fill: currentColor;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Specific improvements for log scale ticks */
+#pysuricata-report .hist[data-scale="log"] .tick-major {
+  stroke-width: 1.2;
+  opacity: 1;
+}
+
+#pysuricata-report .hist[data-scale="log"] .tick-label {
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 1;
+}
+
+/* Ensure axis lines are visible */
+#pysuricata-report .axis {
+  stroke: currentColor;
+  stroke-width: 1.5;
+  opacity: 0.8;
+}
+
+/* =============================================
+   ENHANCED COMMON VALUES TABLE STYLING
+   ============================================= */
+
+/* Enhanced Common Values Table - Professional styling matching report theme */
+#pysuricata-report .common-values-table.enhanced {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin: 8px 0;
+  background: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border: 1px solid var(--chip-br-light);
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  border-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .common-values-table.enhanced thead th {
+  background: linear-gradient(135deg, rgba(0,0,0,0.05), rgba(0,0,0,0.02));
+  color: inherit;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 2px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced thead th {
+  background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+  border-bottom-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .common-values-table.enhanced td {
+  padding: 8px;
+  border-bottom: 1px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  vertical-align: middle;
+  text-align: center;
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced td {
+  border-bottom-color: var(--chip-br-dark);
+}
+
+/* Rank column styling */
+#pysuricata-report .common-values-table.enhanced .rank {
+  text-align: center;
+  font-weight: 600;
+  width: 40px;
+  font-size: 0.9rem;
+}
+
+/* Value column styling */
+#pysuricata-report .common-values-table.enhanced .common-value {
+  text-align: center;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+/* Count column styling */
+#pysuricata-report .common-values-table.enhanced .common-count {
+  text-align: center;
+  color: #666;
+  min-width: 60px;
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced .common-count {
+  color: #aaa;
+}
+
+/* Percentage column styling */
+#pysuricata-report .common-values-table.enhanced .common-pct {
+  text-align: center;
+  font-weight: 500;
+  color: #007acc;
+  min-width: 60px;
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced .common-pct {
+  color: #4db8ff;
+}
+
+/* Progress bar column */
+#pysuricata-report .common-values-table.enhanced .progress-bar {
+  width: 100px;
+  padding: 4px 8px;
+  text-align: center;
+}
+
+#pysuricata-report .common-values-table.enhanced .bar-fill {
+  height: 6px;
+  background: linear-gradient(90deg, #007acc, #4db8ff);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced .bar-fill {
+  background: linear-gradient(90deg, #4db8ff, #66c2ff);
+}
+
+/* Row hover effects */
+#pysuricata-report .common-values-table.enhanced tbody tr:hover {
+  background: rgba(0,0,0,0.02);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced tbody tr:hover {
+  background: rgba(255,255,255,0.05);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Top 3 rows special styling */
+#pysuricata-report .common-values-table.enhanced .rank-1 {
+  background: linear-gradient(135deg, rgba(255,215,0,0.1), rgba(255,215,0,0.05));
+}
+
+#pysuricata-report .common-values-table.enhanced .rank-2 {
+  background: linear-gradient(135deg, rgba(192,192,192,0.1), rgba(192,192,192,0.05));
+}
+
+#pysuricata-report .common-values-table.enhanced .rank-3 {
+  background: linear-gradient(135deg, rgba(205,127,50,0.1), rgba(205,127,50,0.05));
+}
+
+#pysuricata-report .common-values-table.enhanced tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  #pysuricata-report .common-values-table.enhanced {
+    font-size: 0.7rem;
+  }
+  
+  #pysuricata-report .common-values-table.enhanced .progress-bar {
+    width: 60px;
+  }
+}
+
+/* =============================================
+   ENHANCED MIN/MAX SECTIONS STYLING
+   ============================================= */
+
+/* Main extremes container */
+#pysuricata-report .extremes.stats-quant {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+/* Individual min/max subsections */
+#pysuricata-report .extremes .sub {
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  border: 1px solid var(--chip-br-light);
+}
+
+#pysuricata-report:not(.light) .extremes .sub {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  border-color: var(--chip-br-dark);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+/* Section headers */
+#pysuricata-report .extremes .sub .hdr {
+  background: linear-gradient(135deg, rgba(0,0,0,0.06), rgba(0,0,0,0.03));
+  color: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+#pysuricata-report:not(.light) .extremes .sub .hdr {
+  background: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+  border-bottom-color: var(--chip-br-dark);
+}
+
+/* Tables within min/max sections */
+#pysuricata-report .extremes .sub table.kv {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+#pysuricata-report .extremes .sub table.kv thead th {
+  background: rgba(0,0,0,0.02);
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 8px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report:not(.light) .extremes .sub table.kv thead th {
+  background: rgba(255,255,255,0.04);
+  border-bottom-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .extremes .sub table.kv tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--chip-br-light);
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report:not(.light) .extremes .sub table.kv tbody td {
+  border-bottom-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .extremes .sub table.kv tbody tr:last-child td {
+  border-bottom: none;
+}
+
+#pysuricata-report .extremes .sub table.kv tbody tr:hover {
+  background: rgba(0,0,0,0.02);
+}
+
+#pysuricata-report:not(.light) .extremes .sub table.kv tbody tr:hover {
+  background: rgba(255,255,255,0.04);
+}
+
+/* Numeric value styling in min/max tables */
+#pysuricata-report .extremes .sub table.kv td.num {
+  font-weight: 500;
+  /* Use default text color to match index column */
+}
+
+/* Outliers table styling */
+#pysuricata-report .outliers .sub table.kv td.method {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+#pysuricata-report .outliers .sub table.kv td.severity {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+#pysuricata-report .outliers .sub table.kv td.severity[data-severity="extreme"] {
+  color: #d73a49;
+}
+
+#pysuricata-report .outliers .sub table.kv td.severity[data-severity="high"] {
+  color: #f66a0a;
+}
+
+#pysuricata-report .outliers .sub table.kv td.severity[data-severity="moderate"] {
+  color: #0366d6;
+}
+
+/* Enhanced outliers section styling */
+#pysuricata-report .outlier-summary {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+#pysuricata-report .summary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+#pysuricata-report .direction-icon {
+  font-size: 1.2em;
+}
+
+#pysuricata-report .outlier-count {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+#pysuricata-report .severity-breakdown {
+  display: flex;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+#pysuricata-report .severity-item {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+#pysuricata-report .severity-item.extreme {
+  background: rgba(215, 58, 73, 0.1);
+  color: #d73a49;
+}
+
+#pysuricata-report .severity-item.high {
+  background: rgba(246, 106, 10, 0.1);
+  color: #f66a0a;
+}
+
+#pysuricata-report .severity-item.moderate {
+  background: rgba(3, 102, 214, 0.1);
+  color: #0366d6;
+}
+/* Context note styling for outliers section */
+#pysuricata-report .context-note {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(3, 102, 214, 0.05);
+  border-left: 3px solid #0366d6;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+#pysuricata-report:not(.light) .context-note {
+  background: rgba(3, 102, 214, 0.1);
+  color: var(--text-secondary);
+}
+
+#pysuricata-report .context-note small {
+  display: block;
+  margin: 0;
+}
+
+
+
+/* Enhanced outliers table styling */
+#pysuricata-report .outliers-table.enhanced {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  margin-top: 8px;
+}
+
+#pysuricata-report .outliers-table.enhanced thead th {
+  background: var(--bg-tertiary);
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+#pysuricata-report .outliers-table.enhanced td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+#pysuricata-report .outliers-table.enhanced .rank {
+  text-align: center;
+  font-weight: 600;
+  width: 40px;
+}
+
+#pysuricata-report .outliers-table.enhanced .outlier-value {
+  font-weight: 500;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report .outliers-table.enhanced .progress-bar {
+  width: 80px;
+  height: 6px;
+  background: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+#pysuricata-report .outliers-table.enhanced .bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #0366d6, #f66a0a, #d73a49);
+  transition: width 0.3s ease;
+}
+
+#pysuricata-report .outliers-table.enhanced tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+#pysuricata-report .outliers-table.enhanced .rank-1 {
+  background: rgba(255, 215, 0, 0.05);
+}
+
+#pysuricata-report .outliers-table.enhanced .rank-2 {
+  background: rgba(192, 192, 192, 0.05);
+}
+
+#pysuricata-report .outliers-table.enhanced .rank-3 {
+  background: rgba(205, 127, 50, 0.05);
+}
+
+/* Dark mode adjustments for enhanced outliers */
+#pysuricata-report:not(.light) .outlier-summary {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+#pysuricata-report:not(.light) .outliers-table.enhanced thead th {
+  background: var(--bg-tertiary);
+  border-bottom-color: var(--border-color);
+}
+
+#pysuricata-report:not(.light) .outliers-table.enhanced tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+/* Empty state styling */
+#pysuricata-report .extremes .sub .muted {
+  padding: 20px;
+  text-align: center;
+  color: #888;
+  font-style: italic;
+}
+
+#pysuricata-report:not(.light) .extremes .sub .muted {
+  color: #aaa;
+}
+
+/* Responsive design for min/max sections */
+@media (max-width: 768px) {
+  #pysuricata-report .extremes.stats-quant {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  #pysuricata-report .extremes .sub table.kv {
+    font-size: 0.75rem;
+  }
+  
+  #pysuricata-report .extremes .sub .hdr {
+    font-size: 0.8rem;
+    padding: 10px 12px;
+  }
+}
+
+/* Enhanced correlations section styling */
+#pysuricata-report .correlation-summary {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+#pysuricata-report .correlation-summary .summary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+#pysuricata-report .correlation-summary .icon {
+  font-size: 1.2em;
+}
+
+#pysuricata-report .correlation-summary .count {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+#pysuricata-report .strength-breakdown {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+#pysuricata-report .strength-item {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+#pysuricata-report .strength-item.very-strong {
+  background: rgba(220, 38, 127, 0.1);
+  color: #dc267f;
+}
+
+#pysuricata-report .strength-item.strong {
+  background: rgba(234, 88, 12, 0.1);
+  color: #ea580c;
+}
+
+#pysuricata-report .strength-item.moderate {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+#pysuricata-report .strength-item.weak {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
+#pysuricata-report .strongest-correlation {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+/* Enhanced correlations table */
+#pysuricata-report .correlations-table.enhanced {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  margin-top: 8px;
+}
+
+#pysuricata-report .correlations-table.enhanced th {
+  background: var(--bg-tertiary);
+  font-weight: 600;
+  text-align: center;
+  padding: 8px 12px;
+  border-bottom: 2px solid var(--border-color);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#pysuricata-report .correlations-table.enhanced td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+#pysuricata-report .correlations-table.enhanced .rank {
+  text-align: center;
+  width: 40px;
+  font-size: 0.9rem;
+}
+
+#pysuricata-report .correlations-table.enhanced .column {
+  text-align: center;
+}
+
+
+#pysuricata-report .correlations-table.enhanced .correlation-value {
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-align: center;
+  min-width: 80px;
+}
+
+#pysuricata-report .correlations-table.enhanced .correlation-value.positive {
+  color: #059669;
+}
+
+#pysuricata-report .correlations-table.enhanced .correlation-value.negative {
+  color: #dc2626;
+}
+
+#pysuricata-report .correlations-table.enhanced .strength {
+  font-weight: 500;
+  text-align: center;
+  min-width: 80px;
+  font-size: 0.9rem;
+}
+
+#pysuricata-report .correlations-table.enhanced .strength[data-strength="very-strong"] {
+  color: #dc267f;
+}
+
+#pysuricata-report .correlations-table.enhanced .strength[data-strength="strong"] {
+  color: #ea580c;
+}
+
+#pysuricata-report .correlations-table.enhanced .strength[data-strength="moderate"] {
+  color: #3b82f6;
+}
+
+#pysuricata-report .correlations-table.enhanced .strength[data-strength="weak"] {
+  color: #6b7280;
+}
+
+#pysuricata-report .correlations-table.enhanced .direction {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 100px;
+}
+
+#pysuricata-report .correlations-table.enhanced .direction-icon {
+  font-size: 0.9rem;
+}
+
+#pysuricata-report .correlations-table.enhanced .direction-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+#pysuricata-report .correlations-table.enhanced .progress-bar {
+  width: 120px;
+  height: 8px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  margin: 0 auto;
+}
+
+#pysuricata-report .correlations-table.enhanced .bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #6b7280, #3b82f6, #ea580c, #dc267f);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+/* Row hover effects */
+#pysuricata-report .correlations-table.enhanced .correlation-row:hover {
+  background: var(--bg-hover);
+}
+
+/* No correlations state */
+#pysuricata-report .no-correlations {
+  text-align: center;
+  padding: 24px;
+  color: var(--text-secondary);
+}
+
+#pysuricata-report .no-correlations .icon {
+  font-size: 2em;
+  display: block;
+  margin-bottom: 8px;
+}
+
+#pysuricata-report .no-correlations .message {
+  font-weight: 500;
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* Responsive design for correlations */
+@media (max-width: 768px) {
+  #pysuricata-report .correlations-table.enhanced {
+    font-size: 0.85rem;
+  }
+  
+  #pysuricata-report .correlations-table.enhanced th,
+  #pysuricata-report .correlations-table.enhanced td {
+    padding: 8px 6px;
+  }
+  
+  #pysuricata-report .correlations-table.enhanced .progress-bar {
+    width: 80px;
+  }
+  
+  #pysuricata-report .strength-breakdown {
+    gap: 8px;
+  }
+  
+  #pysuricata-report .strength-item {
+    font-size: 0.8rem;
+    padding: 3px 6px;
+  }
+}
+
+/* Enhanced Missing Values Section Styling */
+#pysuricata-report .missing-summary {
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+#pysuricata-report .missing-summary .summary-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+#pysuricata-report .missing-summary .icon {
+  font-size: 1.3em;
+}
+
+#pysuricata-report .missing-summary .title {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+}
+
+#pysuricata-report .quality-indicator {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#pysuricata-report .quality-indicator.critical {
+  background: rgba(220, 38, 38, 0.15);
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+}
+
+#pysuricata-report .quality-indicator.high {
+  background: rgba(234, 88, 12, 0.15);
+  color: #ea580c;
+  border: 1px solid rgba(234, 88, 12, 0.3);
+}
+
+#pysuricata-report .quality-indicator.medium {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+#pysuricata-report .quality-indicator.low {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+#pysuricata-report .data-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+#pysuricata-report .overview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+}
+
+#pysuricata-report .overview-item .label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#pysuricata-report .overview-item .value {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+#pysuricata-report .overview-item .percentage {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+#pysuricata-report .overview-item.present {
+  border-left: 4px solid #22c55e;
+}
+
+#pysuricata-report .overview-item.missing {
+  border-left: 4px solid #dc2626;
+}
+
+/* Missing Values Visualization */
+#pysuricata-report .missing-visualization {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+#pysuricata-report .progress-container {
+  width: 100%;
+}
+
+#pysuricata-report .progress-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+#pysuricata-report .progress-bar {
+  position: relative;
+  height: 24px;
+  background: var(--bg-tertiary);
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+#pysuricata-report .progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+#pysuricata-report .progress-fill.present {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  z-index: 2;
+}
+
+#pysuricata-report .progress-fill.missing {
+  background: linear-gradient(90deg, #dc2626, #b91c1c);
+  z-index: 1;
+}
+
+#pysuricata-report .progress-legend {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 0.8rem;
+}
+
+#pysuricata-report .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#pysuricata-report .legend-item.present {
+  color: #22c55e;
+  font-weight: 500;
+}
+
+#pysuricata-report .legend-item.missing {
+  color: #dc2626;
+  font-weight: 500;
+}
+
+/* Quality Indicators Grid */
+#pysuricata-report .quality-indicators {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+#pysuricata-report .indicators-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+#pysuricata-report .indicators-header .icon {
+  font-size: 1.2em;
+}
+
+#pysuricata-report .indicators-header .title {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+#pysuricata-report .indicators-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+#pysuricata-report .indicator-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#pysuricata-report .indicator-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+#pysuricata-report .indicator-item.critical {
+  border-left: 4px solid #dc2626;
+}
+
+#pysuricata-report .indicator-item.high {
+  border-left: 4px solid #ea580c;
+}
+
+#pysuricata-report .indicator-item.medium {
+  border-left: 4px solid #f59e0b;
+}
+
+#pysuricata-report .indicator-item.low {
+  border-left: 4px solid #22c55e;
+}
+
+#pysuricata-report .indicator-icon {
+  font-size: 1.5em;
+  flex-shrink: 0;
+}
+
+#pysuricata-report .indicator-content {
+  flex: 1;
+}
+
+#pysuricata-report .indicator-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+#pysuricata-report .indicator-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+#pysuricata-report .indicator-description {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+/* Recommendations Section */
+#pysuricata-report .recommendations {
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+#pysuricata-report .recommendations-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  font-weight: 600;
+}
+
+#pysuricata-report .recommendations-header .icon {
+  font-size: 1.2em;
+}
+
+#pysuricata-report .recommendations-header .title {
+  font-size: 1rem;
+  color: var(--text-primary);
+}
+
+#pysuricata-report .recommendations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+#pysuricata-report .recommendation-item {
+  padding: 12px 16px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#pysuricata-report .recommendation-item:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+#pysuricata-report .recommendation-item.critical {
+  border-left: 4px solid #dc2626;
+}
+
+#pysuricata-report .recommendation-item.high {
+  border-left: 4px solid #ea580c;
+}
+
+#pysuricata-report .recommendation-item.medium {
+  border-left: 4px solid #f59e0b;
+}
+
+#pysuricata-report .recommendation-item.low {
+  border-left: 4px solid #22c55e;
+}
+
+#pysuricata-report .recommendation-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+#pysuricata-report .recommendation-description {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Responsive Design for Missing Values */
+@media (max-width: 768px) {
+  #pysuricata-report .data-overview {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  #pysuricata-report .indicators-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  
+  #pysuricata-report .indicator-item {
+    padding: 10px;
+  }
+  
+  #pysuricata-report .recommendation-item {
+    padding: 10px 12px;
+  }
+  
+  #pysuricata-report .missing-summary .summary-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  #pysuricata-report .quality-indicator {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+  }
 }

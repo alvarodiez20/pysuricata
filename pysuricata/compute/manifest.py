@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Mapping, Sequence, Tuple
+from ..accumulators.protocols import FinalizableAccumulator
 
 try:  # optional
     import pandas as pd  # type: ignore
@@ -11,7 +12,7 @@ except Exception:  # pragma: no cover
 
 
 def build_summary(
-    kinds_map: Mapping[str, Tuple[str, Any]],
+    kinds_map: Mapping[str, Tuple[str, FinalizableAccumulator]],
     col_order: Sequence[str],
     *,
     row_kmv: Any,
@@ -95,4 +96,3 @@ def build_summary(
             }
 
     return {"dataset": dataset_summary, "columns": columns_summary}
-
