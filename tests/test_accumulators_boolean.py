@@ -10,4 +10,3 @@ def test_boolean_accumulator_counts():
     assert s.missing >= 1
     # dtype string present
     assert s.dtype_str == "boolean"
-

@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional
 import math
 import warnings
+from typing import Any, Dict, Iterable, List, Optional
 
 import numpy as np
 
@@ -14,12 +14,19 @@ except Exception:  # pragma: no cover
     pd = None  # type: ignore
 
 from ..accumulators import (
-    NumericAccumulator,
-    BooleanAccumulator,
-    DatetimeAccumulator,
-    CategoricalAccumulator,
+    BooleanAccumulatorV2 as BooleanAccumulator,
 )
-from .infer import ColumnKinds, infer_kind_for_series_pandas
+from ..accumulators import (
+    CategoricalAccumulatorV2 as CategoricalAccumulator,
+)
+from ..accumulators import (
+    DatetimeAccumulatorV2 as DatetimeAccumulator,
+)
+from ..accumulators import (
+    NumericAccumulatorV2 as NumericAccumulator,
+)
+from .core.types import ColumnKinds
+from .processing.inference import UnifiedTypeInferrer
 
 
 def _to_numeric_array_pandas(s: "pd.Series") -> np.ndarray:  # type: ignore[name-defined]
@@ -33,8 +40,13 @@ def _to_numeric_array_pandas(s: "pd.Series") -> np.ndarray:  # type: ignore[name
         # Fast path for numeric dtypes (exclude booleans)
         if pd is not None:
             from pandas.api import types as pdt  # type: ignore
+
             dt = getattr(s, "dtype", None)
-            if dt is not None and not pdt.is_bool_dtype(dt) and pdt.is_numeric_dtype(dt):
+            if (
+                dt is not None
+                and not pdt.is_bool_dtype(dt)
+                and pdt.is_numeric_dtype(dt)
+            ):
                 return s.to_numpy(dtype="float64", copy=False)
     except Exception:
         # Fall through to the coercion path on any failure
@@ -44,7 +56,9 @@ def _to_numeric_array_pandas(s: "pd.Series") -> np.ndarray:  # type: ignore[name
         return ns.to_numpy(dtype="float64", copy=False)
     except Exception:
         # Last resort: NumPy coercion (may be slower for object dtype)
-        return np.asarray(getattr(s, "to_numpy", lambda: np.asarray(s))(), dtype="float64")
+        return np.asarray(
+            getattr(s, "to_numpy", lambda: np.asarray(s))(), dtype="float64"
+        )
 
 
 def _to_bool_array_pandas(s: "pd.Series") -> List[Optional[bool]]:  # type: ignore[name-defined]
@@ -84,23 +98,40 @@ def _to_categorical_iter_pandas(s: "pd.Series") -> Iterable[Any]:  # type: ignor
     return s.tolist()
 
 
-def consume_chunk_pandas(df: "pd.DataFrame", accs: Dict[str, Any], kinds: ColumnKinds, logger: Optional["logging.Logger"] = None) -> None:  # type: ignore[name-defined]
+def consume_chunk_pandas(
+    df: "pd.DataFrame",
+    accs: Dict[str, Any],
+    kinds: ColumnKinds,
+    logger: Optional["logging.Logger"] = None,
+) -> None:  # type: ignore[name-defined]
     # 1) Create accumulators for columns not seen in the first chunk
     for name in df.columns:
         if name in accs:
             continue
-        kind = infer_kind_for_series_pandas(df[name])
+        inferrer = UnifiedTypeInferrer()
+        result = inferrer.infer_series_type(df[name])
+        if result.success:
+            kind = result.data
+        else:
+            kind = "categorical"  # fallback
+        # Get the actual dtype string from the pandas Series
+        actual_dtype = str(df[name].dtype)
+
         if kind == "numeric":
             accs[name] = NumericAccumulator(name)
+            accs[name].set_dtype(actual_dtype)
             kinds.numeric.append(name)
         elif kind == "boolean":
             accs[name] = BooleanAccumulator(name)
+            accs[name].set_dtype(actual_dtype)
             kinds.boolean.append(name)
         elif kind == "datetime":
             accs[name] = DatetimeAccumulator(name)
+            accs[name].set_dtype(actual_dtype)
             kinds.datetime.append(name)
         else:
             accs[name] = CategoricalAccumulator(name)
+            accs[name].set_dtype(actual_dtype)
             kinds.categorical.append(name)
         if logger:
             logger.info("➕ discovered new column '%s' inferred as %s", name, kind)
@@ -115,6 +146,11 @@ def consume_chunk_pandas(df: "pd.DataFrame", accs: Dict[str, Any], kinds: Column
         if isinstance(acc, NumericAccumulator):
             arr = _to_numeric_array_pandas(s)
             acc.update(arr)
+            # Track memory usage
+            try:
+                acc.add_mem(int(s.memory_usage(deep=True)))
+            except Exception:
+                pass
             # Track extremes with indices for this chunk
             try:
                 finite = np.isfinite(arr)

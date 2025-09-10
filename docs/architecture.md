@@ -68,9 +68,20 @@ All accumulators expose `update(...)` and `finalize() → SummaryDataclass` for 
 
 The template is a single file with inline CSS/JS/images to produce a portable HTML.
 
+### Shared helpers (deduped)
+
+Rendering utilities live in two small modules for reuse and testability:
+
+- `pysuricata/render/svg_utils.py`
+  - `safe_col_id`, `nice_ticks`, `fmt_tick`, `svg_empty`
+- `pysuricata/render/format_utils.py`
+  - `human_bytes`, `fmt_num`, `fmt_compact`
+
+These power both the main report and the individual variable cards with consistent tick/label formatting.
+
 ## Configuration
 
-`ReportConfig` controls chunk size, sample sizes, distinct/top‑k sketch sizes, and correlation settings, plus logging and checkpointing.
+`ReportConfig` controls chunk size, sample sizes, distinct/top‑k sketch sizes, and correlation settings, plus logging and checkpointing. It also exposes `random_seed` to make sampling deterministic for reproducible visuals.
 
 Key fields:
 
@@ -100,4 +111,3 @@ The report shows:
 - Add backends: polars/Arrow datasets or DuckDB scans can be plugged into the chunk iterator.
 - Add quantile sketches: t‑digest or KLL can replace the default reservoir for better tail accuracy.
 - Add new sections: drift comparisons, profile JSON export to file, CLI wrapper.
-

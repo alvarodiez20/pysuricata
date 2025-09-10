@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{report_title}</title>
+    {favicon}
+    {css}
+    <script>{script}</script>
+  </head>
+
+  <body class="suricata-standalone light">
+    <div id="pysuricata-report" class="light">
+      <!-- Sticky / modern header -->
+      <header class="appbar">
+        <div class="container header-grid">
+          <div class="logo" id="logo-container">
+            <a href="#" onclick="scrollToTop(); return false;" title="Click to scroll to top" style="text-decoration: none; color: inherit; cursor: pointer;">
+              {logo}
+            </a>
+          </div>
+
+          <div class="title-nav">
+            <h1>{report_title}</h1>
+            <div class="nav-and-toggle">
+              <nav class="quick" aria-label="Quick navigation">
+                <a href="#summary">Summary</a>
+                <a href="#sample">Sample</a>
+                <a href="#vars">Variables</a>
+                <a href="#" title="Download this report as HTML" aria-label="Download report" onclick="return downloadReport()">
+                  <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
+                    <path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z"/>
+                    <path fill="currentColor" d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z"/>
+                  </svg>
+                </a>
+              </nav>
+              <button id="toggle-button" class="toggle-button" onclick="toggleDarkModeScoped()" aria-label="Toggle dark mode">
+                <span id="toggle-icon">🌙</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="meta">
+            <span class="chip" title="Report generated on {report_date}">📅 {report_date}</span>
+            <span class="chip" title="Time to generate this report">⏱ {report_duration}</span>
+            <a class="chip" href="{repo_url}" target="_blank" rel="noreferrer" aria-label="Open pysuricata repository on GitHub" title="Open pysuricata repository on GitHub">
+              <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="vertical-align: text-bottom;">
+                <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
+0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01
+1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95
+0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09
+2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15
+0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2
+0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+              </svg>
+              pysuricata v{pysuricata_version}
+            </a>
+            <button id="pin-button" class="icon-btn" title="Unpin header" aria-label="Unpin header" onclick="return toggleHeaderPinScoped()" style="margin-left:auto">
+              <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
+                <!-- Pinned (upright) -->
+                <g id="pinIconOn" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <!-- top handle -->
+                  <rect x="4.2" y="1.2" width="7.6" height="2.2" rx="1.1"/>
+                  <!-- cap/neck lines -->
+                  <path d="M6.0 3.8 L6.6 8.8"/>
+                  <path d="M10.0 3.8 L9.4 8.8"/>
+                  <!-- base (rounded capsule) -->
+                  <rect x="2.0" y="8.6" width="12.0" height="4.6" rx="2.3"/>
+                  <!-- needle -->
+                  <path d="M8 13.2 V 15.2"/>
+                </g>
+                <!-- Unpinned (slanted) -->
+                <g id="pinIconOff" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" transform="rotate(-18 8 8)" style="display:none">
+                  <rect x="4.2" y="1.2" width="7.6" height="2.2" rx="1.1"/>
+                  <path d="M6.0 3.8 L6.6 8.8"/>
+                  <path d="M10.0 3.8 L9.4 8.8"/>
+                  <rect x="2.0" y="8.6" width="12.0" height="4.6" rx="2.3"/>
+                  <path d="M8 13.2 V 15.2"/>
+                </g>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <main class="container">
+        <div class="stack">
+
+          <!-- Dataset Summary -->
+          <section id="summary">
+            <h2>Summary</h2>
+
+            <div class="summary-grid">
+              <div class="summary-card">
+                <div class="label">Rows</div>
+                <div class="value">{n_rows}</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Columns</div>
+                <div class="value">{n_cols}</div>
+              </div>
+              <div class="summary-card">
+                <div class="label" title="Total bytes processed across chunks (approximate)">Processed bytes</div>
+                <div class="value">{memory_usage} (≈)</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Missing (overall)</div>
+                <div class="value">{missing_overall}</div>
+              </div>
+              <div class="summary-card">
+                <div class="label">Duplicates</div>
+                <div class="value">{duplicates_overall}</div>
+              </div>
+            </div>
+
+            <div class="summary-grid second-row">
+              <div class="summary-card">
+                <div class="label">Column types</div>
+                <div class="dtype-donut" style="--num:{numeric_cols}; --cat:{categorical_cols}; --dt:{datetime_cols}; --bool:{bool_cols}"></div>
+                <ul class="summary-list">
+                  <li><span>Numeric</span><span>{numeric_cols}</span></li>
+                  <li><span>Categorical</span><span>{categorical_cols}</span></li>
+                  <li><span>Datetime</span><span>{datetime_cols}</span></li>
+                  <li><span>Boolean</span><span>{bool_cols}</span></li>
+                </ul>
+              </div>
+              <div class="summary-card">
+                <div class="label">Top missing columns</div>
+                <ul class="summary-list top-missing">
+                  {top_missing_list}
+                </ul>
+              </div>
+              <div class="summary-card">
+                <div class="label">Quick insights</div>
+                <ul class="chip-wall">
+                  <li>Unique cols: {n_unique_cols}</li>
+                  <li>Constant cols: {constant_cols}</li>
+                  <li>High-card categoricals: {high_card_cols}</li>
+                  <li>Date range: {date_min} → {date_max}</li>
+                  <li>Text cols: {text_cols} (avg len {avg_text_len})</li>
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          <!-- Sample Section -->
+          <section id="sample" class="collapsible-card">
+            <span id="dataset-sample" class="anchor-alias"></span>
+            <h2 class="section-title">Sample</h2>
+            <details class="card">
+              <summary>
+                <span>View Sample Data</span>
+                <span class="chev" aria-hidden="true">▸</span>
+              </summary>
+              <div class="card-content">
+                {dataset_sample_section}
+              </div>
+            </details>
+          </section>
+          <!-- Variables Section -->
+          <section id="vars">
+            <span id="numeric-vars" class="anchor-alias"></span>
+            <h2 class="section-title">Variables</h2>
+            {variables_section}
+          </section>
+
+          <footer class="page" role="contentinfo">
+            <p>
+              Powered by <a href="{repo_url}" target="_blank" rel="noreferrer">pysuricata</a>.
+            </p>
+          </footer>
+
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

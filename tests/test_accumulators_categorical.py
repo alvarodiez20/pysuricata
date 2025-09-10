@@ -13,4 +13,3 @@ def test_categorical_accumulator_top_items_and_missing():
     assert isinstance(s.top_items, list)
     # empty string counted
     assert s.empty_zero >= 1
-
