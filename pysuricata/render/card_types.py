@@ -53,6 +53,9 @@ class NumericStats:
     min_items: Optional[Sequence[Tuple[Any, Union[int, float]]]]
     max_items: Optional[Sequence[Tuple[Any, Union[int, float]]]]
     corr_top: Optional[Sequence[Tuple[str, float]]]
+    chunk_metadata: Optional[
+        Sequence[Tuple[int, int, int]]
+    ]  # (start_row, end_row, missing_count)
 
 
 @dataclass

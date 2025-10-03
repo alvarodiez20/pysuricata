@@ -98,10 +98,37 @@ class AdaptiveChunker:
         start_time = time.time()
 
         try:
-            # Validate chunk size
-            if chunk_size <= 0:
+            # Handle chunk_size=0 (no chunking)
+            if chunk_size == 0:
+                # No chunking - return source as single chunk
+                # Special handling for DataFrames to avoid iterating over columns
+                if (pd is not None and isinstance(source, pd.DataFrame)) or (
+                    pl is not None and isinstance(source, pl.DataFrame)
+                ):
+                    chunks = iter([source])
+                elif hasattr(source, "__iter__") and not isinstance(
+                    source, (str, bytes)
+                ):
+                    chunks = iter(source)
+                else:
+                    chunks = iter([source])
+
+                duration = time.time() - start_time
+                return ProcessingResult.success_result(
+                    data=chunks,
+                    metrics={
+                        "chunking_strategy": "no_chunking",
+                        "chunk_size": 0,
+                        "force_chunk_in_memory": force_chunk_in_memory,
+                        "duration": duration,
+                    },
+                    duration=duration,
+                )
+
+            # Validate positive chunk size
+            if chunk_size < 0:
                 raise ChunkingError(
-                    f"Invalid chunk size: {chunk_size}. Must be positive.",
+                    f"Invalid chunk size: {chunk_size}. Must be non-negative.",
                     chunk_size=chunk_size,
                 )
 
@@ -162,7 +189,13 @@ class AdaptiveChunker:
             return self.chunk_size_cache[data_type]
 
         # Determine optimal size based on data characteristics
-        if isinstance(data, (pd.DataFrame, pl.DataFrame)):
+        is_dataframe = False
+        if pd is not None and isinstance(data, pd.DataFrame):
+            is_dataframe = True
+        elif pl is not None and isinstance(data, pl.DataFrame):
+            is_dataframe = True
+
+        if is_dataframe:
             optimal_size = self._analyze_dataframe_characteristics(data)
         elif hasattr(data, "__len__"):
             # For other iterables, use size-based heuristics
@@ -217,10 +250,10 @@ class AdaptiveChunker:
             Optimal chunk size based on characteristics.
         """
         try:
-            if isinstance(df, pd.DataFrame):
+            if pd is not None and isinstance(df, pd.DataFrame):
                 n_rows, n_cols = df.shape
                 memory_usage = df.memory_usage(deep=True).sum()
-            elif isinstance(df, pl.DataFrame):
+            elif pl is not None and isinstance(df, pl.DataFrame):
                 n_rows = df.height
                 n_cols = len(df.columns)
                 memory_usage = df.estimated_size()
@@ -256,13 +289,20 @@ class AdaptiveChunker:
 
         Args:
             source: Data source to chunk.
-            chunk_size: Base chunk size.
-            force_chunk: Whether to force chunking.
+            chunk_size: Base chunk size. If 0, no chunking is applied.
+            force_chunk: Whether to force chunking (legacy parameter).
 
         Yields:
             Data chunks.
         """
-        if isinstance(source, (pd.DataFrame, pl.DataFrame)) and force_chunk:
+        # Chunk DataFrames when chunk_size > 0 (not just when force_chunk=True)
+        is_dataframe = False
+        if pd is not None and isinstance(source, pd.DataFrame):
+            is_dataframe = True
+        elif pl is not None and isinstance(source, pl.DataFrame):
+            is_dataframe = True
+
+        if is_dataframe and chunk_size > 0:
             yield from self._chunk_dataframe(source, chunk_size)
         elif hasattr(source, "__iter__") and not isinstance(source, (str, bytes)):
             yield from iter(source)
@@ -328,9 +368,9 @@ class AdaptiveChunker:
         Yields:
             DataFrame chunks.
         """
-        if isinstance(df, pd.DataFrame):
+        if pd is not None and isinstance(df, pd.DataFrame):
             yield from self._chunk_pandas(df, chunk_size)
-        elif isinstance(df, pl.DataFrame):
+        elif pl is not None and isinstance(df, pl.DataFrame):
             yield from self._chunk_polars(df, chunk_size)
         else:
             yield df

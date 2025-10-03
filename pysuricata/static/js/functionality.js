@@ -562,8 +562,8 @@ function toggleSampleText(detailsElement) {
   if (!textElement) return;
   
   if (detailsElement.open) {
-    textElement.textContent = 'Hide';
+    textElement.textContent = 'Hide sample';
   } else {
-    textElement.textContent = 'Show';
+    textElement.textContent = 'Show sample';
   }
 }

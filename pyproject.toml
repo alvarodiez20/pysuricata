@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysuricata"
-version = "0.0.9"
+version = "0.0.10"
 description = "A lightweight EDA tool inspired by the curious nature of suricates. Built just for fun 🔬."
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
@@ -34,7 +34,6 @@ Repository = "https://github.com/alvarodiez20/pysuricata"
 
 [project.optional-dependencies]
 polars = [
-    # Support a wide range of 1.x releases; tested with recent 1.3x
     "polars>=1.0,<2.0",
 ]
 
@@ -50,6 +49,7 @@ dev = [
     "requests>=2.32.3",
     "ruff>=0.11.2",
     "pre-commit>=3.6.2",
+    "ipykernel>=6.30.1",
 ]
 
 [tool.setuptools]

@@ -33,20 +33,13 @@ try:
         NumericConfig,
     )
     from .datetime import DatetimeAccumulator, DatetimeSummary
-    from .factory2 import (
+    from .factory import (
         build_accumulators,
         create_accumulator_config,
         get_accumulator_info,
         validate_accumulator_compatibility,
     )
     from .numeric import NumericAccumulator, NumericSummary
-
-    # Backward compatibility aliases
-    BooleanAccumulatorV2 = BooleanAccumulator
-    CategoricalAccumulatorV2 = CategoricalAccumulator
-    DatetimeAccumulatorV2 = DatetimeAccumulator
-    NumericAccumulatorV2 = NumericAccumulator
-    build_accumulators_v2 = build_accumulators
 
     # Version information
     __version__ = "2.0.0"

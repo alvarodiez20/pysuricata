@@ -4,8 +4,8 @@ This module provides analysis capabilities including correlation analysis,
 statistical estimators, and metrics computation.
 """
 
+from ...accumulators.sketches import RowKMV
 from .correlation import StreamingCorr
-from .estimators import RowKMV
 from .metrics import (
     apply_corr_chips,
     build_kinds_map,
