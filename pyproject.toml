@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysuricata"
-version = "0.0.9"
+version = "0.0.10"
 description = "A lightweight EDA tool inspired by the curious nature of suricates. Built just for fun 🔬."
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
 ]
-license = { text = "MIT" }
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.9,<3.14"
 classifiers = [
@@ -34,7 +34,6 @@ Repository = "https://github.com/alvarodiez20/pysuricata"
 
 [project.optional-dependencies]
 polars = [
-    # Support a wide range of 1.x releases; tested with recent 1.3x
     "polars>=1.0,<2.0",
 ]
 
@@ -47,13 +46,32 @@ dev = [
     "mkdocstrings>=0.30.0",
     "mkdocstrings-python>=1.18.0",
     "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
     "requests>=2.32.3",
     "ruff>=0.11.2",
     "pre-commit>=3.6.2",
+    "ipykernel>=6.30.1",
 ]
 
 [tool.setuptools]
 include-package-data = true
+packages = [
+    "pysuricata",
+    "pysuricata.accumulators",
+    "pysuricata.compute",
+    "pysuricata.compute.adapters",
+    "pysuricata.compute.analysis",
+    "pysuricata.compute.core",
+    "pysuricata.compute.orchestration",
+    "pysuricata.compute.processing",
+    "pysuricata.io",
+    "pysuricata.render",
+    "pysuricata.static",
+    "pysuricata.static.css",
+    "pysuricata.static.images",
+    "pysuricata.static.js",
+    "pysuricata.templates"
+]
 
 [tool.setuptools.package-data]
 pysuricata = [
@@ -63,3 +81,30 @@ pysuricata = [
     "static/images/*.ico",
     "static/js/*.js"
     ]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pysuricata"]

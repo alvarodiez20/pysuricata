@@ -14,19 +14,17 @@ except Exception:  # pragma: no cover
     pd = None  # type: ignore
 
 from ..accumulators import (
-    BooleanAccumulatorV2 as BooleanAccumulator,
-)
-from ..accumulators import (
-    CategoricalAccumulatorV2 as CategoricalAccumulator,
-)
-from ..accumulators import (
-    DatetimeAccumulatorV2 as DatetimeAccumulator,
-)
-from ..accumulators import (
-    NumericAccumulatorV2 as NumericAccumulator,
+    BooleanAccumulator,
+    CategoricalAccumulator,
+    DatetimeAccumulator,
+    NumericAccumulator,
 )
 from .core.types import ColumnKinds
-from .processing.inference import UnifiedTypeInferrer
+from .processing.inference import (
+    UnifiedTypeInferrer,
+    should_reclassify_numeric_as_boolean,
+    should_reclassify_numeric_as_categorical,
+)
 
 
 def _to_numeric_array_pandas(s: "pd.Series") -> np.ndarray:  # type: ignore[name-defined]
@@ -102,6 +100,7 @@ def consume_chunk_pandas(
     df: "pd.DataFrame",
     accs: Dict[str, Any],
     kinds: ColumnKinds,
+    config: Optional[Any] = None,
     logger: Optional["logging.Logger"] = None,
 ) -> None:  # type: ignore[name-defined]
     # 1) Create accumulators for columns not seen in the first chunk

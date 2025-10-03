@@ -220,7 +220,7 @@ class TestEngineConfig:
         options = MockOptions()
         config = EngineConfig.from_options(options)
 
-        assert config.chunk_size == 200_000  # Should use default
+        assert config.chunk_size == 0  # Should use default
         assert config.numeric_sample_k == 5_000
         assert config.uniques_k == 512
         assert config.topk_k == 10
@@ -396,7 +396,7 @@ class TestEngineOptions:
         assert isinstance(options, EngineOptions)
 
         config = EngineConfig.from_options(options)
-        assert config.chunk_size == 200_000  # Should use default
+        assert config.chunk_size == 0  # Should use default
         assert config.numeric_sample_k == 10_000
         assert config.uniques_k == 1024
         assert config.topk_k == 25

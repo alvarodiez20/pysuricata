@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from typing import Any, Dict, List, Mapping, Sequence, Tuple
+
 from ..accumulators.protocols import FinalizableAccumulator
+from ..render.missing_columns import create_missing_columns_renderer
 
 try:  # optional
     import pandas as pd  # type: ignore
@@ -35,13 +37,16 @@ def build_summary(
         "rows_est": int(n_rows),
         "cols": int(n_cols),
         "missing_cells": int(total_missing_cells),
-        "missing_cells_pct": (total_missing_cells / max(1, n_rows * n_cols) * 100.0) if (n_rows and n_cols) else 0.0,
-        "duplicate_rows_est": int(row_kmv.approx_duplicates()[0]) if hasattr(row_kmv, "approx_duplicates") else 0,
-        "duplicate_rows_pct_est": float(row_kmv.approx_duplicates()[1]) if hasattr(row_kmv, "approx_duplicates") else 0.0,
-        "top_missing": [
-            {"column": str(col), "pct": float(pct), "count": int(cnt)}
-            for col, pct, cnt in (list(miss_list)[:5] if miss_list else [])
-        ],
+        "missing_cells_pct": (total_missing_cells / max(1, n_rows * n_cols) * 100.0)
+        if (n_rows and n_cols)
+        else 0.0,
+        "duplicate_rows_est": int(row_kmv.approx_duplicates()[0])
+        if hasattr(row_kmv, "approx_duplicates")
+        else 0,
+        "duplicate_rows_pct_est": float(row_kmv.approx_duplicates()[1])
+        if hasattr(row_kmv, "approx_duplicates")
+        else 0.0,
+        "top_missing": _get_intelligent_top_missing(miss_list, n_rows, n_cols),
     }
 
     columns_summary: Dict[str, Dict[str, Any]] = {}
@@ -96,3 +101,30 @@ def build_summary(
             }
 
     return {"dataset": dataset_summary, "columns": columns_summary}
+
+
+def _get_intelligent_top_missing(
+    miss_list: Sequence[Tuple[str, float, int]], n_rows: int, n_cols: int
+) -> List[Dict[str, Any]]:
+    """Get intelligent top missing columns using the new analyzer.
+
+    Args:
+        miss_list: List of (column_name, missing_pct, missing_count) tuples
+        n_rows: Total number of rows in dataset
+        n_cols: Total number of columns in dataset
+
+    Returns:
+        List of dictionaries with column information for JSON serialization
+    """
+    if not miss_list:
+        return []
+
+    # Use the intelligent analyzer to determine what to include
+    renderer = create_missing_columns_renderer(min_threshold_pct=0.5)
+    result = renderer.analyzer.analyze_missing_columns(miss_list, n_cols, n_rows)
+
+    # Return the initial columns (what would be shown by default)
+    return [
+        {"column": str(col), "pct": float(pct), "count": int(cnt)}
+        for col, pct, cnt in result.initial_columns
+    ]

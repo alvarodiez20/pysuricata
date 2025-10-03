@@ -469,3 +469,147 @@ class UnifiedTypeInferrer:
             "confidence_threshold": self.confidence_threshold,
             "sample_size": self.sample_size,
         }
+
+
+def should_reclassify_numeric_as_categorical(
+    unique_count: int, total_count: int
+) -> bool:
+    """Determine if a numeric column should be reclassified as categorical.
+
+    This function implements a hybrid approach to reclassify numeric columns
+    that have very few unique values as categorical columns. This is useful
+    for columns that are technically numeric but represent discrete categories
+    (like ratings, grades, or status codes).
+
+    Args:
+        unique_count: Number of unique values in the column
+        total_count: Total number of values in the column
+
+    Returns:
+        True if column should be reclassified as categorical, False otherwise
+    """
+    if total_count == 0:
+        return False
+
+    # Calculate unique ratio
+    unique_ratio = unique_count / total_count
+
+    # Reclassify as categorical if:
+    # 1. Less than 10 unique values, OR
+    # 2. Less than 5% unique ratio (for very large datasets)
+    return unique_count < 10 or unique_ratio < 0.05
+
+
+def should_reclassify_numeric_as_boolean(
+    series: Any, config: Any, logger: Optional[Any] = None
+) -> bool:
+    """Determine if a numeric column should be reclassified as boolean.
+
+    This function implements conservative heuristics to detect numeric columns
+    that contain only 0s and 1s and should be treated as boolean columns.
+    This improves semantic accuracy and provides more relevant statistics.
+
+    Args:
+        series: Numeric series to analyze (pandas.Series or polars.Series)
+        config: Configuration object with boolean detection settings
+        logger: Optional logger for debugging
+
+    Returns:
+        True if column should be reclassified as boolean, False otherwise
+    """
+    if not config.enable_auto_boolean_detection:
+        return False
+
+    try:
+        # Get unique values (handle both pandas and polars)
+        if hasattr(series, "dropna"):
+            # Pandas
+            unique_values = set(series.dropna().unique())
+            total_count = len(series.dropna())
+        else:
+            # Polars
+            unique_values = set(series.drop_nulls().unique().to_list())
+            total_count = series.drop_nulls().len()
+
+        # Must have sufficient samples
+        if total_count < config.boolean_detection_min_samples:
+            if logger:
+                logger.debug(
+                    "Boolean detection skipped for '%s': insufficient samples (%d < %d)",
+                    getattr(series, "name", "unknown"),
+                    total_count,
+                    config.boolean_detection_min_samples,
+                )
+            return False
+
+        # Must contain exactly 0 and 1 (handle numpy types)
+        unique_ints = {int(v) for v in unique_values}
+        if not unique_ints.issubset({0, 1}):
+            return False
+
+        # Must have both values present
+        if len(unique_ints) != 2:
+            return False
+
+        # Check for reasonable distribution (not mostly zeros)
+        if hasattr(series, "dropna"):
+            # Pandas
+            zero_count = (series == 0).sum()
+        else:
+            # Polars
+            zero_count = (series == 0).sum()
+
+        zero_ratio = zero_count / total_count
+        if zero_ratio > config.boolean_detection_max_zero_ratio:
+            if logger:
+                logger.debug(
+                    "Boolean detection skipped for '%s': too many zeros (%.2f > %.2f)",
+                    getattr(series, "name", "unknown"),
+                    zero_ratio,
+                    config.boolean_detection_max_zero_ratio,
+                )
+            return False
+
+        # Check column name patterns if required
+        if config.boolean_detection_require_name_pattern:
+            column_name = getattr(series, "name", "").lower()
+            boolean_patterns = [
+                "is_",
+                "has_",
+                "can_",
+                "should_",
+                "flag_",
+                "active",
+                "enabled",
+                "valid",
+                "complete",
+                "success",
+                "failed",
+                "error",
+                "warning",
+                "true",
+                "false",
+                "yes",
+                "no",
+                "on",
+                "off",
+            ]
+
+            if not any(pattern in column_name for pattern in boolean_patterns):
+                if logger:
+                    logger.debug(
+                        "Boolean detection skipped for '%s': no boolean-like name pattern",
+                        getattr(series, "name", "unknown"),
+                    )
+                return False
+
+        return True
+
+    except Exception as e:
+        if logger:
+            logger.warning(
+                "Boolean detection failed for '%s': %s",
+                getattr(series, "name", "unknown"),
+                str(e),
+            )
+        return False

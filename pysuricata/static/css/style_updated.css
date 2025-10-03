@@ -1650,3 +1650,23 @@ body.suricata-standalone:not(.light) {
   font-size: 0.85rem;
   opacity: 0.7;
 }
+
+/* =============================
+   BTN-SOFT ACTIVE STATE STYLING
+   ============================= */
+/* Add active state styling for btn-soft buttons to make selected state visible */
+#pysuricata-report .btn-soft.active {
+  background: rgba(59,130,246,.4);
+  border-color: #1e40af;
+  border-width: 2px;
+  color: #1e3a8a;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.3);
+}
+
+#pysuricata-report:not(.light) .btn-soft.active {
+  background: rgba(59,130,246,.35);
+  border-color: rgba(59,130,246,.50);
+  color: #dbeafe;
+  font-weight: 600;
+}

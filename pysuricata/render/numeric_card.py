@@ -1,6 +1,7 @@
 """Numeric card rendering functionality."""
 
 import html as _html
+import json
 import math
 from typing import Any, List, Optional, Sequence, Tuple, Union
 
@@ -26,16 +27,34 @@ from .format_utils import fmt_compact as _fmt_compact
 from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
 from .format_utils import fmt_num as _fmt_num
 from .format_utils import human_bytes as _human_bytes
+from .histogram_svg import HistogramConfig, SVGHistogramRenderer
 from .svg_utils import _format_pow10_label as _fmt_pow10_label
 from .svg_utils import fmt_tick as _fmt_tick
 from .svg_utils import nice_ticks as _nice_ticks
 from .svg_utils import svg_empty as _svg_empty
 
 
+def ordinal_number(n):
+    """Convert a number to its ordinal form with superscript suffix (1ˢᵗ, 2ⁿᵈ, 3ʳᵈ, 4ᵗʰ, etc.)"""
+    # Keep the number normal size, only make the suffix superscript
+    number_str = str(n)
+
+    # Add ordinal suffix (only the suffix is superscript)
+    if 10 <= n % 100 <= 20:
+        suffix = "ᵗʰ"
+    else:
+        suffix_map = {1: "ˢᵗ", 2: "ⁿᵈ", 3: "ʳᵈ"}
+        suffix = suffix_map.get(n % 10, "ᵗʰ")
+
+    return f"{number_str}{suffix}"
+
+
 class NumericCardRenderer(CardRenderer):
     """Renders numeric data cards."""
 
     def __init__(self):
+        # Initialize SVG histogram renderer
+        self.svg_histogram_renderer = SVGHistogramRenderer()
         super().__init__()
         self.quality_assessor = QualityAssessor()
         self.table_builder = TableBuilder()
@@ -330,344 +349,125 @@ class NumericCardRenderer(CardRenderer):
 
         return self.table_builder.build_key_value_table(data)
 
+    def _create_histogram_data(
+        self, values: np.ndarray, bins: int, scale: str, scale_count: float
+    ) -> Any:
+        """Create histogram data for chart rendering.
+
+        Args:
+            values: Array of numeric values
+            bins: Number of bins for histogram
+            scale: Scale type ('lin' or 'log')
+            scale_count: Scale factor for counts
+
+        Returns:
+            Object with edges and scaled_counts attributes
+        """
+        if len(values) == 0:
+            # Return empty histogram data
+            return type(
+                "HistogramData",
+                (),
+                {"edges": np.array([]), "scaled_counts": np.array([])},
+            )()
+
+        # Apply scale transformation if needed
+        if scale == "log":
+            # Filter out non-positive values for log scale
+            positive_values = values[values > 0]
+            if len(positive_values) == 0:
+                return type(
+                    "HistogramData",
+                    (),
+                    {"edges": np.array([]), "scaled_counts": np.array([])},
+                )()
+            transformed_values = np.log10(positive_values)
+        else:
+            transformed_values = values
+
+        # Create histogram
+        counts, edges = np.histogram(transformed_values, bins=bins)
+
+        # Scale counts
+        scaled_counts = counts * scale_count
+
+        return type(
+            "HistogramData", (), {"edges": edges, "scaled_counts": scaled_counts}
+        )()
+
     def _build_histogram_variants(
         self, col_id: str, base_title: str, stats: NumericStats
     ) -> str:
-        """Build histogram variants HTML."""
-        values = stats.sample_vals or []
-        scale_count = getattr(stats, "sample_scale", 1.0)
+        """Build histogram variants HTML with SVG using true distribution."""
+        # Use true distribution histogram data if available
+        true_edges = getattr(stats, "true_histogram_edges", None)
+        true_counts = getattr(stats, "true_histogram_counts", None)
 
-        # Generate all histogram variants
-        variants = []
-        for bins in self.hist_config.bin_options:
-            for scale in ["lin", "log"]:
-                hist_svg = self._build_histogram_svg(
-                    base_title, values, bins=bins, scale=scale, scale_count=scale_count
-                )
+        if true_edges and true_counts and len(true_edges) > 1 and len(true_counts) > 0:
+            # Use true distribution data
+            variants = []
+            for bins in self.hist_config.bin_options:
+                for scale in ["lin", "log"]:
+                    # Create title with scale indicator
+                    title = f"{base_title}{' (log scale)' if scale == 'log' else ''}"
+
+                    # Generate SVG histogram with true distribution
+                    svg_content = (
+                        self.svg_histogram_renderer.render_histogram_from_bins(
+                            bin_edges=true_edges,
+                            bin_counts=true_counts,
+                            bins=bins,
+                            scale=scale,
+                            title=title,
+                            col_id=col_id,
+                        )
+                    )
+
+                    active_class = " active" if (bins == 25 and scale == "lin") else ""
+
+                    variants.append(
+                        f'<div class="hist variant{active_class}" id="{col_id}-{scale}-bins-{bins}" data-scale="{scale}" data-bin="{bins}">'
+                        f"{svg_content}"
+                        f"</div>"
+                    )
+        else:
+            # Fallback to sample-based approach
+            values = stats.sample_vals or []
+            scale_count = getattr(stats, "sample_scale", 1.0)
+
+            variants = []
+            for bins in self.hist_config.bin_options:
+                for scale in ["lin", "log"]:
+                    # Scale the values if needed
+                    scaled_values = np.asarray(values, dtype=float) * scale_count
+
+                    # Create title with scale indicator
+                    title = f"{base_title}{' (log scale)' if scale == 'log' else ''}"
+
+                    # Generate SVG histogram
+                    svg_content = self.svg_histogram_renderer.render_histogram(
+                        values=scaled_values,
+                        bins=bins,
+                        scale=scale,
+                        title=title,
+                        col_id=col_id,
+                    )
+
                 active_class = " active" if (bins == 25 and scale == "lin") else ""
+
                 variants.append(
-                    f'<div class="hist variant{active_class}" id="{col_id}-{scale}-bins-{bins}" '
-                    f'data-scale="{scale}" data-bin="{bins}">{hist_svg}</div>'
+                    f'<div class="hist variant{active_class}" id="{col_id}-{scale}-bins-{bins}" data-scale="{scale}" data-bin="{bins}">'
+                    f"{svg_content}"
+                    f"</div>"
                 )
 
-        return f"""
+        return f'''
         <div class="hist-chart">
             <div class="hist-variants" data-col="{col_id}">
                 {"".join(variants)}
             </div>
         </div>
-        """
-
-    def _build_histogram_svg(
-        self,
-        base_title: str,
-        vals: Sequence[float],
-        *,
-        bins: int = 25,
-        scale: str = "lin",
-        scale_count: float = 1.0,
-        x_min_override: Optional[float] = None,
-        x_max_override: Optional[float] = None,
-    ) -> str:
-        """Build histogram SVG from values."""
-        arr = np.asarray(vals, dtype=float)
-        arr = arr[np.isfinite(arr)]
-        if arr.size == 0:
-            return self.create_empty_svg(
-                "hist-svg", self.chart_dims.width, self.chart_dims.height
-            )
-
-        if scale == "log":
-            arr = arr[arr > 0]
-            if arr.size == 0:
-                return self.create_empty_svg(
-                    "hist-svg", self.chart_dims.width, self.chart_dims.height
-                )
-            arr = np.log10(arr)
-
-        x_min, x_max = float(np.min(arr)), float(np.max(arr))
-        if x_min_override is not None and np.isfinite(x_min_override):
-            # For log scale, override values need to be converted to log10 space
-            if scale == "log":
-                x_min = float(np.log10(x_min_override)) if x_min_override > 0 else x_min
-            else:
-                x_min = float(x_min_override)
-        if x_max_override is not None and np.isfinite(x_max_override):
-            # For log scale, override values need to be converted to log10 space
-            if scale == "log":
-                x_max = float(np.log10(x_max_override)) if x_max_override > 0 else x_max
-            else:
-                x_max = float(x_max_override)
-        if x_min == x_max:
-            x_min -= 0.5
-            x_max += 0.5
-
-        # Create histogram data
-        hist_data = self._create_histogram_data(arr, bins, x_min, x_max, scale_count)
-
-        # Build SVG
-        return self._build_histogram_svg_content(
-            base_title, hist_data, x_min, x_max, scale
-        )
-
-    def _create_histogram_data(
-        self, arr: np.ndarray, bins: int, x_min: float, x_max: float, scale_count: float
-    ) -> HistogramData:
-        """Create histogram data structure with proper count handling.
-
-        This method intelligently handles count scaling to ensure accurate representation
-        of data distribution while maintaining performance for large datasets.
-
-        Args:
-            arr: Input array of numeric values
-            bins: Number of histogram bins
-            x_min: Minimum value for histogram range
-            x_max: Maximum value for histogram range
-            scale_count: Scaling factor for counts (used for sampling)
-
-        Returns:
-            HistogramData object with properly scaled counts
-        """
-        counts, edges = np.histogram(arr, bins=int(bins), range=(x_min, x_max))
-
-        # Only apply scaling if it's significantly different from 1.0
-        # This prevents unnecessary scaling when working with full datasets
-        if abs(scale_count - 1.0) > 0.01:
-            counts_scaled = np.maximum(
-                0, np.round(counts * max(1.0, float(scale_count)))
-            ).astype(int)
-        else:
-            # Use actual counts when scale is close to 1.0
-            counts_scaled = counts.astype(int)
-
-        y_max = int(max(1, counts_scaled.max()))
-        total_n = int(counts_scaled.sum()) if counts_scaled.size else 0
-
-        return HistogramData(
-            counts=counts,
-            edges=edges,
-            scaled_counts=counts_scaled,
-            y_max=y_max,
-            total_n=total_n,
-        )
-
-    def _build_histogram_svg_content(
-        self,
-        base_title: str,
-        hist_data: HistogramData,
-        x_min: float,
-        x_max: float,
-        scale: str,
-    ) -> str:
-        """Build the actual SVG content for histogram."""
-        # Calculate dimensions
-        iw = (
-            self.chart_dims.width
-            - self.chart_dims.margin_left
-            - self.chart_dims.margin_right
-        )
-        ih = (
-            self.chart_dims.height
-            - self.chart_dims.margin_top
-            - self.chart_dims.margin_bottom
-        )
-
-        def sx(x):
-            return self.chart_dims.margin_left + (x - x_min) / (x_max - x_min) * iw
-
-        def sy(y):
-            return self.chart_dims.margin_top + (1 - y / hist_data.y_max) * ih
-
-        # X and Y ticks
-        x_ticks, x_step, x_tick_labels = compute_x_ticks_and_labels(x_min, x_max, scale)
-        y_ticks, y_step = _nice_ticks(0, hist_data.y_max, self.tick_config.y_max_ticks)
-
-        # Ensure top value is represented
-        if y_ticks and (y_ticks[-1] < hist_data.y_max - EPSILON):
-            y_ticks.append(float(hist_data.y_max))
-
-        parts = [
-            f'<svg class="hist-svg" width="{self.chart_dims.width}" height="{self.chart_dims.height}" '
-            f'viewBox="0 0 {self.chart_dims.width} {self.chart_dims.height}" role="img" aria-label="Histogram">',
-            '<g class="plot-area">',
-        ]
-
-        # Draw bars
-        for i, c in enumerate(hist_data.scaled_counts):
-            x0 = hist_data.edges[i]
-            x1 = hist_data.edges[i + 1]
-            x = sx(x0)
-            w = max(1.0, sx(x1) - sx(x0) - 1.0)
-            y = sy(int(c))
-            h = (self.chart_dims.margin_top + ih) - y
-            pct = (c / hist_data.total_n * 100.0) if hist_data.total_n else 0.0
-
-            # Tooltip/domain labels
-            x0_disp, x1_disp = format_hist_bin_labels(x0, x1, scale)
-            parts.append(
-                f'<rect class="bar" x="{x:.2f}" y="{y:.2f}" width="{w:.2f}" height="{h:.2f}" rx="1" ry="1" '
-                f'data-count="{int(c)}" data-pct="{pct:.1f}" data-x0="{x0_disp}" data-x1="{x1_disp}" '
-                f'title="{int(c)} rows ({pct:.1f}%) - [{x0_disp} – {x1_disp}]">'
-                f"</rect>"
-            )
-
-        parts.append("</g>")
-
-        # Draw axes and ticks
-        self._add_axes_and_ticks(
-            parts, x_ticks, x_tick_labels, y_ticks, x_min, x_max, scale, sx, sy, iw, ih
-        )
-
-        # Add axis titles
-        self._add_axis_titles(parts, base_title, scale, iw, ih)
-
-        parts.append("</svg>")
-        return "".join(parts)
-
-    def _add_axes_and_ticks(
-        self,
-        parts,
-        x_ticks,
-        x_tick_labels,
-        y_ticks,
-        x_min,
-        x_max,
-        scale,
-        sx,
-        sy,
-        iw,
-        ih,
-    ):
-        """Add axes and tick marks to SVG."""
-        x_axis_y = self.chart_dims.margin_top + ih
-
-        # X and Y axes
-        parts.append(
-            f'<line class="axis" x1="{self.chart_dims.margin_left}" y1="{x_axis_y}" '
-            f'x2="{self.chart_dims.margin_left + iw}" y2="{x_axis_y}"></line>'
-        )
-        parts.append(
-            f'<line class="axis" x1="{self.chart_dims.margin_left}" y1="{self.chart_dims.margin_top}" '
-            f'x2="{self.chart_dims.margin_left}" y2="{x_axis_y}"></line>'
-        )
-
-        # X ticks
-        if scale == "log":
-            self._add_log_scale_ticks(
-                parts, x_ticks, x_tick_labels, x_min, x_max, sx, x_axis_y
-            )
-        else:
-            self._add_linear_scale_ticks(parts, x_ticks, x_min, x_max, sx, x_axis_y)
-
-        # Y ticks
-        for yt in y_ticks:
-            py = sy(yt)
-            parts.append(
-                f'<line class="tick" x1="{self.chart_dims.margin_left - 4}" y1="{py}" '
-                f'x2="{self.chart_dims.margin_left}" y2="{py}"></line>'
-            )
-            parts.append(
-                f'<text class="tick-label yt" x="{self.chart_dims.margin_left - 6}" y="{py + 3}" '
-                f'text-anchor="end" transform="rotate(-30 {self.chart_dims.margin_left - 6} {py + 3})">'
-                f"{_fmt_tick(yt, 1.0)}</text>"
-            )
-
-    def _add_log_scale_ticks(
-        self, parts, x_ticks, x_tick_labels, x_min, x_max, sx, x_axis_y
-    ):
-        """Add log scale tick marks with improved visibility and reliability.
-
-        This method generates tick marks for logarithmic scales, ensuring proper
-        visibility and handling edge cases gracefully.
-
-        Args:
-            parts: List to append SVG elements to
-            x_ticks: List of major tick positions
-            x_tick_labels: List of tick labels (optional)
-            x_min: Minimum value on the axis
-            x_max: Maximum value on the axis
-            sx: Scale function for x-coordinates
-            x_axis_y: Y-coordinate of the x-axis
-        """
-        labs = x_tick_labels or []
-
-        # Ensure we have ticks to display
-        if not x_ticks:
-            return
-
-        for i, xt in enumerate(x_ticks):
-            px = sx(xt)
-            # Enhanced major tick visibility for log scale
-            parts.append(
-                f'<line class="tick-major" x1="{px}" y1="{x_axis_y}" x2="{px}" y2="{x_axis_y + 6}" '
-                f'stroke="currentColor"></line>'
-            )
-
-            # Generate label with robust fallback
-            try:
-                lab = (
-                    labs[i]
-                    if i < len(labs) and labs[i]
-                    else _fmt_pow10_label(int(round(xt)))
-                )
-            except Exception:
-                lab = _fmt_pow10_label(int(round(xt)))
-
-            # Add label with improved positioning
-            parts.append(
-                f'<text class="tick-label xt" x="{px}" y="{x_axis_y + 16}" text-anchor="middle" '
-                f'transform="rotate(-30 {px} {x_axis_y + 16})">{lab}</text>'
-            )
-
-    def _add_linear_scale_ticks(self, parts, x_ticks, x_min, x_max, sx, x_axis_y):
-        """Add linear scale tick marks.
-
-        This method generates major tick marks for linear scales with clean,
-        simple appearance.
-
-        Args:
-            parts: List to append SVG elements to
-            x_ticks: List of major tick positions
-            x_min: Minimum value on the axis
-            x_max: Maximum value on the axis
-            sx: Scale function for x-coordinates
-            x_axis_y: Y-coordinate of the x-axis
-        """
-        # Add major tick marks
-        for i, xt in enumerate(x_ticks):
-            px = sx(xt)
-            parts.append(
-                f'<line class="tick-major" x1="{px}" y1="{x_axis_y}" x2="{px}" y2="{x_axis_y + 6}" '
-                f'stroke="currentColor"></line>'
-            )
-            # Add label for all ticks - use scientific notation for large numbers
-            label = _fmt_compact_scientific(xt)
-            parts.append(
-                f'<text class="tick-label xt" x="{px}" y="{x_axis_y + 16}" text-anchor="middle" '
-                f'transform="rotate(-30 {px} {x_axis_y + 16})">{label}</text>'
-            )
-
-    def _add_axis_titles(self, parts, base_title, scale, iw, ih):
-        """Add axis titles to SVG."""
-        x_axis_y = self.chart_dims.margin_top + ih
-
-        if scale == "log":
-            parts.append(
-                f'<text class="axis-title x" x="{self.chart_dims.margin_left + iw / 2:.2f}" '
-                f'y="{x_axis_y + 28}" text-anchor="middle">'
-                f'log<tspan baseline-shift="sub" font-size="8">10</tspan>({base_title})'
-                f"</text>"
-            )
-        else:
-            parts.append(
-                f'<text class="axis-title x" x="{self.chart_dims.margin_left + iw / 2:.2f}" '
-                f'y="{x_axis_y + 28}" text-anchor="middle">{base_title}</text>'
-            )
-
-        parts.append(
-            f'<text class="axis-title y" transform="translate({self.chart_dims.margin_left - 36},'
-            f'{self.chart_dims.margin_top + ih / 2:.2f}) rotate(-90)" text-anchor="middle">Count</text>'
-        )
+        '''
 
     def _build_stats_table(self, stats: NumericStats) -> str:
         """Build detailed statistics table."""
@@ -728,11 +528,7 @@ class NumericCardRenderer(CardRenderer):
             pct = (int(c) / total_nonnull) * 100.0 if total_nonnull else 0.0
 
             # Add ranking indicator for top values
-            rank_icon = (
-                "🥇"
-                if i == 0
-                else ("🥈" if i == 1 else ("🥉" if i == 2 else f"{i + 1}."))
-            )
+            rank_icon = ordinal_number(i + 1)
 
             # Format value with appropriate precision and scientific notation for large numbers
             if isinstance(v, float) and v.is_integer():
@@ -1033,11 +829,7 @@ class NumericCardRenderer(CardRenderer):
             severity, severity_class = self._get_outlier_severity(v, t, stats)
 
             # Add ranking for top outliers
-            rank_icon = (
-                "🥇"
-                if i == 0
-                else ("🥈" if i == 1 else ("🥉" if i == 2 else f"{i + 1}."))
-            )
+            rank_icon = ordinal_number(i + 1)
 
             # Calculate how extreme this outlier is as a percentage
             if hasattr(stats, "mean") and hasattr(stats, "std") and stats.std > 0:
@@ -1149,11 +941,7 @@ class NumericCardRenderer(CardRenderer):
             direction_icon = "📈" if corr_value > 0 else "📉"
 
             # Ranking
-            rank_icon = (
-                "🥇"
-                if i == 0
-                else ("🥈" if i == 1 else ("🥉" if i == 2 else f"{i + 1}."))
-            )
+            rank_icon = ordinal_number(i + 1)
 
             # Progress bar width (0-100%)
             bar_width = min(100, abs_corr * 100)
@@ -1289,18 +1077,403 @@ class NumericCardRenderer(CardRenderer):
             stats, missing_pct, zeros_pct, inf_pct, neg_pct, quality_severity
         )
 
-        # Build quality indicators HTML with optimized string building
-        indicators_html = self._build_indicators_html(quality_indicators)
+        # Add missing values per chunk visualization (DataPrep-style spectrum)
+        chunk_visualization_html = self._build_dataprep_spectrum_visualization(stats)
 
-        # Build recommendations with efficient logic
-        recommendations = self._build_recommendations(
-            stats, missing_pct, zeros_pct, inf_pct
+        return summary_html + progress_html + chunk_visualization_html
+
+    def _build_dataprep_spectrum_visualization(self, stats: NumericStats) -> str:
+        """Build DataPrep-style spectrum visualization for missing values per chunk.
+
+        This creates a single horizontal bar with segments representing actual processing
+        chunks, colored by missing value density (green-yellow-red gradient).
+
+        Args:
+            stats: NumericStats object containing chunk metadata and missing data information
+
+        Returns:
+            HTML string for the DataPrep-style spectrum visualization
+        """
+        # Check if we have chunk metadata
+        chunk_metadata = getattr(stats, "chunk_metadata", None)
+        if not chunk_metadata:
+            return ""
+
+        total_values = stats.count + stats.missing
+        if total_values == 0:
+            return ""
+
+        # Build the spectrum bar segments
+        segments_html = ""
+        total_width = 0
+
+        for start_row, end_row, missing_count in chunk_metadata:
+            chunk_size = end_row - start_row + 1
+            missing_pct = (
+                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
+            )
+
+            # Calculate segment width as percentage of total
+            segment_width_pct = (chunk_size / total_values) * 100.0
+            total_width += segment_width_pct
+
+            # Determine color based on missing percentage (DataPrep-style)
+            if missing_pct <= 5:
+                color_class = "spectrum-low"
+            elif missing_pct <= 20:
+                color_class = "spectrum-medium"
+            else:
+                color_class = "spectrum-high"
+
+            # Create tooltip content
+            tooltip_content = (
+                f"Rows {start_row:,}-{end_row:,}: "
+                f"{missing_count:,} missing ({missing_pct:.1f}%)"
+            )
+
+            segments_html += f"""
+            <div class="spectrum-segment {color_class}" 
+                 style="width: {segment_width_pct:.2f}%"
+                 title="{tooltip_content}"
+                 data-start="{start_row}"
+                 data-end="{end_row}"
+                 data-missing="{missing_count}"
+                 data-missing-pct="{missing_pct:.1f}">
+            </div>
+            """
+
+        # Build summary statistics
+        total_chunks = len(chunk_metadata)
+        max_missing_pct = max(
+            (missing_count / (end_row - start_row + 1)) * 100.0
+            for start_row, end_row, missing_count in chunk_metadata
+        )
+        avg_missing_pct = (
+            sum(
+                (missing_count / (end_row - start_row + 1)) * 100.0
+                for start_row, end_row, missing_count in chunk_metadata
+            )
+            / total_chunks
         )
 
-        # Build recommendations HTML
-        recommendations_html = self._build_recommendations_html(recommendations)
+        # Determine overall severity
+        if max_missing_pct >= 50:
+            severity = "critical"
+            severity_icon = "🚨"
+        elif max_missing_pct >= 20:
+            severity = "high"
+            severity_icon = "⚠️"
+        elif max_missing_pct >= 5:
+            severity = "medium"
+            severity_icon = "⚡"
+        else:
+            severity = "low"
+            severity_icon = "✅"
 
-        return summary_html + progress_html + indicators_html + recommendations_html
+        return f"""
+        <div class="dataprep-spectrum">
+            <div class="spectrum-header">
+                <span class="spectrum-title">Missing Values Distribution</span>
+                <span class="spectrum-stats">
+                    {total_chunks} chunks • {max_missing_pct:.1f}% max • {avg_missing_pct:.1f}% avg
+                </span>
+            </div>
+            
+            <div class="spectrum-bar">
+                {segments_html}
+            </div>
+            
+            <div class="spectrum-summary">
+                <span class="severity-indicator {severity}">
+                    {severity_icon} {severity.title()} Missing Data
+                </span>
+                <span class="spectrum-note">
+                    Hover over segments to see chunk details
+                </span>
+            </div>
+            
+            <div class="spectrum-legend">
+                <div class="legend-item">
+                    <span class="legend-color spectrum-low"></span>
+                    <span class="legend-label">Low (0-5%)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color spectrum-medium"></span>
+                    <span class="legend-label">Medium (5-20%)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color spectrum-high"></span>
+                    <span class="legend-label">High (20%+)</span>
+                </div>
+            </div>
+        </div>
+        """
+
+    def _simulate_chunk_distribution(self, stats: NumericStats) -> list[dict]:
+        """Simulate realistic chunk distribution based on data characteristics.
+
+        Args:
+            stats: NumericStats object containing data characteristics
+
+        Returns:
+            List of chunk data dictionaries with realistic missing value patterns
+        """
+        import math
+        import random
+
+        total_values = stats.count + stats.missing
+        missing_pct = (
+            (stats.missing / total_values) * 100.0 if total_values > 0 else 0.0
+        )
+
+        # Determine number of chunks based on data size
+        if total_values < 1000:
+            num_chunks = max(2, min(5, total_values // 200))
+        elif total_values < 10000:
+            num_chunks = max(3, min(8, total_values // 1000))
+        else:
+            num_chunks = max(5, min(12, total_values // 2000))
+
+        # Calculate base chunk size
+        base_chunk_size = total_values // num_chunks
+        remaining_values = total_values % num_chunks
+
+        chunks = []
+        remaining_missing = stats.missing
+
+        # Create realistic chunk patterns
+        for i in range(num_chunks):
+            # Vary chunk size slightly for realism
+            chunk_size = base_chunk_size + (1 if i < remaining_values else 0)
+            chunk_size += random.randint(-chunk_size // 10, chunk_size // 10)
+            chunk_size = max(1, chunk_size)
+
+            # Simulate missing value patterns
+            if remaining_missing <= 0:
+                chunk_missing = 0
+            elif i == num_chunks - 1:  # Last chunk gets remaining missing values
+                chunk_missing = remaining_missing
+            else:
+                # Create realistic patterns: some chunks have more missing values
+                if missing_pct > 20:  # High missing data - create clusters
+                    if random.random() < 0.3:  # 30% chance of high missing chunk
+                        chunk_missing = min(remaining_missing, int(chunk_size * 0.6))
+                    else:
+                        chunk_missing = min(remaining_missing, int(chunk_size * 0.1))
+                elif missing_pct > 5:  # Medium missing data - some variation
+                    base_missing_pct = missing_pct / 100.0
+                    variation = random.uniform(0.5, 1.5)
+                    chunk_missing = min(
+                        remaining_missing,
+                        int(chunk_size * base_missing_pct * variation),
+                    )
+                else:  # Low missing data - mostly random
+                    chunk_missing = min(
+                        remaining_missing,
+                        random.randint(0, max(1, int(chunk_size * 0.1))),
+                    )
+
+            chunk_missing = max(0, min(chunk_missing, remaining_missing))
+            remaining_missing -= chunk_missing
+
+            chunk_missing_pct = (
+                (chunk_missing / chunk_size) * 100.0 if chunk_size > 0 else 0.0
+            )
+
+            chunks.append(
+                {
+                    "index": i + 1,
+                    "size": chunk_size,
+                    "missing": chunk_missing,
+                    "missing_pct": chunk_missing_pct,
+                    "present": chunk_size - chunk_missing,
+                }
+            )
+
+        return chunks
+
+    def _generate_missing_insights(
+        self, chunk_data: list[dict], overall_missing_pct: float
+    ) -> dict:
+        """Generate insights about missing value patterns.
+
+        Args:
+            chunk_data: List of chunk data dictionaries
+            overall_missing_pct: Overall missing percentage
+
+        Returns:
+            Dictionary containing insights and pattern analysis
+        """
+        if not chunk_data:
+            return {}
+
+        missing_pcts = [chunk["missing_pct"] for chunk in chunk_data]
+        max_missing_pct = max(missing_pcts)
+        min_missing_pct = min(missing_pcts)
+        avg_missing_pct = sum(missing_pcts) / len(missing_pcts)
+
+        # Identify problematic chunks
+        high_missing_chunks = [
+            chunk for chunk in chunk_data if chunk["missing_pct"] > 20
+        ]
+        low_missing_chunks = [chunk for chunk in chunk_data if chunk["missing_pct"] < 2]
+
+        # Pattern detection
+        patterns = []
+        if max_missing_pct - min_missing_pct > 30:
+            patterns.append("High variability in missing values across chunks")
+        if len(high_missing_chunks) > len(chunk_data) * 0.3:
+            patterns.append("Multiple chunks with high missing values")
+        if len(low_missing_chunks) > len(chunk_data) * 0.5:
+            patterns.append("Most chunks have low missing values")
+
+        # Severity assessment
+        if max_missing_pct > 50:
+            severity = "critical"
+            severity_icon = "🚨"
+        elif max_missing_pct > 20:
+            severity = "high"
+            severity_icon = "⚠️"
+        elif max_missing_pct > 5:
+            severity = "medium"
+            severity_icon = "⚡"
+        else:
+            severity = "low"
+            severity_icon = "✅"
+
+        return {
+            "overall_missing_pct": overall_missing_pct,
+            "max_missing_pct": max_missing_pct,
+            "min_missing_pct": min_missing_pct,
+            "avg_missing_pct": avg_missing_pct,
+            "high_missing_chunks": len(high_missing_chunks),
+            "low_missing_chunks": len(low_missing_chunks),
+            "patterns": patterns,
+            "severity": severity,
+            "severity_icon": severity_icon,
+            "total_chunks": len(chunk_data),
+        }
+
+    def _render_chunk_visualization(
+        self, chunk_data: list[dict], insights: dict, stats: NumericStats
+    ) -> str:
+        """Render the complete chunk visualization.
+
+        Args:
+            chunk_data: List of chunk data dictionaries
+            insights: Dictionary containing insights and patterns
+            stats: NumericStats object
+
+        Returns:
+            HTML string for the complete visualization
+        """
+        if not chunk_data:
+            return ""
+
+        # Build chunk bars
+        chunk_bars = ""
+        max_missing = max(chunk["missing"] for chunk in chunk_data) if chunk_data else 0
+
+        for chunk in chunk_data:
+            # Determine severity class
+            if chunk["missing_pct"] > 20:
+                severity_class = "high"
+            elif chunk["missing_pct"] > 5:
+                severity_class = "medium"
+            else:
+                severity_class = "low"
+
+            # Calculate bar width
+            bar_width = (
+                (chunk["missing"] / max_missing) * 100.0 if max_missing > 0 else 0
+            )
+
+            chunk_bars += f"""
+            <div class="chunk-bar-item" data-chunk="{chunk["index"]}">
+                <div class="chunk-info">
+                    <span class="chunk-label">Chunk {chunk["index"]}</span>
+                    <span class="chunk-stats">
+                        {chunk["missing"]:,} missing ({chunk["missing_pct"]:.1f}%)
+                    </span>
+                    <span class="chunk-size">Size: {chunk["size"]:,}</span>
+                </div>
+                <div class="chunk-bar-container">
+                    <div class="chunk-bar-fill {severity_class}" 
+                         style="width: {bar_width:.1f}%"
+                         title="Chunk {chunk["index"]}: {chunk["missing"]:,} missing values ({chunk["missing_pct"]:.1f}%)">
+                    </div>
+                </div>
+            </div>"""
+
+        # Build insights section
+        insights_html = ""
+        if insights.get("patterns"):
+            insights_html = f"""
+            <div class="chunk-insights">
+                <h5>Pattern Analysis</h5>
+                <ul class="insights-list">
+                    {"".join(f"<li>{pattern}</li>" for pattern in insights["patterns"])}
+                </ul>
+            </div>"""
+
+        # Build summary statistics
+        summary_html = f"""
+        <div class="chunk-summary">
+            <div class="summary-stats">
+                <span class="stat-item">
+                    <span class="stat-label">Total Chunks:</span>
+                    <span class="stat-value">{insights.get("total_chunks", 0)}</span>
+                </span>
+                <span class="stat-item">
+                    <span class="stat-label">Max Missing:</span>
+                    <span class="stat-value">{insights.get("max_missing_pct", 0):.1f}%</span>
+                </span>
+                <span class="stat-item">
+                    <span class="stat-label">Avg Missing:</span>
+                    <span class="stat-value">{insights.get("avg_missing_pct", 0):.1f}%</span>
+                </span>
+                <span class="stat-item severity-{insights.get("severity", "low")}">
+                    <span class="stat-label">Severity:</span>
+                    <span class="stat-value">{insights.get("severity_icon", "✅")} {insights.get("severity", "low").title()}</span>
+                </span>
+            </div>
+        </div>"""
+
+        return f"""
+        <div class="missing-per-chunk-enhanced">
+            <div class="chunk-header">
+                <span class="icon">📊</span>
+                <span class="title">Missing Values Distribution Across Chunks</span>
+                <span class="overall-stats">
+                    {stats.missing:,} missing ({insights.get("overall_missing_pct", 0):.1f}% overall)
+                </span>
+            </div>
+            
+            <div class="chunk-visualization">
+                <div class="chunk-bars">
+                    {chunk_bars}
+                </div>
+                
+                {summary_html}
+                {insights_html}
+            </div>
+            
+            <div class="chunk-legend">
+                <div class="legend-item">
+                    <span class="legend-color low"></span>
+                    <span class="legend-label">Low (0-5%)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color medium"></span>
+                    <span class="legend-label">Medium (5-20%)</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-color high"></span>
+                    <span class="legend-label">High (20%+)</span>
+                </div>
+            </div>
+        </div>
+        """
 
     def _get_missing_data_severity(self, missing_pct: float) -> tuple[str, str, str]:
         """Get missing data severity classification with clear thresholds.

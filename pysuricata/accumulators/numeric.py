@@ -21,7 +21,7 @@ from .algorithms import (
     StreamingMoments,
 )
 from .config import NumericConfig
-from .sketches import KMV, MisraGries, ReservoirSampler
+from .sketches import KMV, MisraGries, ReservoirSampler, StreamingHistogram, mad
 
 
 @dataclass
@@ -56,7 +56,7 @@ class NumericSummary:
     zeros: int
     negatives: int
     outliers_iqr: int
-    outliers_mad: int
+    outliers_mod_zscore: int
     approx: bool
     inf: int
     # Advanced analytics (approximate)
@@ -66,6 +66,9 @@ class NumericSummary:
     top_values: List[Tuple[float, int]] = field(default_factory=list)
     # Reservoir sample for advanced analytics
     sample_vals: Optional[List[float]] = None
+    # True distribution histogram data
+    true_histogram_edges: Optional[List[float]] = None
+    true_histogram_counts: Optional[List[int]] = None
     # Quality metrics
     heap_pct: float = float("nan")
     gran_decimals: Optional[int] = None
@@ -83,6 +86,10 @@ class NumericSummary:
     # Extremes with global indices
     min_items: List[Tuple[Any, float]] = field(default_factory=list)
     max_items: List[Tuple[Any, float]] = field(default_factory=list)
+    # Chunk metadata for spectrum visualization
+    chunk_metadata: Optional[List[Tuple[int, int, int]]] = (
+        None  # (start_row, end_row, missing_count)
+    )
 
 
 class NumericAccumulator:
@@ -125,16 +132,18 @@ class NumericAccumulator:
         self._extremes = ExtremeTracker(self.config.max_extremes)
         self._topk = MisraGries(self.config.top_k_size)
 
+        # Streaming histogram for true distribution
+        self._streaming_histogram = StreamingHistogram(bins=25)
+
         # Optional advanced analytics components
         self._monotonicity = (
             MonotonicityDetector()
             if self.config.enable_monotonicity_detection
             else None
         )
+        self.enable_outlier_detection = self.config.enable_outlier_detection
         self._outlier_detector = (
-            OutlierDetector(self.config.outlier_methods)
-            if self.config.enable_outlier_detection
-            else None
+            OutlierDetector() if self.config.enable_outlier_detection else None
         )
 
         # Performance monitoring for production environments
@@ -275,6 +284,9 @@ class NumericAccumulator:
         self._moments.update(finite_values)
         self._sample.add_many(finite_values)
 
+        # Update streaming histogram for true distribution
+        self._streaming_histogram.add_many(finite_values)
+
         # Batch update unique estimates and top values
         for value in finite_values:
             self._uniques.add(value)
@@ -322,8 +334,13 @@ class NumericAccumulator:
         except (ValueError, TypeError):
             pass
 
-    def finalize(self) -> NumericSummary:
+    def finalize(
+        self, chunk_metadata: Optional[List[Tuple[int, int, int]]] = None
+    ) -> NumericSummary:
         """Finalize accumulator and return comprehensive summary statistics.
+
+        Args:
+            chunk_metadata: Optional list of chunk metadata tuples (start_row, end_row, missing_count)
 
         Returns:
             NumericSummary containing all computed statistics
@@ -344,20 +361,27 @@ class NumericAccumulator:
             mono_inc, mono_dec = self._monotonicity.get_monotonicity()
 
         # Get outlier detection results if enabled
-        outliers_iqr, outliers_mad = 0, 0
-        if self._outlier_detector and sample_values:
-            outlier_counts = self._outlier_detector.detect_outliers(
-                np.array(sample_values)
+        outliers_iqr, outliers_mod_zscore = 0, 0
+        if self.enable_outlier_detection and sample_values:
+            sample_arr = np.array(sample_values)
+            q1, q3 = np.percentile(sample_arr, [25, 75])
+            iqr = q3 - q1
+            lower_bound = q1 - 1.5 * iqr
+            upper_bound = q3 + 1.5 * iqr
+            outliers_iqr = np.sum(
+                (sample_arr < lower_bound) | (sample_arr > upper_bound)
             )
-            outliers_iqr = outlier_counts.get("iqr", 0)
-            outliers_mad = outlier_counts.get("mad", 0)
+
+            mad_val = mad(sample_arr)
+            if mad_val > 0:
+                mod_z_score = 0.6745 * (sample_arr - np.median(sample_arr)) / mad_val
+                outliers_mod_zscore = np.sum(np.abs(mod_z_score) > 3.5)
 
         # Compute advanced analytics metrics
         unique_est = self._uniques.estimate()
         unique_ratio = unique_est / max(1, self.count)
 
         # Compute robust statistics
-        mad = self._compute_mad(sample_values)
         jb_chi2 = self._compute_jarque_bera(
             stats["skew"], stats["kurtosis"], self.count
         )
@@ -396,7 +420,7 @@ class NumericAccumulator:
             median=quantiles["median"],
             q3=quantiles["q3"],
             iqr=quantiles["iqr"],
-            mad=mad,
+            mad=mad_val if self.enable_outlier_detection else 0.0,
             skew=stats["skew"],
             kurtosis=stats["kurtosis"],
             jb_chi2=jb_chi2,
@@ -404,12 +428,15 @@ class NumericAccumulator:
             zeros=self.zeros,
             negatives=self.negatives,
             outliers_iqr=outliers_iqr,
-            outliers_mad=outliers_mad,
+            outliers_mod_zscore=outliers_mod_zscore,
             approx=approx,
             inf=self.inf,
             int_like=self._int_like_all,
             unique_ratio_approx=unique_ratio,
             sample_vals=sample_values if sample_values else [],
+            # True distribution histogram data
+            true_histogram_edges=self._streaming_histogram.bin_edges,
+            true_histogram_counts=self._streaming_histogram.counts,
             mem_bytes=self._bytes_seen,
             mono_inc=mono_inc,
             mono_dec=mono_dec,
@@ -424,6 +451,7 @@ class NumericAccumulator:
             heap_pct=heap_pct,
             top_values=self._topk.items(),
             sample_scale=sample_scale,
+            chunk_metadata=chunk_metadata,
         )
 
     def _compute_quantiles(self, values: List[float]) -> dict[str, float]:
@@ -476,22 +504,6 @@ class NumericAccumulator:
             "max": max_val,
             "iqr": iqr,
         }
-
-    def _compute_mad(self, values: List[float]) -> float:
-        """Compute Median Absolute Deviation efficiently.
-
-        Args:
-            values: List of values
-
-        Returns:
-            MAD value
-        """
-        if not values:
-            return 0.0
-
-        median = np.median(values)
-        deviations = [abs(v - median) for v in values]
-        return float(np.median(deviations))
 
     def _compute_jarque_bera(self, skew: float, kurtosis: float, n: int) -> float:
         """Compute Jarque-Bera test statistic for normality testing.

@@ -19,7 +19,7 @@ import collections.abc as cabc
 import json
 import os
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Sequence, Union
 
 from . import report
 from .config import EngineConfig as _EngineConfig
@@ -69,8 +69,29 @@ class Report:
         Args:
             path: Destination file path. Parent directories must exist.
         """
+
+        def _convert_numpy_types(obj):
+            """Convert numpy types to native Python types for JSON serialization."""
+            import numpy as np
+
+            if isinstance(obj, np.integer):
+                return int(obj)
+            elif isinstance(obj, np.floating):
+                return float(obj)
+            elif isinstance(obj, np.ndarray):
+                return obj.tolist()
+            elif isinstance(obj, dict):
+                return {key: _convert_numpy_types(value) for key, value in obj.items()}
+            elif isinstance(obj, (list, tuple)):
+                return [_convert_numpy_types(item) for item in obj]
+            else:
+                return obj
+
+        # Convert numpy types to native Python types
+        converted_stats = _convert_numpy_types(self.stats)
+
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(self.stats, f, ensure_ascii=False, indent=2)
+            json.dump(converted_stats, f, ensure_ascii=False, indent=2)
 
     def save(self, path: str) -> None:
         """Save the report based on the file extension.
@@ -153,6 +174,17 @@ class ComputeOptions:
             Default: False
         checkpoint_max_to_keep: Maximum number of checkpoints to retain.
             Default: 3
+        enable_auto_boolean_detection: Whether to automatically detect 0/1 numeric
+            columns as boolean. Default: True
+        boolean_detection_min_samples: Minimum number of samples required for
+            boolean detection. Default: 100
+        boolean_detection_max_zero_ratio: Maximum ratio of zeros allowed for
+            boolean detection (to avoid classifying mostly-zero columns as boolean).
+            Default: 0.95
+        boolean_detection_require_name_pattern: Whether to require boolean-like
+            column names (e.g., 'is_', 'has_', 'can_') for detection. Default: True
+        force_column_types: Optional dictionary mapping column names to their
+            forced types. Overrides automatic type inference. Default: None
     """
 
     chunk_size: Optional[int] = 200_000
@@ -170,6 +202,13 @@ class ComputeOptions:
     checkpoint_write_html: bool = False
     checkpoint_max_to_keep: int = 3
 
+    # Boolean detection options
+    enable_auto_boolean_detection: bool = True
+    boolean_detection_min_samples: int = 100
+    boolean_detection_max_zero_ratio: float = 0.95
+    boolean_detection_require_name_pattern: bool = True
+    force_column_types: Optional[Dict[str, str]] = None
+
     def __post_init__(self) -> None:
         """Validate configuration parameters."""
         if self.numeric_sample_size <= 0:
@@ -186,6 +225,17 @@ class ComputeOptions:
             raise ValueError("checkpoint_every_n_chunks must be non-negative")
         if self.checkpoint_max_to_keep <= 0:
             raise ValueError("checkpoint_max_to_keep must be positive")
+        if self.boolean_detection_min_samples <= 0:
+            raise ValueError("boolean_detection_min_samples must be positive")
+        if not 0 <= self.boolean_detection_max_zero_ratio <= 1:
+            raise ValueError("boolean_detection_max_zero_ratio must be between 0 and 1")
+        if self.force_column_types is not None:
+            valid_types = {"numeric", "categorical", "datetime", "boolean"}
+            for col_name, col_type in self.force_column_types.items():
+                if col_type not in valid_types:
+                    raise ValueError(
+                        f"Invalid column type '{col_type}' for column '{col_name}'. Must be one of: {valid_types}"
+                    )
 
     # --- Engine-aligned accessors (for backward compatibility) ---
     @property
@@ -266,34 +316,27 @@ def _coerce_input(data: DataLike) -> Union["pd.DataFrame", cabc.Iterable]:
     Raises:
         TypeError: If the object is not one of the supported forms.
     """
-    # pandas DataFrame
     try:
-        import pandas as pd  # type: ignore
+        import pandas as pd
 
         if isinstance(data, pd.DataFrame):
-            return data  # type: ignore[return-value]
-    except Exception:
+            return data
+    except ImportError:
         pass
-    # polars eager/lazy frames: let the caller decide how to iterate
-    try:
-        import polars as pl  # type: ignore
 
-        if (
-            isinstance(data, (pl.DataFrame,))
-            or getattr(data, "__class__", None).__name__ == "LazyFrame"
-        ):
-            return data  # type: ignore[return-value]
-    except Exception:
-        pass
-    # Iterator/generator of DataFrames (duck-typed); let report validate on consumption
     try:
-        # Accept any non-string, non-mapping iterable (lists/tuples allowed)
-        if isinstance(data, cabc.Iterable) and not isinstance(
-            data, (str, bytes, bytearray, cabc.Mapping)
-        ):
-            return data  # type: ignore[return-value]
-    except Exception:
+        import polars as pl
+
+        if isinstance(data, (pl.DataFrame, pl.LazyFrame)):
+            return data
+    except ImportError:
         pass
+
+    if isinstance(data, cabc.Iterable) and not isinstance(
+        data, (str, bytes, bytearray, cabc.Mapping)
+    ):
+        return data
+
     raise TypeError(
         "Unsupported data type for this API. Provide a pandas DataFrame, a polars DataFrame/LazyFrame, or an iterable of pandas/polars DataFrames."
     )
@@ -313,8 +356,11 @@ def _to_engine_config(cfg: ProfileConfig) -> _EngineConfig:
     except Exception:
         # Fallback: direct mapping with checkpointing support
         # Only include checkpointing parameters if they exist in the config
+        # Handle chunk_size=None to disable chunking (pass 0 to engine)
+        engine_chunk_size = 0 if compute.chunk_size is None else compute.chunk_size
+
         config_kwargs = {
-            "chunk_size": compute.chunk_size or 200_000,
+            "chunk_size": engine_chunk_size,
             "numeric_sample_k": compute.numeric_sample_k,
             "uniques_k": compute.uniques_k,
             "topk_k": compute.topk_k,
@@ -355,10 +401,9 @@ def profile(
     """Compute statistics and render a self‑contained HTML report.
 
     The function accepts in‑memory data (pandas or polars) or an iterable of
-    pandas or polars chunks. For polars input, native polars chunks are used
-    (no conversion to pandas), and the engine consumes them via its polars path. All heavy
-    lifting (streaming, sketches, HTML composition) is handled by the internal
-    engine.
+    pandas or polars chunks. Both pandas and polars DataFrames are processed
+    consistently - chunking is handled by the engine based on the chunk_size
+    configuration.
 
     Args:
         data: Dataset to analyze. Supported:
@@ -366,6 +411,7 @@ def profile(
             - ``polars.DataFrame`` or ``polars.LazyFrame``
             - Iterable yielding ``pandas.DataFrame`` or ``polars.DataFrame`` chunks
         config: Optional configuration overriding compute/render defaults.
+            Set chunk_size=None to disable chunking for both pandas and polars.
 
     Returns:
         A :class:`Report` object containing the HTML and the computed stats
@@ -373,28 +419,17 @@ def profile(
 
     Raises:
         TypeError: If ``data`` is not of a supported type.
+        ValueError: If ``data`` is None.
     """
+    if data is None:
+        raise ValueError("Input data cannot be None")
 
     cfg = config or ProfileConfig()
-    inp_raw = _coerce_input(data)
-    wrapped = None
-    try:
-        import polars as pl  # type: ignore
-
-        if (
-            isinstance(inp_raw, (pl.DataFrame,))
-            or getattr(inp_raw, "__class__", None).__name__ == "LazyFrame"
-        ):
-            wrapped = _iter_chunks(
-                inp_raw, chunk_size=cfg.compute.chunk_size, columns=cfg.compute.columns
-            )
-    except Exception:
-        pass
-    inp = wrapped if wrapped is not None else inp_raw
-    v2cfg = _to_engine_config(cfg)
+    inp = _coerce_input(data)  # No more polars-specific wrapping!
+    cfg = _to_engine_config(cfg)
 
     # Always compute stats to return machine-readable mapping
-    html, summary = report.build_report(inp, config=v2cfg, return_summary=True)  # type: ignore[misc]
+    html, summary = report.build_report(inp, config=cfg, return_summary=True)  # type: ignore[misc]
 
     try:
         stats = dict(summary or {})
@@ -411,10 +446,12 @@ def summarize(
 
     This is the programmatic counterpart to :func:`profile` for code paths that
     do not need the HTML report (e.g., CI checks and data quality gates).
+    Both pandas and polars DataFrames are processed consistently.
 
     Args:
         data: Dataset to analyze. Same accepted types as :func:`profile`.
         config: Optional configuration overriding compute/render defaults.
+            Set chunk_size=None to disable chunking for both pandas and polars.
 
     Returns:
         A nested mapping with dataset‑level and per‑column statistics. The
@@ -422,28 +459,17 @@ def summarize(
 
     Raises:
         TypeError: If ``data`` is not of a supported type.
+        ValueError: If ``data`` is None.
     """
+    if data is None:
+        raise ValueError("Input data cannot be None")
 
     cfg = config or ProfileConfig()
-    inp_raw = _coerce_input(data)
-    wrapped = None
-    try:
-        import polars as pl  # type: ignore
-
-        if (
-            isinstance(inp_raw, (pl.DataFrame,))
-            or getattr(inp_raw, "__class__", None).__name__ == "LazyFrame"
-        ):
-            wrapped = _iter_chunks(
-                inp_raw, chunk_size=cfg.compute.chunk_size, columns=cfg.compute.columns
-            )
-    except Exception:
-        pass
-    inp = wrapped if wrapped is not None else inp_raw
-    v2cfg = _to_engine_config(cfg)
+    inp = _coerce_input(data)  # No more polars-specific wrapping!
+    cfg = _to_engine_config(cfg)
     # compute-only to skip HTML render
     _html, summary = report.build_report(
-        inp, config=v2cfg, return_summary=True, compute_only=True
+        inp, config=cfg, return_summary=True, compute_only=True
     )  # type: ignore[misc]
     stats = dict(summary or {})
     return stats

@@ -416,7 +416,8 @@ def get_logger(name: str) -> logging.Logger:
     """Get a logger instance with optimal configuration.
 
     This function creates and configures a logger with performance-optimized
-    settings suitable for data processing workflows.
+    settings suitable for data processing workflows. It automatically detects
+    Jupyter notebook environments and uses stdout for better visibility.
 
     Args:
         name: The logger name (typically __name__).
@@ -426,10 +427,41 @@ def get_logger(name: str) -> logging.Logger:
     """
     logger = logging.getLogger(name)
 
-    # Avoid duplicate handlers
+    # Configure logger with proper handlers if not already configured
     if not logger.handlers:
-        # Add a null handler to prevent "No handlers could be found" warnings
-        logger.addHandler(logging.NullHandler())
+        # Set the logger level
+        logger.setLevel(logging.INFO)
+        
+        # Detect if we're in a Jupyter notebook environment
+        def _is_jupyter_environment():
+            try:
+                # Check for IPython/Jupyter
+                get_ipython()  # This will raise NameError if not in IPython
+                return True
+            except NameError:
+                return False
+        
+        # Use stdout for Jupyter notebooks, stderr for regular scripts
+        if _is_jupyter_environment():
+            stream = sys.stdout
+        else:
+            stream = sys.stderr
+        
+        # Create a console handler with appropriate stream
+        handler = logging.StreamHandler(stream)
+        handler.setLevel(logging.INFO)
+        
+        # Create a formatter
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        handler.setFormatter(formatter)
+        
+        # Add the handler to the logger
+        logger.addHandler(handler)
+        
+        # Prevent propagation to root logger to avoid duplicate messages
+        logger.propagate = False
 
     return logger
 

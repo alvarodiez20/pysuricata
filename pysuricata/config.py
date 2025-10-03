@@ -8,8 +8,8 @@ engine's configuration distinct from the public API config in
 """
 
 import logging
-from dataclasses import dataclass
-from typing import Optional, Protocol, runtime_checkable
+from dataclasses import dataclass, field
+from typing import Dict, Optional, Protocol, runtime_checkable
 
 
 @dataclass
@@ -42,6 +42,9 @@ class EngineConfig:
         checkpoint_write_html: Whether to write HTML with checkpoints
         checkpoint_max_to_keep: Maximum number of checkpoints to retain
         force_chunk_in_memory: Force in-memory chunking
+        missing_columns_threshold_pct: Minimum missing percentage to display
+        missing_columns_max_initial: Maximum columns shown initially
+        missing_columns_max_expanded: Maximum columns shown when expanded
     """
 
     title: str = "PySuricata EDA Report"
@@ -76,6 +79,18 @@ class EngineConfig:
     # In-memory chunking control
     force_chunk_in_memory: bool = False
 
+    # Boolean detection options
+    enable_auto_boolean_detection: bool = True
+    boolean_detection_min_samples: int = 100
+    boolean_detection_max_zero_ratio: float = 0.95
+    boolean_detection_require_name_pattern: bool = True
+    force_column_types: Optional[Dict[str, str]] = None
+
+    # Missing columns display options
+    missing_columns_threshold_pct: float = 0.5  # Minimum missing percentage to display
+    missing_columns_max_initial: int = 8  # Maximum columns shown initially
+    missing_columns_max_expanded: int = 25  # Maximum columns shown when expanded
+
     @classmethod
     def from_options(cls, opts: "EngineOptions") -> "EngineConfig":
         """Build engine config from any EngineOptions-compatible object.
@@ -83,12 +98,15 @@ class EngineConfig:
         Uses duck-typing to avoid import cycles and keep public/internal models
         decoupled.
         """
+        # Handle chunk_size=None to disable chunking (pass 0 to engine)
+        engine_chunk_size = 0 if opts.chunk_size is None else opts.chunk_size
+
         return cls(
-            chunk_size=opts.chunk_size or 200_000,
+            chunk_size=engine_chunk_size,
             numeric_sample_k=int(opts.numeric_sample_k),
             uniques_k=int(opts.uniques_k),
             topk_k=int(opts.topk_k),
-            engine=str(opts.engine),
+            engine=getattr(opts, "engine", "auto"),
             random_seed=opts.random_seed,
             # Add checkpointing parameters
             log_every_n_chunks=getattr(opts, "log_every_n_chunks", 1),
@@ -97,6 +115,20 @@ class EngineConfig:
             checkpoint_prefix=getattr(opts, "checkpoint_prefix", "pysuricata_ckpt"),
             checkpoint_write_html=getattr(opts, "checkpoint_write_html", False),
             checkpoint_max_to_keep=getattr(opts, "checkpoint_max_to_keep", 3),
+            # Boolean detection parameters
+            enable_auto_boolean_detection=getattr(
+                opts, "enable_auto_boolean_detection", True
+            ),
+            boolean_detection_min_samples=getattr(
+                opts, "boolean_detection_min_samples", 100
+            ),
+            boolean_detection_max_zero_ratio=getattr(
+                opts, "boolean_detection_max_zero_ratio", 0.95
+            ),
+            boolean_detection_require_name_pattern=getattr(
+                opts, "boolean_detection_require_name_pattern", True
+            ),
+            force_column_types=getattr(opts, "force_column_types", None),
         )
 
     def __post_init__(self) -> None:

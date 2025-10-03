@@ -90,6 +90,109 @@ class PolarsAdapter(BaseAdapter):
                 actual_dtype = str(data[col_name].dtype)
                 accs[col_name].set_dtype(actual_dtype)
 
+        # Apply reclassification logic for numeric columns
+        from ..processing.inference import (
+            should_reclassify_numeric_as_boolean,
+            should_reclassify_numeric_as_categorical,
+        )
+
+        # First, apply forced column types to all columns
+        if config and config.force_column_types:
+            for col_name, forced_type in config.force_column_types.items():
+                if col_name in data.columns:
+                    if self.logger:
+                        self.logger.info(
+                            "🔧 forcing column '%s' type to '%s' (override) [pl]",
+                            col_name,
+                            forced_type,
+                        )
+
+                    # Remove from current category
+                    if col_name in kinds.numeric:
+                        kinds.numeric.remove(col_name)
+                    elif col_name in kinds.categorical:
+                        kinds.categorical.remove(col_name)
+                    elif col_name in kinds.boolean:
+                        kinds.boolean.remove(col_name)
+                    elif col_name in kinds.datetime:
+                        kinds.datetime.remove(col_name)
+
+                    # Add to forced category
+                    if forced_type == "boolean":
+                        kinds.boolean.append(col_name)
+                        from ...accumulators import BooleanAccumulator
+
+                        accs[col_name] = BooleanAccumulator(col_name)
+                    elif forced_type == "categorical":
+                        kinds.categorical.append(col_name)
+                        from ...accumulators import CategoricalAccumulator
+
+                        accs[col_name] = CategoricalAccumulator(col_name)
+                    elif forced_type == "numeric":
+                        kinds.numeric.append(col_name)
+                        from ...accumulators import NumericAccumulator
+
+                        accs[col_name] = NumericAccumulator(col_name)
+                    elif forced_type == "datetime":
+                        kinds.datetime.append(col_name)
+                        from ...accumulators import DatetimeAccumulator
+
+                        accs[col_name] = DatetimeAccumulator(col_name)
+
+                    accs[col_name].set_dtype(str(data[col_name].dtype))
+
+        for col_name in data.columns:
+            if col_name in kinds.numeric:
+                # Check if this numeric column should be reclassified as boolean
+                if config and should_reclassify_numeric_as_boolean(
+                    data[col_name], config, self.logger
+                ):
+                    if self.logger:
+                        self.logger.info(
+                            "🔄 reclassifying '%s' from numeric to boolean (0/1 values detected) [pl]",
+                            col_name,
+                        )
+                    # Move from numeric to boolean
+                    kinds.numeric.remove(col_name)
+                    kinds.boolean.append(col_name)
+
+                    # Replace accumulator
+                    from ...accumulators import BooleanAccumulator
+
+                    accs[col_name] = BooleanAccumulator(col_name)
+                    accs[col_name].set_dtype(str(data[col_name].dtype))
+                else:
+                    # Check if this numeric column should be reclassified as categorical
+                    try:
+                        unique_count = data[col_name].n_unique()
+                        total_count = data.height
+                        if should_reclassify_numeric_as_categorical(
+                            unique_count, total_count
+                        ):
+                            if self.logger:
+                                self.logger.info(
+                                    "🔄 reclassifying '%s' from numeric to categorical (unique: %d, total: %d) [pl]",
+                                    col_name,
+                                    unique_count,
+                                    total_count,
+                                )
+                            # Move from numeric to categorical
+                            kinds.numeric.remove(col_name)
+                            kinds.categorical.append(col_name)
+
+                            # Replace accumulator
+                            from ...accumulators import CategoricalAccumulator
+
+                            accs[col_name] = CategoricalAccumulator(col_name)
+                            accs[col_name].set_dtype(str(data[col_name].dtype))
+                    except Exception as e:
+                        if self.logger:
+                            self.logger.debug(
+                                "Could not check unique values for '%s': %s [pl]",
+                                col_name,
+                                e,
+                            )
+
         return kinds, accs
 
     def estimate_mem(self, frame: Any) -> int:
@@ -138,6 +241,7 @@ class PolarsAdapter(BaseAdapter):
         data: Any,
         accs: Dict[str, Any],
         kinds: ColumnKinds,
+        config: Optional[Any] = None,
         logger: Optional[Any] = None,
     ) -> None:
         """Consume a polars DataFrame chunk and update accumulators.
@@ -146,6 +250,7 @@ class PolarsAdapter(BaseAdapter):
             data: Polars DataFrame chunk to process.
             accs: Dictionary of accumulators to update.
             kinds: Column type information.
+            config: Configuration object for type inference and processing.
             logger: Optional logger for progress tracking.
         """
         if not isinstance(data, pl.DataFrame):
@@ -155,7 +260,7 @@ class PolarsAdapter(BaseAdapter):
         from ..consume_polars import consume_chunk_polars
 
         # Use the existing polars consume function
-        consume_chunk_polars(data, accs, kinds, logger)
+        consume_chunk_polars(data, accs, kinds, config, logger)
 
     def update_corr(
         self, frame: Any, corr_est: Any, logger: Optional[Any] = None

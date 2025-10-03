@@ -52,13 +52,12 @@ class CategoricalCardRenderer(CardRenderer):
         chart_html = self._build_categorical_variants(
             col_id, items, total, topn_list, default_topn
         )
-        top_values_table = self._build_top_values_table(
-            items, int(getattr(stats, "count", 0))
-        )
+        common_table = self._build_common_values_table(stats)
         norm_tab_btn, norm_tab_pane = self._build_normalization_section(items, stats)
+        missing_table = self._build_missing_values_table(stats, miss_pct)
 
         details_html = self._build_details_section(
-            col_id, top_values_table, norm_tab_btn, norm_tab_pane
+            col_id, common_table, norm_tab_btn, norm_tab_pane, missing_table
         )
         controls_html = self._build_controls_section(col_id, topn_list, default_topn)
 
@@ -430,18 +429,27 @@ class CategoricalCardRenderer(CardRenderer):
             return "", ""
 
     def _build_details_section(
-        self, col_id: str, top_values_table: str, norm_tab_btn: str, norm_tab_pane: str
+        self,
+        col_id: str,
+        common_table: str,
+        norm_tab_btn: str,
+        norm_tab_pane: str,
+        missing_table: str,
     ) -> str:
         """Build details section with tabs."""
         return f"""
         <section id="{col_id}-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
-                <button role="tab" class="active" data-tab="top">Top values</button>
+                <button role="tab" class="active" data-tab="common">Common values</button>
                 {norm_tab_btn}
+                <button role="tab" data-tab="missing">Missing Values</button>
             </nav>
             <div class="tab-panes">
-                <section class="tab-pane active" data-tab="top">{top_values_table}</section>
+                <section class="tab-pane active" data-tab="common">{common_table}</section>
                 {norm_tab_pane}
+                <section class="tab-pane" data-tab="missing">
+                    <div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>
+                </section>
             </div>
         </section>
         """
@@ -506,4 +514,279 @@ class CategoricalCardRenderer(CardRenderer):
                 {details_html}
             </div>
         </article>
+        """
+
+    def _build_common_values_table(self, stats: CategoricalStats) -> str:
+        """Build common values table with enhanced formatting and functionality.
+
+        This method creates a professional, feature-rich table that provides
+        comprehensive insights into the most frequent categorical values in the dataset.
+
+        Args:
+            stats: CategoricalStats object containing the data
+
+        Returns:
+            HTML string for the enhanced common values table
+        """
+        try:
+            top_items = list(getattr(stats, "top_items", []) or [])
+        except Exception:
+            top_items = []
+
+        if not top_items:
+            return '<div class="muted">No common values to display</div>'
+
+        rows = []
+        total_nonnull = max(1, int(getattr(stats, "count", 0)))
+
+        # Take only top 10 values for better display and performance
+        top_items = top_items[:10]
+
+        for i, (value, count) in enumerate(top_items):
+            pct = (int(count) / total_nonnull) * 100.0 if total_nonnull else 0.0
+
+            # Add ranking indicator for top values
+            rank_icon = self._ordinal_number(i + 1)
+
+            # Format categorical value with proper escaping
+            formatted_value = self.safe_html_escape(str(value))
+
+            rows.append(
+                f"<tr class='common-row rank-{i + 1}'>"
+                f"<td class='rank'>{rank_icon}</td>"
+                f"<td class='cat common-value'>{formatted_value}</td>"
+                f"<td class='num common-count'>{int(count):,}</td>"
+                f"<td class='num common-pct'>{pct:.1f}%</td>"
+                f"<td class='progress-bar'><div class='bar-fill' style='width:{pct:.1f}%'></div></td>"
+                f"</tr>"
+            )
+
+        body = "".join(rows)
+        return (
+            '<table class="common-values-table enhanced">'
+            "<thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead>"
+            f"<tbody>{body}</tbody>"
+            "</table>"
+        )
+
+    def _ordinal_number(self, n: int) -> str:
+        """Convert a number to its ordinal form with superscript suffix (1ˢᵗ, 2ⁿᵈ, 3ʳᵈ, 4ᵗʰ, etc.)"""
+        # Keep the number normal size, only make the suffix superscript
+        number_str = str(n)
+
+        # Add ordinal suffix (only the suffix is superscript)
+        if 10 <= n % 100 <= 20:
+            suffix = "ᵗʰ"
+        else:
+            suffix_map = {1: "ˢᵗ", 2: "ⁿᵈ", 3: "ʳᵈ"}
+            suffix = suffix_map.get(n % 10, "ᵗʰ")
+
+        return f"{number_str}{suffix}"
+
+    def _build_missing_values_table(
+        self, stats: CategoricalStats, miss_pct: float
+    ) -> str:
+        """Build comprehensive missing values analysis table with visual elements.
+
+        This method creates a professional, feature-rich analysis of missing data
+        including summary statistics, visual indicators, and data quality insights.
+        Optimized for performance on large datasets with efficient calculations.
+
+        Args:
+            stats: CategoricalStats object containing missing data information
+            miss_pct: Pre-calculated missing percentage
+
+        Returns:
+            HTML string for the enhanced missing values analysis
+        """
+        # Calculate missing data statistics with safe division
+        total_values = stats.count + stats.missing
+        present_pct = (
+            (stats.count / max(1, total_values)) * 100.0 if total_values > 0 else 0.0
+        )
+
+        # Determine data quality severity with clear thresholds (matching numeric)
+        quality_severity, quality_label, quality_icon = self._get_missing_data_severity(
+            miss_pct
+        )
+
+        # Build summary header with performance-optimized string formatting
+        summary_html = f"""
+        <div class="missing-summary">
+            <div class="summary-header">
+                <span class="icon">📊</span>
+                <span class="title">Missing Values Analysis</span>
+                <span class="quality-indicator {quality_severity}">
+                    {quality_icon} {quality_label} Missing Data
+                </span>
+            </div>
+            <div class="data-overview">
+                <div class="overview-item">
+                    <span class="label">Total Values</span>
+                    <span class="value">{total_values:,}</span>
+                </div>
+                <div class="overview-item present">
+                    <span class="label">Present</span>
+                    <span class="value">{stats.count:,}</span>
+                    <span class="percentage">({present_pct:.1f}%)</span>
+                </div>
+                <div class="overview-item missing">
+                    <span class="label">Missing</span>
+                    <span class="value">{stats.missing:,}</span>
+                    <span class="percentage">({miss_pct:.1f}%)</span>
+                </div>
+            </div>
+        </div>
+        """
+
+        # Build visual progress bars with efficient string formatting
+        progress_html = f"""
+        <div class="missing-visualization">
+            <div class="progress-container">
+                <div class="progress-bar-container">
+                    <div class="progress-label">Data Completeness</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill present" style="width: {present_pct:.1f}%"></div>
+                        <div class="progress-fill missing" style="width: {miss_pct:.1f}%"></div>
+                    </div>
+                    <div class="progress-legend">
+                        <span class="legend-item present">Present: {present_pct:.1f}%</span>
+                        <span class="legend-item missing">Missing: {miss_pct:.1f}%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
+
+        # Add missing values per chunk visualization (DataPrep-style spectrum)
+        chunk_visualization_html = self._build_dataprep_spectrum_visualization(stats)
+
+        return summary_html + progress_html + chunk_visualization_html
+
+    def _get_missing_data_severity(self, missing_pct: float) -> tuple[str, str, str]:
+        """Get missing data severity classification with clear thresholds.
+
+        Args:
+            missing_pct: Percentage of missing data
+
+        Returns:
+            Tuple of (severity_class, label, icon)
+        """
+        if missing_pct >= 50:
+            return "critical", "Critical", "🚨"
+        elif missing_pct >= 20:
+            return "high", "High", "⚠️"
+        elif missing_pct >= 5:
+            return "medium", "Medium", "⚡"
+        else:
+            return "low", "Low", "✅"
+
+    def _build_dataprep_spectrum_visualization(self, stats: CategoricalStats) -> str:
+        """Build DataPrep-style spectrum visualization for missing values per chunk.
+
+        This creates a single horizontal bar with segments representing actual processing
+        chunks, colored by missing value density (green-yellow-red gradient).
+
+        Args:
+            stats: CategoricalStats object containing chunk metadata and missing data information
+
+        Returns:
+            HTML string for the DataPrep-style spectrum visualization
+        """
+        # Check if we have chunk metadata
+        chunk_metadata = getattr(stats, "chunk_metadata", None)
+        if not chunk_metadata:
+            return ""
+
+        total_values = stats.count + stats.missing
+        if total_values == 0:
+            return ""
+
+        # Build the spectrum bar segments
+        segments_html = ""
+        total_width = 0
+
+        for start_row, end_row, missing_count in chunk_metadata:
+            chunk_size = end_row - start_row + 1
+            missing_pct = (
+                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
+            )
+
+            # Calculate segment width as percentage of total
+            segment_width_pct = (chunk_size / total_values) * 100.0
+            total_width += segment_width_pct
+
+            # Determine color based on missing percentage (DataPrep-style)
+            if missing_pct <= 5:
+                color_class = "spectrum-low"
+            elif missing_pct <= 20:
+                color_class = "spectrum-medium"
+            else:
+                color_class = "spectrum-high"
+
+            # Create tooltip content
+            tooltip_content = (
+                f"Rows {start_row:,}-{end_row:,}: "
+                f"{missing_count:,} missing ({missing_pct:.1f}%)"
+            )
+
+            segments_html += f"""
+            <div class="spectrum-segment {color_class}" 
+                 style="width: {segment_width_pct:.2f}%"
+                 title="{tooltip_content}"
+                 data-start="{start_row}"
+                 data-end="{end_row}"
+                 data-missing="{missing_count}"
+                 data-missing-pct="{missing_pct:.1f}">
+            </div>
+            """
+
+        # Build summary statistics
+        total_chunks = len(chunk_metadata)
+        max_missing_pct = max(
+            (missing_count / (end_row - start_row + 1)) * 100.0
+            for start_row, end_row, missing_count in chunk_metadata
+        )
+        avg_missing_pct = (
+            sum(
+                (missing_count / (end_row - start_row + 1)) * 100.0
+                for start_row, end_row, missing_count in chunk_metadata
+            )
+            / total_chunks
+        )
+
+        # Determine overall severity
+        if max_missing_pct >= 50:
+            severity = "critical"
+            severity_icon = "🚨"
+        elif max_missing_pct >= 20:
+            severity = "high"
+            severity_icon = "⚠️"
+        elif max_missing_pct >= 5:
+            severity = "medium"
+            severity_icon = "⚡"
+        else:
+            severity = "low"
+            severity_icon = "✅"
+
+        return f"""
+        <div class="dataprep-spectrum">
+            <div class="spectrum-header">
+                <span class="spectrum-title">Missing Values Distribution</span>
+                <span class="spectrum-stats">
+                    {total_chunks} chunks • {max_missing_pct:.1f}% max • {avg_missing_pct:.1f}% avg
+                </span>
+                <span class="spectrum-severity {severity}">
+                    {severity_icon} {severity.title()} Missing Data
+                </span>
+            </div>
+            <div class="spectrum-bar">
+                {segments_html}
+            </div>
+            <div class="spectrum-legend">
+                <span class="legend-item spectrum-low">Low (≤5%)</span>
+                <span class="legend-item spectrum-medium">Medium (5-20%)</span>
+                <span class="legend-item spectrum-high">High (>20%)</span>
+            </div>
+        </div>
         """

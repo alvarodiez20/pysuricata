@@ -14,6 +14,10 @@ Generate clean, self-contained EDA reports for pandas/polars DataFrames and larg
 - Streaming correlations for numeric columns
 - Self-contained HTML export (inline CSS/JS/images)
 
+## How to Contribute
+
+We welcome contributions from the community! If you are interested in contributing to PySuricata, please check out our [Contributing Guide](CONTRIBUTING.md) for more information.
+
 ## Quick links
 - [Installation](install.md)
 - [Usage](usage.md)

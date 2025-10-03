@@ -94,6 +94,7 @@ class BaseAdapter(DataAdapter, ABC):
         data: Any,
         accs: Dict[str, Any],
         kinds: ColumnKinds,
+        config: Optional[Any] = None,
         logger: Optional[Any] = None,
     ) -> None:
         """Consume a data chunk and update accumulators.
@@ -102,6 +103,7 @@ class BaseAdapter(DataAdapter, ABC):
             data: Data chunk to process.
             accs: Dictionary of accumulators to update.
             kinds: Column type information.
+            config: Configuration object for type inference and processing.
             logger: Optional logger for progress tracking.
         """
         pass
