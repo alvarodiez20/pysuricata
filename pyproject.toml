@@ -9,7 +9,7 @@ description = "A lightweight EDA tool inspired by the curious nature of suricate
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
 ]
-license = { text = "MIT" }
+license = "MIT"
 readme = "README.md"
 requires-python = ">=3.9,<3.14"
 classifiers = [
@@ -55,6 +55,23 @@ dev = [
 
 [tool.setuptools]
 include-package-data = true
+packages = [
+    "pysuricata",
+    "pysuricata.accumulators",
+    "pysuricata.compute",
+    "pysuricata.compute.adapters",
+    "pysuricata.compute.analysis",
+    "pysuricata.compute.core",
+    "pysuricata.compute.orchestration",
+    "pysuricata.compute.processing",
+    "pysuricata.io",
+    "pysuricata.render",
+    "pysuricata.static",
+    "pysuricata.static.css",
+    "pysuricata.static.images",
+    "pysuricata.static.js",
+    "pysuricata.templates"
+]
 
 [tool.setuptools.package-data]
 pysuricata = [
@@ -64,3 +81,30 @@ pysuricata = [
     "static/images/*.ico",
     "static/js/*.js"
     ]
+
+[tool.ruff]
+target-version = "py39"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pysuricata"]
