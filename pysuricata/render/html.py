@@ -8,16 +8,10 @@ from typing import Any, Dict, List, Optional
 
 from .._version import resolve_version as _resolve_pysuricata_version
 from ..accumulators import (
-    BooleanAccumulatorV2 as BooleanAccumulator,
-)
-from ..accumulators import (
-    CategoricalAccumulatorV2 as CategoricalAccumulator,
-)
-from ..accumulators import (
-    DatetimeAccumulatorV2 as DatetimeAccumulator,
-)
-from ..accumulators import (
-    NumericAccumulatorV2 as NumericAccumulator,
+    BooleanAccumulator,
+    CategoricalAccumulator,
+    DatetimeAccumulator,
+    NumericAccumulator,
 )
 from ..compute.core.types import ColumnKinds
 from ..utils import embed_favicon, embed_image, load_css, load_script, load_template
@@ -27,6 +21,8 @@ from .cards import render_dt_card as _render_dt_card
 from .cards import render_numeric_card as _render_numeric_card
 from .format_utils import human_bytes as _human_bytes
 from .format_utils import human_time as _human_time
+from .missing_columns import create_missing_columns_renderer
+from .svg_utils import safe_col_id as _safe_col_id
 
 
 def render_html_snapshot(
@@ -41,6 +37,7 @@ def render_html_snapshot(
     cfg: Any,
     report_title: Optional[str],
     sample_section_html: str,
+    chunk_metadata: Optional[List[Tuple[int, int, int]]] = None,
 ) -> str:
     kinds_map = {
         **{name: ("numeric", accs[name]) for name in kinds.numeric},
@@ -49,6 +46,7 @@ def render_html_snapshot(
         **{name: ("boolean", accs[name]) for name in kinds.boolean},
     }
 
+    # Build missing columns list using intelligent analysis
     miss_list: List[tuple[str, float, int]] = []
     for name, (kind, acc) in kinds_map.items():
         miss = getattr(acc, "missing", 0)
@@ -56,25 +54,16 @@ def render_html_snapshot(
         pct = (miss / cnt * 100.0) if cnt else 0.0
         miss_list.append((name, pct, miss))
     miss_list.sort(key=lambda t: t[1], reverse=True)
-    top_missing_list = ""
-    for col, pct, count in miss_list[:5]:
-        severity_class = "low" if pct <= 5 else ("medium" if pct <= 20 else "high")
-        top_missing_list += f"""
-        <li class=\"missing-item\"> 
-          <div class=\"missing-info\"> 
-            <code class=\"missing-col\" title=\"{_html.escape(str(col))}\">{_html.escape(str(col))}</code>
-            <span class=\"missing-stats\">{count:,} ({pct:.1f}%)</span>
-          </div>
-          <div class=\"missing-bar\"><div class=\"missing-fill {severity_class}\" style=\"width:{pct:.1f}%;\"></div></div>
-        </li>
-        """
-    if not top_missing_list:
-        top_missing_list = """
-        <li class=\"missing-item\"><div class=\"missing-info\"><code class=\"missing-col\">None</code><span class=\"missing-stats\">0 (0.0%)</span></div><div class=\"missing-bar\"><div class=\"missing-fill low\" style=\"width:0%;\"></div></div></li>
-        """
 
+    # Use intelligent missing columns renderer with configuration
     n_rows = int(getattr(row_kmv, "rows", 0))
     n_cols = len(kinds_map)
+    missing_renderer = create_missing_columns_renderer(
+        min_threshold_pct=getattr(cfg, "missing_columns_threshold_pct", 0.5)
+    )
+    top_missing_list = missing_renderer.render_missing_columns_html(
+        miss_list, n_cols, n_rows
+    )
     total_cells = n_rows * n_cols
     missing_overall = f"{total_missing_cells:,} ({(total_missing_cells / max(1, total_cells) * 100):.1f}%)"
     dup_rows, dup_pct = row_kmv.approx_duplicates()
@@ -141,17 +130,63 @@ def render_html_snapshot(
     all_cards_list: List[str] = []
     for name in col_order:
         acc = accs[name]
+        card_html = ""
+        data_type = ""
+
         if name in kinds.numeric:
-            all_cards_list.append(_render_numeric_card(acc.finalize()))
+            card_html = _render_numeric_card(acc.finalize(chunk_metadata))
+            data_type = "numeric"
         elif name in kinds.categorical:
-            all_cards_list.append(_render_cat_card(acc.finalize()))
+            card_html = _render_cat_card(acc.finalize())
+            data_type = "categorical"
         elif name in kinds.datetime:
-            all_cards_list.append(_render_dt_card(acc.finalize()))
+            card_html = _render_dt_card(acc.finalize())
+            data_type = "datetime"
         elif name in kinds.boolean:
-            all_cards_list.append(_render_bool_card(acc.finalize()))
+            card_html = _render_bool_card(acc.finalize())
+            data_type = "boolean"
+
+        # Add data attributes for filtering and search
+        if card_html:
+            # Insert data attributes into the var-card element
+            card_html = card_html.replace(
+                f'<article class="var-card" id="{_safe_col_id(name)}">',
+                f'<article class="var-card" id="{_safe_col_id(name)}" data-type="{data_type}" data-name="{_html.escape(name)}">',
+            )
+            all_cards_list.append(card_html)
+    # Build variables section with pagination and search
+    total_variables = (
+        len(kinds.numeric)
+        + len(kinds.categorical)
+        + len(kinds.datetime)
+        + len(kinds.boolean)
+    )
     variables_section_html = f"""
-          <p class=\"muted small\">Analyzing {len(kinds.numeric) + len(kinds.categorical) + len(kinds.datetime) + len(kinds.boolean)} variables ({len(kinds.numeric)} numeric, {len(kinds.categorical)} categorical, {len(kinds.datetime)} datetime, {len(kinds.boolean)} boolean).</p>
-          <div class=\"cards-grid\">{"".join(all_cards_list)}</div>
+          <p class=\"muted small\">Analyzing {total_variables} variables ({len(kinds.numeric)} numeric, {len(kinds.categorical)} categorical, {len(kinds.datetime)} datetime, {len(kinds.boolean)} boolean).</p>
+          
+          <div class=\"vars-controls\">
+            <div class=\"controls-row\">
+              <input type=\"text\" placeholder=\"Search columns...\" id=\"search-input\">
+              <div class=\"filter-buttons\">
+                <button class=\"tab active\" data-filter=\"all\">All</button>
+                <button class=\"tab\" data-filter=\"numeric\">Numeric</button>
+                <button class=\"tab\" data-filter=\"categorical\">Categorical</button>
+                <button class=\"tab\" data-filter=\"datetime\">Datetime</button>
+                <button class=\"tab\" data-filter=\"boolean\">Boolean</button>
+              </div>
+            </div>
+            <div class=\"info\" id=\"pagination-info\">Showing 1-{min(8, total_variables)} of {total_variables}</div>
+          </div>
+          
+          <div class=\"cards-grid\" id=\"cards-grid\">
+            {"".join(all_cards_list)}
+          </div>
+          
+          <div class=\"pagination\" id=\"pagination\">
+            <button id=\"prev-btn\" {"disabled" if total_variables <= 8 else ""}>←</button>
+            <div class=\"pages\" id=\"page-numbers\"></div>
+            <button id=\"next-btn\" {"disabled" if total_variables <= 8 else ""}>→</button>
+          </div>
     """
 
     module_dir = os.path.dirname(os.path.abspath(__file__))
@@ -164,6 +199,22 @@ def render_html_snapshot(
     css_tag = load_css(css_path)
     script_path = os.path.join(static_dir, "js", "functionality.js")
     script_content = load_script(script_path)
+
+    # Add tooltips.js and pagination.js
+    tooltips_script_path = os.path.join(static_dir, "js", "tooltips.js")
+    tooltips_script_content = load_script(tooltips_script_path)
+
+    pagination_script_path = os.path.join(static_dir, "js", "pagination.js")
+    pagination_script_content = load_script(pagination_script_path)
+
+    # Combine all scripts
+    combined_script_content = (
+        script_content
+        + "\n"
+        + tooltips_script_content
+        + "\n"
+        + pagination_script_content
+    )
     logo_light_path = os.path.join(
         static_dir, "images", "logo_suricata_transparent.png"
     )
@@ -192,7 +243,7 @@ def render_html_snapshot(
     html = template.format(
         favicon=favicon_tag,
         css=css_tag,
-        script=script_content,
+        script=combined_script_content,
         logo=logo_html,
         report_title=report_title or cfg.title,
         report_date=report_date,
