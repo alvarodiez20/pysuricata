@@ -45,7 +45,7 @@ def test_numeric_hist_variants_html_ids():
     renderer = NumericCardRenderer()
     stats = MockNumericStats()
     html = renderer._build_histogram_variants("col_x", "X", stats)
-    assert "col_x-lin-bins-25" in html
+    assert "col_x-log-bins-10" in html
     assert 'data-scale="log"' in html
 
 

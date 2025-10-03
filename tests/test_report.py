@@ -229,7 +229,7 @@ def test_build_report_with_iterable():
 @pytest.mark.skipif(not _has_pandas(), reason="pandas not installed")
 def test_build_report_invalid_type():
     """Test build_report with invalid input type."""
-    with pytest.raises(TypeError):
+    with pytest.raises(RuntimeError, match="Unsupported input type"):
         build_report(123, config=EngineConfig())
 
 

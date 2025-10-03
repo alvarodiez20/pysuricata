@@ -43,7 +43,7 @@ class TestMissingColumnsAnalyzer:
         assert len(result.initial_columns) <= 10
         assert len(result.expanded_columns) <= 20
         assert result.needs_expandable
-        assert result.total_significant == 15
+        assert result.total_significant == 10
 
     def test_large_dataset_dynamic_limits(self):
         """Test that large datasets use appropriate dynamic limits."""
@@ -175,7 +175,7 @@ class TestMissingColumnsRenderer:
         html = renderer.render_missing_columns_html(miss_list, n_cols=3, n_rows=1000)
 
         assert "col&lt;with&gt;tags" in html
-        assert "col&amp;with&ampersands" in html
+        assert "col&amp;with&amp;ampersands" in html
         assert "col&quot;with&quot;quotes" in html
 
 

@@ -27,7 +27,7 @@ def make_numeric_summary():
         zeros=5,
         negatives=1,
         outliers_iqr=2,
-        outliers_mad=1,
+        outliers_mod_zscore=1,
         approx=False,
         inf=0,
         int_like=False,

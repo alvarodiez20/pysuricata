@@ -3,7 +3,7 @@ from __future__ import annotations
 import html as _html
 import os
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from .._version import resolve_version as _resolve_pysuricata_version
@@ -100,10 +100,10 @@ def render_html_snapshot(
                 maxs.append(acc._max_ts)
         if mins and maxs:
             date_min = (
-                datetime.utcfromtimestamp(min(mins) / 1_000_000_000).isoformat() + "Z"
+                datetime.fromtimestamp(min(mins) / 1_000_000_000, tz=timezone.utc).isoformat().replace('+00:00', 'Z')
             )
             date_max = (
-                datetime.utcfromtimestamp(max(maxs) / 1_000_000_000).isoformat() + "Z"
+                datetime.fromtimestamp(max(maxs) / 1_000_000_000, tz=timezone.utc).isoformat().replace('+00:00', 'Z')
             )
         else:
             date_min = date_max = "—"
