@@ -1,9 +1,8 @@
 """Numeric card rendering functionality."""
 
-import html as _html
-import json
 import math
-from typing import Any, List, Optional, Sequence, Tuple, Union
+from collections.abc import Sequence
+from typing import Any, Tuple
 
 import numpy as np
 
@@ -11,27 +10,17 @@ from .card_base import (
     CardRenderer,
     QualityAssessor,
     TableBuilder,
-    compute_x_ticks_and_labels,
-    format_hist_bin_labels,
 )
 from .card_config import (
     DEFAULT_CHART_DIMS,
     DEFAULT_HIST_CONFIG,
     DEFAULT_TICK_CONFIG,
-    EPSILON,
     MAD_OUTLIER_THRESHOLD,
     MAD_SCALE_FACTOR,
 )
-from .card_types import HistogramData, NumericStats, QualityFlags, QuantileData
-from .format_utils import fmt_compact as _fmt_compact
+from .card_types import NumericStats, QualityFlags, QuantileData
 from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
-from .format_utils import fmt_num as _fmt_num
-from .format_utils import human_bytes as _human_bytes
-from .histogram_svg import HistogramConfig, SVGHistogramRenderer
-from .svg_utils import _format_pow10_label as _fmt_pow10_label
-from .svg_utils import fmt_tick as _fmt_tick
-from .svg_utils import nice_ticks as _nice_ticks
-from .svg_utils import svg_empty as _svg_empty
+from .histogram_svg import SVGHistogramRenderer
 
 
 def ordinal_number(n):
@@ -1218,7 +1207,6 @@ class NumericCardRenderer(CardRenderer):
         Returns:
             List of chunk data dictionaries with realistic missing value patterns
         """
-        import math
         import random
 
         total_values = stats.count + stats.missing

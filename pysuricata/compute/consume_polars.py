@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import logging
 import warnings
-from typing import Any, Dict, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -21,12 +23,10 @@ from ..accumulators import (
 from .core.types import ColumnKinds
 from .processing.inference import (
     UnifiedTypeInferrer,
-    should_reclassify_numeric_as_boolean,
-    should_reclassify_numeric_as_categorical,
 )
 
 
-def _to_numeric_array_polars(s: "pl.Series") -> np.ndarray:  # type: ignore[name-defined]
+def _to_numeric_array_polars(s: pl.Series) -> np.ndarray:  # type: ignore[name-defined]
     if pl is None:
         raise RuntimeError("polars not available")
     try:
@@ -49,7 +49,7 @@ def _to_numeric_array_polars(s: "pl.Series") -> np.ndarray:  # type: ignore[name
         return np.asarray(s.to_list(), dtype="float64")
 
 
-def _to_bool_array_polars(s: "pl.Series") -> List[Optional[bool]]:  # type: ignore[name-defined]
+def _to_bool_array_polars(s: pl.Series) -> List[Optional[bool]]:  # type: ignore[name-defined]
     if pl is None:
         raise RuntimeError("polars not available")
     try:
@@ -71,18 +71,24 @@ def _to_bool_array_polars(s: "pl.Series") -> List[Optional[bool]]:  # type: igno
         return out
 
 
-def _to_datetime_ns_array_polars(s: "pl.Series") -> List[Optional[int]]:  # type: ignore[name-defined]
+def _to_datetime_ns_array_polars(s: pl.Series) -> List[Optional[int]]:  # type: ignore[name-defined]
     if pl is None:
         raise RuntimeError("polars not available")
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         try:
-            # Force ns resolution and get integer ns since epoch
-            s2 = (
-                s.dt.cast_time_unit("ns")
-                if s.dtype == pl.Datetime
-                else s.cast(pl.Datetime("ns"), strict=False)
-            )
+            # Handle different input types
+            if s.dtype == pl.Datetime:
+                # Already datetime, just cast time unit
+                s2 = s.dt.cast_time_unit("ns")
+            else:
+                # Try Date first for date-only strings, then Datetime
+                try:
+                    s_date = s.cast(pl.Date, strict=False)
+                    s2 = s_date.cast(pl.Datetime("ns"))
+                except Exception:
+                    # Fallback to direct datetime conversion
+                    s2 = s.cast(pl.Datetime("ns"), strict=False)
             # Cast to Int64 to extract raw ns (None for nulls)
             s3 = s2.cast(pl.Int64, strict=False)
             return [None if v is None else int(v) for v in s3.to_list()]
@@ -90,16 +96,16 @@ def _to_datetime_ns_array_polars(s: "pl.Series") -> List[Optional[int]]:  # type
             return [None] * len(s)
 
 
-def _to_categorical_iter_polars(s: "pl.Series") -> Iterable[Any]:  # type: ignore[name-defined]
+def _to_categorical_iter_polars(s: pl.Series) -> Iterable[Any]:  # type: ignore[name-defined]
     return s.to_list()
 
 
 def consume_chunk_polars(
-    df: "pl.DataFrame",
+    df: pl.DataFrame,
     accs: Dict[str, Any],
     kinds: ColumnKinds,
     config: Optional[Any] = None,
-    logger: Optional["logging.Logger"] = None,
+    logger: Optional[logging.Logger] = None,
 ) -> None:  # type: ignore[name-defined]
     if pl is None:
         raise RuntimeError("polars not available")

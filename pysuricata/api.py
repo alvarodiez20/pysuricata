@@ -18,12 +18,12 @@ from __future__ import annotations
 import collections.abc as cabc
 import json
 import os
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, Mapping, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Union
 
 from . import report
 from .config import EngineConfig as _EngineConfig
-from .io import iter_chunks as _iter_chunks
 
 # Type-only imports so pandas/polars/pyarrow remain optional
 if TYPE_CHECKING:  # pragma: no cover
@@ -117,6 +117,57 @@ class Report:
     def _repr_html_(self) -> str:  # pragma: no cover - visual
         return self.html
 
+    def display_in_notebook(self, width: str = "100%", height: str = "600px") -> None:
+        """Display the report in a Jupyter notebook using an iframe.
+
+        This method provides better display for large reports in Jupyter notebooks
+        by using an iframe instead of inline HTML.
+
+        Args:
+            width: Width of the iframe (default: "100%")
+            height: Height of the iframe (default: "600px")
+        """
+        try:
+            import os
+            import tempfile
+            import threading
+            import time
+
+            from IPython.display import IFrame, display
+
+            # Create a temporary file
+            with tempfile.NamedTemporaryFile(
+                mode="w", suffix=".html", delete=False
+            ) as f:
+                f.write(self.html)
+                temp_path = f.name
+
+            # Get the file URL for the iframe
+            file_url = f"file://{temp_path}"
+
+            # Display using iframe
+            display(IFrame(file_url, width=width, height=height))
+
+            # Clean up the temporary file after a delay
+            def cleanup():
+                time.sleep(5)  # Wait 5 seconds before cleanup
+                try:
+                    os.unlink(temp_path)
+                except OSError:
+                    pass
+
+            cleanup_thread = threading.Thread(target=cleanup)
+            cleanup_thread.daemon = True
+            cleanup_thread.start()
+
+        except ImportError:
+            # Fallback to regular HTML display if IPython is not available
+            return self._repr_html_()
+
+    def show(self, width: str = "100%", height: str = "600px") -> None:
+        """Alias for display_in_notebook for convenience."""
+        return self.display_in_notebook(width, height)
+
 
 @dataclass
 class ComputeOptions:
@@ -187,17 +238,17 @@ class ComputeOptions:
             forced types. Overrides automatic type inference. Default: None
     """
 
-    chunk_size: Optional[int] = 200_000
-    columns: Optional[Sequence[str]] = None
+    chunk_size: int | None = 200_000
+    columns: Sequence[str] | None = None
     numeric_sample_size: int = 20_000
     max_uniques: int = 2_048
     top_k: int = 50
-    random_seed: Optional[int] = 0
+    random_seed: int | None = 0
 
     # Logging and checkpointing
     log_every_n_chunks: int = 1
     checkpoint_every_n_chunks: int = 0  # 0 disables checkpointing
-    checkpoint_dir: Optional[str] = None
+    checkpoint_dir: str | None = None
     checkpoint_prefix: str = "pysuricata_ckpt"
     checkpoint_write_html: bool = False
     checkpoint_max_to_keep: int = 3
@@ -207,7 +258,7 @@ class ComputeOptions:
     boolean_detection_min_samples: int = 100
     boolean_detection_max_zero_ratio: float = 0.95
     boolean_detection_require_name_pattern: bool = True
-    force_column_types: Optional[Dict[str, str]] = None
+    force_column_types: dict[str, str] | None = None
 
     def __post_init__(self) -> None:
         """Validate configuration parameters."""
@@ -259,11 +310,20 @@ class RenderOptions:
     """Render options for the HTML output.
 
     The current HTML report is self-contained and styled with built-in assets.
-    This class is kept for future extensibility but currently has no effect
-    on the output.
+    This class controls various rendering aspects of the report.
+
+    Attributes:
+        title: Optional custom title for the HTML report. If not provided,
+            defaults to "PySuricata EDA Report". This title appears in both
+            the browser tab and the main heading of the report.
+        description: Optional user description to display in the summary section.
+            If provided, this will be shown below the "Summary" heading with
+            consistent styling. Can be used to provide context about the dataset
+            or analysis.
     """
 
-    pass  # No options currently implemented
+    title: str | None = None
+    description: str | None = None
 
 
 @dataclass
@@ -296,7 +356,7 @@ class ProfileConfig:
     render: RenderOptions = field(default_factory=RenderOptions)
 
 
-def _coerce_input(data: DataLike) -> Union["pd.DataFrame", cabc.Iterable]:
+def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
     """Normalize supported inputs into a form the engine can consume.
 
     The API is intentionally strict about accepted inputs to keep the
@@ -349,10 +409,15 @@ def _to_engine_config(cfg: ProfileConfig) -> _EngineConfig:
     internal engine configuration format.
     """
     compute = cfg.compute
+    render = cfg.render
 
     # Use the from_options method if available
     try:
-        return _EngineConfig.from_options(compute)
+        engine_config = _EngineConfig.from_options(compute)
+        # Add render options
+        engine_config.title = render.title or "PySuricata EDA Report"
+        engine_config.description = render.description
+        return engine_config
     except Exception:
         # Fallback: direct mapping with checkpointing support
         # Only include checkpointing parameters if they exist in the config
@@ -365,6 +430,8 @@ def _to_engine_config(cfg: ProfileConfig) -> _EngineConfig:
             "uniques_k": compute.uniques_k,
             "topk_k": compute.topk_k,
             "random_seed": compute.random_seed,
+            "title": render.title or "PySuricata EDA Report",
+            "description": render.description,
         }
 
         # Add checkpointing parameters only if they exist in both compute and _EngineConfig
@@ -396,7 +463,7 @@ def _to_engine_config(cfg: ProfileConfig) -> _EngineConfig:
 
 def profile(
     data: DataLike,
-    config: Optional[ProfileConfig] = None,
+    config: ProfileConfig | None = None,
 ) -> Report:
     """Compute statistics and render a self‑contained HTML report.
 
@@ -440,7 +507,7 @@ def profile(
 
 def summarize(
     data: DataLike,
-    config: Optional[ProfileConfig] = None,
+    config: ProfileConfig | None = None,
 ) -> Mapping[str, Any]:
     """Compute statistics only and return a JSON‑safe mapping.
 

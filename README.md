@@ -80,3 +80,26 @@ Highlights:
 - Correlation chips (streaming) for numeric columns.
 - Hardened HTML escaping for column names and labels.
 
+## Markdown Support in Descriptions
+
+Descriptions support Markdown formatting for rich text:
+
+```python
+from pysuricata import ProfileConfig, RenderOptions
+
+config = ProfileConfig(render=RenderOptions(description="""
+# My Analysis
+**Bold text** and *italic text*
+- Bullet points
+- More points
+"""))
+
+rep = profile(df, config=config)
+```
+
+Install markdown support:
+
+```bash
+pip install pysuricata[markdown]
+```
+

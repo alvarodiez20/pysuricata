@@ -10,9 +10,8 @@ import logging
 import re
 import warnings
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, Optional
 
-from ..core.exceptions import InferenceError
 from ..core.types import ColumnKinds, InferenceResult, ProcessingResult
 
 try:
@@ -297,7 +296,7 @@ class UnifiedTypeInferrer:
                 return ProcessingResult.success_result("numeric")
             elif dtype == pl.Boolean:
                 return ProcessingResult.success_result("boolean")
-            elif dtype == pl.Datetime:
+            elif dtype in [pl.Datetime, pl.Date]:
                 return ProcessingResult.success_result("datetime")
 
             # For string types, try to infer more specific types
@@ -403,6 +402,18 @@ class UnifiedTypeInferrer:
                 InferenceStrategy.BALANCED,
             ]:
                 try:
+                    # First try Date type (for date-only strings like '1914-12-01')
+                    ds = sample.cast(pl.Date, strict=False)
+                    null_count = ds.null_count()
+                    if (
+                        sample_size - null_count
+                    ) / sample_size > 0.8:  # 80% success rate
+                        return ProcessingResult.success_result("datetime")
+                except Exception:
+                    pass
+
+                try:
+                    # Then try Datetime type (for datetime strings with time components)
                     ds = sample.cast(pl.Datetime, strict=False)
                     null_count = ds.null_count()
                     if (

@@ -7,9 +7,10 @@ optimizations for processing massive time-series datasets.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, List, Optional, Sequence
+from typing import Any, List, Optional
 
 import numpy as np
 
@@ -34,6 +35,7 @@ class DatetimeSummary:
     by_hour: List[int]  # 24 counts
     by_dow: List[int]  # 7 counts, Monday=0
     by_month: List[int]  # 12 counts, Jan=1 index => store 12-length
+    by_year: dict[int, int]  # Dynamic year counts
     # v2 additions
     dtype_str: str = "datetime"
     mono_inc: bool = False
@@ -48,6 +50,9 @@ class DatetimeSummary:
     weekend_ratio: float = 0.0
     business_hours_ratio: float = 0.0
     seasonal_pattern: Optional[str] = None
+    # Missing fields for renderer compatibility
+    unique_est: int = 0
+    chunk_metadata: Optional[Sequence[Tuple[int, int, int]]] = None
 
 
 class DatetimeAccumulator:
@@ -82,6 +87,7 @@ class DatetimeAccumulator:
         self.by_hour = [0] * 24
         self.by_dow = [0] * 7
         self.by_month = [0] * 12
+        self.by_year: dict[int, int] = {}  # Year -> count mapping
 
         # Data structures optimized for big data
         self._uniques = KMV(self.config.uniques_sketch_size)
@@ -204,8 +210,8 @@ class DatetimeAccumulator:
                 valid_mask[i] = False
             elif isinstance(ts, float) and np.isnan(ts):
                 valid_mask[i] = False
-            elif isinstance(ts, (int, float)) and (ts < 0 or ts > 1e20):
-                # Reasonable timestamp bounds (roughly 1970-2100)
+            elif isinstance(ts, (int, float)) and (ts < -2e18 or ts > 1e20):
+                # Reasonable timestamp bounds (roughly 1900-2100)
                 valid_mask[i] = False
 
         return valid_mask
@@ -250,6 +256,7 @@ class DatetimeAccumulator:
                 self.by_hour[dt.hour] += 1
                 self.by_dow[dt.weekday()] += 1
                 self.by_month[dt.month - 1] += 1  # Convert to 0-based index
+                self.by_year[dt.year] = self.by_year.get(dt.year, 0) + 1
 
         except (ValueError, OSError):
             # Handle invalid timestamps gracefully
@@ -289,7 +296,7 @@ class DatetimeAccumulator:
 
             try:
                 ts_int = int(ts)
-                if ts_int < 0 or ts_int > 1e20:
+                if ts_int < -2e18 or ts_int > 1e20:
                     self.missing += 1
                     continue
 
@@ -324,7 +331,7 @@ class DatetimeAccumulator:
         except (ValueError, TypeError):
             pass
 
-    def finalize(self) -> DatetimeSummary:
+    def finalize(self, chunk_metadata: Optional[List[Tuple[int, int, int]]] = None) -> DatetimeSummary:
         """Finalize accumulator and return comprehensive summary statistics.
 
         Returns:
@@ -355,6 +362,7 @@ class DatetimeAccumulator:
             by_hour=self.by_hour.copy(),
             by_dow=self.by_dow.copy(),
             by_month=self.by_month.copy(),
+            by_year=self.by_year.copy(),
             dtype_str=self._dtype_str,
             mono_inc=mono_inc,
             mono_dec=mono_dec,
@@ -367,6 +375,8 @@ class DatetimeAccumulator:
             weekend_ratio=weekend_ratio,
             business_hours_ratio=business_hours_ratio,
             seasonal_pattern=seasonal_pattern,
+            unique_est=self._uniques.estimate(),
+            chunk_metadata=chunk_metadata,
         )
 
     def _calculate_time_span(self) -> float:
@@ -519,6 +529,9 @@ class DatetimeAccumulator:
             self.by_dow[i] += other.by_dow[i]
         for i in range(12):
             self.by_month[i] += other.by_month[i]
+        # Add year merging
+        for year, count in other.by_year.items():
+            self.by_year[year] = self.by_year.get(year, 0) + count
 
         # Merge intervals with memory management
         self._intervals.extend(other._intervals)
@@ -541,6 +554,7 @@ class DatetimeAccumulator:
         self.by_hour = [0] * 24
         self.by_dow = [0] * 7
         self.by_month = [0] * 12
+        self.by_year = {}
         self._intervals = []
         self._last_ts = None
 

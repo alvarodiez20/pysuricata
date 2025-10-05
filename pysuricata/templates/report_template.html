@@ -28,6 +28,7 @@
                 <a href="#summary">Summary</a>
                 <a href="#sample">Sample</a>
                 <a href="#vars">Variables</a>
+              <a href="#missing-values">Missing Values</a>
                 <a href="#" title="Download this report as HTML" aria-label="Download report" onclick="return downloadReport()">
                   <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
                     <path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z"/>
@@ -142,6 +143,23 @@
                 </ul>
               </div>
             </div>
+
+            <!-- Description Section -->
+            <div class="collapsible-card" style="margin-top: 12px;">
+              <details class="card" ontoggle="toggleDescriptionText(this)">
+                <summary>
+                  <span id="description-toggle-text">Description</span>
+                  <span class="chev" aria-hidden="true">▸</span>
+                </summary>
+                <div class="card-content">
+                  <div class="description-value" id="summary-description" data-original-markdown="" onclick="startDescriptionEdit()">
+                    <div class="description-content">
+                      <span class="placeholder">Click to add description...</span>
+                    </div>
+                  </div>
+                </div>
+              </details>
+            </div>
           </section>
           <hr class="section-divider">
           <!-- Sample Section -->
@@ -164,6 +182,14 @@
             <span id="numeric-vars" class="anchor-alias"></span>
             <h2 class="section-title">Variables</h2>
             {variables_section}
+          </section>
+          </section>
+
+          <!-- Missing Values Section -->
+          <hr class="section-divider">
+          <section id="missing-values">
+            <h2 class="section-title">Missing Values</h2>
+            {missing_values_section}
           </section>
 
           <footer class="page" role="contentinfo">
