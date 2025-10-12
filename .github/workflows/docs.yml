@@ -30,6 +30,10 @@ jobs:
           uv run python -c "import sys;print(sys.version)"
           uv run pip install -e .
 
+      - name: Validate mkdocs.yml
+        run: |
+          uv run python -c "import yaml; yaml.safe_load(open('mkdocs.yml'))"
+
       - name: Build docs
         run: uv run mkdocs build --strict
 

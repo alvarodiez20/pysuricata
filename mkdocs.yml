@@ -7,42 +7,98 @@ edit_uri: blob/main/docs/
 
 theme:
   name: material
+  logo: assets/favicon.ico
+  favicon: assets/favicon.ico
   features:
     - navigation.sections
     - navigation.tracking
     - navigation.top
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
     - toc.integrate
     - content.code.copy
     - content.tabs.link
+    - search.suggest
+    - search.highlight
   palette:
+    # Light mode - Nature/Forest theme
     - scheme: default
-      primary: indigo
-      accent: indigo
+      primary: green
+      accent: light green
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Dark mode - Night Forest theme
+    - scheme: slate
+      primary: green
+      accent: light green
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
   icon:
     repo: fontawesome/brands/github
 
 nav:
   - Home: index.md
-  - Getting started:
+  - Getting Started:
+      - Why PySuricata?: why-pysuricata.md
       - Installation: install.md
-      - Usage: usage.md
-      - API: api.md
-      - Numerical Analysis: numeric_var.md
-  - Internals: architecture.md
+      - Quick Start: quickstart.md
+      - Examples Gallery: examples.md
+  - User Guide:
+      - Basic Usage: usage.md
+      - Configuration: configuration.md
+      - Advanced Features: advanced.md
+      - Performance Tips: performance.md
+  - Technical Reference:
+      - API Reference: api.md
+      - Statistical Methods:
+          - Overview: stats/overview.md
+          - Numeric Analysis: stats/numeric.md
+          - Categorical Analysis: stats/categorical.md
+          - DateTime Analysis: stats/datetime.md
+          - Boolean Analysis: stats/boolean.md
+      - Advanced Analytics:
+          - Correlations: analytics/correlations.md
+          - Missing Values: analytics/missing-values.md
+          - Duplicate Detection: analytics/duplicates.md
+          - Data Quality: analytics/quality.md
+      - Algorithms:
+          - Streaming Statistics: algorithms/streaming.md
+          - Sketch Algorithms: algorithms/sketches.md
+          - Reservoir Sampling: algorithms/sampling.md
+  - Architecture: architecture.md
+  - Contributing: contributing.md
+  - FAQ: faq.md
+  - About:
+      - About Suricatas: about-suricatas.md
+      - Changelog: changelog.md
 
 markdown_extensions:
   - admonition
   - attr_list
   - footnotes
   - md_in_html
+  - tables
   - pymdownx.details
-  - pymdownx.highlight
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
   - pymdownx.inlinehilite
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - pymdownx.tabbed:
       alternate_style: true
   - pymdownx.arithmatex:
       generic: true
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 
 plugins:
   - search
@@ -54,18 +110,15 @@ plugins:
             show_source: true
             show_root_heading: true
             heading_level: 2
-  # uncomment if you installed them:
-  # - git-revision-date-localized:
-  #     enable_creation_date: true
-  # - minify:
-  #     minify_html: true
 
 extra:
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/alvarodiez20
 
+extra_css:
+  - stylesheets/extra.css
 
 extra_javascript:
   - https://polyfill.io/v3/polyfill.min.js?features=es6
-  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

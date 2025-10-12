@@ -37,3 +37,28 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v3
+      
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      
+      - name: Install dependencies
+        run: |
+          uv sync --dev
+          uv run pip install -e .
+      
+      - name: Validate mkdocs.yml
+        run: |
+          uv run python -c "import yaml; yaml.safe_load(open('mkdocs.yml'))"
+      
+      - name: Build docs
+        run: uv run mkdocs build --strict
+

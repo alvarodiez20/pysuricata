@@ -1,0 +1,303 @@
+/* PySuricata - Nature/Green Theme */
+
+:root {
+    /* Nature green palette - Light mode */
+    --md-primary-fg-color: #228B22;
+    --md-primary-fg-color--light: #32CD32;
+    --md-primary-fg-color--dark: #006400;
+    --md-accent-fg-color: #7CB342;
+    --md-accent-fg-color--transparent: rgba(124, 179, 66, 0.1);
+
+    /* Clean white backgrounds */
+    --md-default-bg-color: #FFFFFF;
+    --md-code-bg-color: #FFFFFF;
+    --md-code-fg-color: #1B5E20;
+    --md-typeset-color: #212121;
+}
+
+/* Dark mode - Night forest */
+[data-md-color-scheme="slate"] {
+    --md-primary-fg-color: #4CAF50 !important;
+    --md-primary-fg-color--light: #66BB6A !important;
+    --md-primary-fg-color--dark: #388E3C !important;
+    --md-accent-fg-color: #8BC34A !important;
+    --md-accent-fg-color--transparent: rgba(139, 195, 74, 0.1) !important;
+
+    --md-default-bg-color: #1a1a1a !important;
+    --md-default-bg-color--light: #2d2d2d !important;
+    --md-code-bg-color: #2d2d2d !important;
+    --md-code-fg-color: #A5D6A7 !important;
+    --md-typeset-color: #e0e0e0 !important;
+    --md-typeset-a-color: #66BB6A !important;
+}
+
+/* Dark mode specific overrides */
+[data-md-color-scheme="slate"] .md-main {
+    background-color: #1a1a1a !important;
+}
+
+[data-md-color-scheme="slate"] .md-content {
+    background-color: #1a1a1a !important;
+    color: #e0e0e0 !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset {
+    color: #e0e0e0 !important;
+}
+
+/* Logo styling */
+.md-header__button.md-logo img,
+.md-logo img {
+    filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+/* Enhanced headers with nature feel */
+.md-typeset h1 {
+    color: #1B5E20;
+    /* Dark green */
+    border-bottom: 3px solid #7CB342;
+    /* Light green border */
+    padding-bottom: 0.3em;
+}
+
+[data-md-color-scheme="slate"] .md-typeset h1 {
+    color: #A5D6A7;
+    /* Light green in dark mode */
+    border-bottom: 3px solid #66BB6A;
+}
+
+/* Admonitions - nature tones */
+.md-typeset .admonition.tip,
+.md-typeset details.tip {
+    border-color: #7CB342;
+    /* Light green */
+}
+
+.md-typeset .tip>.admonition-title,
+.md-typeset .tip>summary {
+    background-color: rgba(124, 179, 66, 0.1);
+    border-left-color: #7CB342;
+}
+
+/* Code blocks - clean white */
+.md-typeset code {
+    background-color: #FFFFFF;
+    color: #1B5E20;
+    border: 1px solid #C8E6C9;
+}
+
+[data-md-color-scheme="slate"] .md-typeset code {
+    background-color: #2d2d2d !important;
+    color: #A5D6A7 !important;
+    border: 1px solid #4CAF50 !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset pre {
+    background-color: #2d2d2d !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset pre code {
+    background-color: #2d2d2d !important;
+    color: #A5D6A7 !important;
+}
+
+/* Links - fresh green */
+.md-typeset a {
+    color: #388E3C;
+    /* Medium green */
+}
+
+.md-typeset a:hover {
+    color: #66BB6A;
+    /* Light green */
+}
+
+[data-md-color-scheme="slate"] .md-typeset a {
+    color: #66BB6A;
+    /* Light green */
+}
+
+[data-md-color-scheme="slate"] .md-typeset a:hover {
+    color: #8BC34A;
+    /* Lime green */
+}
+
+/* Buttons - nature inspired */
+.md-button {
+    background-color: #7CB342;
+    color: white;
+    border: none;
+}
+
+.md-button:hover {
+    background-color: #8BC34A;
+}
+
+.md-button--primary {
+    background-color: #388E3C;
+    color: white;
+}
+
+.md-button--primary:hover {
+    background-color: #4CAF50;
+}
+
+/* Tables - nature stripes */
+.md-typeset table:not([class]) tbody tr:hover {
+    background-color: rgba(124, 179, 66, 0.1);
+}
+
+/* Navigation - green tones */
+.md-tabs {
+    background-color: #2E7D32;
+}
+
+.md-tabs__link {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.md-tabs__link--active {
+    color: #A5D6A7;
+}
+
+/* Search bar - subtle green */
+.md-search__input {
+    background-color: rgba(124, 179, 66, 0.1);
+}
+
+.md-search__input:focus {
+    background-color: white;
+}
+
+/* Sidebar - clean white */
+.md-sidebar {
+    background: #FFFFFF;
+}
+
+[data-md-color-scheme="slate"] .md-sidebar {
+    background: #1a1a1a !important;
+}
+
+[data-md-color-scheme="slate"] .md-sidebar__scrollwrap {
+    background-color: #1a1a1a !important;
+}
+
+/* Footer - forest floor */
+.md-footer {
+    background-color: #558B2F;
+    /* Green */
+    color: #F1F8E9;
+}
+
+[data-md-color-scheme="slate"] .md-footer {
+    background-color: #1B2E1F;
+    color: #A5D6A7;
+}
+
+/* Mermaid diagrams - adjust for brown theme */
+.mermaid {
+    background-color: transparent;
+}
+
+/* Math formulas - enhance readability */
+.md-typeset mjx-container {
+    color: #1B5E20;
+}
+
+[data-md-color-scheme="slate"] .md-typeset mjx-container {
+    color: #A5D6A7;
+}
+
+/* Cards/Grid - nature cards */
+.md-typeset .grid {
+    gap: 1rem;
+}
+
+.md-typeset .grid>* {
+    background: linear-gradient(135deg,
+            rgba(232, 245, 233, 0.3) 0%,
+            rgba(255, 255, 255, 0.5) 100%);
+    border: 2px solid #A5D6A7;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+[data-md-color-scheme="slate"] .md-typeset .grid>* {
+    background: #2d2d2d !important;
+    border: 2px solid #4CAF50 !important;
+}
+
+/* Remove texture for clean look */
+body {
+    background-color: #FFFFFF;
+}
+
+[data-md-color-scheme="slate"] body {
+    background-color: #1a1a1a !important;
+}
+
+/* Badges - fresh colors */
+.md-typeset .badge {
+    background-color: #7CB342;
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85em;
+}
+
+/* Logo in home page - larger */
+.md-content h1 img {
+    max-width: 400px;
+    display: block;
+    margin: 2rem auto;
+}
+
+/* Additional dark mode overrides for comprehensive coverage */
+[data-md-color-scheme="slate"] .md-header {
+    background-color: #1B2E1F !important;
+}
+
+[data-md-color-scheme="slate"] .md-tabs {
+    background-color: #1B2E1F !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset h2,
+[data-md-color-scheme="slate"] .md-typeset h3,
+[data-md-color-scheme="slate"] .md-typeset h4 {
+    color: #A5D6A7 !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset p {
+    color: #e0e0e0 !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset li {
+    color: #e0e0e0 !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table {
+    background-color: #1a1a1a !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table th {
+    background-color: #2d2d2d !important;
+    color: #A5D6A7 !important;
+}
+
+[data-md-color-scheme="slate"] .md-typeset table td {
+    background-color: #1a1a1a !important;
+    color: #e0e0e0 !important;
+    border-color: #4CAF50 !important;
+}
+
+[data-md-color-scheme="slate"] .md-nav {
+    color: #e0e0e0 !important;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link {
+    color: #e0e0e0 !important;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link--active {
+    color: #66BB6A !important;
+}
