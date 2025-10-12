@@ -7161,33 +7161,32 @@ body.suricata-standalone:not(.light) {
 /* Description section styling - compact dropdown */
 #pysuricata-report .description-value {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.95rem;
-  line-height: 1.6;
+  font-size: 0.9rem;
+  line-height: 1.4;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-wrap: break-word;
+  overflow-wrap: break-word;
+  hyphens: auto;
   min-height: 1.2rem;
-  max-height: 200px;
-  overflow-y: auto;
-  padding: 0.5rem;
+  /* Removed: max-height, overflow constraints for dynamic sizing */
+  padding: 0;
+  margin: 0;
   background: transparent;
-  border: 1px solid transparent;
-  border-radius: 4px;
+  border: none;
+  border-radius: 0;
   transition: all 0.2s ease;
   cursor: pointer;
+  display: flex;
+  align-items: flex-start;
 }
 
 #pysuricata-report .description-value:hover:not(.editing) {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.02), rgba(59, 130, 246, 0.01));
-  border-color: rgba(59, 130, 246, 0.2);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  cursor: pointer;
+  background: rgba(0, 0, 0, 0.02);
 }
 
 #pysuricata-report:not(.light) .description-value:hover:not(.editing) {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.04));
-  border-color: rgba(59, 130, 246, 0.3);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 #pysuricata-report .description-value:empty::before {
@@ -7198,34 +7197,27 @@ body.suricata-standalone:not(.light) {
 
 /* Edit mode */
 #pysuricata-report .description-value.editing {
-  border-color: var(--accent-color);
+  border-color: var(--bar);
   background: var(--bg-secondary);
   cursor: text;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 #pysuricata-report .description-content {
   margin: 0;
-  min-height: 24px;
 }
+
 
 #pysuricata-report .description-content .placeholder {
   color: var(--text-muted);
   font-style: italic;
-  font-size: 0.9rem;
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-#pysuricata-report .description-value:hover:not(.editing) .placeholder {
-  opacity: 0.9;
+  font-size: 0.85rem;
 }
 
 /* Textarea editor */
 #pysuricata-report .description-editor {
   width: 100%;
   min-height: 60px;
-  max-height: 200px;
+  /* Removed: max-height, overflow constraints for dynamic sizing */
   padding: 0.5rem;
   font-family: inherit;
   font-size: inherit;
@@ -7235,8 +7227,12 @@ body.suricata-standalone:not(.light) {
   border: 2px solid var(--bar);
   border-radius: 4px;
   outline: none;
-  resize: vertical;
-  overflow-y: auto;
+  resize: none;
+  /* Disable manual resize */
+  overflow: hidden;
+  /* Hide overflow instead of scrolling */
+  height: auto;
+  /* Let it grow with content */
 }
 
 #pysuricata-report .description-editor:focus {
@@ -7244,35 +7240,19 @@ body.suricata-standalone:not(.light) {
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-/* Compact scrollbar */
-#pysuricata-report .description-value::-webkit-scrollbar,
-#pysuricata-report .description-editor::-webkit-scrollbar {
-  width: 6px;
+/* Fix padding for summary description textarea only */
+#pysuricata-report #summary-description .description-editor {
+  padding: 0;
 }
 
-#pysuricata-report .description-value::-webkit-scrollbar-track,
-#pysuricata-report .description-editor::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-  border-radius: 3px;
-}
-
-#pysuricata-report .description-value::-webkit-scrollbar-thumb,
-#pysuricata-report .description-editor::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 3px;
-}
-
-#pysuricata-report:not(.light) .description-value::-webkit-scrollbar-thumb,
-#pysuricata-report:not(.light) .description-editor::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-}
+/* Scrollbar styling removed - no longer needed with dynamic sizing */
 
 /* Markdown rendering */
 #pysuricata-report .description-content h1,
 #pysuricata-report .description-content h2,
 #pysuricata-report .description-content h3 {
-  margin-top: 0.5em;
-  margin-bottom: 0.3em;
+  margin-top: 0;
+  margin-bottom: 0.2em;
   font-weight: 600;
 }
 
@@ -7289,12 +7269,12 @@ body.suricata-standalone:not(.light) {
 }
 
 #pysuricata-report .description-content ul {
-  margin: 0.5em 0;
+  margin: 0.2em 0;
   padding-left: 1.5em;
 }
 
 #pysuricata-report .description-content li {
-  margin: 0.2em 0;
+  margin: 0.1em 0;
 }
 
 #pysuricata-report .description-content strong {

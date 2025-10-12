@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 import numpy as np
 
@@ -63,7 +62,7 @@ class HistogramData:
     total_count: int
     scale: str  # 'lin' or 'log'
     y_max: float
-    original_range: Optional[Tuple[float, float]] = (
+    original_range: tuple[float, float] | None = (
         None  # Original data range for log scale
     )
 
@@ -71,7 +70,7 @@ class HistogramData:
 class SVGHistogramRenderer:
     """Renders histograms as SVG with intelligent number formatting."""
 
-    def __init__(self, config: Optional[HistogramConfig] = None):
+    def __init__(self, config: HistogramConfig | None = None):
         self.config = config or HistogramConfig()
 
     def render_histogram(
@@ -142,8 +141,8 @@ class SVGHistogramRenderer:
 
     def render_histogram_from_bins(
         self,
-        bin_edges: List[float],
-        bin_counts: List[int],
+        bin_edges: list[float],
+        bin_counts: list[int],
         bins: int,
         scale: str,
         title: str,
@@ -293,10 +292,8 @@ class SVGHistogramRenderer:
             self._render_bars(hist_data, inner_width, inner_height, col_id)
         )
 
-        # Add axes with standardized formatting
-        svg_parts.extend(
-            self._render_axes_standardized(hist_data, inner_width, inner_height)
-        )
+        # Add axes
+        svg_parts.extend(self._render_axes(hist_data, inner_width, inner_height))
 
         # Add title
         if title:
@@ -389,7 +386,7 @@ class SVGHistogramRenderer:
 
     def _render_grid(
         self, hist_data: HistogramData, inner_width: int, inner_height: int
-    ) -> List[str]:
+    ) -> list[str]:
         """Render grid lines."""
         if hist_data.y_max == 0:
             return []
@@ -413,7 +410,7 @@ class SVGHistogramRenderer:
 
     def _render_bars(
         self, hist_data: HistogramData, inner_width: int, inner_height: int, col_id: str
-    ) -> List[str]:
+    ) -> list[str]:
         """Render histogram bars."""
         if len(hist_data.counts) == 0 or hist_data.y_max == 0:
             return []
@@ -459,185 +456,6 @@ class SVGHistogramRenderer:
 
         return parts
 
-    def _render_axes_standardized(
-        self, hist_data: HistogramData, inner_width: int, inner_height: int
-    ) -> List[str]:
-        """Render axes with standardized formatting for both linear and log scales."""
-        parts = []
-
-        # X-axis line
-        parts.append(
-            f'<line x1="{self.config.margin_left}" y1="{self.config.height - self.config.margin_bottom}" '
-            f'x2="{self.config.width - self.config.margin_right}" y2="{self.config.height - self.config.margin_bottom}" '
-            f'stroke="{self.config.axis_color}" stroke-width="{self.config.axis_stroke_width}"/>'
-        )
-
-        # Y-axis line
-        parts.append(
-            f'<line x1="{self.config.margin_left}" y1="{self.config.margin_top}" '
-            f'x2="{self.config.margin_left}" y2="{self.config.height - self.config.margin_bottom}" '
-            f'stroke="{self.config.axis_color}" stroke-width="{self.config.axis_stroke_width}"/>'
-        )
-
-        # Standardized tick generation
-        if hist_data.scale == "log":
-            # Log scale: use consistent approach
-            # For log scale, we need to work with the original data range, not transformed bin centers
-            if hasattr(hist_data, "original_range") and hist_data.original_range:
-                # Use the original data range for tick generation
-                data_min, data_max = hist_data.original_range
-                if data_min > 0 and data_max > 0:
-                    log_min = math.log10(data_min)
-                    log_max = math.log10(data_max)
-
-                    # Generate consistent log ticks
-                    tick_positions, tick_labels = nice_log_ticks_from_log10(
-                        log_min, log_max, 5
-                    )
-                    tick_values = [10**pos for pos in tick_positions]
-                else:
-                    tick_values = []
-                    tick_labels = []
-            else:
-                # Fallback: use positive bin centers if original range not available
-                positive_centers = hist_data.bin_centers[hist_data.bin_centers > 0]
-                if len(positive_centers) > 0:
-                    log_min = math.log10(max(1e-10, positive_centers.min()))
-                    log_max = math.log10(positive_centers.max())
-
-                    # Generate consistent log ticks
-                    tick_positions, tick_labels = nice_log_ticks_from_log10(
-                        log_min, log_max, 5
-                    )
-                    tick_values = [10**pos for pos in tick_positions]
-                else:
-                    tick_values = []
-                    tick_labels = []
-        else:
-            # Linear scale: use consistent approach
-            if len(hist_data.bin_centers) > 0:
-                tick_values, _ = nice_ticks(
-                    hist_data.bin_centers.min(), hist_data.bin_centers.max(), 5
-                )
-                tick_labels = [
-                    self._format_tick_label_standardized(v) for v in tick_values
-                ]
-            else:
-                tick_values = []
-                tick_labels = []
-
-        # Render X-axis ticks and labels
-        for tick_val, tick_label in zip(tick_values, tick_labels):
-            # Calculate position
-            if hist_data.scale == "log":
-                # Map log values to screen coordinates
-                log_val = math.log10(max(1e-10, tick_val))
-
-                # Use the same range calculation as for tick generation
-                if hasattr(hist_data, "original_range") and hist_data.original_range:
-                    data_min, data_max = hist_data.original_range
-                    if data_min > 0 and data_max > 0:
-                        log_min = math.log10(data_min)
-                        log_max = math.log10(data_max)
-                    else:
-                        # Fallback to bin centers
-                        positive_centers = hist_data.bin_centers[
-                            hist_data.bin_centers > 0
-                        ]
-                        if len(positive_centers) > 0:
-                            log_min = math.log10(max(1e-10, positive_centers.min()))
-                            log_max = math.log10(positive_centers.max())
-                        else:
-                            log_min = log_max = log_val
-                else:
-                    # Fallback: use positive bin centers
-                    positive_centers = hist_data.bin_centers[hist_data.bin_centers > 0]
-                    if len(positive_centers) > 0:
-                        log_min = math.log10(max(1e-10, positive_centers.min()))
-                        log_max = math.log10(positive_centers.max())
-                    else:
-                        log_min = log_max = log_val
-
-                # Handle case where all values are the same
-                if log_max == log_min:
-                    x_pos = self.config.margin_left + inner_width / 2
-                else:
-                    x_pos = (
-                        self.config.margin_left
-                        + (log_val - log_min) / (log_max - log_min) * inner_width
-                    )
-            else:
-                # Map linear values to screen coordinates
-                val_min = hist_data.bin_centers.min()
-                val_max = hist_data.bin_centers.max()
-
-                # Handle case where all values are the same
-                if val_max == val_min:
-                    x_pos = self.config.margin_left + inner_width / 2
-                else:
-                    x_pos = (
-                        self.config.margin_left
-                        + (tick_val - val_min) / (val_max - val_min) * inner_width
-                    )
-
-            # Only render if within bounds
-            if (
-                self.config.margin_left
-                <= x_pos
-                <= self.config.width - self.config.margin_right
-            ):
-                # Tick mark
-                parts.append(
-                    f'<line x1="{x_pos}" y1="{self.config.height - self.config.margin_bottom}" '
-                    f'x2="{x_pos}" y2="{self.config.height - self.config.margin_bottom + self.config.tick_length}" '
-                    f'stroke="{self.config.axis_color}" stroke-width="{self.config.axis_stroke_width}"/>'
-                )
-
-                # Label
-                parts.append(
-                    f'<text x="{x_pos}" y="{self.config.height - self.config.margin_bottom + 15}" '
-                    f'text-anchor="middle" class="tick-label" '
-                    f'font-family="{self.config.font_family}" font-size="{self.config.label_font_size}" '
-                    f'fill="{self.config.axis_color}">'
-                    f"{self.safe_html_escape(tick_label)}</text>"
-                )
-
-        # Y-axis ticks and labels
-        if hist_data.y_max > 0:
-            y_ticks = [
-                0,
-                hist_data.y_max // 4,
-                hist_data.y_max // 2,
-                3 * hist_data.y_max // 4,
-                hist_data.y_max,
-            ]
-            y_ticks = [t for t in y_ticks if t >= 0]  # Remove negative ticks
-
-            for tick_val in y_ticks:
-                y_pos = (
-                    self.config.height
-                    - self.config.margin_bottom
-                    - (tick_val / hist_data.y_max) * inner_height
-                )
-
-                # Tick mark
-                parts.append(
-                    f'<line x1="{self.config.margin_left - self.config.tick_length}" y1="{y_pos}" '
-                    f'x2="{self.config.margin_left}" y2="{y_pos}" '
-                    f'stroke="{self.config.axis_color}" stroke-width="{self.config.axis_stroke_width}"/>'
-                )
-
-                # Label
-                parts.append(
-                    f'<text x="{self.config.margin_left - 8}" y="{y_pos + 4}" '
-                    f'text-anchor="end" class="tick-label" '
-                    f'font-family="{self.config.font_family}" font-size="{self.config.label_font_size}" '
-                    f'fill="{self.config.axis_color}">'
-                    f"{self.safe_html_escape(self._format_tick_label_standardized(tick_val))}</text>"
-                )
-
-        return parts
-
     def _format_tick_label_standardized(
         self, value: float, is_count: bool = False
     ) -> str:
@@ -667,7 +485,7 @@ class SVGHistogramRenderer:
 
     def _render_axes(
         self, hist_data: HistogramData, inner_width: int, inner_height: int
-    ) -> List[str]:
+    ) -> list[str]:
         """Render axes and tick labels."""
         parts = []
 
@@ -695,7 +513,7 @@ class SVGHistogramRenderer:
 
     def _render_x_axis_ticks(
         self, hist_data: HistogramData, inner_width: int, inner_height: int
-    ) -> List[str]:
+    ) -> list[str]:
         """Render X-axis ticks and labels."""
         if len(hist_data.bin_centers) == 0:
             return []
@@ -704,11 +522,27 @@ class SVGHistogramRenderer:
 
         # Calculate tick positions
         if hist_data.scale == "log":
-            # For log scale, use log ticks
-            log_min = math.log10(max(1e-10, hist_data.bin_centers.min()))
-            log_max = math.log10(hist_data.bin_centers.max())
-            tick_positions, tick_labels = nice_log_ticks_from_log10(log_min, log_max, 5)
-            tick_values = [10**pos for pos in tick_positions]
+            # For log scale, use original_range if available for better tick generation
+            if hist_data.original_range and hist_data.original_range[0] > 0:
+                data_min, data_max = hist_data.original_range
+                log_min = math.log10(data_min)
+                log_max = math.log10(data_max)
+                tick_positions, tick_labels = nice_log_ticks_from_log10(
+                    log_min, log_max, 5
+                )
+                tick_values = [10**pos for pos in tick_positions]
+            else:
+                # Fallback to bin centers
+                positive_centers = hist_data.bin_centers[hist_data.bin_centers > 0]
+                if len(positive_centers) > 0:
+                    log_min = math.log10(max(1e-10, positive_centers.min()))
+                    log_max = math.log10(positive_centers.max())
+                    tick_positions, tick_labels = nice_log_ticks_from_log10(
+                        log_min, log_max, 5
+                    )
+                    tick_values = [10**pos for pos in tick_positions]
+                else:
+                    return []  # No valid data for ticks
         else:
             # For linear scale, use regular ticks
             tick_values, _ = nice_ticks(
@@ -718,34 +552,19 @@ class SVGHistogramRenderer:
 
         # Render ticks and labels
         for tick_val, tick_label in zip(tick_values, tick_labels):
-            # Calculate position
-            if hist_data.scale == "log":
-                # Map log values to screen coordinates
-                log_val = math.log10(max(1e-10, tick_val))
-                log_min = math.log10(max(1e-10, hist_data.bin_centers.min()))
-                log_max = math.log10(hist_data.bin_centers.max())
+            # Calculate position - bin_centers are always in linear space
+            # (for log scale, they were converted back in _prepare_histogram_data)
+            val_min = hist_data.bin_centers.min()
+            val_max = hist_data.bin_centers.max()
 
-                # Handle case where all values are the same (constant data)
-                if log_max == log_min:
-                    x_pos = self.config.margin_left + inner_width / 2
-                else:
-                    x_pos = (
-                        self.config.margin_left
-                        + (log_val - log_min) / (log_max - log_min) * inner_width
-                    )
+            # Handle case where all values are the same (constant data)
+            if val_max == val_min:
+                x_pos = self.config.margin_left + inner_width / 2
             else:
-                # Map linear values to screen coordinates
-                val_min = hist_data.bin_centers.min()
-                val_max = hist_data.bin_centers.max()
-
-                # Handle case where all values are the same (constant data)
-                if val_max == val_min:
-                    x_pos = self.config.margin_left + inner_width / 2
-                else:
-                    x_pos = (
-                        self.config.margin_left
-                        + (tick_val - val_min) / (val_max - val_min) * inner_width
-                    )
+                x_pos = (
+                    self.config.margin_left
+                    + (tick_val - val_min) / (val_max - val_min) * inner_width
+                )
 
             # Only render if within bounds
             if (
@@ -774,7 +593,7 @@ class SVGHistogramRenderer:
 
     def _render_y_axis_ticks(
         self, hist_data: HistogramData, inner_height: int
-    ) -> List[str]:
+    ) -> list[str]:
         """Render Y-axis ticks and labels."""
         if hist_data.y_max == 0:
             return []
@@ -824,7 +643,7 @@ def create_histogram_svg(
     scale: str = "lin",
     title: str = "",
     col_id: str = "",
-    config: Optional[HistogramConfig] = None,
+    config: HistogramConfig | None = None,
 ) -> str:
     """
     Create a histogram SVG.
