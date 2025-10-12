@@ -1,0 +1,2538 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Complete mathematical formulas and algorithms for categorical data analysis in pysuricata">
+      
+      
+      
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/stats/categorical/">
+      
+      
+        <link rel="prev" href="../numeric/">
+      
+      
+        <link rel="next" href="../datetime/">
+      
+      
+      <link rel="icon" href="../../assets/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>Categorical Variable Analysis - PySuricata</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2a3383ac.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="light-green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#categorical-variable-analysis" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="PySuricata" class="md-header__button md-logo" aria-label="PySuricata" data-md-component="logo">
+      
+  <img src="../../assets/favicon.ico" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PySuricata
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Categorical Variable Analysis
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="light-green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="light-green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/alvarodiez20/pysuricata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    alvarodiez20/pysuricata
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../why-pysuricata/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Technical Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../about-suricatas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PySuricata" class="md-nav__button md-logo" aria-label="PySuricata" data-md-component="logo">
+      
+  <img src="../../assets/favicon.ico" alt="logo">
+
+    </a>
+    PySuricata
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/alvarodiez20/pysuricata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    alvarodiez20/pysuricata
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../why-pysuricata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Why PySuricata?
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quick Start
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Examples Gallery
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Basic Usage
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Advanced Features
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Tips
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Technical Reference
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Technical Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Statistical Methods
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            Statistical Methods
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../numeric/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Numeric Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Categorical Analysis
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Categorical Analysis
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Features
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-statistics-provided" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary Statistics Provided
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mathematical-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mathematical Definitions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mathematical Definitions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#frequency-and-probability" class="md-nav__link">
+    <span class="md-ellipsis">
+      Frequency and Probability
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shannon-entropy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shannon Entropy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#gini-impurity" class="md-nav__link">
+    <span class="md-ellipsis">
+      Gini Impurity
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#diversity-ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      Diversity Ratio
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#concentration-ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concentration Ratio
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#most-common-ratio" class="md-nav__link">
+    <span class="md-ellipsis">
+      Most Common Ratio
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Streaming Algorithms
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Streaming Algorithms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#misra-gries-algorithm-for-top-k" class="md-nav__link">
+    <span class="md-ellipsis">
+      Misra-Gries Algorithm for Top-K
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kmv-sketch-for-distinct-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      KMV Sketch for Distinct Count
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#space-saving-algorithm-alternative" class="md-nav__link">
+    <span class="md-ellipsis">
+      Space-Saving Algorithm (Alternative)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#string-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      String Analysis
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="String Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#length-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Length Statistics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#empty-strings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Empty Strings
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#case-variants" class="md-nav__link">
+    <span class="md-ellipsis">
+      Case Variants
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#trim-variants" class="md-nav__link">
+    <span class="md-ellipsis">
+      Trim Variants
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#chi-square-uniformity-test" class="md-nav__link">
+    <span class="md-ellipsis">
+      Chi-Square Uniformity Test
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cardinality-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      Cardinality Categories
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#computational-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      Computational Complexity
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementation Details
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#categoricalaccumulator-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      CategoricalAccumulator Class
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Validation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basic Usage
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-cardinality-column" class="md-nav__link">
+    <span class="md-ellipsis">
+      High-Cardinality Column
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#access-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Access Statistics
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interpreting-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interpreting Results
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Interpreting Results">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#high-entropy" class="md-nav__link">
+    <span class="md-ellipsis">
+      High Entropy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#low-entropy" class="md-nav__link">
+    <span class="md-ellipsis">
+      Low Entropy
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#high-gini" class="md-nav__link">
+    <span class="md-ellipsis">
+      High Gini
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#low-gini" class="md-nav__link">
+    <span class="md-ellipsis">
+      Low Gini
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#special-cases" class="md-nav__link">
+    <span class="md-ellipsis">
+      Special Cases
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Special Cases">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#all-unique-primary-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      All Unique (Primary Key)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#nearly-constant" class="md-nav__link">
+    <span class="md-ellipsis">
+      Nearly Constant
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#many-empty-strings" class="md-nav__link">
+    <span class="md-ellipsis">
+      Many Empty Strings
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      References
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    DateTime Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../boolean/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Boolean Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Advanced Analytics
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Analytics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/correlations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Correlations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/missing-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Missing Values
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/duplicates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Duplicate Detection
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Data Quality
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Algorithms
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Algorithms
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../algorithms/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Streaming Statistics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../algorithms/sketches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sketch Algorithms
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../algorithms/sampling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reservoir Sampling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    About
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            About
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about-suricatas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    About Suricatas
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="categorical-variable-analysis">Categorical Variable Analysis</h1>
+<p>This page provides comprehensive documentation for how PySuricata analyzes categorical (string, object) variables using scalable streaming algorithms with mathematical guarantees.</p>
+<h2 id="overview">Overview</h2>
+<p>PySuricata treats a <strong>categorical variable</strong> as any column with string-like values, objects, or low-cardinality integers. Analysis focuses on frequency distributions, diversity metrics, and string characteristics.</p>
+<h3 id="key-features">Key Features</h3>
+<ul>
+<li><strong>Top-k values</strong> with frequencies (Misra-Gries algorithm)</li>
+<li><strong>Distinct count</strong> estimation (KMV sketch)</li>
+<li><strong>Diversity metrics</strong> (entropy, Gini impurity, concentration)</li>
+<li><strong>String statistics</strong> (length distribution, empty strings)</li>
+<li><strong>Variant detection</strong> (case-insensitive, trimmed)</li>
+<li><strong>Memory-efficient</strong> streaming algorithms</li>
+</ul>
+<h2 id="summary-statistics-provided">Summary Statistics Provided</h2>
+<p>For each categorical column:</p>
+<ul>
+<li><strong>Count</strong>: non-null values, missing percentage</li>
+<li><strong>Distinct</strong>: unique value count (exact or approximate)</li>
+<li><strong>Top values</strong>: most frequent values with counts and percentages</li>
+<li><strong>Entropy</strong>: Shannon entropy (information content)</li>
+<li><strong>Gini impurity</strong>: concentration measure</li>
+<li><strong>Diversity ratio</strong>: uniqueness measure</li>
+<li><strong>Most common ratio</strong>: dominance of top value</li>
+<li><strong>String length</strong>: mean, p90, distribution</li>
+<li><strong>Special values</strong>: empty strings, whitespace-only</li>
+<li><strong>Variants</strong>: case-insensitive and trimmed unique counts</li>
+</ul>
+<h2 id="mathematical-definitions">Mathematical Definitions</h2>
+<h3 id="frequency-and-probability">Frequency and Probability</h3>
+<p>Let <span class="arithmatex">\(x_1, x_2, \ldots, x_n\)</span> be the non-missing categorical values.</p>
+<p><strong>Frequency of value <span class="arithmatex">\(v\)</span>:</strong></p>
+<div class="arithmatex">\[
+f(v) = |\{i : x_i = v\}|
+\]</div>
+<p><strong>Relative frequency (empirical probability):</strong></p>
+<div class="arithmatex">\[
+p(v) = \frac{f(v)}{n}
+\]</div>
+<p><strong>Distinct count:</strong></p>
+<div class="arithmatex">\[
+d = |\{v : f(v) &gt; 0\}|
+\]</div>
+<h3 id="shannon-entropy">Shannon Entropy</h3>
+<p>Measures the <strong>information content</strong> or <strong>uncertainty</strong> in the distribution:</p>
+<div class="arithmatex">\[
+H(X) = -\sum_{v} p(v) \log_2 p(v)
+\]</div>
+<p>where the sum is over all distinct values <span class="arithmatex">\(v\)</span> with <span class="arithmatex">\(p(v) &gt; 0\)</span>.</p>
+<p><strong>Properties:</strong>
+- <span class="arithmatex">\(H(X) = 0\)</span> if one value has <span class="arithmatex">\(p=1\)</span> (no uncertainty)
+- <span class="arithmatex">\(H(X) = \log_2 d\)</span> if all values equally likely (maximum entropy)
+- Units: <strong>bits</strong> of information</p>
+<p><strong>Interpretation:</strong>
+- Low entropy (&lt; 1 bit): highly concentrated, predictable
+- Medium entropy (1-3 bits): moderate diversity
+- High entropy (&gt; 3 bits): high diversity, hard to predict</p>
+<p><strong>Example:</strong>
+- Uniform distribution over 8 values: <span class="arithmatex">\(H = \log_2 8 = 3\)</span> bits
+- One value 90%, others 10%/9: <span class="arithmatex">\(H \approx 0.57\)</span> bits</p>
+<h3 id="gini-impurity">Gini Impurity</h3>
+<p>Measures the <strong>probability of misclassification</strong> if labels were assigned randomly according to the distribution:</p>
+<div class="arithmatex">\[
+\text{Gini}(X) = 1 - \sum_{v} p(v)^2
+\]</div>
+<p><strong>Properties:</strong>
+- <span class="arithmatex">\(\text{Gini}(X) = 0\)</span> if one value (no impurity)
+- <span class="arithmatex">\(\text{Gini}(X) = 1 - 1/d\)</span> if uniform over <span class="arithmatex">\(d\)</span> values
+- Range: <span class="arithmatex">\([0, 1)\)</span></p>
+<p><strong>Interpretation:</strong>
+- Low Gini (&lt; 0.2): concentrated distribution
+- Medium Gini (0.2-0.6): moderate spread
+- High Gini (&gt; 0.6): high diversity</p>
+<p><strong>Use in ML:</strong> Decision trees use Gini impurity for splitting criteria.</p>
+<h3 id="diversity-ratio">Diversity Ratio</h3>
+<p>Simple measure of uniqueness:</p>
+<div class="arithmatex">\[
+D = \frac{d}{n}
+\]</div>
+<p>where <span class="arithmatex">\(d\)</span> = distinct count, <span class="arithmatex">\(n\)</span> = total count.</p>
+<p><strong>Interpretation:</strong>
+- <span class="arithmatex">\(D \to 0\)</span>: low diversity (many repeats)
+- <span class="arithmatex">\(D \to 1\)</span>: high diversity (mostly unique)</p>
+<p><strong>Special cases:</strong>
+- <span class="arithmatex">\(D = 1\)</span>: all values unique (e.g., primary keys)
+- <span class="arithmatex">\(D = 1/n\)</span>: all values identical</p>
+<h3 id="concentration-ratio">Concentration Ratio</h3>
+<p>Fraction of observations in the top <span class="arithmatex">\(k\)</span> values:</p>
+<div class="arithmatex">\[
+CR_k = \frac{\sum_{i=1}^{k} f(v_i)}{n}
+\]</div>
+<p>where <span class="arithmatex">\(v_1, v_2, \ldots\)</span> are values sorted by frequency (descending).</p>
+<p><strong>Example:</strong> <span class="arithmatex">\(CR_5 = 0.80\)</span> means top 5 values account for 80% of data.</p>
+<p><strong>Interpretation:</strong>
+- High <span class="arithmatex">\(CR_k\)</span>: distribution dominated by few values
+- Low <span class="arithmatex">\(CR_k\)</span>: distribution spread across many values</p>
+<h3 id="most-common-ratio">Most Common Ratio</h3>
+<p>Dominance of the single most frequent value:</p>
+<div class="arithmatex">\[
+MCR = \frac{f(v_{\max})}{n} = p(v_{\max})
+\]</div>
+<p><strong>Interpretation:</strong>
+- MCR &gt; 0.9: highly dominant category (nearly constant)
+- MCR &lt; 0.1: no dominant category (high diversity)</p>
+<h2 id="streaming-algorithms">Streaming Algorithms</h2>
+<h3 id="misra-gries-algorithm-for-top-k">Misra-Gries Algorithm for Top-K</h3>
+<p>Finds the <span class="arithmatex">\(k\)</span> most frequent items in a stream using <strong>O(k) space</strong> with <strong>frequency guarantees</strong>.</p>
+<p><strong>Algorithm:</strong></p>
+<ol>
+<li><strong>Initialize:</strong> empty dictionary <span class="arithmatex">\(M\)</span> (max size <span class="arithmatex">\(k\)</span>)</li>
+<li><strong>For each value <span class="arithmatex">\(v\)</span>:</strong></li>
+<li>If <span class="arithmatex">\(v \in M\)</span>: increment <span class="arithmatex">\(M[v]\)</span></li>
+<li>Else if <span class="arithmatex">\(|M| &lt; k\)</span>: add <span class="arithmatex">\(M[v] = 1\)</span></li>
+<li>Else: decrement all counts in <span class="arithmatex">\(M\)</span>; remove zeros</li>
+<li><strong>Output:</strong> items in <span class="arithmatex">\(M\)</span> with estimated counts</li>
+</ol>
+<p><strong>Guarantee:</strong> For any value <span class="arithmatex">\(v\)</span> with true frequency <span class="arithmatex">\(f(v)\)</span>:
+- If <span class="arithmatex">\(f(v) &gt; n/k\)</span>, then <span class="arithmatex">\(v\)</span> is in output
+- Estimated frequency within <span class="arithmatex">\(n/k\)</span> of true frequency</p>
+<p><strong>Space complexity:</strong> <span class="arithmatex">\(O(k)\)</span><br />
+<strong>Update complexity:</strong> <span class="arithmatex">\(O(k)\)</span> worst-case, <span class="arithmatex">\(O(1)\)</span> amortized</p>
+<p><strong>Mergeable:</strong> Yes (sum counters from multiple streams)</p>
+<p><strong>Example:</strong> <span class="arithmatex">\(k=50\)</span>, <span class="arithmatex">\(n=1,000,000\)</span>
+- Guaranteed to find all items with frequency &gt; 20,000
+- Frequency estimates within ±20,000</p>
+<p><strong>Reference:</strong> Misra, J., Gries, D. (1982), "Finding repeated elements", <em>Science of Computer Programming</em>, 2(2): 143–152.</p>
+<h3 id="kmv-sketch-for-distinct-count">KMV Sketch for Distinct Count</h3>
+<p>Estimates cardinality using <span class="arithmatex">\(k\)</span> minimum hash values.</p>
+<p><strong>Algorithm:</strong></p>
+<ol>
+<li><strong>Initialize:</strong> empty set <span class="arithmatex">\(S\)</span> (max size <span class="arithmatex">\(k\)</span>)</li>
+<li><strong>For each value <span class="arithmatex">\(v\)</span>:</strong></li>
+<li>Compute hash <span class="arithmatex">\(h(v) \in [0,1]\)</span></li>
+<li>If <span class="arithmatex">\(|S| &lt; k\)</span> or <span class="arithmatex">\(h(v) &lt; \max(S)\)</span>:<ul>
+<li>Add <span class="arithmatex">\(h(v)\)</span> to <span class="arithmatex">\(S\)</span></li>
+<li>If <span class="arithmatex">\(|S| &gt; k\)</span>: remove <span class="arithmatex">\(\max(S)\)</span></li>
+</ul>
+</li>
+<li><strong>Estimate:</strong></li>
+</ol>
+<div class="arithmatex">\[
+\hat{d} = \frac{k-1}{x_k}
+\]</div>
+<p>where <span class="arithmatex">\(x_k = \max(S)\)</span> is the <span class="arithmatex">\(k\)</span>-th smallest hash.</p>
+<p><strong>Error bound:</strong></p>
+<div class="arithmatex">\[
+\text{Relative error} \approx \frac{1}{\sqrt{k}}
+\]</div>
+<p><strong>Space:</strong> <span class="arithmatex">\(O(k)\)</span><br />
+<strong>Update:</strong> <span class="arithmatex">\(O(\log k)\)</span> (heap operations)<br />
+<strong>Mergeable:</strong> Yes (union of sets)</p>
+<p><strong>Example:</strong> <span class="arithmatex">\(k=2048\)</span>
+- Error: ~2.2% (95% confidence)
+- Space: ~16 KB (assuming 64-bit hashes)</p>
+<p><strong>Reference:</strong> Bar-Yossef, Z. et al. (2002), "Counting Distinct Elements in a Data Stream", <em>RANDOM</em>.</p>
+<h3 id="space-saving-algorithm-alternative">Space-Saving Algorithm (Alternative)</h3>
+<p>Maintains top-k with guaranteed error bounds:</p>
+<p><strong>Error bound:</strong> Estimated frequency within <span class="arithmatex">\(\epsilon n\)</span> where <span class="arithmatex">\(\epsilon = 1/k\)</span></p>
+<p><strong>Advantage over Misra-Gries:</strong> Tighter worst-case bounds, better for skewed distributions.</p>
+<p><strong>Reference:</strong> Metwally, A., Agrawal, D., El Abbadi, A. (2005), "Efficient Computation of Frequent and Top-k Elements in Data Streams", <em>ICDT</em>.</p>
+<h2 id="string-analysis">String Analysis</h2>
+<h3 id="length-statistics">Length Statistics</h3>
+<p>For string values, track:</p>
+<p><strong>Mean length:</strong></p>
+<div class="arithmatex">\[
+\bar{L} = \frac{1}{n} \sum_{i=1}^{n} |x_i|
+\]</div>
+<p>where <span class="arithmatex">\(|x_i|\)</span> is the character count of string <span class="arithmatex">\(x_i\)</span>.</p>
+<p><strong>P90 length:</strong> 90th percentile of lengths (via reservoir sampling)</p>
+<p><strong>Length distribution:</strong> Histogram of string lengths</p>
+<p><strong>Use cases:</strong>
+- Detect outliers (abnormally long strings)
+- Validate constraints (max length)
+- Estimate storage requirements</p>
+<h3 id="empty-strings">Empty Strings</h3>
+<p>Count of strings that are:
+- Empty: <code>""</code>
+- Whitespace-only: match <code>/^\s*$/</code>
+- NULL vs. empty distinction</p>
+<p><strong>Formula:</strong></p>
+<div class="arithmatex">\[
+n_{\text{empty}} = |\{i : x_i = "" \text{ or } x_i \text{ matches } /^\s*$/\}|
+\]</div>
+<h3 id="case-variants">Case Variants</h3>
+<p>Estimate distinct count after case normalization:</p>
+<div class="arithmatex">\[
+d_{\text{lower}} = |\{v.\text{lower}() : v \in \text{values}\}|
+\]</div>
+<p><strong>Interpretation:</strong>
+- <span class="arithmatex">\(d_{\text{lower}} &lt; d\)</span>: case variants present (e.g., "USA", "usa")
+- <span class="arithmatex">\(d_{\text{lower}} = d\)</span>: no case variants</p>
+<h3 id="trim-variants">Trim Variants</h3>
+<p>Estimate distinct count after removing leading/trailing whitespace:</p>
+<div class="arithmatex">\[
+d_{\text{trim}} = |\{v.\text{strip}() : v \in \text{values}\}|
+\]</div>
+<p><strong>Interpretation:</strong>
+- <span class="arithmatex">\(d_{\text{trim}} &lt; d\)</span>: whitespace variants present
+- <span class="arithmatex">\(d_{\text{trim}} = d\)</span>: no trim variants</p>
+<h2 id="chi-square-uniformity-test">Chi-Square Uniformity Test</h2>
+<p>Test if the distribution is uniform (all categories equally likely).</p>
+<p><strong>Null hypothesis:</strong> <span class="arithmatex">\(p(v_1) = p(v_2) = \cdots = p(v_d) = 1/d\)</span></p>
+<p><strong>Test statistic:</strong></p>
+<div class="arithmatex">\[
+\chi^2 = \sum_{i=1}^{d} \frac{(f(v_i) - E)^2}{E}
+\]</div>
+<p>where <span class="arithmatex">\(E = n/d\)</span> is the expected frequency under uniformity.</p>
+<p><strong>Distribution under <span class="arithmatex">\(H_0\)</span>:</strong> <span class="arithmatex">\(\chi^2_{d-1}\)</span> (chi-square with <span class="arithmatex">\(d-1\)</span> degrees of freedom)</p>
+<p><strong>P-value:</strong> <span class="arithmatex">\(P(\chi^2_{d-1} &gt; \chi^2_{\text{obs}})\)</span></p>
+<p><strong>Interpretation:</strong>
+- Small p-value (&lt; 0.05): reject uniformity (distribution is skewed)
+- Large p-value: consistent with uniform distribution</p>
+<div class="admonition note">
+<p class="admonition-title">Not implemented in current version</p>
+<p>Chi-square test is planned for future release.</p>
+</div>
+<h2 id="cardinality-categories">Cardinality Categories</h2>
+<p>Classify categorical variables by distinct count:</p>
+<table>
+<thead>
+<tr>
+<th>Category</th>
+<th>Distinct Count</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Boolean-like</strong></td>
+<td>2-3</td>
+<td>Yes/No, True/False/Unknown</td>
+</tr>
+<tr>
+<td><strong>Low cardinality</strong></td>
+<td>4-20</td>
+<td>Status codes, categories</td>
+</tr>
+<tr>
+<td><strong>Medium cardinality</strong></td>
+<td>21-100</td>
+<td>US states, countries</td>
+</tr>
+<tr>
+<td><strong>High cardinality</strong></td>
+<td>101-10,000</td>
+<td>Zip codes, product IDs</td>
+</tr>
+<tr>
+<td><strong>Very high cardinality</strong></td>
+<td>&gt; 10,000</td>
+<td>User IDs, URLs, emails</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Recommended actions:</strong>
+- <strong>Low cardinality:</strong> Show all values in report
+- <strong>High cardinality:</strong> Show top-k only, estimate distinct
+- <strong>Very high cardinality:</strong> Consider as identifier (unique key)</p>
+<h2 id="computational-complexity">Computational Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Time</th>
+<th>Space</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Misra-Gries</strong></td>
+<td><span class="arithmatex">\(O(nk)\)</span> worst, <span class="arithmatex">\(O(n)\)</span> amortized</td>
+<td><span class="arithmatex">\(O(k)\)</span></td>
+<td>Top-k values</td>
+</tr>
+<tr>
+<td><strong>KMV distinct</strong></td>
+<td><span class="arithmatex">\(O(n \log k)\)</span></td>
+<td><span class="arithmatex">\(O(k)\)</span></td>
+<td>Distinct count</td>
+</tr>
+<tr>
+<td><strong>Entropy</strong></td>
+<td><span class="arithmatex">\(O(n + d)\)</span></td>
+<td><span class="arithmatex">\(O(d)\)</span></td>
+<td>From frequency table</td>
+</tr>
+<tr>
+<td><strong>String lengths</strong></td>
+<td><span class="arithmatex">\(O(n)\)</span></td>
+<td><span class="arithmatex">\(O(k)\)</span></td>
+<td>Reservoir sample</td>
+</tr>
+<tr>
+<td><strong>Exact distinct</strong></td>
+<td><span class="arithmatex">\(O(n)\)</span></td>
+<td><span class="arithmatex">\(O(d)\)</span></td>
+<td>Hash set</td>
+</tr>
+</tbody>
+</table>
+<h2 id="configuration">Configuration</h2>
+<p>Control categorical analysis via <code>ReportConfig</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Top-k size (Misra-Gries)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">top_k_size</span> <span class="o">=</span> <span class="mi">50</span>  <span class="c1"># Default</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Distinct count sketch size (KMV)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">uniques_sketch_size</span> <span class="o">=</span> <span class="mi">2_048</span>  <span class="c1"># Default</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># String length sample size</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># (Not separately configurable, uses numeric_sample_size)</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="c1"># Enable/disable case variants</span>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1"># (Always enabled, no toggle)</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a><span class="c1"># Enable/disable trim variants</span>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># (Always enabled, no toggle)</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="implementation-details">Implementation Details</h2>
+<h3 id="categoricalaccumulator-class">CategoricalAccumulator Class</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">CategoricalAccumulator</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">CategoricalConfig</span><span class="p">):</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">missing</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="c1"># Top-k values</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_topk</span> <span class="o">=</span> <span class="n">MisraGries</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">top_k_size</span><span class="p">)</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="c1"># Distinct count</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_uniques</span> <span class="o">=</span> <span class="n">KMV</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">uniques_sketch_size</span><span class="p">)</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_uniques_lower</span> <span class="o">=</span> <span class="n">KMV</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">uniques_sketch_size</span><span class="p">)</span>  <span class="c1"># Case-insensitive</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_uniques_strip</span> <span class="o">=</span> <span class="n">KMV</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">uniques_sketch_size</span><span class="p">)</span>  <span class="c1"># Trimmed</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>        <span class="c1"># String lengths</span>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_len_sum</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_len_n</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_len_sample</span> <span class="o">=</span> <span class="n">ReservoirSampler</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">length_sample_size</span><span class="p">)</span>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>        <span class="c1"># Special values</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_empty_count</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Update with chunk of values&quot;&quot;&quot;</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>        <span class="c1"># Filter out missing</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>        <span class="c1"># Update top-k</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>        <span class="c1"># Update distinct sketches (original, lower, strip)</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>        <span class="c1"># Track string lengths</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>        <span class="c1"># Count empty strings</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>        <span class="k">pass</span>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CategoricalSummary</span><span class="p">:</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute final statistics&quot;&quot;&quot;</span>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>        <span class="c1"># Get top values from Misra-Gries</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>        <span class="c1"># Estimate distinct from KMV</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>        <span class="c1"># Compute entropy and Gini</span>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>        <span class="c1"># Compute string length stats</span>
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>        <span class="k">return</span> <span class="n">CategoricalSummary</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="validation">Validation</h2>
+<p>PySuricata validates categorical algorithms:</p>
+<ul>
+<li><strong>Exact vs approximate</strong>: Compare KMV estimate to exact count (small datasets)</li>
+<li><strong>Top-k correctness</strong>: Verify all items with <span class="arithmatex">\(f &gt; n/k\)</span> are found</li>
+<li><strong>Entropy bounds</strong>: Check <span class="arithmatex">\(0 \le H(X) \le \log_2 d\)</span></li>
+<li><strong>Gini bounds</strong>: Check <span class="arithmatex">\(0 \le \text{Gini}(X) &lt; 1\)</span></li>
+<li><strong>Mergeability</strong>: Verify merge = concatenate (for Misra-Gries, KMV)</li>
+</ul>
+<h2 id="examples">Examples</h2>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="s2">&quot;country&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;USA&quot;</span><span class="p">,</span> <span class="s2">&quot;UK&quot;</span><span class="p">,</span> <span class="s2">&quot;USA&quot;</span><span class="p">,</span> <span class="s2">&quot;DE&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;USA&quot;</span><span class="p">,</span> <span class="s2">&quot;FR&quot;</span><span class="p">]</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">})</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">report</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="high-cardinality-column">High-Cardinality Column</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Column with 10,000 unique values</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="s2">&quot;user_id&quot;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;user_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100_000</span><span class="p">)]</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="p">})</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">top_k_size</span> <span class="o">=</span> <span class="mi">100</span>  <span class="c1"># Show top 100</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">uniques_sketch_size</span> <span class="o">=</span> <span class="mi">4_096</span>  <span class="c1"># More accurate distinct</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="access-statistics">Access Statistics</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">country_stats</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">][</span><span class="s2">&quot;country&quot;</span><span class="p">]</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Distinct: </span><span class="si">{</span><span class="n">country_stats</span><span class="p">[</span><span class="s1">&#39;distinct&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Top value: </span><span class="si">{</span><span class="n">country_stats</span><span class="p">[</span><span class="s1">&#39;top_values&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Entropy: </span><span class="si">{</span><span class="n">country_stats</span><span class="p">[</span><span class="s1">&#39;entropy&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2"> bits&quot;</span><span class="p">)</span>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Gini: </span><span class="si">{</span><span class="n">country_stats</span><span class="p">[</span><span class="s1">&#39;gini&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="interpreting-results">Interpreting Results</h2>
+<h3 id="high-entropy">High Entropy</h3>
+<p><span class="arithmatex">\(H(X) &gt; 5\)</span> bits suggests:
+- Many distinct values (&gt; 32)
+- Fairly uniform distribution
+- High information content
+- Possibly high cardinality (consider as identifier)</p>
+<h3 id="low-entropy">Low Entropy</h3>
+<p><span class="arithmatex">\(H(X) &lt; 1\)</span> bit suggests:
+- Few distinct values (&lt; 4 effective)
+- Skewed distribution (one value dominates)
+- Low information content
+- Consider as low-cardinality categorical</p>
+<h3 id="high-gini">High Gini</h3>
+<p><span class="arithmatex">\(\text{Gini} &gt; 0.7\)</span> suggests:
+- Values well-distributed
+- No single dominant category
+- Good for stratification</p>
+<h3 id="low-gini">Low Gini</h3>
+<p><span class="arithmatex">\(\text{Gini} &lt; 0.2\)</span> suggests:
+- One or few values dominate
+- Imbalanced distribution
+- Consider as nearly constant column</p>
+<h2 id="special-cases">Special Cases</h2>
+<h3 id="all-unique-primary-key">All Unique (Primary Key)</h3>
+<ul>
+<li>Distinct count <span class="arithmatex">\(d = n\)</span></li>
+<li>Entropy <span class="arithmatex">\(H = \log_2 n\)</span> (maximum)</li>
+<li>Diversity ratio <span class="arithmatex">\(D = 1.0\)</span></li>
+<li>Top-k meaningless (all have count 1)</li>
+</ul>
+<p><strong>Recommendation:</strong> Flag as identifier, exclude from analysis.</p>
+<h3 id="nearly-constant">Nearly Constant</h3>
+<ul>
+<li>Distinct count <span class="arithmatex">\(d = 2\)</span> with <span class="arithmatex">\(p_1 &gt; 0.99\)</span></li>
+<li>Entropy <span class="arithmatex">\(H &lt; 0.1\)</span> bits</li>
+<li>Gini <span class="arithmatex">\(&lt; 0.02\)</span></li>
+</ul>
+<p><strong>Recommendation:</strong> Consider removing (low variance).</p>
+<h3 id="many-empty-strings">Many Empty Strings</h3>
+<ul>
+<li>Empty count &gt; 10% of non-null</li>
+</ul>
+<p><strong>Possible data quality issue:</strong> Missing values encoded as empty strings.</p>
+<h2 id="references">References</h2>
+<ol>
+<li>
+<p><strong>Misra, J., Gries, D. (1982)</strong>, "Finding repeated elements", <em>Science of Computer Programming</em>, 2(2): 143–152.</p>
+</li>
+<li>
+<p><strong>Bar-Yossef, Z. et al. (2002)</strong>, "Counting Distinct Elements in a Data Stream", <em>RANDOM</em>.</p>
+</li>
+<li>
+<p><strong>Metwally, A., Agrawal, D., El Abbadi, A. (2005)</strong>, "Efficient Computation of Frequent and Top-k Elements in Data Streams", <em>ICDT</em>.</p>
+</li>
+<li>
+<p><strong>Shannon, C.E. (1948)</strong>, "A Mathematical Theory of Communication", <em>Bell System Technical Journal</em>, 27: 379–423.</p>
+</li>
+<li>
+<p><strong>Breiman, L. et al. (1984)</strong>, <em>Classification and Regression Trees</em>, Wadsworth.</p>
+</li>
+<li>
+<p><strong>Wikipedia: Entropy (information theory)</strong> - <a href="https://en.wikipedia.org/wiki/Entropy_(information_theory)">Link</a></p>
+</li>
+<li>
+<p><strong>Wikipedia: Decision tree learning</strong> - <a href="https://en.wikipedia.org/wiki/Decision_tree_learning">Link</a></p>
+</li>
+</ol>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../numeric/">Numeric Analysis</a> - Numeric variables</li>
+<li><a href="../../algorithms/sketches/">Sketch Algorithms</a> - KMV, Misra-Gries deep dive</li>
+<li><a href="../../analytics/quality/">Data Quality</a> - Quality metrics</li>
+<li><a href="../../configuration/">Configuration Guide</a> - All parameters</li>
+</ul>
+<hr />
+<p><em>Last updated: 2025-10-12</em></p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/alvarodiez20" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.tracking", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "toc.integrate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>

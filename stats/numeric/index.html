@@ -1,0 +1,2500 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Complete mathematical formulas, algorithms, and implementation details for numerical statistics in pysuricata">
+      
+      
+      
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/stats/numeric/">
+      
+      
+        <link rel="prev" href="../overview/">
+      
+      
+        <link rel="next" href="../categorical/">
+      
+      
+      <link rel="icon" href="../../assets/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>Numeric Variable Analysis - PySuricata</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2a3383ac.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="light-green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#numeric-variable-analysis" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="PySuricata" class="md-header__button md-logo" aria-label="PySuricata" data-md-component="logo">
+      
+  <img src="../../assets/favicon.ico" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PySuricata
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Numeric Variable Analysis
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="light-green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="light-green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/alvarodiez20/pysuricata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    alvarodiez20/pysuricata
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../why-pysuricata/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../usage/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Technical Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../architecture/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Architecture
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../about-suricatas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="PySuricata" class="md-nav__button md-logo" aria-label="PySuricata" data-md-component="logo">
+      
+  <img src="../../assets/favicon.ico" alt="logo">
+
+    </a>
+    PySuricata
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/alvarodiez20/pysuricata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    alvarodiez20/pysuricata
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../why-pysuricata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Why PySuricata?
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quick Start
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Examples Gallery
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Basic Usage
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Advanced Features
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Tips
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Technical Reference
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Technical Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Statistical Methods
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_2">
+            <span class="md-nav__icon md-icon"></span>
+            Statistical Methods
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Numeric Analysis
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Numeric Analysis
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary-statistics-provided" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary Statistics Provided
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mathematical-definitions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Mathematical Definitions
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Mathematical Definitions">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#notation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notation
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#central-tendency" class="md-nav__link">
+    <span class="md-ellipsis">
+      Central Tendency
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#dispersion" class="md-nav__link">
+    <span class="md-ellipsis">
+      Dispersion
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#shape-statistics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Shape Statistics
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quantiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quantiles
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#confidence-intervals" class="md-nav__link">
+    <span class="md-ellipsis">
+      Confidence Intervals
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outlier-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      Outlier Detection
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Streaming Algorithms
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Streaming Algorithms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#welfords-online-algorithm" class="md-nav__link">
+    <span class="md-ellipsis">
+      Welford's Online Algorithm
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#higher-moments-skewness-kurtosis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Higher Moments (Skewness, Kurtosis)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pebays-parallel-merge-formulas" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pébay's Parallel Merge Formulas
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quantile-estimation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quantile Estimation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quantile Estimation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exact-quantiles-reservoir-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exact Quantiles (Reservoir Sampling)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#approximate-quantiles-kll-sketch" class="md-nav__link">
+    <span class="md-ellipsis">
+      Approximate Quantiles (KLL Sketch)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#t-digest-alternative" class="md-nav__link">
+    <span class="md-ellipsis">
+      T-Digest (Alternative)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#histogram-construction" class="md-nav__link">
+    <span class="md-ellipsis">
+      Histogram Construction
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Histogram Construction">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#freedman-diaconis-rule" class="md-nav__link">
+    <span class="md-ellipsis">
+      Freedman-Diaconis Rule
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sturges-rule-alternative" class="md-nav__link">
+    <span class="md-ellipsis">
+      Sturges' Rule (Alternative)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scotts-rule-alternative" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scott's Rule (Alternative)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#distinct-count-estimation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Distinct Count Estimation
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Distinct Count Estimation">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#kmv-k-minimum-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      KMV (K-Minimum Values)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#hyperloglog-alternative" class="md-nav__link">
+    <span class="md-ellipsis">
+      HyperLogLog (Alternative)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#missing-nan-and-inf-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Missing, NaN, and Inf Handling
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#computational-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      Computational Complexity
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#implementation-details" class="md-nav__link">
+    <span class="md-ellipsis">
+      Implementation Details
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Implementation Details">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#numericaccumulator-class" class="md-nav__link">
+    <span class="md-ellipsis">
+      NumericAccumulator Class
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Validation
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      Examples
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Examples">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#basic-usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      Basic Usage
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#streaming-large-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Streaming Large Dataset
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#access-statistics-programmatically" class="md-nav__link">
+    <span class="md-ellipsis">
+      Access Statistics Programmatically
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      References
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../categorical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Categorical Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../datetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    DateTime Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../boolean/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Boolean Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Advanced Analytics
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Analytics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/correlations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Correlations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/missing-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Missing Values
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/duplicates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Duplicate Detection
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../analytics/quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Data Quality
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Algorithms
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Algorithms
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../algorithms/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Streaming Statistics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../algorithms/sketches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sketch Algorithms
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../algorithms/sampling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reservoir Sampling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    About
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            About
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../about-suricatas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    About Suricatas
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="numeric-variable-analysis">Numeric Variable Analysis</h1>
+<p>This page provides comprehensive technical documentation for how pysuricata profiles and summarizes numerical (continuous and discrete) columns at scale using proven streaming algorithms with mathematical guarantees.</p>
+<div class="admonition tip">
+<p class="admonition-title">Audience</p>
+<p>Designed for users who want to <strong>understand and trust</strong> the numbers in the HTML report, as well as contributors who need to <strong>modify</strong> or <strong>extend</strong> the accumulator implementations.</p>
+</div>
+<h2 id="overview">Overview</h2>
+<p>PySuricata treats a <strong>numerical variable</strong> as any column with machine type among <code>{int8, int16, int32, int64, float32, float64, decimal}</code> (nullable). Values may include <code>NaN</code>, <code>±Inf</code>, and missing markers, all handled appropriately.</p>
+<p>All statistics are computed <strong>incrementally</strong> via <em>stateful accumulators</em> using single-pass streaming algorithms, enabling processing of datasets larger than available RAM.</p>
+<h2 id="summary-statistics-provided">Summary Statistics Provided</h2>
+<p>For each numeric column, the report includes:</p>
+<ul>
+<li><strong>Count</strong>: non-null values, missing percentage</li>
+<li><strong>Central tendency</strong>: mean, median</li>
+<li><strong>Dispersion</strong>: variance, standard deviation, IQR, MAD, coefficient of variation</li>
+<li><strong>Shape</strong>: skewness, excess kurtosis, bimodality hints</li>
+<li><strong>Range</strong>: min, max, range</li>
+<li><strong>Quantiles</strong>: configurable set (default: 0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99)</li>
+<li><strong>Outliers</strong>: IQR fences, z-score, MAD-based detection</li>
+<li><strong>Distribution</strong>: histogram with adaptive binning</li>
+<li><strong>Special values</strong>: zeros, negatives, infinities</li>
+<li><strong>Extremes</strong>: min/max values with row indices</li>
+<li><strong>Confidence intervals</strong>: 95% CI for mean</li>
+<li><strong>Correlations</strong>: top correlations with other numeric columns (optional)</li>
+</ul>
+<h2 id="mathematical-definitions">Mathematical Definitions</h2>
+<h3 id="notation">Notation</h3>
+<p>Let <span class="arithmatex">\(x_1, x_2, \ldots, x_n\)</span> be the non-missing, finite observations for a column.</p>
+<h3 id="central-tendency">Central Tendency</h3>
+<p><strong>Mean (arithmetic average):</strong></p>
+<div class="arithmatex">\[
+\bar{x} = \frac{1}{n}\sum_{i=1}^{n} x_i
+\]</div>
+<p><strong>Median:</strong></p>
+<p>The value <span class="arithmatex">\(m\)</span> such that at least half the observations are <span class="arithmatex">\(\le m\)</span> and at least half are <span class="arithmatex">\(\ge m\)</span>. For even <span class="arithmatex">\(n\)</span>, typically the average of the two middle values.</p>
+<div class="arithmatex">\[
+\text{median} = 
+\begin{cases}
+x_{(n+1)/2} &amp; \text{if } n \text{ odd} \\
+\frac{x_{n/2} + x_{n/2+1}}{2} &amp; \text{if } n \text{ even}
+\end{cases}
+\]</div>
+<p>where <span class="arithmatex">\(x_{(k)}\)</span> denotes the <span class="arithmatex">\(k\)</span>-th order statistic (sorted values).</p>
+<h3 id="dispersion">Dispersion</h3>
+<p><strong>Sample variance (unbiased):</strong></p>
+<div class="arithmatex">\[
+s^2 = \frac{1}{n-1}\sum_{i=1}^{n} (x_i-\bar{x})^2
+\]</div>
+<p><strong>Standard deviation:</strong></p>
+<div class="arithmatex">\[
+s = \sqrt{s^2}
+\]</div>
+<p><strong>Coefficient of variation (CV):</strong></p>
+<div class="arithmatex">\[
+\text{CV} = \frac{s}{|\bar{x}|} \times 100\%
+\]</div>
+<p>Measures relative variability; useful for comparing dispersion across variables with different scales.</p>
+<p><strong>Interquartile range (IQR):</strong></p>
+<div class="arithmatex">\[
+\text{IQR} = Q_{0.75} - Q_{0.25}
+\]</div>
+<p>Robust measure of spread, resistant to outliers.</p>
+<p><strong>Median absolute deviation (MAD):</strong></p>
+<div class="arithmatex">\[
+\text{MAD} = \text{median}(|x_i - \text{median}(x)|)
+\]</div>
+<p>Highly robust measure of variability; often preferred over standard deviation for non-normal data.</p>
+<h3 id="shape-statistics">Shape Statistics</h3>
+<p><strong>Skewness (Fisher-Pearson, <span class="arithmatex">\(g_1\)</span>):</strong></p>
+<p>Measures asymmetry of the distribution.</p>
+<div class="arithmatex">\[
+g_1 = \frac{n}{(n-1)(n-2)} \cdot \frac{m_3}{s^3}
+\]</div>
+<p>where <span class="arithmatex">\(m_3 = \frac{1}{n}\sum_{i=1}^{n}(x_i-\bar{x})^3\)</span> is the third central moment.</p>
+<p><strong>Interpretation:</strong>
+- <span class="arithmatex">\(g_1 = 0\)</span>: symmetric
+- <span class="arithmatex">\(g_1 &gt; 0\)</span>: right-skewed (long right tail)
+- <span class="arithmatex">\(g_1 &lt; 0\)</span>: left-skewed (long left tail)</p>
+<p><strong>Excess kurtosis (<span class="arithmatex">\(g_2\)</span>):</strong></p>
+<p>Measures tail heaviness relative to normal distribution.</p>
+<div class="arithmatex">\[
+g_2 = \frac{n(n+1)}{(n-1)(n-2)(n-3)} \cdot \frac{m_4}{s^4} - \frac{3(n-1)^2}{(n-2)(n-3)}
+\]</div>
+<p>where <span class="arithmatex">\(m_4 = \frac{1}{n}\sum_{i=1}^{n}(x_i-\bar{x})^4\)</span> is the fourth central moment.</p>
+<p><strong>Interpretation:</strong>
+- <span class="arithmatex">\(g_2 = 0\)</span>: normal (mesokurtic)
+- <span class="arithmatex">\(g_2 &gt; 0\)</span>: heavy tails (leptokurtic)
+- <span class="arithmatex">\(g_2 &lt; 0\)</span>: light tails (platykurtic)</p>
+<h3 id="quantiles">Quantiles</h3>
+<p><strong>Quantile function <span class="arithmatex">\(Q(p)\)</span>:</strong></p>
+<p>For probability <span class="arithmatex">\(p \in [0,1]\)</span>, the <span class="arithmatex">\(p\)</span>-quantile is:</p>
+<div class="arithmatex">\[
+Q(p) = \inf\{x : F(x) \ge p\}
+\]</div>
+<p>where <span class="arithmatex">\(F(x) = \mathbb{P}(X \le x)\)</span> is the cumulative distribution function.</p>
+<p><strong>Common quantiles:</strong>
+- <span class="arithmatex">\(Q(0.25)\)</span>: first quartile (Q1)
+- <span class="arithmatex">\(Q(0.50)\)</span>: median (Q2)
+- <span class="arithmatex">\(Q(0.75)\)</span>: third quartile (Q3)</p>
+<h3 id="confidence-intervals">Confidence Intervals</h3>
+<p><strong>95% confidence interval for mean:</strong></p>
+<p>Assuming approximate normality (or large <span class="arithmatex">\(n\)</span> by CLT):</p>
+<div class="arithmatex">\[
+\text{CI}_{0.95}(\bar{x}) = \bar{x} \pm t_{n-1,0.975} \cdot \frac{s}{\sqrt{n}}
+\]</div>
+<p>where <span class="arithmatex">\(t_{n-1,0.975}\)</span> is the 97.5th percentile of Student's t-distribution with <span class="arithmatex">\(n-1\)</span> degrees of freedom.</p>
+<p>For large <span class="arithmatex">\(n\)</span>, <span class="arithmatex">\(t_{n-1,0.975} \approx 1.96\)</span>.</p>
+<h3 id="outlier-detection">Outlier Detection</h3>
+<p><strong>IQR fences (Tukey's method):</strong></p>
+<p>Lower fence:</p>
+<div class="arithmatex">\[
+L = Q_{0.25} - 1.5 \cdot \text{IQR}
+\]</div>
+<p>Upper fence:</p>
+<div class="arithmatex">\[
+U = Q_{0.75} + 1.5 \cdot \text{IQR}
+\]</div>
+<p>Values outside <span class="arithmatex">\([L, U]\)</span> are flagged as outliers. For "extreme" outliers, use multiplier 3.0 instead of 1.5.</p>
+<p><strong>Modified z-score (robust):</strong></p>
+<div class="arithmatex">\[
+M_i = 0.6745 \cdot \frac{x_i - \text{median}(x)}{\text{MAD}}
+\]</div>
+<p>Flag if <span class="arithmatex">\(|M_i| &gt; 3.5\)</span>. The constant 0.6745 makes MAD consistent with standard deviation under normality.</p>
+<p><strong>Classical z-score:</strong></p>
+<div class="arithmatex">\[
+Z_i = \frac{x_i - \bar{x}}{s}
+\]</div>
+<p>Flag if <span class="arithmatex">\(|Z_i| &gt; 3\)</span>. Sensitive to outliers themselves (not robust).</p>
+<h2 id="streaming-algorithms">Streaming Algorithms</h2>
+<h3 id="welfords-online-algorithm">Welford's Online Algorithm</h3>
+<p>For computing mean and variance in a <strong>single pass</strong> with <strong>O(1) memory</strong> and <strong>numerical stability</strong>.</p>
+<p><strong>Initialization:</strong></p>
+<div class="arithmatex">\[
+n = 0, \quad \mu = 0, \quad M_2 = 0
+\]</div>
+<p><strong>Update step:</strong> for each new value <span class="arithmatex">\(x\)</span>:</p>
+<div class="arithmatex">\[
+\begin{aligned}
+n &amp;\leftarrow n + 1 \\
+\delta &amp;= x - \mu \\
+\mu &amp;\leftarrow \mu + \frac{\delta}{n} \\
+\delta_2 &amp;= x - \mu \\
+M_2 &amp;\leftarrow M_2 + \delta \cdot \delta_2
+\end{aligned}
+\]</div>
+<p><strong>Finalize:</strong></p>
+<div class="arithmatex">\[
+\text{mean} = \mu, \quad \text{variance} = \frac{M_2}{n-1}
+\]</div>
+<p><strong>Properties:</strong>
+- <strong>Numerical stability</strong>: avoids catastrophic cancellation in <span class="arithmatex">\(\sum x_i^2 - n\bar{x}^2\)</span>
+- <strong>Exact</strong>: produces same result as two-pass method (up to FP rounding)
+- <strong>Online</strong>: updates in O(1) time per value</p>
+<p><strong>Reference:</strong> Welford, B.P. (1962), "Note on a Method for Calculating Corrected Sums of Squares and Products", <em>Technometrics</em>, 4(3): 419–420.</p>
+<h3 id="higher-moments-skewness-kurtosis">Higher Moments (Skewness, Kurtosis)</h3>
+<p>Extending Welford to track <span class="arithmatex">\(M_3\)</span> and <span class="arithmatex">\(M_4\)</span>:</p>
+<p><strong>Update step:</strong></p>
+<div class="arithmatex">\[
+\begin{aligned}
+n &amp;\leftarrow n + 1 \\
+\delta &amp;= x - \mu \\
+\delta_n &amp;= \frac{\delta}{n} \\
+\delta_n^2 &amp;= \delta_n^2 \\
+\mu &amp;\leftarrow \mu + \delta_n \\
+M_4 &amp;\leftarrow M_4 + \delta \left(\delta^3 \frac{n(n-1)}{n^3} + 6\delta_n M_2 - 4\delta_n M_3\right) \\
+M_3 &amp;\leftarrow M_3 + \delta \left(\delta^2 \frac{n(n-1)}{n^2} - 3\delta_n M_2\right) \\
+M_2 &amp;\leftarrow M_2 + \delta(\delta - \delta_n)
+\end{aligned}
+\]</div>
+<p><strong>Finalize:</strong></p>
+<div class="arithmatex">\[
+\begin{aligned}
+s^2 &amp;= \frac{M_2}{n-1} \\
+g_1 &amp;= \frac{n}{(n-1)(n-2)} \cdot \frac{M_3/n}{(s^2)^{3/2}} \\
+g_2 &amp;= \frac{n(n+1)}{(n-1)(n-2)(n-3)} \cdot \frac{M_4/n}{(s^2)^2} - \frac{3(n-1)^2}{(n-2)(n-3)}
+\end{aligned}
+\]</div>
+<h3 id="pebays-parallel-merge-formulas">Pébay's Parallel Merge Formulas</h3>
+<p>To combine results from <strong>multiple chunks</strong> or <strong>parallel threads</strong>, Pébay's formulas enable <strong>exact merging</strong> of moments.</p>
+<p>Given two partial states:
+- State A: <span class="arithmatex">\((n_a, \mu_a, M_{2a}, M_{3a}, M_{4a})\)</span>
+- State B: <span class="arithmatex">\((n_b, \mu_b, M_{2b}, M_{3b}, M_{4b})\)</span></p>
+<p>Define:</p>
+<div class="arithmatex">\[
+\delta = \mu_b - \mu_a, \quad n = n_a + n_b
+\]</div>
+<p><strong>Merged state:</strong></p>
+<div class="arithmatex">\[
+\begin{aligned}
+\mu &amp;= \mu_a + \delta \cdot \frac{n_b}{n} \\
+M_2 &amp;= M_{2a} + M_{2b} + \delta^2 \cdot \frac{n_a n_b}{n} \\
+M_3 &amp;= M_{3a} + M_{3b} + \delta^3 \cdot \frac{n_a n_b (n_a - n_b)}{n^2} + 3\delta \cdot \frac{n_a M_{2b} - n_b M_{2a}}{n} \\
+M_4 &amp;= M_{4a} + M_{4b} + \delta^4 \cdot \frac{n_a n_b (n_a^2 - n_a n_b + n_b^2)}{n^3} \\
+&amp;\quad + 6\delta^2 \cdot \frac{n_a n_b}{n^2}(n_a M_{2b} + n_b M_{2a}) + 4\delta \cdot \frac{n_a M_{3b} - n_b M_{3a}}{n}
+\end{aligned}
+\]</div>
+<p><strong>Properties:</strong>
+- <strong>Associative</strong>: order of merging doesn't matter (up to FP rounding)
+- <strong>Exact</strong>: same result as single-pass over concatenated data
+- <strong>Parallelizable</strong>: enables multi-core and distributed computation</p>
+<p><strong>Reference:</strong> Pébay, P. (2008), "Formulas for Robust, One-Pass Parallel Computation of Covariances and Arbitrary-Order Statistical Moments", Sandia Report SAND2008-6212.</p>
+<h2 id="quantile-estimation">Quantile Estimation</h2>
+<h3 id="exact-quantiles-reservoir-sampling">Exact Quantiles (Reservoir Sampling)</h3>
+<p>For <strong>exact quantiles</strong>, maintain a <strong>reservoir sample</strong> of size <span class="arithmatex">\(k\)</span> (default 20,000):</p>
+<ol>
+<li>First <span class="arithmatex">\(k\)</span> values: keep all</li>
+<li>For value <span class="arithmatex">\(i &gt; k\)</span>: include with probability <span class="arithmatex">\(k/i\)</span>, replacing random existing sample</li>
+</ol>
+<p><strong>Uniform guarantee:</strong> Every subset of size <span class="arithmatex">\(k\)</span> has equal probability.</p>
+<p><strong>Quantile computation:</strong> Sort sample and compute using linear interpolation:</p>
+<div class="arithmatex">\[
+Q(p) \approx x_{(\lceil p \cdot k \rceil)}
+\]</div>
+<p><strong>Pros:</strong> Exact for small datasets, unbiased estimator<br />
+<strong>Cons:</strong> <span class="arithmatex">\(O(k)\)</span> memory, <span class="arithmatex">\(O(k \log k)\)</span> sort cost</p>
+<h3 id="approximate-quantiles-kll-sketch">Approximate Quantiles (KLL Sketch)</h3>
+<p>For massive datasets, use <strong>KLL sketch</strong> (Karnin, Lang, Liberty):</p>
+<p><strong>Properties:</strong>
+- <strong>Space:</strong> <span class="arithmatex">\(O(\frac{1}{\epsilon} \log \log \frac{1}{\delta})\)</span>
+- <strong>Error bound:</strong> <span class="arithmatex">\(\epsilon\)</span>-approximate with probability <span class="arithmatex">\(1-\delta\)</span>
+- <strong>Mergeable:</strong> Combine sketches from multiple streams</p>
+<p><strong>Example:</strong> With <span class="arithmatex">\(\epsilon=0.01\)</span>, quantiles accurate to ±1 percentile using ~1 KB memory.</p>
+<p><strong>Reference:</strong> Karnin, Z., Lang, K., Liberty, E. (2016), "Optimal Quantile Approximation in Streams", arXiv:1603.05346.</p>
+<h3 id="t-digest-alternative">T-Digest (Alternative)</h3>
+<p><strong>T-digest</strong> (Dunning &amp; Ertl) provides excellent <strong>tail accuracy</strong>:</p>
+<p><strong>Properties:</strong>
+- Better accuracy for extreme quantiles (P99, P99.9)
+- Adaptive compression
+- Mergeable</p>
+<p><strong>Reference:</strong> Dunning, T., Ertl, O. (2019), "Computing Extremely Accurate Quantiles Using t-Digests", arXiv:1902.04023.</p>
+<h2 id="histogram-construction">Histogram Construction</h2>
+<h3 id="freedman-diaconis-rule">Freedman-Diaconis Rule</h3>
+<p>Optimal bin width for histograms:</p>
+<div class="arithmatex">\[
+h = 2 \cdot \frac{\text{IQR}}{n^{1/3}}
+\]</div>
+<p>Number of bins:</p>
+<div class="arithmatex">\[
+k = \left\lceil \frac{\max - \min}{h} \right\rceil
+\]</div>
+<p><strong>Rationale:</strong> Balances bias and variance; works well for wide variety of distributions.</p>
+<h3 id="sturges-rule-alternative">Sturges' Rule (Alternative)</h3>
+<div class="arithmatex">\[
+k = \lceil \log_2 n \rceil + 1
+\]</div>
+<p>Simpler but may undersmooth for large <span class="arithmatex">\(n\)</span>.</p>
+<h3 id="scotts-rule-alternative">Scott's Rule (Alternative)</h3>
+<div class="arithmatex">\[
+h = 3.5 \cdot \frac{s}{n^{1/3}}
+\]</div>
+<p>Assumes normal distribution; similar to Freedman-Diaconis.</p>
+<h2 id="distinct-count-estimation">Distinct Count Estimation</h2>
+<p>For numeric columns with many repeated values (e.g., categorical-like integers):</p>
+<h3 id="kmv-k-minimum-values">KMV (K-Minimum Values)</h3>
+<p>Maintain the <span class="arithmatex">\(k\)</span> smallest hash values from column.</p>
+<p><strong>Estimator:</strong></p>
+<div class="arithmatex">\[
+\hat{n}_{\text{distinct}} = \frac{k-1}{x_k}
+\]</div>
+<p>where <span class="arithmatex">\(x_k\)</span> is the <span class="arithmatex">\(k\)</span>-th smallest hash (normalized to [0,1]).</p>
+<p><strong>Error bound:</strong></p>
+<div class="arithmatex">\[
+\text{Relative error} \approx \frac{1}{\sqrt{k}}
+\]</div>
+<p><strong>Example:</strong> <span class="arithmatex">\(k=2048\)</span> → ~2.2% error (95% confidence)</p>
+<p><strong>Properties:</strong>
+- <strong>Mergeable</strong>: Union of two KMV sketches
+- <strong>Space</strong>: <span class="arithmatex">\(O(k)\)</span> per column
+- <strong>Update</strong>: <span class="arithmatex">\(O(\log k)\)</span> per value</p>
+<h3 id="hyperloglog-alternative">HyperLogLog (Alternative)</h3>
+<p><strong>Space:</strong> <span class="arithmatex">\(O(\epsilon^{-2})\)</span> for relative error <span class="arithmatex">\(\epsilon\)</span><br />
+<strong>Error:</strong> Typical 2% with 1.5 KB<br />
+<strong>Standard:</strong> Redis, BigQuery, many production systems</p>
+<h2 id="missing-nan-and-inf-handling">Missing, NaN, and Inf Handling</h2>
+<ul>
+<li><strong>Missing (NULL):</strong> Excluded from moment calculations; counted separately</li>
+<li><strong>NaN (Not-a-Number):</strong> Treated as missing</li>
+<li><strong>±Inf:</strong> Excluded from moments; counted under <code>inf_count</code> and surfaced in warnings</li>
+<li><strong>Type coercion:</strong> Strings parsing to numbers counted only if parsing enabled</li>
+</ul>
+<div class="admonition warning">
+<p class="admonition-title">Edge Cases</p>
+<ul>
+<li>All-missing columns: statistics undefined (reported as <code>null</code>)</li>
+<li><span class="arithmatex">\(n &lt; 2\)</span>: variance/shape undefined</li>
+<li><span class="arithmatex">\(n &lt; 4\)</span>: kurtosis undefined</li>
+</ul>
+</div>
+<h2 id="computational-complexity">Computational Complexity</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Time</th>
+<th>Space</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Moments</strong></td>
+<td><span class="arithmatex">\(O(n)\)</span> total, <span class="arithmatex">\(O(1)\)</span> per value</td>
+<td><span class="arithmatex">\(O(1)\)</span></td>
+<td>Welford/Pébay</td>
+</tr>
+<tr>
+<td><strong>Reservoir sampling</strong></td>
+<td><span class="arithmatex">\(O(n)\)</span> total, <span class="arithmatex">\(O(1)\)</span> amortized</td>
+<td><span class="arithmatex">\(O(k)\)</span></td>
+<td><span class="arithmatex">\(k\)</span> = sample size</td>
+</tr>
+<tr>
+<td><strong>Quantiles (exact)</strong></td>
+<td><span class="arithmatex">\(O(k \log k)\)</span></td>
+<td><span class="arithmatex">\(O(k)\)</span></td>
+<td>Sort sample</td>
+</tr>
+<tr>
+<td><strong>KLL sketch</strong></td>
+<td><span class="arithmatex">\(O(n \log \log n)\)</span></td>
+<td><span class="arithmatex">\(O(\epsilon^{-1} \log \log n)\)</span></td>
+<td>Approximate</td>
+</tr>
+<tr>
+<td><strong>KMV distinct</strong></td>
+<td><span class="arithmatex">\(O(n \log k)\)</span></td>
+<td><span class="arithmatex">\(O(k)\)</span></td>
+<td>Heap operations</td>
+</tr>
+<tr>
+<td><strong>Histogram</strong></td>
+<td><span class="arithmatex">\(O(n + k)\)</span></td>
+<td><span class="arithmatex">\(O(b)\)</span></td>
+<td><span class="arithmatex">\(b\)</span> bins</td>
+</tr>
+</tbody>
+</table>
+<h2 id="configuration">Configuration</h2>
+<p>Control numeric analysis via <code>ReportConfig</code>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># Sample size for quantiles/histograms</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">numeric_sample_size</span> <span class="o">=</span> <span class="mi">20_000</span>  <span class="c1"># Default</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1"># Sketch sizes</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">uniques_sketch_size</span> <span class="o">=</span> <span class="mi">2_048</span>  <span class="c1"># KMV (default)</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">top_k_size</span> <span class="o">=</span> <span class="mi">50</span>  <span class="c1"># Top values (if tracking)</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="c1"># Quantiles to compute</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># (Not yet configurable, default: [0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99])</span>
+</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
+</span><span id="__span-0-15"><a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1"># Histogram bins</span>
+</span><span id="__span-0-16"><a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="c1"># (Automatic via Freedman-Diaconis, max 256)</span>
+</span><span id="__span-0-17"><a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>
+</span><span id="__span-0-18"><a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a><span class="c1"># Outlier detection method</span>
+</span><span id="__span-0-19"><a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a><span class="c1"># (Always computed: IQR, z-score, MAD)</span>
+</span><span id="__span-0-20"><a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>
+</span><span id="__span-0-21"><a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a><span class="c1"># Random seed for reproducibility</span>
+</span><span id="__span-0-22"><a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">random_seed</span> <span class="o">=</span> <span class="mi">42</span>
+</span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>
+</span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="implementation-details">Implementation Details</h2>
+<h3 id="numericaccumulator-class">NumericAccumulator Class</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">NumericAccumulator</span><span class="p">:</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">NumericConfig</span><span class="p">):</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">missing</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">zeros</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">negatives</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">inf</span> <span class="o">=</span> <span class="mi">0</span>
+</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>        <span class="c1"># Streaming moments</span>
+</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_moments</span> <span class="o">=</span> <span class="n">StreamingMoments</span><span class="p">()</span>
+</span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="c1"># Reservoir sample for quantiles</span>
+</span><span id="__span-1-14"><a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_sample</span> <span class="o">=</span> <span class="n">ReservoirSampler</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">sample_size</span><span class="p">)</span>
+</span><span id="__span-1-15"><a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>
+</span><span id="__span-1-16"><a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>        <span class="c1"># KMV for distinct count</span>
+</span><span id="__span-1-17"><a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_uniques</span> <span class="o">=</span> <span class="n">KMV</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">uniques_sketch_size</span><span class="p">)</span>
+</span><span id="__span-1-18"><a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>
+</span><span id="__span-1-19"><a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>        <span class="c1"># Min/max tracking</span>
+</span><span id="__span-1-20"><a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_extremes</span> <span class="o">=</span> <span class="n">ExtremeTracker</span><span class="p">()</span>
+</span><span id="__span-1-21"><a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
+</span><span id="__span-1-22"><a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+</span><span id="__span-1-23"><a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Update with chunk of values&quot;&quot;&quot;</span>
+</span><span id="__span-1-24"><a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>        <span class="c1"># Filter out missing/NaN/Inf</span>
+</span><span id="__span-1-25"><a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>        <span class="c1"># Update moments</span>
+</span><span id="__span-1-26"><a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>        <span class="c1"># Update sample</span>
+</span><span id="__span-1-27"><a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>        <span class="c1"># Update KMV</span>
+</span><span id="__span-1-28"><a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>        <span class="c1"># Track extremes</span>
+</span><span id="__span-1-29"><a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>        <span class="k">pass</span>
+</span><span id="__span-1-30"><a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>
+</span><span id="__span-1-31"><a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NumericSummary</span><span class="p">:</span>
+</span><span id="__span-1-32"><a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute final statistics&quot;&quot;&quot;</span>
+</span><span id="__span-1-33"><a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>        <span class="c1"># Compute mean, variance, skewness, kurtosis from moments</span>
+</span><span id="__span-1-34"><a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>        <span class="c1"># Compute quantiles from sample</span>
+</span><span id="__span-1-35"><a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>        <span class="c1"># Estimate distinct count from KMV</span>
+</span><span id="__span-1-36"><a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>        <span class="c1"># Build histogram</span>
+</span><span id="__span-1-37"><a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>        <span class="c1"># Detect outliers</span>
+</span><span id="__span-1-38"><a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>        <span class="k">return</span> <span class="n">NumericSummary</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="validation">Validation</h2>
+<p>PySuricata validates numeric algorithms against reference implementations:</p>
+<ul>
+<li><strong>NumPy/SciPy</strong>: Cross-check mean, variance, skewness, kurtosis on small datasets</li>
+<li><strong>Property-based tests</strong>: Invariants under concatenation (merge = single pass)</li>
+<li><strong>Scaling laws</strong>: <span class="arithmatex">\(\text{Var}(aX) = a^2 \text{Var}(X)\)</span></li>
+<li><strong>Translation laws</strong>: <span class="arithmatex">\(\text{Mean}(X+c) = \text{Mean}(X) + c\)</span></li>
+<li><strong>Numerical stability</strong>: Test with extreme values, large cancellations</li>
+</ul>
+<h2 id="examples">Examples</h2>
+<h3 id="basic-usage">Basic Usage</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">50</span><span class="p">]})</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">report</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="streaming-large-dataset">Streaming Large Dataset</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">def</span><span class="w"> </span><span class="nf">read_chunks</span><span class="p">():</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">100</span><span class="p">):</span>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>        <span class="k">yield</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;data/part-</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">.parquet&quot;</span><span class="p">)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">numeric_sample_size</span> <span class="o">=</span> <span class="mi">50_000</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">random_seed</span> <span class="o">=</span> <span class="mi">42</span>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">read_chunks</span><span class="p">(),</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</span></code></pre></div>
+<h3 id="access-statistics-programmatically">Access Statistics Programmatically</h3>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="n">amount_stats</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">][</span><span class="s2">&quot;amount&quot;</span><span class="p">]</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean: </span><span class="si">{</span><span class="n">amount_stats</span><span class="p">[</span><span class="s1">&#39;mean&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Std: </span><span class="si">{</span><span class="n">amount_stats</span><span class="p">[</span><span class="s1">&#39;std&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skewness: </span><span class="si">{</span><span class="n">amount_stats</span><span class="p">[</span><span class="s1">&#39;skewness&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<h2 id="references">References</h2>
+<ol>
+<li>
+<p><strong>Welford, B.P. (1962)</strong>, "Note on a Method for Calculating Corrected Sums of Squares and Products", <em>Technometrics</em>, 4(3): 419–420.</p>
+</li>
+<li>
+<p><strong>Pébay, P. (2008)</strong>, "Formulas for Robust, One-Pass Parallel Computation of Covariances and Arbitrary-Order Statistical Moments", Sandia Report SAND2008-6212. <a href="https://prod-ng.sandia.gov/techlib-noauth/access-control.cgi/2008/086212.pdf">PDF</a></p>
+</li>
+<li>
+<p><strong>Karnin, Z., Lang, K., Liberty, E. (2016)</strong>, "Optimal Quantile Approximation in Streams", <em>IEEE FOCS</em>. <a href="https://arxiv.org/abs/1603.05346">arXiv:1603.05346</a></p>
+</li>
+<li>
+<p><strong>Dunning, T., Ertl, O. (2019)</strong>, "Computing Extremely Accurate Quantiles Using t-Digests", <a href="https://arxiv.org/abs/1902.04023">arXiv:1902.04023</a></p>
+</li>
+<li>
+<p><strong>Tukey, J.W. (1977)</strong>, <em>Exploratory Data Analysis</em>, Addison-Wesley.</p>
+</li>
+<li>
+<p><strong>Freedman, D., Diaconis, P. (1981)</strong>, "On the histogram as a density estimator", <em>Zeitschrift für Wahrscheinlichkeitstheorie und verwandte Gebiete</em>, 57: 453–476.</p>
+</li>
+<li>
+<p><strong>Wikipedia: Algorithms for calculating variance</strong> - <a href="https://en.wikipedia.org/wiki/Algorithms_for_calculating_variance">Link</a></p>
+</li>
+<li>
+<p><strong>Wikipedia: Skewness</strong> - <a href="https://en.wikipedia.org/wiki/Skewness">Link</a></p>
+</li>
+<li>
+<p><strong>Wikipedia: Kurtosis</strong> - <a href="https://en.wikipedia.org/wiki/Kurtosis">Link</a></p>
+</li>
+<li>
+<p><strong>Wikipedia: Median absolute deviation</strong> - <a href="https://en.wikipedia.org/wiki/Median_absolute_deviation">Link</a></p>
+</li>
+</ol>
+<h2 id="see-also">See Also</h2>
+<ul>
+<li><a href="../categorical/">Categorical Analysis</a> - String/categorical variables</li>
+<li><a href="../datetime/">DateTime Analysis</a> - Temporal variables</li>
+<li><a href="../../algorithms/streaming/">Streaming Algorithms</a> - Welford/Pébay deep dive</li>
+<li><a href="../../algorithms/sketches/">Sketch Algorithms</a> - KMV, HyperLogLog, KLL</li>
+<li><a href="../../configuration/">Configuration Guide</a> - All parameters</li>
+</ul>
+<hr />
+<p><em>Last updated: 2025-10-12</em></p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/alvarodiez20" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.tracking", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "toc.integrate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
