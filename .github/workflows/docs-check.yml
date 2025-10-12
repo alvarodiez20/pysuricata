@@ -28,11 +28,6 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --dev
-          uv run pip install -e .
-
-      - name: Validate mkdocs.yml
-        run: |
-          uv run python -c "import yaml; yaml.safe_load(open('mkdocs.yml'))"
 
       - name: Build docs (strict mode)
         run: uv run mkdocs build --strict
