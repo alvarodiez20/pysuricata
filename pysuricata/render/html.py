@@ -94,15 +94,14 @@ def render_html_snapshot(
             if acc._max_ts is not None:
                 maxs.append(acc._max_ts)
         if mins and maxs:
+            dt_min = datetime.fromtimestamp(min(mins) / 1_000_000_000, tz=timezone.utc)
+            dt_max = datetime.fromtimestamp(max(maxs) / 1_000_000_000, tz=timezone.utc)
+            # Format: date on one line, time on next (inline with <br>)
             date_min = (
-                datetime.fromtimestamp(min(mins) / 1_000_000_000, tz=timezone.utc)
-                .isoformat()
-                .replace("+00:00", "Z")
+                f"{dt_min.strftime('%Y-%m-%d')}<br>{dt_min.strftime('%H:%M:%S UTC')}"
             )
             date_max = (
-                datetime.fromtimestamp(max(maxs) / 1_000_000_000, tz=timezone.utc)
-                .isoformat()
-                .replace("+00:00", "Z")
+                f"{dt_max.strftime('%Y-%m-%d')}<br>{dt_max.strftime('%H:%M:%S UTC')}"
             )
         else:
             date_min = date_max = "—"

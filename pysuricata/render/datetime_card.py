@@ -13,6 +13,7 @@ from .card_base import CardRenderer, QualityAssessor, TableBuilder
 from .card_config import DEFAULT_CHART_DIMS, DEFAULT_DT_CONFIG
 from .card_types import DateTimeStats, QualityFlags
 from .svg_utils import nice_ticks as _nice_ticks
+from .temporal_charts import TemporalChartRenderer
 
 
 class DateTimeCardRenderer(CardRenderer):
@@ -24,6 +25,7 @@ class DateTimeCardRenderer(CardRenderer):
         self.table_builder = TableBuilder()
         self.dt_config = DEFAULT_DT_CONFIG
         self.chart_dims = DEFAULT_CHART_DIMS
+        self.temporal_renderer = TemporalChartRenderer()
 
     def _get_chart_dimensions(self) -> tuple[int, int]:
         """Get consistent chart dimensions for datetime timeline."""
@@ -94,7 +96,7 @@ class DateTimeCardRenderer(CardRenderer):
         # Seasonal pattern detected
         seasonal = getattr(stats, "seasonal_pattern", None)
         if seasonal:
-            flag_items.append(f'<li class="flag">Peak in {seasonal}</li>')
+            flag_items.append(f'<li class="flag">{seasonal}</li>')
 
         # High uniqueness (like IDs or log timestamps)
         unique_est = getattr(stats, "unique_est", 0)
@@ -206,23 +208,38 @@ class DateTimeCardRenderer(CardRenderer):
 
         return self.table_builder.build_key_value_table(data)
 
-    def _format_timestamp(self, ts: Optional[int]) -> str:
-        """Format a UTC nanoseconds epoch as ISO8601 Z; fallback safely."""
+    def _format_timestamp(self, ts: Optional[int], multiline: bool = True) -> str:
+        """Format a UTC nanoseconds epoch as readable datetime string.
+
+        Args:
+            ts: Timestamp in nanoseconds
+            multiline: If True, format with <br> (date on line 1, time on line 2).
+                       If False, single line format.
+        """
         if ts is None:
             return "—"
         try:
             # Prefer pandas if available for robustness
             if pd is not None:  # type: ignore
                 dt = pd.to_datetime(int(ts), utc=True)
-                formatted = dt.isoformat()
-                return formatted
+                date_part = dt.strftime("%Y-%m-%d")
+                time_part = dt.strftime("%H:%M:%S UTC")
+                if multiline:
+                    return f"{date_part}<br>{time_part}"
+                else:
+                    return f"{date_part} {time_part}"
         except Exception:
             pass
         try:
             from datetime import datetime as _dt
 
-            formatted = _dt.utcfromtimestamp(int(ts) / 1_000_000_000).isoformat() + "Z"
-            return formatted
+            dt = _dt.utcfromtimestamp(int(ts) / 1_000_000_000)
+            date_part = dt.strftime("%Y-%m-%d")
+            time_part = dt.strftime("%H:%M:%S UTC")
+            if multiline:
+                return f"{date_part}<br>{time_part}"
+            else:
+                return f"{date_part} {time_part}"
         except Exception:
             return str(ts)
 
@@ -317,7 +334,7 @@ class DateTimeCardRenderer(CardRenderer):
                         ts = pd.to_datetime(int(v), utc=True)
                         if span_ns <= self.dt_config.short_span_ns:
                             return ts.strftime("%Y-%m-%d %H:%M")
-                        return ts.date().isoformat()
+                        return ts.strftime("%Y-%m-%d")
                 except Exception:
                     pass
                 try:
@@ -330,7 +347,7 @@ class DateTimeCardRenderer(CardRenderer):
                     return str(v)
 
             parts = [
-                f'<svg class="dt-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Timeline">',
+                f'<svg class="dt-svg" width="100%" height="100%" viewBox="0 0 {width} {height}" preserveAspectRatio="none" role="img" aria-label="Timeline">',
             ]
 
             # Add title with error handling
@@ -468,12 +485,12 @@ class DateTimeCardRenderer(CardRenderer):
         timestamp_data = [
             (
                 "Min timestamp",
-                self._format_timestamp(getattr(stats, "min_ts", None)),
+                self._format_timestamp(getattr(stats, "min_ts", None), multiline=False),
                 "timestamp-value",
             ),
             (
                 "Max timestamp",
-                self._format_timestamp(getattr(stats, "max_ts", None)),
+                self._format_timestamp(getattr(stats, "max_ts", None), multiline=False),
                 "timestamp-value",
             ),
             (
@@ -798,89 +815,79 @@ class DateTimeCardRenderer(CardRenderer):
         </div>
         """
 
+    def _build_temporal_distributions(self, stats: DateTimeStats) -> str:
+        """Build temporal distribution charts (hour/DOW/month/year).
+
+        Args:
+            stats: DateTimeStats object
+
+        Returns:
+            HTML string with temporal distribution charts
+        """
+        # Get temporal data
+        hour_counts = getattr(stats, "by_hour", None) or [0] * 24
+        dow_counts = getattr(stats, "by_dow", None) or [0] * 7
+        month_counts = getattr(stats, "by_month", None) or [0] * 12
+        year_data = getattr(stats, "by_year", None) or {}
+
+        # Render charts
+        hour_svg = self.temporal_renderer.render_hour_chart(hour_counts)
+        dow_svg = self.temporal_renderer.render_dow_chart(dow_counts)
+        month_svg = self.temporal_renderer.render_month_chart(month_counts)
+        year_svg = self.temporal_renderer.render_year_chart(year_data)
+
+        return f"""
+        <div class="temporal-grid">
+            <div class="temporal-item">
+                <h4>Hour of Day</h4>
+                {hour_svg}
+            </div>
+            <div class="temporal-item">
+                <h4>Day of Week</h4>
+                {dow_svg}
+            </div>
+            <div class="temporal-item">
+                <h4>Month</h4>
+                {month_svg}
+            </div>
+            <div class="temporal-item">
+                <h4>Year</h4>
+                {year_svg}
+            </div>
+        </div>
+        """
+
     def _build_details_section(self, col_id: str, stats: DateTimeStats) -> str:
         """Build details section with multiple tabs."""
-        # Build histogram breakdown
-        breakdown_html = self._build_breakdown_histograms(col_id, stats)
-
-        # New tables
+        # Build content for each tab
         stats_table = self._build_temporal_statistics_table(stats)
         missing_table = self._build_missing_values_table(stats)
+        temporal_charts = self._build_temporal_distributions(stats)
+
         return f"""
         <section id="{col_id}-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="stats">Statistics</button>
-                <button role="tab" data-tab="breakdown">Temporal Distribution</button>
+                <button role="tab" data-tab="temporal">Temporal Distribution</button>
                 <button role="tab" data-tab="missing">Missing Values</button>
             </nav>
             <div class="tab-panes">
                 <section class="tab-pane active" data-tab="stats">
                     <div class="sub">
-                        <div class="hdr">Temporal Analysis</div>
                         {stats_table}
                     </div>
                 </section>
-                <section class="tab-pane" data-tab="breakdown">
-                    {breakdown_html}
+                <section class="tab-pane" data-tab="temporal">
+                    <div class="sub">
+                        {temporal_charts}
+                    </div>
                 </section>
                 <section class="tab-pane" data-tab="missing">
-                    <div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>
+                    <div class="sub">{missing_table}</div>
                 </section>
             </div>
         </section>
         """
-
-    def _build_breakdown_histograms(self, col_id: str, stats: DateTimeStats) -> str:
-        """Build histogram containers for hour, DOW, month, and year distributions."""
-        import json
-
-        # Prepare data for JavaScript
-        hour_counts = getattr(stats, "by_hour", None) or []
-        dow_counts = getattr(stats, "by_dow", None) or []
-        month_counts = getattr(stats, "by_month", None) or []
-        year_data = getattr(stats, "by_year", None) or {}
-
-        # Convert year dict to sorted arrays
-        if year_data:
-            sorted_years = sorted(year_data.keys())
-            year_values = [year_data[y] for y in sorted_years]
-            year_labels = sorted_years
-        else:
-            year_values = []
-            year_labels = []
-
-        # Build JSON metadata for JavaScript renderer
-        dt_meta = {
-            "counts": {
-                "hour": hour_counts,
-                "dow": dow_counts,
-                "month": month_counts,
-                "year": {"values": year_values, "labels": year_labels},
-            }
-        }
-
-        # Build HTML with histogram containers
-        return f'''
-        <script type="application/json" id="{col_id}-dt-meta">{json.dumps(dt_meta)}</script>
-        <div class="dt-breakdown-grid">
-            <div class="dt-breakdown-item">
-                <h4>Hour of Day</h4>
-                <div id="{col_id}-dt-hour" class="dt-chart"></div>
-            </div>
-            <div class="dt-breakdown-item">
-                <h4>Day of Week</h4>
-                <div id="{col_id}-dt-dow" class="dt-chart"></div>
-            </div>
-            <div class="dt-breakdown-item">
-                <h4>Month</h4>
-                <div id="{col_id}-dt-month" class="dt-chart"></div>
-            </div>
-            <div class="dt-breakdown-item">
-                <h4>Year</h4>
-                <div id="{col_id}-dt-year" class="dt-chart"></div>
-            </div>
-        </div>
-        '''
 
     def _assemble_card(
         self,

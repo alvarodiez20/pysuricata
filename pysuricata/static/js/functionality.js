@@ -429,128 +429,8 @@ ${root.outerHTML}
   }, { passive: true });
 })();
 
-/* --- Datetime mini-charts renderer (hour/DOW/month/YEAR) --- */
+/* --- Variables section and controls --- */
 (function () {
-  const ROOT_ID = 'pysuricata-report';
-  const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-  function renderAll() {
-    const root = document.getElementById(ROOT_ID);
-    if (!root) return;
-    const metas = root.querySelectorAll('script[type="application/json"][id$="-dt-meta"]');
-    metas.forEach(m => {
-      let data; try { data = JSON.parse(m.textContent || '{}'); } catch (e) { data = null; }
-      if (!data) return;
-      const colId = m.id.replace(/-dt-meta$/, '');
-      // Hour / DOW / Month
-      drawBar(colId + '-dt-hour', data.counts && data.counts.hour, Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + ':00'));
-      drawBar(colId + '-dt-dow', data.counts && data.counts.dow, DOW);
-      drawBar(colId + '-dt-month', data.counts && data.counts.month, MONTHS.map(m => m.slice(0, 3)));
-      // YEAR (dynamic labels)
-      const yr = data.counts && data.counts.year;
-      if (yr && Array.isArray(yr.values) && Array.isArray(yr.labels)) {
-        drawBar(colId + '-dt-year', yr.values, yr.labels.map(String));
-      }
-    });
-  }
-
-  // Render all charts within a provided container (DOM node)
-  function renderIn(container) {
-    const metas = container.querySelectorAll && container.querySelectorAll('script[type="application/json"][id$="-dt-meta"]');
-    if (!metas || !metas.length) return;
-    metas.forEach(m => {
-      let data; try { data = JSON.parse(m.textContent || '{}'); } catch (e) { data = null; }
-      if (!data) return;
-      const colId = m.id.replace(/-dt-meta$/, '');
-      drawBar(colId + '-dt-hour', data.counts && data.counts.hour, Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + ':00'));
-      drawBar(colId + '-dt-dow', data.counts && data.counts.dow, DOW);
-      drawBar(colId + '-dt-month', data.counts && data.counts.month, MONTHS.map(m => m.slice(0, 3)));
-      const yr = data.counts && data.counts.year;
-      if (yr && Array.isArray(yr.values) && Array.isArray(yr.labels)) {
-        drawBar(colId + '-dt-year', yr.values, yr.labels.map(String));
-      }
-    });
-  }
-
-  function drawBar(containerId, values, labels) {
-    const el = document.getElementById(containerId);
-    if (!el || !values || !labels || values.length === 0) return;
-
-    // Prevent re-rendering if already rendered with same data
-    const dataHash = JSON.stringify({ values, labels, W, H });
-    if (el.dataset.renderedHash === dataHash && el.innerHTML.includes('svg')) {
-      return;
-    }
-    el.dataset.renderedHash = dataHash;
-    const n = values.reduce((a, b) => a + (+b || 0), 0) || 1;
-    const W = 420; // Fixed width to prevent CSS/JS conflicts
-    const H = 120; // Fixed height to match CSS min-height
-    const ML = 36, MR = 8, MT = 8, MB = 20;
-    const iw = W - ML - MR;
-    const ih = H - MT - MB;
-    const max = Math.max(1, Math.max.apply(null, values));
-
-    function sx(i) { return ML + (i + 0.5) / values.length * iw; }
-    function sy(v) { return MT + (1 - v / max) * ih; }
-
-    // Label density
-    const dense = labels.length > 12;
-    const ticks = [];
-    for (let i = 0; i < labels.length; i++) {
-      if (!dense || i % Math.ceil(labels.length / 6) === 0 || i === labels.length - 1) {
-        ticks.push({ i, label: String(labels[i]) });
-      }
-    }
-
-    const parts = [];
-    parts.push(`<svg class="dt-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`);
-    // Axis
-    const xAxisY = MT + ih;
-    parts.push(`<line class="axis" x1="${ML}" y1="${xAxisY}" x2="${ML + iw}" y2="${xAxisY}"></line>`);
-
-    // Bars
-    const bw = Math.max(1, iw / values.length * 0.9);
-    for (let i = 0; i < values.length; i++) {
-      const v = +values[i] || 0;
-      const x = sx(i) - bw / 2;
-      const y = sy(v);
-      const h = (MT + ih) - y;
-      const pct = ((v / n) * 100).toFixed(1);
-      const label = labels[i];
-      parts.push(
-        `<rect class="bar" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${bw.toFixed(2)}" height="${Math.max(0, h).toFixed(2)}" data-count="${v}" data-pct="${pct}" data-label="${label}"><title>${v} rows\n${label}</title></rect>`
-      );
-    }
-
-    // X tick labels
-    ticks.forEach(t => {
-      const tx = sx(t.i);
-      parts.push(`<text class="tick-label" x="${tx.toFixed(2)}" y="${xAxisY + 12}" text-anchor="middle">${t.label}</text>`);
-    });
-
-    parts.push('</svg>');
-    el.innerHTML = parts.join('');
-  }
-
-  // Debounce helper
-  function debounce(fn, ms) { let t; return function () { clearTimeout(t); t = setTimeout(() => fn.apply(this, arguments), ms); }; }
-  let renderTimeout = null;
-  const onResize = debounce(() => {
-    if (renderTimeout) clearTimeout(renderTimeout);
-    renderTimeout = setTimeout(() => {
-      try {
-        renderAll();
-      } catch (e) { }
-    }, 200);
-  }, 300);
-  window.addEventListener('resize', onResize);
-
-  document.addEventListener('suricata:dt:render', function (e) {
-    const c = e && e.detail && e.detail.container;
-    if (c) { try { renderIn(c); } catch (e2) { } }
-  });
-
   // Variables section controls
   let searchTerm = '';
   let currentFilter = 'all';
@@ -683,13 +563,11 @@ ${root.outerHTML}
   // Run now if DOM is already loaded (e.g., inside notebooks), else on DOMContentLoaded
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     try {
-      renderAll();
       setupVariablesControls();
     } catch (e) { }
   } else {
     document.addEventListener('DOMContentLoaded', () => {
       try {
-        renderAll();
         setupVariablesControls();
       } catch (e) { }
     });

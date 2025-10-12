@@ -6651,6 +6651,7 @@ body.suricata-standalone:not(.light) {
   pointer-events: none;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.15);
+  -webkit-backdrop-filter: blur(4px);
   backdrop-filter: blur(4px);
   max-width: 300px;
   text-align: center;
@@ -6661,6 +6662,7 @@ body.suricata-standalone:not(.light) {
   color: #1a1a1a;
   border-color: rgba(0, 0, 0, 0.15);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
 
@@ -6946,69 +6948,10 @@ body.suricata-standalone:not(.light) {
 }
 
 /* =============================
-   Datetime Analysis Enhancements
+   Datetime Timeline Chart (Main Line Chart)
    ============================= */
 
-/* Breakdown grid for datetime histograms */
-#pysuricata-report .dt-breakdown-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
-
-@media (max-width: 768px) {
-  #pysuricata-report .dt-breakdown-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-#pysuricata-report .dt-breakdown-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-#pysuricata-report .dt-breakdown-item h4 {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-#pysuricata-report .dt-chart {
-  min-height: 120px;
-  background: var(--bg-secondary);
-  border-radius: 4px;
-  padding: 0.5rem;
-}
-
-/* Temporal analysis sections */
-#pysuricata-report .temporal-analysis {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-
-#pysuricata-report .temporal-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-@media (min-width: 768px) {
-  #pysuricata-report .temporal-analysis {
-    flex-direction: row;
-    gap: 2rem;
-  }
-
-  #pysuricata-report .temporal-section {
-    flex: 1;
-  }
-}
-
-/* Datetime SVG enhancements */
+/* Datetime timeline SVG enhancements */
 #pysuricata-report .dt-svg .hist-title {
   font-weight: 600;
   fill: var(--text-primary);
@@ -7075,115 +7018,140 @@ body.suricata-standalone:not(.light) {
 }
 
 /* =============================
-   Temporal Distribution Breakdown
+   Temporal Distribution Charts
    ============================= */
 
-/* Temporal Distribution tab content */
-#pysuricata-report .temporal-distribution-content {
-  padding: 1rem;
-}
-
-/* Breakdown grid for temporal histograms */
-#pysuricata-report .temporal-breakdown-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
-
-@media (max-width: 768px) {
-  #pysuricata-report .temporal-breakdown-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-}
-
-#pysuricata-report .temporal-breakdown-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-#pysuricata-report .temporal-breakdown-item h4 {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-#pysuricata-report .temporal-breakdown-chart {
-  min-height: 120px;
-  background: var(--bg-secondary);
-  border-radius: 4px;
-  padding: 0.5rem;
-}
-
-/* Temporal analysis sections */
-#pysuricata-report .temporal-analysis-sections {
+/* Statistics section - two tables side by side */
+#pysuricata-report .temporal-analysis {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  margin-top: 1rem;
 }
 
-#pysuricata-report .temporal-analysis-section {
+#pysuricata-report .temporal-section {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
 }
 
 @media (min-width: 768px) {
-  #pysuricata-report .temporal-analysis-sections {
+  #pysuricata-report .temporal-analysis {
     flex-direction: row;
     gap: 2rem;
   }
 
-  #pysuricata-report .temporal-analysis-section {
+  #pysuricata-report .temporal-section {
     flex: 1;
   }
 }
 
-/* Temporal analysis table styling */
-#pysuricata-report .temporal-analysis-section table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
+/* Grid layout for temporal charts */
+#pysuricata-report .temporal-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-top: 1rem;
 }
 
-#pysuricata-report .temporal-analysis-section table th,
-#pysuricata-report .temporal-analysis-section table td {
-  padding: 0.5rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border-color);
+@media (max-width: 768px) {
+  #pysuricata-report .temporal-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
 }
 
-#pysuricata-report .temporal-analysis-section table th {
+/* Individual chart items */
+#pysuricata-report .temporal-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#pysuricata-report .temporal-item h4 {
+  margin: 0 0 0.25rem 0;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-secondary);
-  background: var(--bg-secondary);
+  letter-spacing: -0.01em;
 }
 
-#pysuricata-report .temporal-analysis-section table td {
-  color: var(--text-primary);
+/* SVG chart styling */
+#pysuricata-report .temporal-chart {
+  width: 100%;
+  height: auto;
+  display: block;
 }
 
-/* Human-readable temporal values */
-#pysuricata-report .temporal-value {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 0.8rem;
-  color: var(--text-primary);
+/* Bar styling with smooth transitions */
+#pysuricata-report .temporal-chart .bar {
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-origin: center bottom;
 }
 
-/* Data density styling */
-#pysuricata-report .data-density {
-  font-weight: 500;
-  color: var(--text-primary);
+#pysuricata-report .temporal-chart .bar:hover {
+  fill: #60a5fa !important;
+  fill-opacity: 1 !important;
+  stroke: #2563eb !important;
+  stroke-width: 1.5 !important;
+  filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.4));
+  transform: scaleY(1.05);
 }
 
-/* Peak year styling */
-#pysuricata-report .peak-year {
-  font-weight: 600;
-  color: var(--bar);
+/* Enhanced hover effect for better visibility */
+#pysuricata-report:not(.light) .temporal-chart .bar:hover {
+  filter: drop-shadow(0 4px 12px rgba(96, 165, 250, 0.5));
+}
+
+/* Grid lines */
+#pysuricata-report .temporal-chart .grid-line {
+  stroke-dasharray: 2, 3;
+}
+
+/* Axis and tick styling */
+#pysuricata-report .temporal-chart .axis {
+  stroke-linecap: round;
+}
+
+#pysuricata-report .temporal-chart .tick-label,
+#pysuricata-report .temporal-chart .x-label {
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Dark mode adjustments */
+#pysuricata-report:not(.light) .temporal-chart .grid-line {
+  stroke: #4b5563;
+  stroke-opacity: 0.3;
+}
+
+#pysuricata-report:not(.light) .temporal-chart .axis {
+  stroke: #9ca3af;
+}
+
+#pysuricata-report:not(.light) .temporal-chart .tick-label,
+#pysuricata-report:not(.light) .temporal-chart .x-label {
+  fill: #d1d5db;
+}
+
+/* Empty chart state */
+#pysuricata-report .temporal-chart.empty text {
+  font-style: italic;
+}
+
+#pysuricata-report:not(.light) .temporal-chart.empty text {
+  fill: #6b7280;
+}
+
+/* Responsive adjustments */
+@media (max-width: 560px) {
+  #pysuricata-report .temporal-item .chart-container {
+    padding: 0.75rem;
+  }
+
+  #pysuricata-report .temporal-chart .x-label {
+    font-size: 9px !important;
+  }
 }
 
 /* =============================
