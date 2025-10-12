@@ -1,17 +1,11 @@
 """Categorical card rendering functionality."""
 
-import html as _html
 import math
-from typing import Any, List, Optional, Sequence, Tuple, Union
-
-import numpy as np
+from collections.abc import Sequence
 
 from .card_base import CardRenderer, QualityAssessor, TableBuilder
 from .card_config import DEFAULT_CAT_CONFIG, DEFAULT_CHART_DIMS
 from .card_types import BarData, CategoricalStats, QualityFlags
-from .format_utils import fmt_num as _fmt_num
-from .format_utils import human_bytes as _human_bytes
-from .svg_utils import svg_empty as _svg_empty
 
 
 class CategoricalCardRenderer(CardRenderer):
@@ -168,7 +162,7 @@ class CategoricalCardRenderer(CardRenderer):
         self, stats: CategoricalStats, miss_cls: str, miss_pct: float, cat_stats: dict
     ) -> str:
         """Build left statistics table."""
-        mem_display = self.format_bytes(int(getattr(stats, "mem_bytes", 0)))
+        self.format_bytes(int(getattr(stats, "mem_bytes", 0)))
 
         data = [
             ("Count", f"{int(getattr(stats, 'count', 0)):,}", "num"),
@@ -223,8 +217,8 @@ class CategoricalCardRenderer(CardRenderer):
         return self.table_builder.build_key_value_table(data)
 
     def _get_topn_candidates(
-        self, items: Sequence[Tuple[str, int]]
-    ) -> Tuple[List[int], int]:
+        self, items: Sequence[tuple[str, int]]
+    ) -> tuple[list[int], int]:
         """Get Top-N candidates for categorical display."""
         max_n = max(1, min(15, len(items)))
         candidates = [5, 10, 15, max_n]
@@ -237,9 +231,9 @@ class CategoricalCardRenderer(CardRenderer):
     def _build_categorical_variants(
         self,
         col_id: str,
-        items: Sequence[Tuple[str, int]],
+        items: Sequence[tuple[str, int]],
         total: int,
-        topn_list: List[int],
+        topn_list: list[int],
         default_topn: int,
     ) -> str:
         """Build categorical chart variants."""
@@ -266,7 +260,7 @@ class CategoricalCardRenderer(CardRenderer):
         """
 
     def _build_categorical_bar_svg(
-        self, items: List[Tuple[str, int]], total: int, *, scale: str = "count"
+        self, items: list[tuple[str, int]], total: int, *, scale: str = "count"
     ) -> str:
         """Build categorical bar chart SVG."""
         if total <= 0 or not items:
@@ -278,7 +272,7 @@ class CategoricalCardRenderer(CardRenderer):
         return self._render_bar_svg(bar_data)
 
     def _prepare_bar_data(
-        self, items: List[Tuple[str, int]], total: int, scale: str
+        self, items: list[tuple[str, int]], total: int, scale: str
     ) -> BarData:
         """Prepare bar chart data."""
         labels = [self.safe_html_escape(str(k)) for k, _ in items]
@@ -299,7 +293,7 @@ class CategoricalCardRenderer(CardRenderer):
         margin_right = 12
 
         # Calculate label width
-        max_label_len = max((len(l) for l in bar_data.labels), default=0)
+        max_label_len = max((len(label) for label in bar_data.labels), default=0)
         char_w = self.cat_config.char_width
         gutter = max(
             self.cat_config.min_gutter,
@@ -353,7 +347,7 @@ class CategoricalCardRenderer(CardRenderer):
         return "".join(parts)
 
     def _build_top_values_table(
-        self, items: Sequence[Tuple[str, int]], count: int, max_rows: int = 15
+        self, items: Sequence[tuple[str, int]], count: int, max_rows: int = 15
     ) -> str:
         """Build top values table."""
         rows = []
@@ -383,8 +377,8 @@ class CategoricalCardRenderer(CardRenderer):
         )
 
     def _build_normalization_section(
-        self, items: Sequence[Tuple[str, int]], stats: CategoricalStats
-    ) -> Tuple[str, str]:
+        self, items: Sequence[tuple[str, int]], stats: CategoricalStats
+    ) -> tuple[str, str]:
         """Build normalization section if needed."""
         try:
             need_norm = (getattr(stats, "case_variants_est", 0) > 0) or (
@@ -455,7 +449,7 @@ class CategoricalCardRenderer(CardRenderer):
         """
 
     def _build_controls_section(
-        self, col_id: str, topn_list: List[int], default_topn: int
+        self, col_id: str, topn_list: list[int], default_topn: int
     ) -> str:
         """Build controls section."""
         topn_buttons = " ".join(
@@ -586,82 +580,117 @@ class CategoricalCardRenderer(CardRenderer):
     def _build_missing_values_table(
         self, stats: CategoricalStats, miss_pct: float
     ) -> str:
-        """Build comprehensive missing values analysis table with visual elements.
-
-        This method creates a professional, feature-rich analysis of missing data
-        including summary statistics, visual indicators, and data quality insights.
-        Optimized for performance on large datasets with efficient calculations.
+        """Build simple missing values analysis matching reference HTML.
 
         Args:
             stats: CategoricalStats object containing missing data information
             miss_pct: Pre-calculated missing percentage
 
         Returns:
-            HTML string for the enhanced missing values analysis
+            HTML string for the missing values analysis
         """
-        # Calculate missing data statistics with safe division
+        # Calculate missing data statistics
         total_values = stats.count + stats.missing
         present_pct = (
             (stats.count / max(1, total_values)) * 100.0 if total_values > 0 else 0.0
         )
 
-        # Determine data quality severity with clear thresholds (matching numeric)
-        quality_severity, quality_label, quality_icon = self._get_missing_data_severity(
-            miss_pct
-        )
+        # Section 1: Data Completeness
+        completeness_html = f"""
+        <div class="missing-analysis-header">
+            <h4 class="section-title">Data Completeness</h4>
+        </div>
 
-        # Build summary header with performance-optimized string formatting
-        summary_html = f"""
-        <div class="missing-summary">
-            <div class="summary-header">
-                <span class="icon">📊</span>
-                <span class="title">Missing Values Analysis</span>
-                <span class="quality-indicator {quality_severity}">
-                    {quality_icon} {quality_label} Missing Data
+        <div class="completeness-container">
+            <div class="completeness-stats">
+                <span class="stat-item">
+                    <span class="stat-label">Present:</span>
+                    <span class="stat-value">{stats.count:,} <span class="stat-pct">({present_pct:.1f}%)</span></span>
+                </span>
+                <span class="stat-item">
+                    <span class="stat-label">Missing:</span>
+                    <span class="stat-value">{stats.missing:,} <span class="stat-pct">({miss_pct:.1f}%)</span></span>
                 </span>
             </div>
-            <div class="data-overview">
-                <div class="overview-item">
-                    <span class="label">Total Values</span>
-                    <span class="value">{total_values:,}</span>
-                </div>
-                <div class="overview-item present">
-                    <span class="label">Present</span>
-                    <span class="value">{stats.count:,}</span>
-                    <span class="percentage">({present_pct:.1f}%)</span>
-                </div>
-                <div class="overview-item missing">
-                    <span class="label">Missing</span>
-                    <span class="value">{stats.missing:,}</span>
-                    <span class="percentage">({miss_pct:.1f}%)</span>
-                </div>
+            <div class="completeness-bar">
+                <div class="bar-fill present" style="width: {present_pct:.1f}%" title="Present: {present_pct:.1f}%"></div>
+                <div class="bar-fill missing" style="width: {miss_pct:.1f}%" title="Missing: {miss_pct:.1f}%"></div>
             </div>
         </div>
         """
 
-        # Build visual progress bars with efficient string formatting
-        progress_html = f"""
-        <div class="missing-visualization">
-            <div class="progress-container">
-                <div class="progress-bar-container">
-                    <div class="progress-label">Data Completeness</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill present" style="width: {present_pct:.1f}%"></div>
-                        <div class="progress-fill missing" style="width: {miss_pct:.1f}%"></div>
-                    </div>
-                    <div class="progress-legend">
-                        <span class="legend-item present">Present: {present_pct:.1f}%</span>
-                        <span class="legend-item missing">Missing: {miss_pct:.1f}%</span>
-                    </div>
-                </div>
+        # Section 2: Chunk Distribution
+        chunk_html = self._build_chunk_distribution_simple(stats)
+
+        return completeness_html + chunk_html
+
+    def _build_chunk_distribution_simple(self, stats: CategoricalStats) -> str:
+        """Build simple chunk distribution visualization matching reference HTML.
+
+        Args:
+            stats: CategoricalStats object
+
+        Returns:
+            HTML string for chunk distribution
+        """
+        # Get chunk metadata
+        chunk_metadata = getattr(stats, "chunk_metadata", None)
+        if not chunk_metadata:
+            return ""
+
+        total_values = stats.count + stats.missing
+        if total_values == 0:
+            return ""
+
+        # Build segments
+        segments_html = ""
+        max_missing_pct = 0.0
+        num_chunks = len(chunk_metadata)
+
+        for start_row, end_row, missing_count in chunk_metadata:
+            chunk_size = end_row - start_row + 1
+            missing_pct = (
+                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
+            )
+            width_pct = (chunk_size / total_values) * 100.0
+
+            # Track peak
+            if missing_pct > max_missing_pct:
+                max_missing_pct = missing_pct
+
+            # Determine severity class (3 levels only)
+            if missing_pct <= 5:
+                severity = "low"
+            elif missing_pct <= 20:
+                severity = "medium"
+            else:
+                severity = "high"
+
+            segments_html += f"""
+            <div class="chunk-segment {severity}" style="width: {width_pct:.2f}%" title="Rows {start_row:,}-{end_row:,}: {missing_count:,} missing ({missing_pct:.1f}%)"></div>
+            """
+
+        return f"""
+        <div class="chunk-distribution">
+            <h4 class="section-title">Missing Values Distribution</h4>
+            <div class="chunk-info">
+                <span>{num_chunks} chunks analyzed</span>
+                <span>Peak: {max_missing_pct:.1f}%</span>
+            </div>
+            <div class="chunk-spectrum">
+                {segments_html}
+            </div>
+            <div class="chunk-legend">
+                <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
+                <span class="legend-item"><span class="color-box medium"></span>Medium (5-20%)</span>
+                <span class="legend-item"><span class="color-box high"></span>High (20%+)</span>
             </div>
         </div>
         """
 
-        # Add missing values per chunk visualization (DataPrep-style spectrum)
-        chunk_visualization_html = self._build_dataprep_spectrum_visualization(stats)
-
-        return summary_html + progress_html + chunk_visualization_html
+    def _build_dataprep_spectrum_visualization(self, stats: CategoricalStats) -> str:
+        """Legacy method - no longer used."""
+        return ""
 
     def _get_missing_data_severity(self, missing_pct: float) -> tuple[str, str, str]:
         """Get missing data severity classification with clear thresholds.
@@ -731,7 +760,7 @@ class CategoricalCardRenderer(CardRenderer):
             )
 
             segments_html += f"""
-            <div class="spectrum-segment {color_class}" 
+            <div class="spectrum-segment {color_class}"
                  style="width: {segment_width_pct:.2f}%"
                  title="{tooltip_content}"
                  data-start="{start_row}"

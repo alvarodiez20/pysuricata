@@ -569,7 +569,7 @@ class DateTimeCardRenderer(CardRenderer):
         return f"{peak_year} ({by_year[peak_year]:,} records)"
 
     def _build_missing_values_table(self, stats: DateTimeStats) -> str:
-        """Build comprehensive missing values analysis table."""
+        """Build simple missing values analysis matching reference HTML."""
         # Calculate missing data statistics
         total_values = stats.count + stats.missing
         missing_pct = (
@@ -579,63 +579,98 @@ class DateTimeCardRenderer(CardRenderer):
             (stats.count / max(1, total_values)) * 100.0 if total_values > 0 else 0.0
         )
 
-        # Determine severity
-        quality_severity, quality_label, quality_icon = self._get_missing_data_severity(
-            missing_pct
-        )
+        # Section 1: Data Completeness
+        completeness_html = f"""
+        <div class="missing-analysis-header">
+            <h4 class="section-title">Data Completeness</h4>
+        </div>
 
-        # Build summary header
-        summary_html = f"""
-        <div class="missing-summary">
-            <div class="summary-header">
-                <span class="icon">📊</span>
-                <span class="title">Missing Values Analysis</span>
-                <span class="quality-indicator {quality_severity}">
-                    {quality_icon} {quality_label} Missing Data
+        <div class="completeness-container">
+            <div class="completeness-stats">
+                <span class="stat-item">
+                    <span class="stat-label">Present:</span>
+                    <span class="stat-value">{stats.count:,} <span class="stat-pct">({present_pct:.1f}%)</span></span>
+                </span>
+                <span class="stat-item">
+                    <span class="stat-label">Missing:</span>
+                    <span class="stat-value">{stats.missing:,} <span class="stat-pct">({missing_pct:.1f}%)</span></span>
                 </span>
             </div>
-            <div class="data-overview">
-                <div class="overview-item">
-                    <span class="label">Total Values</span>
-                    <span class="value">{total_values:,}</span>
-                </div>
-                <div class="overview-item present">
-                    <span class="label">Present</span>
-                    <span class="value">{stats.count:,}</span>
-                    <span class="percentage">({present_pct:.1f}%)</span>
-                </div>
-                <div class="overview-item missing">
-                    <span class="label">Missing</span>
-                    <span class="value">{stats.missing:,}</span>
-                    <span class="percentage">({missing_pct:.1f}%)</span>
-                </div>
+            <div class="completeness-bar">
+                <div class="bar-fill present" style="width: {present_pct:.1f}%" title="Present: {present_pct:.1f}%"></div>
+                <div class="bar-fill missing" style="width: {missing_pct:.1f}%" title="Missing: {missing_pct:.1f}%"></div>
             </div>
         </div>
         """
 
-        # Build progress visualization
-        progress_html = f"""
-        <div class="missing-visualization">
-            <div class="progress-container">
-                <div class="progress-bar-container">
-                    <div class="progress-label">Data Completeness</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill present" style="width: {present_pct:.1f}%"></div>
-                        <div class="progress-fill missing" style="width: {missing_pct:.1f}%"></div>
-                    </div>
-                    <div class="progress-legend">
-                        <span class="legend-item present">Present: {present_pct:.1f}%</span>
-                        <span class="legend-item missing">Missing: {missing_pct:.1f}%</span>
-                    </div>
-                </div>
+        # Section 2: Chunk Distribution
+        chunk_html = self._build_chunk_distribution_simple(stats)
+
+        return completeness_html + chunk_html
+
+    def _build_chunk_distribution_simple(self, stats: DateTimeStats) -> str:
+        """Build simple chunk distribution visualization matching reference HTML.
+
+        Args:
+            stats: DateTimeStats object
+
+        Returns:
+            HTML string for chunk distribution
+        """
+        # Get chunk metadata
+        chunk_metadata = getattr(stats, "chunk_metadata", None)
+        if not chunk_metadata:
+            return ""
+
+        total_values = stats.count + stats.missing
+        if total_values == 0:
+            return ""
+
+        # Build segments
+        segments_html = ""
+        max_missing_pct = 0.0
+        num_chunks = len(chunk_metadata)
+
+        for start_row, end_row, missing_count in chunk_metadata:
+            chunk_size = end_row - start_row + 1
+            missing_pct = (
+                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
+            )
+            width_pct = (chunk_size / total_values) * 100.0
+
+            # Track peak
+            if missing_pct > max_missing_pct:
+                max_missing_pct = missing_pct
+
+            # Determine severity class (3 levels only)
+            if missing_pct <= 5:
+                severity = "low"
+            elif missing_pct <= 20:
+                severity = "medium"
+            else:
+                severity = "high"
+
+            segments_html += f"""
+            <div class="chunk-segment {severity}" style="width: {width_pct:.2f}%" title="Rows {start_row:,}-{end_row:,}: {missing_count:,} missing ({missing_pct:.1f}%)"></div>
+            """
+
+        return f"""
+        <div class="chunk-distribution">
+            <h4 class="section-title">Missing Values Distribution</h4>
+            <div class="chunk-info">
+                <span>{num_chunks} chunks analyzed</span>
+                <span>Peak: {max_missing_pct:.1f}%</span>
+            </div>
+            <div class="chunk-spectrum">
+                {segments_html}
+            </div>
+            <div class="chunk-legend">
+                <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
+                <span class="legend-item"><span class="color-box medium"></span>Medium (5-20%)</span>
+                <span class="legend-item"><span class="color-box high"></span>High (20%+)</span>
             </div>
         </div>
         """
-
-        # Add DataPrep-style spectrum visualization
-        chunk_visualization_html = self._build_dataprep_spectrum_visualization(stats)
-
-        return summary_html + progress_html + chunk_visualization_html
 
     def _get_missing_data_severity(self, missing_pct: float) -> tuple[str, str, str]:
         """Get missing data severity classification."""

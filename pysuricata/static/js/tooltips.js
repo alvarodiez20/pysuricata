@@ -15,6 +15,27 @@
   const ROOT_ID = 'pysuricata-report';
   
   /**
+   * Header tooltip definitions for metadata chips.
+   */
+  const HEADER_TOOLTIP_DEFINITIONS = {
+    'date': {
+      title: 'Report Generation Time',
+      getDescription: (value) => `This report was generated on <strong>${value}</strong>. The timestamp indicates when the profiling analysis was completed.`,
+      category: 'metadata'
+    },
+    'duration': {
+      title: 'Processing Duration',
+      getDescription: (value) => `Time elapsed to generate this report: <strong>${value}</strong>. This includes data processing, statistical analysis, and report rendering.`,
+      category: 'performance'
+    },
+    'version': {
+      title: 'PySuricata Version',
+      getDescription: (value) => `Generated with <strong>pysuricata v${value}</strong>. Click to visit the GitHub repository for documentation, updates, and support.`,
+      category: 'metadata'
+    }
+  };
+  
+  /**
    * Comprehensive tooltip definitions for all quality flags.
    * Each definition includes title, description, and severity level.
    */
@@ -283,24 +304,53 @@
      * Show tooltip for an element.
      * @param {HTMLElement} element - The element to show tooltip for
      * @param {string} flagText - The flag text
+     * @param {Object} headerTooltipData - Optional header tooltip data
      */
-    showTooltip(element, flagText) {
+    showTooltip(element, flagText, headerTooltipData = null) {
       if (!this.tooltip || !element) return;
       
-      const content = this.getTooltipContent(flagText);
+      let content;
+      let isHeaderTooltip = false;
+      
+      if (headerTooltipData) {
+        // Header tooltip
+        isHeaderTooltip = true;
+        const def = HEADER_TOOLTIP_DEFINITIONS[headerTooltipData.type];
+        content = {
+          title: def.title,
+          description: def.getDescription(headerTooltipData.value),
+          category: def.category
+        };
+      } else {
+        // Quality flag tooltip
+        content = this.getTooltipContent(flagText);
+      }
+      
       this.currentElement = element;
       
       // Build tooltip HTML
-      this.tooltip.innerHTML = `
-        <div class="tooltip-header">
-          <span class="tooltip-title">${this.escapeHtml(content.title)}</span>
-          <span class="tooltip-severity ${content.severity}" aria-label="Severity: ${content.severity}">
-            ${content.severity}
-          </span>
-        </div>
-        <div class="tooltip-description">${this.escapeHtml(content.description)}</div>
-        <div class="tooltip-category">Category: ${this.escapeHtml(content.category)}</div>
-      `;
+      if (isHeaderTooltip) {
+        this.tooltip.innerHTML = `
+          <div class="tooltip-header">
+            <span class="tooltip-title">${content.title}</span>
+          </div>
+          <div class="tooltip-description">${content.description}</div>
+          <div class="tooltip-footer">
+            <span class="tooltip-category">📋 ${this.escapeHtml(content.category)}</span>
+          </div>
+        `;
+      } else {
+        this.tooltip.innerHTML = `
+          <div class="tooltip-header">
+            <span class="tooltip-title">${this.escapeHtml(content.title)}</span>
+            <span class="tooltip-severity ${content.severity}" aria-label="Severity: ${content.severity}">
+              ${content.severity}
+            </span>
+          </div>
+          <div class="tooltip-description">${this.escapeHtml(content.description)}</div>
+          <div class="tooltip-category">Category: ${this.escapeHtml(content.category)}</div>
+        `;
+      }
       
       // Position tooltip
       this.positionTooltip(element);
@@ -410,18 +460,35 @@
       // Handle mouse enter on quality flags
       root.addEventListener('mouseenter', (e) => {
         const flag = e.target.closest('.quality-flags .flag');
-        if (!flag) return;
+        if (flag) {
+          const flagText = flag.textContent.trim();
+          this.showTooltip(flag, flagText);
+          return;
+        }
         
-        const flagText = flag.textContent.trim();
-        this.showTooltip(flag, flagText);
+        // Handle header tooltips
+        const headerChip = e.target.closest('.header-tooltip');
+        if (headerChip) {
+          const tooltipType = headerChip.getAttribute('data-tooltip-type');
+          const tooltipValue = headerChip.getAttribute('data-tooltip-value');
+          if (tooltipType && tooltipValue) {
+            this.showTooltip(headerChip, null, { type: tooltipType, value: tooltipValue });
+          }
+        }
       }, true);
       
       // Handle mouse leave on quality flags
       root.addEventListener('mouseleave', (e) => {
         const flag = e.target.closest('.quality-flags .flag');
-        if (!flag) return;
+        if (flag) {
+          this.hideTooltip();
+          return;
+        }
         
-        this.hideTooltip();
+        const headerChip = e.target.closest('.header-tooltip');
+        if (headerChip) {
+          this.hideTooltip();
+        }
       }, true);
       
       // Hide tooltip when mouse leaves the root element
@@ -444,12 +511,29 @@
         if (flag) {
           const flagText = flag.textContent.trim();
           this.showTooltip(flag, flagText);
+          return;
+        }
+        
+        // Handle header tooltips on focus
+        const headerChip = e.target.closest('.header-tooltip');
+        if (headerChip) {
+          const tooltipType = headerChip.getAttribute('data-tooltip-type');
+          const tooltipValue = headerChip.getAttribute('data-tooltip-value');
+          if (tooltipType && tooltipValue) {
+            this.showTooltip(headerChip, null, { type: tooltipType, value: tooltipValue });
+          }
         }
       }, true);
       
       root.addEventListener('focusout', (e) => {
         const flag = e.target.closest('.quality-flags .flag');
         if (flag && !root.contains(e.relatedTarget)) {
+          this.hideTooltip();
+          return;
+        }
+        
+        const headerChip = e.target.closest('.header-tooltip');
+        if (headerChip && !root.contains(e.relatedTarget)) {
           this.hideTooltip();
         }
       }, true);
@@ -514,6 +598,6 @@
   
   // Export for module systems if available
   if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { TooltipManager, TOOLTIP_DEFINITIONS };
+    module.exports = { TooltipManager, TOOLTIP_DEFINITIONS, HEADER_TOOLTIP_DEFINITIONS };
   }
 })();

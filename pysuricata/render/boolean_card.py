@@ -1,15 +1,8 @@
 """Boolean card rendering functionality."""
 
-import html as _html
-from typing import Any, List, Optional, Sequence, Tuple, Union
-
-import numpy as np
-
 from .card_base import CardRenderer, QualityAssessor, TableBuilder
 from .card_config import DEFAULT_BOOL_CONFIG
 from .card_types import BooleanStats, QualityFlags
-from .format_utils import human_bytes as _human_bytes
-from .svg_utils import svg_empty as _svg_empty
 
 
 def ordinal_number(n):
@@ -299,7 +292,7 @@ class BooleanCardRenderer(CardRenderer):
         miss_pct: float,
     ) -> str:
         """Build breakdown table in Common Values style similar to numeric cards."""
-        total = int(stats.true_n + stats.false_n + stats.missing)
+        int(stats.true_n + stats.false_n + stats.missing)
 
         # Create value entries with ranking
         values_data = []
@@ -320,7 +313,7 @@ class BooleanCardRenderer(CardRenderer):
         values_data.sort(key=lambda x: x[1], reverse=True)
 
         rows = []
-        for i, (value, count, pct, original_rank) in enumerate(values_data):
+        for i, (value, count, pct, _original_rank) in enumerate(values_data):
             # Format value display
             if value == "True":
                 formatted_value = "True"
@@ -347,77 +340,103 @@ class BooleanCardRenderer(CardRenderer):
         )
 
     def _build_missing_values_table(self, stats: BooleanStats, miss_pct: float) -> str:
-        """Build comprehensive missing values analysis table similar to numeric cards."""
+        """Build simple missing values analysis matching reference HTML."""
         total = int(stats.true_n + stats.false_n + stats.missing)
         present = int(stats.true_n + stats.false_n)
         present_pct = (present / max(1, total)) * 100.0 if total > 0 else 0.0
 
-        # Determine data quality severity
-        if miss_pct == 0:
-            quality_severity, quality_label, quality_icon = "good", "No", "&#10004;"
-        elif miss_pct <= 5:
-            quality_severity, quality_label, quality_icon = "warn", "Low", "&#9888;"
-        elif miss_pct <= 20:
-            quality_severity, quality_label, quality_icon = (
-                "warn",
-                "Moderate",
-                "&#9888;",
-            )
-        else:
-            quality_severity, quality_label, quality_icon = "bad", "High", "&#10060;"
+        # Section 1: Data Completeness
+        completeness_html = f"""
+        <div class="missing-analysis-header">
+            <h4 class="section-title">Data Completeness</h4>
+        </div>
 
-        # Build summary header
-        summary_html = f"""
-        <div class="missing-summary">
-            <div class="summary-header">
-                <span class="icon">&#128202;</span>
-                <span class="title">Missing Values Analysis</span>
-                <span class="quality-indicator {quality_severity}">
-                    {quality_icon} {quality_label} Missing Data
+        <div class="completeness-container">
+            <div class="completeness-stats">
+                <span class="stat-item">
+                    <span class="stat-label">Present:</span>
+                    <span class="stat-value">{present:,} <span class="stat-pct">({present_pct:.1f}%)</span></span>
+                </span>
+                <span class="stat-item">
+                    <span class="stat-label">Missing:</span>
+                    <span class="stat-value">{stats.missing:,} <span class="stat-pct">({miss_pct:.1f}%)</span></span>
                 </span>
             </div>
-            <div class="data-overview">
-                <div class="overview-item">
-                    <span class="label">Total Values</span>
-                    <span class="value">{total:,}</span>
-                </div>
-                <div class="overview-item present">
-                    <span class="label">Present</span>
-                    <span class="value">{present:,}</span>
-                    <span class="percentage">({present_pct:.1f}%)</span>
-                </div>
-                <div class="overview-item missing">
-                    <span class="label">Missing</span>
-                    <span class="value">{stats.missing:,}</span>
-                    <span class="percentage">({miss_pct:.1f}%)</span>
-                </div>
+            <div class="completeness-bar">
+                <div class="bar-fill present" style="width: {present_pct:.1f}%" title="Present: {present_pct:.1f}%"></div>
+                <div class="bar-fill missing" style="width: {miss_pct:.1f}%" title="Missing: {miss_pct:.1f}%"></div>
             </div>
         </div>
         """
 
-        # Build visual progress bar
-        progress_html = f"""
-        <div class="missing-visualization">
-            <div class="progress-container">
-                <div class="progress-bar-container">
-                    <div class="progress-label">Data Completeness</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill present" style="width: {present_pct:.1f}%"></div>
-                        <div class="progress-fill missing" style="width: {miss_pct:.1f}%"></div>
-                    </div>
-                    <div class="progress-legend">
-                        <span class="legend-item present">Present: {present_pct:.1f}%</span>
-                        <span class="legend-item missing">Missing: {miss_pct:.1f}%</span>
-                    </div>
-                </div>
+        # Section 2: Chunk Distribution
+        chunk_html = self._build_chunk_distribution_simple(stats)
+
+        return completeness_html + chunk_html
+
+    def _build_chunk_distribution_simple(self, stats: BooleanStats) -> str:
+        """Build simple chunk distribution visualization matching reference HTML.
+
+        Args:
+            stats: BooleanStats object
+
+        Returns:
+            HTML string for chunk distribution
+        """
+        # Get chunk metadata
+        chunk_metadata = getattr(stats, "chunk_metadata", None)
+        if not chunk_metadata:
+            return ""
+
+        total = int(stats.true_n + stats.false_n + stats.missing)
+        if total == 0:
+            return ""
+
+        # Build segments
+        segments_html = ""
+        max_missing_pct = 0.0
+        num_chunks = len(chunk_metadata)
+
+        for start_row, end_row, missing_count in chunk_metadata:
+            chunk_size = end_row - start_row + 1
+            missing_pct = (
+                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
+            )
+            width_pct = (chunk_size / total) * 100.0
+
+            # Track peak
+            if missing_pct > max_missing_pct:
+                max_missing_pct = missing_pct
+
+            # Determine severity class (3 levels only)
+            if missing_pct <= 5:
+                severity = "low"
+            elif missing_pct <= 20:
+                severity = "medium"
+            else:
+                severity = "high"
+
+            segments_html += f"""
+            <div class="chunk-segment {severity}" style="width: {width_pct:.2f}%" title="Rows {start_row:,}-{end_row:,}: {missing_count:,} missing ({missing_pct:.1f}%)"></div>
+            """
+
+        return f"""
+        <div class="chunk-distribution">
+            <h4 class="section-title">Missing Values Distribution</h4>
+            <div class="chunk-info">
+                <span>{num_chunks} chunks analyzed</span>
+                <span>Peak: {max_missing_pct:.1f}%</span>
+            </div>
+            <div class="chunk-spectrum">
+                {segments_html}
+            </div>
+            <div class="chunk-legend">
+                <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
+                <span class="legend-item"><span class="color-box medium"></span>Medium (5-20%)</span>
+                <span class="legend-item"><span class="color-box high"></span>High (20%+)</span>
             </div>
         </div>
         """
-
-        # Build missing values distribution (DataPrep-style spectrum)
-        distribution_html = self._build_dataprep_spectrum_visualization(stats)
-
-        return summary_html + progress_html + distribution_html
 
     def _build_dataprep_spectrum_visualization(self, stats: BooleanStats) -> str:
         """Build DataPrep-style spectrum visualization for missing values per chunk.
@@ -470,7 +489,7 @@ class BooleanCardRenderer(CardRenderer):
             )
 
             segments_html += f"""
-            <div class="spectrum-segment {color_class}" 
+            <div class="spectrum-segment {color_class}"
                  style="width: {segment_width_pct:.2f}%"
                  title="{tooltip_content}"
                  data-start="{start_row}"
@@ -563,7 +582,7 @@ class BooleanCardRenderer(CardRenderer):
                 </span>
             </div>
             <div class="spectrum-bar">
-                <div class="spectrum-segment spectrum-{"high" if missing_pct > 20 else "medium" if missing_pct > 5 else "low"}" 
+                <div class="spectrum-segment spectrum-{"high" if missing_pct > 20 else "medium" if missing_pct > 5 else "low"}"
                      style="width: 100%"
                      title="Dataset: {stats.missing:,} missing ({missing_pct:.1f}%)">
                 </div>

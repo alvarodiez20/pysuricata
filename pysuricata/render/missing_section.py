@@ -1,16 +1,18 @@
 """Missing Values Section Renderer.
 
 This module provides rendering functionality for the dataset-wide missing values section,
-including bar chart and spectrum visualizations.
+including heatmap, bar chart and spectrum visualizations.
 """
 
 from __future__ import annotations
 
 import html as _html
 
+from .missing_values_heatmap import create_missing_values_heatmap_renderer
+
 
 class MissingValuesSectionRenderer:
-    """Renders the dataset-wide missing values section with bar chart and spectrum tabs."""
+    """Renders the dataset-wide missing values section with heatmap, bar chart and spectrum tabs."""
 
     def render_section(
         self,
@@ -45,14 +47,19 @@ class MissingValuesSectionRenderer:
         # Sort by missing percentage descending
         miss_list.sort(key=lambda t: t[1], reverse=True)
 
+        # Build heatmap HTML
+        heatmap_html = self._build_heatmap(kinds_map, accs, n_rows, miss_list)
+
         # Create bar chart tab HTML
         bar_chart_html = self._build_bar_chart_tab(miss_list)
 
         # Create spectrum tab HTML
         spectrum_html = self._build_spectrum_tab(kinds_map, accs, n_rows)
 
-        # Wrap in section with tabs and container
+        # Wrap in section with heatmap at top, then tabs and container
         return f"""
+        {heatmap_html}
+
         <div class="missing-values-container">
             <div class="missing-section-tabs">
                 <button class="active" data-tab="bar-chart">Bar Chart</button>
@@ -68,6 +75,44 @@ class MissingValuesSectionRenderer:
             </div>
         </div>
         """
+
+    def _build_heatmap(
+        self,
+        kinds_map: dict[str, tuple[str, object]],
+        accs: dict[str, object],
+        n_rows: int,
+        miss_list: list[tuple[str, float, int]],
+    ) -> str:
+        """Build heatmap visualization for cross-column missing values.
+
+        Args:
+            kinds_map: Dictionary mapping column names to (kind, accumulator) tuples
+            accs: Dictionary mapping column names to accumulators
+            n_rows: Total number of rows in dataset
+            miss_list: List of (column_name, missing_pct, missing_count) tuples
+
+        Returns:
+            HTML string for heatmap visualization
+        """
+        # Extract per-column chunk metadata
+        per_column_chunk_metadata = {}
+        column_names = list(kinds_map.keys())
+
+        for name, (_, acc) in kinds_map.items():
+            chunk_metadata = getattr(acc, "chunk_metadata", None)
+            if chunk_metadata:
+                per_column_chunk_metadata[name] = chunk_metadata
+            else:
+                # Fallback: create single segment for entire column
+                missing = getattr(acc, "missing", 0)
+                if missing > 0:
+                    per_column_chunk_metadata[name] = [(0, n_rows, missing)]
+
+        # Create and use heatmap renderer
+        heatmap_renderer = create_missing_values_heatmap_renderer()
+        return heatmap_renderer.render_heatmap(
+            per_column_chunk_metadata, column_names, n_rows
+        )
 
     def _build_bar_chart_tab(self, miss_list: list[tuple[str, float, int]]) -> str:
         """Build the bar chart tab showing missing percentages per variable.

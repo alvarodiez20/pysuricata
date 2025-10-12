@@ -585,14 +585,18 @@ body.suricata-standalone:not(.light) {
 /* Bar container */
 #pysuricata-report .missing-bar {
   position: relative;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--bg-secondary);
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.05));
   overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 #pysuricata-report:not(.light) .missing-bar {
-  background: var(--divider-dark);
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.05));
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 /* Percentage fill. Width is set inline: style="width: 23.4%;" */
@@ -602,20 +606,54 @@ body.suricata-standalone:not(.light) {
   top: 0;
   height: 100%;
   display: block;
-  background-color: #4ea3f1;
-  transition: width 0.3s ease;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 #pysuricata-report .missing-fill.low {
-  background-color: #4ea3f1;
+  background: linear-gradient(to right, #4ea3f1, #5db3ff);
+  box-shadow: 0 1px 3px rgba(78, 163, 241, 0.4);
 }
 
 #pysuricata-report .missing-fill.medium {
-  background-color: #f1c54e;
+  background: linear-gradient(to right, #f1c54e, #f5d165);
+  box-shadow: 0 1px 3px rgba(241, 197, 78, 0.4);
 }
 
 #pysuricata-report .missing-fill.high {
-  background-color: #f15e4e;
+  background: linear-gradient(to right, #f15e4e, #f57365);
+  box-shadow: 0 1px 3px rgba(241, 94, 78, 0.4);
+}
+
+/* Hover effects for missing bars */
+#pysuricata-report .missing-item:hover .missing-fill {
+  transform: scaleY(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#pysuricata-report .missing-item:hover .missing-fill.low {
+  box-shadow: 0 2px 4px rgba(78, 163, 241, 0.6);
+}
+
+#pysuricata-report .missing-item:hover .missing-fill.medium {
+  box-shadow: 0 2px 4px rgba(241, 197, 78, 0.6);
+}
+
+#pysuricata-report .missing-item:hover .missing-fill.high {
+  box-shadow: 0 2px 4px rgba(241, 94, 78, 0.6);
+}
+
+/* Dark mode adjustments for missing fills */
+#pysuricata-report:not(.light) .missing-fill.low {
+  background: linear-gradient(to right, #3b8ad1, #4a9ae1);
+}
+
+#pysuricata-report:not(.light) .missing-fill.medium {
+  background: linear-gradient(to right, #d1a53e, #e1b54e);
+}
+
+#pysuricata-report:not(.light) .missing-fill.high {
+  background: linear-gradient(to right, #d14e3e, #e15e4e);
 }
 
 /* =============================
@@ -2512,7 +2550,7 @@ body.suricata-standalone:not(.light) {
 
 /*# =============================
 #    DETAILS BUTTON + FULL-WIDTH SECTION (pestañas)
-# ============================= 
+# =============================
 /* Make Details look like our pills and keep it steady (no movement on hover) */
 #pysuricata-report .details-toggle {
   appearance: none;
@@ -3197,7 +3235,7 @@ body.suricata-standalone:not(.light) {
 
 /*# =============================
 #   DATETIME card – align chart height with tables & trim bottom whitespace
-# ============================= 
+# =============================
 /* Make all three columns in the triple row stretch equally */
 #pysuricata-report .var-card__body .triple-row {
   align-items: stretch;
@@ -5708,6 +5746,20 @@ body.suricata-standalone:not(.light) {
   flex-wrap: wrap;
 }
 
+/* Filter button hover effects */
+#pysuricata-report .filter-buttons button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: var(--hover-bg);
+  border-color: var(--accent-color);
+  border-radius: 6px !important;
+  /* Override tab-like border-radius */
+}
+
+#pysuricata-report:not(.light) .filter-buttons button:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 #pysuricata-report .controls-row input:focus {
   outline: none;
   border-color: var(--accent-color);
@@ -5752,6 +5804,32 @@ body.suricata-standalone:not(.light) {
   border-width: 2px;
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+  position: relative;
+  z-index: 1;
+}
+
+/* Dark mode adjustments for tabs */
+#pysuricata-report:not(.light) .tab {
+  background: var(--bg-primary);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+#pysuricata-report:not(.light) .tab:hover {
+  background: var(--hover-bg);
+  border-radius: 6px 6px 0 0;
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+}
+
+#pysuricata-report:not(.light) .tab.active {
+  background: var(--bg-primary);
+  color: var(--text-primary) !important;
+  border-color: var(--accent-color);
+  border-width: 2px;
+  font-weight: 700;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
   transform: translateY(-1px);
   position: relative;
   z-index: 1;
@@ -6194,6 +6272,463 @@ body.suricata-standalone:not(.light) {
     width: 10px;
     height: 10px;
   }
+}
+
+/* =============================
+   MISSING VALUES HEATMAP
+   ============================= */
+#pysuricata-report .missing-values-heatmap {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+#pysuricata-report .heatmap-header {
+  margin-bottom: 1rem;
+}
+
+#pysuricata-report .heatmap-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+}
+
+#pysuricata-report .heatmap-stats {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+#pysuricata-report .heatmap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+}
+
+#pysuricata-report .heatmap-legend .legend-title {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-right: 0.5rem;
+}
+
+#pysuricata-report .heatmap-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#pysuricata-report .heatmap-legend .color-box {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  margin-right: 4px;
+  vertical-align: middle;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+#pysuricata-report .heatmap-legend .color-box.hm-none {
+  background: #e5e7eb;
+}
+
+#pysuricata-report .heatmap-legend .color-box.hm-low {
+  background: #86efac;
+}
+
+#pysuricata-report .heatmap-legend .color-box.hm-medium {
+  background: #fbbf24;
+}
+
+#pysuricata-report .heatmap-legend .color-box.hm-high {
+  background: #fb923c;
+}
+
+#pysuricata-report .heatmap-legend .color-box.hm-critical {
+  background: #ef4444;
+}
+
+#pysuricata-report .heatmap-container {
+  overflow-x: auto;
+}
+
+#pysuricata-report .heatmap-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#pysuricata-report .heatmap-row {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 1rem;
+  align-items: center;
+  padding: 0.5rem;
+  background: var(--bg-surface);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+#pysuricata-report .heatmap-row:hover {
+  background: var(--bg-secondary);
+}
+
+#pysuricata-report .heatmap-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#pysuricata-report .heatmap-label code {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+#pysuricata-report .heatmap-label .missing-summary {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+#pysuricata-report .heatmap-spectrum {
+  height: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+}
+
+#pysuricata-report .hm-segment {
+  height: 100%;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+#pysuricata-report .hm-segment:hover {
+  transform: scaleY(1.2);
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+#pysuricata-report .hm-segment.hm-none {
+  background: #e5e7eb;
+}
+
+#pysuricata-report .hm-segment.hm-low {
+  background: linear-gradient(180deg, #86efac 0%, #4ade80 100%);
+}
+
+#pysuricata-report .hm-segment.hm-medium {
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
+}
+
+#pysuricata-report .hm-segment.hm-high {
+  background: linear-gradient(180deg, #fb923c 0%, #f97316 100%);
+}
+
+#pysuricata-report .hm-segment.hm-critical {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
+}
+
+#pysuricata-report .heatmap-expandable {
+  margin-top: 8px;
+}
+
+#pysuricata-report .expand-heatmap-btn {
+  margin-top: 1rem;
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-primary);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+#pysuricata-report .expand-heatmap-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--accent-color);
+}
+
+/* Responsive heatmap */
+@media (max-width: 768px) {
+  #pysuricata-report .heatmap-row {
+    grid-template-columns: 1fr;
+  }
+
+  #pysuricata-report .heatmap-label {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+  }
+}
+
+/* =============================
+   DETAILS -> MISSING VALUES TAB (IN VARIABLE CARDS)
+   ============================= */
+
+/* Spacing for sections within missing tab */
+#pysuricata-report .tab-pane[data-tab="missing"] .missing-analysis-header,
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-distribution {
+  margin-bottom: 1rem;
+}
+
+/* Section titles - only in missing tab */
+#pysuricata-report .tab-pane[data-tab="missing"] h4.section-title,
+#pysuricata-report .tab-pane[data-tab="missing"] .section-title,
+#pysuricata-report .tab-pane[data-tab="missing"] .missing-analysis-header h4,
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-distribution h4 {
+  font-size: 0.95rem !important;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 0.5rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] h4.section-title,
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .section-title,
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .missing-analysis-header h4,
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .chunk-distribution h4 {
+  color: var(--text-primary);
+  border-bottom-color: var(--border-color);
+}
+
+/* Data Completeness - scoped to missing tab */
+#pysuricata-report .tab-pane[data-tab="missing"] .completeness-container {
+  margin-bottom: 2rem;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .completeness-stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .stat-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .stat-label {
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .stat-label {
+  color: var(--text-secondary);
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .stat-value {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .stat-value {
+  color: var(--text-primary);
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .stat-pct {
+  font-weight: 400;
+  opacity: 0.8;
+}
+
+/* Completeness Bar - scoped to missing tab */
+#pysuricata-report .tab-pane[data-tab="missing"] .completeness-bar {
+  height: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  background: var(--bg-secondary);
+  border: 1px solid var(--divider-light);
+}
+
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .completeness-bar {
+  background: var(--bg-secondary);
+  border-color: var(--divider-dark);
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .completeness-bar .bar-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .completeness-bar .bar-fill.present {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .completeness-bar .bar-fill.missing {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+}
+
+/* Chunk Distribution - scoped to missing tab */
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .chunk-info {
+  color: var(--text-secondary);
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-spectrum {
+  height: 24px;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  background: var(--bg-secondary);
+  border: 1px solid var(--divider-light);
+  margin-bottom: 0.75rem;
+}
+
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .chunk-spectrum {
+  background: var(--bg-secondary);
+  border-color: var(--divider-dark);
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment {
+  height: 100%;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment:hover {
+  opacity: 0.8;
+  transform: scaleY(1.1);
+  z-index: 10;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment.low {
+  background: #4caf50;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment.medium {
+  background: #ff9800;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment.high {
+  background: #f44336;
+}
+
+/* Enhanced Tooltip Styling for Chunk Segments */
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment::before {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.95);
+  color: white;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s ease;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
+  max-width: 300px;
+  text-align: center;
+}
+
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .chunk-segment::before {
+  background: rgba(255, 255, 255, 0.98);
+  color: #1a1a1a;
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(6px);
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(100%);
+  border: 5px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .chunk-segment::after {
+  border-top-color: rgba(255, 255, 255, 0.98);
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment:hover::before,
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment:hover::after {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) translateY(-5px);
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment:hover::after {
+  transform: translateX(-50%) translateY(95%);
+}
+
+/* Legend - scoped to missing tab */
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-legend {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  justify-content: center;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .color-box {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+#pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .color-box {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .color-box.low {
+  background: #4caf50;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .color-box.medium {
+  background: #ff9800;
+}
+
+#pysuricata-report .tab-pane[data-tab="missing"] .color-box.high {
+  background: #f44336;
 }
 
 /* Missing Values Section */
@@ -6658,8 +7193,8 @@ body.suricata-standalone:not(.light) {
 /* Description section styling - compact dropdown */
 #pysuricata-report .description-value {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  font-size: 0.95rem;
+  line-height: 1.6;
   color: var(--text-primary);
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -6675,11 +7210,16 @@ body.suricata-standalone:not(.light) {
 }
 
 #pysuricata-report .description-value:hover:not(.editing) {
-  background: rgba(0, 0, 0, 0.02);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.02), rgba(59, 130, 246, 0.01));
+  border-color: rgba(59, 130, 246, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
 }
 
 #pysuricata-report:not(.light) .description-value:hover:not(.editing) {
-  background: rgba(255, 255, 255, 0.04);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.04));
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 #pysuricata-report .description-value:empty::before {
@@ -6690,19 +7230,27 @@ body.suricata-standalone:not(.light) {
 
 /* Edit mode */
 #pysuricata-report .description-value.editing {
-  border-color: var(--bar);
+  border-color: var(--accent-color);
   background: var(--bg-secondary);
   cursor: text;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 #pysuricata-report .description-content {
   margin: 0;
+  min-height: 24px;
 }
 
 #pysuricata-report .description-content .placeholder {
   color: var(--text-muted);
   font-style: italic;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+#pysuricata-report .description-value:hover:not(.editing) .placeholder {
+  opacity: 0.9;
 }
 
 /* Textarea editor */

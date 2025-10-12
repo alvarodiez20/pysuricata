@@ -2,7 +2,7 @@
 
 import math
 from collections.abc import Sequence
-from typing import Any, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -565,7 +565,7 @@ class NumericCardRenderer(CardRenderer):
             + "</div>"
         )
 
-    def _build_outliers_tables(self, stats: NumericStats) -> Tuple[str, str]:
+    def _build_outliers_tables(self, stats: NumericStats) -> tuple[str, str]:
         """Build outliers tables."""
         try:
             sample_vals = list(getattr(stats, "sample_vals", []) or [])
@@ -599,7 +599,7 @@ class NumericCardRenderer(CardRenderer):
 
     def _identify_outliers(
         self, stats: NumericStats, sample_vals: list
-    ) -> Tuple[list, list]:
+    ) -> tuple[list, list]:
         """Identify outliers using IQR and MAD methods."""
         low_list = []
         high_list = []
@@ -874,7 +874,7 @@ class NumericCardRenderer(CardRenderer):
 
         # Calculate summary statistics
         corr_values = [abs(corr) for _, corr in corr_data]
-        avg_strength = sum(corr_values) / len(corr_values) if corr_values else 0
+        sum(corr_values) / len(corr_values) if corr_values else 0
 
         # Categorize correlations by strength
         strength_counts = {"very_strong": 0, "strong": 0, "moderate": 0, "weak": 0}
@@ -978,19 +978,15 @@ class NumericCardRenderer(CardRenderer):
         return summary_html + table_html
 
     def _build_missing_values_table(self, stats: NumericStats) -> str:
-        """Build comprehensive missing values analysis table with visual elements.
-
-        This method creates a professional, feature-rich analysis of missing data
-        including summary statistics, visual indicators, and data quality insights.
-        Optimized for performance on large datasets with efficient calculations.
+        """Build simple missing values analysis matching reference HTML.
 
         Args:
             stats: NumericStats object containing missing data information
 
         Returns:
-            HTML string for the enhanced missing values analysis
+            HTML string for the missing values analysis
         """
-        # Calculate missing data statistics with safe division
+        # Calculate missing data statistics
         total_values = stats.count + stats.missing
         missing_pct = (
             (stats.missing / max(1, total_values)) * 100.0 if total_values > 0 else 0.0
@@ -999,77 +995,98 @@ class NumericCardRenderer(CardRenderer):
             (stats.count / max(1, total_values)) * 100.0 if total_values > 0 else 0.0
         )
 
-        # Calculate other data quality metrics with safe division
-        zeros_pct = (
-            (stats.zeros / max(1, stats.count)) * 100.0 if stats.count > 0 else 0.0
-        )
-        inf_pct = (stats.inf / max(1, stats.count)) * 100.0 if stats.count > 0 else 0.0
-        neg_pct = (
-            (stats.negatives / max(1, stats.count)) * 100.0 if stats.count > 0 else 0.0
-        )
+        # Section 1: Data Completeness
+        completeness_html = f"""
+        <div class="missing-analysis-header">
+            <h4 class="section-title">Data Completeness</h4>
+        </div>
 
-        # Determine data quality severity with clear thresholds
-        quality_severity, quality_label, quality_icon = self._get_missing_data_severity(
-            missing_pct
-        )
-
-        # Build summary header with performance-optimized string formatting
-        summary_html = f"""
-        <div class="missing-summary">
-            <div class="summary-header">
-                <span class="icon">📊</span>
-                <span class="title">Missing Values Analysis</span>
-                <span class="quality-indicator {quality_severity}">
-                    {quality_icon} {quality_label} Missing Data
+        <div class="completeness-container">
+            <div class="completeness-stats">
+                <span class="stat-item">
+                    <span class="stat-label">Present:</span>
+                    <span class="stat-value">{stats.count:,} <span class="stat-pct">({present_pct:.1f}%)</span></span>
+                </span>
+                <span class="stat-item">
+                    <span class="stat-label">Missing:</span>
+                    <span class="stat-value">{stats.missing:,} <span class="stat-pct">({missing_pct:.1f}%)</span></span>
                 </span>
             </div>
-            <div class="data-overview">
-                <div class="overview-item">
-                    <span class="label">Total Values</span>
-                    <span class="value">{total_values:,}</span>
-                </div>
-                <div class="overview-item present">
-                    <span class="label">Present</span>
-                    <span class="value">{stats.count:,}</span>
-                    <span class="percentage">({present_pct:.1f}%)</span>
-                </div>
-                <div class="overview-item missing">
-                    <span class="label">Missing</span>
-                    <span class="value">{stats.missing:,}</span>
-                    <span class="percentage">({missing_pct:.1f}%)</span>
-                </div>
+            <div class="completeness-bar">
+                <div class="bar-fill present" style="width: {present_pct:.1f}%" title="Present: {present_pct:.1f}%"></div>
+                <div class="bar-fill missing" style="width: {missing_pct:.1f}%" title="Missing: {missing_pct:.1f}%"></div>
             </div>
         </div>
         """
 
-        # Build visual progress bars with efficient string formatting
-        progress_html = f"""
-        <div class="missing-visualization">
-            <div class="progress-container">
-                <div class="progress-bar-container">
-                    <div class="progress-label">Data Completeness</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill present" style="width: {present_pct:.1f}%"></div>
-                        <div class="progress-fill missing" style="width: {missing_pct:.1f}%"></div>
-                    </div>
-                    <div class="progress-legend">
-                        <span class="legend-item present">Present: {present_pct:.1f}%</span>
-                        <span class="legend-item missing">Missing: {missing_pct:.1f}%</span>
-                    </div>
-                </div>
+        # Section 2: Chunk Distribution
+        chunk_html = self._build_chunk_distribution_simple(stats)
+
+        return completeness_html + chunk_html
+
+    def _build_chunk_distribution_simple(self, stats: NumericStats) -> str:
+        """Build simple chunk distribution visualization matching reference HTML.
+
+        Args:
+            stats: NumericStats object
+
+        Returns:
+            HTML string for chunk distribution
+        """
+        # Get chunk metadata
+        chunk_metadata = getattr(stats, "chunk_metadata", None)
+        if not chunk_metadata:
+            return ""
+
+        total_values = stats.count + stats.missing
+        if total_values == 0:
+            return ""
+
+        # Build segments
+        segments_html = ""
+        max_missing_pct = 0.0
+        num_chunks = len(chunk_metadata)
+
+        for start_row, end_row, missing_count in chunk_metadata:
+            chunk_size = end_row - start_row + 1
+            missing_pct = (
+                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
+            )
+            width_pct = (chunk_size / total_values) * 100.0
+
+            # Track peak
+            if missing_pct > max_missing_pct:
+                max_missing_pct = missing_pct
+
+            # Determine severity class (3 levels only)
+            if missing_pct <= 5:
+                severity = "low"
+            elif missing_pct <= 20:
+                severity = "medium"
+            else:
+                severity = "high"
+
+            segments_html += f"""
+            <div class="chunk-segment {severity}" style="width: {width_pct:.2f}%" title="Rows {start_row:,}-{end_row:,}: {missing_count:,} missing ({missing_pct:.1f}%)"></div>
+            """
+
+        return f"""
+        <div class="chunk-distribution">
+            <h4 class="section-title">Missing Values Distribution</h4>
+            <div class="chunk-info">
+                <span>{num_chunks} chunks analyzed</span>
+                <span>Peak: {max_missing_pct:.1f}%</span>
+            </div>
+            <div class="chunk-spectrum">
+                {segments_html}
+            </div>
+            <div class="chunk-legend">
+                <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
+                <span class="legend-item"><span class="color-box medium"></span>Medium (5-20%)</span>
+                <span class="legend-item"><span class="color-box high"></span>High (20%+)</span>
             </div>
         </div>
         """
-
-        # Build data quality indicators with efficient list comprehension
-        quality_indicators = self._build_quality_indicators(
-            stats, missing_pct, zeros_pct, inf_pct, neg_pct, quality_severity
-        )
-
-        # Add missing values per chunk visualization (DataPrep-style spectrum)
-        chunk_visualization_html = self._build_dataprep_spectrum_visualization(stats)
-
-        return summary_html + progress_html + chunk_visualization_html
 
     def _build_dataprep_spectrum_visualization(self, stats: NumericStats) -> str:
         """Build DataPrep-style spectrum visualization for missing values per chunk.
@@ -1121,7 +1138,7 @@ class NumericCardRenderer(CardRenderer):
             )
 
             segments_html += f"""
-            <div class="spectrum-segment {color_class}" 
+            <div class="spectrum-segment {color_class}"
                  style="width: {segment_width_pct:.2f}%"
                  title="{tooltip_content}"
                  data-start="{start_row}"
@@ -1167,11 +1184,11 @@ class NumericCardRenderer(CardRenderer):
                     {total_chunks} chunks • {max_missing_pct:.1f}% max • {avg_missing_pct:.1f}% avg
                 </span>
             </div>
-            
+
             <div class="spectrum-bar">
                 {segments_html}
             </div>
-            
+
             <div class="spectrum-summary">
                 <span class="severity-indicator {severity}">
                     {severity_icon} {severity.title()} Missing Data
@@ -1180,7 +1197,7 @@ class NumericCardRenderer(CardRenderer):
                     Hover over segments to see chunk details
                 </span>
             </div>
-            
+
             <div class="spectrum-legend">
                 <div class="legend-item">
                     <span class="legend-color spectrum-low"></span>
@@ -1386,7 +1403,7 @@ class NumericCardRenderer(CardRenderer):
                     <span class="chunk-size">Size: {chunk["size"]:,}</span>
                 </div>
                 <div class="chunk-bar-container">
-                    <div class="chunk-bar-fill {severity_class}" 
+                    <div class="chunk-bar-fill {severity_class}"
                          style="width: {bar_width:.1f}%"
                          title="Chunk {chunk["index"]}: {chunk["missing"]:,} missing values ({chunk["missing_pct"]:.1f}%)">
                     </div>
@@ -1436,16 +1453,16 @@ class NumericCardRenderer(CardRenderer):
                     {stats.missing:,} missing ({insights.get("overall_missing_pct", 0):.1f}% overall)
                 </span>
             </div>
-            
+
             <div class="chunk-visualization">
                 <div class="chunk-bars">
                     {chunk_bars}
                 </div>
-                
+
                 {summary_html}
                 {insights_html}
             </div>
-            
+
             <div class="chunk-legend">
                 <div class="legend-item">
                     <span class="legend-color low"></span>
