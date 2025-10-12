@@ -7,6 +7,7 @@ across all columns simultaneously, with support for hundreds of columns.
 
 from __future__ import annotations
 
+import html as _html
 from typing import Dict, List, Tuple
 
 
