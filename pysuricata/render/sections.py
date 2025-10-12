@@ -8,12 +8,13 @@ dependencies where possible and provides a pandas-free HTML path for
 polars datasets.
 """
 
-from typing import Any, Iterable, List, Sequence, Tuple
+from collections.abc import Iterable, Sequence
+from typing import Any, List, Tuple
 
 import numpy as np
 
 
-def _build_sample_table_html(pdf: "pd.DataFrame") -> str:  # type: ignore[name-defined]
+def _build_sample_table_html(pdf: pd.DataFrame) -> str:  # type: ignore[name-defined]
     """Build an HTML table for a pandas sample frame.
 
     The function right-aligns numeric columns by wrapping values in
@@ -82,7 +83,7 @@ def _build_simple_table_html(
     return f'<table class="sample-table">{thead}{tbody}</table>'
 
 
-def _sample_pandas(df: "pd.DataFrame", sample_rows: int) -> Tuple["pd.DataFrame", int]:  # type: ignore[name-defined]
+def _sample_pandas(df: pd.DataFrame, sample_rows: int) -> Tuple[pd.DataFrame, int]:  # type: ignore[name-defined]
     """Sample rows from a pandas DataFrame and add a positional column.
 
     Args:
@@ -105,7 +106,7 @@ def _sample_pandas(df: "pd.DataFrame", sample_rows: int) -> Tuple["pd.DataFrame"
 
 
 def _sample_polars(
-    df: "pl.DataFrame", sample_rows: int
+    df: pl.DataFrame, sample_rows: int
 ) -> Tuple[Tuple[List[str], List[Sequence[Any]], List[int]], int]:  # type: ignore[name-defined]
     """Sample rows from a polars DataFrame and build HTML-friendly payload.
 
@@ -126,7 +127,7 @@ def _sample_polars(
         - ``n_rows``: Number of sampled rows actually returned.
     """
     try:
-        import polars as pl  # type: ignore
+        pass  # type: ignore
     except Exception:
         # No polars, return empty
         return ([], [], []), 0
@@ -136,11 +137,11 @@ def _sample_polars(
         cols = [""] + list(df.columns)
         return (cols, [], []), 0
     try:
-        with_idx = df.with_row_count(name="")
+        with_idx = df.with_row_index(name="")
         sampled = with_idx.sample(n=n, with_replacement=False, shuffle=True)
     except Exception:
         # If sample not available (older polars), fall back to head
-        sampled = df.with_row_count(name="").head(n)
+        sampled = df.with_row_index(name="").head(n)
     # Build simple table without pandas
     cols = [""] + list(df.columns)
     try:
@@ -149,19 +150,19 @@ def _sample_polars(
         rows = []
     # numeric columns: detect using polars dtypes
     try:
-        import polars as pl  # type: ignore
+        from polars import selectors as cs  # type: ignore
 
+        # Use selectors to detect numeric columns
+        numeric_cols = set(df.select(cs.numeric()).columns)
         numeric_idx = [0] + [
-            i + 1
-            for i, c in enumerate(df.columns)
-            if df.schema.get(c) in pl.NUMERIC_DTYPES
+            i + 1 for i, c in enumerate(df.columns) if c in numeric_cols
         ]
     except Exception:
         numeric_idx = [0]
     return (cols, rows, numeric_idx), n
 
 
-def render_sample_section_pandas(df: "pd.DataFrame", sample_rows: int = 10) -> str:  # type: ignore[name-defined]
+def render_sample_section_pandas(df: pd.DataFrame, sample_rows: int = 10) -> str:  # type: ignore[name-defined]
     """Render the sample content for a pandas chunk.
 
     Args:
@@ -190,7 +191,7 @@ def render_sample_section_pandas(df: "pd.DataFrame", sample_rows: int = 10) -> s
     return _wrap_sample_content(sample_html_table, n)
 
 
-def render_sample_section_polars(df: "pl.DataFrame", sample_rows: int = 10) -> str:  # type: ignore[name-defined]
+def render_sample_section_polars(df: pl.DataFrame, sample_rows: int = 10) -> str:  # type: ignore[name-defined]
     """Render the sample content for a polars chunk.
 
     This function relies solely on polars to compute the sample and build the

@@ -37,7 +37,9 @@ venv/
 .ipynb_checkpoints/
 
 # VSCode settings
-.vscode/
+.vscode/settings.json
+.vscode/launch.json
+.vscode/*.code-workspace
 
 # Coverage reports
 htmlcov/
@@ -58,3 +60,22 @@ coverage.xml
 /report_*.html
 /oom_demo.csv
 *.parquet
+
+# Test files and temporary files
+*_test*.html
+*test_*.html
+*_demo_*.html
+*_FIX.md
+*_SUMMARY.md
+*_IMPLEMENTATION.md
+*_GUIDE.md
+*_COMPARISON.md
+*_ENHANCEMENTS.md
+*.backup
+
+# Temporary utility scripts
+fix_*.py
+update_*.py
+
+# MkDocs build output
+site/

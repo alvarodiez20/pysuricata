@@ -4,7 +4,7 @@ import html as _html
 import os
 import time
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from .._version import resolve_version as _resolve_pysuricata_version
 from ..compute.core.types import ColumnKinds
@@ -15,6 +15,7 @@ from .cards import render_dt_card as _render_dt_card
 from .cards import render_numeric_card as _render_numeric_card
 from .format_utils import human_bytes as _human_bytes
 from .format_utils import human_time as _human_time
+from .markdown_utils import render_markdown_to_html
 from .missing_columns import create_missing_columns_renderer
 from .svg_utils import safe_col_id as _safe_col_id
 
@@ -252,6 +253,17 @@ def render_html_snapshot(
     pysuricata_version = _resolve_pysuricata_version()
     repo_url = "https://github.com/alvarodiez20/pysuricata"
 
+    # Process description
+    description_raw = getattr(cfg, "description", None) or ""
+    # Treat whitespace-only descriptions as empty
+    if description_raw and not description_raw.strip():
+        description_raw = ""
+    description_html = (
+        render_markdown_to_html(description_raw) if description_raw else ""
+    )
+    # Escape the raw markdown for the data attribute
+    description_attr = _html.escape(description_raw) if description_raw else ""
+
     html = template.format(
         favicon=favicon_tag,
         css=css_tag,
@@ -282,6 +294,8 @@ def render_html_snapshot(
         dataset_sample_section=sample_section_html or "",
         variables_section=variables_section_html,
         missing_values_section=missing_values_section_html,
+        description_html=description_html,
+        description_attr=description_attr,
     )
     return html
 
