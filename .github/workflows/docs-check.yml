@@ -32,45 +32,6 @@ jobs:
       - name: Build docs (strict mode)
         run: uv run mkdocs build --strict
 
-      - name: Check for broken internal links
-        run: |
-          uv run python -c "
-          import os
-          import re
-          from pathlib import Path
-          
-          # Collect all doc files
-          doc_files = set()
-          for p in Path('docs').rglob('*.md'):
-              doc_files.add(str(p.relative_to('docs')))
-          
-          # Check links in markdown files
-          broken_links = []
-          for md_file in Path('docs').rglob('*.md'):
-              content = md_file.read_text()
-              # Find markdown links
-              links = re.findall(r'\[([^\]]+)\]\(([^)]+)\)', content)
-              for text, link in links:
-                  if link.startswith('http') or link.startswith('#'):
-                      continue
-                  # Remove anchor
-                  link = link.split('#')[0]
-                  if not link:
-                      continue
-                  # Check if file exists
-                  target = (md_file.parent / link).resolve()
-                  if not target.exists():
-                      broken_links.append(f'{md_file}: broken link to {link}')
-          
-          if broken_links:
-              print('Broken links found:')
-              for link in broken_links:
-                  print(f'  - {link}')
-              exit(1)
-          else:
-              print('✓ All internal links valid')
-          "
-
 
 
 
