@@ -3,18 +3,22 @@ from __future__ import annotations
 """Sample-section renderers for pandas and polars.
 
 This module contains small, testable helpers to build the sample content
-for the report for both pandas and polars backends. It avoids heavyweight 
-dependencies where possible and provides a pandas-free HTML path for 
+for the report for both pandas and polars backends. It avoids heavyweight
+dependencies where possible and provides a pandas-free HTML path for
 polars datasets.
 """
 
 from collections.abc import Iterable, Sequence
-from typing import Any, List, Tuple
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
+if TYPE_CHECKING:
+    import pandas as pd
+    import polars as pl
 
-def _build_sample_table_html(pdf: pd.DataFrame) -> str:  # type: ignore[name-defined]
+
+def _build_sample_table_html(pdf: pd.DataFrame) -> str:
     """Build an HTML table for a pandas sample frame.
 
     The function right-aligns numeric columns by wrapping values in
@@ -61,13 +65,13 @@ def _build_simple_table_html(
         str: HTML for a table suitable for embedding in the sample section.
     """
     try:
-        num_set = set(int(i) for i in numeric_idx)
+        num_set = {int(i) for i in numeric_idx}
     except Exception:
         num_set = set()
     # Header
     thead = "<thead><tr>" + "".join(f"<th>{c}</th>" for c in columns) + "</tr></thead>"
     # Body
-    body_cells: List[str] = []
+    body_cells: list[str] = []
     for r in rows:
         try:
             cells = []
@@ -83,7 +87,7 @@ def _build_simple_table_html(
     return f'<table class="sample-table">{thead}{tbody}</table>'
 
 
-def _sample_pandas(df: pd.DataFrame, sample_rows: int) -> Tuple[pd.DataFrame, int]:  # type: ignore[name-defined]
+def _sample_pandas(df: pd.DataFrame, sample_rows: int) -> tuple[pd.DataFrame, int]:
     """Sample rows from a pandas DataFrame and add a positional column.
 
     Args:
@@ -107,11 +111,11 @@ def _sample_pandas(df: pd.DataFrame, sample_rows: int) -> Tuple[pd.DataFrame, in
 
 def _sample_polars(
     df: pl.DataFrame, sample_rows: int
-) -> Tuple[Tuple[List[str], List[Sequence[Any]], List[int]], int]:  # type: ignore[name-defined]
+) -> tuple[tuple[list[str], list[Sequence[Any]], list[int]], int]:
     """Sample rows from a polars DataFrame and build HTML-friendly payload.
 
     This path never converts to pandas. It adds a positional column via
-    ``with_row_count``, samples rows (without replacement), and returns the
+    ``with_row_index``, samples rows (without replacement), and returns the
     sequences required by :func:`_build_simple_table_html`.
 
     Args:
@@ -119,18 +123,13 @@ def _sample_polars(
         sample_rows: Maximum number of rows to sample (capped by height).
 
     Returns:
-        Tuple[((columns, rows, numeric_idx), n_rows)]:
+        tuple[((columns, rows, numeric_idx), n_rows)]:
         - ``columns``: Display column names including the positional column.
         - ``rows``: Sampled rows as sequences.
         - ``numeric_idx``: Indices (including the positional column 0) that
           should be right-aligned.
         - ``n_rows``: Number of sampled rows actually returned.
     """
-    try:
-        pass  # type: ignore
-    except Exception:
-        # No polars, return empty
-        return ([], [], []), 0
 
     n = max(0, min(int(sample_rows), int(df.height)))
     if n <= 0:
@@ -162,7 +161,7 @@ def _sample_polars(
     return (cols, rows, numeric_idx), n
 
 
-def render_sample_section_pandas(df: pd.DataFrame, sample_rows: int = 10) -> str:  # type: ignore[name-defined]
+def render_sample_section_pandas(df: pd.DataFrame, sample_rows: int = 10) -> str:
     """Render the sample content for a pandas chunk.
 
     Args:
@@ -191,7 +190,7 @@ def render_sample_section_pandas(df: pd.DataFrame, sample_rows: int = 10) -> str
     return _wrap_sample_content(sample_html_table, n)
 
 
-def render_sample_section_polars(df: pl.DataFrame, sample_rows: int = 10) -> str:  # type: ignore[name-defined]
+def render_sample_section_polars(df: pl.DataFrame, sample_rows: int = 10) -> str:
     """Render the sample content for a polars chunk.
 
     This function relies solely on polars to compute the sample and build the
