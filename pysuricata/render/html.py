@@ -4,15 +4,9 @@ import html as _html
 import os
 import time
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, List, Optional
 
 from .._version import resolve_version as _resolve_pysuricata_version
-from ..accumulators import (
-    BooleanAccumulator,
-    CategoricalAccumulator,
-    DatetimeAccumulator,
-    NumericAccumulator,
-)
 from ..compute.core.types import ColumnKinds
 from ..utils import embed_favicon, embed_image, load_css, load_script, load_template
 from .cards import render_bool_card as _render_bool_card
@@ -21,6 +15,7 @@ from .cards import render_dt_card as _render_dt_card
 from .cards import render_numeric_card as _render_numeric_card
 from .format_utils import human_bytes as _human_bytes
 from .format_utils import human_time as _human_time
+from .markdown_utils import render_markdown_to_html
 from .missing_columns import create_missing_columns_renderer
 from .svg_utils import safe_col_id as _safe_col_id
 
@@ -28,8 +23,8 @@ from .svg_utils import safe_col_id as _safe_col_id
 def render_html_snapshot(
     *,
     kinds: ColumnKinds,
-    accs: Dict[str, Any],
-    first_columns: List[str],
+    accs: dict[str, Any],
+    first_columns: list[str],
     row_kmv: Any,
     total_missing_cells: int,
     approx_mem_bytes: int,
@@ -37,7 +32,7 @@ def render_html_snapshot(
     cfg: Any,
     report_title: Optional[str],
     sample_section_html: str,
-    chunk_metadata: Optional[List[Tuple[int, int, int]]] = None,
+    chunk_metadata: Optional[list[tuple[int, int, int]]] = None,
 ) -> str:
     kinds_map = {
         **{name: ("numeric", accs[name]) for name in kinds.numeric},
@@ -47,7 +42,7 @@ def render_html_snapshot(
     }
 
     # Build missing columns list using intelligent analysis
-    miss_list: List[tuple[str, float, int]] = []
+    miss_list: list[tuple[str, float, int]] = []
     for name, (kind, acc) in kinds_map.items():
         miss = getattr(acc, "missing", 0)
         cnt = getattr(acc, "count", 0) + miss
@@ -83,7 +78,7 @@ def render_html_snapshot(
         else:
             present = (acc.true_n > 0) + (acc.false_n > 0)
             u = int(present)
-        total = getattr(acc, "count", 0) + getattr(acc, "missing", 0)
+        _ = getattr(acc, "count", 0) + getattr(acc, "missing", 0)
         if u <= 1:
             constant_cols += 1
         if kind == "categorical" and n_rows:
@@ -100,10 +95,14 @@ def render_html_snapshot(
                 maxs.append(acc._max_ts)
         if mins and maxs:
             date_min = (
-                datetime.fromtimestamp(min(mins) / 1_000_000_000, tz=timezone.utc).isoformat().replace('+00:00', 'Z')
+                datetime.fromtimestamp(min(mins) / 1_000_000_000, tz=timezone.utc)
+                .isoformat()
+                .replace("+00:00", "Z")
             )
             date_max = (
-                datetime.fromtimestamp(max(maxs) / 1_000_000_000, tz=timezone.utc).isoformat().replace('+00:00', 'Z')
+                datetime.fromtimestamp(max(maxs) / 1_000_000_000, tz=timezone.utc)
+                .isoformat()
+                .replace("+00:00", "Z")
             )
         else:
             date_min = date_max = "—"
@@ -140,7 +139,7 @@ def render_html_snapshot(
             card_html = _render_cat_card(acc.finalize())
             data_type = "categorical"
         elif name in kinds.datetime:
-            card_html = _render_dt_card(acc.finalize())
+            card_html = _render_dt_card(acc.finalize(chunk_metadata))
             data_type = "datetime"
         elif name in kinds.boolean:
             card_html = _render_bool_card(acc.finalize())
@@ -163,7 +162,7 @@ def render_html_snapshot(
     )
     variables_section_html = f"""
           <p class=\"muted small\">Analyzing {total_variables} variables ({len(kinds.numeric)} numeric, {len(kinds.categorical)} categorical, {len(kinds.datetime)} datetime, {len(kinds.boolean)} boolean).</p>
-          
+
           <div class=\"vars-controls\">
             <div class=\"controls-row\">
               <input type=\"text\" placeholder=\"Search columns...\" id=\"search-input\">
@@ -177,11 +176,11 @@ def render_html_snapshot(
             </div>
             <div class=\"info\" id=\"pagination-info\">Showing 1-{min(8, total_variables)} of {total_variables}</div>
           </div>
-          
+
           <div class=\"cards-grid\" id=\"cards-grid\">
             {"".join(all_cards_list)}
           </div>
-          
+
           <div class=\"pagination\" id=\"pagination\">
             <button id=\"prev-btn\" {"disabled" if total_variables <= 8 else ""}>←</button>
             <div class=\"pages\" id=\"page-numbers\"></div>
@@ -207,6 +206,10 @@ def render_html_snapshot(
     pagination_script_path = os.path.join(static_dir, "js", "pagination.js")
     pagination_script_content = load_script(pagination_script_path)
 
+    # Add description editor
+    description_editor_path = os.path.join(static_dir, "js", "description-editor.js")
+    description_editor_content = load_script(description_editor_path)
+
     # Combine all scripts
     combined_script_content = (
         script_content
@@ -214,6 +217,16 @@ def render_html_snapshot(
         + tooltips_script_content
         + "\n"
         + pagination_script_content
+        + "\n"
+        + description_editor_content
+    )
+
+    # Generate missing values section
+    from .missing_section import MissingValuesSectionRenderer
+
+    missing_section_renderer = MissingValuesSectionRenderer()
+    missing_values_section_html = missing_section_renderer.render_section(
+        kinds_map, accs, n_rows, n_cols, total_missing_cells
     )
     logo_light_path = os.path.join(
         static_dir, "images", "logo_suricata_transparent.png"
@@ -239,6 +252,17 @@ def render_html_snapshot(
     report_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     pysuricata_version = _resolve_pysuricata_version()
     repo_url = "https://github.com/alvarodiez20/pysuricata"
+
+    # Process description
+    description_raw = getattr(cfg, "description", None) or ""
+    # Treat whitespace-only descriptions as empty
+    if description_raw and not description_raw.strip():
+        description_raw = ""
+    description_html = (
+        render_markdown_to_html(description_raw) if description_raw else ""
+    )
+    # Escape the raw markdown for the data attribute
+    description_attr = _html.escape(description_raw) if description_raw else ""
 
     html = template.format(
         favicon=favicon_tag,
@@ -269,6 +293,9 @@ def render_html_snapshot(
         avg_text_len=avg_text_len,
         dataset_sample_section=sample_section_html or "",
         variables_section=variables_section_html,
+        missing_values_section=missing_values_section_html,
+        description_html=description_html,
+        description_attr=description_attr,
     )
     return html
 

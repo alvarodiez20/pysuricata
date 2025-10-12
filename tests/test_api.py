@@ -1,7 +1,5 @@
-import io
 import json
-import os
-from typing import Iterable
+from collections.abc import Iterable
 
 import pandas as pd
 import pytest
@@ -109,12 +107,17 @@ def test__to_engine_config_fallback_without_from_options(monkeypatch):
             uniques_k,
             topk_k,
             random_seed,
+            title=None,
+            description=None,
+            **kwargs,  # Accept any additional parameters
         ):
             self.chunk_size = chunk_size
             self.numeric_sample_k = numeric_sample_k
             self.uniques_k = uniques_k
             self.topk_k = topk_k
             self.random_seed = random_seed
+            self.title = title
+            self.description = description
 
     import pysuricata.api as api
 
@@ -136,6 +139,8 @@ def test__to_engine_config_fallback_without_from_options(monkeypatch):
     assert eng.uniques_k == 22
     assert eng.topk_k == 33
     assert eng.random_seed == 123
+    assert eng.title == "PySuricata EDA Report"  # Default title
+    assert eng.description is None  # No description provided
 
 
 def test_profile_and_summarize_with_pandas():

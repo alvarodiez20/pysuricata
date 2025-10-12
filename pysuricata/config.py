@@ -8,8 +8,8 @@ engine's configuration distinct from the public API config in
 """
 
 import logging
-from dataclasses import dataclass, field
-from typing import Dict, Optional, Protocol, runtime_checkable
+from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
 
 
 @dataclass
@@ -21,6 +21,7 @@ class EngineConfig:
 
     Attributes:
         title: Report title for HTML output
+        description: Optional user description for the summary section
         chunk_size: Number of rows to process in each chunk
         numeric_sample_k: Reservoir sample size for numeric statistics
         uniques_k: Sketch size for approximate unique counting
@@ -48,13 +49,14 @@ class EngineConfig:
     """
 
     title: str = "PySuricata EDA Report"
+    description: str | None = None
     chunk_size: int = 200_000
     numeric_sample_k: int = 20_000
     uniques_k: int = 2048
     topk_k: int = 50
     engine: str = "auto"  # reserved for future (e.g., force polars)
     # Logging
-    logger: Optional[logging.Logger] = None
+    logger: logging.Logger | None = None
     log_level: int = logging.INFO
     log_every_n_chunks: int = 1  # set >1 to reduce verbosity on huge runs
     include_sample: bool = True
@@ -65,11 +67,11 @@ class EngineConfig:
     corr_max_cols: int = 50
     corr_max_per_col: int = 2
     # Randomness control (None = nondeterministic; set an int for reproducibility)
-    random_seed: Optional[int] = None
+    random_seed: int | None = None
 
     # Checkpointing
     checkpoint_every_n_chunks: int = 0  # 0 disables
-    checkpoint_dir: Optional[str] = (
+    checkpoint_dir: str | None = (
         None  # if None, the engine decides (usually CWD or an engine-defined default)
     )
     checkpoint_prefix: str = "pysuricata_ckpt"
@@ -84,7 +86,7 @@ class EngineConfig:
     boolean_detection_min_samples: int = 100
     boolean_detection_max_zero_ratio: float = 0.95
     boolean_detection_require_name_pattern: bool = True
-    force_column_types: Optional[Dict[str, str]] = None
+    force_column_types: dict[str, str] | None = None
 
     # Missing columns display options
     missing_columns_threshold_pct: float = 0.5  # Minimum missing percentage to display
@@ -92,7 +94,7 @@ class EngineConfig:
     missing_columns_max_expanded: int = 25  # Maximum columns shown when expanded
 
     @classmethod
-    def from_options(cls, opts: "EngineOptions") -> "EngineConfig":
+    def from_options(cls, opts: EngineOptions) -> EngineConfig:
         """Build engine config from any EngineOptions-compatible object.
 
         Uses duck-typing to avoid import cycles and keep public/internal models
@@ -181,9 +183,9 @@ class EngineOptions(Protocol):
     across public and internal configs.
     """
 
-    chunk_size: Optional[int]
+    chunk_size: int | None
     numeric_sample_k: int
     uniques_k: int
     topk_k: int
     engine: str
-    random_seed: Optional[int]
+    random_seed: int | None

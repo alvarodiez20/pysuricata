@@ -58,11 +58,11 @@ ${root.outerHTML}
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a');
     a.href = url;
-    var ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
+    var ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     a.download = 'pysuricata-report-' + ts + '.html';
     document.body.appendChild(a);
     a.click();
-    setTimeout(function(){ URL.revokeObjectURL(url); a.remove(); }, 0);
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 0);
   } catch (e) {
     console.error('Download failed', e);
   }
@@ -70,103 +70,103 @@ ${root.outerHTML}
 }
 
 // --- Scroll to top functionality for logo/report icon ---
-(function(){
+(function () {
   const ROOT_ID = 'pysuricata-report';
-  
+
   // Add click handler for logo to scroll to top
-  document.addEventListener('click', function(e){
+  document.addEventListener('click', function (e) {
     const logo = e.target.closest('#logo-container, .logo');
     if (!logo) return;
-    
+
     const root = document.getElementById(ROOT_ID);
     if (!root || !root.contains(logo)) return;
-    
+
     // Smooth scroll to top
     window.scrollTo({
       top: 0,
       behavior: 'smooth'
     });
-    
+
     e.preventDefault();
     return false;
   });
 })();
 
 // --- Header pin/unpin toggle (scoped to #pysuricata-report) ---
-(function(){
+(function () {
   const ROOT_ID = 'pysuricata-report';
   const PIN_BTN_ID = 'pin-button';
   const STORAGE_KEY = 'headerPinned';
 
-  function setPinned(pinned){
+  function setPinned(pinned) {
     const root = document.getElementById(ROOT_ID);
-    if(!root) return;
+    if (!root) return;
     const btn = document.getElementById(PIN_BTN_ID);
     const iconOn = document.getElementById('pinIconOn');
     const iconOff = document.getElementById('pinIconOff');
-    if(pinned){
+    if (pinned) {
       root.classList.remove('unpinned');
-      try { localStorage.setItem(STORAGE_KEY, 'true'); } catch(e){}
-      if(btn) btn.setAttribute('aria-label','Unpin header');
-      if(iconOn) iconOn.style.display = '';
-      if(iconOff) iconOff.style.display = 'none';
+      try { localStorage.setItem(STORAGE_KEY, 'true'); } catch (e) { }
+      if (btn) btn.setAttribute('aria-label', 'Unpin header');
+      if (iconOn) iconOn.style.display = '';
+      if (iconOff) iconOff.style.display = 'none';
     } else {
       root.classList.add('unpinned');
-      try { localStorage.setItem(STORAGE_KEY, 'false'); } catch(e){}
-      if(btn) btn.setAttribute('aria-label','Pin header');
-      if(iconOn) iconOn.style.display = 'none';
-      if(iconOff) iconOff.style.display = '';
+      try { localStorage.setItem(STORAGE_KEY, 'false'); } catch (e) { }
+      if (btn) btn.setAttribute('aria-label', 'Pin header');
+      if (iconOn) iconOn.style.display = 'none';
+      if (iconOff) iconOff.style.display = '';
     }
   }
 
   // Public toggle for inline onclick hooks
-  window.toggleHeaderPinScoped = function(){
-    const current = (function(){ try { return localStorage.getItem(STORAGE_KEY) !== 'false'; } catch(e){ return true; } })();
+  window.toggleHeaderPinScoped = function () {
+    const current = (function () { try { return localStorage.getItem(STORAGE_KEY) !== 'false'; } catch (e) { return true; } })();
     setPinned(!current);
     return false;
   };
 
   // Insert a pin link into the quick nav if one isn't present
-  function ensurePinButton(){
+  function ensurePinButton() {
     if (document.getElementById(PIN_BTN_ID)) return;
     const quickNav = document.querySelector('#pysuricata-report .quick');
-    if(!quickNav) return;
+    if (!quickNav) return;
     const a = document.createElement('a');
     a.href = '#';
     a.id = PIN_BTN_ID;
     a.title = 'Unpin header';
-    a.setAttribute('aria-label','Unpin header');
-    a.setAttribute('onclick','return toggleHeaderPinScoped()');
-    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-    svg.setAttribute('aria-hidden','true');
-    svg.setAttribute('viewBox','0 0 16 16');
-    svg.setAttribute('width','16');
-    svg.setAttribute('height','16');
-    const pathOn = document.createElementNS('http://www.w3.org/2000/svg','path');
-    pathOn.setAttribute('id','pinIconOn');
-    pathOn.setAttribute('fill','currentColor');
-    pathOn.setAttribute('d','M6.75 1.5h2.5c.414 0 .75.336.75.75V5h1.25c.414 0 .75.336.75.75s-.336.75-.75.75H10v2.1l1.97 1.97a.75.75 0 1 1-1.06 1.06L8.94 9.81 8.75 10v4.25a.75.75 0 0 1-1.5 0V10l-.19-.19-1.97 1.97a.75.75 0 1 1-1.06-1.06L6 8.6V6.5H4.75a.75.75 0 0 1 0-1.5H6V2.25c0-.414.336-.75.75-.75Z');
-    const pathOff = document.createElementNS('http://www.w3.org/2000/svg','path');
-    pathOff.setAttribute('id','pinIconOff');
-    pathOff.setAttribute('fill','currentColor');
-    pathOff.setAttribute('d','M3.22 2.22a.75.75 0 0 1 1.06 0l8.5 8.5a.75.75 0 1 1-1.06 1.06L9.5 9.56l-.56.56V14a.75.75 0 0 1-1.5 0V10.12l-.56-.56-2.72 2.72a.75.75 0 1 1-1.06-1.06L5.38 8.5V6.5H4.25a.75.75 0 0 1 0-1.5H6V2.25c0-.414.336-.75.75-.75h2.5c.209 0 .398.085.535.222l-1.06 1.06H7.5V5.94L3.22 2.22Z');
+    a.setAttribute('aria-label', 'Unpin header');
+    a.setAttribute('onclick', 'return toggleHeaderPinScoped()');
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('viewBox', '0 0 16 16');
+    svg.setAttribute('width', '16');
+    svg.setAttribute('height', '16');
+    const pathOn = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathOn.setAttribute('id', 'pinIconOn');
+    pathOn.setAttribute('fill', 'currentColor');
+    pathOn.setAttribute('d', 'M6.75 1.5h2.5c.414 0 .75.336.75.75V5h1.25c.414 0 .75.336.75.75s-.336.75-.75.75H10v2.1l1.97 1.97a.75.75 0 1 1-1.06 1.06L8.94 9.81 8.75 10v4.25a.75.75 0 0 1-1.5 0V10l-.19-.19-1.97 1.97a.75.75 0 1 1-1.06-1.06L6 8.6V6.5H4.75a.75.75 0 0 1 0-1.5H6V2.25c0-.414.336-.75.75-.75Z');
+    const pathOff = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathOff.setAttribute('id', 'pinIconOff');
+    pathOff.setAttribute('fill', 'currentColor');
+    pathOff.setAttribute('d', 'M3.22 2.22a.75.75 0 0 1 1.06 0l8.5 8.5a.75.75 0 1 1-1.06 1.06L9.5 9.56l-.56.56V14a.75.75 0 0 1-1.5 0V10.12l-.56-.56-2.72 2.72a.75.75 0 1 1-1.06-1.06L5.38 8.5V6.5H4.25a.75.75 0 0 1 0-1.5H6V2.25c0-.414.336-.75.75-.75h2.5c.209 0 .398.085.535.222l-1.06 1.06H7.5V5.94L3.22 2.22Z');
     pathOff.style.display = 'none';
     svg.appendChild(pathOn); svg.appendChild(pathOff);
     a.appendChild(svg);
     quickNav.appendChild(a);
   }
 
-  document.addEventListener('DOMContentLoaded', function(){
+  document.addEventListener('DOMContentLoaded', function () {
     ensurePinButton();
-    const pinned = (function(){ try { return localStorage.getItem(STORAGE_KEY) !== 'false'; } catch(e){ return true; } })();
+    const pinned = (function () { try { return localStorage.getItem(STORAGE_KEY) !== 'false'; } catch (e) { return true; } })();
     setPinned(pinned);
   });
 })();
 
 // --- Histogram controls: bins + scale (per-card, scoped to #pysuricata-report) ---
-(function(){
+(function () {
   const ROOT_ID = 'pysuricata-report';
-  document.addEventListener('click', function(e){
+  document.addEventListener('click', function (e) {
     const btn = e.target.closest('.hist-controls button');
     if (!btn) return;
     const root = document.getElementById(ROOT_ID);
@@ -210,12 +210,12 @@ ${root.outerHTML}
       target = document.getElementById(targetId);
     }
     if (target) target.classList.add('active');
-  }, {passive:true});
+  }, { passive: true });
 })();
 
 
 /* --- Histogram/Datetime hover tooltip --- */
-(function(){
+(function () {
   const ROOT_ID = 'pysuricata-report';
   function ensureTip() {
     const root = document.getElementById(ROOT_ID);
@@ -230,7 +230,7 @@ ${root.outerHTML}
   }
   function showTip(e, html) {
     const root = document.getElementById(ROOT_ID);
-    const tip  = ensureTip();
+    const tip = ensureTip();
     if (!root || !tip) return;
     tip.innerHTML = html;
     tip.style.display = 'block';
@@ -238,44 +238,55 @@ ${root.outerHTML}
   }
   function hideTip() {
     const root = document.getElementById(ROOT_ID);
-    const tip  = root && root.querySelector('.hist-tooltip');
+    const tip = root && root.querySelector('.hist-tooltip');
     if (tip) tip.style.display = 'none';
   }
   function positionTip(e, tip, root) {
     const r = root.getBoundingClientRect();
     let x = e.clientX - r.left + 12;
-    let y = e.clientY - r.top  + 12;
-    const maxX = r.width  - tip.offsetWidth  - 8;
+    let y = e.clientY - r.top + 12;
+    const maxX = r.width - tip.offsetWidth - 8;
     const maxY = r.height - tip.offsetHeight - 8;
     if (x > maxX) x = Math.max(8, maxX);
     if (y > maxY) y = Math.max(8, maxY);
     tip.style.left = x + 'px';
-    tip.style.top  = y + 'px';
+    tip.style.top = y + 'px';
   }
 
-  // Delegated mouse tracking over bars (numeric hist + datetime mini charts)
-  document.addEventListener('mousemove', function(e){
+  // Timeline histogram hover effects with mathematical notation
+  document.addEventListener('mousemove', function (e) {
+    const timelineHot = e.target.closest('.dt-svg .hot');
+    if (timelineHot) {
+      const count = timelineHot.getAttribute('data-count') || '0';
+      const pct = timelineHot.getAttribute('data-pct') || '0.0';
+      const label = timelineHot.getAttribute('data-label') || '';
+      const html = `<div class="line"><strong>${count}</strong> rows <span class="muted">(${pct}%)</span></div>` +
+        `<div class="line"><span class="muted">Range:</span> [${label}]</div>`;
+      showTip(e, html);
+      return;
+    }
+
     const bar = e.target.closest('.hist-svg .bar, .dt-svg .bar');
     if (!bar) { hideTip(); return; }
     const isDt = !!bar.closest('.dt-svg');
     const count = bar.getAttribute('data-count') || '0';
-    const pct   = bar.getAttribute('data-pct')   || '0.0';
+    const pct = bar.getAttribute('data-pct') || '0.0';
     if (isDt) {
       const label = bar.getAttribute('data-label') || '';
       const html = `<div class="line"><strong>${count}</strong> rows <span class="muted">(${pct}%)</span></div>` +
-                   `<div class="line"><span class="muted">Value:</span> ${label}</div>`;
+        `<div class="line"><span class="muted">Value:</span> ${label}</div>`;
       showTip(e, html);
     } else {
-      const x0    = bar.getAttribute('data-x0')    || '';
-      const x1    = bar.getAttribute('data-x1')    || '';
+      const x0 = bar.getAttribute('data-x0') || '';
+      const x1 = bar.getAttribute('data-x1') || '';
       const html = `<div class="line"><strong>${count}</strong> rows <span class="muted">(${pct}%)</span></div>` +
-                   `<div class="line"><span class="muted">Range:</span> ${x0} – ${x1}</div>`;
+        `<div class="line"><span class="muted">Range:</span> [${x0}, ${x1})</div>`;
       showTip(e, html);
     }
-  }, {passive:true});
+  }, { passive: true });
 
   // Hide when leaving a histogram entirely
-  document.addEventListener('mouseleave', function(e){
+  document.addEventListener('mouseleave', function (e) {
     if (e.target && e.target.closest && (e.target.closest('.hist-svg') || e.target.closest('.dt-svg'))) {
       hideTip();
     }
@@ -283,44 +294,35 @@ ${root.outerHTML}
 })();
 
 /* --- Details section + tabs (full-width) --- */
-(function(){
+(function () {
   const ROOT_ID = 'pysuricata-report';
 
   // Toggle full-width details section controlled via aria-controls
-  document.addEventListener('click', function(e){
+  document.addEventListener('click', function (e) {
     const btn = e.target.closest('.details-toggle');
     if (!btn) return;
     const root = document.getElementById(ROOT_ID);
     if (!root || !root.contains(btn)) return;
 
-    console.log('Details toggle clicked:', btn); // Debug log
-
     const id = btn.getAttribute('aria-controls');
-    console.log('Aria-controls ID:', id); // Debug log
-    
     const panel = id && document.getElementById(id);
-    console.log('Found panel:', panel); // Debug log
-    
+
     if (panel) {
       const isOpen = !panel.hasAttribute('hidden');
-      console.log('Panel is currently open:', isOpen); // Debug log
-      
+
       if (isOpen) {
         panel.setAttribute('hidden', '');
         btn.setAttribute('aria-expanded', 'false');
-        console.log('Panel closed'); // Debug log
       } else {
         panel.removeAttribute('hidden');
         btn.setAttribute('aria-expanded', 'true');
-        console.log('Panel opened'); // Debug log
-        
+
         // Ask dt mini‑charts to render with actual widths now that panel is visible
         try {
           const ev = new CustomEvent('suricata:dt:render', { detail: { container: panel } });
-          document.dispatchEvent(ev);
-          // Run again after layout settles
-          setTimeout(() => document.dispatchEvent(ev), 50);
-        } catch(e) {
+          // Single delayed render after layout settles
+          setTimeout(() => document.dispatchEvent(ev), 100);
+        } catch (e) {
           console.error('Failed to trigger chart render:', e);
         }
       }
@@ -333,29 +335,24 @@ ${root.outerHTML}
     // Legacy fallback: inline dropdown panel inside .details
     const details = btn.closest('.details');
     const legacy = details && details.querySelector('.details-panel');
-    console.log('Legacy panel found:', legacy); // Debug log
-    
+
     if (!legacy) {
-      console.log('No panel found for details toggle'); // Debug log
       return;
     }
-    
+
     const open = !legacy.hasAttribute('hidden');
-    console.log('Legacy panel is currently open:', open); // Debug log
-    
+
     if (open) {
-      legacy.setAttribute('hidden','');
-      btn.setAttribute('aria-expanded','false');
-      console.log('Legacy panel closed'); // Debug log
+      legacy.setAttribute('hidden', '');
+      btn.setAttribute('aria-expanded', 'false');
     } else {
       legacy.removeAttribute('hidden');
-      btn.setAttribute('aria-expanded','true');
-      console.log('Legacy panel opened'); // Debug log
+      btn.setAttribute('aria-expanded', 'true');
     }
-  }, {passive: false});
+  }, { passive: false });
 
   // Tab switching inside the details section (or legacy panel)
-  document.addEventListener('click', function(e){
+  document.addEventListener('click', function (e) {
     const tabBtn = e.target.closest('.tabs [role="tab"]');
     if (!tabBtn) return;
     const root = document.getElementById(ROOT_ID);
@@ -369,20 +366,20 @@ ${root.outerHTML}
 
     container.querySelectorAll('.tabs [role="tab"]').forEach(b => b.classList.toggle('active', b === tabBtn));
     container.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.getAttribute('data-tab') === name));
-    if (name === 'dist') {
+    if (name === 'breakdown') {  // Updated tab name
       try {
         const ev = new CustomEvent('suricata:dt:render', { detail: { container } });
-        document.dispatchEvent(ev);
-        setTimeout(() => document.dispatchEvent(ev), 50);
-      } catch(e) {}
+        // Single delayed render after layout settles
+        setTimeout(() => document.dispatchEvent(ev), 100);
+      } catch (e) { }
     }
-  }, {passive: true});
+  }, { passive: true });
 })();
 
 // --- Categorical controls: Top-N + scale (per-card, scoped to #pysuricata-report) ---
-(function(){
+(function () {
   const ROOT_ID = 'pysuricata-report';
-  document.addEventListener('click', function(e){
+  document.addEventListener('click', function (e) {
     const btn = e.target.closest('.hist-controls button');
     if (!btn) return;
     const root = document.getElementById(ROOT_ID);
@@ -429,27 +426,27 @@ ${root.outerHTML}
     // Toggle via active class to align with CSS
     card.querySelectorAll('.cat.variant').forEach(v => v.classList.remove('active'));
     if (target) target.classList.add('active');
-  }, {passive:true});
+  }, { passive: true });
 })();
 
 /* --- Datetime mini-charts renderer (hour/DOW/month/YEAR) --- */
-(function(){
+(function () {
   const ROOT_ID = 'pysuricata-report';
-  const DOW = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-  function renderAll(){
+  function renderAll() {
     const root = document.getElementById(ROOT_ID);
     if (!root) return;
     const metas = root.querySelectorAll('script[type="application/json"][id$="-dt-meta"]');
     metas.forEach(m => {
-      let data; try { data = JSON.parse(m.textContent || '{}'); } catch(e){ data = null; }
+      let data; try { data = JSON.parse(m.textContent || '{}'); } catch (e) { data = null; }
       if (!data) return;
       const colId = m.id.replace(/-dt-meta$/, '');
       // Hour / DOW / Month
-      drawBar(colId + '-dt-hour',  data.counts && data.counts.hour,  Array.from({length:24}, (_,i)=>String(i).padStart(2,'0')+':00'));
-      drawBar(colId + '-dt-dow',   data.counts && data.counts.dow,   DOW);
-      drawBar(colId + '-dt-month', data.counts && data.counts.month, MONTHS.map(m => m.slice(0,3)));
+      drawBar(colId + '-dt-hour', data.counts && data.counts.hour, Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + ':00'));
+      drawBar(colId + '-dt-dow', data.counts && data.counts.dow, DOW);
+      drawBar(colId + '-dt-month', data.counts && data.counts.month, MONTHS.map(m => m.slice(0, 3)));
       // YEAR (dynamic labels)
       const yr = data.counts && data.counts.year;
       if (yr && Array.isArray(yr.values) && Array.isArray(yr.labels)) {
@@ -459,16 +456,16 @@ ${root.outerHTML}
   }
 
   // Render all charts within a provided container (DOM node)
-  function renderIn(container){
+  function renderIn(container) {
     const metas = container.querySelectorAll && container.querySelectorAll('script[type="application/json"][id$="-dt-meta"]');
     if (!metas || !metas.length) return;
     metas.forEach(m => {
-      let data; try { data = JSON.parse(m.textContent || '{}'); } catch(e){ data = null; }
+      let data; try { data = JSON.parse(m.textContent || '{}'); } catch (e) { data = null; }
       if (!data) return;
       const colId = m.id.replace(/-dt-meta$/, '');
-      drawBar(colId + '-dt-hour',  data.counts && data.counts.hour,  Array.from({length:24}, (_,i)=>String(i).padStart(2,'0')+':00'));
-      drawBar(colId + '-dt-dow',   data.counts && data.counts.dow,   DOW);
-      drawBar(colId + '-dt-month', data.counts && data.counts.month, MONTHS);
+      drawBar(colId + '-dt-hour', data.counts && data.counts.hour, Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + ':00'));
+      drawBar(colId + '-dt-dow', data.counts && data.counts.dow, DOW);
+      drawBar(colId + '-dt-month', data.counts && data.counts.month, MONTHS.map(m => m.slice(0, 3)));
       const yr = data.counts && data.counts.year;
       if (yr && Array.isArray(yr.values) && Array.isArray(yr.labels)) {
         drawBar(colId + '-dt-year', yr.values, yr.labels.map(String));
@@ -476,26 +473,33 @@ ${root.outerHTML}
     });
   }
 
-  function drawBar(containerId, values, labels){
+  function drawBar(containerId, values, labels) {
     const el = document.getElementById(containerId);
     if (!el || !values || !labels || values.length === 0) return;
-    const n = values.reduce((a,b)=>a+(+b||0), 0) || 1;
-    const W = el.clientWidth || 420;
-    const H = el.clientHeight || 90;
+
+    // Prevent re-rendering if already rendered with same data
+    const dataHash = JSON.stringify({ values, labels, W, H });
+    if (el.dataset.renderedHash === dataHash && el.innerHTML.includes('svg')) {
+      return;
+    }
+    el.dataset.renderedHash = dataHash;
+    const n = values.reduce((a, b) => a + (+b || 0), 0) || 1;
+    const W = 420; // Fixed width to prevent CSS/JS conflicts
+    const H = 120; // Fixed height to match CSS min-height
     const ML = 36, MR = 8, MT = 8, MB = 20;
     const iw = W - ML - MR;
     const ih = H - MT - MB;
     const max = Math.max(1, Math.max.apply(null, values));
 
-    function sx(i){ return ML + (i + 0.5) / values.length * iw; }
-    function sy(v){ return MT + (1 - v / max) * ih; }
+    function sx(i) { return ML + (i + 0.5) / values.length * iw; }
+    function sy(v) { return MT + (1 - v / max) * ih; }
 
     // Label density
     const dense = labels.length > 12;
     const ticks = [];
     for (let i = 0; i < labels.length; i++) {
-      if (!dense || i % Math.ceil(labels.length/6) === 0 || i === labels.length - 1) {
-        ticks.push({i, label: String(labels[i])});
+      if (!dense || i % Math.ceil(labels.length / 6) === 0 || i === labels.length - 1) {
+        ticks.push({ i, label: String(labels[i]) });
       }
     }
 
@@ -503,19 +507,19 @@ ${root.outerHTML}
     parts.push(`<svg class="dt-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`);
     // Axis
     const xAxisY = MT + ih;
-    parts.push(`<line class="axis" x1="${ML}" y1="${xAxisY}" x2="${ML+iw}" y2="${xAxisY}"></line>`);
+    parts.push(`<line class="axis" x1="${ML}" y1="${xAxisY}" x2="${ML + iw}" y2="${xAxisY}"></line>`);
 
     // Bars
     const bw = Math.max(1, iw / values.length * 0.9);
     for (let i = 0; i < values.length; i++) {
       const v = +values[i] || 0;
-      const x = sx(i) - bw/2;
+      const x = sx(i) - bw / 2;
       const y = sy(v);
       const h = (MT + ih) - y;
       const pct = ((v / n) * 100).toFixed(1);
       const label = labels[i];
       parts.push(
-        `<rect class="bar" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${bw.toFixed(2)}" height="${Math.max(0,h).toFixed(2)}" data-count="${v}" data-pct="${pct}" data-label="${label}"><title>${v} rows\n${label}</title></rect>`
+        `<rect class="bar" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${bw.toFixed(2)}" height="${Math.max(0, h).toFixed(2)}" data-count="${v}" data-pct="${pct}" data-label="${label}"><title>${v} rows\n${label}</title></rect>`
       );
     }
 
@@ -530,20 +534,165 @@ ${root.outerHTML}
   }
 
   // Debounce helper
-  function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t = setTimeout(() => fn.apply(this, arguments), ms); }; }
-  const onResize = debounce(() => { try { renderAll(); } catch(e) {} }, 120);
+  function debounce(fn, ms) { let t; return function () { clearTimeout(t); t = setTimeout(() => fn.apply(this, arguments), ms); }; }
+  let renderTimeout = null;
+  const onResize = debounce(() => {
+    if (renderTimeout) clearTimeout(renderTimeout);
+    renderTimeout = setTimeout(() => {
+      try {
+        renderAll();
+      } catch (e) { }
+    }, 200);
+  }, 300);
   window.addEventListener('resize', onResize);
 
-  document.addEventListener('suricata:dt:render', function(e){
+  document.addEventListener('suricata:dt:render', function (e) {
     const c = e && e.detail && e.detail.container;
-    if (c) { try { renderIn(c); } catch(e2) {} }
+    if (c) { try { renderIn(c); } catch (e2) { } }
   });
+
+  // Variables section controls
+  let searchTerm = '';
+  let currentFilter = 'all';
+  const SEARCH_DEBOUNCE = 300;
+
+  function setupVariablesControls() {
+    const controls = document.querySelector('.vars-controls');
+    const cardsGrid = document.getElementById('cards-grid');
+    const pagination = document.getElementById('pagination');
+
+    if (!controls || !cardsGrid) return;
+
+    // Hide controls if there are 8 or fewer variables
+    const totalCards = cardsGrid.children.length;
+    if (totalCards <= 8) {
+      if (controls) controls.style.display = 'none';
+      if (pagination) pagination.style.display = 'none';
+      return;
+    }
+
+    setupSearch();
+    setupFilters();
+    setupPagination();
+    applyFilters();
+  }
+
+  function setupSearch() {
+    const searchInput = document.getElementById('search-input');
+
+    if (!searchInput) return;
+
+    let timeout;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        searchTerm = e.target.value.toLowerCase();
+        applyFilters();
+      }, SEARCH_DEBOUNCE);
+    });
+  }
+
+  function setupFilters() {
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', (e) => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        e.target.classList.add('active');
+        currentFilter = e.target.dataset.filter;
+        applyFilters();
+      });
+    });
+  }
+
+  function setupPagination() {
+    const prevBtn = document.getElementById('prev-btn');
+    const nextBtn = document.getElementById('next-btn');
+    const paginationInfo = document.getElementById('pagination-info');
+
+    if (!prevBtn || !nextBtn || !paginationInfo) return;
+
+    let currentPage = 1;
+    const cardsPerPage = 8;
+
+    function updatePagination() {
+      const cards = Array.from(document.querySelectorAll('.var-card:not([style*="display: none"])'));
+      const totalPages = Math.ceil(cards.length / cardsPerPage);
+
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = currentPage === totalPages || totalPages === 0;
+
+      const start = (currentPage - 1) * cardsPerPage + 1;
+      const end = Math.min(currentPage * cardsPerPage, cards.length);
+
+      if (cards.length === 0) {
+        paginationInfo.textContent = 'No variables found';
+      } else {
+        paginationInfo.textContent = `Showing ${start}-${end} of ${cards.length}`;
+      }
+
+      // Show/hide cards based on current page
+      cards.forEach((card, index) => {
+        const shouldShow = index >= (currentPage - 1) * cardsPerPage &&
+          index < currentPage * cardsPerPage;
+        card.style.display = shouldShow ? 'block' : 'none';
+      });
+    }
+
+    prevBtn.addEventListener('click', () => {
+      if (currentPage > 1) {
+        currentPage--;
+        updatePagination();
+      }
+    });
+
+    nextBtn.addEventListener('click', () => {
+      const cards = Array.from(document.querySelectorAll('.var-card:not([style*="display: none"])'));
+      const totalPages = Math.ceil(cards.length / cardsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        updatePagination();
+      }
+    });
+
+    // Store update function for use in applyFilters
+    window.updatePagination = updatePagination;
+  }
+
+  function applyFilters() {
+    const cards = document.querySelectorAll('.var-card');
+
+    cards.forEach(card => {
+      const cardName = card.querySelector('.var-card__header h3')?.textContent?.toLowerCase() || '';
+      const cardType = card.dataset.type || '';
+
+      const matchesSearch = !searchTerm || cardName.includes(searchTerm);
+      const matchesFilter = currentFilter === 'all' || cardType === currentFilter;
+
+      if (matchesSearch && matchesFilter) {
+        card.style.display = 'block';
+      } else {
+        card.style.display = 'none';
+      }
+    });
+
+    // Update pagination if it exists
+    if (window.updatePagination) {
+      window.updatePagination();
+    }
+  }
 
   // Run now if DOM is already loaded (e.g., inside notebooks), else on DOMContentLoaded
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    try { renderAll(); } catch (e) {}
+    try {
+      renderAll();
+      setupVariablesControls();
+    } catch (e) { }
   } else {
-    document.addEventListener('DOMContentLoaded', renderAll);
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        renderAll();
+        setupVariablesControls();
+      } catch (e) { }
+    });
   }
 })();
 
@@ -560,10 +709,74 @@ function scrollToTop() {
 function toggleSampleText(detailsElement) {
   const textElement = document.getElementById('sample-toggle-text');
   if (!textElement) return;
-  
+
   if (detailsElement.open) {
     textElement.textContent = 'Hide sample';
   } else {
     textElement.textContent = 'Show sample';
+  }
+}
+
+/* Missing Values Section Tab Switching */
+(function () {
+  function initMissingValuesTabs() {
+    const tabButtons = document.querySelectorAll('.missing-section-tabs button');
+
+    if (tabButtons.length === 0) {
+      // Not loaded yet, try again
+      return;
+    }
+
+    tabButtons.forEach(button => {
+      // Remove existing listeners to prevent duplicates
+      button.replaceWith(button.cloneNode(true));
+    });
+
+    // Re-query after cloning
+    const freshTabButtons = document.querySelectorAll('.missing-section-tabs button');
+
+    freshTabButtons.forEach(button => {
+      button.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const targetTab = this.getAttribute('data-tab');
+        console.log('Tab clicked:', targetTab);
+
+        // Update button states
+        freshTabButtons.forEach(btn => btn.classList.remove('active'));
+        this.classList.add('active');
+
+        // Update content visibility
+        const tabContents = document.querySelectorAll('.missing-tab-content');
+        tabContents.forEach(content => {
+          const contentTab = content.getAttribute('data-tab');
+          if (contentTab === targetTab) {
+            content.classList.add('active');
+            console.log('Activating tab:', contentTab);
+          } else {
+            content.classList.remove('active');
+          }
+        });
+      });
+    });
+  }
+
+  // Try to initialize immediately
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMissingValuesTabs);
+  } else {
+    initMissingValuesTabs();
+  }
+
+  // Also try after a short delay to catch dynamically rendered content
+  setTimeout(initMissingValuesTabs, 100);
+})();
+
+/* Toggle description text */
+function toggleDescriptionText(detailsEl) {
+  const toggleText = document.getElementById('description-toggle-text');
+  if (toggleText) {
+    toggleText.textContent = detailsEl.open ? 'Description' : 'Description';
   }
 }

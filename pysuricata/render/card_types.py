@@ -1,7 +1,8 @@
 """Type definitions for card rendering."""
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -93,6 +94,16 @@ class DateTimeStats:
     by_hour: Optional[List[int]]
     by_dow: Optional[List[int]]
     by_month: Optional[List[int]]
+    by_year: Optional[dict[int, int]]
+    # Temporal analysis fields
+    unique_est: int = 0
+    time_span_days: float = 0.0
+    avg_interval_seconds: float = 0.0
+    interval_std_seconds: float = 0.0
+    weekend_ratio: float = 0.0
+    business_hours_ratio: float = 0.0
+    seasonal_pattern: Optional[str] = None
+    chunk_metadata: Optional[Sequence[Tuple[int, int, int]]] = None
 
 
 @dataclass

@@ -1,1 +1,2 @@
 # Static assets for pysuricata
+
