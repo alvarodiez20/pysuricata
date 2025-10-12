@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, 14-stabilize-code-and-continue-adding-features ]
   pull_request:
     branches: [ main ]
 
