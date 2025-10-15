@@ -749,7 +749,25 @@ class NumericCardRenderer(CardRenderer):
             HTML string for the enhanced outliers table with summary
         """
         if not outliers:
-            return '<div class="muted">No outliers detected</div>'
+            # Still show summary box even with 0 outliers
+            direction_icon = "📉" if direction == "low" else "📈"
+            direction_label = "Low Outliers" if direction == "low" else "High Outliers"
+
+            summary_html = f"""
+            <div class="outlier-summary">
+                <div class="summary-header">
+                    <span class="direction-icon">{direction_icon}</span>
+                    <span class="direction-label">{direction_label}</span>
+                    <span class="outlier-count">0 outliers (0.0%)</span>
+                </div>
+                <div class="severity-breakdown">
+                    <span class="severity-item extreme">Extreme: 0</span>
+                    <span class="severity-item high">High: 0</span>
+                    <span class="severity-item moderate">Moderate: 0</span>
+                </div>
+            </div>
+            """
+            return summary_html
 
         # Calculate summary statistics
         total_count = getattr(stats, "count", 0)
@@ -1746,15 +1764,15 @@ class NumericCardRenderer(CardRenderer):
                 <section class="tab-pane" data-tab="extremes">{extremes_table}</section>
                 <section class="tab-pane" data-tab="outliers">
                     <div class="stats-quant">
-                        <div class="sub"><div class="hdr">Low outliers</div>{outliers_low}</div>
-                        <div class="sub"><div class="hdr">High outliers</div>{outliers_high}</div>
+                        <div class="sub">{outliers_low}</div>
+                        <div class="sub">{outliers_high}</div>
                     </div>
                 </section>
                 <section class="tab-pane" data-tab="corr">
-                    <div class="sub"><div class="hdr">Correlations</div>{corr_table}</div>
+                    <div class="sub">{corr_table}</div>
                 </section>
                 <section class="tab-pane" data-tab="missing">
-                    <div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>
+                    <div class="sub">{missing_table}</div>
                 </section>
             </div>
         </section>

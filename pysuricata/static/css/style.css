@@ -2664,13 +2664,19 @@ body.suricata-standalone:not(.light) {
 }
 
 #pysuricata-report .details-section .tabs [role="tab"].active {
-  background: rgba(0, 0, 0, 0.06);
-  border-color: var(--border-color);
+  background: rgba(59, 130, 246, 0.12);
+  border-color: var(--accent-color);
+  border-bottom: 2px solid var(--accent-color);
+  color: #1e40af;
   font-weight: 600;
 }
 
 #pysuricata-report:not(.light) .details-section .tabs [role="tab"].active {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(96, 165, 250, 0.2);
+  border-color: var(--accent-color);
+  border-bottom: 2px solid var(--accent-color);
+  color: #93c5fd;
+  font-weight: 600;
 }
 
 /* Tab panes visibility */
@@ -5358,14 +5364,14 @@ body.suricata-standalone:not(.light) {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
-#pysuricata-report .details-section .tabs [role="tab"]:hover {
+#pysuricata-report .details-section .tabs [role="tab"]:hover:not(.active) {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   background: rgba(0, 0, 0, 0.08) !important;
   border-color: var(--accent-color) !important;
 }
 
-#pysuricata-report:not(.light) .details-section .tabs [role="tab"]:hover {
+#pysuricata-report:not(.light) .details-section .tabs [role="tab"]:hover:not(.active) {
   background: rgba(255, 255, 255, 0.12) !important;
 }
 
