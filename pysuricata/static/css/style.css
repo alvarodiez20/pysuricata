@@ -846,6 +846,7 @@ body.suricata-standalone:not(.light) {
   justify-content: space-between;
   gap: 12px;
   font-weight: 700;
+  border-radius: 10px;
   transition: background-color 0.2s ease;
 }
 
@@ -853,11 +854,26 @@ body.suricata-standalone:not(.light) {
   display: none;
 }
 
+/* Hover states inherit border-radius from base state */
 #pysuricata-report details.card>summary:hover {
   background: rgba(0, 0, 0, 0.06);
 }
 
 #pysuricata-report:not(.light) details.card>summary:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* When details is open, summary should only have top rounded corners */
+#pysuricata-report details.card[open]>summary {
+  border-radius: 10px 10px 0 0;
+}
+
+/* Hover state when details is open inherits border-radius from open state */
+#pysuricata-report details.card[open]>summary:hover {
+  background: rgba(0, 0, 0, 0.06);
+}
+
+#pysuricata-report:not(.light) details.card[open]>summary:hover {
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -872,6 +888,7 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report details.card>.card-content {
   padding: 12px 14px;
   border-top: 1px solid var(--divider-light);
+  border-radius: 0 0 10px 10px;
 }
 
 #pysuricata-report:not(.light) details.card>.card-content {

@@ -253,8 +253,7 @@ class MissingValuesSectionRenderer:
             segments.append(f"""
             <div class="spectrum-segment {severity_class}"
                  style="width: {width_pct:.2f}%;"
-                 {tooltip_data}
-                 title="Rows {start_row:,}-{end_row:,}: {missing_count:,} missing ({missing_pct:.1f}%)">
+                 {tooltip_data}>
             </div>
             """)
 

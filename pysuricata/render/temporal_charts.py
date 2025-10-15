@@ -218,13 +218,12 @@ class TemporalChartRenderer:
             label = labels[i] if i < len(labels) else ""
 
             svg_parts.append(
-                f'<rect class="bar" '
+                f'<rect class="bar temporal-bar" '
                 f'x="{x:.1f}" y="{y:.1f}" width="{bw:.1f}" height="{bh:.1f}" '
                 f'fill="{self.bar_color}" fill-opacity="0.8" '
                 f'stroke="{self.bar_color}" stroke-width="1" '
                 f'data-count="{count}" data-pct="{pct:.1f}" data-label="{label}" '
                 f'rx="2" ry="2">'
-                f"<title>{label}: {count:,} ({pct:.1f}%)</title>"
                 f"</rect>"
             )
 

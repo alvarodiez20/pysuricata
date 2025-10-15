@@ -6,11 +6,7 @@ from typing import Any
 
 import numpy as np
 
-from .card_base import (
-    CardRenderer,
-    QualityAssessor,
-    TableBuilder,
-)
+from .card_base import CardRenderer, QualityAssessor, TableBuilder
 from .card_config import (
     DEFAULT_CHART_DIMS,
     DEFAULT_HIST_CONFIG,
@@ -1067,7 +1063,13 @@ class NumericCardRenderer(CardRenderer):
                 severity = "high"
 
             segments_html += f"""
-            <div class="chunk-segment {severity}" style="width: {width_pct:.2f}%" title="Rows {start_row:,}-{end_row:,}: {missing_count:,} missing ({missing_pct:.1f}%)"></div>
+            <div class="chunk-segment {severity}"
+                 style="width: {width_pct:.2f}%"
+                 data-start="{start_row}"
+                 data-end="{end_row}"
+                 data-missing="{missing_count}"
+                 data-total="{chunk_size}"
+                 data-pct="{missing_pct:.1f}"></div>
             """
 
         return f"""
@@ -1131,20 +1133,13 @@ class NumericCardRenderer(CardRenderer):
             else:
                 color_class = "spectrum-high"
 
-            # Create tooltip content
-            tooltip_content = (
-                f"Rows {start_row:,}-{end_row:,}: "
-                f"{missing_count:,} missing ({missing_pct:.1f}%)"
-            )
-
             segments_html += f"""
             <div class="spectrum-segment {color_class}"
                  style="width: {segment_width_pct:.2f}%"
-                 title="{tooltip_content}"
                  data-start="{start_row}"
                  data-end="{end_row}"
                  data-missing="{missing_count}"
-                 data-missing-pct="{missing_pct:.1f}">
+                 data-pct="{missing_pct:.1f}">
             </div>
             """
 

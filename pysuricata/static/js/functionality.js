@@ -252,6 +252,15 @@ ${root.outerHTML}
     tip.style.left = x + 'px';
     tip.style.top = y + 'px';
   }
+  function formatCount(count) {
+    if (count >= 1_000_000) {
+      return `${(count / 1_000_000).toFixed(1)}M (${count.toLocaleString()})`;
+    } else if (count >= 10_000) {
+      return `${(count / 1_000).toFixed(1)}K (${count.toLocaleString()})`;
+    } else {
+      return count.toLocaleString();
+    }
+  }
 
   // Timeline histogram hover effects with mathematical notation
   document.addEventListener('mousemove', function (e) {
@@ -262,6 +271,41 @@ ${root.outerHTML}
       const label = timelineHot.getAttribute('data-label') || '';
       const html = `<div class="line"><strong>${count}</strong> rows <span class="muted">(${pct}%)</span></div>` +
         `<div class="line"><span class="muted">Range:</span> [${label}]</div>`;
+      showTip(e, html);
+      return;
+    }
+
+    // Temporal distribution chart tooltips (hour/dow/month/year)
+    const temporalBar = e.target.closest('.temporal-chart .temporal-bar');
+    if (temporalBar) {
+      const count = parseInt(temporalBar.getAttribute('data-count') || '0');
+      const pct = temporalBar.getAttribute('data-pct') || '0.0';
+      const label = temporalBar.getAttribute('data-label') || '';
+
+      // Smart number formatting
+      const formattedCount = formatCount(count);
+
+      const html = `<div class="line"><strong>${label}</strong></div>` +
+        `<div class="line">${formattedCount} records <span class="muted">(${pct}%)</span></div>`;
+      showTip(e, html);
+      return;
+    }
+
+    // Missing values distribution tooltips (chunk and spectrum segments)
+    const missingSegment = e.target.closest('.chunk-segment, .spectrum-segment');
+    if (missingSegment) {
+      const startRow = parseInt(missingSegment.getAttribute('data-start') || '0');
+      const endRow = parseInt(missingSegment.getAttribute('data-end') || '0');
+      const missingCount = parseInt(missingSegment.getAttribute('data-missing') || '0');
+      const pct = missingSegment.getAttribute('data-pct') || '0.0';
+
+      // Smart number formatting for row ranges and counts
+      const formattedStart = formatCount(startRow);
+      const formattedEnd = formatCount(endRow);
+      const formattedMissing = formatCount(missingCount);
+
+      const html = `<div class="line"><strong>Rows ${formattedStart}–${formattedEnd}</strong></div>` +
+        `<div class="line">${formattedMissing} missing <span class="muted">(${pct}%)</span></div>`;
       showTip(e, html);
       return;
     }
@@ -287,7 +331,11 @@ ${root.outerHTML}
 
   // Hide when leaving a histogram entirely
   document.addEventListener('mouseleave', function (e) {
-    if (e.target && e.target.closest && (e.target.closest('.hist-svg') || e.target.closest('.dt-svg'))) {
+    if (e.target && e.target.closest &&
+        (e.target.closest('.hist-svg') || e.target.closest('.dt-svg') ||
+         e.target.closest('.temporal-chart') || e.target.closest('.chunk-distribution') ||
+         e.target.closest('.chunk-spectrum') || e.target.closest('.missing-spectrum-bar') ||
+         e.target.closest('.dataprep-spectrum'))) {
       hideTip();
     }
   }, true);
