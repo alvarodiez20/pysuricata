@@ -3882,6 +3882,28 @@ body.suricata-standalone:not(.light) {
   display: flex;
   gap: 12px;
   font-size: 0.82rem;
+  flex-wrap: wrap;
+}
+
+#pysuricata-report .method-severity-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+#pysuricata-report:not(.light) .method-severity-group {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+#pysuricata-report .method-label {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 #pysuricata-report .severity-item {
@@ -3915,6 +3937,23 @@ body.suricata-standalone:not(.light) {
   font-size: 0.85rem;
   color: var(--text-secondary);
   line-height: 1.4;
+}
+
+/* Outlier note styling for index information */
+#pysuricata-report .outlier-note {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(128, 128, 128, 0.05);
+  border-left: 3px solid #888;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+#pysuricata-report:not(.light) .outlier-note {
+  background: rgba(255, 255, 255, 0.03);
+  border-left-color: #aaa;
 }
 
 #pysuricata-report:not(.light) .context-note {
@@ -3963,28 +4002,19 @@ body.suricata-standalone:not(.light) {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
-#pysuricata-report .outliers-table.enhanced .progress-bar {
-  width: 80px;
-  height: 6px;
-  background: var(--bg-tertiary);
-  border-radius: 3px;
-  overflow: hidden;
-}
-
-#pysuricata-report .outliers-table.enhanced .bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #0366d6, #f66a0a, #d73a49);
-  transition: width 0.3s ease;
-}
-
 #pysuricata-report .outliers-table.enhanced tbody tr:hover {
   background: var(--bg-hover);
 }
 
-#pysuricata-report .outliers-table.enhanced
+/* Sub-row styling for multi-method outliers */
+#pysuricata-report .outliers-table.enhanced .outlier-row-sub {
+  border-top: none;
 }
 
-#pysuricata-report .outliers-table.enhanced
+#pysuricata-report .outliers-table.enhanced .outlier-row-sub td {
+  border-top: 1px dashed var(--border-color);
+  padding-top: 6px;
+  padding-bottom: 6px;
 }
 
 #pysuricata-report:not(.light) .outliers-table.enhanced thead th {
@@ -5360,7 +5390,8 @@ body.suricata-standalone:not(.light) {
 /* Enhanced tab button styling */
 #pysuricata-report .details-section .tabs [role="tab"] {
   position: relative;
-  transition: all 0.2s ease;
+  /* Only transition hover effects for smooth animations without delaying state changes */
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
@@ -5378,23 +5409,6 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .details-section .tabs [role="tab"]:active {
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-/* Add subtle pulse animation for active tabs */
-#pysuricata-report .details-section .tabs [role="tab"].active {
-  animation: subtle-pulse 2s ease-in-out infinite;
-}
-
-@keyframes subtle-pulse {
-
-  0%,
-  100% {
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-  }
-
-  50% {
-    box-shadow: 0 1px 4px rgba(59, 130, 246, 0.2);
-  }
 }
 
 /* Enhanced button styling for all interactive elements */
