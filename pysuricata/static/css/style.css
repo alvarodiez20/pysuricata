@@ -1413,51 +1413,7 @@ body.suricata-standalone:not(.light) {
   }
 }
 
-/* Correlation table + mini bars */
-#pysuricata-report .corr-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-variant-numeric: tabular-nums;
-}
-
-#pysuricata-report .corr-table th,
-#pysuricata-report .corr-table td {
-  border: 1px solid var(--chip-br-light);
-  padding: 6px 8px;
-}
-
-#pysuricata-report:not(.light) .corr-table th,
-#pysuricata-report:not(.light) .corr-table td {
-  border-color: var(--chip-br-dark);
-}
-
-#pysuricata-report .corr-bar {
-  position: relative;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--bg-secondary);
-  overflow: hidden;
-}
-
-#pysuricata-report:not(.light) .corr-bar {
-  background: var(--divider-dark);
-}
-
-#pysuricata-report .corr-bar .fill {
-  position: absolute;
-  left: 50%;
-  top: 0;
-  bottom: 0;
-  transform-origin: left center;
-}
-
-#pysuricata-report .corr-bar .fill.pos {
-  background: #4ea3f1;
-}
-
-#pysuricata-report .corr-bar .fill.neg {
-  background: #ff595e;
-}
+/* Legacy correlation table styles removed - using .correlations-table.enhanced instead */
 
 /* Helper: muted small text and numeric alignment */
 #pysuricata-report .muted {
@@ -3869,8 +3825,14 @@ body.suricata-standalone:not(.light) {
   font-weight: 600;
 }
 
-#pysuricata-report .direction-icon {
+/* Direction icon and label for outlier summaries (scoped to avoid conflicts) */
+#pysuricata-report .outlier-summary .direction-icon {
   font-size: 1.2em;
+}
+
+#pysuricata-report .outlier-summary .direction-label {
+  font-weight: 600;
+  font-size: 0.95rem;
 }
 
 #pysuricata-report .outlier-count {
@@ -4055,7 +4017,12 @@ body.suricata-standalone:not(.light) {
   }
 }
 
-/* Enhanced correlations section styling */
+/* ============================================================================
+   CORRELATIONS SECTION - Complete Redesign
+   Fixed vertical alignment issues with proper table cell centering
+   ============================================================================ */
+
+/* Correlation Summary Header */
 #pysuricata-report .correlation-summary {
   margin-bottom: 16px;
   padding: 12px;
@@ -4081,6 +4048,7 @@ body.suricata-standalone:not(.light) {
   font-weight: 500;
 }
 
+/* Strength Breakdown Badges */
 #pysuricata-report .strength-breakdown {
   display: flex;
   gap: 12px;
@@ -4115,56 +4083,124 @@ body.suricata-standalone:not(.light) {
   color: #6b7280;
 }
 
-#pysuricata-report .strongest-correlation {
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-  margin-top: 4px;
-}
+/* ============================================================================
+   CORRELATIONS TABLE - Redesigned with Fixed Vertical Alignment
+   ============================================================================ */
 
-/* Enhanced correlations table */
+/* Table Foundation - Fixed Layout with Visual Polish */
 #pysuricata-report .correlations-table.enhanced {
   width: 100%;
+  table-layout: fixed;
   border-collapse: separate;
   border-spacing: 0;
   font-variant-numeric: tabular-nums;
-  margin-top: 8px;
+  margin: 8px 0;
+
+  /* Visual polish matching common values table */
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--chip-br-light);
 }
 
+#pysuricata-report:not(.light) .correlations-table.enhanced {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: var(--chip-br-dark);
+}
+
+/* Table Header - Enhanced with Gradients */
 #pysuricata-report .correlations-table.enhanced th {
-  background: var(--bg-tertiary);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.02));
   font-weight: 600;
   text-align: center;
-  padding: 8px 12px;
+  padding: 10px 8px;
   border-bottom: 2px solid var(--border-color);
-  font-size: 0.85rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-}
-
-#pysuricata-report .correlations-table.enhanced td {
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 }
 
-#pysuricata-report .correlations-table.enhanced .rank {
+#pysuricata-report:not(.light) .correlations-table.enhanced th {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  border-bottom-color: var(--chip-br-dark);
+}
+
+/* Table Cell - Matching Common Values Styling */
+#pysuricata-report .correlations-table.enhanced td {
+  padding: 8px;
+  border-bottom: 1px solid var(--chip-br-light);
+  vertical-align: middle;
   text-align: center;
+  font-size: 0.8rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report:not(.light) .correlations-table.enhanced td {
+  border-bottom-color: var(--chip-br-dark);
+}
+
+/* Remove border from last row like common values */
+#pysuricata-report .correlations-table.enhanced tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Column Width Definitions - Fixed widths for consistent layout */
+#pysuricata-report .correlations-table.enhanced .rank {
   width: 40px;
+  min-width: 40px;
   font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
 }
 
 #pysuricata-report .correlations-table.enhanced .column {
-  text-align: center;
+  width: 30%; /* Flexible width for column names */
+  min-width: 150px;
+  max-width: 300px;
 }
-
 
 #pysuricata-report .correlations-table.enhanced .correlation-value {
+  width: 110px;
+  min-width: 110px;
   font-weight: 600;
-  font-size: 0.82rem;
-  text-align: center;
-  min-width: 80px;
+  font-size: 0.8rem;
 }
 
+#pysuricata-report .correlations-table.enhanced .strength {
+  width: 120px;
+  min-width: 120px;
+  font-weight: 500;
+  font-size: 0.8rem;
+}
+
+/* Column Name Code Element - Fixed for Correlation Tables */
+#pysuricata-report .correlations-table.enhanced .missing-col {
+  display: inline-block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+  line-height: 1.4;
+}
+
+#pysuricata-report:not(.light) .correlations-table.enhanced .missing-col {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Correlation Value Colors */
 #pysuricata-report .correlations-table.enhanced .correlation-value.positive {
   color: #059669;
 }
@@ -4173,19 +4209,15 @@ body.suricata-standalone:not(.light) {
   color: #dc2626;
 }
 
-#pysuricata-report .correlations-table.enhanced .strength {
-  font-weight: 500;
-  text-align: center;
-  min-width: 80px;
-  font-size: 0.82rem;
-}
-
+/* Strength Colors - Plain Text */
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="very-strong"] {
   color: #dc267f;
+  font-weight: 600;
 }
 
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="strong"] {
   color: #ea580c;
+  font-weight: 600;
 }
 
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="moderate"] {
@@ -4196,46 +4228,54 @@ body.suricata-standalone:not(.light) {
   color: #6b7280;
 }
 
+/* ============================================================================
+   DIRECTION COLUMN - Completely Redesigned (No Flexbox)
+   Simple inline-block layout that works naturally with vertical-align: middle
+   ============================================================================ */
+
+/* Direction Column - Main Container */
 #pysuricata-report .correlations-table.enhanced .direction {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-width: 100px;
-}
-
-#pysuricata-report .correlations-table.enhanced .direction-icon {
-  font-size: 0.82rem;
-}
-
-#pysuricata-report .correlations-table.enhanced .direction-text {
-  font-size: 0.82rem;
-  font-weight: 500;
-}
-
-#pysuricata-report .correlations-table.enhanced .progress-bar {
   width: 120px;
-  height: 8px;
-  background: var(--bg-tertiary);
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-  margin: 0 auto;
+  min-width: 120px;
+  padding: 12px 8px;
+  text-align: center; /* Ensure horizontal centering */
 }
 
-#pysuricata-report .correlations-table.enhanced .bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #6b7280, #3b82f6, #ea580c, #dc267f);
-  transition: width 0.3s ease;
-  border-radius: 4px;
+/* Direction Icon - Simple inline-block, no flexbox needed */
+#pysuricata-report .correlations-table.enhanced .direction-icon {
+  display: inline-block;
+  font-size: 0.8rem;
+  margin-right: 6px;
+  vertical-align: middle;
+  line-height: 1;
 }
 
-/* Row hover effects */
-#pysuricata-report .correlations-table.enhanced .correlation-row:hover {
-  background: var(--bg-hover);
+/* Direction Text - Simple inline-block, aligned with icon */
+#pysuricata-report .correlations-table.enhanced .direction-text {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 500;
+  vertical-align: middle;
+  line-height: 1;
 }
 
-/* No correlations state */
+/* Enhanced Row Hover Effects - Match Common Values */
+#pysuricata-report .correlations-table.enhanced tbody tr {
+  transition: all 0.2s ease;
+}
+
+#pysuricata-report .correlations-table.enhanced tbody tr:hover {
+  background: rgba(0, 0, 0, 0.02);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#pysuricata-report:not(.light) .correlations-table.enhanced tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* No Correlations State */
 #pysuricata-report .no-correlations {
   text-align: center;
   padding: 24px;
@@ -4254,27 +4294,113 @@ body.suricata-standalone:not(.light) {
   margin-bottom: 4px;
 }
 
-/* Responsive design for correlations */
-@media (max-width: 768px) {
+/* ============================================================================
+   RESPONSIVE DESIGN - Mobile & Tablet Optimizations
+   ============================================================================ */
+
+/* Tablet: Reduce spacing and font sizes */
+@media (max-width: 1024px) {
   #pysuricata-report .correlations-table.enhanced {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
+  }
+
+  #pysuricata-report .correlations-table.enhanced td {
+    padding: 8px 6px;
+    font-size: 0.75rem;
+  }
+
+  #pysuricata-report .correlations-table.enhanced .missing-col {
+    font-size: 0.75rem;
+    padding: 3px 6px;
+  }
+
+  #pysuricata-report .correlations-table.enhanced .strength {
+    font-size: 0.75rem;
+  }
+
+  /* Direction column adjustments for tablet */
+  #pysuricata-report .correlations-table.enhanced .direction {
+    width: 110px;
+    min-width: 110px;
+    padding: 8px 6px;
+  }
+
+  #pysuricata-report .correlations-table.enhanced .direction-icon {
+    font-size: 0.75rem;
+    margin-right: 5px;
+  }
+
+  #pysuricata-report .correlations-table.enhanced .direction-text {
+    font-size: 0.75rem;
+  }
+}
+
+/* Mobile: Further optimizations */
+@media (max-width: 768px) {
+  /* Add horizontal scroll wrapper if needed */
+  #pysuricata-report .correlations-table.enhanced {
+    font-size: 0.7rem;
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   }
 
   #pysuricata-report .correlations-table.enhanced th,
   #pysuricata-report .correlations-table.enhanced td {
-    padding: 8px 6px;
+    padding: 6px 4px;
   }
 
-  #pysuricata-report .correlations-table.enhanced .progress-bar {
+  #pysuricata-report .correlations-table.enhanced .rank {
+    width: 35px;
+    min-width: 35px;
+    font-size: 0.7rem;
+  }
+
+  #pysuricata-report .correlations-table.enhanced .column {
+    min-width: 100px;
+  }
+
+  #pysuricata-report .correlations-table.enhanced .missing-col {
+    font-size: 0.7rem;
+    padding: 2px 4px;
+  }
+
+  #pysuricata-report .correlations-table.enhanced .correlation-value {
     width: 80px;
+    min-width: 80px;
+    font-size: 0.7rem;
   }
 
+  #pysuricata-report .correlations-table.enhanced .strength {
+    width: 90px;
+    min-width: 90px;
+    font-size: 0.65rem;
+  }
+
+  /* Direction column adjustments for mobile */
+  #pysuricata-report .correlations-table.enhanced .direction {
+    width: 90px;
+    min-width: 90px;
+    padding: 6px 3px;
+  }
+
+  #pysuricata-report .correlations-table.enhanced .direction-icon {
+    font-size: 0.7rem;
+    margin-right: 3px;
+  }
+
+  #pysuricata-report .correlations-table.enhanced .direction-text {
+    font-size: 0.7rem;
+  }
+
+  /* Summary section mobile adjustments */
   #pysuricata-report .strength-breakdown {
-    gap: 8px;
+    gap: 6px;
   }
 
   #pysuricata-report .strength-item {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     padding: 3px 6px;
   }
 }

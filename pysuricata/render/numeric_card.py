@@ -1010,9 +1010,6 @@ class NumericCardRenderer(CardRenderer):
             # Ranking
             rank_icon = ordinal_number(i + 1)
 
-            # Progress bar width (0-100%)
-            bar_width = min(100, abs_corr * 100)
-
             parts.append(f'''
             <tr class="correlation-row strength-{strength_class}">
                 <td class="rank">{rank_icon}</td>
@@ -1029,9 +1026,6 @@ class NumericCardRenderer(CardRenderer):
                     <span class="direction-icon">{direction_icon}</span>
                     <span class="direction-text">{direction.title()}</span>
                 </td>
-                <td class="progress-bar">
-                    <div class="bar-fill" style="width:{bar_width:.1f}%"></div>
-                </td>
             </tr>
             ''')
 
@@ -1044,7 +1038,6 @@ class NumericCardRenderer(CardRenderer):
                     <th>Correlation</th>
                     <th>Strength</th>
                     <th>Direction</th>
-                    <th>Visual</th>
                 </tr>
             </thead>
             <tbody>
