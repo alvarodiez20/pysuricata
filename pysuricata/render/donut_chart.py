@@ -70,6 +70,35 @@ class DonutChartRenderer:
         Returns:
             SVG HTML string
         """
+        # Check if only one segment type (100% case)
+        non_zero_segments = [s for s in segments if s["count"] > 0]
+        
+        if len(non_zero_segments) == 1:
+            # Special case: draw a full circle instead of arc to avoid SVG arc limitation
+            # When arc = 360°, start point = end point, making arc invisible
+            segment = non_zero_segments[0]
+            return f"""
+        <svg class="dtype-donut-svg" viewBox="0 0 {self.width} {self.height}"
+             width="{self.width}" height="{self.height}"
+             xmlns="http://www.w3.org/2000/svg">
+            <circle cx="{self.cx}" cy="{self.cy}" r="{self.outer_radius}"
+                    fill="#f0f0f0" opacity="0.15" class="donut-background"/>
+            <g class="donut-segments">
+                <g class="donut-segment" data-type="{segment["label"].lower()}">
+                    <circle cx="{self.cx}" cy="{self.cy}" r="{self.outer_radius}"
+                            fill="{segment["color"]}" class="segment-path"
+                            data-type="{segment["label"]}"
+                            data-count="{segment["count"]}"
+                            data-percentage="100.0"/>
+                </g>
+            </g>
+            <g class="donut-inner-segments">
+                <circle cx="{self.cx}" cy="{self.cy}" r="45"
+                        fill="{segment["color"]}" opacity="0.6" class="segment-inner"/>
+            </g>
+        </svg>
+        """
+        
         # Add background circle to ensure complete appearance even with zero segments
         background_circle = f"""
             <circle cx="{self.cx}" cy="{self.cy}" r="{self.outer_radius}"

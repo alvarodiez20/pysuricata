@@ -487,6 +487,13 @@ class CategoricalCardRenderer(CardRenderer):
         controls_html: str,
     ) -> str:
         """Assemble the complete card HTML."""
+        docs_url = "https://alvarodiez20.github.io/pysuricata/stats/categorical/"
+        info_button = f'''<a href="{docs_url}" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zM6.5 5a.75.75 0 0 0 0 1.5h.5v2.5h-.5a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-.5V6h-.5A.75.75 0 0 0 8 5.25H6.5zM8 3.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z"/>
+            </svg>
+        </a>'''
+
         return f"""
         <article class="var-card" id="{col_id}">
             <header class="var-card__header">
@@ -497,6 +504,7 @@ class CategoricalCardRenderer(CardRenderer):
                     {approx_badge}
                     {quality_flags_html}
                 </div>
+                {info_button}
             </header>
             <div class="var-card__body">
                 <div class="triple-row">

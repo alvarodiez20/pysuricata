@@ -102,15 +102,15 @@
                 <div class="value">{n_cols}</div>
               </div>
               <div class="summary-card">
-                <div class="label" title="Total bytes processed across chunks (approximate)">Processed bytes</div>
-                <div class="value">{memory_usage} (≈)</div>
+                <div class="label" title="Sum of memory used by all columns across all chunks">Processed bytes (≈)</div>
+                <div class="value">{memory_usage}</div>
               </div>
               <div class="summary-card">
-                <div class="label">Missing (overall)</div>
+                <div class="label">Missing</div>
                 <div class="value">{missing_overall}</div>
               </div>
               <div class="summary-card">
-                <div class="label">Duplicates</div>
+                <div class="label" title="Approximate count using probabilistic KMV sketch algorithm">Duplicates (≈)</div>
                 <div class="value">{duplicates_overall}</div>
               </div>
             </div>

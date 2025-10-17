@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import math
 import warnings
-from typing import Any, Dict, Iterable, List, Optional
+from collections.abc import Iterable
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -20,14 +21,10 @@ from ..accumulators import (
     NumericAccumulator,
 )
 from .core.types import ColumnKinds
-from .processing.inference import (
-    UnifiedTypeInferrer,
-    should_reclassify_numeric_as_boolean,
-    should_reclassify_numeric_as_categorical,
-)
+from .processing.inference import UnifiedTypeInferrer
 
 
-def _to_numeric_array_pandas(s: "pd.Series") -> np.ndarray:  # type: ignore[name-defined]
+def _to_numeric_array_pandas(s: pd.Series) -> np.ndarray:  # type: ignore[name-defined]
     """Best-effort fast path to float64 NumPy array with NaN for invalid.
 
     - If the Series is already numeric (including pandas nullable ints),
@@ -59,7 +56,7 @@ def _to_numeric_array_pandas(s: "pd.Series") -> np.ndarray:  # type: ignore[name
         )
 
 
-def _to_bool_array_pandas(s: "pd.Series") -> List[Optional[bool]]:  # type: ignore[name-defined]
+def _to_bool_array_pandas(s: pd.Series) -> List[Optional[bool]]:  # type: ignore[name-defined]
     if str(s.dtype).startswith("bool"):
         arr = s.astype("boolean").tolist()
         return [None if x is pd.NA else bool(x) for x in arr]
@@ -77,7 +74,7 @@ def _to_bool_array_pandas(s: "pd.Series") -> List[Optional[bool]]:  # type: igno
     return [_coerce(v) for v in s.tolist()]
 
 
-def _to_datetime_ns_array_pandas(s: "pd.Series") -> List[Optional[int]]:  # type: ignore[name-defined]
+def _to_datetime_ns_array_pandas(s: pd.Series) -> List[Optional[int]]:  # type: ignore[name-defined]
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         try:
@@ -92,16 +89,16 @@ def _to_datetime_ns_array_pandas(s: "pd.Series") -> List[Optional[int]]:  # type
     return out
 
 
-def _to_categorical_iter_pandas(s: "pd.Series") -> Iterable[Any]:  # type: ignore[name-defined]
+def _to_categorical_iter_pandas(s: pd.Series) -> Iterable[Any]:  # type: ignore[name-defined]
     return s.tolist()
 
 
 def consume_chunk_pandas(
-    df: "pd.DataFrame",
+    df: pd.DataFrame,
     accs: Dict[str, Any],
     kinds: ColumnKinds,
     config: Optional[Any] = None,
-    logger: Optional["logging.Logger"] = None,
+    logger: Optional[logging.Logger] = None,
 ) -> None:  # type: ignore[name-defined]
     # 1) Create accumulators for columns not seen in the first chunk
     for name in df.columns:
@@ -181,3 +178,8 @@ def consume_chunk_pandas(
                 pass
         elif isinstance(acc, CategoricalAccumulator):
             acc.update(_to_categorical_iter_pandas(s))
+            # Add memory tracking for categorical columns
+            try:
+                acc.add_mem(int(s.memory_usage(deep=True)))
+            except Exception:
+                pass

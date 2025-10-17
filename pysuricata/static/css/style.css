@@ -258,7 +258,7 @@ body.suricata-standalone:not(.light) {
 
 #pysuricata-report .quick a {
   font-weight: 600;
-  font-size: 1rem;
+  font-size: 0.9rem;
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
   background: transparent;
@@ -445,6 +445,11 @@ body.suricata-standalone:not(.light) {
   background: rgba(0, 0, 0, 0.02);
 }
 
+/* Only apply min-height to second-row cards (Column types, Top missing, Quick insights) */
+#pysuricata-report #summary .summary-grid.second-row .summary-card {
+  min-height: 280px;
+}
+
 #pysuricata-report:not(.light) #summary .summary-card {
   border-color: var(--chip-br-dark);
   background: rgba(255, 255, 255, 0.04);
@@ -498,8 +503,6 @@ body.suricata-standalone:not(.light) {
   /* uniform vertical spacing between rows */
   margin: 0;
   padding: 0;
-  min-height: 230px;
-  /* keep the card height consistent */
 }
 
 /* Each LI is a 2-row grid: info row + bar row */
@@ -1905,6 +1908,49 @@ body.suricata-standalone:not(.light) {
 
 #pysuricata-report .var-card__header .dtype {
   margin-right: 2px;
+}
+
+/* Info button for variable cards */
+#pysuricata-report .var-card__header {
+  position: relative;
+}
+
+#pysuricata-report .var-card__header .info-link {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.4);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+#pysuricata-report:not(.light) .var-card__header .info-link {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+#pysuricata-report .var-card__header .info-link:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
+}
+
+#pysuricata-report:not(.light) .var-card__header .info-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+#pysuricata-report .var-card__header .info-link svg {
+  display: block;
+  shape-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 

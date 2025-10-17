@@ -31,9 +31,6 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 # Checkpointing imports
-from .accumulators.protocols import FinalizableAccumulator
-from .checkpoint import maybe_make_manager as _maybe_ckpt
-
 # Processing imports
 from .compute.analysis import RowKMV
 from .compute.orchestration.engine import StreamingEngine
@@ -44,12 +41,8 @@ from .logger import SectionTimer as _SectionTimer
 
 # Rendering imports
 from .render.format_utils import human_bytes as _human_bytes
-from .render.html import (
-    render_empty_html as _render_empty_html,
-)
-from .render.html import (
-    render_html_snapshot as _render_html_snapshot,
-)
+from .render.html import render_empty_html as _render_empty_html
+from .render.html import render_html_snapshot as _render_html_snapshot
 
 # Module-level RNG seed used by public SVG helpers
 _REPORT_RANDOM_SEED: int = 0
@@ -203,7 +196,7 @@ class ReportOrchestrator:
         chunk_metadata: Optional[List[Tuple[int, int, int]]] = None,
     ) -> str:
         """Render the final HTML report."""
-        with _SectionTimer(self.logger, f"Render final HTML"):
+        with _SectionTimer(self.logger, "Render final HTML"):
             return _render_html_snapshot(
                 kinds=kinds,
                 accs=accs,
@@ -226,6 +219,7 @@ class ReportOrchestrator:
         n_rows: int,
         n_cols: int,
         total_missing_cells: int,
+        approx_mem_bytes: int = 0,
     ) -> Optional[dict]:
         """Build the programmatic summary."""
         dataset_summary = {
@@ -241,6 +235,7 @@ class ReportOrchestrator:
             "duplicate_rows_pct_est": float(self.row_kmv.approx_duplicates()[1])
             if hasattr(self.row_kmv, "approx_duplicates")
             else 0.0,
+            "memory_bytes": int(approx_mem_bytes),
             "top_missing": [
                 {"column": str(col), "pct": float(pct), "count": int(cnt)}
                 for col, pct, cnt in (list(miss_list)[:5] if miss_list else [])
@@ -268,6 +263,7 @@ class ReportOrchestrator:
                     "negatives": s.negatives,
                     "outliers_iqr_est": s.outliers_iqr,
                     "approx": bool(s.approx),
+                    "mem_bytes": s.mem_bytes,
                 }
             elif kind == "categorical":
                 s = acc.finalize()
@@ -278,6 +274,7 @@ class ReportOrchestrator:
                     "unique_est": s.unique_est,
                     "top_items": s.top_items,
                     "approx": bool(s.approx),
+                    "mem_bytes": s.mem_bytes,
                 }
             elif kind == "datetime":
                 s = acc.finalize()
@@ -287,6 +284,7 @@ class ReportOrchestrator:
                     "missing": s.missing,
                     "min_ts": s.min_ts,
                     "max_ts": s.max_ts,
+                    "mem_bytes": s.mem_bytes,
                 }
             else:  # boolean
                 s = acc.finalize()
@@ -296,6 +294,7 @@ class ReportOrchestrator:
                     "missing": s.missing,
                     "true": s.true_n,
                     "false": s.false_n,
+                    "mem_bytes": s.mem_bytes,
                 }
 
         return {"dataset": dataset_summary, "columns": columns_summary}
@@ -408,7 +407,13 @@ class ReportOrchestrator:
             )
 
         summary_obj = self._build_summary(
-            kinds_map, col_order, miss_list, n_rows, n_cols, total_missing_cells
+            kinds_map,
+            col_order,
+            miss_list,
+            n_rows,
+            n_cols,
+            total_missing_cells,
+            approx_mem_bytes,
         )
 
         # Phase 5: Handle output

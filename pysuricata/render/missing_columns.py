@@ -15,9 +15,9 @@ class MissingColumnsAnalyzer:
     """Intelligent analyzer for determining missing columns display strategy."""
 
     # Configuration constants
-    MIN_THRESHOLD_PCT = 0.5  # Only show columns with >0.5% missing
-    MAX_INITIAL_DISPLAY = 8  # Maximum columns shown initially
-    MAX_EXPANDED_DISPLAY = 25  # Maximum columns shown when expanded
+    MIN_THRESHOLD_PCT = 0.0  # Show all columns with any missing data
+    MAX_INITIAL_DISPLAY = 5  # Maximum columns shown initially
+    MAX_EXPANDED_DISPLAY = 10  # Maximum columns shown when expanded
 
     # Dataset size thresholds
     SMALL_DATASET_COLS = 10
@@ -28,7 +28,7 @@ class MissingColumnsAnalyzer:
         """Initialize the analyzer with custom threshold.
 
         Args:
-            min_threshold_pct: Minimum missing percentage to display (default: 0.5%)
+            min_threshold_pct: Minimum missing percentage to display (default: 0.0%)
         """
         self.min_threshold_pct = min_threshold_pct
 
@@ -45,10 +45,8 @@ class MissingColumnsAnalyzer:
         Returns:
             MissingColumnsResult with display strategy and filtered data
         """
-        # Filter out columns with insignificant missing data
-        significant_missing = [
-            item for item in miss_list if item[1] >= self.min_threshold_pct
-        ]
+        # Filter out columns with no missing data
+        significant_missing = [item for item in miss_list if item[1] > 0.0]
 
         # Determine dynamic limits based on dataset size
         initial_limit = self._get_initial_display_limit(n_cols, n_rows)
@@ -75,26 +73,12 @@ class MissingColumnsAnalyzer:
         )
 
     def _get_initial_display_limit(self, n_cols: int, n_rows: int) -> int:
-        """Determine initial display limit based on dataset characteristics."""
-        if n_cols <= self.SMALL_DATASET_COLS:
-            return min(n_cols, self.MAX_INITIAL_DISPLAY)
-        elif n_cols <= self.MEDIUM_DATASET_COLS:
-            return min(10, self.MAX_INITIAL_DISPLAY)
-        elif n_cols <= self.LARGE_DATASET_COLS:
-            return min(12, self.MAX_INITIAL_DISPLAY)
-        else:
-            return min(15, self.MAX_INITIAL_DISPLAY)
+        """Determine initial display limit (fixed at 5 for all datasets)."""
+        return self.MAX_INITIAL_DISPLAY
 
     def _get_expanded_display_limit(self, n_cols: int, n_rows: int) -> int:
-        """Determine expanded display limit based on dataset characteristics."""
-        if n_cols <= self.SMALL_DATASET_COLS:
-            return n_cols
-        elif n_cols <= self.MEDIUM_DATASET_COLS:
-            return min(20, n_cols)
-        elif n_cols <= self.LARGE_DATASET_COLS:
-            return min(25, n_cols)
-        else:
-            return min(30, n_cols)
+        """Determine expanded display limit (fixed at 10 for all datasets)."""
+        return self.MAX_EXPANDED_DISPLAY
 
 
 class MissingColumnsResult:
@@ -146,36 +130,41 @@ class MissingColumnsRenderer:
         initial_html = self._render_columns_list(result.initial_columns, "initial")
 
         if not result.needs_expandable:
-            return f'<ul class="summary-list top-missing">{initial_html}</ul>'
+            # No wrapper needed - template provides it
+            return initial_html
 
-        # Render expandable version
-        expanded_html = self._render_columns_list(result.expanded_columns, "expanded")
+        # Render expandable version - only the ADDITIONAL columns beyond initial display
+        additional_columns = result.expanded_columns[len(result.initial_columns) :]
+        expanded_html = self._render_columns_list(additional_columns, "expanded")
+
+        # Calculate how many additional columns we're actually showing
+        num_additional = len(additional_columns)
 
         # Create unique ID for this dataset
         dataset_id = f"missing-cols-{n_cols}-{n_rows}".replace(" ", "")
 
+        # Return just the list items - template provides the <ul> wrapper
         return f'''
-        <ul class="summary-list top-missing" id="{dataset_id}">
             {initial_html}
-            <li class="expandable-content" style="display: none;">
+            <div class="expandable-content" style="display: none;">
                 {expanded_html}
-            </li>
+            </div>
             <li class="expand-controls">
-                <button class="expand-btn" onclick="toggleMissingColumns('{dataset_id}')" 
-                        data-expanded="false" aria-label="Show more missing columns">
-                    <span class="expand-text">Show {result.total_significant - len(result.initial_columns)} more...</span>
+                <button class="expand-btn" onclick="toggleMissingColumns('{dataset_id}')"
+                        data-expanded="false" aria-label="Show more missing columns" data-id="{dataset_id}">
+                    <span class="expand-text">Show {num_additional} more...</span>
                     <span class="expand-icon">▼</span>
                 </button>
             </li>
-        </ul>
         <script>
         function toggleMissingColumns(datasetId) {{
-            const container = document.getElementById(datasetId);
+            // Find the button and traverse up to the UL container
+            const button = document.querySelector('[data-id="' + datasetId + '"]');
+            const container = button.closest('.top-missing');
             const expandable = container.querySelector('.expandable-content');
-            const button = container.querySelector('.expand-btn');
             const text = container.querySelector('.expand-text');
             const icon = container.querySelector('.expand-icon');
-            
+
             if (expandable.style.display === 'none') {{
                 expandable.style.display = 'block';
                 button.setAttribute('data-expanded', 'true');
@@ -184,7 +173,7 @@ class MissingColumnsRenderer:
             }} else {{
                 expandable.style.display = 'none';
                 button.setAttribute('data-expanded', 'false');
-                text.textContent = 'Show {result.total_significant - len(result.initial_columns)} more...';
+                text.textContent = 'Show {num_additional} more...';
                 icon.textContent = '▼';
             }}
         }}
@@ -202,8 +191,8 @@ class MissingColumnsRenderer:
         for col, pct, count in columns:
             severity_class = self._get_severity_class(pct)
             html_parts.append(f'''
-            <li class="missing-item {css_class}"> 
-              <div class="missing-info"> 
+            <li class="missing-item {css_class}">
+              <div class="missing-info">
                 <code class="missing-col" title="{_html.escape(str(col))}">{_html.escape(str(col))}</code>
                 <span class="missing-stats">{count:,} ({pct:.1f}%)</span>
               </div>
@@ -223,24 +212,23 @@ class MissingColumnsRenderer:
             return "high"
 
     def _render_no_missing_columns(self) -> str:
-        """Render HTML when no significant missing columns exist."""
+        """Render HTML when no missing columns exist."""
+        # Return just the list item - template provides the <ul> wrapper
         return """
-        <ul class="summary-list top-missing">
             <li class="missing-item">
                 <div class="missing-info">
-                    <code class="missing-col">No significant missing data</code>
+                    <code class="missing-col">No missing data</code>
                     <span class="missing-stats">0 (0.0%)</span>
                 </div>
                 <div class="missing-bar">
                     <div class="missing-fill low" style="width:0%;"></div>
                 </div>
             </li>
-        </ul>
         """
 
 
 def create_missing_columns_renderer(
-    min_threshold_pct: float = 0.5,
+    min_threshold_pct: float = 0.0,
 ) -> MissingColumnsRenderer:
     """Factory function to create a configured missing columns renderer.
 

@@ -89,9 +89,9 @@ class EngineConfig:
     force_column_types: dict[str, str] | None = None
 
     # Missing columns display options
-    missing_columns_threshold_pct: float = 0.5  # Minimum missing percentage to display
-    missing_columns_max_initial: int = 8  # Maximum columns shown initially
-    missing_columns_max_expanded: int = 25  # Maximum columns shown when expanded
+    missing_columns_threshold_pct: float = 0.0  # Minimum missing percentage to display
+    missing_columns_max_initial: int = 5  # Maximum columns shown initially
+    missing_columns_max_expanded: int = 10  # Maximum columns shown when expanded
 
     @classmethod
     def from_options(cls, opts: EngineOptions) -> EngineConfig:

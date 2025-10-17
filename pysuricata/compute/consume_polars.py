@@ -21,9 +21,7 @@ from ..accumulators import (
     NumericAccumulator,
 )
 from .core.types import ColumnKinds
-from .processing.inference import (
-    UnifiedTypeInferrer,
-)
+from .processing.inference import UnifiedTypeInferrer
 
 
 def _to_numeric_array_polars(s: pl.Series) -> np.ndarray:  # type: ignore[name-defined]
@@ -142,7 +140,21 @@ def consume_chunk_polars(
         if logger:
             logger.info("➕ discovered new column '%s' inferred as %s [pl]", name, kind)
 
-    # 2) Feed accumulators for columns present in this chunk
+    # 2) Calculate per-column memory usage once per chunk for efficiency
+    # This avoids calling df.select(col).estimated_size() multiple times
+    column_mem_cache = {}
+    try:
+        for col_name in df.columns:
+            column_mem_cache[col_name] = int(df.select(col_name).estimated_size())
+    except Exception:
+        # Fallback: use equal distribution of total size
+        total_size = df.estimated_size() if hasattr(df, "estimated_size") else 0
+        num_cols = len(df.columns)
+        fallback_size = total_size // num_cols if num_cols > 0 else 0
+        for col_name in df.columns:
+            column_mem_cache[col_name] = fallback_size
+
+    # 3) Feed accumulators for columns present in this chunk
     for name, acc in accs.items():
         if name not in df.columns:
             if logger:
@@ -154,9 +166,9 @@ def consume_chunk_polars(
         if isinstance(acc, NumericAccumulator):
             arr = _to_numeric_array_polars(s)
             acc.update(arr)
-            # Track memory usage
+            # Track memory usage using cached per-column estimate
             try:
-                acc.add_mem(int(df.estimated_size()))
+                acc.add_mem(column_mem_cache.get(name, 0))
             except Exception:
                 pass
             # extremes: approximate via argpartition like pandas path
@@ -176,17 +188,22 @@ def consume_chunk_polars(
                 pass
         elif isinstance(acc, BooleanAccumulator):
             acc.update(_to_bool_array_polars(s))
+            # Track memory usage using cached per-column estimate
             try:
-                # Optimized memory estimation - use simple estimated_size() instead of complex aggregation
-                acc.add_mem(int(df.estimated_size()))
+                acc.add_mem(column_mem_cache.get(name, 0))
             except Exception:
                 pass
         elif isinstance(acc, DatetimeAccumulator):
             acc.update(_to_datetime_ns_array_polars(s))
+            # Track memory usage using cached per-column estimate
             try:
-                # Optimized memory accounting - use simple estimated_size()
-                acc.add_mem(int(df.estimated_size()))
+                acc.add_mem(column_mem_cache.get(name, 0))
             except Exception:
                 pass
         else:  # categorical
             acc.update(_to_categorical_iter_polars(s))
+            # Add memory tracking for categorical columns
+            try:
+                acc.add_mem(column_mem_cache.get(name, 0))
+            except Exception:
+                pass
