@@ -164,7 +164,7 @@ body.suricata-standalone:not(.light) {
   position: sticky;
   top: 0;
   z-index: 50;
-  transition: background .25s ease, border-color .25s ease, -webkit-backdrop-filter .25s ease, backdrop-filter .25s ease;
+  transition: background .2s ease, border-color .2s ease;
 }
 
 #pysuricata-report.unpinned .appbar {
@@ -242,7 +242,7 @@ body.suricata-standalone:not(.light) {
   gap: 0.75rem;
 }
 
-/* Quick links as neutral chips (inherit color; not blue) */
+/* Quick links - minimal clean design with no default background */
 #pysuricata-report .quick {
   display: flex;
   gap: 0.5rem;
@@ -253,26 +253,46 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .quick a,
 #pysuricata-report .quick a:visited {
   color: inherit !important;
+  text-decoration: none !important;
 }
 
 #pysuricata-report .quick a {
   font-weight: 600;
+  font-size: 1rem;
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
-  background: rgba(0, 0, 0, 0.05);
-  transition: background-color 0.2s, color 0.2s;
+  background: transparent;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
-#pysuricata-report:not(.light) .quick a {
-  background: rgba(255, 255, 255, 0.08);
-}
-
+/* Hover state - subtle background only, no border, no underline */
 #pysuricata-report .quick a:hover {
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+  text-decoration: none;
 }
 
 #pysuricata-report:not(.light) .quick a:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Active state - shows current section */
+#pysuricata-report .quick a.active {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+#pysuricata-report:not(.light) .quick a.active {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+}
+
+/* Focus state - accessibility */
+#pysuricata-report .quick a:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
 
 /* Toggle button (monochrome) */
@@ -783,38 +803,109 @@ body.suricata-standalone:not(.light) {
 }
 
 /* =============================
-   DTYPE DONUT (proportions)
+   DTYPE PIE CHART SVG (interactive with custom tooltips)
+   Full pie slices from center to edge with lighter inner overlay
    ============================= */
-#pysuricata-report .dtype-donut {
-  --total: calc(var(--num) + var(--cat) + var(--dt) + var(--bool));
-  --p1: calc(var(--num) / var(--total) * 360deg);
-  --p2: calc(var(--cat) / var(--total) * 360deg);
-  --p3: calc(var(--dt) / var(--total) * 360deg);
-  width: 120px;
-  height: 120px;
+#pysuricata-report .dtype-donut-svg {
+  display: block;
+  margin: 12px auto;
+  cursor: pointer;
   border-radius: 50%;
-  background:
-    conic-gradient(#4ea3f1 0 var(--p1),
-      #8ac926 var(--p1) calc(var(--p1) + var(--p2)),
-      #ffca3a calc(var(--p1) + var(--p2)) calc(var(--p1) + var(--p2) + var(--p3)),
-      #ff595e 0);
-  position: relative;
-  margin: 12px auto 12px;
+  overflow: visible;
 }
 
-#pysuricata-report .dtype-donut::after {
-  content: "";
+/* Background circle - ensures complete appearance */
+#pysuricata-report .donut-background {
+  fill: #f0f0f0;
+  opacity: 0.15;
+}
+
+#pysuricata-report:not(.light) .donut-background {
+  fill: #555;
+  opacity: 0.2;
+}
+
+/* Segment hover effects - highlight on hover */
+#pysuricata-report .segment-path {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+#pysuricata-report .segment-path:hover {
+  opacity: 0.85;
+  filter: brightness(1.15);
+  stroke: rgba(255, 255, 255, 0.6);
+  stroke-width: 2;
+}
+
+/* Dark mode - adjust stroke color for hover */
+#pysuricata-report:not(.light) .segment-path:hover {
+  stroke: rgba(255, 255, 255, 0.4);
+}
+
+/* Inner segments - subtle overlay matching original CSS exactly */
+#pysuricata-report .segment-inner {
+  fill: rgba(0, 0, 0, 0.06);
+  pointer-events: none;
+  transition: fill 0.2s ease;
+}
+
+#pysuricata-report:not(.light) .segment-inner {
+  fill: rgba(255, 255, 255, 0.08);
+}
+
+/* Center circle - subtle background color */
+#pysuricata-report .donut-center {
+  fill: var(--chip-bg-light);
+}
+
+#pysuricata-report:not(.light) .donut-center {
+  fill: var(--chip-bg-dark);
+}
+
+/* Custom Donut Chart Tooltip - Matches Histogram Style */
+#pysuricata-report .donut-tooltip {
   position: absolute;
-  inset: 14px;
-  border-radius: 50%;
-  box-shadow: 0 0 0 999px var(--chip-bg-light) inset;
-  /* creates hole */
+  z-index: 1000;
+  pointer-events: none;
+  display: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(20, 20, 20, 0.92);
+  color: #fff;
+  font-size: .85rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
 }
 
-#pysuricata-report:not(.light) .dtype-donut::after {
-  box-shadow: 0 0 0 999px var(--chip-bg-dark) inset;
+#pysuricata-report.light .donut-tooltip {
+  background: rgba(255, 255, 255, 0.96);
+  color: #111;
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
 }
 
+#pysuricata-report .donut-tooltip .type-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+#pysuricata-report .donut-tooltip .type-stats {
+  font-size: 0.8rem;
+}
+
+#pysuricata-report .donut-tooltip .line {
+  margin: 2px 0;
+}
+
+#pysuricata-report .donut-tooltip .muted {
+  opacity: .75;
+}
+
+/* Legacy: Hide old dtype-legend if it exists */
 #pysuricata-report .dtype-legend {
   display: none !important;
 }

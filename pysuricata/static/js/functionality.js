@@ -240,6 +240,9 @@ ${root.outerHTML}
     const root = document.getElementById(ROOT_ID);
     const tip = root && root.querySelector('.hist-tooltip');
     if (tip) tip.style.display = 'none';
+    // Also hide donut tooltip
+    const donutTip = root && root.querySelector('.donut-tooltip');
+    if (donutTip) donutTip.style.display = 'none';
   }
   function positionTip(e, tip, root) {
     const r = root.getBoundingClientRect();
@@ -288,6 +291,31 @@ ${root.outerHTML}
       const html = `<div class="line"><strong>${label}</strong></div>` +
         `<div class="line">${formattedCount} records <span class="muted">(${pct}%)</span></div>`;
       showTip(e, html);
+      return;
+    }
+
+    // Donut chart segment tooltips (Column types pie chart)
+    const donutSegment = e.target.closest('.segment-path');
+    if (donutSegment) {
+      const type = donutSegment.getAttribute('data-type') || 'Unknown';
+      const count = donutSegment.getAttribute('data-count') || '0';
+      const pct = donutSegment.getAttribute('data-percentage') || '0.0';
+
+      const html = `<div class="line"><strong>${type}</strong></div>` +
+        `<div class="line">${count} ${count === '1' ? 'column' : 'columns'} <span class="muted">(${pct}%)</span></div>`;
+
+      // Use donut-tooltip class instead of hist-tooltip
+      const root = document.getElementById(ROOT_ID);
+      if (!root) return;
+      let tip = root.querySelector('.donut-tooltip');
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.className = 'donut-tooltip';
+        root.appendChild(tip);
+      }
+      tip.innerHTML = html;
+      tip.style.display = 'block';
+      positionTip(e, tip, root);
       return;
     }
 

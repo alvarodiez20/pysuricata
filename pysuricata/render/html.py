@@ -13,6 +13,7 @@ from .cards import render_bool_card as _render_bool_card
 from .cards import render_cat_card as _render_cat_card
 from .cards import render_dt_card as _render_dt_card
 from .cards import render_numeric_card as _render_numeric_card
+from .donut_chart import DonutChartRenderer
 from .format_utils import human_bytes as _human_bytes
 from .format_utils import human_time as _human_time
 from .markdown_utils import render_markdown_to_html
@@ -263,6 +264,15 @@ def render_html_snapshot(
     # Escape the raw markdown for the data attribute
     description_attr = _html.escape(description_raw) if description_raw else ""
 
+    # Generate interactive SVG donut chart with tooltips
+    donut_renderer = DonutChartRenderer()
+    dtype_donut_svg = donut_renderer.render_dtype_donut(
+        numeric=len(kinds.numeric),
+        categorical=len(kinds.categorical),
+        datetime=len(kinds.datetime),
+        boolean=len(kinds.boolean),
+    )
+
     html = template.format(
         favicon=favicon_tag,
         css=css_tag,
@@ -282,6 +292,7 @@ def render_html_snapshot(
         categorical_cols=len(kinds.categorical),
         datetime_cols=len(kinds.datetime),
         bool_cols=len(kinds.boolean),
+        dtype_donut_svg=dtype_donut_svg,
         top_missing_list=top_missing_list,
         n_unique_cols=f"{n_cols:,}",
         constant_cols=f"{constant_cols:,}",
