@@ -6162,12 +6162,16 @@ body.suricata-standalone:not(.light) {
   color: var(--text-primary);
   cursor: pointer;
   font-size: 0.8rem;
+  transition: all 0.2s ease;
 }
 
 #pysuricata-report .pagination button:hover:not(:disabled) {
   background: var(--hover-bg);
-  border-radius: 6px 6px 0 0;
+  border-radius: 6px;
   border-color: var(--accent-color);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
 
 #pysuricata-report .pagination button:disabled {
@@ -6195,7 +6199,7 @@ body.suricata-standalone:not(.light) {
 
 #pysuricata-report .page-number:hover {
   background: var(--hover-bg);
-  border-radius: 6px 6px 0 0;
+  border-radius: 6px;
   border-color: var(--accent-color);
 }
 
@@ -6283,6 +6287,15 @@ body.suricata-standalone:not(.light) {
   color: var(--text-primary);
 }
 
+#pysuricata-report:not(.light) .pagination button:hover:not(:disabled) {
+  background: var(--hover-bg);
+  border-radius: 6px;
+  border-color: var(--accent-color);
+  color: var(--text-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+}
+
 #pysuricata-report:not(.light) .page-number {
   background: var(--bg-primary);
   border-color: var(--border-color);
@@ -6291,7 +6304,7 @@ body.suricata-standalone:not(.light) {
 
 #pysuricata-report:not(.light) .page-number:hover {
   background: var(--hover-bg);
-  border-radius: 6px 6px 0 0;
+  border-radius: 6px;
   border-color: var(--accent-color);
 }
 

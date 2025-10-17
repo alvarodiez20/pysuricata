@@ -174,7 +174,7 @@ def render_html_snapshot(
                 <button class=\"tab\" data-filter=\"boolean\">Boolean</button>
               </div>
             </div>
-            <div class=\"info\" id=\"pagination-info\">Showing 1-{min(8, total_variables)} of {total_variables}</div>
+            <div class=\"info\" id=\"pagination-info\">Showing 1-{min(10, total_variables)} of {total_variables}</div>
           </div>
 
           <div class=\"cards-grid\" id=\"cards-grid\">
@@ -182,9 +182,9 @@ def render_html_snapshot(
           </div>
 
           <div class=\"pagination\" id=\"pagination\">
-            <button id=\"prev-btn\" {"disabled" if total_variables <= 8 else ""}>←</button>
+            <button id=\"prev-btn\" {"disabled" if total_variables <= 10 else ""}>←</button>
             <div class=\"pages\" id=\"page-numbers\"></div>
-            <button id=\"next-btn\" {"disabled" if total_variables <= 8 else ""}>→</button>
+            <button id=\"next-btn\" {"disabled" if total_variables <= 10 else ""}>→</button>
           </div>
     """
 

@@ -519,9 +519,9 @@ ${root.outerHTML}
 
     if (!controls || !cardsGrid) return;
 
-    // Hide controls if there are 8 or fewer variables
+    // Hide controls if there are 10 or fewer variables
     const totalCards = cardsGrid.children.length;
-    if (totalCards <= 8) {
+    if (totalCards <= 10) {
       if (controls) controls.style.display = 'none';
       if (pagination) pagination.style.display = 'none';
       return;
@@ -567,7 +567,7 @@ ${root.outerHTML}
     if (!prevBtn || !nextBtn || !paginationInfo) return;
 
     let currentPage = 1;
-    const cardsPerPage = 8;
+    const cardsPerPage = 10;
 
     function updatePagination() {
       const cards = Array.from(document.querySelectorAll('.var-card:not([style*="display: none"])'));

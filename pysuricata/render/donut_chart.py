@@ -72,7 +72,7 @@ class DonutChartRenderer:
         """
         # Check if only one segment type (100% case)
         non_zero_segments = [s for s in segments if s["count"] > 0]
-        
+
         if len(non_zero_segments) == 1:
             # Special case: draw a full circle instead of arc to avoid SVG arc limitation
             # When arc = 360°, start point = end point, making arc invisible
@@ -98,7 +98,7 @@ class DonutChartRenderer:
             </g>
         </svg>
         """
-        
+
         # Add background circle to ensure complete appearance even with zero segments
         background_circle = f"""
             <circle cx="{self.cx}" cy="{self.cy}" r="{self.outer_radius}"
