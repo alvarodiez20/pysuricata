@@ -111,7 +111,7 @@ def build_summary(
 def _get_intelligent_top_missing(
     miss_list: Sequence[Tuple[str, float, int]], n_rows: int, n_cols: int
 ) -> List[Dict[str, Any]]:
-    """Get intelligent top missing columns using the new analyzer.
+    """Get top missing columns (max 5) using the analyzer.
 
     Args:
         miss_list: List of (column_name, missing_pct, missing_count) tuples
@@ -124,12 +124,12 @@ def _get_intelligent_top_missing(
     if not miss_list:
         return []
 
-    # Use the intelligent analyzer to determine what to include
+    # Use the analyzer to determine what to include (max 5)
     renderer = create_missing_columns_renderer(min_threshold_pct=0.5)
     result = renderer.analyzer.analyze_missing_columns(miss_list, n_cols, n_rows)
 
-    # Return the initial columns (what would be shown by default)
+    # Return the columns (max 5)
     return [
         {"column": str(col), "pct": float(pct), "count": int(cnt)}
-        for col, pct, cnt in result.initial_columns
+        for col, pct, cnt in result.columns
     ]

@@ -445,9 +445,21 @@ body.suricata-standalone:not(.light) {
   background: rgba(0, 0, 0, 0.02);
 }
 
+/* First row cards - keep compact */
+#pysuricata-report #summary .summary-grid:not(.second-row) .summary-card {
+  display: block;
+}
+
 /* Only apply min-height to second-row cards (Column types, Top missing, Quick insights) */
 #pysuricata-report #summary .summary-grid.second-row .summary-card {
   min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Better space distribution for Column types card */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child {
+  justify-content: space-between;
 }
 
 #pysuricata-report:not(.light) #summary .summary-card {
@@ -458,7 +470,7 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report #summary .summary-card .label {
   font-size: .8rem;
   opacity: .8;
-  margin: 0 0 6px;
+  margin: 0 0 12px;
 }
 
 #pysuricata-report #summary .summary-card .value {
@@ -499,7 +511,7 @@ body.suricata-standalone:not(.light) {
   justify-content: flex-start;
   /* do not stretch gaps between items */
   align-content: flex-start;
-  gap: 8px;
+  gap: 16px;
   /* uniform vertical spacing between rows */
   margin: 0;
   padding: 0;
@@ -509,7 +521,7 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .top-missing .missing-item {
   display: grid !important;
   grid-template-rows: auto 8px;
-  row-gap: clamp(4px, 0.6vw, 12px);
+  row-gap: 4px;
   list-style: none;
 }
 
@@ -687,6 +699,7 @@ body.suricata-standalone:not(.light) {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
+  margin: 0;
 }
 
 /* Turn each LI into a compact tile */
@@ -696,8 +709,8 @@ body.suricata-standalone:not(.light) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  padding: 12px 10px;
+  gap: 6px;
+  padding: 16px 10px;
   border-radius: 10px;
   border: 1px solid var(--chip-br-light);
   background: rgba(0, 0, 0, 0.02);
@@ -811,7 +824,7 @@ body.suricata-standalone:not(.light) {
    ============================= */
 #pysuricata-report .dtype-donut-svg {
   display: block;
-  margin: 12px auto;
+  margin: 8px auto;
   cursor: pointer;
   border-radius: 50%;
   overflow: visible;

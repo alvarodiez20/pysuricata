@@ -7,12 +7,12 @@ class DonutChartRenderer:
     """Renders interactive SVG donut charts with tooltips."""
 
     def __init__(self):
-        self.width = 120
-        self.height = 120
-        self.cx = 60
-        self.cy = 60
-        self.outer_radius = 60
-        self.inner_radius = 46  # Creates donut ring with styled center hole
+        self.width = 135
+        self.height = 135
+        self.cx = 67.5
+        self.cy = 67.5
+        self.outer_radius = 67.5
+        self.inner_radius = 52  # Creates donut ring with styled center hole
 
     def render_dtype_donut(
         self, numeric: int, categorical: int, datetime: int, boolean: int
@@ -93,7 +93,7 @@ class DonutChartRenderer:
                 </g>
             </g>
             <g class="donut-inner-segments">
-                <circle cx="{self.cx}" cy="{self.cy}" r="45"
+                <circle cx="{self.cx}" cy="{self.cy}" r="50"
                         fill="{segment["color"]}" opacity="0.6" class="segment-inner"/>
             </g>
         </svg>
@@ -219,7 +219,7 @@ class DonutChartRenderer:
         Returns:
             SVG path string for smaller inner pie slice
         """
-        inner_radius = 45  # Larger radius for more visible inner portion
+        inner_radius = 50  # Larger radius for more visible inner portion
 
         # Convert degrees to radians
         start_rad = math.radians(start_angle)

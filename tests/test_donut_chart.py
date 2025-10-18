@@ -24,7 +24,7 @@ class TestDonutChartRenderer:
 
         # Should use circle element for 100% case
         assert "dtype-donut-svg" in result
-        assert '<circle cx="60" cy="60" r="60"' in result
+        assert '<circle cx="67.5" cy="67.5" r="67.5"' in result
         assert 'fill="#4ea3f1"' in result  # Numeric color
         assert 'data-percentage="100.0"' in result
         assert 'data-count="75"' in result
@@ -39,7 +39,7 @@ class TestDonutChartRenderer:
         result = renderer.render_dtype_donut(0, 50, 0, 0)
 
         assert "dtype-donut-svg" in result
-        assert '<circle cx="60" cy="60" r="60"' in result
+        assert '<circle cx="67.5" cy="67.5" r="67.5"' in result
         assert 'fill="#8ac926"' in result  # Categorical color
         assert 'data-type="Categorical"' in result
 
@@ -49,7 +49,7 @@ class TestDonutChartRenderer:
         result = renderer.render_dtype_donut(0, 0, 30, 0)
 
         assert "dtype-donut-svg" in result
-        assert '<circle cx="60" cy="60" r="60"' in result
+        assert '<circle cx="67.5" cy="67.5" r="67.5"' in result
         assert 'fill="#ffca3a"' in result  # Datetime color
         assert 'data-type="Datetime"' in result
 
@@ -59,7 +59,7 @@ class TestDonutChartRenderer:
         result = renderer.render_dtype_donut(0, 0, 0, 20)
 
         assert "dtype-donut-svg" in result
-        assert '<circle cx="60" cy="60" r="60"' in result
+        assert '<circle cx="67.5" cy="67.5" r="67.5"' in result
         assert 'fill="#ff595e"' in result  # Boolean color
         assert 'data-type="Boolean"' in result
 
@@ -70,7 +70,7 @@ class TestDonutChartRenderer:
 
         assert "dtype-donut-svg" in result
         # Should use path elements with arcs, not circles
-        assert '<path d="M 60,60 L' in result
+        assert '<path d="M 67.5,67.5 L' in result
         assert "donut-segment" in result
 
         # Should have multiple segments
@@ -82,7 +82,7 @@ class TestDonutChartRenderer:
         result = renderer.render_dtype_donut(10, 10, 0, 0)
 
         assert "dtype-donut-svg" in result
-        assert '<path d="M 60,60 L' in result
+        assert '<path d="M 67.5,67.5 L' in result
 
         # Should have numeric and categorical segments
         assert 'data-type="Numeric"' in result
@@ -108,7 +108,7 @@ class TestDonutChartRenderer:
         result = renderer.render_dtype_donut(1, 0, 0, 0)
 
         # Should render as full circle
-        assert '<circle cx="60" cy="60" r="60"' in result
+        assert '<circle cx="67.5" cy="67.5" r="67.5"' in result
         assert 'data-count="1"' in result
 
     def test_very_large_number_of_columns(self):
@@ -117,7 +117,7 @@ class TestDonutChartRenderer:
         result = renderer.render_dtype_donut(1000, 0, 0, 0)
 
         # Should still render as full circle
-        assert '<circle cx="60" cy="60" r="60"' in result
+        assert '<circle cx="67.5" cy="67.5" r="67.5"' in result
         assert 'data-count="1000"' in result
         assert 'data-percentage="100.0"' in result
 
@@ -136,7 +136,7 @@ class TestDonutChartRenderer:
 
         assert "donut-inner-segments" in result
         # Should have inner circle for depth effect
-        assert '<circle cx="60" cy="60" r="45"' in result
+        assert '<circle cx="67.5" cy="67.5" r="50"' in result
         assert 'class="segment-inner"' in result
 
     def test_background_circle_always_present(self):
