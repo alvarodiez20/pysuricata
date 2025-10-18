@@ -2271,12 +2271,12 @@ body.suricata-standalone:not(.light) {
 }
 
 #pysuricata-report .var-card__body .triple-row .chart {
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
   align-self: stretch;
   min-height: 0;
-}
-
-#pysuricata-report .var-card__body .triple-row .chart {
-  padding-bottom: 12px;
+  padding-bottom: 6px;
 }
 
 #pysuricata-report .var-card__body .triple-row .chart .hist-variants {
@@ -2972,7 +2972,7 @@ body.suricata-standalone:not(.light) {
   /* match .triple-row */
   gap: 12px;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 #pysuricata-report .card-controls .details-slot {
@@ -3365,11 +3365,7 @@ body.suricata-standalone:not(.light) {
 /*# =============================
 #   DATETIME card – align chart height with tables & trim bottom whitespace
 # =============================
-/* Make all three columns in the triple row stretch equally */
-#pysuricata-report .var-card__body .triple-row {
-  align-items: stretch;
-}
-
+/* Triple row alignment is now handled by the general rule above */
 #pysuricata-report .var-card__body .triple-row>* {
   align-self: stretch;
 }
@@ -3403,12 +3399,12 @@ body.suricata-standalone:not(.light) {
 }
 
 #pysuricata-report .var-card:has(.dt-chart) .card-controls {
-  margin-top: 8px;
+  margin-top: 4px;
   margin-bottom: 0;
 }
 
-/* Ensure the chart column itself has no bottom padding so it aligns with tables */
-#pysuricata-report .var-card__body .triple-row .chart {
+/* Ensure the chart column itself has no bottom padding so it aligns with tables (datetime only) */
+#pysuricata-report .var-card:has(.dt-chart) .var-card__body .triple-row .chart {
   padding-bottom: 0;
 }
 

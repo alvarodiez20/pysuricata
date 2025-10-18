@@ -2,9 +2,6 @@
 
 import math
 from collections.abc import Sequence
-from typing import Any
-
-import numpy as np
 
 from .card_base import CardRenderer, QualityAssessor, TableBuilder
 from .card_config import (
@@ -334,52 +331,6 @@ class NumericCardRenderer(CardRenderer):
 
         return self.table_builder.build_key_value_table(data)
 
-    def _create_histogram_data(
-        self, values: np.ndarray, bins: int, scale: str, scale_count: float
-    ) -> Any:
-        """Create histogram data for chart rendering.
-
-        Args:
-            values: Array of numeric values
-            bins: Number of bins for histogram
-            scale: Scale type ('lin' or 'log')
-            scale_count: Scale factor for counts
-
-        Returns:
-            Object with edges and scaled_counts attributes
-        """
-        if len(values) == 0:
-            # Return empty histogram data
-            return type(
-                "HistogramData",
-                (),
-                {"edges": np.array([]), "scaled_counts": np.array([])},
-            )()
-
-        # Apply scale transformation if needed
-        if scale == "log":
-            # Filter out non-positive values for log scale
-            positive_values = values[values > 0]
-            if len(positive_values) == 0:
-                return type(
-                    "HistogramData",
-                    (),
-                    {"edges": np.array([]), "scaled_counts": np.array([])},
-                )()
-            transformed_values = np.log10(positive_values)
-        else:
-            transformed_values = values
-
-        # Create histogram
-        counts, edges = np.histogram(transformed_values, bins=bins)
-
-        # Scale counts
-        scaled_counts = counts * scale_count
-
-        return type(
-            "HistogramData", (), {"edges": edges, "scaled_counts": scaled_counts}
-        )()
-
     def _build_histogram_variants(
         self, col_id: str, base_title: str, stats: NumericStats
     ) -> str:
@@ -388,55 +339,36 @@ class NumericCardRenderer(CardRenderer):
         true_edges = getattr(stats, "true_histogram_edges", None)
         true_counts = getattr(stats, "true_histogram_counts", None)
 
-        if true_edges and true_counts and len(true_edges) > 1 and len(true_counts) > 0:
-            # Use true distribution data
-            variants = []
-            for bins in self.hist_config.bin_options:
-                for scale in ["lin", "log"]:
-                    # Create title with scale indicator
-                    title = f"{base_title}{' (log scale)' if scale == 'log' else ''}"
+        if not (
+            true_edges and true_counts and len(true_edges) > 1 and len(true_counts) > 0
+        ):
+            # No true distribution data available
+            return f'''
+            <div class="hist-chart">
+                <div class="hist-variants" data-col="{col_id}">
+                    <div class="hist variant active">
+                        {self.svg_histogram_renderer._render_empty_histogram("No histogram data")}
+                    </div>
+                </div>
+            </div>
+            '''
 
-                    # Generate SVG histogram with true distribution
-                    svg_content = (
-                        self.svg_histogram_renderer.render_histogram_from_bins(
-                            bin_edges=true_edges,
-                            bin_counts=true_counts,
-                            bins=bins,
-                            scale=scale,
-                            title=title,
-                            col_id=col_id,
-                        )
-                    )
+        # Generate histogram variants with true distribution data
+        variants = []
+        for bins in self.hist_config.bin_options:
+            for scale in ["lin", "log"]:
+                # Create title with scale indicator
+                title = f"{base_title}{' (log scale)' if scale == 'log' else ''}"
 
-                    active_class = " active" if (bins == 25 and scale == "lin") else ""
-
-                    variants.append(
-                        f'<div class="hist variant{active_class}" id="{col_id}-{scale}-bins-{bins}" data-scale="{scale}" data-bin="{bins}">'
-                        f"{svg_content}"
-                        f"</div>"
-                    )
-        else:
-            # Fallback to sample-based approach
-            values = stats.sample_vals or []
-            scale_count = getattr(stats, "sample_scale", 1.0)
-
-            variants = []
-            for bins in self.hist_config.bin_options:
-                for scale in ["lin", "log"]:
-                    # Scale the values if needed
-                    scaled_values = np.asarray(values, dtype=float) * scale_count
-
-                    # Create title with scale indicator
-                    title = f"{base_title}{' (log scale)' if scale == 'log' else ''}"
-
-                    # Generate SVG histogram
-                    svg_content = self.svg_histogram_renderer.render_histogram(
-                        values=scaled_values,
-                        bins=bins,
-                        scale=scale,
-                        title=title,
-                        col_id=col_id,
-                    )
+                # Generate SVG histogram with true distribution
+                svg_content = self.svg_histogram_renderer.render_histogram_from_bins(
+                    bin_edges=true_edges,
+                    bin_counts=true_counts,
+                    bins=bins,
+                    scale=scale,
+                    title=title,
+                    col_id=col_id,
+                )
 
                 active_class = " active" if (bins == 25 and scale == "lin") else ""
 
@@ -940,12 +872,13 @@ class NumericCardRenderer(CardRenderer):
         corr_data = getattr(stats, "corr_top", []) or []
 
         if not corr_data:
-            return """
+            threshold = getattr(stats, "corr_threshold", 0.5)
+            return f"""
         <div class="correlation-summary">
             <div class="no-correlations">
                 <span class="icon">📊</span>
                 <span class="message">No significant correlations found</span>
-                <small>Correlations below 0.3 threshold are not shown</small>
+                <small>Correlations below {threshold:.1f} threshold are not shown</small>
             </div>
         </div>
         """

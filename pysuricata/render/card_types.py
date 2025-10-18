@@ -57,6 +57,7 @@ class NumericStats:
     chunk_metadata: Optional[
         Sequence[Tuple[int, int, int]]
     ]  # (start_row, end_row, missing_count)
+    corr_threshold: float = 0.5  # Threshold used for correlation filtering
 
 
 @dataclass

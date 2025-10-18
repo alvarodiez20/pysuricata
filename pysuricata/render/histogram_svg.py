@@ -30,16 +30,14 @@ class HistogramConfig:
 
     # Bar styling - Professional Blue
     bar_color: str = "#3b82f6"
-    bar_opacity: float = 0.7
+    bar_opacity: float = 0.95
     bar_stroke: str = "#1d4ed8"
-    bar_stroke_width: float = 0.5
+    bar_stroke_width: float = 0
 
     # Axis styling
     axis_color: str = "#666"
     axis_stroke_width: float = 1.0
     tick_length: int = 5
-    grid_color: str = "#eee"
-    grid_opacity: float = 0.5
 
     # Text styling
     font_family: str = "Arial, sans-serif"
@@ -72,72 +70,6 @@ class SVGHistogramRenderer:
 
     def __init__(self, config: HistogramConfig | None = None):
         self.config = config or HistogramConfig()
-
-    def render_histogram(
-        self,
-        values: np.ndarray,
-        bins: int = 25,
-        scale: str = "lin",
-        title: str = "",
-        col_id: str = "",
-    ) -> str:
-        """
-        Render a histogram as SVG.
-
-        Args:
-            values: Array of numeric values
-            bins: Number of bins
-            scale: Scale type ('lin' or 'log')
-            title: Chart title
-            col_id: Column ID for tooltips
-
-        Returns:
-            SVG string
-        """
-        if len(values) == 0:
-            return self._render_empty_histogram(title)
-
-        # Prepare data
-        hist_data = self._prepare_histogram_data(values, bins, scale)
-
-        # Calculate dimensions
-        inner_width = (
-            self.config.width - self.config.margin_left - self.config.margin_right
-        )
-        inner_height = (
-            self.config.height - self.config.margin_top - self.config.margin_bottom
-        )
-
-        # Generate SVG
-        svg_parts = [
-            f'<svg class="hist-svg" width="{self.config.width}" height="{self.config.height}" '
-            f'viewBox="0 0 {self.config.width} {self.config.height}" '
-            f'role="img" aria-label="Histogram for {title}">'
-        ]
-
-        # Add grid
-        svg_parts.extend(self._render_grid(hist_data, inner_width, inner_height))
-
-        # Add bars
-        svg_parts.extend(
-            self._render_bars(hist_data, inner_width, inner_height, col_id)
-        )
-
-        # Add axes
-        svg_parts.extend(self._render_axes(hist_data, inner_width, inner_height))
-
-        # Add title
-        if title:
-            svg_parts.append(
-                f'<text x="{self.config.width // 2}" y="15" '
-                f'text-anchor="middle" class="hist-title" '
-                f'font-family="{self.config.font_family}" '
-                f'font-size="{self.config.title_font_size}">'
-                f"{self.safe_html_escape(title)}</text>"
-            )
-
-        svg_parts.append("</svg>")
-        return "\n".join(svg_parts)
 
     def render_histogram_from_bins(
         self,
@@ -259,14 +191,22 @@ class SVGHistogramRenderer:
         # Calculate new bin centers
         new_bin_centers = (new_edges[:-1] + new_edges[1:]) / 2.0
 
-        # Create histogram data with new bins
+        # Calculate actual max count
+        actual_max = int(np.max(new_counts)) if len(new_counts) > 0 else 0
+
+        # Calculate nice ticks to get the proper y_max for scaling
+        # This ensures bars can reach the top tick mark
+        y_ticks, _ = nice_ticks(0, actual_max, 5)
+        nice_y_max = y_ticks[-1] if y_ticks else actual_max
+
+        # Create histogram data with nice y_max for proper bar scaling
         hist_data = HistogramData(
             counts=new_counts,
             edges=new_edges,
             bin_centers=new_bin_centers,
             total_count=int(np.sum(new_counts)),
             scale=scale,
-            y_max=int(np.max(new_counts)) if len(new_counts) > 0 else 0,
+            y_max=nice_y_max,
         )
 
         # Calculate dimensions
@@ -307,54 +247,6 @@ class SVGHistogramRenderer:
 
         svg_parts.append("</svg>")
         return "\n".join(svg_parts)
-
-    def _prepare_histogram_data(
-        self, values: np.ndarray, bins: int, scale: str
-    ) -> HistogramData:
-        """Prepare histogram data for rendering."""
-
-        # Store original range for log scale tick generation
-        original_range = None
-        if len(values) > 0:
-            original_range = (float(values.min()), float(values.max()))
-
-        if scale == "log":
-            # Filter out non-positive values for log scale
-            positive_values = values[values > 0]
-            if len(positive_values) == 0:
-                return HistogramData(
-                    counts=np.array([]),
-                    edges=np.array([]),
-                    bin_centers=np.array([]),
-                    total_count=0,
-                    scale=scale,
-                    y_max=0,
-                    original_range=original_range,
-                )
-            transformed_values = np.log10(positive_values)
-        else:
-            transformed_values = values
-
-        # Create histogram
-        counts, edges = np.histogram(transformed_values, bins=bins)
-
-        # Calculate bin centers
-        bin_centers = (edges[:-1] + edges[1:]) / 2.0
-
-        # Convert back to linear space for log scale
-        if scale == "log":
-            bin_centers = 10**bin_centers
-            edges = 10**edges
-
-        return HistogramData(
-            counts=counts,
-            edges=edges,
-            bin_centers=bin_centers,
-            total_count=len(values),
-            scale=scale,
-            y_max=float(counts.max()) if len(counts) > 0 else 0,
-            original_range=original_range,
-        )
 
     def _render_empty_histogram(self, title: str) -> str:
         """Render an empty histogram when no data is available."""
@@ -400,10 +292,8 @@ class SVGHistogramRenderer:
                 self.config.margin_top + (1 - y_tick / hist_data.y_max) * inner_height
             )
             parts.append(
-                f'<line x1="{self.config.margin_left}" y1="{y_pos}" '
-                f'x2="{self.config.margin_left + inner_width}" y2="{y_pos}" '
-                f'stroke="{self.config.grid_color}" stroke-opacity="{self.config.grid_opacity}" '
-                f'stroke-width="0.5"/>'
+                f'<line class="grid" x1="{self.config.margin_left}" y1="{y_pos}" '
+                f'x2="{self.config.margin_left + inner_width}" y2="{y_pos}"/>'
             )
 
         return parts
@@ -466,6 +356,10 @@ class SVGHistogramRenderer:
             is_count: If True, format as integer (for histogram counts).
                      If False, format with appropriate precision (for data ranges).
         """
+        # Special case: zero
+        if value == 0:
+            return "0"
+
         if is_count:
             # For histogram counts (y-axis), always format as integers
             if abs(value) >= 1000:
@@ -473,11 +367,20 @@ class SVGHistogramRenderer:
             else:
                 return f"{int(value)}"
         else:
-            # For data values (x-axis ranges), use appropriate precision
+            # For data values (x-axis)
+            # Check if value is effectively an integer
+            if abs(value - round(value)) < 1e-9:
+                int_val = int(round(value))
+                if abs(int_val) >= 1000:
+                    return f"{int_val:,}"
+                else:
+                    return f"{int_val}"
+
+            # Non-integer values
             if abs(value) >= 1e6 or (abs(value) < 1e-3 and value != 0):
                 return fmt_compact_scientific(value)
             elif abs(value) >= 1000:
-                return f"{value:,.0f}"
+                return f"{value:,.1f}"
             elif abs(value) >= 1:
                 return f"{value:.1f}"
             else:
@@ -635,29 +538,3 @@ class SVGHistogramRenderer:
             .replace('"', "&quot;")
             .replace("'", "&#x27;")
         )
-
-
-def create_histogram_svg(
-    values: np.ndarray,
-    bins: int = 25,
-    scale: str = "lin",
-    title: str = "",
-    col_id: str = "",
-    config: HistogramConfig | None = None,
-) -> str:
-    """
-    Create a histogram SVG.
-
-    Args:
-        values: Array of numeric values
-        bins: Number of bins
-        scale: Scale type ('lin' or 'log')
-        title: Chart title
-        col_id: Column ID for tooltips
-        config: Optional histogram configuration
-
-    Returns:
-        SVG string
-    """
-    renderer = SVGHistogramRenderer(config)
-    return renderer.render_histogram(values, bins, scale, title, col_id)

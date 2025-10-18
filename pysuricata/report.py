@@ -183,6 +183,11 @@ class ReportOrchestrator:
                         acc.set_corr_top(top_map.get(name, []))
                     except Exception:
                         pass
+                if hasattr(acc, "set_corr_threshold"):
+                    try:
+                        acc.set_corr_threshold(self.config.corr_threshold)
+                    except Exception:
+                        pass
 
     def _render_html(
         self,

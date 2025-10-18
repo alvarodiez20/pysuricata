@@ -8,8 +8,9 @@ designed for processing massive numerical datasets efficiently.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
@@ -90,6 +91,7 @@ class NumericSummary:
     chunk_metadata: Optional[List[Tuple[int, int, int]]] = (
         None  # (start_row, end_row, missing_count)
     )
+    corr_threshold: float = 0.5  # Threshold used for correlation filtering
 
 
 class NumericAccumulator:
@@ -119,6 +121,7 @@ class NumericAccumulator:
         self._int_like_all = True
         self._dtype_str = "numeric"
         self._corr_top: List[Tuple[str, float]] = []
+        self._corr_threshold: float = 0.5
 
         # Memory tracking for big data optimization
         self._bytes_seen = 0
@@ -169,6 +172,14 @@ class NumericAccumulator:
             items: List of (column_name, correlation) tuples
         """
         self._corr_top = list(items or [])
+
+    def set_corr_threshold(self, threshold: float) -> None:
+        """Set correlation threshold for analytics.
+
+        Args:
+            threshold: Minimum absolute correlation to report
+        """
+        self._corr_threshold = float(threshold)
 
     @property
     def unique_est(self) -> int:
@@ -442,6 +453,7 @@ class NumericAccumulator:
             mono_dec=mono_dec,
             dtype_str=self._dtype_str,
             corr_top=self._corr_top,
+            corr_threshold=self._corr_threshold,
             min_items=min_pairs,
             max_items=max_pairs,
             ci_lo=ci_lo,

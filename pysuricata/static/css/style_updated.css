@@ -1070,8 +1070,7 @@ body.suricata-standalone:not(.light) {
 
 /* Make the histogram fill the same height as the tables */
 #pysuricata-report .var-card__body .triple-row { align-items: stretch; }
-#pysuricata-report .var-card__body .triple-row .chart { align-self: stretch; min-height: 0; }
-#pysuricata-report .var-card__body .triple-row .chart { padding-bottom: 12px; }
+#pysuricata-report .var-card__body .triple-row .chart { display: flex; flex-direction: column; justify-content: stretch; align-self: stretch; min-height: 0; padding-bottom: 6px; }
 #pysuricata-report .var-card__body .triple-row .chart .hist-variants { flex: 1 1 auto; min-height: 200px; }
 /* Override any generic SVG sizing (e.g., .viz svg { height:80px }) so the hist grows */
 #pysuricata-report .var-card__body .triple-row .chart .hist-variants svg { width: 100% !important; height: 100% !important; display: block; }
@@ -1410,7 +1409,7 @@ body.suricata-standalone:not(.light) {
   grid-template-columns: var(--triple-left) var(--triple-right) 1fr; /* match .triple-row */
   gap: 12px;
   align-items: center;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 #pysuricata-report .card-controls .details-slot { grid-column: 1; justify-self: start; }
 #pysuricata-report .card-controls .controls-slot { grid-column: 3; justify-self: center; }
@@ -1576,8 +1575,7 @@ body.suricata-standalone:not(.light) {
 /*# =============================
 #   DATETIME card – align chart height with tables & trim bottom whitespace
 # =============================
-/* Make all three columns in the triple row stretch equally */
-#pysuricata-report .var-card__body .triple-row { align-items: stretch; }
+/* Triple row alignment is now handled by the general rule above */
 #pysuricata-report .var-card__body .triple-row > * { align-self: stretch; }
 
 /* Let the main datetime chart fill its column height without relying on % heights */
@@ -1598,10 +1596,10 @@ body.suricata-standalone:not(.light) {
 
 /* Avoid extra vertical space from nested margins under the triple row */
 #pysuricata-report .var-card:has(.dt-chart) .var-card__body .triple-row table { margin-bottom: 0; }
-#pysuricata-report .var-card:has(.dt-chart) .card-controls { margin-top: 8px; margin-bottom: 0; }
+#pysuricata-report .var-card:has(.dt-chart) .card-controls { margin-top: 4px; margin-bottom: 0; }
 
-/* Ensure the chart column itself has no bottom padding so it aligns with tables */
-#pysuricata-report .var-card__body .triple-row .chart { padding-bottom: 0; }
+/* Ensure the chart column itself has no bottom padding so it aligns with tables (datetime only) */
+#pysuricata-report .var-card:has(.dt-chart) .var-card__body .triple-row .chart { padding-bottom: 0; }
 
 /* =============================
    BOOLEAN VARIABLES – stacked bar chart styling
