@@ -322,6 +322,11 @@ class StreamingEngine:
                     adapter.update_corr(chunk, corr_est, self.logger)
                 adapter.update_row_kmv(chunk, row_kmv)
 
+                # Mark chunk boundaries in all accumulators for per-column tracking
+                for acc in accs.values():
+                    if hasattr(acc, "mark_chunk_boundary"):
+                        acc.mark_chunk_boundary()
+
                 chunk_size = len(chunk) if hasattr(chunk, "__len__") else 0
                 chunk_missing = adapter.missing_cells(chunk)
                 chunk_metadata.append(

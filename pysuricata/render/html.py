@@ -34,6 +34,7 @@ def render_html_snapshot(
     report_title: Optional[str],
     sample_section_html: str,
     chunk_metadata: Optional[list[tuple[int, int, int]]] = None,
+    corr_est: Optional[Any] = None,
 ) -> str:
     kinds_map = {
         **{name: ("numeric", accs[name]) for name in kinds.numeric},
@@ -221,6 +222,14 @@ def render_html_snapshot(
         + description_editor_content
     )
 
+    # Generate correlations section (before missing values)
+    from .correlations_section import CorrelationsSectionRenderer
+
+    correlations_renderer = CorrelationsSectionRenderer()
+    correlations_section_html = correlations_renderer.render_section(
+        corr_est, kinds.numeric, cfg.corr_threshold
+    )
+
     # Generate missing values section
     from .missing_section import MissingValuesSectionRenderer
 
@@ -306,6 +315,7 @@ def render_html_snapshot(
         avg_text_len=avg_text_len,
         dataset_sample_section=sample_section_html or "",
         variables_section=variables_section_html,
+        correlations_section=correlations_section_html,
         missing_values_section=missing_values_section_html,
         description_html=description_html,
         description_attr=description_attr,

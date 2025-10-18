@@ -6,8 +6,9 @@ with comprehensive error handling, validation, and performance optimizations for
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
@@ -42,6 +43,7 @@ class CategoricalSummary:
     gini_impurity: float = 0.0
     most_common_ratio: float = 0.0
     diversity_ratio: float = 0.0
+    chunk_metadata: Optional[List[Tuple[int, int, int]]] = None
 
 
 class CategoricalAccumulator:
@@ -94,6 +96,12 @@ class CategoricalAccumulator:
         # Special value tracking
         self._empty_zero = 0
 
+        # Per-column chunk tracking for accurate missing value reporting
+        self._chunk_boundaries: List[int] = []  # Cumulative row counts
+        self._chunk_missing: List[int] = []  # Missing count per chunk
+        self._current_chunk_missing = 0  # Missing in current chunk
+        self._current_chunk_rows = 0  # Total rows in current chunk
+
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string.
 
@@ -126,6 +134,9 @@ class CategoricalAccumulator:
         if not arr:
             return
 
+        # Track chunk metadata before processing
+        missing_before = self.missing
+
         # Process each value with comprehensive error handling
         for value in arr:
             try:
@@ -134,6 +145,11 @@ class CategoricalAccumulator:
                 # Robust error handling - continue processing even with bad data
                 self.missing += 1
                 continue
+
+        # Track missing values in current chunk
+        missing_in_update = self.missing - missing_before
+        self._current_chunk_missing += missing_in_update
+        self._current_chunk_rows += len(arr)
 
     def _process_single_value(self, value: Any) -> None:
         """Process a single categorical value with optimized handling.
@@ -231,6 +247,19 @@ class CategoricalAccumulator:
         except (ValueError, TypeError):
             pass
 
+    def mark_chunk_boundary(self) -> None:
+        """Mark the end of a chunk for per-column missing value tracking.
+
+        This method records the cumulative row count and missing count for the
+        current chunk, enabling accurate per-column chunk visualization.
+        """
+        if self._current_chunk_rows > 0:
+            cumulative_rows = self.count + self.missing
+            self._chunk_boundaries.append(cumulative_rows)
+            self._chunk_missing.append(self._current_chunk_missing)
+            self._current_chunk_missing = 0
+            self._current_chunk_rows = 0
+
     def finalize(self) -> CategoricalSummary:
         """Finalize accumulator and return comprehensive summary statistics.
 
@@ -259,6 +288,20 @@ class CategoricalAccumulator:
         # Determine if approximation was used
         approx = len(top_items) < self.config.top_k_size
 
+        # Build per-column chunk metadata from tracked boundaries
+        # Finalize any pending chunk data first
+        if self._current_chunk_rows > 0:
+            self.mark_chunk_boundary()
+
+        # Build per-column chunk metadata list
+        per_column_chunk_metadata = []
+        start_row = 0
+        for i, end_cumulative in enumerate(self._chunk_boundaries):
+            end_row = end_cumulative - 1
+            missing_in_chunk = self._chunk_missing[i]
+            per_column_chunk_metadata.append((start_row, end_row, missing_in_chunk))
+            start_row = end_cumulative
+
         return CategoricalSummary(
             name=self.name,
             count=self.count,
@@ -277,6 +320,9 @@ class CategoricalAccumulator:
             gini_impurity=gini_impurity,
             most_common_ratio=most_common_ratio,
             diversity_ratio=diversity_ratio,
+            chunk_metadata=per_column_chunk_metadata
+            if per_column_chunk_metadata
+            else None,
         )
 
     def _calculate_percentile(

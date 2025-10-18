@@ -98,6 +98,7 @@ class DateTimeStats:
     by_year: Optional[dict[int, int]]
     # Temporal analysis fields
     unique_est: int = 0
+    approx: bool = True  # unique_est uses KMV sketch, always approximate
     time_span_days: float = 0.0
     avg_interval_seconds: float = 0.0
     interval_std_seconds: float = 0.0

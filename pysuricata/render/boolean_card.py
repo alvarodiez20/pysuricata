@@ -111,12 +111,12 @@ class BooleanCardRenderer(CardRenderer):
         self, stats: BooleanStats, true_pct_total: float, false_pct_total: float
     ) -> str:
         """Build right statistics table."""
-        mem_display = self.format_bytes(getattr(stats, "mem_bytes", 0)) + " (≈)"
+        mem_display = self.format_bytes(getattr(stats, "mem_bytes", 0))
 
         data = [
             ("True", f"{int(stats.true_n):,} ({true_pct_total:.1f}%)", "num"),
             ("False", f"{int(stats.false_n):,} ({false_pct_total:.1f}%)", "num"),
-            ("Processed bytes", mem_display, "num"),
+            ("Processed bytes (≈)", mem_display, "num"),
         ]
 
         return self.table_builder.build_key_value_table(data)

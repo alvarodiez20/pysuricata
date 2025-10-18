@@ -7,8 +7,9 @@ optimized for big data processing with vectorized operations and comprehensive e
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Optional, Sequence
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
@@ -33,6 +34,7 @@ class BooleanSummary:
     true_ratio: float = 0.0
     false_ratio: float = 0.0
     entropy: float = 0.0
+    chunk_metadata: Optional[List[Tuple[int, int, int]]] = None
 
 
 class BooleanAccumulator:
@@ -60,6 +62,12 @@ class BooleanAccumulator:
         self._dtype_str = "boolean"
         self._mem_bytes = 0
 
+        # Per-column chunk tracking for accurate missing value reporting
+        self._chunk_boundaries: List[int] = []  # Cumulative row counts
+        self._chunk_missing: List[int] = []  # Missing count per chunk
+        self._current_chunk_missing = 0  # Missing in current chunk
+        self._current_chunk_rows = 0  # Total rows in current chunk
+
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string.
 
@@ -85,16 +93,28 @@ class BooleanAccumulator:
         if not arr:
             return
 
+        # Track chunk metadata before processing
+        missing_before = self.missing
+
         # Convert to numpy array for efficient processing
         try:
             values = np.asarray(arr, dtype=object)
         except Exception:
             # Fallback to list processing for problematic arrays
             self._update_fallback(arr)
+            # Track chunk data for fallback path too
+            missing_in_update = self.missing - missing_before
+            self._current_chunk_missing += missing_in_update
+            self._current_chunk_rows += len(arr)
             return
 
         # Vectorized processing for better performance
         self._process_values_vectorized(values)
+
+        # Track missing values in current chunk
+        missing_in_update = self.missing - missing_before
+        self._current_chunk_missing += missing_in_update
+        self._current_chunk_rows += len(arr)
 
     def _process_values_vectorized(self, values: np.ndarray) -> None:
         """Process values using vectorized numpy operations.
@@ -166,6 +186,19 @@ class BooleanAccumulator:
         except (ValueError, TypeError):
             pass
 
+    def mark_chunk_boundary(self) -> None:
+        """Mark the end of a chunk for per-column missing value tracking.
+
+        This method records the cumulative row count and missing count for the
+        current chunk, enabling accurate per-column chunk visualization.
+        """
+        if self._current_chunk_rows > 0:
+            cumulative_rows = self.count + self.missing
+            self._chunk_boundaries.append(cumulative_rows)
+            self._chunk_missing.append(self._current_chunk_missing)
+            self._current_chunk_missing = 0
+            self._current_chunk_rows = 0
+
     def finalize(self) -> BooleanSummary:
         """Finalize accumulator and return summary statistics.
 
@@ -185,6 +218,20 @@ class BooleanAccumulator:
             # Rough estimate: ~1 byte per boolean value
             self._mem_bytes = self.count + self.missing
 
+        # Build per-column chunk metadata from tracked boundaries
+        # Finalize any pending chunk data first
+        if self._current_chunk_rows > 0:
+            self.mark_chunk_boundary()
+
+        # Build per-column chunk metadata list
+        per_column_chunk_metadata = []
+        start_row = 0
+        for i, end_cumulative in enumerate(self._chunk_boundaries):
+            end_row = end_cumulative - 1
+            missing_in_chunk = self._chunk_missing[i]
+            per_column_chunk_metadata.append((start_row, end_row, missing_in_chunk))
+            start_row = end_cumulative
+
         return BooleanSummary(
             name=self.name,
             count=self.count,
@@ -196,6 +243,9 @@ class BooleanAccumulator:
             true_ratio=true_ratio,
             false_ratio=false_ratio,
             entropy=entropy,
+            chunk_metadata=per_column_chunk_metadata
+            if per_column_chunk_metadata
+            else None,
         )
 
     def _calculate_entropy(self, true_ratio: float, false_ratio: float) -> float:

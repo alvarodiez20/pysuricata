@@ -167,8 +167,8 @@ class CategoricalCardRenderer(CardRenderer):
         data = [
             ("Count", f"{int(getattr(stats, 'count', 0)):,}", "num"),
             (
-                "Unique",
-                f"{int(getattr(stats, 'unique_est', 0)):,}{' (≈)' if getattr(stats, 'approx', False) else ''}",
+                f"Unique{' (≈)' if getattr(stats, 'approx', False) else ''}",
+                f"{int(getattr(stats, 'unique_est', 0)):,}",
                 "num",
             ),
             (
@@ -208,8 +208,8 @@ class CategoricalCardRenderer(CardRenderer):
             ),
             ("Length p90", str(cat_stats.get("len_p90", "—")), None),
             (
-                "Processed bytes",
-                f"{self.format_bytes(int(cat_stats.get('mem_bytes', 0)))} (≈)",
+                "Processed bytes (≈)",
+                self.format_bytes(int(cat_stats.get("mem_bytes", 0))),
                 "num",
             ),
         ]

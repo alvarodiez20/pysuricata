@@ -153,7 +153,11 @@ class DateTimeCardRenderer(CardRenderer):
 
         data = [
             ("Count", f"{int(getattr(stats, 'count', 0)):,}", "num"),
-            ("Unique", f"{int(getattr(stats, 'unique_est', 0)):,} (≈)", "num"),
+            (
+                f"Unique{' (≈)' if getattr(stats, 'approx', True) else ''}",
+                f"{int(getattr(stats, 'unique_est', 0)):,}",
+                "num",
+            ),
             (
                 "Missing",
                 f"{int(getattr(stats, 'missing', 0)):,} ({miss_pct:.1f}%)",
@@ -169,7 +173,7 @@ class DateTimeCardRenderer(CardRenderer):
 
     def _build_right_table(self, stats: DateTimeStats) -> str:
         """Build right statistics table with temporal analysis."""
-        mem_display = self.format_bytes(int(getattr(stats, "mem_bytes", 0))) + " (≈)"
+        mem_display = self.format_bytes(int(getattr(stats, "mem_bytes", 0)))
 
         # Seasonal pattern removed from display
 
@@ -203,7 +207,7 @@ class DateTimeCardRenderer(CardRenderer):
                 "num",
             ),
             ("Data density", density_display, None),
-            ("Processed bytes", mem_display, "num"),
+            ("Processed bytes (≈)", mem_display, "num"),
         ]
 
         return self.table_builder.build_key_value_table(data)
@@ -494,8 +498,8 @@ class DateTimeCardRenderer(CardRenderer):
                 "timestamp-value",
             ),
             (
-                "Unique timestamps",
-                f"{int(getattr(stats, 'unique_est', 0)):,} (≈)",
+                f"Unique timestamps{' (≈)' if getattr(stats, 'approx', True) else ''}",
+                f"{int(getattr(stats, 'unique_est', 0)):,}",
                 "num",
             ),
             ("Timezone", "UTC", None),

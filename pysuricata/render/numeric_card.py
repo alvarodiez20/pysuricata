@@ -55,7 +55,9 @@ class NumericCardRenderer(CardRenderer):
 
         # Build components
         approx_badge = self._build_approx_badge(stats.approx)
-        quality_flags_html = self._build_quality_flags_html(quality_flags, percentages)
+        quality_flags_html = self._build_quality_flags_html(
+            quality_flags, percentages, stats
+        )
 
         left_table = self._build_left_table(stats, percentages)
         right_table = self._build_right_table(stats)
@@ -125,49 +127,83 @@ class NumericCardRenderer(CardRenderer):
         """Build approximation badge if needed."""
         return '<span class="badge">approx</span>' if approx else ""
 
-    def _build_quality_flags_html(self, flags: QualityFlags, percentages: dict) -> str:
-        """Build quality flags HTML with percentage context."""
+    def _build_quality_flags_html(
+        self, flags: QualityFlags, percentages: dict, stats: NumericStats
+    ) -> str:
+        """Build quality flags HTML with percentage context and threshold tooltips."""
         flag_items = []
 
         if flags.missing:
             severity = "bad" if percentages["miss_pct"] > 20 else "warn"
-            flag_items.append(f'<li class="flag {severity}">Missing</li>')
+            threshold = ">20%" if percentages["miss_pct"] > 20 else "≤20%"
+            flag_items.append(
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{percentages["miss_pct"]:.1f}%">Missing</li>'
+            )
 
         if flags.infinite:
-            flag_items.append('<li class="flag bad">Has ∞</li>')
+            flag_items.append(
+                f'<li class="flag bad" data-threshold="Any ∞" '
+                f'data-value="{stats.inf} values">Has ∞</li>'
+            )
 
         if flags.has_negatives:
             severity = "warn" if percentages["neg_pct"] > 10 else ""
+            threshold = ">10%" if percentages["neg_pct"] > 10 else "Present"
             flag_items.append(
-                f'<li class="flag {severity}">Has negatives</li>'
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{percentages["neg_pct"]:.1f}%">Has negatives</li>'
                 if severity
-                else '<li class="flag">Has negatives</li>'
+                else f'<li class="flag" data-threshold="{threshold}" '
+                f'data-value="{percentages["neg_pct"]:.1f}%">Has negatives</li>'
             )
 
         if flags.zero_inflated:
             severity = "bad" if percentages["zeros_pct"] >= 50.0 else "warn"
-            flag_items.append(f'<li class="flag {severity}">Zero‑inflated</li>')
+            threshold = "≥50%" if percentages["zeros_pct"] >= 50.0 else "<50%"
+            flag_items.append(
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{percentages["zeros_pct"]:.1f}%">Zero‑inflated</li>'
+            )
 
         if flags.positive_only:
             flag_items.append('<li class="flag good">Positive‑only</li>')
 
         if flags.skewed_right:
-            flag_items.append('<li class="flag warn">Skewed Right</li>')
+            skew_val = getattr(stats, "skew", 0)
+            flag_items.append(
+                f'<li class="flag warn" data-threshold=">1" data-value="{skew_val:.2f}">Skewed Right</li>'
+            )
 
         if flags.skewed_left:
-            flag_items.append('<li class="flag warn">Skewed Left</li>')
+            skew_val = getattr(stats, "skew", 0)
+            flag_items.append(
+                f'<li class="flag warn" data-threshold="<-1" data-value="{skew_val:.2f}">Skewed Left</li>'
+            )
 
         if flags.heavy_tailed:
-            flag_items.append('<li class="flag bad">Heavy‑tailed</li>')
+            kurt_val = getattr(stats, "kurtosis", 0)
+            flag_items.append(
+                f'<li class="flag bad" data-threshold="|kurtosis| > 3" data-value="{kurt_val:.2f}">Heavy‑tailed</li>'
+            )
 
         if flags.approximately_normal:
-            flag_items.append('<li class="flag good">≈ Normal (JB)</li>')
+            jb_val = getattr(stats, "jb_chi2", 0)
+            flag_items.append(
+                f'<li class="flag good" data-threshold="JB χ² < 5.99" data-value="{jb_val:.2f}">≈ Normal (JB)</li>'
+            )
 
         if flags.discrete:
-            flag_items.append('<li class="flag warn">Discrete</li>')
+            unique_ratio = getattr(stats, "unique_ratio_approx", 0)
+            flag_items.append(
+                f'<li class="flag warn" data-threshold="Low unique count" data-value="{unique_ratio:.1%}">Discrete</li>'
+            )
 
         if flags.heaping:
-            flag_items.append('<li class="flag">Heaping</li>')
+            heap_pct = getattr(stats, "heap_pct", 0)
+            flag_items.append(
+                f'<li class="flag" data-threshold="Detected rounding" data-value="{heap_pct:.1f}%">Heaping</li>'
+            )
 
         if flags.bimodal:
             flag_items.append('<li class="flag warn">Possibly bimodal</li>')
@@ -176,16 +212,27 @@ class NumericCardRenderer(CardRenderer):
             flag_items.append('<li class="flag good">Log‑scale?</li>')
 
         if flags.constant:
-            flag_items.append('<li class="flag bad">Constant</li>')
+            flag_items.append(
+                f'<li class="flag bad" data-threshold="1 unique" data-value="{stats.unique_est}">Constant</li>'
+            )
 
         if flags.quasi_constant:
-            flag_items.append('<li class="flag warn">Quasi‑constant</li>')
+            unique_ratio = getattr(stats, "unique_ratio_approx", 0)
+            flag_items.append(
+                f'<li class="flag warn" data-threshold="Very low cardinality" data-value="{unique_ratio:.1%}">Quasi‑constant</li>'
+            )
 
         if flags.many_outliers:
-            flag_items.append('<li class="flag bad">Many outliers</li>')
+            out_pct = percentages.get("out_pct", 0)
+            flag_items.append(
+                f'<li class="flag bad" data-threshold=">1%" data-value="{out_pct:.1f}%">Many outliers</li>'
+            )
 
         if flags.some_outliers:
-            flag_items.append('<li class="flag warn">Some outliers</li>')
+            out_pct = percentages.get("out_pct", 0)
+            flag_items.append(
+                f'<li class="flag warn" data-threshold="0.3%-1%" data-value="{out_pct:.1f}%">Some outliers</li>'
+            )
 
         if flags.monotonic_increasing:
             flag_items.append('<li class="flag good">Monotonic ↑</li>')
@@ -221,7 +268,7 @@ class NumericCardRenderer(CardRenderer):
 
         data = [
             ("Count", f"{stats.count:,}", "num"),
-            ("Unique", f"{stats.unique_est:,}{' (≈)' if stats.approx else ''}", "num"),
+            (f"Unique{' (≈)' if stats.approx else ''}", f"{stats.unique_est:,}", "num"),
             (
                 "Missing",
                 f"{stats.missing:,} ({percentages['miss_pct']:.1f}%)",
@@ -262,7 +309,7 @@ class NumericCardRenderer(CardRenderer):
             ("Mean", self.format_number(stats.mean), "num"),
             ("Q3 (P75)", self.format_number(stats.q3), "num"),
             ("Max", self.format_number(stats.max), "num"),
-            ("Processed bytes", f"{mem_display} (≈)", "num"),
+            ("Processed bytes (≈)", mem_display, "num"),
         ]
 
         return self.table_builder.build_key_value_table(data)
@@ -316,15 +363,15 @@ class NumericCardRenderer(CardRenderer):
 
         data = [
             ("Min", self.format_number(stats.min), "num"),
-            ("P1", f"{self.format_number(quantiles.p1)} (≈)", "num"),
-            ("P5", f"{self.format_number(quantiles.p5)} (≈)", "num"),
-            ("P10", f"{self.format_number(quantiles.p10)} (≈)", "num"),
+            ("P1 (≈)", self.format_number(quantiles.p1), "num"),
+            ("P5 (≈)", self.format_number(quantiles.p5), "num"),
+            ("P10 (≈)", self.format_number(quantiles.p10), "num"),
             ("Q1 (P25)", self.format_number(stats.q1), "num"),
             ("Median (P50)", self.format_number(stats.median), "num"),
             ("Q3 (P75)", self.format_number(stats.q3), "num"),
-            ("P90", f"{self.format_number(quantiles.p90)} (≈)", "num"),
-            ("P95", f"{self.format_number(quantiles.p95)} (≈)", "num"),
-            ("P99", f"{self.format_number(quantiles.p99)} (≈)", "num"),
+            ("P90 (≈)", self.format_number(quantiles.p90), "num"),
+            ("P95 (≈)", self.format_number(quantiles.p95), "num"),
+            ("P99 (≈)", self.format_number(quantiles.p99), "num"),
             ("Range", self.format_number(range_val), "num"),
             ("Std Dev", self.format_number(stats.std), "num"),
         ]
@@ -1082,7 +1129,7 @@ class NumericCardRenderer(CardRenderer):
 
         return f"""
         <div class="chunk-distribution">
-            <h4 class="section-title">Missing Values Distribution</h4>
+            <h4 class="section-title">Missing Values per Chunk</h4>
             <div class="chunk-info">
                 <span>{num_chunks} chunks analyzed</span>
                 <span>Peak: {max_missing_pct:.1f}%</span>
@@ -1182,7 +1229,7 @@ class NumericCardRenderer(CardRenderer):
         return f"""
         <div class="dataprep-spectrum">
             <div class="spectrum-header">
-                <span class="spectrum-title">Missing Values Distribution</span>
+                <span class="spectrum-title">Missing Values per Chunk</span>
                 <span class="spectrum-stats">
                     {total_chunks} chunks • {max_missing_pct:.1f}% max • {avg_missing_pct:.1f}% avg
                 </span>
@@ -1451,7 +1498,7 @@ class NumericCardRenderer(CardRenderer):
         <div class="missing-per-chunk-enhanced">
             <div class="chunk-header">
                 <span class="icon">📊</span>
-                <span class="title">Missing Values Distribution Across Chunks</span>
+                <span class="title">Missing Values per Chunk</span>
                 <span class="overall-stats">
                     {stats.missing:,} missing ({insights.get("overall_missing_pct", 0):.1f}% overall)
                 </span>

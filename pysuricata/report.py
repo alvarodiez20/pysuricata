@@ -199,6 +199,7 @@ class ReportOrchestrator:
         sample_section_html,
         report_title: Optional[str] = None,
         chunk_metadata: Optional[List[Tuple[int, int, int]]] = None,
+        corr_est: Optional[Any] = None,
     ) -> str:
         """Render the final HTML report."""
         with _SectionTimer(self.logger, "Render final HTML"):
@@ -214,6 +215,7 @@ class ReportOrchestrator:
                 report_title=report_title,
                 sample_section_html=sample_section_html,
                 chunk_metadata=chunk_metadata,
+                corr_est=corr_est,
             )
 
     def _build_summary(
@@ -409,6 +411,7 @@ class ReportOrchestrator:
                 sample_section_html,
                 report_title,
                 chunk_metadata,
+                corr_est,
             )
 
         summary_obj = self._build_summary(

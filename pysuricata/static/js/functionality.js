@@ -671,10 +671,10 @@ function toggleSampleText(detailsElement) {
   }
 }
 
-/* Missing Values Section Tab Switching */
+/* Missing Values Section Tab Switching - Redesigned Two-Tab Interface */
 (function () {
   function initMissingValuesTabs() {
-    const tabButtons = document.querySelectorAll('.missing-section-tabs button');
+    const tabButtons = document.querySelectorAll('.missing-tabs button');
 
     if (tabButtons.length === 0) {
       // Not loaded yet, try again
@@ -687,7 +687,7 @@ function toggleSampleText(detailsElement) {
     });
 
     // Re-query after cloning
-    const freshTabButtons = document.querySelectorAll('.missing-section-tabs button');
+    const freshTabButtons = document.querySelectorAll('.missing-tabs button');
 
     freshTabButtons.forEach(button => {
       button.addEventListener('click', function (e) {
@@ -695,23 +695,23 @@ function toggleSampleText(detailsElement) {
         e.stopPropagation();
 
         const targetTab = this.getAttribute('data-tab');
-        console.log('Tab clicked:', targetTab);
 
         // Update button states
         freshTabButtons.forEach(btn => btn.classList.remove('active'));
         this.classList.add('active');
 
-        // Update content visibility
-        const tabContents = document.querySelectorAll('.missing-tab-content');
-        tabContents.forEach(content => {
-          const contentTab = content.getAttribute('data-tab');
-          if (contentTab === targetTab) {
-            content.classList.add('active');
-            console.log('Activating tab:', contentTab);
-          } else {
-            content.classList.remove('active');
-          }
-        });
+        // Update content visibility within the same section
+        const container = this.closest('.missing-values-section-redesign');
+        if (container) {
+          container.querySelectorAll('.missing-tab-content').forEach(content => {
+            const contentTab = content.getAttribute('data-tab');
+            if (contentTab === targetTab) {
+              content.classList.add('active');
+            } else {
+              content.classList.remove('active');
+            }
+          });
+        }
       });
     });
   }
