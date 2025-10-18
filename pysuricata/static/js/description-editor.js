@@ -6,13 +6,19 @@
   'use strict';
 
   const ROOT_ID = 'pysuricata-report';
-  const STORAGE_KEY = 'pysuricata-description-markdown';
+  const STORAGE_KEY_PREFIX = 'pysuricata-description-';
   const PLACEHOLDER_TEXT = 'Click to add description...';
 
   // ===== Private Helper Functions =====
 
   function getDescriptionContainer() {
     return document.querySelector(`#${ROOT_ID} .description-value`);
+  }
+
+  function getStorageKey() {
+    const container = getDescriptionContainer();
+    const reportId = container?.getAttribute('data-report-id') || 'default';
+    return STORAGE_KEY_PREFIX + reportId;
   }
 
   function getContentElement() {
@@ -35,10 +41,11 @@
 
   function saveToStorage(markdownText) {
     try {
+      const key = getStorageKey();
       if (markdownText.trim()) {
-        localStorage.setItem(STORAGE_KEY, markdownText);
+        localStorage.setItem(key, markdownText);
       } else {
-        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(key);
       }
     } catch (e) {
       console.warn('Failed to save description:', e);
@@ -47,7 +54,8 @@
 
   function loadFromStorage() {
     try {
-      return localStorage.getItem(STORAGE_KEY) || '';
+      const key = getStorageKey();
+      return localStorage.getItem(key) || '';
     } catch (e) {
       console.warn('Failed to load description:', e);
       return '';

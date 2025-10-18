@@ -250,6 +250,8 @@ def render_html_snapshot(
     end_time = time.time()
     duration_seconds = end_time - start_time
     report_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Generate unique report ID for description localStorage isolation
+    report_id = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:20]
     pysuricata_version = _resolve_pysuricata_version()
     repo_url = "https://github.com/alvarodiez20/pysuricata"
 
@@ -280,6 +282,7 @@ def render_html_snapshot(
         logo=logo_html,
         report_title=report_title or cfg.title,
         report_date=report_date,
+        report_id=report_id,
         pysuricata_version=pysuricata_version,
         report_duration=_human_time(duration_seconds),
         repo_url=repo_url,
