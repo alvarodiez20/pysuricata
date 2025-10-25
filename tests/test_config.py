@@ -28,9 +28,9 @@ class TestEngineConfig:
         assert config.include_sample is True
         assert config.sample_rows == 10
         assert config.compute_correlations is True
-        assert config.corr_threshold == 0.6
+        assert config.corr_threshold == 0.5
         assert config.corr_max_cols == 50
-        assert config.corr_max_per_col == 2
+        assert config.corr_max_per_col == 10
         assert config.checkpoint_every_n_chunks == 0
         assert config.checkpoint_dir is None
         assert config.checkpoint_prefix == "pysuricata_ckpt"

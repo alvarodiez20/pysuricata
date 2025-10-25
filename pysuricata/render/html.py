@@ -13,6 +13,7 @@ from .cards import render_bool_card as _render_bool_card
 from .cards import render_cat_card as _render_cat_card
 from .cards import render_dt_card as _render_dt_card
 from .cards import render_numeric_card as _render_numeric_card
+from .donut_chart import DonutChartRenderer
 from .format_utils import human_bytes as _human_bytes
 from .format_utils import human_time as _human_time
 from .markdown_utils import render_markdown_to_html
@@ -33,6 +34,7 @@ def render_html_snapshot(
     report_title: Optional[str],
     sample_section_html: str,
     chunk_metadata: Optional[list[tuple[int, int, int]]] = None,
+    corr_est: Optional[Any] = None,
 ) -> str:
     kinds_map = {
         **{name: ("numeric", accs[name]) for name in kinds.numeric},
@@ -94,15 +96,14 @@ def render_html_snapshot(
             if acc._max_ts is not None:
                 maxs.append(acc._max_ts)
         if mins and maxs:
+            dt_min = datetime.fromtimestamp(min(mins) / 1_000_000_000, tz=timezone.utc)
+            dt_max = datetime.fromtimestamp(max(maxs) / 1_000_000_000, tz=timezone.utc)
+            # Format: date on one line, time on next (inline with <br>)
             date_min = (
-                datetime.fromtimestamp(min(mins) / 1_000_000_000, tz=timezone.utc)
-                .isoformat()
-                .replace("+00:00", "Z")
+                f"{dt_min.strftime('%Y-%m-%d')}<br>{dt_min.strftime('%H:%M:%S UTC')}"
             )
             date_max = (
-                datetime.fromtimestamp(max(maxs) / 1_000_000_000, tz=timezone.utc)
-                .isoformat()
-                .replace("+00:00", "Z")
+                f"{dt_max.strftime('%Y-%m-%d')}<br>{dt_max.strftime('%H:%M:%S UTC')}"
             )
         else:
             date_min = date_max = "—"
@@ -174,7 +175,7 @@ def render_html_snapshot(
                 <button class=\"tab\" data-filter=\"boolean\">Boolean</button>
               </div>
             </div>
-            <div class=\"info\" id=\"pagination-info\">Showing 1-{min(8, total_variables)} of {total_variables}</div>
+            <div class=\"info\" id=\"pagination-info\">Showing 1-{min(10, total_variables)} of {total_variables}</div>
           </div>
 
           <div class=\"cards-grid\" id=\"cards-grid\">
@@ -182,9 +183,9 @@ def render_html_snapshot(
           </div>
 
           <div class=\"pagination\" id=\"pagination\">
-            <button id=\"prev-btn\" {"disabled" if total_variables <= 8 else ""}>←</button>
+            <button id=\"prev-btn\" {"disabled" if total_variables <= 10 else ""}>←</button>
             <div class=\"pages\" id=\"page-numbers\"></div>
-            <button id=\"next-btn\" {"disabled" if total_variables <= 8 else ""}>→</button>
+            <button id=\"next-btn\" {"disabled" if total_variables <= 10 else ""}>→</button>
           </div>
     """
 
@@ -221,6 +222,14 @@ def render_html_snapshot(
         + description_editor_content
     )
 
+    # Generate correlations section (before missing values)
+    from .correlations_section import CorrelationsSectionRenderer
+
+    correlations_renderer = CorrelationsSectionRenderer()
+    correlations_section_html = correlations_renderer.render_section(
+        corr_est, kinds.numeric, cfg.corr_threshold
+    )
+
     # Generate missing values section
     from .missing_section import MissingValuesSectionRenderer
 
@@ -250,6 +259,8 @@ def render_html_snapshot(
     end_time = time.time()
     duration_seconds = end_time - start_time
     report_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # Generate unique report ID for description localStorage isolation
+    report_id = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:20]
     pysuricata_version = _resolve_pysuricata_version()
     repo_url = "https://github.com/alvarodiez20/pysuricata"
 
@@ -264,6 +275,15 @@ def render_html_snapshot(
     # Escape the raw markdown for the data attribute
     description_attr = _html.escape(description_raw) if description_raw else ""
 
+    # Generate interactive SVG donut chart with tooltips
+    donut_renderer = DonutChartRenderer()
+    dtype_donut_svg = donut_renderer.render_dtype_donut(
+        numeric=len(kinds.numeric),
+        categorical=len(kinds.categorical),
+        datetime=len(kinds.datetime),
+        boolean=len(kinds.boolean),
+    )
+
     html = template.format(
         favicon=favicon_tag,
         css=css_tag,
@@ -271,6 +291,7 @@ def render_html_snapshot(
         logo=logo_html,
         report_title=report_title or cfg.title,
         report_date=report_date,
+        report_id=report_id,
         pysuricata_version=pysuricata_version,
         report_duration=_human_time(duration_seconds),
         repo_url=repo_url,
@@ -283,6 +304,7 @@ def render_html_snapshot(
         categorical_cols=len(kinds.categorical),
         datetime_cols=len(kinds.datetime),
         bool_cols=len(kinds.boolean),
+        dtype_donut_svg=dtype_donut_svg,
         top_missing_list=top_missing_list,
         n_unique_cols=f"{n_cols:,}",
         constant_cols=f"{constant_cols:,}",
@@ -293,6 +315,7 @@ def render_html_snapshot(
         avg_text_len=avg_text_len,
         dataset_sample_section=sample_section_html or "",
         variables_section=variables_section_html,
+        correlations_section=correlations_section_html,
         missing_values_section=missing_values_section_html,
         description_html=description_html,
         description_attr=description_attr,

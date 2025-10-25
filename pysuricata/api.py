@@ -236,6 +236,14 @@ class ComputeOptions:
             column names (e.g., 'is_', 'has_', 'can_') for detection. Default: True
         force_column_types: Optional dictionary mapping column names to their
             forced types. Overrides automatic type inference. Default: None
+        compute_correlations: Whether to compute pairwise correlations between
+            numeric columns. Default: True
+        corr_threshold: Minimum absolute correlation value to report. Only
+            correlations with |r| >= threshold are shown. Default: 0.5
+        corr_max_cols: Maximum number of numeric columns for correlation analysis.
+            If exceeded, correlations are skipped. Default: 50
+        corr_max_per_col: Maximum number of top correlations to show per column.
+            Default: 10
     """
 
     chunk_size: int | None = 200_000
@@ -259,6 +267,12 @@ class ComputeOptions:
     boolean_detection_max_zero_ratio: float = 0.95
     boolean_detection_require_name_pattern: bool = True
     force_column_types: dict[str, str] | None = None
+
+    # Correlation analysis options
+    compute_correlations: bool = True
+    corr_threshold: float = 0.5
+    corr_max_cols: int = 50
+    corr_max_per_col: int = 10
 
     def __post_init__(self) -> None:
         """Validate configuration parameters."""
@@ -287,6 +301,12 @@ class ComputeOptions:
                     raise ValueError(
                         f"Invalid column type '{col_type}' for column '{col_name}'. Must be one of: {valid_types}"
                     )
+        if not 0 <= self.corr_threshold <= 1:
+            raise ValueError("corr_threshold must be between 0 and 1")
+        if self.corr_max_cols <= 0:
+            raise ValueError("corr_max_cols must be positive")
+        if self.corr_max_per_col <= 0:
+            raise ValueError("corr_max_per_col must be positive")
 
     # --- Engine-aligned accessors (for backward compatibility) ---
     @property

@@ -63,9 +63,9 @@ class EngineConfig:
     sample_rows: int = 10
     # Correlations (optional, lightweight)
     compute_correlations: bool = True
-    corr_threshold: float = 0.6
+    corr_threshold: float = 0.5
     corr_max_cols: int = 50
-    corr_max_per_col: int = 2
+    corr_max_per_col: int = 10
     # Randomness control (None = nondeterministic; set an int for reproducibility)
     random_seed: int | None = None
 
@@ -89,9 +89,9 @@ class EngineConfig:
     force_column_types: dict[str, str] | None = None
 
     # Missing columns display options
-    missing_columns_threshold_pct: float = 0.5  # Minimum missing percentage to display
-    missing_columns_max_initial: int = 8  # Maximum columns shown initially
-    missing_columns_max_expanded: int = 25  # Maximum columns shown when expanded
+    missing_columns_threshold_pct: float = 0.0  # Minimum missing percentage to display
+    missing_columns_max_initial: int = 5  # Maximum columns shown initially
+    missing_columns_max_expanded: int = 10  # Maximum columns shown when expanded
 
     @classmethod
     def from_options(cls, opts: EngineOptions) -> EngineConfig:
@@ -131,6 +131,11 @@ class EngineConfig:
                 opts, "boolean_detection_require_name_pattern", True
             ),
             force_column_types=getattr(opts, "force_column_types", None),
+            # Correlation parameters
+            compute_correlations=getattr(opts, "compute_correlations", True),
+            corr_threshold=getattr(opts, "corr_threshold", 0.5),
+            corr_max_cols=getattr(opts, "corr_max_cols", 50),
+            corr_max_per_col=getattr(opts, "corr_max_per_col", 10),
         )
 
     def __post_init__(self) -> None:

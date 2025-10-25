@@ -240,6 +240,9 @@ ${root.outerHTML}
     const root = document.getElementById(ROOT_ID);
     const tip = root && root.querySelector('.hist-tooltip');
     if (tip) tip.style.display = 'none';
+    // Also hide donut tooltip
+    const donutTip = root && root.querySelector('.donut-tooltip');
+    if (donutTip) donutTip.style.display = 'none';
   }
   function positionTip(e, tip, root) {
     const r = root.getBoundingClientRect();
@@ -252,6 +255,15 @@ ${root.outerHTML}
     tip.style.left = x + 'px';
     tip.style.top = y + 'px';
   }
+  function formatCount(count) {
+    if (count >= 1_000_000) {
+      return `${(count / 1_000_000).toFixed(1)}M (${count.toLocaleString()})`;
+    } else if (count >= 10_000) {
+      return `${(count / 1_000).toFixed(1)}K (${count.toLocaleString()})`;
+    } else {
+      return count.toLocaleString();
+    }
+  }
 
   // Timeline histogram hover effects with mathematical notation
   document.addEventListener('mousemove', function (e) {
@@ -262,6 +274,66 @@ ${root.outerHTML}
       const label = timelineHot.getAttribute('data-label') || '';
       const html = `<div class="line"><strong>${count}</strong> rows <span class="muted">(${pct}%)</span></div>` +
         `<div class="line"><span class="muted">Range:</span> [${label}]</div>`;
+      showTip(e, html);
+      return;
+    }
+
+    // Temporal distribution chart tooltips (hour/dow/month/year)
+    const temporalBar = e.target.closest('.temporal-chart .temporal-bar');
+    if (temporalBar) {
+      const count = parseInt(temporalBar.getAttribute('data-count') || '0');
+      const pct = temporalBar.getAttribute('data-pct') || '0.0';
+      const label = temporalBar.getAttribute('data-label') || '';
+
+      // Smart number formatting
+      const formattedCount = formatCount(count);
+
+      const html = `<div class="line"><strong>${label}</strong></div>` +
+        `<div class="line">${formattedCount} records <span class="muted">(${pct}%)</span></div>`;
+      showTip(e, html);
+      return;
+    }
+
+    // Donut chart segment tooltips (Column types pie chart)
+    const donutSegment = e.target.closest('.segment-path');
+    if (donutSegment) {
+      const type = donutSegment.getAttribute('data-type') || 'Unknown';
+      const count = donutSegment.getAttribute('data-count') || '0';
+      const pct = donutSegment.getAttribute('data-percentage') || '0.0';
+
+      const html = `<div class="line"><strong>${type}</strong></div>` +
+        `<div class="line">${count} ${count === '1' ? 'column' : 'columns'} <span class="muted">(${pct}%)</span></div>`;
+
+      // Use donut-tooltip class instead of hist-tooltip
+      const root = document.getElementById(ROOT_ID);
+      if (!root) return;
+      let tip = root.querySelector('.donut-tooltip');
+      if (!tip) {
+        tip = document.createElement('div');
+        tip.className = 'donut-tooltip';
+        root.appendChild(tip);
+      }
+      tip.innerHTML = html;
+      tip.style.display = 'block';
+      positionTip(e, tip, root);
+      return;
+    }
+
+    // Missing values distribution tooltips (chunk and spectrum segments)
+    const missingSegment = e.target.closest('.chunk-segment, .spectrum-segment');
+    if (missingSegment) {
+      const startRow = parseInt(missingSegment.getAttribute('data-start') || '0');
+      const endRow = parseInt(missingSegment.getAttribute('data-end') || '0');
+      const missingCount = parseInt(missingSegment.getAttribute('data-missing') || '0');
+      const pct = missingSegment.getAttribute('data-pct') || '0.0';
+
+      // Smart number formatting for row ranges and counts
+      const formattedStart = formatCount(startRow);
+      const formattedEnd = formatCount(endRow);
+      const formattedMissing = formatCount(missingCount);
+
+      const html = `<div class="line"><strong>Rows ${formattedStart}–${formattedEnd}</strong></div>` +
+        `<div class="line">${formattedMissing} missing <span class="muted">(${pct}%)</span></div>`;
       showTip(e, html);
       return;
     }
@@ -287,7 +359,11 @@ ${root.outerHTML}
 
   // Hide when leaving a histogram entirely
   document.addEventListener('mouseleave', function (e) {
-    if (e.target && e.target.closest && (e.target.closest('.hist-svg') || e.target.closest('.dt-svg'))) {
+    if (e.target && e.target.closest &&
+        (e.target.closest('.hist-svg') || e.target.closest('.dt-svg') ||
+         e.target.closest('.temporal-chart') || e.target.closest('.chunk-distribution') ||
+         e.target.closest('.chunk-spectrum') || e.target.closest('.missing-spectrum-bar') ||
+         e.target.closest('.dataprep-spectrum'))) {
       hideTip();
     }
   }, true);
@@ -429,128 +505,8 @@ ${root.outerHTML}
   }, { passive: true });
 })();
 
-/* --- Datetime mini-charts renderer (hour/DOW/month/YEAR) --- */
+/* --- Variables section and controls --- */
 (function () {
-  const ROOT_ID = 'pysuricata-report';
-  const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-  const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-  function renderAll() {
-    const root = document.getElementById(ROOT_ID);
-    if (!root) return;
-    const metas = root.querySelectorAll('script[type="application/json"][id$="-dt-meta"]');
-    metas.forEach(m => {
-      let data; try { data = JSON.parse(m.textContent || '{}'); } catch (e) { data = null; }
-      if (!data) return;
-      const colId = m.id.replace(/-dt-meta$/, '');
-      // Hour / DOW / Month
-      drawBar(colId + '-dt-hour', data.counts && data.counts.hour, Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + ':00'));
-      drawBar(colId + '-dt-dow', data.counts && data.counts.dow, DOW);
-      drawBar(colId + '-dt-month', data.counts && data.counts.month, MONTHS.map(m => m.slice(0, 3)));
-      // YEAR (dynamic labels)
-      const yr = data.counts && data.counts.year;
-      if (yr && Array.isArray(yr.values) && Array.isArray(yr.labels)) {
-        drawBar(colId + '-dt-year', yr.values, yr.labels.map(String));
-      }
-    });
-  }
-
-  // Render all charts within a provided container (DOM node)
-  function renderIn(container) {
-    const metas = container.querySelectorAll && container.querySelectorAll('script[type="application/json"][id$="-dt-meta"]');
-    if (!metas || !metas.length) return;
-    metas.forEach(m => {
-      let data; try { data = JSON.parse(m.textContent || '{}'); } catch (e) { data = null; }
-      if (!data) return;
-      const colId = m.id.replace(/-dt-meta$/, '');
-      drawBar(colId + '-dt-hour', data.counts && data.counts.hour, Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0') + ':00'));
-      drawBar(colId + '-dt-dow', data.counts && data.counts.dow, DOW);
-      drawBar(colId + '-dt-month', data.counts && data.counts.month, MONTHS.map(m => m.slice(0, 3)));
-      const yr = data.counts && data.counts.year;
-      if (yr && Array.isArray(yr.values) && Array.isArray(yr.labels)) {
-        drawBar(colId + '-dt-year', yr.values, yr.labels.map(String));
-      }
-    });
-  }
-
-  function drawBar(containerId, values, labels) {
-    const el = document.getElementById(containerId);
-    if (!el || !values || !labels || values.length === 0) return;
-
-    // Prevent re-rendering if already rendered with same data
-    const dataHash = JSON.stringify({ values, labels, W, H });
-    if (el.dataset.renderedHash === dataHash && el.innerHTML.includes('svg')) {
-      return;
-    }
-    el.dataset.renderedHash = dataHash;
-    const n = values.reduce((a, b) => a + (+b || 0), 0) || 1;
-    const W = 420; // Fixed width to prevent CSS/JS conflicts
-    const H = 120; // Fixed height to match CSS min-height
-    const ML = 36, MR = 8, MT = 8, MB = 20;
-    const iw = W - ML - MR;
-    const ih = H - MT - MB;
-    const max = Math.max(1, Math.max.apply(null, values));
-
-    function sx(i) { return ML + (i + 0.5) / values.length * iw; }
-    function sy(v) { return MT + (1 - v / max) * ih; }
-
-    // Label density
-    const dense = labels.length > 12;
-    const ticks = [];
-    for (let i = 0; i < labels.length; i++) {
-      if (!dense || i % Math.ceil(labels.length / 6) === 0 || i === labels.length - 1) {
-        ticks.push({ i, label: String(labels[i]) });
-      }
-    }
-
-    const parts = [];
-    parts.push(`<svg class="dt-svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`);
-    // Axis
-    const xAxisY = MT + ih;
-    parts.push(`<line class="axis" x1="${ML}" y1="${xAxisY}" x2="${ML + iw}" y2="${xAxisY}"></line>`);
-
-    // Bars
-    const bw = Math.max(1, iw / values.length * 0.9);
-    for (let i = 0; i < values.length; i++) {
-      const v = +values[i] || 0;
-      const x = sx(i) - bw / 2;
-      const y = sy(v);
-      const h = (MT + ih) - y;
-      const pct = ((v / n) * 100).toFixed(1);
-      const label = labels[i];
-      parts.push(
-        `<rect class="bar" x="${x.toFixed(2)}" y="${y.toFixed(2)}" width="${bw.toFixed(2)}" height="${Math.max(0, h).toFixed(2)}" data-count="${v}" data-pct="${pct}" data-label="${label}"><title>${v} rows\n${label}</title></rect>`
-      );
-    }
-
-    // X tick labels
-    ticks.forEach(t => {
-      const tx = sx(t.i);
-      parts.push(`<text class="tick-label" x="${tx.toFixed(2)}" y="${xAxisY + 12}" text-anchor="middle">${t.label}</text>`);
-    });
-
-    parts.push('</svg>');
-    el.innerHTML = parts.join('');
-  }
-
-  // Debounce helper
-  function debounce(fn, ms) { let t; return function () { clearTimeout(t); t = setTimeout(() => fn.apply(this, arguments), ms); }; }
-  let renderTimeout = null;
-  const onResize = debounce(() => {
-    if (renderTimeout) clearTimeout(renderTimeout);
-    renderTimeout = setTimeout(() => {
-      try {
-        renderAll();
-      } catch (e) { }
-    }, 200);
-  }, 300);
-  window.addEventListener('resize', onResize);
-
-  document.addEventListener('suricata:dt:render', function (e) {
-    const c = e && e.detail && e.detail.container;
-    if (c) { try { renderIn(c); } catch (e2) { } }
-  });
-
   // Variables section controls
   let searchTerm = '';
   let currentFilter = 'all';
@@ -563,9 +519,9 @@ ${root.outerHTML}
 
     if (!controls || !cardsGrid) return;
 
-    // Hide controls if there are 8 or fewer variables
+    // Hide controls if there are 10 or fewer variables
     const totalCards = cardsGrid.children.length;
-    if (totalCards <= 8) {
+    if (totalCards <= 10) {
       if (controls) controls.style.display = 'none';
       if (pagination) pagination.style.display = 'none';
       return;
@@ -611,7 +567,7 @@ ${root.outerHTML}
     if (!prevBtn || !nextBtn || !paginationInfo) return;
 
     let currentPage = 1;
-    const cardsPerPage = 8;
+    const cardsPerPage = 10;
 
     function updatePagination() {
       const cards = Array.from(document.querySelectorAll('.var-card:not([style*="display: none"])'));
@@ -683,13 +639,11 @@ ${root.outerHTML}
   // Run now if DOM is already loaded (e.g., inside notebooks), else on DOMContentLoaded
   if (document.readyState === 'complete' || document.readyState === 'interactive') {
     try {
-      renderAll();
       setupVariablesControls();
     } catch (e) { }
   } else {
     document.addEventListener('DOMContentLoaded', () => {
       try {
-        renderAll();
         setupVariablesControls();
       } catch (e) { }
     });
@@ -717,10 +671,10 @@ function toggleSampleText(detailsElement) {
   }
 }
 
-/* Missing Values Section Tab Switching */
+/* Missing Values Section Tab Switching - Redesigned Two-Tab Interface */
 (function () {
   function initMissingValuesTabs() {
-    const tabButtons = document.querySelectorAll('.missing-section-tabs button');
+    const tabButtons = document.querySelectorAll('.missing-tabs button');
 
     if (tabButtons.length === 0) {
       // Not loaded yet, try again
@@ -733,7 +687,7 @@ function toggleSampleText(detailsElement) {
     });
 
     // Re-query after cloning
-    const freshTabButtons = document.querySelectorAll('.missing-section-tabs button');
+    const freshTabButtons = document.querySelectorAll('.missing-tabs button');
 
     freshTabButtons.forEach(button => {
       button.addEventListener('click', function (e) {
@@ -741,23 +695,23 @@ function toggleSampleText(detailsElement) {
         e.stopPropagation();
 
         const targetTab = this.getAttribute('data-tab');
-        console.log('Tab clicked:', targetTab);
 
         // Update button states
         freshTabButtons.forEach(btn => btn.classList.remove('active'));
         this.classList.add('active');
 
-        // Update content visibility
-        const tabContents = document.querySelectorAll('.missing-tab-content');
-        tabContents.forEach(content => {
-          const contentTab = content.getAttribute('data-tab');
-          if (contentTab === targetTab) {
-            content.classList.add('active');
-            console.log('Activating tab:', contentTab);
-          } else {
-            content.classList.remove('active');
-          }
-        });
+        // Update content visibility within the same section
+        const container = this.closest('.missing-values-section-redesign');
+        if (container) {
+          container.querySelectorAll('.missing-tab-content').forEach(content => {
+            const contentTab = content.getAttribute('data-tab');
+            if (contentTab === targetTab) {
+              content.classList.add('active');
+            } else {
+              content.classList.remove('active');
+            }
+          });
+        }
       });
     });
   }

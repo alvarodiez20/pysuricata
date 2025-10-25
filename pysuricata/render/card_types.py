@@ -57,6 +57,7 @@ class NumericStats:
     chunk_metadata: Optional[
         Sequence[Tuple[int, int, int]]
     ]  # (start_row, end_row, missing_count)
+    corr_threshold: float = 0.5  # Threshold used for correlation filtering
 
 
 @dataclass
@@ -97,6 +98,7 @@ class DateTimeStats:
     by_year: Optional[dict[int, int]]
     # Temporal analysis fields
     unique_est: int = 0
+    approx: bool = True  # unique_est uses KMV sketch, always approximate
     time_span_days: float = 0.0
     avg_interval_seconds: float = 0.0
     interval_std_seconds: float = 0.0

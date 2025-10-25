@@ -35,7 +35,7 @@ class NumericConfig:
 
     sample_size: int = 20_000
     uniques_sketch_size: int = 2_048
-    top_k_size: int = 20
+    top_k_size: int = 50
     enable_monotonicity_detection: bool = True
     enable_outlier_detection: bool = True
     max_extremes: int = 5

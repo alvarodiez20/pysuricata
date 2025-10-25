@@ -129,7 +129,7 @@ class StreamingCorr:
                 st["sy2"] += sy2
                 st["sxy"] += sxy
 
-    def top_map(self, *, threshold: float = 0.3, max_per_col: int = 3):
+    def top_map(self, *, threshold: float = 0.5, max_per_col: int = 10):
         def corr_from(st):
             n = st["n"]
             sx, sy = st["sx"], st["sy"]

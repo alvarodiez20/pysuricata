@@ -17,7 +17,7 @@ class TestMissingColumnsAnalyzer:
     """Test the intelligent missing columns analyzer."""
 
     def test_small_dataset_all_columns_shown(self):
-        """Test that small datasets show all columns."""
+        """Test that small datasets show all columns (up to 5)."""
         analyzer = MissingColumnsAnalyzer()
         miss_list = [
             ("col1", 5.0, 100),
@@ -27,34 +27,29 @@ class TestMissingColumnsAnalyzer:
 
         result = analyzer.analyze_missing_columns(miss_list, n_cols=3, n_rows=1000)
 
-        assert len(result.initial_columns) == 3
-        assert len(result.expanded_columns) == 3
-        assert not result.needs_expandable
+        assert len(result.columns) == 3
         assert result.total_significant == 3
         assert result.total_insignificant == 0
 
-    def test_medium_dataset_limited_initial(self):
-        """Test that medium datasets show limited initial columns."""
+    def test_medium_dataset_capped_at_five(self):
+        """Test that medium datasets are capped at 5 columns."""
         analyzer = MissingColumnsAnalyzer()
+        # Create 15 columns but only 10 have > 0% missing (col0-col9: 10.0% - 1.0%)
         miss_list = [(f"col{i}", 10.0 - i, 100) for i in range(15)]
 
         result = analyzer.analyze_missing_columns(miss_list, n_cols=15, n_rows=1000)
 
-        assert len(result.initial_columns) <= 10
-        assert len(result.expanded_columns) <= 20
-        assert result.needs_expandable
-        assert result.total_significant == 10
+        assert len(result.columns) == 5  # Capped at 5
+        assert result.total_significant == 10  # 10 columns have > 0% missing
 
-    def test_large_dataset_dynamic_limits(self):
-        """Test that large datasets use appropriate dynamic limits."""
+    def test_large_dataset_capped_at_five(self):
+        """Test that large datasets are also capped at 5 columns."""
         analyzer = MissingColumnsAnalyzer()
         miss_list = [(f"col{i}", 15.0 - (i % 10), 100) for i in range(100)]
 
         result = analyzer.analyze_missing_columns(miss_list, n_cols=100, n_rows=10000)
 
-        assert len(result.initial_columns) <= 15
-        assert len(result.expanded_columns) <= 30
-        assert result.needs_expandable
+        assert len(result.columns) == 5
         assert result.total_significant == 100
 
     def test_threshold_filtering(self):
@@ -69,11 +64,11 @@ class TestMissingColumnsAnalyzer:
 
         result = analyzer.analyze_missing_columns(miss_list, n_cols=4, n_rows=1000)
 
-        assert len(result.initial_columns) == 2  # Only col1 and col4
+        assert len(result.columns) == 2  # Only col1 and col4
         assert result.total_significant == 2
         assert result.total_insignificant == 2
-        assert result.initial_columns[0][0] == "col1"  # Sorted by percentage
-        assert result.initial_columns[1][0] == "col4"
+        assert result.columns[0][0] == "col1"  # Sorted by percentage
+        assert result.columns[1][0] == "col4"
 
     def test_no_significant_missing(self):
         """Test behavior when no columns have significant missing data."""
@@ -86,7 +81,7 @@ class TestMissingColumnsAnalyzer:
 
         result = analyzer.analyze_missing_columns(miss_list, n_cols=3, n_rows=1000)
 
-        assert len(result.initial_columns) == 0
+        assert len(result.columns) == 0
         assert result.total_significant == 0
         assert result.total_insignificant == 3
 
@@ -101,7 +96,7 @@ class TestMissingColumnsAnalyzer:
 
         result = analyzer.analyze_missing_columns(miss_list, n_cols=3, n_rows=1000)
 
-        assert len(result.initial_columns) == 2  # Only col1 and col3
+        assert len(result.columns) == 2  # Only col1 and col3
         assert result.threshold_used == 10.0
 
 
@@ -110,7 +105,8 @@ class TestMissingColumnsRenderer:
 
     def test_render_no_missing_columns(self):
         """Test rendering when no significant missing columns exist."""
-        renderer = MissingColumnsRenderer()
+        # Use factory with default threshold (0.5%) to filter out low percentages
+        renderer = create_missing_columns_renderer()
         miss_list = [
             ("col1", 0.1, 2),
             ("col2", 0.3, 6),
@@ -118,8 +114,8 @@ class TestMissingColumnsRenderer:
 
         html = renderer.render_missing_columns_html(miss_list, n_cols=2, n_rows=1000)
 
-        assert "No significant missing data" in html
-        assert "expand-btn" not in html  # No expand button needed
+        assert "No missing data" in html
+        assert "expand-btn" not in html  # No expand button
 
     def test_render_small_dataset_no_expand(self):
         """Test rendering small dataset without expand functionality."""
@@ -133,20 +129,21 @@ class TestMissingColumnsRenderer:
 
         assert "col1" in html
         assert "col2" in html
-        assert "expand-btn" not in html  # No expand button needed
-        assert "toggleMissingColumns" not in html  # No JavaScript needed
+        assert "expand-btn" not in html  # No expand button
+        assert "toggleMissingColumns" not in html  # No JavaScript
 
-    def test_render_large_dataset_with_expand(self):
-        """Test rendering large dataset with expand functionality."""
+    def test_render_large_dataset_caps_at_five(self):
+        """Test rendering large dataset caps at 5 columns (no expand)."""
         renderer = MissingColumnsRenderer()
         miss_list = [(f"col{i}", 10.0 - i, 100) for i in range(20)]
 
         html = renderer.render_missing_columns_html(miss_list, n_cols=20, n_rows=1000)
 
         assert "col0" in html  # First column should be visible
-        assert "expand-btn" in html  # Expand button should be present
-        assert "toggleMissingColumns" in html  # JavaScript should be present
-        assert "Show " in html and "more..." in html  # Expand text should be present
+        assert "col4" in html  # Fifth column should be visible
+        assert "col5" not in html  # Sixth column should NOT be visible
+        assert "expand-btn" not in html  # No expand button
+        assert "toggleMissingColumns" not in html  # No JavaScript
 
     def test_severity_classification(self):
         """Test that severity classes are correctly assigned."""
@@ -210,25 +207,23 @@ class TestIntegrationScenarios:
             miss_list, n_cols=500, n_rows=1000000
         )
 
-        # Should show limited initial columns
-        assert len(result.initial_columns) <= 15
-        # Should have expand functionality
-        assert result.needs_expandable
-        # Should show many columns when expanded
-        assert len(result.expanded_columns) <= 30
+        # Should show max 5 columns
+        assert len(result.columns) == 5
+        assert result.total_significant == 500
 
         html = renderer.render_missing_columns_html(
             miss_list, n_cols=500, n_rows=1000000
         )
-        assert "expand-btn" in html
-        assert "toggleMissingColumns" in html
+        # Should not have expand functionality
+        assert "expand-btn" not in html
+        assert "toggleMissingColumns" not in html
 
     def test_edge_case_empty_dataset(self):
         """Test behavior with empty dataset."""
         renderer = create_missing_columns_renderer()
 
         html = renderer.render_missing_columns_html([], n_cols=0, n_rows=0)
-        assert "No significant missing data" in html
+        assert "No missing data" in html
 
     def test_edge_case_all_columns_insignificant(self):
         """Test behavior when all columns have insignificant missing data."""
@@ -241,7 +236,7 @@ class TestIntegrationScenarios:
         renderer = create_missing_columns_renderer(min_threshold_pct=1.0)
         html = renderer.render_missing_columns_html(miss_list, n_cols=3, n_rows=1000)
 
-        assert "No significant missing data" in html
+        assert "No missing data" in html
         assert "expand-btn" not in html
 
 

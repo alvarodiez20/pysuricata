@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Mapping, Sequence, Tuple
+from collections.abc import Mapping, Sequence
+from typing import Any, Dict, List, Tuple
 
 from ..accumulators.protocols import FinalizableAccumulator
 from ..render.missing_columns import create_missing_columns_renderer
@@ -70,6 +71,7 @@ def build_summary(
                 "negatives": s.negatives,
                 "outliers_iqr_est": s.outliers_iqr,
                 "approx": bool(s.approx),
+                "mem_bytes": s.mem_bytes,
             }
         elif kind == "categorical":
             s = acc.finalize()
@@ -80,6 +82,7 @@ def build_summary(
                 "unique_est": s.unique_est,
                 "top_items": s.top_items,
                 "approx": bool(s.approx),
+                "mem_bytes": s.mem_bytes,
             }
         elif kind == "datetime":
             s = acc.finalize()
@@ -89,6 +92,7 @@ def build_summary(
                 "missing": s.missing,
                 "min_ts": s.min_ts,
                 "max_ts": s.max_ts,
+                "mem_bytes": s.mem_bytes,
             }
         else:  # boolean
             s = acc.finalize()
@@ -98,6 +102,7 @@ def build_summary(
                 "missing": s.missing,
                 "true": s.true_n,
                 "false": s.false_n,
+                "mem_bytes": s.mem_bytes,
             }
 
     return {"dataset": dataset_summary, "columns": columns_summary}
@@ -106,7 +111,7 @@ def build_summary(
 def _get_intelligent_top_missing(
     miss_list: Sequence[Tuple[str, float, int]], n_rows: int, n_cols: int
 ) -> List[Dict[str, Any]]:
-    """Get intelligent top missing columns using the new analyzer.
+    """Get top missing columns (max 5) using the analyzer.
 
     Args:
         miss_list: List of (column_name, missing_pct, missing_count) tuples
@@ -119,12 +124,12 @@ def _get_intelligent_top_missing(
     if not miss_list:
         return []
 
-    # Use the intelligent analyzer to determine what to include
+    # Use the analyzer to determine what to include (max 5)
     renderer = create_missing_columns_renderer(min_threshold_pct=0.5)
     result = renderer.analyzer.analyze_missing_columns(miss_list, n_cols, n_rows)
 
-    # Return the initial columns (what would be shown by default)
+    # Return the columns (max 5)
     return [
         {"column": str(col), "pct": float(pct), "count": int(cnt)}
-        for col, pct, cnt in result.initial_columns
+        for col, pct, cnt in result.columns
     ]

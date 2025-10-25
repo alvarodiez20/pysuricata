@@ -161,33 +161,33 @@ class StreamingCorr:
     def __init__(self, columns: List[str]):
         self.cols = columns
         self.pairs = {}  # (col1, col2) -> {n, sx, sy, sxx, syy, sxy}
-    
+
     def update(self, df: pd.DataFrame):
         """Update with chunk of data"""
         for i, col1 in enumerate(self.cols):
             for j in range(i+1, len(self.cols)):
                 col2 = self.cols[j]
-                
+
                 # Extract values
                 x = df[col1].to_numpy()
                 y = df[col2].to_numpy()
-                
+
                 # Filter valid pairs
                 mask = np.isfinite(x) & np.isfinite(y)
                 x_valid = x[mask]
                 y_valid = y[mask]
-                
+
                 if len(x_valid) == 0:
                     continue
-                
+
                 # Update sufficient statistics
                 key = (col1, col2)
                 if key not in self.pairs:
                     self.pairs[key] = {
-                        'n': 0, 'sx': 0, 'sy': 0, 
+                        'n': 0, 'sx': 0, 'sy': 0,
                         'sxx': 0, 'syy': 0, 'sxy': 0
                     }
-                
+
                 stats = self.pairs[key]
                 stats['n'] += len(x_valid)
                 stats['sx'] += float(np.sum(x_valid))
@@ -195,30 +195,30 @@ class StreamingCorr:
                 stats['sxx'] += float(np.sum(x_valid ** 2))
                 stats['syy'] += float(np.sum(y_valid ** 2))
                 stats['sxy'] += float(np.sum(x_valid * y_valid))
-    
+
     def finalize(self, threshold: float = 0.0) -> Dict:
         """Compute final correlations"""
         results = {}
-        
+
         for (col1, col2), stats in self.pairs.items():
             n = stats['n']
             if n < 2:
                 continue
-            
+
             # Compute correlation
             num = n * stats['sxy'] - stats['sx'] * stats['sy']
             den1 = n * stats['sxx'] - stats['sx'] ** 2
             den2 = n * stats['syy'] - stats['sy'] ** 2
-            
+
             if den1 <= 0 or den2 <= 0:
                 continue
-            
+
             r = num / (math.sqrt(den1) * math.sqrt(den2))
-            
+
             # Filter by threshold
             if abs(r) >= threshold:
                 results[(col1, col2)] = r
-        
+
         return results
 ```
 
@@ -265,21 +265,15 @@ config.compute.compute_correlations = False  # Disable
 Control correlation analysis via `ReportConfig`:
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig, ComputeOptions
 
-config = ReportConfig()
-
-# Enable/disable correlations
-config.compute.compute_correlations = True  # Default
-
-# Minimum |r| to report
-config.compute.corr_threshold = 0.5  # Default (only |r| >= 0.5)
-
-# Maximum columns to compute correlations
-config.compute.corr_max_cols = 100  # Default (skip if > 100 cols)
-
-# Maximum correlations per column
-config.compute.corr_max_per_col = 10  # Default (top 10 per column)
+# Using the public API
+config = ProfileConfig(compute=ComputeOptions(
+    compute_correlations=True,  # Default
+    corr_threshold=0.5,  # Default (only |r| >= 0.5)
+    corr_max_cols=50,  # Default (skip if > 50 cols)
+    corr_max_per_col=10  # Default (top 10 per column)
+))
 
 report = profile(df, config=config)
 ```
@@ -474,7 +468,3 @@ report = profile(wide_df, config=config)
 ---
 
 *Last updated: 2025-10-12*
-
-
-
-

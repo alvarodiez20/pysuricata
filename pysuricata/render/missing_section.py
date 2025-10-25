@@ -1,7 +1,7 @@
 """Missing Values Section Renderer.
 
-This module provides rendering functionality for the dataset-wide missing values section,
-including bar chart and spectrum visualizations.
+This module provides rendering functionality for the dataset-wide missing values section
+with a two-tab compact design: Data Completeness and Missing per Chunk.
 """
 
 from __future__ import annotations
@@ -10,7 +10,14 @@ import html as _html
 
 
 class MissingValuesSectionRenderer:
-    """Renders the dataset-wide missing values section with bar chart and spectrum tabs."""
+    """Renders the dataset-wide missing values section with two compact tabs.
+
+    The renderer creates a two-tab interface:
+    - Tab 1: Data Completeness - Shows overall missing stats with bars (40px rows)
+    - Tab 2: Missing per Chunk - Shows chunk distribution spectrums (35px rows)
+
+    Only columns with missing values are displayed.
+    """
 
     def render_section(
         self,
@@ -20,7 +27,7 @@ class MissingValuesSectionRenderer:
         n_cols: int,
         total_missing_cells: int,
     ) -> str:
-        """Main entry point - returns complete section HTML.
+        """Main entry point - returns complete section HTML with two tabs.
 
         Args:
             kinds_map: Dictionary mapping column names to (kind, accumulator) tuples
@@ -32,190 +39,204 @@ class MissingValuesSectionRenderer:
         Returns:
             Complete HTML string for missing values section
         """
-        # Build miss_list from accumulators
-        miss_list = []
+        # Build list of columns with missing values only
+        columns_with_missing = []
         for name, (_, acc) in kinds_map.items():
             missing = getattr(acc, "missing", 0)
-            count = getattr(acc, "count", 0)
-            total = missing + count
-            if total > 0:
-                pct = (missing / total) * 100
-                miss_list.append((name, pct, missing))
+            if missing > 0:  # Only include columns with missing values
+                count = getattr(acc, "count", 0)
+                total = missing + count
+                pct = (missing / total) * 100 if total > 0 else 0
+                chunk_metadata = getattr(acc, "chunk_metadata", None)
+                columns_with_missing.append((name, pct, missing, chunk_metadata))
 
         # Sort by missing percentage descending
-        miss_list.sort(key=lambda t: t[1], reverse=True)
+        columns_with_missing.sort(key=lambda t: t[1], reverse=True)
 
-        # Create bar chart tab HTML
-        bar_chart_html = self._build_bar_chart_tab(miss_list)
+        # Count columns with missing values
+        n_missing_cols = len(columns_with_missing)
 
-        # Create spectrum tab HTML
-        spectrum_html = self._build_spectrum_tab(kinds_map, accs, n_rows)
+        # Build both tabs
+        completeness_tab_html = self._build_completeness_tab(columns_with_missing)
+        chunk_tab_html = self._build_chunk_tab(columns_with_missing)
 
-        # Wrap in section with tabs and container
+        # Two-tab layout with compact design
         return f"""
-        <div class="missing-values-container">
-            <div class="missing-section-tabs">
-                <button class="active" data-tab="bar-chart">Bar Chart</button>
-                <button data-tab="spectrum">Spectrum</button>
+        <div class="missing-values-section-redesign">
+            <div class="missing-tabs-header">
+                <div class="missing-tabs">
+                    <button class="active" data-tab="completeness">Data Completeness</button>
+                    <button data-tab="chunks">Missing per Chunk</button>
+                </div>
+                <span class="missing-count-badge">{n_missing_cols} column{"s" if n_missing_cols != 1 else ""} with missing values</span>
             </div>
 
-            <div class="missing-tab-content active" data-tab="bar-chart">
-                {bar_chart_html}
+            <div class="missing-tab-content active" data-tab="completeness">
+                {completeness_tab_html}
             </div>
 
-            <div class="missing-tab-content" data-tab="spectrum">
+            <div class="missing-tab-content" data-tab="chunks">
+                {chunk_tab_html}
+            </div>
+        </div>
+        """
+
+    def _build_completeness_tab(
+        self,
+        columns_with_missing: list[tuple[str, float, int, list | None]],
+    ) -> str:
+        """Build Data Completeness tab with dual-color bars showing present and missing data.
+
+        Args:
+            columns_with_missing: List of (column_name, missing_pct, missing_count, chunk_metadata) tuples
+
+        Returns:
+            HTML string for completeness tab content
+        """
+        if not columns_with_missing:
+            return """
+            <div class="scrollable-list">
+                <div class="no-missing-state">
+                    <span class="icon">✓</span>
+                    <p>No missing values detected in any column</p>
+                </div>
+            </div>
+            """
+
+        rows = []
+        for name, missing_pct, missing_count, _ in columns_with_missing:
+            # Calculate present values from the accumulator data
+            # We need to get the count from the original data structure
+            # The missing_pct and missing_count are already calculated, so we can derive present
+            total = missing_count / (missing_pct / 100) if missing_pct > 0 else 0
+            present_count = int(total - missing_count) if total > 0 else 0
+            present_pct = 100 - missing_pct
+
+            escaped_name = _html.escape(name)
+
+            # Generate dual-color bar with rich tooltips
+            dual_bar_html = self._render_dual_bar(
+                present_pct, missing_pct, present_count, missing_count, int(total)
+            )
+
+            rows.append(f"""
+            <div class="compact-row">
+                <code class="col-name missing-col" title="{escaped_name}">{escaped_name}</code>
+                {dual_bar_html}
+            </div>
+            """)
+
+        return f"""
+        <div class="scrollable-list">
+            {"".join(rows)}
+        </div>
+        """
+
+    def _build_chunk_tab(
+        self,
+        columns_with_missing: list[tuple[str, float, int, list | None]],
+    ) -> str:
+        """Build Missing per Chunk tab with spectrum bars.
+
+        Format matches Data Completeness - one compact row per column
+        with horizontal spectrum bar showing chunk distribution.
+        """
+        if not columns_with_missing:
+            return """
+            <div class="scrollable-list">
+                <div class="no-missing-state">
+                    <span class="icon">✓</span>
+                    <p>No missing values detected in any column</p>
+                </div>
+            </div>
+            """
+
+        rows = []
+        for name, missing_pct, missing_count, chunk_metadata in columns_with_missing:
+            # If no chunk metadata, create a synthetic single chunk
+            if not chunk_metadata or len(chunk_metadata) == 0:
+                total_rows = (
+                    int(missing_count / (missing_pct / 100))
+                    if missing_pct > 0
+                    else missing_count
+                )
+                if total_rows == 0:
+                    total_rows = missing_count
+                chunk_metadata = [
+                    (0, total_rows - 1 if total_rows > 0 else 0, missing_count)
+                ]
+
+            escaped_name = _html.escape(name)
+
+            # Calculate total rows for width calculations
+            total_rows = sum(
+                end_row - start_row + 1 for start_row, end_row, _ in chunk_metadata
+            )
+
+            # Build spectrum segments
+            segments_html = ""
+            for idx, (start_row, end_row, missing_count) in enumerate(
+                chunk_metadata, 1
+            ):
+                chunk_size = end_row - start_row + 1
+                missing_pct_chunk = (
+                    (missing_count / chunk_size) * 100 if chunk_size > 0 else 0
+                )
+                width_pct = (chunk_size / total_rows) * 100.0 if total_rows > 0 else 0
+
+                # Determine severity
+                if missing_pct_chunk <= 5:
+                    severity = "low"
+                elif missing_pct_chunk <= 20:
+                    severity = "medium"
+                else:
+                    severity = "high"
+
+                # Create tooltip
+                tooltip = (
+                    f"Chunk {idx} (rows {start_row:,}-{end_row:,}): "
+                    f"{missing_count:,} missing ({missing_pct_chunk:.1f}%)"
+                )
+
+                segments_html += f"""
+                <div class="chunk-segment {severity}"
+                     style="width: {width_pct:.2f}%"
+                     title="{tooltip}"
+                     data-chunk="{idx}"
+                     data-start="{start_row}"
+                     data-end="{end_row}"
+                     data-missing="{missing_count}"
+                     data-pct="{missing_pct_chunk:.1f}"></div>
+                """
+
+            # Build spectrum bar HTML
+            spectrum_html = f'<div class="chunk-spectrum">{segments_html}</div>'
+
+            rows.append(f"""
+            <div class="compact-row">
+                <code class="col-name missing-col" title="{escaped_name}">{escaped_name}</code>
                 {spectrum_html}
             </div>
-        </div>
-        """
-
-    def _build_bar_chart_tab(self, miss_list: list[tuple[str, float, int]]) -> str:
-        """Build the bar chart tab showing missing percentages per variable.
-
-        Args:
-            miss_list: List of (column_name, missing_pct, missing_count) tuples
-
-        Returns:
-            HTML string for bar chart tab
-        """
-        if not miss_list:
-            return """
-            <div class="missing-bar-chart">
-                <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">
-                    No missing values found in the dataset.
-                </p>
-            </div>
-            """
-
-        bar_items = []
-        for name, pct, count in miss_list:
-            severity_class = self._get_severity_class(pct)
-            bar_items.append(f"""
-            <div class="missing-bar-item">
-                <div class="missing-var-name" title="{_html.escape(name)}">
-                    {_html.escape(name)}
-                </div>
-                <div class="missing-bar-visual">
-                    <div class="missing-bar-fill {severity_class}" style="width: {min(pct, 100):.1f}%;"></div>
-                </div>
-                <div class="missing-bar-label">
-                    {count:,} ({pct:.1f}%)
-                </div>
-            </div>
             """)
 
         return f"""
-        <div class="missing-bar-chart">
-            {"".join(bar_items)}
+        <div class="chunk-legend">
+            <span class="legend-label">Missing per chunk:</span>
+            <div class="legend-item">
+                <span class="legend-color low"></span>
+                <span class="legend-text">≤5%</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color medium"></span>
+                <span class="legend-text">5-20%</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color high"></span>
+                <span class="legend-text">&gt;20%</span>
+            </div>
         </div>
-        """
-
-    def _build_spectrum_tab(
-        self,
-        kinds_map: dict[str, tuple[str, object]],
-        accs: dict[str, object],
-        n_rows: int,
-    ) -> str:
-        """Build the spectrum tab showing per-variable chunk-level missing distributions.
-
-        Args:
-            kinds_map: Dictionary mapping column names to (kind, accumulator) tuples
-            accs: Dictionary mapping column names to accumulators
-            n_rows: Total number of rows in dataset
-
-        Returns:
-            HTML string for spectrum tab
-        """
-        spectrum_items = []
-
-        for name, (_, acc) in kinds_map.items():
-            missing = getattr(acc, "missing", 0)
-            count = getattr(acc, "count", 0)
-            total = missing + count
-
-            if total == 0:
-                continue
-
-            pct = (missing / total) * 100
-            chunk_metadata = getattr(acc, "chunk_metadata", [])
-
-            if not chunk_metadata:
-                # Fallback: create a single segment for the entire column
-                spectrum_bar = self._create_spectrum_bar([(0, n_rows, missing)], n_rows)
-            else:
-                spectrum_bar = self._create_spectrum_bar(chunk_metadata, n_rows)
-
-            spectrum_items.append(f"""
-            <div class="missing-spectrum-item">
-                <div class="missing-spectrum-header">
-                    <span class="missing-var-name" title="{_html.escape(name)}">
-                        {_html.escape(name)}
-                    </span>
-                    <span class="missing-bar-label">
-                        {missing:,} ({pct:.1f}%)
-                    </span>
-                </div>
-                {spectrum_bar}
-            </div>
-            """)
-
-        if not spectrum_items:
-            return """
-            <div class="missing-spectrum-container">
-                <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">
-                    No missing values found in the dataset.
-                </p>
-            </div>
-            """
-
-        return f"""
-        <div class="missing-spectrum-container">
-            {"".join(spectrum_items)}
-        </div>
-        """
-
-    def _create_spectrum_bar(
-        self,
-        chunk_metadata: list[tuple[int, int, int]],
-        n_rows: int,
-    ) -> str:
-        """Create a spectrum bar visualization for a single variable.
-
-        Args:
-            chunk_metadata: List of (start_row, end_row, missing_count) tuples
-            n_rows: Total number of rows in dataset
-
-        Returns:
-            HTML string for spectrum bar
-        """
-        if not chunk_metadata or n_rows == 0:
-            return '<div class="missing-spectrum-bar"></div>'
-
-        segments = []
-        for start_row, end_row, missing_count in chunk_metadata:
-            chunk_size = end_row - start_row
-            if chunk_size == 0:
-                continue
-
-            missing_pct = (missing_count / chunk_size) * 100
-            width_pct = (chunk_size / n_rows) * 100
-
-            severity_class = self._get_severity_class(missing_pct)
-
-            # Create tooltip data
-            tooltip_data = f'data-start="{start_row}" data-end="{end_row}" data-missing="{missing_count}" data-total="{chunk_size}" data-pct="{missing_pct:.1f}"'
-
-            segments.append(f"""
-            <div class="spectrum-segment {severity_class}"
-                 style="width: {width_pct:.2f}%;"
-                 {tooltip_data}
-                 title="Rows {start_row:,}-{end_row:,}: {missing_count:,} missing ({missing_pct:.1f}%)">
-            </div>
-            """)
-
-        return f"""
-        <div class="missing-spectrum-bar">
-            {"".join(segments)}
+        <div class="scrollable-list">
+            {"".join(rows)}
         </div>
         """
 
@@ -234,3 +255,52 @@ class MissingValuesSectionRenderer:
             return "medium"
         else:
             return "high"
+
+    def _calculate_completeness_stats(
+        self, count: int, missing: int
+    ) -> tuple[int, float, float]:
+        """Calculate present count and percentages for completeness display.
+
+        Args:
+            count: Number of non-missing values
+            missing: Number of missing values
+
+        Returns:
+            Tuple of (present_count, present_pct, missing_pct)
+        """
+        total = count + missing
+        present_pct = (count / total * 100) if total > 0 else 0
+        missing_pct = (missing / total * 100) if total > 0 else 0
+        return count, present_pct, missing_pct
+
+    def _render_dual_bar(
+        self,
+        present_pct: float,
+        missing_pct: float,
+        present_count: int,
+        missing_count: int,
+        total: int,
+    ) -> str:
+        """Generate dual-color completeness bar HTML with rich tooltips.
+
+        Args:
+            present_pct: Percentage of present values
+            missing_pct: Percentage of missing values
+            present_count: Count of present values
+            missing_count: Count of missing values
+            total: Total number of values
+
+        Returns:
+            HTML string for dual-color bar
+        """
+        present_tooltip = f"Present: {present_count:,} ({present_pct:.1f}%)"
+        missing_tooltip = f"Missing: {missing_count:,} ({missing_pct:.1f}%)"
+
+        return f"""
+        <div class="completeness-bar-dual" title="Total: {total:,} values">
+            <div class="bar-fill present" style="width: {present_pct:.1f}%"
+                 title="{present_tooltip}"></div>
+            <div class="bar-fill missing" style="width: {missing_pct:.1f}%"
+                 title="{missing_tooltip}"></div>
+        </div>
+        """

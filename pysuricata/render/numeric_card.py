@@ -2,15 +2,8 @@
 
 import math
 from collections.abc import Sequence
-from typing import Any, Tuple
 
-import numpy as np
-
-from .card_base import (
-    CardRenderer,
-    QualityAssessor,
-    TableBuilder,
-)
+from .card_base import CardRenderer, QualityAssessor, TableBuilder
 from .card_config import (
     DEFAULT_CHART_DIMS,
     DEFAULT_HIST_CONFIG,
@@ -62,7 +55,9 @@ class NumericCardRenderer(CardRenderer):
 
         # Build components
         approx_badge = self._build_approx_badge(stats.approx)
-        quality_flags_html = self._build_quality_flags_html(quality_flags, percentages)
+        quality_flags_html = self._build_quality_flags_html(
+            quality_flags, percentages, stats
+        )
 
         left_table = self._build_left_table(stats, percentages)
         right_table = self._build_right_table(stats)
@@ -132,49 +127,83 @@ class NumericCardRenderer(CardRenderer):
         """Build approximation badge if needed."""
         return '<span class="badge">approx</span>' if approx else ""
 
-    def _build_quality_flags_html(self, flags: QualityFlags, percentages: dict) -> str:
-        """Build quality flags HTML with percentage context."""
+    def _build_quality_flags_html(
+        self, flags: QualityFlags, percentages: dict, stats: NumericStats
+    ) -> str:
+        """Build quality flags HTML with percentage context and threshold tooltips."""
         flag_items = []
 
         if flags.missing:
             severity = "bad" if percentages["miss_pct"] > 20 else "warn"
-            flag_items.append(f'<li class="flag {severity}">Missing</li>')
+            threshold = ">20%" if percentages["miss_pct"] > 20 else "≤20%"
+            flag_items.append(
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{percentages["miss_pct"]:.1f}%">Missing</li>'
+            )
 
         if flags.infinite:
-            flag_items.append('<li class="flag bad">Has ∞</li>')
+            flag_items.append(
+                f'<li class="flag bad" data-threshold="Any ∞" '
+                f'data-value="{stats.inf} values">Has ∞</li>'
+            )
 
         if flags.has_negatives:
             severity = "warn" if percentages["neg_pct"] > 10 else ""
+            threshold = ">10%" if percentages["neg_pct"] > 10 else "Present"
             flag_items.append(
-                f'<li class="flag {severity}">Has negatives</li>'
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{percentages["neg_pct"]:.1f}%">Has negatives</li>'
                 if severity
-                else '<li class="flag">Has negatives</li>'
+                else f'<li class="flag" data-threshold="{threshold}" '
+                f'data-value="{percentages["neg_pct"]:.1f}%">Has negatives</li>'
             )
 
         if flags.zero_inflated:
             severity = "bad" if percentages["zeros_pct"] >= 50.0 else "warn"
-            flag_items.append(f'<li class="flag {severity}">Zero‑inflated</li>')
+            threshold = "≥50%" if percentages["zeros_pct"] >= 50.0 else "<50%"
+            flag_items.append(
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{percentages["zeros_pct"]:.1f}%">Zero‑inflated</li>'
+            )
 
         if flags.positive_only:
             flag_items.append('<li class="flag good">Positive‑only</li>')
 
         if flags.skewed_right:
-            flag_items.append('<li class="flag warn">Skewed Right</li>')
+            skew_val = getattr(stats, "skew", 0)
+            flag_items.append(
+                f'<li class="flag warn" data-threshold=">1" data-value="{skew_val:.2f}">Skewed Right</li>'
+            )
 
         if flags.skewed_left:
-            flag_items.append('<li class="flag warn">Skewed Left</li>')
+            skew_val = getattr(stats, "skew", 0)
+            flag_items.append(
+                f'<li class="flag warn" data-threshold="<-1" data-value="{skew_val:.2f}">Skewed Left</li>'
+            )
 
         if flags.heavy_tailed:
-            flag_items.append('<li class="flag bad">Heavy‑tailed</li>')
+            kurt_val = getattr(stats, "kurtosis", 0)
+            flag_items.append(
+                f'<li class="flag bad" data-threshold="|kurtosis| > 3" data-value="{kurt_val:.2f}">Heavy‑tailed</li>'
+            )
 
         if flags.approximately_normal:
-            flag_items.append('<li class="flag good">≈ Normal (JB)</li>')
+            jb_val = getattr(stats, "jb_chi2", 0)
+            flag_items.append(
+                f'<li class="flag good" data-threshold="JB χ² < 5.99" data-value="{jb_val:.2f}">≈ Normal (JB)</li>'
+            )
 
         if flags.discrete:
-            flag_items.append('<li class="flag warn">Discrete</li>')
+            unique_ratio = getattr(stats, "unique_ratio_approx", 0)
+            flag_items.append(
+                f'<li class="flag warn" data-threshold="Low unique count" data-value="{unique_ratio:.1%}">Discrete</li>'
+            )
 
         if flags.heaping:
-            flag_items.append('<li class="flag">Heaping</li>')
+            heap_pct = getattr(stats, "heap_pct", 0)
+            flag_items.append(
+                f'<li class="flag" data-threshold="Detected rounding" data-value="{heap_pct:.1f}%">Heaping</li>'
+            )
 
         if flags.bimodal:
             flag_items.append('<li class="flag warn">Possibly bimodal</li>')
@@ -183,16 +212,27 @@ class NumericCardRenderer(CardRenderer):
             flag_items.append('<li class="flag good">Log‑scale?</li>')
 
         if flags.constant:
-            flag_items.append('<li class="flag bad">Constant</li>')
+            flag_items.append(
+                f'<li class="flag bad" data-threshold="1 unique" data-value="{stats.unique_est}">Constant</li>'
+            )
 
         if flags.quasi_constant:
-            flag_items.append('<li class="flag warn">Quasi‑constant</li>')
+            unique_ratio = getattr(stats, "unique_ratio_approx", 0)
+            flag_items.append(
+                f'<li class="flag warn" data-threshold="Very low cardinality" data-value="{unique_ratio:.1%}">Quasi‑constant</li>'
+            )
 
         if flags.many_outliers:
-            flag_items.append('<li class="flag bad">Many outliers</li>')
+            out_pct = percentages.get("out_pct", 0)
+            flag_items.append(
+                f'<li class="flag bad" data-threshold=">1%" data-value="{out_pct:.1f}%">Many outliers</li>'
+            )
 
         if flags.some_outliers:
-            flag_items.append('<li class="flag warn">Some outliers</li>')
+            out_pct = percentages.get("out_pct", 0)
+            flag_items.append(
+                f'<li class="flag warn" data-threshold="0.3%-1%" data-value="{out_pct:.1f}%">Some outliers</li>'
+            )
 
         if flags.monotonic_increasing:
             flag_items.append('<li class="flag good">Monotonic ↑</li>')
@@ -228,7 +268,7 @@ class NumericCardRenderer(CardRenderer):
 
         data = [
             ("Count", f"{stats.count:,}", "num"),
-            ("Unique", f"{stats.unique_est:,}{' (≈)' if stats.approx else ''}", "num"),
+            (f"Unique{' (≈)' if stats.approx else ''}", f"{stats.unique_est:,}", "num"),
             (
                 "Missing",
                 f"{stats.missing:,} ({percentages['miss_pct']:.1f}%)",
@@ -269,7 +309,7 @@ class NumericCardRenderer(CardRenderer):
             ("Mean", self.format_number(stats.mean), "num"),
             ("Q3 (P75)", self.format_number(stats.q3), "num"),
             ("Max", self.format_number(stats.max), "num"),
-            ("Processed bytes", f"{mem_display} (≈)", "num"),
+            ("Processed bytes (≈)", mem_display, "num"),
         ]
 
         return self.table_builder.build_key_value_table(data)
@@ -323,66 +363,20 @@ class NumericCardRenderer(CardRenderer):
 
         data = [
             ("Min", self.format_number(stats.min), "num"),
-            ("P1", f"{self.format_number(quantiles.p1)} (≈)", "num"),
-            ("P5", f"{self.format_number(quantiles.p5)} (≈)", "num"),
-            ("P10", f"{self.format_number(quantiles.p10)} (≈)", "num"),
+            ("P1 (≈)", self.format_number(quantiles.p1), "num"),
+            ("P5 (≈)", self.format_number(quantiles.p5), "num"),
+            ("P10 (≈)", self.format_number(quantiles.p10), "num"),
             ("Q1 (P25)", self.format_number(stats.q1), "num"),
             ("Median (P50)", self.format_number(stats.median), "num"),
             ("Q3 (P75)", self.format_number(stats.q3), "num"),
-            ("P90", f"{self.format_number(quantiles.p90)} (≈)", "num"),
-            ("P95", f"{self.format_number(quantiles.p95)} (≈)", "num"),
-            ("P99", f"{self.format_number(quantiles.p99)} (≈)", "num"),
+            ("P90 (≈)", self.format_number(quantiles.p90), "num"),
+            ("P95 (≈)", self.format_number(quantiles.p95), "num"),
+            ("P99 (≈)", self.format_number(quantiles.p99), "num"),
             ("Range", self.format_number(range_val), "num"),
             ("Std Dev", self.format_number(stats.std), "num"),
         ]
 
         return self.table_builder.build_key_value_table(data)
-
-    def _create_histogram_data(
-        self, values: np.ndarray, bins: int, scale: str, scale_count: float
-    ) -> Any:
-        """Create histogram data for chart rendering.
-
-        Args:
-            values: Array of numeric values
-            bins: Number of bins for histogram
-            scale: Scale type ('lin' or 'log')
-            scale_count: Scale factor for counts
-
-        Returns:
-            Object with edges and scaled_counts attributes
-        """
-        if len(values) == 0:
-            # Return empty histogram data
-            return type(
-                "HistogramData",
-                (),
-                {"edges": np.array([]), "scaled_counts": np.array([])},
-            )()
-
-        # Apply scale transformation if needed
-        if scale == "log":
-            # Filter out non-positive values for log scale
-            positive_values = values[values > 0]
-            if len(positive_values) == 0:
-                return type(
-                    "HistogramData",
-                    (),
-                    {"edges": np.array([]), "scaled_counts": np.array([])},
-                )()
-            transformed_values = np.log10(positive_values)
-        else:
-            transformed_values = values
-
-        # Create histogram
-        counts, edges = np.histogram(transformed_values, bins=bins)
-
-        # Scale counts
-        scaled_counts = counts * scale_count
-
-        return type(
-            "HistogramData", (), {"edges": edges, "scaled_counts": scaled_counts}
-        )()
 
     def _build_histogram_variants(
         self, col_id: str, base_title: str, stats: NumericStats
@@ -392,55 +386,36 @@ class NumericCardRenderer(CardRenderer):
         true_edges = getattr(stats, "true_histogram_edges", None)
         true_counts = getattr(stats, "true_histogram_counts", None)
 
-        if true_edges and true_counts and len(true_edges) > 1 and len(true_counts) > 0:
-            # Use true distribution data
-            variants = []
-            for bins in self.hist_config.bin_options:
-                for scale in ["lin", "log"]:
-                    # Create title with scale indicator
-                    title = f"{base_title}{' (log scale)' if scale == 'log' else ''}"
+        if not (
+            true_edges and true_counts and len(true_edges) > 1 and len(true_counts) > 0
+        ):
+            # No true distribution data available
+            return f'''
+            <div class="hist-chart">
+                <div class="hist-variants" data-col="{col_id}">
+                    <div class="hist variant active">
+                        {self.svg_histogram_renderer._render_empty_histogram("No histogram data")}
+                    </div>
+                </div>
+            </div>
+            '''
 
-                    # Generate SVG histogram with true distribution
-                    svg_content = (
-                        self.svg_histogram_renderer.render_histogram_from_bins(
-                            bin_edges=true_edges,
-                            bin_counts=true_counts,
-                            bins=bins,
-                            scale=scale,
-                            title=title,
-                            col_id=col_id,
-                        )
-                    )
+        # Generate histogram variants with true distribution data
+        variants = []
+        for bins in self.hist_config.bin_options:
+            for scale in ["lin", "log"]:
+                # Create title with scale indicator
+                title = f"{base_title}{' (log scale)' if scale == 'log' else ''}"
 
-                    active_class = " active" if (bins == 25 and scale == "lin") else ""
-
-                    variants.append(
-                        f'<div class="hist variant{active_class}" id="{col_id}-{scale}-bins-{bins}" data-scale="{scale}" data-bin="{bins}">'
-                        f"{svg_content}"
-                        f"</div>"
-                    )
-        else:
-            # Fallback to sample-based approach
-            values = stats.sample_vals or []
-            scale_count = getattr(stats, "sample_scale", 1.0)
-
-            variants = []
-            for bins in self.hist_config.bin_options:
-                for scale in ["lin", "log"]:
-                    # Scale the values if needed
-                    scaled_values = np.asarray(values, dtype=float) * scale_count
-
-                    # Create title with scale indicator
-                    title = f"{base_title}{' (log scale)' if scale == 'log' else ''}"
-
-                    # Generate SVG histogram
-                    svg_content = self.svg_histogram_renderer.render_histogram(
-                        values=scaled_values,
-                        bins=bins,
-                        scale=scale,
-                        title=title,
-                        col_id=col_id,
-                    )
+                # Generate SVG histogram with true distribution
+                svg_content = self.svg_histogram_renderer.render_histogram_from_bins(
+                    bin_edges=true_edges,
+                    bin_counts=true_counts,
+                    bins=bins,
+                    scale=scale,
+                    title=title,
+                    col_id=col_id,
+                )
 
                 active_class = " active" if (bins == 25 and scale == "lin") else ""
 
@@ -565,7 +540,7 @@ class NumericCardRenderer(CardRenderer):
             + "</div>"
         )
 
-    def _build_outliers_tables(self, stats: NumericStats) -> Tuple[str, str]:
+    def _build_outliers_tables(self, stats: NumericStats) -> tuple[str, str]:
         """Build outliers tables."""
         try:
             sample_vals = list(getattr(stats, "sample_vals", []) or [])
@@ -599,7 +574,7 @@ class NumericCardRenderer(CardRenderer):
 
     def _identify_outliers(
         self, stats: NumericStats, sample_vals: list
-    ) -> Tuple[list, list]:
+    ) -> tuple[list, list]:
         """Identify outliers using IQR and MAD methods."""
         low_list = []
         high_list = []
@@ -651,16 +626,20 @@ class NumericCardRenderer(CardRenderer):
         return idx_map
 
     def _deduplicate_outliers(self, outliers: list) -> list:
-        """Remove duplicate outliers."""
-        seen = set()
-        result = []
+        """Group outliers by value, keeping track of all detection methods."""
+        value_map = {}
         for v, t in outliers:
-            k = (round(float(v), 12), t)
-            if k in seen:
-                continue
-            seen.add(k)
-            result.append((v, t))
-        return result
+            key = round(float(v), 12)
+            if key in value_map:
+                # Value already seen - add method if different
+                existing_val, existing_methods = value_map[key]
+                if t not in existing_methods:
+                    existing_methods.append(t)
+            else:
+                value_map[key] = (v, [t])
+
+        # Return list with combined methods
+        return [(v, methods) for v, methods in value_map.values()]
 
     def _get_outlier_severity(
         self, value: float, method: str, stats: NumericStats
@@ -753,7 +732,25 @@ class NumericCardRenderer(CardRenderer):
             HTML string for the enhanced outliers table with summary
         """
         if not outliers:
-            return '<div class="muted">No outliers detected</div>'
+            # Still show summary box even with 0 outliers
+            direction_icon = "📉" if direction == "low" else "📈"
+            direction_label = "Low Outliers" if direction == "low" else "High Outliers"
+
+            summary_html = f"""
+            <div class="outlier-summary">
+                <div class="summary-header">
+                    <span class="direction-icon">{direction_icon}</span>
+                    <span class="direction-label">{direction_label}</span>
+                    <span class="outlier-count">0 outliers (0.0%)</span>
+                </div>
+                <div class="severity-breakdown">
+                    <span class="severity-item extreme">Extreme: 0</span>
+                    <span class="severity-item high">High: 0</span>
+                    <span class="severity-item moderate">Moderate: 0</span>
+                </div>
+            </div>
+            """
+            return summary_html
 
         # Calculate summary statistics
         total_count = getattr(stats, "count", 0)
@@ -778,15 +775,61 @@ class NumericCardRenderer(CardRenderer):
             else ""
         )
 
-        # Get severity distribution
-        severity_counts = {"extreme": 0, "high": 0, "moderate": 0}
-        for v, t in outliers:
-            _, severity_class = self._get_outlier_severity(v, t, stats)
-            severity_counts[severity_class] += 1
+        # Get severity distribution per method
+        severity_counts_iqr = {"extreme": 0, "high": 0, "moderate": 0}
+        severity_counts_mad = {"extreme": 0, "high": 0, "moderate": 0}
+        has_iqr = False
+        has_mad = False
+
+        for v, methods in outliers:
+            for method in methods:
+                _, severity_class = self._get_outlier_severity(v, method, stats)
+                if method == "IQR":
+                    severity_counts_iqr[severity_class] += 1
+                    has_iqr = True
+                elif method == "MAD":
+                    severity_counts_mad[severity_class] += 1
+                    has_mad = True
 
         # Build summary header
         direction_icon = "📉" if direction == "low" else "📈"
         direction_label = "Low Outliers" if direction == "low" else "High Outliers"
+
+        # Build severity breakdown - show both methods if both are present
+        severity_breakdown_html = ""
+        if has_iqr and has_mad:
+            severity_breakdown_html = f"""
+            <div class="severity-breakdown">
+                <div class="method-severity-group">
+                    <span class="method-label">IQR:</span>
+                    <span class="severity-item extreme">Extreme: {severity_counts_iqr["extreme"]}</span>
+                    <span class="severity-item high">High: {severity_counts_iqr["high"]}</span>
+                    <span class="severity-item moderate">Moderate: {severity_counts_iqr["moderate"]}</span>
+                </div>
+                <div class="method-severity-group">
+                    <span class="method-label">MAD:</span>
+                    <span class="severity-item extreme">Extreme: {severity_counts_mad["extreme"]}</span>
+                    <span class="severity-item high">High: {severity_counts_mad["high"]}</span>
+                    <span class="severity-item moderate">Moderate: {severity_counts_mad["moderate"]}</span>
+                </div>
+            </div>
+            """
+        elif has_iqr:
+            severity_breakdown_html = f"""
+            <div class="severity-breakdown">
+                <span class="severity-item extreme">Extreme: {severity_counts_iqr["extreme"]}</span>
+                <span class="severity-item high">High: {severity_counts_iqr["high"]}</span>
+                <span class="severity-item moderate">Moderate: {severity_counts_iqr["moderate"]}</span>
+            </div>
+            """
+        else:  # has_mad
+            severity_breakdown_html = f"""
+            <div class="severity-breakdown">
+                <span class="severity-item extreme">Extreme: {severity_counts_mad["extreme"]}</span>
+                <span class="severity-item high">High: {severity_counts_mad["high"]}</span>
+                <span class="severity-item moderate">Moderate: {severity_counts_mad["moderate"]}</span>
+            </div>
+            """
 
         summary_html = f"""
         <div class="outlier-summary">
@@ -795,57 +838,71 @@ class NumericCardRenderer(CardRenderer):
                 <span class="direction-label">{direction_label}</span>
                 <span class="outlier-count">{outlier_count} outliers ({outlier_pct:.1f}%){sample_note}</span>
             </div>
-            <div class="severity-breakdown">
-                <span class="severity-item extreme">Extreme: {severity_counts["extreme"]}</span>
-                <span class="severity-item high">High: {severity_counts["high"]}</span>
-                <span class="severity-item moderate">Moderate: {severity_counts["moderate"]}</span>
-            </div>
+            {severity_breakdown_html}
             {f'<div class="context-note"><small>💡 This shows the most extreme outliers from a representative sample. The general statistics show all {total_outliers_iqr} outliers ({total_outliers_pct:.1f}%) in the full dataset.</small></div>' if is_sample else ""}
         </div>
         """
 
         # Build enhanced table rows
         parts = []
-        for i, (v, t) in enumerate(outliers):
+        has_missing_indices = False
+        for i, (v, methods) in enumerate(outliers):
             key = round(float(v), 12)
             idxs = idx_map.get(key) or []
             idx_disp = self.safe_html_escape(str(idxs[0])) if idxs else "—"
-
-            # Enhanced method labels
-            method_label = "IQR Method" if t == "IQR" else "MAD Method"
-
-            # Add severity indicator based on method
-            severity, severity_class = self._get_outlier_severity(v, t, stats)
+            if not idxs:
+                has_missing_indices = True
 
             # Add ranking for top outliers
             rank_icon = ordinal_number(i + 1)
 
-            # Calculate how extreme this outlier is as a percentage
-            if hasattr(stats, "mean") and hasattr(stats, "std") and stats.std > 0:
-                z_score = abs(v - stats.mean) / stats.std
-                extreme_pct = min(99.9, (1 - (1 / (1 + z_score))) * 100)
-            else:
-                extreme_pct = 50.0  # Default fallback
+            # If detected by multiple methods, show each method on a separate row
+            for method_idx, method in enumerate(methods):
+                # Enhanced method labels
+                if method == "IQR":
+                    method_label = "IQR Method"
+                else:
+                    method_label = "MAD Method"
 
-            parts.append(
-                f"<tr class='outlier-row rank-{i + 1}'>"
-                f"<td class='rank'>{rank_icon}</td>"
-                f"<td class='index'>{idx_disp}</td>"
-                f"<td class='num outlier-value'>{self.format_number(v)}</td>"
-                f"<td class='method'>{method_label}</td>"
-                f"<td class='severity' data-severity='{severity_class}'>{severity}</td>"
-                f"<td class='progress-bar'><div class='bar-fill' style='width:{extreme_pct:.1f}%'></div></td>"
-                f"</tr>"
-            )
+                # Add severity indicator based on method
+                severity, severity_class = self._get_outlier_severity(v, method, stats)
+
+                # First method row shows rank, index, value with rowspan
+                # Subsequent method rows only show method and severity
+                if method_idx == 0:
+                    # First row: show all columns with rowspan for rank/index/value
+                    rowspan = len(methods)
+                    parts.append(
+                        f"<tr class='outlier-row rank-{i + 1}'>"
+                        f"<td class='rank' rowspan='{rowspan}'>{rank_icon}</td>"
+                        f"<td class='index' rowspan='{rowspan}'>{idx_disp}</td>"
+                        f"<td class='num outlier-value' rowspan='{rowspan}'>{self.format_number(v)}</td>"
+                        f"<td class='method'>{method_label}</td>"
+                        f"<td class='severity'><span class='severity-item {severity_class}'>{severity}</span></td>"
+                        f"</tr>"
+                    )
+                else:
+                    # Additional method rows: only method and severity
+                    parts.append(
+                        f"<tr class='outlier-row outlier-row-sub rank-{i + 1}'>"
+                        f"<td class='method'>{method_label}</td>"
+                        f"<td class='severity'><span class='severity-item {severity_class}'>{severity}</span></td>"
+                        f"</tr>"
+                    )
 
         table_html = (
             '<table class="outliers-table enhanced">'
-            "<thead><tr><th>Rank</th><th>Index</th><th>Value</th><th>Method</th><th>Severity</th><th>Extremity</th></tr></thead>"
+            "<thead><tr><th>Rank</th><th>Index</th><th>Value</th><th>Method</th><th>Severity</th></tr></thead>"
             f"<tbody>{''.join(parts)}</tbody>"
             "</table>"
         )
 
-        return summary_html + table_html
+        # Add note about missing indices if applicable
+        index_note = ""
+        if has_missing_indices:
+            index_note = '<div class="outlier-note"><small>ℹ️ Index shown only for top/bottom extreme values tracked during profiling. Sample-based outliers may not have row indices.</small></div>'
+
+        return summary_html + table_html + index_note
 
     def _build_correlation_table(self, stats: NumericStats) -> str:
         """Build enhanced correlation table with visual improvements and summary statistics.
@@ -862,19 +919,20 @@ class NumericCardRenderer(CardRenderer):
         corr_data = getattr(stats, "corr_top", []) or []
 
         if not corr_data:
-            return """
+            threshold = getattr(stats, "corr_threshold", 0.5)
+            return f"""
         <div class="correlation-summary">
             <div class="no-correlations">
                 <span class="icon">📊</span>
                 <span class="message">No significant correlations found</span>
-                <small>Correlations below 0.3 threshold are not shown</small>
+                <small>Correlations below {threshold:.1f} threshold are not shown</small>
             </div>
         </div>
         """
 
         # Calculate summary statistics
         corr_values = [abs(corr) for _, corr in corr_data]
-        avg_strength = sum(corr_values) / len(corr_values) if corr_values else 0
+        sum(corr_values) / len(corr_values) if corr_values else 0
 
         # Categorize correlations by strength
         strength_counts = {"very_strong": 0, "strong": 0, "moderate": 0, "weak": 0}
@@ -932,9 +990,6 @@ class NumericCardRenderer(CardRenderer):
             # Ranking
             rank_icon = ordinal_number(i + 1)
 
-            # Progress bar width (0-100%)
-            bar_width = min(100, abs_corr * 100)
-
             parts.append(f'''
             <tr class="correlation-row strength-{strength_class}">
                 <td class="rank">{rank_icon}</td>
@@ -951,9 +1006,6 @@ class NumericCardRenderer(CardRenderer):
                     <span class="direction-icon">{direction_icon}</span>
                     <span class="direction-text">{direction.title()}</span>
                 </td>
-                <td class="progress-bar">
-                    <div class="bar-fill" style="width:{bar_width:.1f}%"></div>
-                </td>
             </tr>
             ''')
 
@@ -966,7 +1018,6 @@ class NumericCardRenderer(CardRenderer):
                     <th>Correlation</th>
                     <th>Strength</th>
                     <th>Direction</th>
-                    <th>Visual</th>
                 </tr>
             </thead>
             <tbody>
@@ -978,19 +1029,15 @@ class NumericCardRenderer(CardRenderer):
         return summary_html + table_html
 
     def _build_missing_values_table(self, stats: NumericStats) -> str:
-        """Build comprehensive missing values analysis table with visual elements.
-
-        This method creates a professional, feature-rich analysis of missing data
-        including summary statistics, visual indicators, and data quality insights.
-        Optimized for performance on large datasets with efficient calculations.
+        """Build simple missing values analysis matching reference HTML.
 
         Args:
             stats: NumericStats object containing missing data information
 
         Returns:
-            HTML string for the enhanced missing values analysis
+            HTML string for the missing values analysis
         """
-        # Calculate missing data statistics with safe division
+        # Calculate missing data statistics
         total_values = stats.count + stats.missing
         missing_pct = (
             (stats.missing / max(1, total_values)) * 100.0 if total_values > 0 else 0.0
@@ -999,77 +1046,104 @@ class NumericCardRenderer(CardRenderer):
             (stats.count / max(1, total_values)) * 100.0 if total_values > 0 else 0.0
         )
 
-        # Calculate other data quality metrics with safe division
-        zeros_pct = (
-            (stats.zeros / max(1, stats.count)) * 100.0 if stats.count > 0 else 0.0
-        )
-        inf_pct = (stats.inf / max(1, stats.count)) * 100.0 if stats.count > 0 else 0.0
-        neg_pct = (
-            (stats.negatives / max(1, stats.count)) * 100.0 if stats.count > 0 else 0.0
-        )
+        # Section 1: Data Completeness
+        completeness_html = f"""
+        <div class="missing-analysis-header">
+            <h4 class="section-title">Data Completeness</h4>
+        </div>
 
-        # Determine data quality severity with clear thresholds
-        quality_severity, quality_label, quality_icon = self._get_missing_data_severity(
-            missing_pct
-        )
-
-        # Build summary header with performance-optimized string formatting
-        summary_html = f"""
-        <div class="missing-summary">
-            <div class="summary-header">
-                <span class="icon">📊</span>
-                <span class="title">Missing Values Analysis</span>
-                <span class="quality-indicator {quality_severity}">
-                    {quality_icon} {quality_label} Missing Data
+        <div class="completeness-container">
+            <div class="completeness-stats">
+                <span class="stat-item">
+                    <span class="stat-label">Present:</span>
+                    <span class="stat-value">{stats.count:,} <span class="stat-pct">({present_pct:.1f}%)</span></span>
+                </span>
+                <span class="stat-item">
+                    <span class="stat-label">Missing:</span>
+                    <span class="stat-value">{stats.missing:,} <span class="stat-pct">({missing_pct:.1f}%)</span></span>
                 </span>
             </div>
-            <div class="data-overview">
-                <div class="overview-item">
-                    <span class="label">Total Values</span>
-                    <span class="value">{total_values:,}</span>
-                </div>
-                <div class="overview-item present">
-                    <span class="label">Present</span>
-                    <span class="value">{stats.count:,}</span>
-                    <span class="percentage">({present_pct:.1f}%)</span>
-                </div>
-                <div class="overview-item missing">
-                    <span class="label">Missing</span>
-                    <span class="value">{stats.missing:,}</span>
-                    <span class="percentage">({missing_pct:.1f}%)</span>
-                </div>
+            <div class="completeness-bar">
+                <div class="bar-fill present" style="width: {present_pct:.1f}%" title="Present: {present_pct:.1f}%"></div>
+                <div class="bar-fill missing" style="width: {missing_pct:.1f}%" title="Missing: {missing_pct:.1f}%"></div>
             </div>
         </div>
         """
 
-        # Build visual progress bars with efficient string formatting
-        progress_html = f"""
-        <div class="missing-visualization">
-            <div class="progress-container">
-                <div class="progress-bar-container">
-                    <div class="progress-label">Data Completeness</div>
-                    <div class="progress-bar">
-                        <div class="progress-fill present" style="width: {present_pct:.1f}%"></div>
-                        <div class="progress-fill missing" style="width: {missing_pct:.1f}%"></div>
-                    </div>
-                    <div class="progress-legend">
-                        <span class="legend-item present">Present: {present_pct:.1f}%</span>
-                        <span class="legend-item missing">Missing: {missing_pct:.1f}%</span>
-                    </div>
-                </div>
+        # Section 2: Chunk Distribution
+        chunk_html = self._build_chunk_distribution_simple(stats)
+
+        return completeness_html + chunk_html
+
+    def _build_chunk_distribution_simple(self, stats: NumericStats) -> str:
+        """Build simple chunk distribution visualization matching reference HTML.
+
+        Args:
+            stats: NumericStats object
+
+        Returns:
+            HTML string for chunk distribution
+        """
+        # Get chunk metadata
+        chunk_metadata = getattr(stats, "chunk_metadata", None)
+        if not chunk_metadata:
+            return ""
+
+        total_values = stats.count + stats.missing
+        if total_values == 0:
+            return ""
+
+        # Build segments
+        segments_html = ""
+        max_missing_pct = 0.0
+        num_chunks = len(chunk_metadata)
+
+        for start_row, end_row, missing_count in chunk_metadata:
+            chunk_size = end_row - start_row + 1
+            missing_pct = (
+                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
+            )
+            width_pct = (chunk_size / total_values) * 100.0
+
+            # Track peak
+            if missing_pct > max_missing_pct:
+                max_missing_pct = missing_pct
+
+            # Determine severity class (3 levels only)
+            if missing_pct <= 5:
+                severity = "low"
+            elif missing_pct <= 20:
+                severity = "medium"
+            else:
+                severity = "high"
+
+            segments_html += f"""
+            <div class="chunk-segment {severity}"
+                 style="width: {width_pct:.2f}%"
+                 data-start="{start_row}"
+                 data-end="{end_row}"
+                 data-missing="{missing_count}"
+                 data-total="{chunk_size}"
+                 data-pct="{missing_pct:.1f}"></div>
+            """
+
+        return f"""
+        <div class="chunk-distribution">
+            <h4 class="section-title">Missing Values per Chunk</h4>
+            <div class="chunk-info">
+                <span>{num_chunks} chunks analyzed</span>
+                <span>Peak: {max_missing_pct:.1f}%</span>
+            </div>
+            <div class="chunk-spectrum">
+                {segments_html}
+            </div>
+            <div class="chunk-legend">
+                <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
+                <span class="legend-item"><span class="color-box medium"></span>Medium (5-20%)</span>
+                <span class="legend-item"><span class="color-box high"></span>High (20%+)</span>
             </div>
         </div>
         """
-
-        # Build data quality indicators with efficient list comprehension
-        quality_indicators = self._build_quality_indicators(
-            stats, missing_pct, zeros_pct, inf_pct, neg_pct, quality_severity
-        )
-
-        # Add missing values per chunk visualization (DataPrep-style spectrum)
-        chunk_visualization_html = self._build_dataprep_spectrum_visualization(stats)
-
-        return summary_html + progress_html + chunk_visualization_html
 
     def _build_dataprep_spectrum_visualization(self, stats: NumericStats) -> str:
         """Build DataPrep-style spectrum visualization for missing values per chunk.
@@ -1114,20 +1188,13 @@ class NumericCardRenderer(CardRenderer):
             else:
                 color_class = "spectrum-high"
 
-            # Create tooltip content
-            tooltip_content = (
-                f"Rows {start_row:,}-{end_row:,}: "
-                f"{missing_count:,} missing ({missing_pct:.1f}%)"
-            )
-
             segments_html += f"""
-            <div class="spectrum-segment {color_class}" 
+            <div class="spectrum-segment {color_class}"
                  style="width: {segment_width_pct:.2f}%"
-                 title="{tooltip_content}"
                  data-start="{start_row}"
                  data-end="{end_row}"
                  data-missing="{missing_count}"
-                 data-missing-pct="{missing_pct:.1f}">
+                 data-pct="{missing_pct:.1f}">
             </div>
             """
 
@@ -1162,16 +1229,16 @@ class NumericCardRenderer(CardRenderer):
         return f"""
         <div class="dataprep-spectrum">
             <div class="spectrum-header">
-                <span class="spectrum-title">Missing Values Distribution</span>
+                <span class="spectrum-title">Missing Values per Chunk</span>
                 <span class="spectrum-stats">
                     {total_chunks} chunks • {max_missing_pct:.1f}% max • {avg_missing_pct:.1f}% avg
                 </span>
             </div>
-            
+
             <div class="spectrum-bar">
                 {segments_html}
             </div>
-            
+
             <div class="spectrum-summary">
                 <span class="severity-indicator {severity}">
                     {severity_icon} {severity.title()} Missing Data
@@ -1180,7 +1247,7 @@ class NumericCardRenderer(CardRenderer):
                     Hover over segments to see chunk details
                 </span>
             </div>
-            
+
             <div class="spectrum-legend">
                 <div class="legend-item">
                     <span class="legend-color spectrum-low"></span>
@@ -1386,7 +1453,7 @@ class NumericCardRenderer(CardRenderer):
                     <span class="chunk-size">Size: {chunk["size"]:,}</span>
                 </div>
                 <div class="chunk-bar-container">
-                    <div class="chunk-bar-fill {severity_class}" 
+                    <div class="chunk-bar-fill {severity_class}"
                          style="width: {bar_width:.1f}%"
                          title="Chunk {chunk["index"]}: {chunk["missing"]:,} missing values ({chunk["missing_pct"]:.1f}%)">
                     </div>
@@ -1431,21 +1498,21 @@ class NumericCardRenderer(CardRenderer):
         <div class="missing-per-chunk-enhanced">
             <div class="chunk-header">
                 <span class="icon">📊</span>
-                <span class="title">Missing Values Distribution Across Chunks</span>
+                <span class="title">Missing Values per Chunk</span>
                 <span class="overall-stats">
                     {stats.missing:,} missing ({insights.get("overall_missing_pct", 0):.1f}% overall)
                 </span>
             </div>
-            
+
             <div class="chunk-visualization">
                 <div class="chunk-bars">
                     {chunk_bars}
                 </div>
-                
+
                 {summary_html}
                 {insights_html}
             </div>
-            
+
             <div class="chunk-legend">
                 <div class="legend-item">
                     <span class="legend-color low"></span>
@@ -1734,15 +1801,15 @@ class NumericCardRenderer(CardRenderer):
                 <section class="tab-pane" data-tab="extremes">{extremes_table}</section>
                 <section class="tab-pane" data-tab="outliers">
                     <div class="stats-quant">
-                        <div class="sub"><div class="hdr">Low outliers</div>{outliers_low}</div>
-                        <div class="sub"><div class="hdr">High outliers</div>{outliers_high}</div>
+                        <div class="sub">{outliers_low}</div>
+                        <div class="sub">{outliers_high}</div>
                     </div>
                 </section>
                 <section class="tab-pane" data-tab="corr">
-                    <div class="sub"><div class="hdr">Correlations</div>{corr_table}</div>
+                    <div class="sub">{corr_table}</div>
                 </section>
                 <section class="tab-pane" data-tab="missing">
-                    <div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>
+                    <div class="sub">{missing_table}</div>
                 </section>
             </div>
         </section>
@@ -1790,6 +1857,13 @@ class NumericCardRenderer(CardRenderer):
         controls_html: str,
     ) -> str:
         """Assemble the complete card HTML."""
+        docs_url = "https://alvarodiez20.github.io/pysuricata/stats/numeric/"
+        info_button = f'''<a href="{docs_url}" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Numeric analysis" aria-label="View Numeric analysis documentation">
+            <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+                <path fill="currentColor" d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zM6.5 5a.75.75 0 0 0 0 1.5h.5v2.5h-.5a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-.5V6h-.5A.75.75 0 0 0 8 5.25H6.5zM8 3.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z"/>
+            </svg>
+        </a>'''
+
         return f"""
         <article class="var-card" id="{col_id}">
             <header class="var-card__header">
@@ -1800,6 +1874,7 @@ class NumericCardRenderer(CardRenderer):
                     {approx_badge}
                     {quality_flags_html}
                 </div>
+                {info_button}
             </header>
             <div class="var-card__body">
                 <div class="triple-row">

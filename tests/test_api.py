@@ -4,13 +4,13 @@ from collections.abc import Iterable
 import pandas as pd
 import pytest
 
+from pysuricata.api import _coerce_input  # type: ignore
+from pysuricata.api import _to_engine_config  # type: ignore
 from pysuricata.api import (
     ComputeOptions,
     ProfileConfig,
     RenderOptions,
     Report,
-    _coerce_input,  # type: ignore
-    _to_engine_config,  # type: ignore
     profile,
     summarize,
 )
@@ -193,9 +193,33 @@ def test_compute_options_validation():
     with pytest.raises(ValueError, match="chunk_size must be positive"):
         ComputeOptions(chunk_size=0)
 
+    # Test correlation parameter validation
+    with pytest.raises(ValueError, match="corr_threshold must be between 0 and 1"):
+        ComputeOptions(corr_threshold=-0.1)
+
+    with pytest.raises(ValueError, match="corr_threshold must be between 0 and 1"):
+        ComputeOptions(corr_threshold=1.1)
+
+    with pytest.raises(ValueError, match="corr_max_cols must be positive"):
+        ComputeOptions(corr_max_cols=0)
+
+    with pytest.raises(ValueError, match="corr_max_per_col must be positive"):
+        ComputeOptions(corr_max_per_col=0)
+
     # Test valid edge cases
     ComputeOptions(chunk_size=1, numeric_sample_size=1, max_uniques=1, top_k=1)
     ComputeOptions(chunk_size=None)  # None should be allowed
+    ComputeOptions(corr_threshold=0.0)  # Min valid threshold
+    ComputeOptions(corr_threshold=1.0)  # Max valid threshold
+
+
+def test_compute_options_correlation_defaults():
+    """Test ComputeOptions correlation default values."""
+    opts = ComputeOptions()
+    assert opts.compute_correlations is True
+    assert opts.corr_threshold == 0.5
+    assert opts.corr_max_cols == 50
+    assert opts.corr_max_per_col == 10
 
 
 def test_profile_config_creation():

@@ -8,8 +8,9 @@ designed for processing massive numerical datasets efficiently.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 
@@ -90,6 +91,7 @@ class NumericSummary:
     chunk_metadata: Optional[List[Tuple[int, int, int]]] = (
         None  # (start_row, end_row, missing_count)
     )
+    corr_threshold: float = 0.5  # Threshold used for correlation filtering
 
 
 class NumericAccumulator:
@@ -119,6 +121,7 @@ class NumericAccumulator:
         self._int_like_all = True
         self._dtype_str = "numeric"
         self._corr_top: List[Tuple[str, float]] = []
+        self._corr_threshold: float = 0.5
 
         # Memory tracking for big data optimization
         self._bytes_seen = 0
@@ -151,6 +154,12 @@ class NumericAccumulator:
             PerformanceMetrics() if self.config.enable_memory_tracking else None
         )
 
+        # Per-column chunk tracking for accurate missing value reporting
+        self._chunk_boundaries: List[int] = []  # Cumulative row counts
+        self._chunk_missing: List[int] = []  # Missing count per chunk
+        self._current_chunk_missing = 0  # Missing in current chunk
+        self._current_chunk_rows = 0  # Total rows in current chunk
+
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string efficiently.
 
@@ -170,6 +179,14 @@ class NumericAccumulator:
         """
         self._corr_top = list(items or [])
 
+    def set_corr_threshold(self, threshold: float) -> None:
+        """Set correlation threshold for analytics.
+
+        Args:
+            threshold: Minimum absolute correlation to report
+        """
+        self._corr_threshold = float(threshold)
+
     @property
     def unique_est(self) -> int:
         """Get unique count estimate for compatibility."""
@@ -184,6 +201,9 @@ class NumericAccumulator:
         # Handle empty arrays efficiently
         if len(arr) == 0:
             return
+
+        # Track chunk metadata before processing
+        missing_before = self.missing
 
         # Performance tracking for production monitoring
         if self._performance_metrics:
@@ -202,6 +222,11 @@ class NumericAccumulator:
 
         # Process values with optimized algorithms
         self._process_values(values)
+
+        # Track missing values in current chunk
+        missing_in_update = self.missing - missing_before
+        self._current_chunk_missing += missing_in_update
+        self._current_chunk_rows += len(arr)
 
         # Update performance metrics for monitoring
         if self._performance_metrics:
@@ -334,6 +359,19 @@ class NumericAccumulator:
         except (ValueError, TypeError):
             pass
 
+    def mark_chunk_boundary(self) -> None:
+        """Mark the end of a chunk for per-column missing value tracking.
+
+        This method records the cumulative row count and missing count for the
+        current chunk, enabling accurate per-column chunk visualization.
+        """
+        if self._current_chunk_rows > 0:
+            cumulative_rows = self.count + self.missing
+            self._chunk_boundaries.append(cumulative_rows)
+            self._chunk_missing.append(self._current_chunk_missing)
+            self._current_chunk_missing = 0
+            self._current_chunk_rows = 0
+
     def finalize(
         self, chunk_metadata: Optional[List[Tuple[int, int, int]]] = None
     ) -> NumericSummary:
@@ -404,6 +442,41 @@ class NumericAccumulator:
         # Compute heaping percentage
         heap_pct = self._compute_heaping_percentage(sample_values)
 
+        # Get top values from MisraGries sketch
+        top_values = self._topk.items()
+
+        # Fallback: if MisraGries returned too few values (due to uniform distribution
+        # or high cardinality), compute common values from reservoir sample
+        # This ensures we always show meaningful common values to the user
+        if len(top_values) < 5 and sample_values and len(sample_values) > 0:
+            from collections import Counter
+
+            # Count occurrences in the sample
+            value_counts = Counter(sample_values).most_common(10)
+
+            # Scale counts to represent full dataset size
+            # This gives an approximate count for the entire dataset
+            top_values = [(v, int(c * sample_scale)) for v, c in value_counts]
+
+        # Build per-column chunk metadata from tracked boundaries
+        # Finalize any pending chunk data first
+        if self._current_chunk_rows > 0:
+            self.mark_chunk_boundary()
+
+        # Build per-column chunk metadata list
+        per_column_chunk_metadata = []
+        start_row = 0
+        for i, end_cumulative in enumerate(self._chunk_boundaries):
+            end_row = end_cumulative - 1
+            missing_in_chunk = self._chunk_missing[i]
+            per_column_chunk_metadata.append((start_row, end_row, missing_in_chunk))
+            start_row = end_cumulative
+
+        # Use per-column metadata if available, otherwise use provided global metadata
+        final_chunk_metadata = (
+            per_column_chunk_metadata if per_column_chunk_metadata else chunk_metadata
+        )
+
         return NumericSummary(
             name=self.name,
             count=self.count,
@@ -442,6 +515,7 @@ class NumericAccumulator:
             mono_dec=mono_dec,
             dtype_str=self._dtype_str,
             corr_top=self._corr_top,
+            corr_threshold=self._corr_threshold,
             min_items=min_pairs,
             max_items=max_pairs,
             ci_lo=ci_lo,
@@ -449,9 +523,9 @@ class NumericAccumulator:
             gran_step=gran_step,
             gran_decimals=gran_decimals,
             heap_pct=heap_pct,
-            top_values=self._topk.items(),
+            top_values=top_values,
             sample_scale=sample_scale,
-            chunk_metadata=chunk_metadata,
+            chunk_metadata=final_chunk_metadata,
         )
 
     def _compute_quantiles(self, values: List[float]) -> dict[str, float]:

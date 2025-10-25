@@ -300,7 +300,6 @@ class StreamingEngine:
             n_rows = len(first_chunk) if hasattr(first_chunk, "__len__") else 0
             n_cols = len(first_chunk.columns) if hasattr(first_chunk, "columns") else 0
             total_missing_cells = adapter.missing_cells(first_chunk)
-            approx_mem_bytes = adapter.estimate_mem(first_chunk)
             first_columns = list(getattr(first_chunk, "columns", []))
             sample_section_html = adapter.sample_section_html(first_chunk, config)
 
@@ -332,7 +331,15 @@ class StreamingEngine:
 
                 n_rows += chunk_size
                 total_missing_cells += chunk_missing
-                approx_mem_bytes += adapter.estimate_mem(chunk)
+
+            # Calculate total memory as sum of all column memories
+            # This ensures Total Dataset Memory = Sum of All Column Memories
+            approx_mem_bytes = 0
+            for acc in accs.values():
+                if hasattr(acc, "_bytes_seen"):
+                    approx_mem_bytes += acc._bytes_seen
+                elif hasattr(acc, "_mem_bytes"):
+                    approx_mem_bytes += acc._mem_bytes
 
             duration = time.time() - start_time
 
