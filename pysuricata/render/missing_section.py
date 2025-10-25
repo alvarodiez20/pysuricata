@@ -78,12 +78,6 @@ class MissingValuesSectionRenderer:
             <div class="missing-tab-content" data-tab="chunks">
                 {chunk_tab_html}
             </div>
-
-            <div class="missing-legend">
-                <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
-                <span class="legend-item"><span class="color-box medium"></span>Medium (5-20%)</span>
-                <span class="legend-item"><span class="color-box high"></span>High (20%+)</span>
-            </div>
         </div>
         """
 
@@ -91,7 +85,7 @@ class MissingValuesSectionRenderer:
         self,
         columns_with_missing: list[tuple[str, float, int, list | None]],
     ) -> str:
-        """Build Data Completeness tab with compact 40px rows.
+        """Build Data Completeness tab with dual-color bars showing present and missing data.
 
         Args:
             columns_with_missing: List of (column_name, missing_pct, missing_count, chunk_metadata) tuples
@@ -110,17 +104,25 @@ class MissingValuesSectionRenderer:
             """
 
         rows = []
-        for name, pct, count, _ in columns_with_missing:
-            severity_class = self._get_severity_class(pct)
+        for name, missing_pct, missing_count, _ in columns_with_missing:
+            # Calculate present values from the accumulator data
+            # We need to get the count from the original data structure
+            # The missing_pct and missing_count are already calculated, so we can derive present
+            total = missing_count / (missing_pct / 100) if missing_pct > 0 else 0
+            present_count = int(total - missing_count) if total > 0 else 0
+            present_pct = 100 - missing_pct
+
             escaped_name = _html.escape(name)
+
+            # Generate dual-color bar with rich tooltips
+            dual_bar_html = self._render_dual_bar(
+                present_pct, missing_pct, present_count, missing_count, int(total)
+            )
 
             rows.append(f"""
             <div class="compact-row">
-                <code class="col-name" title="{escaped_name}">{escaped_name}</code>
-                <span class="stats">{count:,} <span class="pct">({pct:.1f}%)</span></span>
-                <div class="bar">
-                    <div class="fill {severity_class}" style="width: {min(pct, 100):.1f}%"></div>
-                </div>
+                <code class="col-name missing-col" title="{escaped_name}">{escaped_name}</code>
+                {dual_bar_html}
             </div>
             """)
 
@@ -235,3 +237,54 @@ class MissingValuesSectionRenderer:
             return "medium"
         else:
             return "high"
+
+    def _calculate_completeness_stats(
+        self, count: int, missing: int
+    ) -> tuple[int, float, float]:
+        """Calculate present count and percentages for completeness display.
+
+        Args:
+            count: Number of non-missing values
+            missing: Number of missing values
+
+        Returns:
+            Tuple of (present_count, present_pct, missing_pct)
+        """
+        total = count + missing
+        present_pct = (count / total * 100) if total > 0 else 0
+        missing_pct = (missing / total * 100) if total > 0 else 0
+        return count, present_pct, missing_pct
+
+    def _render_dual_bar(
+        self,
+        present_pct: float,
+        missing_pct: float,
+        present_count: int,
+        missing_count: int,
+        total: int,
+    ) -> str:
+        """Generate dual-color completeness bar HTML with rich tooltips.
+
+        Args:
+            present_pct: Percentage of present values
+            missing_pct: Percentage of missing values
+            present_count: Count of present values
+            missing_count: Count of missing values
+            total: Total number of values
+
+        Returns:
+            HTML string for dual-color bar
+        """
+        present_tooltip = f"Present: {present_count:,} ({present_pct:.1f}%)"
+        missing_tooltip = f"Missing: {missing_count:,} ({missing_pct:.1f}%)"
+
+        return f"""
+        <div class="completeness-bar-dual" data-total="{total:,}">
+            <div class="bar-fill present"
+                 style="width: {present_pct:.1f}%"
+                 title="{present_tooltip}"></div>
+            <div class="bar-fill missing"
+                 style="width: {missing_pct:.1f}%"
+                 title="{missing_tooltip}"></div>
+        </div>
+        """

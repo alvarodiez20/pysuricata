@@ -7275,25 +7275,38 @@ body.suricata-standalone:not(.light) {
 
 /* Custom scrollbar styling */
 #pysuricata-report .scrollable-list::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 #pysuricata-report .scrollable-list::-webkit-scrollbar-track {
   background: var(--scroll-track);
   border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+#pysuricata-report:not(.light) .scrollable-list::-webkit-scrollbar-track {
+  border-color: rgba(255, 255, 255, 0.05);
 }
 
 #pysuricata-report .scrollable-list::-webkit-scrollbar-thumb {
-  background: var(--scroll-thumb);
+  background: rgba(0, 0, 0, 0.35);
   border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+#pysuricata-report:not(.light) .scrollable-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 #pysuricata-report .scrollable-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 #pysuricata-report:not(.light) .scrollable-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 /* =============================================================================
@@ -7302,12 +7315,12 @@ body.suricata-standalone:not(.light) {
    ============================================================================= */
 
 #pysuricata-report .compact-row {
-  height: 40px;
+  height: 32px;
   display: grid;
-  grid-template-columns: 1fr auto 200px;
+  grid-template-columns: max-content 1fr;
   gap: 12px;
   align-items: center;
-  padding: 8px 12px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--divider);
   transition: background 0.15s ease;
 }
@@ -7328,6 +7341,28 @@ body.suricata-standalone:not(.light) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Chip-style formatting for column names (matching top missing columns) */
+#pysuricata-report .compact-row .col-name.missing-col {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+  width: fit-content;
+  display: inline-block;
+  justify-self: start;
+}
+
+#pysuricata-report:not(.light) .compact-row .col-name.missing-col {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 #pysuricata-report .compact-row .stats {
@@ -7366,6 +7401,39 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .compact-row .fill.high {
   background: linear-gradient(90deg, #f44336 0%, #ef5350 100%);
 }
+
+/* Dual-color completeness bar styles */
+#pysuricata-report .compact-row .completeness-bar-dual {
+  height: 18px;
+  border-radius: 4px;
+  overflow: hidden;
+  display: flex;
+  background: var(--bg-secondary);
+  border: 1px solid var(--divider-light);
+}
+
+#pysuricata-report:not(.light) .compact-row .completeness-bar-dual {
+  background: var(--bg-secondary);
+  border-color: var(--divider-dark);
+}
+
+#pysuricata-report .compact-row .completeness-bar-dual .bar-fill.present {
+  background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+}
+
+#pysuricata-report .compact-row .completeness-bar-dual .bar-fill.missing {
+  background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+}
+
+/* Enhanced tooltip styling for dual-color bar segments */
+#pysuricata-report .missing-values-section-redesign .compact-row .completeness-bar-dual .bar-fill {
+  position: relative;
+  height: 100%;
+  transition: width 0.3s ease;
+  cursor: help;
+}
+
+/* CSS pseudo-element tooltips removed - using JavaScript tooltip system instead */
 
 /* =============================================================================
    TAB 2: MISSING PER CHUNK (35px rows)
@@ -7527,6 +7595,10 @@ body.suricata-standalone:not(.light) {
   }
 
   #pysuricata-report .compact-row .bar {
+    width: 100%;
+  }
+
+  #pysuricata-report .compact-row .completeness-bar-dual {
     width: 100%;
   }
 
@@ -8493,4 +8565,54 @@ body.suricata-standalone:not(.light) {
 
 #pysuricata-report .description-content em {
   font-style: italic;
+}
+
+/* Scrollbar styling for missing values section - both light and dark modes */
+#pysuricata-report .missing-values-section-redesign .scrollable-list {
+  /* Ensure scrollable behavior */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar styling for missing values section */
+#pysuricata-report .missing-values-section-redesign .scrollable-list::-webkit-scrollbar {
+  width: 12px; /* Width of the vertical scrollbar */
+}
+
+#pysuricata-report .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+#pysuricata-report .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 6px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  transition: background 0.2s ease;
+}
+
+#pysuricata-report .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Dark mode scrollbar styling */
+#pysuricata-report:not(.light) .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+#pysuricata-report:not(.light) .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+#pysuricata-report:not(.light) .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
+
+/* Firefox scrollbar styling (fallback) */
+#pysuricata-report .missing-values-section-redesign .scrollable-list {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
 }

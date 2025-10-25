@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, List, Optional, Tuple
+from typing import Any, List, Optional
 
 import numpy as np
 
@@ -52,7 +52,6 @@ class DatetimeSummary:
     seasonal_pattern: Optional[str] = None
     # Missing fields for renderer compatibility
     unique_est: int = 0
-    approx: bool = True  # unique_est uses KMV sketch, always approximate
     chunk_metadata: Optional[Sequence[Tuple[int, int, int]]] = None
 
 
@@ -105,12 +104,6 @@ class DatetimeAccumulator:
         self._intervals: List[float] = []
         self._last_ts: Optional[int] = None
 
-        # Per-column chunk tracking for accurate missing value reporting
-        self._chunk_boundaries: List[int] = []  # Cumulative row counts
-        self._chunk_missing: List[int] = []  # Missing count per chunk
-        self._current_chunk_missing = 0  # Missing in current chunk
-        self._current_chunk_rows = 0  # Total rows in current chunk
-
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string.
 
@@ -146,28 +139,16 @@ class DatetimeAccumulator:
         if not arr_ns:
             return
 
-        # Track chunk metadata before processing
-        missing_before = self.missing
-
         # Convert to numpy array for maximum performance
         try:
             timestamps = np.asarray(arr_ns, dtype=object)
         except Exception:
             # Fallback to list processing for edge cases
             self._update_fallback(arr_ns)
-            # Track chunk data for fallback path too
-            missing_in_update = self.missing - missing_before
-            self._current_chunk_missing += missing_in_update
-            self._current_chunk_rows += len(arr_ns)
             return
 
         # High-performance vectorized processing
         self._process_timestamps_vectorized(timestamps)
-
-        # Track missing values in current chunk
-        missing_in_update = self.missing - missing_before
-        self._current_chunk_missing += missing_in_update
-        self._current_chunk_rows += len(arr_ns)
 
     def _process_timestamps_vectorized(self, timestamps: np.ndarray) -> None:
         """Process timestamps using optimized vectorized operations.
@@ -350,22 +331,7 @@ class DatetimeAccumulator:
         except (ValueError, TypeError):
             pass
 
-    def mark_chunk_boundary(self) -> None:
-        """Mark the end of a chunk for per-column missing value tracking.
-
-        This method records the cumulative row count and missing count for the
-        current chunk, enabling accurate per-column chunk visualization.
-        """
-        if self._current_chunk_rows > 0:
-            cumulative_rows = self.count + self.missing
-            self._chunk_boundaries.append(cumulative_rows)
-            self._chunk_missing.append(self._current_chunk_missing)
-            self._current_chunk_missing = 0
-            self._current_chunk_rows = 0
-
-    def finalize(
-        self, chunk_metadata: Optional[List[Tuple[int, int, int]]] = None
-    ) -> DatetimeSummary:
+    def finalize(self, chunk_metadata: Optional[List[Tuple[int, int, int]]] = None) -> DatetimeSummary:
         """Finalize accumulator and return comprehensive summary statistics.
 
         Returns:
@@ -386,25 +352,6 @@ class DatetimeAccumulator:
         # Get sample values efficiently
         sample_vals = self._sample.values()
         sample_ts = [int(ts) for ts in sample_vals] if sample_vals else None
-
-        # Build per-column chunk metadata from tracked boundaries
-        # Finalize any pending chunk data first
-        if self._current_chunk_rows > 0:
-            self.mark_chunk_boundary()
-
-        # Build per-column chunk metadata list
-        per_column_chunk_metadata = []
-        start_row = 0
-        for i, end_cumulative in enumerate(self._chunk_boundaries):
-            end_row = end_cumulative - 1
-            missing_in_chunk = self._chunk_missing[i]
-            per_column_chunk_metadata.append((start_row, end_row, missing_in_chunk))
-            start_row = end_cumulative
-
-        # Use per-column metadata if available, otherwise use provided global metadata
-        final_chunk_metadata = (
-            per_column_chunk_metadata if per_column_chunk_metadata else chunk_metadata
-        )
 
         return DatetimeSummary(
             name=self.name,
@@ -429,8 +376,7 @@ class DatetimeAccumulator:
             business_hours_ratio=business_hours_ratio,
             seasonal_pattern=seasonal_pattern,
             unique_est=self._uniques.estimate(),
-            approx=True,  # unique_est uses KMV sketch, always approximate
-            chunk_metadata=final_chunk_metadata,
+            chunk_metadata=chunk_metadata,
         )
 
     def _calculate_time_span(self) -> float:

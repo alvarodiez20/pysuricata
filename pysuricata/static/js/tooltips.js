@@ -311,6 +311,7 @@
 
       let content;
       let isHeaderTooltip = false;
+      let isBarFillTooltip = false;
 
       if (headerTooltipData) {
         // Header tooltip
@@ -320,6 +321,14 @@
           title: def.title,
           description: def.getDescription(headerTooltipData.value),
           category: def.category
+        };
+      } else if (element.classList.contains('bar-fill')) {
+        // Bar-fill tooltip (simple text display)
+        isBarFillTooltip = true;
+        content = {
+          title: flagText,
+          description: '',
+          category: 'data-completeness'
         };
       } else {
         // Quality flag tooltip
@@ -346,6 +355,13 @@
           <div class="tooltip-description">${content.description}</div>
           <div class="tooltip-footer">
             <span class="tooltip-category">📋 ${this.escapeHtml(content.category)}</span>
+          </div>
+        `;
+      } else if (isBarFillTooltip) {
+        // Simple tooltip for bar-fill elements
+        this.tooltip.innerHTML = `
+          <div class="tooltip-header">
+            <span class="tooltip-title">${this.escapeHtml(content.title)}</span>
           </div>
         `;
       } else {
@@ -488,6 +504,19 @@
           return;
         }
 
+        // Handle bar-fill tooltips
+        const barFill = e.target.closest('.completeness-bar-dual .bar-fill');
+        if (barFill) {
+          const tooltipText = barFill.getAttribute('title');
+          if (tooltipText) {
+            // Remove title to prevent native tooltip
+            barFill.removeAttribute('title');
+            barFill.setAttribute('data-original-title', tooltipText);
+            this.showTooltip(barFill, tooltipText);
+          }
+          return;
+        }
+
         // Handle header tooltips
         const headerChip = e.target.closest('.header-tooltip');
         if (headerChip) {
@@ -503,6 +532,16 @@
       root.addEventListener('mouseleave', (e) => {
         const flag = e.target.closest('.quality-flags .flag');
         if (flag) {
+          this.hideTooltip();
+          return;
+        }
+
+        const barFill = e.target.closest('.completeness-bar-dual .bar-fill');
+        if (barFill) {
+          const originalTitle = barFill.getAttribute('data-original-title');
+          if (originalTitle) {
+            barFill.setAttribute('title', originalTitle);
+          }
           this.hideTooltip();
           return;
         }
@@ -563,6 +602,37 @@
   }
 
   /**
+   * Align completeness bars to equal length based on longest column name.
+   */
+  function alignCompletenessBars() {
+    const rows = document.querySelectorAll('.compact-row');
+    if (rows.length === 0) return;
+
+    // Find the maximum width of column names
+    let maxWidth = 0;
+    rows.forEach(row => {
+      const colName = row.querySelector('.col-name');
+      if (colName) {
+        // Temporarily remove max-width to measure full content
+        const originalMaxWidth = colName.style.maxWidth;
+        colName.style.maxWidth = 'none';
+        const width = colName.getBoundingClientRect().width;
+        colName.style.maxWidth = originalMaxWidth;
+        maxWidth = Math.max(maxWidth, width);
+      }
+    });
+
+    // Apply the maximum width to all column names
+    rows.forEach(row => {
+      const colName = row.querySelector('.col-name');
+      if (colName) {
+        colName.style.width = maxWidth + 'px';
+        colName.style.maxWidth = maxWidth + 'px';
+      }
+    });
+  }
+
+  /**
    * Initialize tooltips when DOM is ready.
    */
   function initializeTooltips() {
@@ -576,6 +646,9 @@
     if (typeof window !== 'undefined') {
       window.pysuricataTooltips = tooltipManager;
     }
+
+    // Align completeness bars
+    alignCompletenessBars();
   }
 
   /**
@@ -588,12 +661,16 @@
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-          // Check if any added nodes contain quality flags
+          // Check if any added nodes contain quality flags or missing values sections
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
-              if (node.classList && node.classList.contains('quality-flags')) {
-                // Re-initialize tooltips for new content
-                setTimeout(initializeTooltips, 100);
+              if (node.classList && (node.classList.contains('quality-flags') ||
+                  node.classList.contains('missing-values-section-redesign'))) {
+                // Re-initialize tooltips and align bars for new content
+                setTimeout(() => {
+                  initializeTooltips();
+                  alignCompletenessBars();
+                }, 100);
               }
             }
           });
