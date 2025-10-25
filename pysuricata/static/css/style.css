@@ -7271,42 +7271,32 @@ body.suricata-standalone:not(.light) {
   padding-right: 4px;
   margin-bottom: 1.5rem;
   scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
 }
 
-/* Custom scrollbar styling */
+/* Custom scrollbar styling - matching Sample section format */
 #pysuricata-report .scrollable-list::-webkit-scrollbar {
   width: 10px;
 }
 
 #pysuricata-report .scrollable-list::-webkit-scrollbar-track {
   background: var(--scroll-track);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-#pysuricata-report:not(.light) .scrollable-list::-webkit-scrollbar-track {
-  border-color: rgba(255, 255, 255, 0.05);
 }
 
 #pysuricata-report .scrollable-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.35);
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-#pysuricata-report:not(.light) .scrollable-list::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.4);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--scroll-thumb);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 #pysuricata-report .scrollable-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.5);
-  border-color: rgba(0, 0, 0, 0.15);
+  background: rgba(0, 0, 0, 0.45);
 }
 
 #pysuricata-report:not(.light) .scrollable-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.55);
-  border-color: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.45);
 }
 
 /* =============================================================================
@@ -7433,78 +7423,153 @@ body.suricata-standalone:not(.light) {
   cursor: help;
 }
 
-/* CSS pseudo-element tooltips removed - using JavaScript tooltip system instead */
-
-/* =============================================================================
-   TAB 2: MISSING PER CHUNK (35px rows)
-   Ultra-compact rows showing: short name | chunk spectrum only
-   ============================================================================= */
-
-#pysuricata-report .chunk-row {
-  height: 35px;
-  display: grid;
-  grid-template-columns: 180px 1fr;
-  gap: 12px;
-  align-items: center;
-  padding: 6px 12px;
-  border-bottom: 1px solid var(--divider);
-  transition: background 0.15s ease;
-}
-
-#pysuricata-report .chunk-row:hover {
-  background: rgba(59, 130, 246, 0.04);
-}
-
-#pysuricata-report:not(.light) .chunk-row:hover {
-  background: rgba(59, 130, 246, 0.08);
-}
-
-#pysuricata-report .chunk-row .short-name {
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+#pysuricata-report .missing-values-section-redesign .compact-row .completeness-bar-dual .bar-fill::before {
+  content: attr(title);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.95);
+  color: white;
+  padding: 8px 12px;
+  border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 500;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.4;
   white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.25s ease;
+  z-index: 1000;
+  pointer-events: none;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(4px);
 }
 
-#pysuricata-report .chunk-row .spectrum {
-  display: flex;
-  height: 12px;
-  border-radius: 3px;
+/* Tooltip arrow */
+#pysuricata-report .missing-values-section-redesign .compact-row .completeness-bar-dual .bar-fill::after {
+  content: '';
+  position: absolute;
+  bottom: calc(100% + 3px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.95);
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Show tooltip on hover */
+#pysuricata-report .missing-values-section-redesign .compact-row .completeness-bar-dual .bar-fill:hover::before,
+#pysuricata-report .missing-values-section-redesign .compact-row .completeness-bar-dual .bar-fill:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Dark mode variant */
+#pysuricata-report:not(.light) .missing-values-section-redesign .compact-row .completeness-bar-dual .bar-fill::before {
+  background: rgba(255, 255, 255, 0.98);
+  color: #1a1a1a;
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+#pysuricata-report:not(.light) .missing-values-section-redesign .compact-row .completeness-bar-dual .bar-fill::after {
+  border-top-color: rgba(255, 255, 255, 0.98);
+}
+
+/* =============================================================================
+   TAB 2: MISSING PER CHUNK - SPECTRUM BARS
+   Compact rows with horizontal spectrum bars showing chunk distribution
+   ============================================================================= */
+
+/* Missing per Chunk - Spectrum Bar (matching numeric card format) */
+#pysuricata-report .chunk-spectrum {
+  height: 18px;
+  border-radius: 4px;
   overflow: hidden;
-  gap: 1px;
+  display: flex;
   background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--divider);
 }
 
-#pysuricata-report .chunk-row .seg {
-  flex: 1;
-  min-width: 0;
+#pysuricata-report .chunk-segment {
+  height: 100%;
   cursor: pointer;
-  transition: transform 0.15s ease;
+  transition: all 0.2s ease;
+  position: relative;
 }
 
-#pysuricata-report .chunk-row .seg:hover {
-  transform: scaleY(1.4);
+#pysuricata-report .chunk-segment:hover {
+  filter: brightness(1.1);
+  transform: scaleY(1.15);
   z-index: 5;
 }
 
-#pysuricata-report .chunk-row .seg.low {
+/* Severity colors for chunk segments */
+#pysuricata-report .chunk-segment.low {
   background: #4caf50;
 }
 
-#pysuricata-report .chunk-row .seg.medium {
+#pysuricata-report .chunk-segment.medium {
   background: #ff9800;
 }
 
-#pysuricata-report .chunk-row .seg.high {
+#pysuricata-report .chunk-segment.high {
   background: #f44336;
 }
 
-#pysuricata-report .chunk-row .seg.unknown {
-  background: #9e9e9e;
+/* Missing per Chunk - Legend */
+#pysuricata-report .chunk-legend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--divider);
+  font-size: 0.85rem;
+}
+
+#pysuricata-report .chunk-legend .legend-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-right: 4px;
+}
+
+#pysuricata-report .chunk-legend .legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#pysuricata-report .chunk-legend .legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+#pysuricata-report .chunk-legend .legend-color.low {
+  background: #4caf50;
+}
+
+#pysuricata-report .chunk-legend .legend-color.medium {
+  background: #ff9800;
+}
+
+#pysuricata-report .chunk-legend .legend-color.high {
+  background: #f44336;
+}
+
+#pysuricata-report .chunk-legend .legend-text {
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 /* No missing state (both tabs) */
@@ -7530,6 +7595,37 @@ body.suricata-standalone:not(.light) {
   margin: 0;
   font-size: 1rem;
   color: var(--text-secondary);
+}
+
+/* No chunk data state */
+#pysuricata-report .no-chunk-data-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  text-align: center;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+#pysuricata-report .no-chunk-data-state .icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #3b82f6;
+}
+
+#pysuricata-report .no-chunk-data-state p {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+#pysuricata-report .no-chunk-data-state p.small {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  margin: 0;
 }
 
 /* Legend styling */
@@ -8565,54 +8661,4 @@ body.suricata-standalone:not(.light) {
 
 #pysuricata-report .description-content em {
   font-style: italic;
-}
-
-/* Scrollbar styling for missing values section - both light and dark modes */
-#pysuricata-report .missing-values-section-redesign .scrollable-list {
-  /* Ensure scrollable behavior */
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-/* Custom scrollbar styling for missing values section */
-#pysuricata-report .missing-values-section-redesign .scrollable-list::-webkit-scrollbar {
-  width: 12px; /* Width of the vertical scrollbar */
-}
-
-#pysuricata-report .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-track {
-  background: var(--scroll-track);
-  border-radius: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-#pysuricata-report .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-thumb {
-  background: var(--scroll-thumb);
-  border-radius: 6px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  transition: background 0.2s ease;
-}
-
-#pysuricata-report .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.4);
-}
-
-/* Dark mode scrollbar styling */
-#pysuricata-report:not(.light) .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-track {
-  background: var(--scroll-track);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-#pysuricata-report:not(.light) .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-thumb {
-  background: var(--scroll-thumb);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-#pysuricata-report:not(.light) .missing-values-section-redesign .scrollable-list::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
-}
-
-/* Firefox scrollbar styling (fallback) */
-#pysuricata-report .missing-values-section-redesign .scrollable-list {
-  scrollbar-width: thin;
-  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
 }
