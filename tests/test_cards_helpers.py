@@ -36,14 +36,11 @@ def test_x_ticks_and_labels_log():
 
 
 def test_numeric_hist_variants_html_ids():
-    # Create a mock numeric stats object with required histogram data
+    # Create a mock numeric stats object
     class MockNumericStats:
         def __init__(self):
             self.sample_vals = [1, 2, 3, 4, 5]
             self.sample_scale = 1.0
-            # Add required histogram data attributes
-            self.true_histogram_edges = [0, 1, 2, 3, 4, 5]
-            self.true_histogram_counts = [1, 1, 1, 1, 1]
 
     renderer = NumericCardRenderer()
     stats = MockNumericStats()

@@ -136,13 +136,10 @@ class MissingValuesSectionRenderer:
         self,
         columns_with_missing: list[tuple[str, float, int, list | None]],
     ) -> str:
-        """Build Missing per Chunk tab with ultra-compact 35px rows.
+        """Build Missing per Chunk tab with spectrum bars.
 
-        Args:
-            columns_with_missing: List of (column_name, missing_pct, missing_count, chunk_metadata) tuples
-
-        Returns:
-            HTML string for chunk tab content
+        Format matches Data Completeness - one compact row per column
+        with horizontal spectrum bar showing chunk distribution.
         """
         if not columns_with_missing:
             return """
@@ -155,72 +152,93 @@ class MissingValuesSectionRenderer:
             """
 
         rows = []
-        for name, _, _, chunk_metadata in columns_with_missing:
-            # Truncate long names to 20 characters
-            short_name = name[:20] + "..." if len(name) > 20 else name
-            escaped_name = _html.escape(short_name)
-            escaped_full_name = _html.escape(name)
+        for name, missing_pct, missing_count, chunk_metadata in columns_with_missing:
+            # If no chunk metadata, create a synthetic single chunk
+            if not chunk_metadata or len(chunk_metadata) == 0:
+                total_rows = (
+                    int(missing_count / (missing_pct / 100))
+                    if missing_pct > 0
+                    else missing_count
+                )
+                if total_rows == 0:
+                    total_rows = missing_count
+                chunk_metadata = [
+                    (0, total_rows - 1 if total_rows > 0 else 0, missing_count)
+                ]
 
-            # Create chunk spectrum
-            spectrum_html = self._create_chunk_spectrum(chunk_metadata, name)
+            escaped_name = _html.escape(name)
+
+            # Calculate total rows for width calculations
+            total_rows = sum(
+                end_row - start_row + 1 for start_row, end_row, _ in chunk_metadata
+            )
+
+            # Build spectrum segments
+            segments_html = ""
+            for idx, (start_row, end_row, missing_count) in enumerate(
+                chunk_metadata, 1
+            ):
+                chunk_size = end_row - start_row + 1
+                missing_pct_chunk = (
+                    (missing_count / chunk_size) * 100 if chunk_size > 0 else 0
+                )
+                width_pct = (chunk_size / total_rows) * 100.0 if total_rows > 0 else 0
+
+                # Determine severity
+                if missing_pct_chunk <= 5:
+                    severity = "low"
+                elif missing_pct_chunk <= 20:
+                    severity = "medium"
+                else:
+                    severity = "high"
+
+                # Create tooltip
+                tooltip = (
+                    f"Chunk {idx} (rows {start_row:,}-{end_row:,}): "
+                    f"{missing_count:,} missing ({missing_pct_chunk:.1f}%)"
+                )
+
+                segments_html += f"""
+                <div class="chunk-segment {severity}"
+                     style="width: {width_pct:.2f}%"
+                     title="{tooltip}"
+                     data-chunk="{idx}"
+                     data-start="{start_row}"
+                     data-end="{end_row}"
+                     data-missing="{missing_count}"
+                     data-pct="{missing_pct_chunk:.1f}"></div>
+                """
+
+            # Build spectrum bar HTML
+            spectrum_html = f'<div class="chunk-spectrum">{segments_html}</div>'
 
             rows.append(f"""
-            <div class="chunk-row">
-                <code class="short-name" title="{escaped_full_name}">{escaped_name}</code>
+            <div class="compact-row">
+                <code class="col-name missing-col" title="{escaped_name}">{escaped_name}</code>
                 {spectrum_html}
             </div>
             """)
 
         return f"""
+        <div class="chunk-legend">
+            <span class="legend-label">Missing per chunk:</span>
+            <div class="legend-item">
+                <span class="legend-color low"></span>
+                <span class="legend-text">≤5%</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color medium"></span>
+                <span class="legend-text">5-20%</span>
+            </div>
+            <div class="legend-item">
+                <span class="legend-color high"></span>
+                <span class="legend-text">&gt;20%</span>
+            </div>
+        </div>
         <div class="scrollable-list">
             {"".join(rows)}
         </div>
         """
-
-    def _create_chunk_spectrum(
-        self,
-        chunk_metadata: list[tuple[int, int, int]] | None,
-        col_name: str,
-    ) -> str:
-        """Create chunk spectrum with equal-width segments.
-
-        Args:
-            chunk_metadata: List of (start_row, end_row, missing_count) tuples for this column
-            col_name: Column name for tooltip
-
-        Returns:
-            HTML string for chunk spectrum
-        """
-        if not chunk_metadata or len(chunk_metadata) == 0:
-            # No chunk data: show single neutral segment
-            return '<div class="spectrum"><div class="seg unknown" title="No chunk data available"></div></div>'
-
-        segments = []
-
-        for start_row, end_row, missing_count in chunk_metadata:
-            chunk_size = end_row - start_row + 1
-            if chunk_size == 0:
-                continue
-
-            missing_pct = (missing_count / chunk_size) * 100 if chunk_size > 0 else 0
-            severity_class = self._get_severity_class(missing_pct)
-
-            # Create tooltip with chunk details
-            tooltip = (
-                f"{col_name} | Rows {start_row:,}-{end_row:,}: "
-                f"{missing_count:,} missing ({missing_pct:.1f}%)"
-            )
-
-            segments.append(f"""
-            <div class="seg {severity_class}"
-                 title="{_html.escape(tooltip)}"
-                 data-start="{start_row}"
-                 data-end="{end_row}"
-                 data-missing="{missing_count}"
-                 data-pct="{missing_pct:.1f}"></div>
-            """)
-
-        return f'<div class="spectrum">{"".join(segments)}</div>'
 
     def _get_severity_class(self, pct: float) -> str:
         """Get CSS class based on missing percentage severity.
