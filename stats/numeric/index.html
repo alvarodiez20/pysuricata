@@ -999,6 +999,81 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#quality-flags-and-indicators" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quality Flags and Indicators
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Quality Flags and Indicators">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#flag-categories" class="md-nav__link">
+    <span class="md-ellipsis">
+      Flag Categories
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Flag Categories">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#critical-issues-red-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      🔴 Critical Issues (Red Flags)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#distribution-warnings-orange-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      🟠 Distribution Warnings (Orange Flags)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#positive-characteristics-green-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      🟢 Positive Characteristics (Green Flags)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#additional-badges" class="md-nav__link">
+    <span class="md-ellipsis">
+      Additional Badges
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpreting-multiple-flags" class="md-nav__link">
+    <span class="md-ellipsis">
+      Interpreting Multiple Flags
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#mathematical-definitions" class="md-nav__link">
     <span class="md-ellipsis">
       Mathematical Definitions
@@ -1947,6 +2022,122 @@
 <li><strong>Confidence intervals</strong>: 95% CI for mean</li>
 <li><strong>Correlations</strong>: top correlations with other numeric columns (optional)</li>
 </ul>
+<h2 id="quality-flags-and-indicators">Quality Flags and Indicators</h2>
+<p>Numeric variable cards display <strong>quality flags</strong> (colored chips) that highlight important data characteristics and potential issues. These flags are automatically detected based on statistical thresholds and help you quickly identify data quality concerns or interesting patterns.</p>
+<h3 id="flag-categories">Flag Categories</h3>
+<h4 id="critical-issues-red-flags">🔴 Critical Issues (Red Flags)</h4>
+<p><strong>Missing</strong> (&gt;20%)
+- <strong>Threshold</strong>: More than 20% of values are missing
+- <strong>Impact</strong>: Significant data loss may bias analysis and require imputation
+- <strong>Action</strong>: Investigate data collection process, consider imputation strategies</p>
+<p><strong>Has ∞</strong>
+- <strong>Threshold</strong>: Any infinite values (±∞) present
+- <strong>Impact</strong>: Indicates calculation overflow, division by zero, or data corruption
+- <strong>Action</strong>: Investigate source of infinities, may need to exclude or cap values</p>
+<p><strong>Zero-inflated</strong> (≥50%)
+- <strong>Threshold</strong>: 50% or more values are exactly zero
+- <strong>Impact</strong>: May indicate sparse data, special zero category, or data quality issue
+- <strong>Action</strong>: Consider zero-inflated models or separate analysis of zeros vs non-zeros</p>
+<p><strong>Constant</strong>
+- <strong>Threshold</strong>: All non-missing values are identical
+- <strong>Impact</strong>: Zero variance, column provides no information for modeling
+- <strong>Action</strong>: Consider removing column or investigating data collection</p>
+<p><strong>Quasi-constant</strong>
+- <strong>Threshold</strong>: Very low cardinality (typically &gt;95% same value)
+- <strong>Impact</strong>: Limited information content, may not be useful for analysis
+- <strong>Action</strong>: Review if column adds value to analysis</p>
+<p><strong>Many outliers</strong>
+- <strong>Threshold</strong>: High proportion of outliers detected (varies by method)
+- <strong>Impact</strong>: Outliers may skew mean, standard deviation, and other statistics
+- <strong>Action</strong>: Investigate outliers, consider robust statistics or capping</p>
+<p><strong>Heavy-tailed</strong>
+- <strong>Threshold</strong>: High excess kurtosis (typically |kurtosis| &gt; 3)
+- <strong>Impact</strong>: More extreme values than normal distribution, classical statistics may be unreliable
+- <strong>Action</strong>: Use robust statistics, consider transformations, or non-parametric methods</p>
+<h4 id="distribution-warnings-orange-flags">🟠 Distribution Warnings (Orange Flags)</h4>
+<p><strong>Missing</strong> (≤20%)
+- <strong>Threshold</strong>: 0% to 20% missing values
+- <strong>Impact</strong>: Minor concern, may introduce slight bias
+- <strong>Action</strong>: Monitor data quality, document missingness pattern</p>
+<p><strong>Has negatives</strong> (&gt;10%)
+- <strong>Threshold</strong>: More than 10% of values are negative
+- <strong>Impact</strong>: May be unexpected for metrics that should be positive (age, price, count, etc.)
+- <strong>Action</strong>: Verify this is expected for your data domain</p>
+<p><strong>Skewed Right</strong>
+- <strong>Threshold</strong>: Positive skewness detected (typically &gt; 1)
+- <strong>Impact</strong>: Long right tail, mean &gt; median, affects parametric assumptions
+- <strong>Action</strong>: Consider log transformation or report median instead of mean</p>
+<p><strong>Skewed Left</strong>
+- <strong>Threshold</strong>: Negative skewness detected (typically &lt; -1)
+- <strong>Impact</strong>: Long left tail, mean &lt; median, affects parametric assumptions
+- <strong>Action</strong>: Consider transformation or non-parametric methods</p>
+<p><strong>Discrete</strong>
+- <strong>Threshold</strong>: Low unique count relative to sample size
+- <strong>Impact</strong>: Column may behave more like categorical than continuous
+- <strong>Action</strong>: Consider treating as categorical or ordinal</p>
+<p><strong>Heaping</strong>
+- <strong>Threshold</strong>: Values cluster at round numbers (detected via digit analysis)
+- <strong>Impact</strong>: May indicate measurement precision issues, rounding, or self-reporting
+- <strong>Action</strong>: Be aware of artificial clustering in distribution analysis</p>
+<p><strong>Possibly bimodal</strong>
+- <strong>Threshold</strong>: Bimodality coefficient suggests two modes
+- <strong>Impact</strong>: May represent two distinct populations or processes
+- <strong>Action</strong>: Investigate if data contains meaningful subgroups</p>
+<p><strong>Some outliers</strong>
+- <strong>Threshold</strong>: Moderate outliers present (0.3% &lt; outliers ≤ 1%)
+- <strong>Impact</strong>: Minor outlier presence may slightly affect statistics
+- <strong>Action</strong>: Review outlier values, consider if they're valid extreme values</p>
+<p><strong>Zero-inflated</strong> (&lt;50%)
+- <strong>Threshold</strong>: 30-50% zero values (significant but not dominant)
+- <strong>Impact</strong>: High zero percentage affects distribution shape
+- <strong>Action</strong>: Consider zero-inflated models if modeling zeros separately</p>
+<h4 id="positive-characteristics-green-flags">🟢 Positive Characteristics (Green Flags)</h4>
+<p><strong>Positive-only</strong>
+- <strong>Threshold</strong>: All values &gt; 0, no zeros or negatives
+- <strong>Impact</strong>: Safe for log transformation, geometric mean, etc.
+- <strong>Benefit</strong>: Simplifies many analyses and transformations</p>
+<p><strong>≈ Normal (JB)</strong>
+- <strong>Threshold</strong>: Jarque-Bera test passes (typically JB χ² &lt; critical value)
+- <strong>Impact</strong>: Data approximately follows normal distribution
+- <strong>Benefit</strong>: Parametric tests valid, mean/std are appropriate summaries</p>
+<p><strong>Log-scale?</strong>
+- <strong>Threshold</strong>: Log transformation would improve distribution (based on range and skewness)
+- <strong>Impact</strong>: Suggests log scale may reveal patterns
+- <strong>Benefit</strong>: May linearize relationships, normalize distribution</p>
+<p><strong>Monotonic ↑</strong>
+- <strong>Threshold</strong>: Values strictly or weakly increase
+- <strong>Impact</strong>: May be index, timestamp, cumulative value, or sorted data
+- <strong>Benefit</strong>: Indicates ordering or temporal relationship</p>
+<p><strong>Monotonic ↓</strong>
+- <strong>Threshold</strong>: Values strictly or weakly decrease
+- <strong>Impact</strong>: May be countdown, priority, or reverse-sorted data
+- <strong>Benefit</strong>: Indicates ordering relationship</p>
+<h3 id="additional-badges">Additional Badges</h3>
+<p><strong><code>Numeric</code> Badge</strong>
+- Always present on numeric variable cards
+- Indicates this is a continuous or discrete numeric column
+- Distinguished from categorical, datetime, or boolean types</p>
+<p><strong>Data Type Chip</strong> (e.g., <code>int64</code>, <code>float64</code>, <code>uint8</code>)
+- Shows the specific data type from the source dataframe
+- Important for understanding precision, range, and memory usage
+- Helps identify potential overflow or underflow issues</p>
+<p><strong><code>approx</code> Badge</strong>
+- Appears when statistics use sampling or approximation
+- Indicates quantiles, unique counts, or other metrics are estimated
+- Typical when dataset is large and full data scan isn't used
+- Approximations are still statistically valid with high accuracy</p>
+<h3 id="interpreting-multiple-flags">Interpreting Multiple Flags</h3>
+<p>A column can display multiple flags simultaneously. Common combinations:</p>
+<ul>
+<li><strong><code>Missing</code> + <code>Skewed Right</code></strong>: Incomplete data with asymmetric distribution</li>
+<li><strong><code>Zero-inflated</code> + <code>Positive-only</code></strong>: Many zeros, but no negatives</li>
+<li><strong><code>Heavy-tailed</code> + <code>Many outliers</code></strong>: Extreme values with fat tails</li>
+<li><strong><code>Discrete</code> + <code>Heaping</code></strong>: Categorical-like integers with rounding</li>
+</ul>
+<p><strong>Best Practice</strong>: Address flags by priority:
+1. 🔴 Red flags first (data quality issues)
+2. 🟠 Orange flags next (distribution concerns)
+3. 🟢 Use green flags to inform analysis approach</p>
 <h2 id="mathematical-definitions">Mathematical Definitions</h2>
 <h3 id="notation">Notation</h3>
 <p>Let <span class="arithmatex">\(x_1, x_2, \ldots, x_n\)</span> be the non-missing, finite observations for a column.</p>
@@ -1958,7 +2149,7 @@
 <p><strong>Median:</strong></p>
 <p>The value <span class="arithmatex">\(m\)</span> such that at least half the observations are <span class="arithmatex">\(\le m\)</span> and at least half are <span class="arithmatex">\(\ge m\)</span>. For even <span class="arithmatex">\(n\)</span>, typically the average of the two middle values.</p>
 <div class="arithmatex">\[
-\text{median} = 
+\text{median} =
 \begin{cases}
 x_{(n+1)/2} &amp; \text{if } n \text{ odd} \\
 \frac{x_{n/2} + x_{n/2+1}}{2} &amp; \text{if } n \text{ even}
@@ -2135,7 +2326,7 @@ M_4 &amp;= M_{4a} + M_{4b} + \delta^4 \cdot \frac{n_a n_b (n_a^2 - n_a n_b + n_b
 <div class="arithmatex">\[
 Q(p) \approx x_{(\lceil p \cdot k \rceil)}
 \]</div>
-<p><strong>Pros:</strong> Exact for small datasets, unbiased estimator<br />
+<p><strong>Pros:</strong> Exact for small datasets, unbiased estimator
 <strong>Cons:</strong> <span class="arithmatex">\(O(k)\)</span> memory, <span class="arithmatex">\(O(k \log k)\)</span> sort cost</p>
 <h3 id="approximate-quantiles-kll-sketch">Approximate Quantiles (KLL Sketch)</h3>
 <p>For massive datasets, use <strong>KLL sketch</strong> (Karnin, Lang, Liberty):</p>
@@ -2192,8 +2383,8 @@ h = 3.5 \cdot \frac{s}{n^{1/3}}
 - <strong>Space</strong>: <span class="arithmatex">\(O(k)\)</span> per column
 - <strong>Update</strong>: <span class="arithmatex">\(O(\log k)\)</span> per value</p>
 <h3 id="hyperloglog-alternative">HyperLogLog (Alternative)</h3>
-<p><strong>Space:</strong> <span class="arithmatex">\(O(\epsilon^{-2})\)</span> for relative error <span class="arithmatex">\(\epsilon\)</span><br />
-<strong>Error:</strong> Typical 2% with 1.5 KB<br />
+<p><strong>Space:</strong> <span class="arithmatex">\(O(\epsilon^{-2})\)</span> for relative error <span class="arithmatex">\(\epsilon\)</span>
+<strong>Error:</strong> Typical 2% with 1.5 KB
 <strong>Standard:</strong> Redis, BigQuery, many production systems</p>
 <h2 id="missing-nan-and-inf-handling">Missing, NaN, and Inf Handling</h2>
 <ul>
