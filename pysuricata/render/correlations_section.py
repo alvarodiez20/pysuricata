@@ -22,6 +22,7 @@ class CorrelationsSectionRenderer:
         corr_est,
         numeric_columns: list[str],
         threshold: float = 0.5,
+        max_correlations: int = 100,
     ) -> str:
         """Main entry point - returns complete correlations section HTML.
 
@@ -29,6 +30,7 @@ class CorrelationsSectionRenderer:
             corr_est: StreamingCorr estimator with full correlation matrix
             numeric_columns: List of numeric column names
             threshold: Minimum absolute correlation value to include (default: 0.5)
+            max_correlations: Maximum number of correlations to display in list view (default: 100)
 
         Returns:
             Complete HTML string for correlations section
@@ -50,30 +52,51 @@ class CorrelationsSectionRenderer:
         n_correlations = len(all_correlations)
 
         # Decide rendering strategy based on number of columns
-        if len(numeric_columns) <= 15:
+        is_matrix_view = len(numeric_columns) <= 15
+
+        if is_matrix_view:
             # Matrix view for small datasets
             correlations_html = self._render_correlation_matrix(
                 all_correlations, numeric_columns
             )
         else:
             # List view for large datasets
-            correlations_html = self._render_correlations_list(all_correlations)
+            correlations_html = self._render_correlations_list(
+                all_correlations, max_correlations
+            )
 
-        # Wrap in section container with header
-        return f"""
-        <div class="correlations-section-redesign">
+        # Build header based on view type
+        if is_matrix_view:
+            # Matrix view: show traditional header with title
+            header_html = f"""
             <div class="correlation-section-header">
                 <h3 class="correlation-section-title">Correlation Analysis</h3>
                 <span class="correlation-count-badge">{n_correlations} significant correlation{"s" if n_correlations != 1 else ""} found</span>
             </div>
+            """
+            legend_html = ""  # No legend for matrix view
+        else:
+            # List view: replace title with legend in header
+            header_html = f"""
+            <div class="correlation-legend-header">
+                <span class="correlation-count-badge">{n_correlations} significant correlation{"s" if n_correlations != 1 else ""} found</span>
+                <div class="correlation-legend">
+                    <span class="legend-item"><span class="color-box very-strong"></span>(≥0.9)</span>
+                    <span class="legend-item"><span class="color-box strong"></span>(0.7-0.9)</span>
+                    <span class="legend-item"><span class="color-box moderate"></span>(0.5-0.7)</span>
+                </div>
+            </div>
+            """
+            legend_html = ""  # No separate legend at bottom for list view
+
+        # Wrap in section container with appropriate header
+        return f"""
+        <div class="correlations-section-redesign">
+            {header_html}
 
             {correlations_html}
 
-            <div class="correlation-legend">
-                <span class="legend-item"><span class="color-box very-strong"></span>Very Strong (≥0.9)</span>
-                <span class="legend-item"><span class="color-box strong"></span>Strong (0.7-0.9)</span>
-                <span class="legend-item"><span class="color-box moderate"></span>Moderate (0.5-0.7)</span>
-            </div>
+            {legend_html}
         </div>
         """
 
@@ -112,20 +135,21 @@ class CorrelationsSectionRenderer:
         return sorted(all_correlations, key=lambda x: abs(x[2]), reverse=True)
 
     def _render_correlations_list(
-        self, sorted_correlations: list[tuple[str, str, float]]
+        self, sorted_correlations: list[tuple[str, str, float]], max_display: int = 100
     ) -> str:
         """Render scrollable list of top correlations (for large datasets).
 
         Args:
             sorted_correlations: List of (col1, col2, corr_value) sorted by strength
+            max_display: Maximum number of correlations to display (default: 100)
 
         Returns:
             HTML string for correlations list
         """
         bar_items = []
 
-        # Show top 50 correlations (or all if less)
-        display_count = min(50, len(sorted_correlations))
+        # Show top N correlations (or all if less)
+        display_count = min(max_display, len(sorted_correlations))
 
         for i, (col1, col2, corr) in enumerate(sorted_correlations[:display_count]):
             abs_corr = abs(corr)
@@ -143,11 +167,11 @@ class CorrelationsSectionRenderer:
             <div class="correlation-row">
                 <div class="correlation-header">
                     <span class="rank-badge">#{rank}</span>
-                    <code class="col-pair" title="{escaped_col1} ↔ {escaped_col2}">
-                        <span class="col-name">{escaped_col1}</span>
+                    <div class="col-pair" title="{escaped_col1} ↔ {escaped_col2}">
+                        <span class="col-name correlation-col">{escaped_col1}</span>
                         <span class="arrow">↔</span>
-                        <span class="col-name">{escaped_col2}</span>
-                    </code>
+                        <span class="col-name correlation-col">{escaped_col2}</span>
+                    </div>
                     <span class="correlation-value {direction}">
                         {corr:+.3f}
                     </span>
@@ -156,15 +180,6 @@ class CorrelationsSectionRenderer:
                     <div class="bar-fill {strength_class}"
                          style="width: {abs_corr * 100:.1f}%"
                          title="Correlation strength: {abs_corr:.3f}"></div>
-                </div>
-                <div class="correlation-meta">
-                    <span class="strength-label {strength_class}">
-                        {strength_label}
-                    </span>
-                    <span class="direction-indicator">
-                        <span class="direction-icon">{direction_icon}</span>
-                        <span class="direction-text">{direction.title()}</span>
-                    </span>
                 </div>
             </div>
             """

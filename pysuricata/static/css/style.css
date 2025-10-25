@@ -7721,7 +7721,16 @@ body.suricata-standalone:not(.light) {
 /* Main container for correlations section */
 #pysuricata-report .correlations-section-redesign {
   margin-top: 0;
-  padding: 0;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--chip-br-light);
+  border-radius: 10px;
+  transition: background-color 0.2s ease;
+}
+
+#pysuricata-report:not(.light) .correlations-section-redesign {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--chip-br-dark);
 }
 
 /* Header section with title and count badge */
@@ -7751,6 +7760,28 @@ body.suricata-standalone:not(.light) {
   color: var(--text-secondary);
 }
 
+/* Legend header for list view (replaces title with legend) */
+#pysuricata-report .correlation-legend-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--border-color);
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+#pysuricata-report .correlation-legend-header .correlation-legend {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  font-size: 0.875rem;
+}
+
 /* Scrollable container for correlation rows */
 #pysuricata-report .correlations-container {
   max-height: 600px;
@@ -7759,35 +7790,38 @@ body.suricata-standalone:not(.light) {
   padding-right: 4px;
   margin-bottom: 1.5rem;
   scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
 }
 
-/* Custom scrollbar styling */
+/* Custom scrollbar styling - matching Missing Values section format */
 #pysuricata-report .correlations-container::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 #pysuricata-report .correlations-container::-webkit-scrollbar-track {
   background: var(--scroll-track);
-  border-radius: 4px;
 }
 
 #pysuricata-report .correlations-container::-webkit-scrollbar-thumb {
   background: var(--scroll-thumb);
-  border-radius: 4px;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
 }
 
 #pysuricata-report .correlations-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.4);
+  background: rgba(0, 0, 0, 0.45);
 }
 
 #pysuricata-report:not(.light) .correlations-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.45);
 }
 
 /* Individual correlation row */
 #pysuricata-report .correlation-row {
-  margin-bottom: 1.25rem;
-  padding: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem;
   background: var(--card-bg);
   border-radius: 8px;
   border: 1px solid var(--border-color);
@@ -7808,41 +7842,52 @@ body.suricata-standalone:not(.light) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   gap: 1rem;
   flex-wrap: wrap;
 }
 
 #pysuricata-report .rank-badge {
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-secondary);
   background: var(--chip-bg);
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 4px;
   min-width: 32px;
   text-align: center;
 }
 
 #pysuricata-report .col-pair {
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: var(--text-primary);
-  background: var(--chip-bg);
-  padding: 6px 10px;
-  border-radius: 4px;
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   display: flex;
   align-items: center;
   gap: 8px;
+  overflow: hidden;
 }
 
 #pysuricata-report .col-pair .col-name {
   color: var(--text-primary);
+}
+
+/* Column name chip format for correlations */
+#pysuricata-report .col-pair .col-name.correlation-col {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 300px;
+  display: inline-block;
+}
+
+#pysuricata-report:not(.light) .col-pair .col-name.correlation-col {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 #pysuricata-report .col-pair .arrow {
@@ -7852,10 +7897,10 @@ body.suricata-standalone:not(.light) {
 }
 
 #pysuricata-report .correlation-value {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   font-family: ui-monospace, monospace;
-  padding: 4px 10px;
+  padding: 3px 8px;
   border-radius: 4px;
   min-width: 70px;
   text-align: center;
@@ -7873,12 +7918,12 @@ body.suricata-standalone:not(.light) {
 
 /* Correlation strength bar */
 #pysuricata-report .correlation-bar {
-  height: 24px;
+  height: 16px;
   background: var(--bg-secondary);
   border-radius: 6px;
   overflow: hidden;
   border: 1px solid var(--border-color);
-  margin: 8px 0;
+  margin: 4px 0;
   position: relative;
 }
 
@@ -7961,6 +8006,33 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .correlation-matrix-container {
   overflow-x: auto;
   margin-bottom: 1.5rem;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+}
+
+/* Custom scrollbar styling - matching Sample section horizontal scrollbar */
+#pysuricata-report .correlation-matrix-container::-webkit-scrollbar {
+  height: 10px;
+}
+
+#pysuricata-report .correlation-matrix-container::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+}
+
+#pysuricata-report .correlation-matrix-container::-webkit-scrollbar-thumb {
+  background: var(--scroll-thumb);
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+#pysuricata-report .correlation-matrix-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+#pysuricata-report:not(.light) .correlation-matrix-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.45);
 }
 
 #pysuricata-report .correlation-matrix {
@@ -8132,6 +8204,12 @@ body.suricata-standalone:not(.light) {
 /* Responsive adjustments */
 @media (max-width: 768px) {
   #pysuricata-report .correlation-section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  #pysuricata-report .correlation-legend-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.75rem;
