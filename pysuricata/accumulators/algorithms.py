@@ -6,6 +6,7 @@ extracted into separate, testable, and reusable components.
 
 from __future__ import annotations
 
+import heapq
 import math
 import time
 from dataclasses import dataclass
@@ -210,10 +211,11 @@ class StreamingMoments:
 
 
 class ExtremeTracker:
-    """Tracks extreme values with their indices.
+    """Tracks extreme values with their indices using bounded heaps.
 
     This class efficiently tracks the minimum and maximum values along with
     their indices, maintaining only the top K extremes to control memory usage.
+    Uses heapq for O(log k) insertions and O(k) space complexity.
     """
 
     def __init__(self, max_extremes: int = 5):
@@ -223,8 +225,11 @@ class ExtremeTracker:
             max_extremes: Maximum number of extremes to track
         """
         self.max_extremes = max_extremes
-        self._min_pairs: List[Tuple[Any, float]] = []
-        self._max_pairs: List[Tuple[Any, float]] = []
+        # Use separate heaps for min and max tracking
+        # Min heap: (value, index) - tracks smallest values
+        self._min_heap: List[Tuple[float, Any]] = []
+        # Max heap: (value, index) - tracks largest values (use max-heap by negating)
+        self._max_heap: List[Tuple[float, Any]] = []
 
     def update(self, values: np.ndarray, indices: Optional[np.ndarray] = None) -> None:
         """Update with new values and their indices.
@@ -247,47 +252,46 @@ class ExtremeTracker:
         finite_values = values[finite_mask]
         finite_indices = indices[finite_mask]
 
-        # Find extremes using argpartition for efficiency
-        k = min(self.max_extremes, len(finite_values))
+        # Process each value individually to maintain heap properties
+        for value, index in zip(finite_values, finite_indices):
+            self._add_to_min_heap(index, float(value))
+            self._add_to_max_heap(index, float(value))
 
-        if k > 0:
-            # Find minimum values
-            min_indices = np.argpartition(finite_values, k - 1)[:k]
-            for i in min_indices:
-                self._min_pairs.append((finite_indices[i], float(finite_values[i])))
+    def _add_to_min_heap(self, index: Any, value: float) -> None:
+        """Add value to min heap (tracking minimums)."""
+        if len(self._min_heap) < self.max_extremes:
+            # Heap not full, just add
+            heapq.heappush(self._min_heap, (value, index))
+        else:
+            # Heap is full, check if this is smaller than the largest value in the heap
+            # For a min heap, we want to keep the smallest values
+            # The root is the smallest, but we want to replace the largest
+            # So we need to find the largest value in the heap
+            largest_value = max(item[0] for item in self._min_heap)
+            if value < largest_value:
+                # Replace the item with the largest value
+                for i, item in enumerate(self._min_heap):
+                    if item[0] == largest_value:
+                        self._min_heap[i] = (value, index)
+                        heapq.heapify(self._min_heap)  # Restore heap property
+                        break
 
-            # Find maximum values
-            max_indices = np.argpartition(-finite_values, k - 1)[:k]
-            for i in max_indices:
-                self._max_pairs.append((finite_indices[i], float(finite_values[i])))
-
-        # Remove duplicates within each list and keep only the best extremes
-        # Remove duplicates from min_pairs (keep first occurrence)
-        seen_min = set()
-        unique_min_pairs = []
-        for pair in self._min_pairs:
-            if pair not in seen_min:
-                seen_min.add(pair)
-                unique_min_pairs.append(pair)
-        self._min_pairs = unique_min_pairs
-
-        # Remove duplicates from max_pairs (keep first occurrence)
-        seen_max = set()
-        unique_max_pairs = []
-        for pair in self._max_pairs:
-            if pair not in seen_max:
-                seen_max.add(pair)
-                unique_max_pairs.append(pair)
-        self._max_pairs = unique_max_pairs
-
-        # Sort and trim to max_extremes
-        self._min_pairs.sort(key=lambda x: x[1])
-        if len(self._min_pairs) > self.max_extremes:
-            self._min_pairs = self._min_pairs[: self.max_extremes]
-
-        self._max_pairs.sort(key=lambda x: -x[1])
-        if len(self._max_pairs) > self.max_extremes:
-            self._max_pairs = self._max_pairs[: self.max_extremes]
+    def _add_to_max_heap(self, index: Any, value: float) -> None:
+        """Add value to max heap (tracking maximums)."""
+        if len(self._max_heap) < self.max_extremes:
+            # Heap not full, just add (negate value for min-heap simulation of max-heap)
+            heapq.heappush(self._max_heap, (-value, index))
+        else:
+            # Heap is full, check if this is larger than the smallest value in the heap
+            # Find the smallest original value in the heap (which should be replaced)
+            smallest_original = min(-negated_value for negated_value, _ in self._max_heap)
+            if value > smallest_original:
+                # Replace the item with the smallest original value
+                for i, (negated_value, idx) in enumerate(self._max_heap):
+                    if -negated_value == smallest_original:
+                        self._max_heap[i] = (-value, index)
+                        heapq.heapify(self._max_heap)  # Restore heap property
+                        break
 
     def get_extremes(self) -> Tuple[List[Tuple[Any, float]], List[Tuple[Any, float]]]:
         """Get current extreme values.
@@ -295,7 +299,15 @@ class ExtremeTracker:
         Returns:
             Tuple of (min_pairs, max_pairs) where each pair is (index, value)
         """
-        return self._min_pairs.copy(), self._max_pairs.copy()
+        # Extract min pairs (convert back from heap format)
+        min_pairs = [(index, value) for value, index in self._min_heap]
+        min_pairs.sort(key=lambda x: x[1])  # Sort by value
+        
+        # Extract max pairs (convert back from heap format)
+        max_pairs = [(index, -negated_value) for negated_value, index in self._max_heap]
+        max_pairs.sort(key=lambda x: -x[1])  # Sort by value descending
+        
+        return min_pairs, max_pairs
 
     def merge(self, other: ExtremeTracker) -> None:
         """Merge another ExtremeTracker.
@@ -303,37 +315,13 @@ class ExtremeTracker:
         Args:
             other: Another ExtremeTracker to merge
         """
-        self._min_pairs.extend(other._min_pairs)
-        self._max_pairs.extend(other._max_pairs)
-
-        # Remove duplicates and re-sort
-        # First, remove duplicates within each list
-        self._min_pairs = list(dict.fromkeys(self._min_pairs))  # Preserves order
-        self._max_pairs = list(dict.fromkeys(self._max_pairs))  # Preserves order
-
-        # Remove items from max_pairs that are already in min_pairs (same index AND value)
-        # But only if we have enough unique max values
-        min_pairs_set = set(self._min_pairs)
-        filtered_max_pairs = [
-            (idx, val) for idx, val in self._max_pairs if (idx, val) not in min_pairs_set
-        ]
+        # Merge min heaps
+        for value, index in other._min_heap:
+            self._add_to_min_heap(index, value)
         
-        # If we don't have enough max pairs after filtering, keep some duplicates
-        if len(filtered_max_pairs) < self.max_extremes and len(self._max_pairs) > len(filtered_max_pairs):
-            # Keep the highest values from max_pairs, even if they're in min_pairs
-            self._max_pairs.sort(key=lambda x: -x[1])
-            self._max_pairs = self._max_pairs[:self.max_extremes]
-        else:
-            self._max_pairs = filtered_max_pairs
-
-        # Re-sort and trim
-        self._min_pairs.sort(key=lambda x: x[1])
-        if len(self._min_pairs) > self.max_extremes:
-            self._min_pairs = self._min_pairs[: self.max_extremes]
-
-        self._max_pairs.sort(key=lambda x: -x[1])
-        if len(self._max_pairs) > self.max_extremes:
-            self._max_pairs = self._max_pairs[: self.max_extremes]
+        # Merge max heaps
+        for negated_value, index in other._max_heap:
+            self._add_to_max_heap(index, -negated_value)
 
 
 class MonotonicityDetector:

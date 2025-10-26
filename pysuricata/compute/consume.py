@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import warnings
 from collections.abc import Iterable
@@ -100,6 +101,10 @@ def consume_chunk_pandas(
     config: Optional[Any] = None,
     logger: Optional[logging.Logger] = None,
 ) -> None:  # type: ignore[name-defined]
+    # Initialize memory cache if not present
+    if not hasattr(consume_chunk_pandas, '_memory_cache'):
+        consume_chunk_pandas._memory_cache = {}
+    
     # 1) Create accumulators for columns not seen in the first chunk
     for name in df.columns:
         if name in accs:
@@ -139,12 +144,25 @@ def consume_chunk_pandas(
                 logger.debug("column '%s' not present in this chunk; skipping", name)
             continue
         s = df[name]
+        
+        # Get cached memory usage or calculate and cache it
+        if name not in consume_chunk_pandas._memory_cache:
+            try:
+                # Calculate memory usage once per column
+                memory_per_row = s.memory_usage(deep=True) / len(s)
+                consume_chunk_pandas._memory_cache[name] = memory_per_row
+            except Exception:
+                consume_chunk_pandas._memory_cache[name] = 0
+        
+        # Use cached memory estimate
+        estimated_memory = int(consume_chunk_pandas._memory_cache[name] * len(s))
+        
         if isinstance(acc, NumericAccumulator):
             arr = _to_numeric_array_pandas(s)
             acc.update(arr)
-            # Track memory usage
+            # Track memory usage using cached estimate
             try:
-                acc.add_mem(int(s.memory_usage(deep=True)))
+                acc.add_mem(estimated_memory)
             except Exception:
                 pass
             # Track extremes with indices for this chunk
@@ -166,20 +184,20 @@ def consume_chunk_pandas(
             arr = _to_bool_array_pandas(s)
             acc.update(arr)
             try:
-                acc.add_mem(int(s.memory_usage(deep=True)))
+                acc.add_mem(estimated_memory)
             except Exception:
                 pass
         elif isinstance(acc, DatetimeAccumulator):
             arr = _to_datetime_ns_array_pandas(s)
             acc.update(arr)
             try:
-                acc.add_mem(int(s.memory_usage(deep=True)))
+                acc.add_mem(estimated_memory)
             except Exception:
                 pass
         elif isinstance(acc, CategoricalAccumulator):
             acc.update(_to_categorical_iter_pandas(s))
-            # Add memory tracking for categorical columns
+            # Add memory tracking for categorical columns using cached estimate
             try:
-                acc.add_mem(int(s.memory_usage(deep=True)))
+                acc.add_mem(estimated_memory)
             except Exception:
                 pass

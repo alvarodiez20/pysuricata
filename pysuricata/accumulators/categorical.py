@@ -126,14 +126,142 @@ class CategoricalAccumulator:
         if not arr:
             return
 
-        # Process each value with comprehensive error handling
-        for value in arr:
+        # Convert to pandas Series for vectorized operations
+        try:
+            import pandas as pd
+            s = pd.Series(arr) if not isinstance(arr, pd.Series) else arr
+        except ImportError:
+            # Fallback to original implementation if pandas not available
+            for value in arr:
+                try:
+                    self._process_single_value(value)
+                except Exception:
+                    self.missing += 1
+                    continue
+            return
+
+        # Vectorized missing value detection
+        missing_mask = s.isna()
+        self.missing += missing_mask.sum()
+
+        # Get valid (non-missing) values
+        valid_values = s[~missing_mask]
+        
+        if len(valid_values) == 0:
+            return
+
+        # Convert to string representation (vectorized)
+        try:
+            str_values = valid_values.astype(str)
+        except Exception:
+            # Fallback to individual conversion
+            for value in valid_values:
+                try:
+                    str_value = self._convert_to_string(value)
+                    self._update_sketches(str_value)
+                    self._update_length_stats(str_value)
+                    self._update_special_values(str_value)
+                except Exception:
+                    continue
+            self.count += len(valid_values)
+            return
+
+        # Update count
+        self.count += len(valid_values)
+
+        # Vectorized sketch updates using value_counts for efficiency
+        try:
+            value_counts = str_values.value_counts()
+            
+            # Batch update sketches
+            for value, count in value_counts.items():
+                # Update KMV sketch
+                for _ in range(count):
+                    self._uniques.add(value)
+                
+                # Update MisraGries sketch
+                for _ in range(count):
+                    self._topk.add(value)
+                
+                # Update variant tracking if enabled
+                if self.config.enable_case_variants and self._uniques_lower:
+                    for _ in range(count):
+                        self._uniques_lower.add(value.lower())
+                
+                if self.config.enable_trim_variants and self._uniques_strip:
+                    for _ in range(count):
+                        self._uniques_strip.add(value.strip())
+                
+                # Update special value tracking
+                if value == "" or value == "0":
+                    self._empty_zero += count
+
+        except Exception:
+            # Fallback to individual processing if vectorization fails
+            for value in str_values:
+                try:
+                    self._update_sketches(value)
+                    self._update_length_stats(value)
+                    self._update_special_values(value)
+                except Exception:
+                    continue
+
+        # Vectorized string length statistics
+        if self.config.enable_length_stats and self._len_sample:
             try:
-                self._process_single_value(value)
+                lengths = str_values.str.len()
+                self._len_sum += lengths.sum()
+                self._len_n += len(lengths)
+                
+                # Add lengths to reservoir sampler
+                for length in lengths:
+                    self._len_sample.add(float(length))
             except Exception:
-                # Robust error handling - continue processing even with bad data
-                self.missing += 1
-                continue
+                # Fallback to individual processing
+                for value in str_values:
+                    try:
+                        str_len = len(value)
+                        self._len_sum += str_len
+                        self._len_n += 1
+                        self._len_sample.add(float(str_len))
+                    except Exception:
+                        continue
+
+    def _update_sketches(self, value: str) -> None:
+        """Update sketching algorithms with a single value.
+        
+        Args:
+            value: String value to add to sketches
+        """
+        self._uniques.add(value)
+        self._topk.add(value)
+        
+        if self.config.enable_case_variants and self._uniques_lower:
+            self._uniques_lower.add(value.lower())
+        
+        if self.config.enable_trim_variants and self._uniques_strip:
+            self._uniques_strip.add(value.strip())
+
+    def _update_length_stats(self, value: str) -> None:
+        """Update string length statistics.
+        
+        Args:
+            value: String value to process
+        """
+        if self.config.enable_length_stats and self._len_sample:
+            str_len = len(value)
+            self._len_sum += str_len
+            self._len_n += 1
+            self._len_sample.add(float(str_len))
+
+    def _update_special_values(self, value: str) -> None:
+        """Update special value tracking.
+        
+        Args:
+            value: String value to check
+        """
+        if value == "" or value == "0":
+            self._empty_zero += 1
 
     def _process_single_value(self, value: Any) -> None:
         """Process a single categorical value with optimized handling.

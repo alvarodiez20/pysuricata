@@ -18,6 +18,8 @@ class ColumnKinds:
 
     This class organizes column names by their inferred data types,
     providing a clean interface for type-based operations.
+    Supports both list-based access (kinds.numeric.append()) and 
+    dictionary-like access (kinds[col] = 'numeric').
 
     Attributes:
         numeric: List of numeric column names.
@@ -30,6 +32,83 @@ class ColumnKinds:
     categorical: List[str] = field(default_factory=list)
     datetime: List[str] = field(default_factory=list)
     boolean: List[str] = field(default_factory=list)
+    
+    def __getitem__(self, key: str) -> str:
+        """Get the type of a column.
+        
+        Args:
+            key: Column name to look up.
+            
+        Returns:
+            The type of the column ('numeric', 'categorical', 'datetime', 'boolean').
+            
+        Raises:
+            KeyError: If the column is not found.
+        """
+        if key in self.numeric:
+            return 'numeric'
+        elif key in self.categorical:
+            return 'categorical'
+        elif key in self.datetime:
+            return 'datetime'
+        elif key in self.boolean:
+            return 'boolean'
+        else:
+            raise KeyError(f"Column '{key}' not found")
+    
+    def __setitem__(self, key: str, value: str) -> None:
+        """Set the type of a column.
+        
+        Args:
+            key: Column name.
+            value: Column type ('numeric', 'categorical', 'datetime', 'boolean').
+            
+        Raises:
+            ValueError: If the value is not a valid type.
+        """
+        # Remove from all lists first
+        self.numeric = [col for col in self.numeric if col != key]
+        self.categorical = [col for col in self.categorical if col != key]
+        self.datetime = [col for col in self.datetime if col != key]
+        self.boolean = [col for col in self.boolean if col != key]
+        
+        # Add to the appropriate list
+        if value == 'numeric':
+            self.numeric.append(key)
+        elif value == 'categorical':
+            self.categorical.append(key)
+        elif value == 'datetime':
+            self.datetime.append(key)
+        elif value == 'boolean':
+            self.boolean.append(key)
+        else:
+            raise ValueError(f"Invalid column type: {value}. Must be one of: numeric, categorical, datetime, boolean")
+    
+    def __contains__(self, key: str) -> bool:
+        """Check if a column exists.
+        
+        Args:
+            key: Column name to check.
+            
+        Returns:
+            True if the column exists, False otherwise.
+        """
+        return key in self.numeric or key in self.categorical or key in self.datetime or key in self.boolean
+    
+    def items(self):
+        """Get all column name and type pairs.
+        
+        Returns:
+            Iterator of (column_name, type) tuples.
+        """
+        for col in self.numeric:
+            yield col, 'numeric'
+        for col in self.categorical:
+            yield col, 'categorical'
+        for col in self.datetime:
+            yield col, 'datetime'
+        for col in self.boolean:
+            yield col, 'boolean'
 
     def __repr__(self) -> str:
         """Return string representation of column kinds."""

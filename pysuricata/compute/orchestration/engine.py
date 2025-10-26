@@ -315,6 +315,15 @@ class StreamingEngine:
             )
             current_row += chunk_size
 
+            # Initialize checkpoint manager if configured
+            checkpoint_manager = None
+            if config.checkpoint_every_n_chunks > 0:
+                from ...checkpoint import maybe_make_manager
+                checkpoint_manager = maybe_make_manager(config, None)
+
+            # Track chunk index for logging and checkpointing
+            chunk_idx = 1  # First chunk already processed
+
             # Process remaining chunks
             for chunk in chunks:
                 adapter.consume_chunk(chunk, accs, kinds, config, self.logger)
@@ -331,6 +340,64 @@ class StreamingEngine:
 
                 n_rows += chunk_size
                 total_missing_cells += chunk_missing
+                
+                # Increment chunk counter
+                chunk_idx += 1
+                
+                # Log progress every N chunks
+                if config.log_every_n_chunks > 0 and chunk_idx % config.log_every_n_chunks == 0:
+                    self.logger.info(
+                        "Processed chunk %d: %d rows total, %d missing cells",
+                        chunk_idx,
+                        n_rows,
+                        total_missing_cells
+                    )
+                
+                # Create checkpoint every N chunks
+                if checkpoint_manager and config.checkpoint_every_n_chunks > 0:
+                    if chunk_idx % config.checkpoint_every_n_chunks == 0:
+                        from ...checkpoint import make_state_snapshot
+                        
+                        # Calculate memory usage on-demand for checkpointing
+                        checkpoint_mem_bytes = 0
+                        for acc in accs.values():
+                            if hasattr(acc, "_bytes_seen"):
+                                checkpoint_mem_bytes += acc._bytes_seen
+                            elif hasattr(acc, "_mem_bytes"):
+                                checkpoint_mem_bytes += acc._mem_bytes
+                        
+                        state = make_state_snapshot(
+                            kinds=kinds,
+                            accs=accs,
+                            row_kmv=row_kmv,
+                            total_missing_cells=total_missing_cells,
+                            approx_mem_bytes=checkpoint_mem_bytes,
+                            chunk_idx=chunk_idx,
+                            first_columns=first_columns,
+                            sample_section_html=sample_section_html,
+                            cfg=config
+                        )
+                        # Generate partial HTML if configured
+                        html_snapshot = None
+                        if config.checkpoint_write_html:
+                            from ...render.html import render_html_snapshot
+                            html_snapshot = render_html_snapshot(
+                                kinds=kinds,
+                                accs=accs,
+                                first_columns=first_columns,
+                                row_kmv=row_kmv,
+                                total_missing_cells=total_missing_cells,
+                                approx_mem_bytes=checkpoint_mem_bytes,
+                                start_time=start_time,
+                                cfg=config,
+                                report_title=f"Checkpoint at Chunk {chunk_idx}",
+                                sample_section_html=sample_section_html,
+                                chunk_metadata=chunk_metadata,
+                                corr_est=corr_est
+                            )
+                        
+                        checkpoint_manager.save(chunk_idx, state, html_snapshot)
+                        self.logger.info("Checkpoint created at chunk %d", chunk_idx)
 
             # Calculate total memory as sum of all column memories
             # This ensures Total Dataset Memory = Sum of All Column Memories
