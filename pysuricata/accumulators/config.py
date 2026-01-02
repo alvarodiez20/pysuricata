@@ -22,7 +22,7 @@ class NumericConfig:
         top_k_size: Maximum number of top values to track for common values analysis.
             Larger values provide better coverage but use more memory. Default: 20
         enable_monotonicity_detection: Whether to track if values are monotonic.
-            Default: True
+            Default: False (disabled for performance)
         enable_outlier_detection: Whether to detect outliers using IQR and MAD.
             Default: True
         max_extremes: Maximum number of extreme values to track. Default: 5
@@ -41,7 +41,7 @@ class NumericConfig:
     sample_size: int = 20_000
     uniques_sketch_size: int = 2_048
     top_k_size: int = 50
-    enable_monotonicity_detection: bool = True
+    enable_monotonicity_detection: bool = False
     enable_outlier_detection: bool = True
     max_extremes: int = 5
     enable_memory_tracking: bool = True

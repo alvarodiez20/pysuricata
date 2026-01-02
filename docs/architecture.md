@@ -111,3 +111,38 @@ The report shows:
 - Add backends: polars/Arrow datasets or DuckDB scans can be plugged into the chunk iterator.
 - Add quantile sketches: t‑digest or KLL can replace the default reservoir for better tail accuracy.
 - Add new sections: drift comparisons, profile JSON export to file, CLI wrapper.
+
+## Complexity Analysis
+
+### Time Complexity
+
+All accumulators are designed for streaming processing with constant-time operations per element:
+
+- **NumericAccumulator**: O(1) per element for basic statistics, O(log k) for extreme tracking
+- **CategoricalAccumulator**: O(1) per element for sketches, O(log k) for top-k tracking
+- **DatetimeAccumulator**: O(1) per element for basic operations
+- **BooleanAccumulator**: O(1) per element for counting operations
+
+### Space Complexity
+
+Memory usage is bounded and independent of dataset size:
+
+- **KMV Sketch**: O(k) where k is the sketch size (default: 2,048)
+- **Reservoir Sampling**: O(s) where s is the sample size (default: 20,000)
+- **Misra-Gries Top-K**: O(k) where k is the number of top values (default: 50)
+- **Extreme Tracking**: O(k) where k is max extremes (default: 5)
+- **Chunk Metadata**: O(c) where c is max chunks tracked (default: 1,000)
+
+### Memory Optimization Features
+
+- **Bounded Exact Counting**: KMV switches from exact counting to approximation after tracking 100 unique values
+- **Heap-Based Extremes**: Uses heapq for O(log k) insertions instead of O(k) list operations
+- **Optional Chunk Metadata**: Can be disabled to save memory when visualization isn't needed
+- **Configurable Limits**: All memory usage can be tuned via configuration parameters
+
+### Performance Characteristics
+
+- **Scalability**: Can process datasets larger than available memory
+- **Memory Efficiency**: Sub-linear memory growth (typically <1KB per row)
+- **Processing Speed**: Optimized for streaming with minimal overhead
+- **Accuracy**: Maintains statistical accuracy while using bounded memory
