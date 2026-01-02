@@ -1454,6 +1454,57 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#complexity-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Complexity Analysis
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Complexity Analysis">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#time-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      Time Complexity
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#space-complexity" class="md-nav__link">
+    <span class="md-ellipsis">
+      Space Complexity
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-optimization-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      Memory Optimization Features
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#performance-characteristics" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Characteristics
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -1727,6 +1778,38 @@
 <li>Add backends: polars/Arrow datasets or DuckDB scans can be plugged into the chunk iterator.</li>
 <li>Add quantile sketches: t‑digest or KLL can replace the default reservoir for better tail accuracy.</li>
 <li>Add new sections: drift comparisons, profile JSON export to file, CLI wrapper.</li>
+</ul>
+<h2 id="complexity-analysis">Complexity Analysis</h2>
+<h3 id="time-complexity">Time Complexity</h3>
+<p>All accumulators are designed for streaming processing with constant-time operations per element:</p>
+<ul>
+<li><strong>NumericAccumulator</strong>: O(1) per element for basic statistics, O(log k) for extreme tracking</li>
+<li><strong>CategoricalAccumulator</strong>: O(1) per element for sketches, O(log k) for top-k tracking</li>
+<li><strong>DatetimeAccumulator</strong>: O(1) per element for basic operations</li>
+<li><strong>BooleanAccumulator</strong>: O(1) per element for counting operations</li>
+</ul>
+<h3 id="space-complexity">Space Complexity</h3>
+<p>Memory usage is bounded and independent of dataset size:</p>
+<ul>
+<li><strong>KMV Sketch</strong>: O(k) where k is the sketch size (default: 2,048)</li>
+<li><strong>Reservoir Sampling</strong>: O(s) where s is the sample size (default: 20,000)</li>
+<li><strong>Misra-Gries Top-K</strong>: O(k) where k is the number of top values (default: 50)</li>
+<li><strong>Extreme Tracking</strong>: O(k) where k is max extremes (default: 5)</li>
+<li><strong>Chunk Metadata</strong>: O(c) where c is max chunks tracked (default: 1,000)</li>
+</ul>
+<h3 id="memory-optimization-features">Memory Optimization Features</h3>
+<ul>
+<li><strong>Bounded Exact Counting</strong>: KMV switches from exact counting to approximation after tracking 100 unique values</li>
+<li><strong>Heap-Based Extremes</strong>: Uses heapq for O(log k) insertions instead of O(k) list operations</li>
+<li><strong>Optional Chunk Metadata</strong>: Can be disabled to save memory when visualization isn't needed</li>
+<li><strong>Configurable Limits</strong>: All memory usage can be tuned via configuration parameters</li>
+</ul>
+<h3 id="performance-characteristics">Performance Characteristics</h3>
+<ul>
+<li><strong>Scalability</strong>: Can process datasets larger than available memory</li>
+<li><strong>Memory Efficiency</strong>: Sub-linear memory growth (typically &lt;1KB per row)</li>
+<li><strong>Processing Speed</strong>: Optimized for streaming with minimal overhead</li>
+<li><strong>Accuracy</strong>: Maintains statistical accuracy while using bounded memory</li>
 </ul>
 
 

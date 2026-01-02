@@ -1950,8 +1950,7 @@
 <thead>
 <tr>
 <th>Library</th>
-<th>Memory (1GB CSV)</th>
-<th>Time (1GB CSV)</th>
+<th>Memory (1M+ rows)</th>
 <th>Streaming</th>
 <th>Dependencies</th>
 </tr>
@@ -1959,45 +1958,39 @@
 <tbody>
 <tr>
 <td><strong>pysuricata</strong></td>
-<td><strong>~50 MB</strong></td>
-<td><strong>~15s</strong></td>
+<td><strong>~50 MB</strong> (constant)</td>
 <td>✅ Yes</td>
 <td>pandas only</td>
 </tr>
 <tr>
 <td>pandas-profiling</td>
 <td>1.2+ GB</td>
-<td>~90s</td>
 <td>❌ No</td>
 <td>20+ packages</td>
 </tr>
 <tr>
 <td>ydata-profiling</td>
 <td>1.2+ GB</td>
-<td>~85s</td>
 <td>❌ No</td>
 <td>25+ packages</td>
 </tr>
 <tr>
 <td>sweetviz</td>
 <td>1.1+ GB</td>
-<td>~75s</td>
 <td>❌ No</td>
 <td>15+ packages</td>
 </tr>
 <tr>
 <td>pandas-eda</td>
 <td>1.0+ GB</td>
-<td>~60s</td>
 <td>❌ No</td>
 <td>10+ packages</td>
 </tr>
 </tbody>
 </table>
 <div class="admonition note">
-<p class="admonition-title">Benchmark Environment</p>
-<p>Benchmarks run on Intel i7-10th gen, 16GB RAM, 1GB CSV with 50 columns (mixed types).
-Times include full HTML report generation.</p>
+<p class="admonition-title">Key Advantage</p>
+<p>PySuricata maintains ~50MB memory usage regardless of dataset size, while competitors require memory proportional to data.</p>
 </div>
 <h3 id="minimal-dependencies">📦 Minimal Dependencies</h3>
 <p><strong>PySuricata core dependencies:</strong>
@@ -2322,19 +2315,44 @@ Times include full HTML report generation.</p>
     D --&gt; I[PySuricata: 50 MB]
     D --&gt; J[pandas-profiling: OOM]</code></pre>
 <h3 id="processing-time">Processing Time</h3>
-<p>For 1M rows × 50 columns mixed dataset:</p>
-<ul>
-<li><strong>PySuricata</strong>: 15 seconds</li>
-<li><strong>pandas-profiling</strong>: 90 seconds</li>
-<li><strong>sweetviz</strong>: 75 seconds</li>
-<li><strong>pandas-eda</strong>: 60 seconds</li>
-</ul>
+<p>Measured on Apple Silicon (M-series) with Python 3.13:</p>
+<table>
+<thead>
+<tr>
+<th>Dataset Size</th>
+<th>Processing Time</th>
+<th>Throughput</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10K rows</td>
+<td>~3s</td>
+<td>~3,000 rows/s</td>
+</tr>
+<tr>
+<td>100K rows</td>
+<td>~13s</td>
+<td>~8,000 rows/s</td>
+</tr>
+<tr>
+<td>1M rows</td>
+<td>~3 min</td>
+<td>~5,500 rows/s</td>
+</tr>
+<tr>
+<td>10M rows</td>
+<td>~30 min</td>
+<td>~5,500 rows/s</td>
+</tr>
+</tbody>
+</table>
 <h3 id="scalability">Scalability</h3>
-<p>PySuricata scales <strong>linearly</strong> with dataset size:
-- 1M rows → 15s
-- 10M rows → 150s
-- 100M rows → 1500s (25 min)</p>
-<p>Competitors scale <strong>super-linearly</strong> or fail (OOM).</p>
+<p>PySuricata scales <strong>linearly</strong> with dataset size with <strong>constant memory</strong>:
+- 1M rows → ~3 min, 50 MB
+- 10M rows → ~30 min, 50 MB
+- 100M rows → ~5 hours, 50 MB</p>
+<p>Competitors fail (OOM) on large datasets while PySuricata handles them in bounded memory.</p>
 <h2 id="algorithm-innovation">Algorithm Innovation</h2>
 <h3 id="streaming-moments-welford-pebay">Streaming Moments (Welford + Pébay)</h3>
 <p><strong>Update complexity:</strong> O(1) per value<br />

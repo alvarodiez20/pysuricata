@@ -1915,8 +1915,8 @@
 <tr>
 <th>Rows</th>
 <th>Columns</th>
-<th>Time (default)</th>
-<th>Time (optimized)</th>
+<th>Time</th>
+<th>Throughput</th>
 <th>Memory</th>
 </tr>
 </thead>
@@ -1924,41 +1924,36 @@
 <tr>
 <td>10K</td>
 <td>10</td>
-<td>1s</td>
-<td>0.5s</td>
-<td>30 MB</td>
+<td>~3s</td>
+<td>~3,000 rows/s</td>
+<td>20 MB</td>
 </tr>
 <tr>
 <td>100K</td>
-<td>50</td>
-<td>5s</td>
-<td>3s</td>
-<td>50 MB</td>
+<td>10</td>
+<td>~13s</td>
+<td>~8,000 rows/s</td>
+<td>30 MB</td>
 </tr>
 <tr>
 <td>1M</td>
-<td>50</td>
-<td>15s</td>
-<td>10s</td>
+<td>10</td>
+<td>~3 min</td>
+<td>~5,500 rows/s</td>
 <td>50 MB</td>
 </tr>
 <tr>
 <td>10M</td>
-<td>50</td>
-<td>150s</td>
-<td>100s</td>
-<td>50 MB</td>
-</tr>
-<tr>
-<td>100M</td>
-<td>50</td>
-<td>1500s</td>
-<td>1000s</td>
+<td>10</td>
+<td>~30 min</td>
+<td>~5,500 rows/s</td>
 <td>50 MB</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Note</strong>: Times approximate, measured on Intel i7-10th gen, 16GB RAM.</p>
+<blockquote>
+<p><em>Benchmarks measured on Apple Silicon with Python 3.13. Actual times vary by hardware, data complexity, and configuration.</em></p>
+</blockquote>
 <h3 id="scalability">Scalability</h3>
 <p>PySuricata scales <strong>linearly</strong> with dataset size (O(n)) thanks to streaming algorithms:</p>
 <div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Time(n) ≈ k × n
@@ -1969,33 +1964,36 @@
 <thead>
 <tr>
 <th>Library</th>
-<th>1GB Dataset</th>
-<th>Memory</th>
+<th>Memory (1M+ rows)</th>
+<th>Streaming</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong>pysuricata</strong></td>
-<td><strong>15s</strong></td>
-<td><strong>50 MB</strong></td>
+<td><strong>~50 MB</strong> (constant)</td>
+<td>✅ Yes</td>
 </tr>
 <tr>
 <td>pandas-profiling</td>
-<td>90s</td>
 <td>1.2 GB</td>
+<td>❌ No</td>
 </tr>
 <tr>
 <td>sweetviz</td>
-<td>75s</td>
 <td>1.1 GB</td>
+<td>❌ No</td>
 </tr>
 <tr>
 <td>pandas-eda</td>
-<td>60s</td>
 <td>1.0 GB</td>
+<td>❌ No</td>
 </tr>
 </tbody>
 </table>
+<blockquote>
+<p>PySuricata's key advantage is <strong>bounded memory usage</strong> - competitors cannot process datasets larger than RAM.</p>
+</blockquote>
 <h2 id="advanced-configuration">Advanced Configuration</h2>
 <h3 id="for-maximum-speed">For Maximum Speed</h3>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
