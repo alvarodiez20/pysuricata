@@ -16,6 +16,23 @@ For polars support (optional):
 pip install pysuricata polars
 ```
 
+## Command Line Usage
+
+The fastest way to profile a dataset:
+
+```bash
+# Generate an HTML report
+pysuricata profile data.csv --output report.html
+
+# Get JSON statistics (no HTML)
+pysuricata summarize data.csv --output stats.json
+
+# With options
+pysuricata profile data.csv -o report.html --seed 42 --no-correlations
+```
+
+See `pysuricata --help` for all options.
+
 ## Your First Report
 
 ### Step 1: Import and Load Data

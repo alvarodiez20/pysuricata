@@ -24,19 +24,132 @@ class KMV:
     have been seen, |S| is exact uniques. Otherwise, estimate uniques as (k-1)/t,
     where t is the kth smallest hash normalized to (0,1].
 
-    Enhanced with small discrete value detection for exact counting.
+    Enhanced with bounded exact counting for small discrete value sets.
+    Memory usage is O(k) instead of O(n) for large datasets.
     """
 
-    __slots__ = ("k", "_values", "_exact_values", "_use_exact")
+    __slots__ = ("k", "_values", "_exact_counter", "_use_exact", "_max_exact_tracking")
 
-    def __init__(self, k: int = 2048) -> None:
+    def __init__(self, k: int = 2048, max_exact_tracking: int = 100) -> None:
         self.k = int(k)
         self._values: List[int] = []  # store as integers in [0, 2^64)
-        self._exact_values: set = set()  # for exact counting of small discrete values
+        self._exact_counter: Dict[bytes, int] = {}  # bounded counter for exact counting
         self._use_exact = True  # start with exact mode for small datasets
+        self._max_exact_tracking = int(max_exact_tracking)  # max unique values to track exactly
+
+    def add_many(self, values: Sequence[Any]) -> None:
+        """Batch add values to KMV sketch for improved performance.
+        
+        Args:
+            values: Sequence of values to add
+        """
+        if not values:
+            return
+            
+        # Convert all values to bytes and hash them in batch
+        try:
+            import numpy as np
+            
+            # Convert values to bytes
+            byte_values = []
+            for v in values:
+                if v is None:
+                    byte_values.append(b"__NULL__")
+                elif isinstance(v, bytes):
+                    byte_values.append(v)
+                else:
+                    byte_values.append(str(v).encode("utf-8", "ignore"))
+            
+            # Batch hash computation
+            hashes = np.array([_u64(bv) for bv in byte_values], dtype=np.uint64)
+            
+            # Process in exact mode if still using exact tracking
+            if self._use_exact:
+                for i, bv in enumerate(byte_values):
+                    if bv in self._exact_counter:
+                        self._exact_counter[bv] += 1
+                    else:
+                        if len(self._exact_counter) >= self._max_exact_tracking:
+                            # Switch to approximation mode
+                            self._use_exact = False
+                            # Convert existing exact values to KMV hashes
+                            for exact_value in self._exact_counter:
+                                h = _u64(exact_value)
+                                self._add_hash_to_kmv(h)
+                            self._exact_counter.clear()
+                            # Process remaining values in approximation mode
+                            remaining_hashes = hashes[i:]
+                            self._batch_add_hashes(remaining_hashes)
+                            return
+                        else:
+                            self._exact_counter[bv] = 1
+            else:
+                # Process all hashes in approximation mode
+                self._batch_add_hashes(hashes)
+                
+        except ImportError:
+            # Fallback to individual processing if numpy not available
+            for v in values:
+                self.add(v)
+
+    def _add_hash_to_kmv(self, h: int) -> None:
+        """Add a single hash to the KMV sketch.
+        
+        Args:
+            h: Hash value to add
+        """
+        if len(self._values) < self.k:
+            self._values.append(h)
+            if len(self._values) == self.k:
+                self._values.sort()
+        else:
+            if h < self._values[-1]:
+                # Binary search and insert
+                lo, hi = 0, self.k - 1
+                while lo < hi:
+                    mid = (lo + hi) // 2
+                    if self._values[mid] < h:
+                        lo = mid + 1
+                    else:
+                        hi = mid
+                self._values.insert(lo, h)
+                del self._values[self.k]
+
+    def _batch_add_hashes(self, hashes: np.ndarray) -> None:
+        """Batch add hashes to KMV sketch using numpy operations.
+        
+        Args:
+            hashes: Array of hash values to add
+        """
+        if len(hashes) == 0:
+            return
+            
+        # Fill KMV sketch first if not full
+        if len(self._values) < self.k:
+            needed = min(self.k - len(self._values), len(hashes))
+            self._values.extend(hashes[:needed])
+            hashes = hashes[needed:]
+            if len(self._values) == self.k:
+                self._values.sort()
+        
+        # Process remaining hashes
+        if len(hashes) > 0:
+            # Filter hashes that are smaller than the largest in KMV
+            max_hash = self._values[-1] if self._values else 0
+            candidate_mask = hashes < max_hash
+            candidate_hashes = hashes[candidate_mask]
+            
+            if len(candidate_hashes) > 0:
+                # Add candidates to existing values and sort
+                self._values.extend(candidate_hashes)
+                self._values.sort()
+                
+                # Keep only the k smallest
+                if len(self._values) > self.k:
+                    self._values = self._values[:self.k]
 
     def add(self, v: Any) -> None:
-        # Always track exact values for small discrete sets
+        # Convert value to bytes for consistent hashing
         if v is None:
             v = b"__NULL__"
         elif isinstance(v, bytes):
@@ -44,14 +157,59 @@ class KMV:
         else:
             v = str(v).encode("utf-8", "ignore")
 
-        # Add to exact tracking
-        self._exact_values.add(v)
+        # Track unique values exactly if we're still in exact mode
+        if self._use_exact:
+            if v in self._exact_counter:
+                self._exact_counter[v] += 1
+            else:
+                # Check if we've hit the limit for exact tracking
+                if len(self._exact_counter) >= self._max_exact_tracking:
+                    # Switch to approximation mode
+                    self._use_exact = False
+                    # Convert existing exact values to KMV hashes before clearing
+                    for exact_value in self._exact_counter:
+                        h = _u64(exact_value)
+                        if len(self._values) < self.k:
+                            self._values.append(h)
+                        else:
+                            # Insert if smaller than largest
+                            if h < self._values[-1]:
+                                # Binary search and insert
+                                lo, hi = 0, self.k - 1
+                                while lo < hi:
+                                    mid = (lo + hi) // 2
+                                    if self._values[mid] < h:
+                                        lo = mid + 1
+                                    else:
+                                        hi = mid
+                                self._values.insert(lo, h)
+                                del self._values[self.k]
+                    # Sort the values after adding all
+                    if len(self._values) > 1:
+                        self._values.sort()
+                    # Clear the counter to free memory
+                    self._exact_counter.clear()
+                    # Add the current value to KMV sketch
+                    h = _u64(v)
+                    if len(self._values) < self.k:
+                        self._values.append(h)
+                        if len(self._values) == self.k:
+                            self._values.sort()
+                    else:
+                        if h < self._values[-1]:
+                            lo, hi = 0, self.k - 1
+                            while lo < hi:
+                                mid = (lo + hi) // 2
+                                if self._values[mid] < h:
+                                    lo = mid + 1
+                                else:
+                                    hi = mid
+                            self._values.insert(lo, h)
+                            del self._values[self.k]
+                else:
+                    self._exact_counter[v] = 1
 
-        # If we have too many unique values, switch to approximation mode
-        if len(self._exact_values) > 100:  # threshold for switching to approximation
-            self._use_exact = False
-
-        # Only use KMV approximation if we're not in exact mode
+        # Use KMV approximation if we're not in exact mode
         if not self._use_exact:
             h = _u64(v)
             if len(self._values) < self.k:
@@ -80,7 +238,7 @@ class KMV:
     def estimate(self) -> int:
         # Use exact counting for small discrete value sets
         if self._use_exact:
-            return len(self._exact_values)
+            return len(self._exact_counter)
 
         # Use KMV approximation for large datasets
         n = len(self._values)
@@ -96,6 +254,17 @@ class KMV:
             return n
         return max(n, int(round((self.k - 1) / t)))
 
+    def get_memory_usage(self) -> int:
+        """Get approximate memory usage in bytes for monitoring."""
+        memory = 0
+        # _values list: k integers * 8 bytes each
+        memory += len(self._values) * 8
+        # _exact_counter: dict overhead + key bytes + value ints
+        memory += len(self._exact_counter) * (32 + 8)  # rough estimate
+        for key in self._exact_counter:
+            memory += len(key)  # actual key bytes
+        return memory
+
 
 class ReservoirSampler:
     """Reservoir sampler for numeric/datetime values to approximate quantiles/histograms."""
@@ -108,8 +277,46 @@ class ReservoirSampler:
         self._seen: int = 0
 
     def add_many(self, arr: Sequence[float]) -> None:
-        for x in arr:
-            self.add(float(x))
+        """Optimized batch addition using numpy random generation.
+        
+        Args:
+            arr: Sequence of float values to add
+        """
+        if len(arr) == 0:
+            return
+            
+        try:
+            import numpy as np
+            arr = np.asarray(arr, dtype=float)
+        except ImportError:
+            # Fallback to original implementation if numpy not available
+            for x in arr:
+                self.add(float(x))
+            return
+        
+        # Fill reservoir first if not full
+        if len(self._buf) < self.k:
+            needed = min(self.k - len(self._buf), len(arr))
+            self._buf.extend(arr[:needed])
+            arr = arr[needed:]
+            self._seen += needed
+        
+        # Process remaining elements with batch random generation
+        if len(arr) > 0:
+            # Generate random numbers for replacement decisions
+            random_vals = np.random.randint(1, self._seen + len(arr) + 1, size=len(arr))
+            
+            # Determine which elements to replace
+            replace_mask = random_vals <= self.k
+            replace_indices = random_vals[replace_mask] - 1
+            
+            # Replace elements in batch (convert to Python list for indexing)
+            if len(replace_indices) > 0:
+                replace_values = arr[replace_mask]
+                for i, val in zip(replace_indices, replace_values):
+                    self._buf[i] = val
+            
+            self._seen += len(arr)
 
     def add(self, x: float) -> None:
         self._seen += 1

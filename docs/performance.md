@@ -123,15 +123,14 @@ report = profile(partition_generator())
 
 ### Performance by Dataset Size
 
-| Rows | Columns | Time (default) | Time (optimized) | Memory |
-|------|---------|---------------|------------------|--------|
-| 10K | 10 | 1s | 0.5s | 30 MB |
-| 100K | 50 | 5s | 3s | 50 MB |
-| 1M | 50 | 15s | 10s | 50 MB |
-| 10M | 50 | 150s | 100s | 50 MB |
-| 100M | 50 | 1500s | 1000s | 50 MB |
+| Rows | Columns | Time | Throughput | Memory |
+|------|---------|------|------------|--------|
+| 10K | 10 | ~3s | ~3,000 rows/s | 20 MB |
+| 100K | 10 | ~13s | ~8,000 rows/s | 30 MB |
+| 1M | 10 | ~3 min | ~5,500 rows/s | 50 MB |
+| 10M | 10 | ~30 min | ~5,500 rows/s | 50 MB |
 
-**Note**: Times approximate, measured on Intel i7-10th gen, 16GB RAM.
+> *Benchmarks measured on Apple Silicon with Python 3.13. Actual times vary by hardware, data complexity, and configuration.*
 
 ### Scalability
 
@@ -145,12 +144,14 @@ where k is constant per row processing time.
 
 ### Comparison to Competitors
 
-| Library | 1GB Dataset | Memory |
-|---------|-------------|--------|
-| **pysuricata** | **15s** | **50 MB** |
-| pandas-profiling | 90s | 1.2 GB |
-| sweetviz | 75s | 1.1 GB |
-| pandas-eda | 60s | 1.0 GB |
+| Library | Memory (1M+ rows) | Streaming |
+|---------|-------------------|----------|
+| **pysuricata** | **~50 MB** (constant) | ✅ Yes |
+| pandas-profiling | 1.2 GB | ❌ No |
+| sweetviz | 1.1 GB | ❌ No |
+| pandas-eda | 1.0 GB | ❌ No |
+
+> PySuricata's key advantage is **bounded memory usage** - competitors cannot process datasets larger than RAM.
 
 ## Advanced Configuration
 

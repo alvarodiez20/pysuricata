@@ -29,14 +29,14 @@
 
 ## ✨ Features
 
-- 🚀 **True Streaming Architecture** - Process TB datasets in bounded memory (O(1) space per column)
-- ⚡ **Lightning Fast** - Single-pass O(n) algorithms, 15x faster than pandas-profiling
-- 🎯 **Mathematically Proven** - Welford/Pébay for exact moments, KMV/Misra-Gries for guarantees
-- 📦 **Minimal Dependencies** - Just pandas/polars (~10 MB installed)
+- 🚀 **True Streaming Architecture** - Process datasets larger than RAM with bounded memory (~50MB regardless of size)
+- 📊 **Mathematically Rigorous** - Welford/Pébay for exact moments, KMV/Misra-Gries with proven error bounds
+- 📦 **Minimal Dependencies** - Just pandas/polars + markdown (~10 MB installed)
 - 📄 **Portable Reports** - Self-contained HTML with inline CSS/JS/images
 - 🔄 **Framework Flexible** - Native pandas and polars support
 - 🎲 **Reproducible** - Seeded sampling for deterministic results
 - ⚙️ **Highly Customizable** - Extensive configuration without code changes
+- 🖥️ **CLI Tool** - Profile datasets from the command line
 
 ## Quick Start
 
@@ -62,6 +62,16 @@ report.save_html("report.html")
 
 That's it! Open `report.html` in your browser to see a comprehensive analysis.
 
+### Command Line Interface
+
+```bash
+# Generate HTML report
+pysuricata profile data.csv --output report.html
+
+# Get JSON statistics
+pysuricata summarize data.csv
+```
+
 ## Why PySuricata?
 
 ### 🆚 Comparison with Alternatives
@@ -70,7 +80,6 @@ That's it! Open `report.html` in your browser to see a comprehensive analysis.
 |---------|------------|------------------|----------|------------|
 | **Memory model** | 🟢 Streaming (bounded) | 🔴 In-memory (full) | 🔴 In-memory | 🔴 In-memory |
 | **Large datasets (>1GB)** | ✅ GB to TB | ❌ RAM limited | ❌ RAM limited | ❌ RAM limited |
-| **Speed (1GB dataset)** | 🟢 15s | 🔴 90s | 🟡 75s | 🟡 60s |
 | **Peak memory (1GB)** | 🟢 50 MB | 🔴 1.2 GB | 🔴 1.1 GB | 🔴 1.0 GB |
 | **Dependencies** | 🟢 Minimal (~10 MB) | 🔴 Heavy (100+ MB) | 🟡 Medium (80 MB) | 🟡 Medium |
 | **Report format** | 🟢 Single HTML | 🟡 HTML + assets | 🟡 HTML + assets | 🟡 HTML + assets |
@@ -80,23 +89,16 @@ That's it! Open `report.html` in your browser to see a comprehensive analysis.
 
 ### 📊 Performance Benchmarks
 
-**Processing time** (1M rows × 50 columns, mixed types):
+**Memory usage** (1M+ rows dataset):
 
 ```
-PySuricata:       ████░░░░░░░░░░░░░░░░  15s
-pandas-eda:       ████████████░░░░░░░░  60s
-sweetviz:         ███████████████░░░░░  75s
-pandas-profiling: ██████████████████░░  90s
-```
-
-**Memory usage** (1GB CSV file):
-
-```
-PySuricata:       ██░░░░░░░░░░░░░░░░░░  50 MB
+PySuricata:       ██░░░░░░░░░░░░░░░░░░  50 MB (constant!)
 pandas-eda:       ████████████████████  1.0 GB
 sweetviz:         █████████████████████ 1.1 GB
 pandas-profiling: ██████████████████████ 1.2 GB
 ```
+
+> **Key advantage**: PySuricata uses ~50MB regardless of dataset size, while competitors require memory proportional to data size.
 
 ## 🎯 What's in a Report?
 
@@ -342,16 +344,17 @@ Full mathematical formulas and derivations in [Statistical Methods](https://alva
 
 PySuricata scales **linearly** with dataset size:
 
-| Dataset Size | Processing Time | Peak Memory |
-|--------------|----------------|-------------|
-| 10K rows | 1s | 30 MB |
-| 100K rows | 5s | 50 MB |
-| 1M rows | 15s | 50 MB |
-| 10M rows | 150s | 50 MB |
-| 100M rows | 1,500s (25 min) | 50 MB |
-| 1B rows | 15,000s (4 hrs) | 50 MB |
+| Dataset Size | Processing Time | Peak Memory | Throughput |
+|--------------|-----------------|-------------|------------|
+| 10K rows | ~3s | 20 MB | ~3,000 rows/s |
+| 100K rows | ~13s | 30 MB | ~8,000 rows/s |
+| 1M rows | ~3 min | 50 MB | ~5,500 rows/s |
+| 10M rows | ~30 min | 50 MB | ~5,500 rows/s |
+| 100M rows | ~5 hours | 50 MB | ~5,500 rows/s |
 
 **Memory stays constant** regardless of dataset size! 🎉
+
+> *Benchmarks measured on Apple Silicon with Python 3.13. Actual times vary by hardware and data complexity.*
 
 ## 🤝 Why "Suricata"?
 

@@ -22,7 +22,7 @@ class NumericConfig:
         top_k_size: Maximum number of top values to track for common values analysis.
             Larger values provide better coverage but use more memory. Default: 20
         enable_monotonicity_detection: Whether to track if values are monotonic.
-            Default: True
+            Default: False (disabled for performance)
         enable_outlier_detection: Whether to detect outliers using IQR and MAD.
             Default: True
         max_extremes: Maximum number of extreme values to track. Default: 5
@@ -30,18 +30,25 @@ class NumericConfig:
         enable_geometric_mean: Whether to compute geometric mean. Default: True
         enable_confidence_intervals: Whether to compute confidence intervals.
             Default: False
+        enable_chunk_metadata: Whether to track chunk metadata for visualization.
+            When disabled, saves memory by not tracking per-chunk statistics.
+            Default: True
+        max_chunks: Maximum number of chunks to track metadata for. When exceeded,
+            switches to summary mode to prevent unbounded growth. Default: 1000
         outlier_methods: Methods to use for outlier detection. Default: ['iqr', 'mad']
     """
 
     sample_size: int = 20_000
     uniques_sketch_size: int = 2_048
     top_k_size: int = 50
-    enable_monotonicity_detection: bool = True
+    enable_monotonicity_detection: bool = False
     enable_outlier_detection: bool = True
     max_extremes: int = 5
     enable_memory_tracking: bool = True
     enable_geometric_mean: bool = True
     enable_confidence_intervals: bool = False
+    enable_chunk_metadata: bool = True
+    max_chunks: int = 1000
     outlier_methods: list[str] = field(default_factory=lambda: ["iqr", "mad"])
 
     def __post_init__(self) -> None:
@@ -54,6 +61,8 @@ class NumericConfig:
             raise ValueError("top_k_size must be positive")
         if self.max_extremes <= 0:
             raise ValueError("max_extremes must be positive")
+        if self.max_chunks <= 0:
+            raise ValueError("max_chunks must be positive")
         if not self.outlier_methods:
             raise ValueError("outlier_methods cannot be empty")
 

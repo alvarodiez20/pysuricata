@@ -14,17 +14,16 @@ Unlike competitors that load entire datasets into memory, PySuricata uses **stre
 
 ### ⚡ Performance Comparison
 
-| Library | Memory (1GB CSV) | Time (1GB CSV) | Streaming | Dependencies |
-|---------|------------------|----------------|-----------|--------------|
-| **pysuricata** | **~50 MB** | **~15s** | ✅ Yes | pandas only |
-| pandas-profiling | 1.2+ GB | ~90s | ❌ No | 20+ packages |
-| ydata-profiling | 1.2+ GB | ~85s | ❌ No | 25+ packages |
-| sweetviz | 1.1+ GB | ~75s | ❌ No | 15+ packages |
-| pandas-eda | 1.0+ GB | ~60s | ❌ No | 10+ packages |
+| Library | Memory (1M+ rows) | Streaming | Dependencies |
+|---------|-------------------|-----------|-------------|
+| **pysuricata** | **~50 MB** (constant) | ✅ Yes | pandas only |
+| pandas-profiling | 1.2+ GB | ❌ No | 20+ packages |
+| ydata-profiling | 1.2+ GB | ❌ No | 25+ packages |
+| sweetviz | 1.1+ GB | ❌ No | 15+ packages |
+| pandas-eda | 1.0+ GB | ❌ No | 10+ packages |
 
-!!! note "Benchmark Environment"
-    Benchmarks run on Intel i7-10th gen, 16GB RAM, 1GB CSV with 50 columns (mixed types).
-    Times include full HTML report generation.
+!!! note "Key Advantage"
+    PySuricata maintains ~50MB memory usage regardless of dataset size, while competitors require memory proportional to data.
 
 ### 📦 Minimal Dependencies
 
@@ -282,21 +281,23 @@ graph LR
 
 ### Processing Time
 
-For 1M rows × 50 columns mixed dataset:
+Measured on Apple Silicon (M-series) with Python 3.13:
 
-- **PySuricata**: 15 seconds
-- **pandas-profiling**: 90 seconds
-- **sweetviz**: 75 seconds
-- **pandas-eda**: 60 seconds
+| Dataset Size | Processing Time | Throughput |
+|--------------|-----------------|------------|
+| 10K rows | ~3s | ~3,000 rows/s |
+| 100K rows | ~13s | ~8,000 rows/s |
+| 1M rows | ~3 min | ~5,500 rows/s |
+| 10M rows | ~30 min | ~5,500 rows/s |
 
 ### Scalability
 
-PySuricata scales **linearly** with dataset size:
-- 1M rows → 15s
-- 10M rows → 150s
-- 100M rows → 1500s (25 min)
+PySuricata scales **linearly** with dataset size with **constant memory**:
+- 1M rows → ~3 min, 50 MB
+- 10M rows → ~30 min, 50 MB
+- 100M rows → ~5 hours, 50 MB
 
-Competitors scale **super-linearly** or fail (OOM).
+Competitors fail (OOM) on large datasets while PySuricata handles them in bounded memory.
 
 ## Algorithm Innovation
 

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysuricata"
-version = "0.0.12"
+version = "0.0.13"
 description = "A lightweight EDA tool inspired by the curious nature of suricates. Built just for fun 🔬."
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
@@ -21,6 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
@@ -28,10 +29,18 @@ dependencies = [
     "pandas>=2.2.3,<3.0; python_version >= '3.13'",
     "numpy>=2.1; python_version >= '3.13'",
     "markdown>=3.4.0",
+    "polars>=1.34.0",
+    "psutil>=7.1.0",
+    "matplotlib>=3.9.4",
+    "ipywidgets>=8.1.7",
+    "seaborn>=0.13.2",
 ]
 
 [project.urls]
 Repository = "https://github.com/alvarodiez20/pysuricata"
+
+[project.scripts]
+pysuricata = "pysuricata.cli:main"
 
 [project.optional-dependencies]
 polars = [
@@ -52,6 +61,8 @@ dev = [
     "ruff>=0.11.2",
     "pre-commit>=3.6.2",
     "ipykernel>=6.30.1",
+    "ydata-profiling>=4.17.0",
+    "setuptools>=80.9.0",
 ]
 
 [tool.setuptools]
@@ -109,3 +120,8 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["pysuricata"]
+
+[tool.pytest.ini_options]
+markers = [
+    "benchmark: marks tests as slow benchmarks (deselect with '-m \"not benchmark\"')",
+]

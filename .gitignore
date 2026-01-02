@@ -61,6 +61,23 @@ coverage.xml
 /oom_demo.csv
 *.parquet
 
+# PySuricata generated reports
+pysuricata_*.html
+ydata_profiling_*.html
+*_report_*.html
+
+# Benchmark scripts and artifacts
+benchmark_*.py
+comprehensive_performance_benchmark.py
+*_OPTIMIZATION_SUMMARY.md
+
+# Large test data files
+examples/*_test*.csv
+examples/*_uncompressed.csv
+examples/checkpoints/
+examples/polars_checkpoints/
+examples/test_checkpoints/
+
 # Test files and temporary files
 *_test*.html
 *test_*.html

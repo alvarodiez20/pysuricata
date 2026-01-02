@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import math
 import warnings
 from collections.abc import Iterable
@@ -22,6 +23,43 @@ from ..accumulators import (
 )
 from .core.types import ColumnKinds
 from .processing.inference import UnifiedTypeInferrer
+
+
+def _estimate_memory_per_row_fast(s: pd.Series) -> float:  # type: ignore[name-defined]
+    """Fast memory estimation based on dtype instead of deep profiling.
+    
+    This avoids the expensive memory_usage(deep=True) which traverses every string.
+    
+    Args:
+        s: pandas Series to estimate memory for
+        
+    Returns:
+        Estimated bytes per row
+    """
+    dtype = s.dtype
+    
+    # Fast dtype-based estimation
+    if dtype == 'object':
+        # For object columns, estimate based on sample
+        if len(s) > 0:
+            # Sample first 100 values to estimate average string length
+            sample_size = min(100, len(s))
+            sample = s.head(sample_size)
+            # Rough estimate: 8 bytes overhead + average string length
+            avg_length = sample.astype(str).str.len().mean()
+            return 8 + avg_length
+        return 8  # Default for empty series
+    elif dtype == 'string':
+        # String dtype - estimate based on sample
+        if len(s) > 0:
+            sample_size = min(100, len(s))
+            sample = s.head(sample_size)
+            avg_length = sample.str.len().mean()
+            return avg_length
+        return 8
+    else:
+        # Numeric/datetime types - use dtype size
+        return dtype.itemsize
 
 
 def _to_numeric_array_pandas(s: pd.Series) -> np.ndarray:  # type: ignore[name-defined]
@@ -100,6 +138,10 @@ def consume_chunk_pandas(
     config: Optional[Any] = None,
     logger: Optional[logging.Logger] = None,
 ) -> None:  # type: ignore[name-defined]
+    # Initialize memory cache if not present
+    if not hasattr(consume_chunk_pandas, '_memory_cache'):
+        consume_chunk_pandas._memory_cache = {}
+    
     # 1) Create accumulators for columns not seen in the first chunk
     for name in df.columns:
         if name in accs:
@@ -139,47 +181,68 @@ def consume_chunk_pandas(
                 logger.debug("column '%s' not present in this chunk; skipping", name)
             continue
         s = df[name]
+        
+        # Get cached memory usage or calculate and cache it
+        if name not in consume_chunk_pandas._memory_cache:
+            try:
+                # Use fast dtype-based estimation instead of expensive deep profiling
+                memory_per_row = _estimate_memory_per_row_fast(s)
+                consume_chunk_pandas._memory_cache[name] = memory_per_row
+            except Exception:
+                consume_chunk_pandas._memory_cache[name] = 0
+        
+        # Use cached memory estimate
+        estimated_memory = int(consume_chunk_pandas._memory_cache[name] * len(s))
+        
         if isinstance(acc, NumericAccumulator):
             arr = _to_numeric_array_pandas(s)
             acc.update(arr)
-            # Track memory usage
+            # Track memory usage using cached estimate
             try:
-                acc.add_mem(int(s.memory_usage(deep=True)))
+                acc.add_mem(estimated_memory)
             except Exception:
                 pass
-            # Track extremes with indices for this chunk
-            try:
-                finite = np.isfinite(arr)
-                if finite.any():
-                    vals = arr[finite]
-                    idx = s.index.to_numpy()[finite]
-                    if vals.size > 0:
-                        k = min(5, vals.size)
-                        part_min = np.argpartition(vals, k - 1)[:k]
-                        pairs_min = [(idx[i], float(vals[i])) for i in part_min]
-                        part_max = np.argpartition(-vals, k - 1)[:k]
-                        pairs_max = [(idx[i], float(vals[i])) for i in part_max]
-                        acc.update_extremes(pairs_min, pairs_max)
-            except Exception:
-                pass
+            # Track extremes with indices - only every 5 chunks for performance
+            # Initialize chunk counter if not exists
+            if not hasattr(acc, '_extreme_update_counter'):
+                acc._extreme_update_counter = 0
+            
+            acc._extreme_update_counter += 1
+            
+            # Only update extremes every 5 chunks to reduce overhead
+            if acc._extreme_update_counter % 5 == 0:
+                try:
+                    finite = np.isfinite(arr)
+                    if finite.any():
+                        vals = arr[finite]
+                        idx = s.index.to_numpy()[finite]
+                        if vals.size > 0:
+                            k = min(5, vals.size)
+                            part_min = np.argpartition(vals, k - 1)[:k]
+                            pairs_min = [(idx[i], float(vals[i])) for i in part_min]
+                            part_max = np.argpartition(-vals, k - 1)[:k]
+                            pairs_max = [(idx[i], float(vals[i])) for i in part_max]
+                            acc.update_extremes(pairs_min, pairs_max)
+                except Exception:
+                    pass
         elif isinstance(acc, BooleanAccumulator):
             arr = _to_bool_array_pandas(s)
             acc.update(arr)
             try:
-                acc.add_mem(int(s.memory_usage(deep=True)))
+                acc.add_mem(estimated_memory)
             except Exception:
                 pass
         elif isinstance(acc, DatetimeAccumulator):
             arr = _to_datetime_ns_array_pandas(s)
             acc.update(arr)
             try:
-                acc.add_mem(int(s.memory_usage(deep=True)))
+                acc.add_mem(estimated_memory)
             except Exception:
                 pass
         elif isinstance(acc, CategoricalAccumulator):
             acc.update(_to_categorical_iter_pandas(s))
-            # Add memory tracking for categorical columns
+            # Add memory tracking for categorical columns using cached estimate
             try:
-                acc.add_mem(int(s.memory_usage(deep=True)))
+                acc.add_mem(estimated_memory)
             except Exception:
                 pass

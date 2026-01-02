@@ -155,8 +155,19 @@ class NumericAccumulator:
         )
 
         # Per-column chunk tracking for accurate missing value reporting
-        self._chunk_boundaries: List[int] = []  # Cumulative row counts
-        self._chunk_missing: List[int] = []  # Missing count per chunk
+        if self.config.enable_chunk_metadata:
+            # Pre-allocate arrays for bounded memory usage
+            self._chunk_boundaries: List[int] = []
+            self._chunk_missing: List[int] = []
+            self._chunk_metadata_enabled = True
+            self._chunk_count = 0
+        else:
+            # Disable chunk metadata tracking to save memory
+            self._chunk_boundaries = None
+            self._chunk_missing = None
+            self._chunk_metadata_enabled = False
+            self._chunk_count = 0
+        
         self._current_chunk_missing = 0  # Missing in current chunk
         self._current_chunk_rows = 0  # Total rows in current chunk
 
@@ -364,13 +375,30 @@ class NumericAccumulator:
 
         This method records the cumulative row count and missing count for the
         current chunk, enabling accurate per-column chunk visualization.
+        When chunk metadata is disabled, this method does nothing to save memory.
         """
-        if self._current_chunk_rows > 0:
-            cumulative_rows = self.count + self.missing
-            self._chunk_boundaries.append(cumulative_rows)
-            self._chunk_missing.append(self._current_chunk_missing)
+        if not self._chunk_metadata_enabled or self._current_chunk_rows == 0:
             self._current_chunk_missing = 0
             self._current_chunk_rows = 0
+            return
+        
+        # Check if we've exceeded the maximum number of chunks to track
+        if self._chunk_count >= self.config.max_chunks:
+            # Switch to summary mode - stop tracking individual chunks
+            self._chunk_metadata_enabled = False
+            self._current_chunk_missing = 0
+            self._current_chunk_rows = 0
+            return
+        
+        # Record chunk metadata
+        cumulative_rows = self.count + self.missing
+        self._chunk_boundaries.append(cumulative_rows)
+        self._chunk_missing.append(self._current_chunk_missing)
+        self._chunk_count += 1
+        
+        # Reset for next chunk
+        self._current_chunk_missing = 0
+        self._current_chunk_rows = 0
 
     def finalize(
         self, chunk_metadata: Optional[List[Tuple[int, int, int]]] = None
@@ -463,14 +491,15 @@ class NumericAccumulator:
         if self._current_chunk_rows > 0:
             self.mark_chunk_boundary()
 
-        # Build per-column chunk metadata list
+        # Build per-column chunk metadata list (only if enabled)
         per_column_chunk_metadata = []
-        start_row = 0
-        for i, end_cumulative in enumerate(self._chunk_boundaries):
-            end_row = end_cumulative - 1
-            missing_in_chunk = self._chunk_missing[i]
-            per_column_chunk_metadata.append((start_row, end_row, missing_in_chunk))
-            start_row = end_cumulative
+        if self._chunk_metadata_enabled and self._chunk_boundaries is not None:
+            start_row = 0
+            for i, end_cumulative in enumerate(self._chunk_boundaries):
+                end_row = end_cumulative - 1
+                missing_in_chunk = self._chunk_missing[i]
+                per_column_chunk_metadata.append((start_row, end_row, missing_in_chunk))
+                start_row = end_cumulative
 
         # Use per-column metadata if available, otherwise use provided global metadata
         final_chunk_metadata = (
