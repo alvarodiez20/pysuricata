@@ -194,6 +194,7 @@ def run_benchmark(
 class TestComplexityAnalysis:
     """Tests to validate time and space complexity claims."""
 
+    @pytest.mark.benchmark
     def test_time_complexity_linear_scaling(self):
         """Verify O(n) time complexity - processing time should scale linearly.
 
@@ -241,6 +242,7 @@ class TestComplexityAnalysis:
 
         print("✅ Time complexity is O(n) - VERIFIED")
 
+    @pytest.mark.benchmark
     def test_space_complexity_constant_memory(self):
         """Verify O(1) space complexity - memory should stay bounded.
 
@@ -294,6 +296,7 @@ class TestComplexityAnalysis:
 
         print("✅ Space complexity is O(1) - VERIFIED")
 
+    @pytest.mark.benchmark
     def test_validate_readme_performance_claims(self):
         """Validate specific claims made in README.md and documentation.
 
@@ -360,6 +363,7 @@ class TestComplexityAnalysis:
             "claims": claims_validated,
         }
 
+    @pytest.mark.benchmark
     def test_scalability_stress_test(self):
         """Stress test with large datasets to find actual limits.
 

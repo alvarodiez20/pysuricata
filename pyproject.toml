@@ -21,6 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Programming Language :: Python :: Implementation :: CPython"
 ]
 dependencies = [
@@ -119,3 +120,8 @@ ignore = [
 
 [tool.ruff.lint.isort]
 known-first-party = ["pysuricata"]
+
+[tool.pytest.ini_options]
+markers = [
+    "benchmark: marks tests as slow benchmarks (deselect with '-m \"not benchmark\"')",
+]

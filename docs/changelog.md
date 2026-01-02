@@ -12,6 +12,8 @@ All notable changes to PySuricata are documented here.
 ### Added
 - **CLI tool** - New command-line interface with `pysuricata profile` and `pysuricata summarize` commands
 - **Comprehensive stress tests** - New `test_complexity_analysis.py` with time/space profiling
+- **Python 3.14 support** - Officially supported in package metadata
+- **CI Benchmark markers** - Heavy stress tests marked with `@pytest.mark.benchmark` for exclusion in CI
 
 ### Fixed
 - **Memory leak fixes** - Resolved memory leaks in KMV sketch, ExtremeTracker, and chunk metadata
