@@ -422,6 +422,7 @@ class TestComplexityAnalysis:
 class TestPerformanceRegression:
     """Regression tests to catch performance degradation."""
 
+    @pytest.mark.benchmark
     def test_baseline_performance_10k_rows(self):
         """Baseline test: 10K rows should complete quickly."""
         gc.collect()
@@ -440,6 +441,7 @@ class TestPerformanceRegression:
         print(f"\n✅ 10K baseline: {result.processing_time_seconds:.2f}s, "
               f"{result.peak_memory_mb:.1f}MB peak")
 
+    @pytest.mark.benchmark
     def test_baseline_performance_100k_rows(self):
         """Baseline test: 100K rows should complete reasonably."""
         gc.collect()
