@@ -105,7 +105,7 @@ class TestMemoryStressTests:
                     'normal_values': np.random.randn(500),
                     'extreme_values': np.random.randn(500) * 1000,  # Large range
                     'mixed_values': np.concatenate([
-                        np.random.randn(400),
+                        np.random.randn(496),  # 496 + 4 = 500
                         np.array([-10000, 10000, -5000, 5000])  # Extreme values
                     ])
                 }
