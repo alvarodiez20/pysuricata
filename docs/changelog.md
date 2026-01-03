@@ -7,6 +7,18 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.14] - 2026-01-03
+
+### Added
+- **Polars LazyFrame support** - LazyFrames are now automatically collected before profiling
+- **ReportConfig alias** - Added `ReportConfig` as an alias for `ProfileConfig` for better API discoverability
+
+### Fixed
+- **Self-contained HTML reports** - HTML reports no longer depend on external CDN (Chart.js is now inlined)
+
+### Changed
+- **Lighter dependencies** - Removed unused dependencies: `matplotlib`, `seaborn`, `ipywidgets`
+
 ## [0.0.13] - 2026-01-02
 
 ### Added
