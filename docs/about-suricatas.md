@@ -3,7 +3,7 @@ title: About Suricatas (Meerkats)
 description: Why these amazing animals inspired PySuricata
 ---
 
-# About Suricatas 🦦
+# About Suricatas
 
 ## Meet the Inspiration Behind PySuricata!
 
@@ -125,7 +125,7 @@ Just as suricatas stand tall on the African plains, scanning the horizon for imp
 | 🎯 **Precision** | Mathematically proven algorithms |
 | 📚 **Teaching** | Educational documentation with formulas |
 
-## Join the Mob! 🦦🦦🦦
+## Join the Mob!
 
 When you use PySuricata, you're joining a "mob" of data analysts who value:
 - **Efficiency** over waste
@@ -138,7 +138,7 @@ When you use PySuricata, you're joining a "mob" of data analysts who value:
 
 Throughout PySuricata, you'll notice references to these remarkable animals:
 
-- 🦦 **Logo**: Features a suricata standing watch
+- **Logo**: Features a suricata standing watch
 - 🏜️ **Theme**: Nature/green colors inspired by their habitat
 - 📊 **Sentinel behavior**: Always monitoring your data
 - 🤝 **Mob mentality**: Accumulators work together
@@ -165,7 +165,7 @@ Just like suricatas teaching their young, we welcome contributors who want to le
 
 ---
 
-**Remember:** Every time you profile a dataset with PySuricata, you're channeling the vigilance, cooperation, and intelligence of a suricata mob! 🦦📊✨
+**Remember:** Every time you profile a dataset with PySuricata, you're channeling the vigilance, cooperation, and intelligence of a suricata mob! 📊✨
 
 *"In the Kalahari of big data, be a suricata - vigilant, efficient, and always ready to dig for insights!"*
 

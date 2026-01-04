@@ -106,22 +106,22 @@ class EngineManager:
                     duration=duration,
                 )
 
-            # Check for polars DataFrame
-            if (
-                "polars" in self._adapters
-                and pl is not None
-                and isinstance(data, pl.DataFrame)
-            ):
-                adapter = self._adapters["polars"]
-                duration = time.time() - start_time
-                return ProcessingResult.success_result(
-                    data=adapter,
-                    metrics={
-                        "adapter_type": "polars",
-                        "selection_reason": "polars_dataframe",
-                    },
-                    duration=duration,
-                )
+            # Check for polars DataFrame or LazyFrame
+            if "polars" in self._adapters and pl is not None:
+                # Collect LazyFrame to eager DataFrame
+                if isinstance(data, pl.LazyFrame):
+                    data = data.collect()
+                if isinstance(data, pl.DataFrame):
+                    adapter = self._adapters["polars"]
+                    duration = time.time() - start_time
+                    return ProcessingResult.success_result(
+                        data=adapter,
+                        metrics={
+                            "adapter_type": "polars",
+                            "selection_reason": "polars_dataframe",
+                        },
+                        duration=duration,
+                    )
 
             # Check for iterable of DataFrames
             if hasattr(data, "__iter__") and not isinstance(data, (str, bytes)):
@@ -269,6 +269,10 @@ class StreamingEngine:
                 )
 
             adapter = adapter_result.data
+
+            # Collect LazyFrame to eager DataFrame before processing
+            if pl is not None and isinstance(source, pl.LazyFrame):
+                source = source.collect()
 
             # Generate chunks
             chunk_result = self.chunker.chunks_from_source(

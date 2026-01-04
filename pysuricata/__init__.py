@@ -48,3 +48,6 @@ from .api import (
     profile,
     summarize,
 )
+
+# Alias for discoverability
+ReportConfig = ProfileConfig
