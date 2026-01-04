@@ -1,4 +1,4 @@
-# PySuricata 🦦
+# PySuricata
 
 [![Build Status](https://github.com/alvarodiez20/pysuricata/workflows/CI/badge.svg)](https://github.com/alvarodiez20/pysuricata/actions)
 [![PyPI version](https://img.shields.io/pypi/v/pysuricata.svg)](https://pypi.org/project/pysuricata/)
@@ -518,7 +518,7 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## 🙏 Acknowledgments
 
 Built with inspiration from:
-- **Suricatas (meerkats)** - Vigilant, cooperative, efficient 🦦
+- **Suricatas (meerkats)** - Vigilant, cooperative, efficient
 - **Welford & Pébay** - Streaming moments algorithms
 - **Bar-Yossef, Misra & Gries** - Sketch algorithms
 - Open-source community
