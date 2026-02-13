@@ -440,10 +440,4 @@ Timestamps > current time:
 - [Data Quality](../analytics/quality.md) - Quality checks
 - [Configuration Guide](../configuration.md) - All parameters
 
----
-
-*Last updated: 2025-10-12*
-
-
-
 

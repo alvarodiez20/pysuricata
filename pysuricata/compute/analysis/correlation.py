@@ -19,6 +19,7 @@ class StreamingCorr:
     def update_from_pandas(self, df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
         try:
             import pandas as pd  # type: ignore
+            from pandas.api import types as pdt  # type: ignore
         except Exception:
             return
         use_cols = [c for c in self.cols if c in df.columns]
@@ -27,19 +28,29 @@ class StreamingCorr:
         arrs: Dict[str, np.ndarray] = {}
         for c in use_cols:
             try:
-                a = pd.to_numeric(df[c], errors="coerce").to_numpy(
-                    dtype="float64", copy=False
-                )
+                # Fast path: skip pd.to_numeric for already-numeric columns
+                dt = df[c].dtype
+                if pdt.is_numeric_dtype(dt) and not pdt.is_bool_dtype(dt):
+                    a = df[c].to_numpy(dtype="float64", copy=False)
+                else:
+                    a = pd.to_numeric(df[c], errors="coerce").to_numpy(
+                        dtype="float64", copy=False
+                    )
             except Exception:
                 a = np.asarray(df[c].to_numpy(), dtype=float)
             arrs[c] = a
+        # Pre-compute finite masks once per column to avoid redundant recomputation
+        finite_masks: Dict[str, np.ndarray] = {
+            c: np.isfinite(arrs[c]) for c in use_cols
+        }
         for i in range(len(use_cols)):
             ci = use_cols[i]
             xi = arrs[ci]
+            fi = finite_masks[ci]
             for j in range(i + 1, len(use_cols)):
                 cj = use_cols[j]
                 yj = arrs[cj]
-                m = np.isfinite(xi) & np.isfinite(yj)
+                m = fi & finite_masks[cj]
                 if not m.any():
                     continue
                 x = xi[m]
@@ -94,13 +105,18 @@ class StreamingCorr:
             except Exception:
                 a = np.asarray(df[c].to_list(), dtype=float)
             arrs[c] = a
+        # Pre-compute finite masks once per column to avoid redundant recomputation
+        finite_masks_pl: Dict[str, np.ndarray] = {
+            c: np.isfinite(arrs[c]) for c in use_cols
+        }
         for i in range(len(use_cols)):
             ci = use_cols[i]
             xi = arrs[ci]
+            fi = finite_masks_pl[ci]
             for j in range(i + 1, len(use_cols)):
                 cj = use_cols[j]
                 yj = arrs[cj]
-                m = np.isfinite(xi) & np.isfinite(yj)
+                m = fi & finite_masks_pl[cj]
                 if not m.any():
                     continue
                 x = xi[m]

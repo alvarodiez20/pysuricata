@@ -1,11 +1,11 @@
-# High-level API
+# High-Level API
 
-The unified API exposes two entry points that cover most workflows:
+Two entry points cover most workflows:
 
-- `profile(data, config=None) -> Report`: compute + HTML
-- `summarize(data, config=None) -> Mapping[str, Any]`: stats-only
-
-Import from the package root:
+| Function | Returns | Use case |
+|----------|---------|----------|
+| `profile(data, config)` | `Report` | HTML report + statistics |
+| `summarize(data, config)` | `dict` | Statistics only (no HTML) |
 
 ```python
 from pysuricata import profile, summarize, ReportConfig
@@ -13,116 +13,101 @@ from pysuricata import profile, summarize, ReportConfig
 
 ## Inputs
 
-- In-memory `pandas.DataFrame`
-- `polars.DataFrame` or `LazyFrame`
-- Iterable/generator yielding pandas DataFrame chunks (you control chunking)
+`profile()` and `summarize()` accept:
 
-## Report object
+- `pandas.DataFrame`
+- `polars.DataFrame` or `polars.LazyFrame` (requires `pysuricata[polars]`)
+- `Iterable[pandas.DataFrame]` — a generator yielding chunks
+
+## Report Object
 
 ```python
-from pysuricata import profile, ReportConfig
+report = profile(df)
+report.save_html("report.html")   # Self-contained HTML file
+report.save_json("stats.json")    # Statistics as JSON
 
-rep = profile(df, config=ReportConfig())
-rep.save_html("report.html")
-rep.save_json("report.json")
-
-# In notebooks, the report displays inline
-rep
+# Jupyter: displays inline automatically
+report
 ```
 
-## Quick render
+## Stats-Only Path
+
+`summarize()` skips HTML rendering — useful for CI/CD checks:
 
 ```python
-rep = profile(df)
-rep.save_html("report.html")
-```
+stats = summarize(df)
 
-## Stats-only (CI/data-quality)
+# Dataset-level
+print(stats["dataset"]["rows_est"])
+print(stats["dataset"]["missing_cells_pct"])
 
-```python
-stats = summarize(df)  # compute-only fast path (skips HTML)
+# Per-column
+print(stats["columns"]["age"]["mean"])
 
-# Example: assert no column has > 10% missing
-bad = [
-    (name, col["missing"]) for name, col in stats["columns"].items()
-    if col.get("missing", 0) / max(1, col.get("count", 0)) > 0.10
-]
-assert not bad, f"Columns too missing: {bad}"
+# Quality gate
+assert stats["dataset"]["missing_cells_pct"] < 5.0
+assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 ```
 
 ## Configuration
 
-The top-level `ReportConfig` wraps compute and render options:
+All options live in `ReportConfig`:
 
 ```python
-from pysuricata import ReportConfig
-
 cfg = ReportConfig()
-cfg.compute.chunk_size = 250_000
-cfg.compute.columns = ["a", "b", "c"]
-cfg.compute.numeric_sample_size = 50_000
-cfg.compute.max_uniques = 4096
-cfg.compute.top_k = 100
-cfg.compute.random_seed = 42  # deterministic sampling
 
-rep = profile(df, config=cfg)
+# Chunking
+cfg.compute.chunk_size = 250_000        # rows per chunk (default: 200_000)
+
+# Sampling
+cfg.compute.numeric_sample_size = 50_000  # reservoir size (default: 20_000)
+cfg.compute.random_seed = 42              # deterministic sampling
+
+# Sketch parameters
+cfg.compute.uniques_sketch_size = 2_048  # KMV sketch size (default: 2_048)
+cfg.compute.top_k_size = 50             # Misra-Gries k (default: 50)
+
+# Correlations
+cfg.compute.compute_correlations = True
+cfg.compute.corr_threshold = 0.5        # minimum |r| to report
+
+# Column selection
+cfg.compute.columns = ["col_a", "col_b"]  # profile only these
+
+# Render
+cfg.render.title = "My Report"
+
+report = profile(df, config=cfg)
 ```
 
-### Load and chunk outside
+## Streaming Usage
 
-You can read data with any library and either pass a single DataFrame or an iterable of DataFrames you manage:
+Pass a generator to process data larger than RAM:
 
 ```python
 import pandas as pd
 from pysuricata import profile
 
-def chunk_iter():
-    for i in range(10):
-        yield pd.read_parquet(f"/data/part-{i}.parquet")
+def chunks():
+    for path in sorted(Path("data/").glob("*.parquet")):
+        yield pd.read_parquet(path)
 
-rep = profile((ch for ch in chunk_iter()))
+report = profile(chunks())
+report.save_html("report.html")
 ```
-
-## Common use cases
-
-- Small DataFrame (in-memory):
-  ```python
-  import pandas as pd
-  from pysuricata import profile
-  df = pd.DataFrame({"x": [1,2,3], "y": ["a","b","a"]})
-  rep = profile(df)
-  ```
-
-- Large dataset (streaming in-memory):
-  ```python
-  from pysuricata import ReportConfig, profile
-  cfg = ReportConfig(); cfg.compute.chunk_size = 250_000
-  rep = profile((ch for ch in chunk_iter()), config=cfg)
-  rep.save_html("report.html")
-  ```
-
-- Column selection:
-  ```python
-  from pysuricata import ReportConfig, summarize
-  cfg = ReportConfig()
-  cfg.compute.columns = ["id", "amount", "ts"]
-  stats = summarize(df[["id", "amount", "ts"]])
-  ```
-
-- CI check: enforce low duplicates and missingness:
-  ```python
-  stats = summarize(df)
-  ds = stats["dataset"]
-  assert ds["duplicate_rows_pct_est"] < 1.0
-  assert ds["missing_cells_pct"] < 5.0
-  ```
-
-## Notes and limits
-
-- Current engine consumes pandas or polars DataFrames (or iterables of pandas frames). Polars eager/LazyFrames are processed natively.
-- Render options are minimal; the HTML template is self-contained (light theme).
 
 ## Determinism
 
-Set `cfg.compute.random_seed` to make reservoir sampling and other RNG use deterministic. This stabilizes histogram shapes in tests and CI.
- 
+Set `random_seed` to make reservoir sampling reproducible:
+
+```python
+cfg = ReportConfig()
+cfg.compute.random_seed = 42
+# Same data + same seed = identical report
+```
+
+## See Also
+
+- [Configuration Guide](configuration.md) — full parameter reference
+- [Basic Usage](usage.md) — more examples
+- [Performance Tips](performance.md) — tuning for large datasets

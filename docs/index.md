@@ -2,43 +2,51 @@
   <img src="assets/logo_suricata_transparent.png" alt="PySuricata Logo" width="300" style="margin: 2rem 0;">
 </div>
 
+[![Build Status](https://github.com/alvarodiez20/pysuricata/workflows/CI/badge.svg)](https://github.com/alvarodiez20/pysuricata/actions)
+[![PyPI version](https://img.shields.io/pypi/v/pysuricata.svg)](https://pypi.org/project/pysuricata/)
+[![Python versions](https://img.shields.io/pypi/pyversions/pysuricata.svg)](https://github.com/alvarodiez20/pysuricata)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![codecov](https://codecov.io/gh/alvarodiez20/pysuricata/branch/main/graph/badge.svg)](https://codecov.io/gh/alvarodiez20/pysuricata)
+[![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://alvarodiez20.github.io/pysuricata/)
+[![Downloads](https://static.pepy.tech/badge/pysuricata)](https://pepy.tech/project/pysuricata)
+
 # PySuricata
 
-**Lightweight, high-performance exploratory data analysis for Python.**
+**Exploratory data analysis for Python, built on streaming algorithms.**
 
-Generate comprehensive, self-contained HTML reports for pandas and polars DataFrames using proven streaming algorithms that work with datasets of any size.
+PySuricata generates self-contained HTML reports for pandas and polars DataFrames. It processes data in chunks using streaming algorithms, so memory usage stays bounded regardless of dataset size.
 
 <div class="grid cards" markdown>
 
--   :material-rocket-launch:{ .lg .middle } **Get Started Fast**
+-   **Quick Start**
 
     ---
 
-    Install and create your first report in 60 seconds.
+    Install PySuricata and generate your first report.
 
-    [:octicons-arrow-right-24: Quick Start](quickstart.md)
+    [:octicons-arrow-right-24: Get Started](quickstart.md)
 
--   :material-chart-line:{ .lg .middle } **Why PySuricata?**
-
-    ---
-
-    Learn how PySuricata compares to alternatives.
-
-    [:octicons-arrow-right-24: Competitive Advantages](why-pysuricata.md)
-
--   :material-book-open:{ .lg .middle } **User Guide**
+-   **Why PySuricata?**
 
     ---
 
-    Comprehensive guides for all use cases.
+    Understand the streaming architecture and design decisions.
 
-    [:octicons-arrow-right-24: Usage Documentation](usage.md)
+    [:octicons-arrow-right-24: Learn More](why-pysuricata.md)
 
--   :material-api:{ .lg .middle } **API Reference**
+-   **User Guide**
 
     ---
 
-    Complete API documentation with examples.
+    Detailed guides for configuration, advanced features, and more.
+
+    [:octicons-arrow-right-24: Read the Guide](usage.md)
+
+-   **API Reference**
+
+    ---
+
+    Full API documentation generated from source code.
 
     [:octicons-arrow-right-24: API Docs](api.md)
 
@@ -46,47 +54,34 @@ Generate comprehensive, self-contained HTML reports for pandas and polars DataFr
 
 ## Features
 
-<div class="grid" markdown>
+- **Streaming processing** — Data is processed in configurable chunks, keeping memory usage bounded. Useful for datasets that don't fit in RAM.
+- **Mathematically grounded** — Uses Welford's algorithm for numerically stable moments, Pébay's formulas for mergeable statistics, KMV sketches for distinct count estimation, and Misra-Gries for heavy hitters.
+- **Pandas and Polars support** — Works natively with both `pandas.DataFrame` and `polars.DataFrame` / `polars.LazyFrame`.
+- **Self-contained reports** — Generates a single HTML file with inline CSS, JS, and SVG charts. No external assets or dependencies needed to view.
+- **Configurable** — Control chunk sizes, sample sizes, sketch parameters, correlation thresholds, and rendering options via `ReportConfig`.
+- **Reproducible** — Seeded random sampling produces deterministic results across runs.
 
-=== "Memory Efficient"
+## Installation
 
-    **True streaming architecture** processes datasets larger than RAM with bounded memory using O(1) or O(log n) algorithms per column.
+=== "uv (Recommended)"
 
-    ```python
-    # Profile 10GB dataset in 50MB memory
-    def read_chunks():
-        for i in range(100):
-            yield pd.read_parquet(f"part-{i}.parquet")
-    
-    report = profile(read_chunks())
+    ```bash
+    uv add pysuricata
     ```
 
-=== "Fast & Accurate"
+=== "pip"
 
-    **Proven algorithms** with mathematical guarantees: Welford/Pébay for exact moments, KMV/Misra-Gries for approximate analytics.
-
-    **15x faster** than pandas-profiling on 1GB datasets.
-
-=== "Framework Flexible"
-
-    **Native support** for pandas and polars DataFrames. Works with CSV, Parquet, SQL, or any data source.
-
-    ```python
-    # Pandas
-    report = profile(pd_df)
-    
-    # Polars
-    report = profile(pl_df)
-    
-    # Polars Lazy
-    report = profile(lf)
+    ```bash
+    pip install pysuricata
     ```
 
-=== "Portable Reports"
+This installs PySuricata along with its dependencies: **pandas**, **numpy** (on Python ≥3.13), **markdown**, and **psutil**.
 
-    **Self-contained HTML** with inline CSS/JS/images. Share via email, cloud storage, or static hosting. No dependencies required.
+To also install polars support:
 
-</div>
+```bash
+pip install pysuricata[polars]
+```
 
 ## Quick Example
 
@@ -94,110 +89,66 @@ Generate comprehensive, self-contained HTML reports for pandas and polars DataFr
 import pandas as pd
 from pysuricata import profile
 
-# Load data
-df = pd.read_csv("data.csv")
+# Load Titanic dataset
+url = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
+df = pd.read_csv(url)
 
 # Generate report
 report = profile(df)
-report.save_html("report.html")
+report.save_html("titanic_report.html")
 ```
 
-That's it! Open `report.html` to see:
+This is the actual report generated from the code above (Titanic dataset, 891 rows × 12 columns):
 
-- Dataset overview (rows, columns, memory, missing, duplicates)
-- Per-variable analysis (numeric, categorical, datetime, boolean)
-- Correlations between numeric variables  
-- Missing values patterns
-- Data quality metrics
+<div style="border: 2px solid #7CB342; border-radius: 8px; overflow: hidden; margin: 2rem 0;">
+  <iframe src="assets/titanic_report.html" width="100%" height="800px" style="border: none;"></iframe>
+</div>
 
-## What You'll Find in Reports
+<div align="center">
+  <p><em>Can't see the report? <a href="assets/titanic_report.html" target="_blank">Open in new tab →</a></em></p>
+</div>
 
-### Numeric Variables
-- Central tendency: mean, median
-- Dispersion: variance, std, IQR, MAD
-- Shape: skewness, kurtosis
-- Quantiles and histograms
-- Outlier detection (IQR, z-score, MAD)
-- Correlations with other columns
+## How It Works
 
-### Categorical Variables
-- Top values and frequencies
-- Distinct count (exact or approximate)
-- Entropy and Gini impurity
-- String length statistics
-- Case/trim variants
+PySuricata reads data in chunks and updates lightweight accumulators for each column. This means:
 
-### DateTime Variables
-- Temporal range and coverage
-- Hour/day-of-week/month distributions
-- Monotonicity detection
-- Timeline visualizations
+| Aspect | Approach |
+|--------|----------|
+| **Memory** | Bounded by chunk size + accumulator state, not dataset size |
+| **Speed** | Single pass over the data — each row is read once |
+| **Accuracy** | Exact for moments (mean, variance, skewness, kurtosis); approximate with known error bounds for distinct counts and top-k |
+| **Mergeability** | Accumulators can be merged across chunks or machines |
 
-### Boolean Variables
-- True/false ratios
-- Entropy calculation
-- Imbalance detection
-- Balance scores
-
-## Key Advantages
-
-✅ **Memory efficient** - Process GB/TB datasets in bounded memory  
-✅ **Fast** - Single-pass O(n) algorithms  
-✅ **Accurate** - Exact moments, provable approximation bounds  
-✅ **Portable** - Self-contained HTML reports  
-✅ **Minimal dependencies** - Just pandas/polars  
-✅ **Reproducible** - Seeded sampling for deterministic results  
-✅ **Customizable** - Extensive configuration options  
-
-## Installation
-
-```bash
-pip install pysuricata
-```
-
-Optional polars support:
-
-```bash
-pip install pysuricata polars
-```
+Reports include per-column statistics, histograms, correlation chips, missing value analysis, outlier detection, and more — all computed during the single streaming pass.
 
 ## Next Steps
 
 <div class="grid cards" markdown>
 
--   **Never used PySuricata?**
+-   **New to PySuricata?**
 
     Start with the [Quick Start Guide](quickstart.md)
 
--   **Coming from pandas-profiling?**
-
-    See [Why PySuricata?](why-pysuricata.md)
-
--   **Need specific examples?**
+-   **Want specific examples?**
 
     Check the [Examples Gallery](examples.md)
 
--   **Want to understand the math?**
+-   **Interested in the algorithms?**
 
     Explore [Statistical Methods](stats/overview.md)
+
+-   **Want to contribute?**
+
+    Read the [Contributing Guide](contributing.md)
 
 </div>
 
 ## Community & Support
 
-- 📖 [Documentation](https://alvarodiez20.github.io/pysuricata/)
-- 💬 [GitHub Discussions](https://github.com/alvarodiez20/pysuricata/discussions)
-- 🐛 [Issue Tracker](https://github.com/alvarodiez20/pysuricata/issues)
-- ⭐ [Star on GitHub](https://github.com/alvarodiez20/pysuricata)
-
-## Contributing
-
-We welcome contributions! See the [Contributing Guide](contributing.md) to get started.
+- [GitHub Discussions](https://github.com/alvarodiez20/pysuricata/discussions)
+- [Issue Tracker](https://github.com/alvarodiez20/pysuricata/issues)
+- [Star on GitHub](https://github.com/alvarodiez20/pysuricata)
 
 ## License
 
 MIT License. See [LICENSE](https://github.com/alvarodiez20/pysuricata/blob/main/LICENSE) for details.
-
----
-
-**Ready to profile your data?** [Install now →](install.md)

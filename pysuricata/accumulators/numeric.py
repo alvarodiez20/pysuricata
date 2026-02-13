@@ -225,8 +225,11 @@ class NumericAccumulator:
         # Convert to numpy array for maximum performance
         try:
             values = np.asarray(arr, dtype=float)
-            # Count missing values in the original array
-            self._count_missing_values(arr)
+            # Count missing/inf values using vectorized numpy operations
+            nan_count = int(np.sum(np.isnan(values)))
+            inf_count = int(np.sum(np.isinf(values)))
+            self.missing += nan_count
+            self.inf += inf_count
         except (ValueError, TypeError):
             # Robust error handling for mixed-type data
             values = self._convert_to_numeric(arr)
@@ -312,9 +315,11 @@ class NumericAccumulator:
         self.zeros += int(np.sum(finite_values == 0))
         self.negatives += int(np.sum(finite_values < 0))
 
-        # Check if all values are integer-like for type inference
+        # Check if all values are integer-like for type inference (vectorized)
         if self._int_like_all:
-            self._int_like_all = all(abs(v - round(v)) < 1e-10 for v in finite_values)
+            self._int_like_all = bool(
+                np.all(np.abs(finite_values - np.round(finite_values)) < 1e-10)
+            )
 
         # Update algorithm components with vectorized operations
         self._moments.update(finite_values)
@@ -323,10 +328,9 @@ class NumericAccumulator:
         # Update streaming histogram for true distribution
         self._streaming_histogram.add_many(finite_values)
 
-        # Batch update unique estimates and top values
-        for value in finite_values:
-            self._uniques.add(value)
-            self._topk.add(value)
+        # Batch update unique estimates and top values using vectorized operations
+        self._uniques.add_many(finite_values)
+        self._topk.add_many(finite_values)
 
         # Update extremes with efficient index tracking
         indices = np.arange(len(values))[finite_mask]

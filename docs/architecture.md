@@ -5,144 +5,215 @@ description: How pysuricata generates EDA reports at scale — chunked ingestion
 
 # Architecture & Internals
 
-This document explains how `pysuricata` profiles data efficiently and renders a self‑contained HTML report.
+How `pysuricata` profiles data efficiently and renders a self-contained HTML report.
 
+## High-Level Pipeline
 
-## Overview
+```mermaid
+flowchart LR
+    A["Data Source"] --> B["Chunk Iterator"]
+    B --> C["Typed Accumulators"]
+    C --> D["Summary Metrics"]
+    D --> E["HTML Renderer"]
 
+    style A fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
+    style B fill:#C8E6C9,stroke:#2E7D32,color:#1B5E20
+    style C fill:#A5D6A7,stroke:#2E7D32,color:#1B5E20
+    style D fill:#81C784,stroke:#2E7D32,color:#1B5E20
+    style E fill:#66BB6A,stroke:#2E7D32,color:#fff
 ```
-┌────────┐   ┌──────────────┐   ┌────────────────────┐   ┌──────────────┐
-│ Source │ → │ Chunk iterator│ → │ Typed accumulators │ → │ HTML template │
-└────────┘   └──────────────┘   └────────────────────┘   └──────────────┘
-     In-memory DataFrame(s)          numeric / categorical / datetime / boolean
+
+**Data Sources** → pandas DataFrames, polars DataFrames, or any iterable of DataFrames (for streaming).
+
+**Chunk Iterator** → If a single DataFrame is passed, it is treated as one chunk. Generators are consumed chunk-by-chunk to bound memory.
+
+**Typed Accumulators** → Each column is assigned a specialized accumulator based on its inferred type. All accumulators are streaming: they accept one chunk at a time and maintain bounded state.
+
+**Summary Metrics** → After all chunks are consumed, accumulators are finalized and dataset-wide metrics (missingness, duplicates, etc.) are computed.
+
+**HTML Renderer** → A single-file Jinja2 template with inline CSS/JS produces a portable, self-contained HTML report.
+
+---
+
+## Accumulator Architecture
+
+```mermaid
+classDiagram
+    class BaseAccumulator {
+        +name: str
+        +count: int
+        +missing: int
+        +update(chunk)
+        +finalize() Summary
+    }
+
+    class NumericAccumulator {
+        +StreamingMoments
+        +ReservoirSampler
+        +KMV sketch
+        +MisraGries top-k
+        +ExtremeTracker
+    }
+
+    class CategoricalAccumulator {
+        +KMV sketch × 3
+        +MisraGries top-k
+        +String length stats
+    }
+
+    class DatetimeAccumulator {
+        +min/max timestamps
+        +hour/weekday/month counts
+        +monotonicity tracker
+    }
+
+    class BooleanAccumulator {
+        +true_count
+        +false_count
+    }
+
+    BaseAccumulator <|-- NumericAccumulator
+    BaseAccumulator <|-- CategoricalAccumulator
+    BaseAccumulator <|-- DatetimeAccumulator
+    BaseAccumulator <|-- BooleanAccumulator
 ```
 
-## Chunk ingestion
+Each accumulator follows the same interface:
 
-- Iterable of pandas DataFrames: consumed as-is.
-- Single pandas DataFrame: treated as one chunk (or sliced by rows if you pre-split it).
+1. **`update(chunk)`** — process a batch of values, update internal state
+2. **`finalize()`** — compute final statistics from accumulated state
 
-## Typed accumulators
+---
 
-Each column kind is handled by a specialized accumulator with small, mergeable state:
+## Data Flow
 
-- NumericAccumulator
-  - Moments (n, mean, M2, M3, M4) via Welford/Pébay (exact, mergeable)
-  - Min/Max, zeros, negatives, ±inf, missing counters
-  - Reservoir sample (default 20k) for quantiles, histograms, and shape hints
-  - KMV (K‑Minimum Values) for approximate distinct
-  - Misra–Gries top‑k for discrete integer‑like columns (on demand)
-  - Heaping %, granularity (decimals/step), bimodality hint
-  - Streaming correlation chips (optional, numeric vs numeric)
-  - Extremes with row indices (min / max tracked across chunks)
+```mermaid
+sequenceDiagram
+    participant User
+    participant profile as profile()
+    participant Infer as Type Inference
+    participant Acc as Accumulators
+    participant Corr as Correlations
+    participant Render as HTML Renderer
 
-- CategoricalAccumulator
-  - KMV for distinct, Misra–Gries for top‑k
-  - String length stats (avg, p90), empty strings
-  - Case/trim variant distinctness
+    User->>profile: DataFrame / generator
+    profile->>Infer: First chunk
+    Infer-->>profile: Column types
+    profile->>Acc: Create typed accumulators
 
-- DatetimeAccumulator
-  - Min/Max timestamps (ns), counts by hour / day of week / month
-  - Monotonicity hints
+    loop Each chunk
+        profile->>Acc: update(chunk)
+        profile->>Corr: update pairs (optional)
+    end
 
-- BooleanAccumulator
-  - True/False counts, missing, imbalance hints
+    profile->>Acc: finalize()
+    Acc-->>profile: Per-column summaries
+    profile->>Corr: finalize()
+    Corr-->>profile: Correlation matrix
 
-All accumulators expose `update(...)` and `finalize() → SummaryDataclass` for rendering.
+    profile->>Render: Summaries + config
+    Render-->>User: Report (HTML)
+```
 
-## Streaming correlations
+---
 
-`_StreamingCorr` maintains pairwise sufficient statistics for numeric columns and emits top absolute correlations above a configurable threshold for each column.
+## Streaming Algorithms
 
-## Rendering pipeline
+Each accumulator uses algorithms chosen for **O(1) per-value update** and **bounded memory**:
 
-1. Infer column kinds from the first chunk.
-2. Build accumulators and consume the first chunk.
-3. Consume remaining chunks, update streaming correlations if enabled.
-4. Compute summary metrics (missingness, duplicates, constant columns, etc.).
-5. Render the template with:
-   - Summary cards (rows, cols, processed bytes (≈), missing/duplicates)
-   - Top missing columns
-   - Variables (cards by type)
-   - Optional dataset sample
+```mermaid
+flowchart TB
+    subgraph Numeric["Numeric Accumulator"]
+        N1["Welford/Pébay<br/>mean, var, skew, kurt<br/>O(1) space"]
+        N2["Reservoir Sampling<br/>quantiles, histograms<br/>O(s) space"]
+        N3["KMV Sketch<br/>distinct count<br/>O(k) space"]
+        N4["Misra-Gries<br/>top-k values<br/>O(k) space"]
+        N5["Extreme Tracker<br/>min/max with indices<br/>O(k) space"]
+    end
 
-The template is a single file with inline CSS/JS/images to produce a portable HTML.
+    subgraph Categorical["Categorical Accumulator"]
+        C1["KMV × 3<br/>distinct: original, lower, trimmed"]
+        C2["Misra-Gries<br/>top-k values"]
+        C3["String Length<br/>avg, p90"]
+    end
 
-### Shared helpers (deduped)
+    subgraph DateTime["DateTime Accumulator"]
+        D1["Min/Max<br/>timestamps"]
+        D2["Counters<br/>hour/weekday/month"]
+        D3["Monotonicity<br/>pair comparison"]
+    end
 
-Rendering utilities live in two small modules for reuse and testability:
+    subgraph Boolean["Boolean Accumulator"]
+        B1["Counters<br/>true/false/missing"]
+    end
 
-- `pysuricata/render/svg_utils.py`
-  - `safe_col_id`, `nice_ticks`, `fmt_tick`, `svg_empty`
-- `pysuricata/render/format_utils.py`
-  - `human_bytes`, `fmt_num`, `fmt_compact`
+    style Numeric fill:#E8F5E9,stroke:#2E7D32
+    style Categorical fill:#FFF3E0,stroke:#E65100
+    style DateTime fill:#E3F2FD,stroke:#1565C0
+    style Boolean fill:#F3E5F5,stroke:#6A1B9A
+```
 
-These power both the main report and the individual variable cards with consistent tick/label formatting.
+---
+
+## Rendering Pipeline
+
+```mermaid
+flowchart TB
+    A["Finalized Summaries"] --> B["Dataset-Level Metrics"]
+    B --> C["Jinja2 Template"]
+    C --> D["Inline CSS + JS"]
+    C --> E["Summary Cards"]
+    C --> F["Variable Cards"]
+    C --> G["Sample Table"]
+    D --> H["Single HTML File"]
+    E --> H
+    F --> H
+    G --> H
+
+    style H fill:#66BB6A,stroke:#2E7D32,color:#fff
+```
+
+The template produces a **single portable HTML file** — no external dependencies, no server required.
+
+**Summary cards** show: rows, columns, processed bytes, missing %, duplicates %.
+
+**Variable cards** are rendered per-type with SVG charts, statistics, and quality flags.
+
+### Shared Utilities
+
+| Module | Functions | Purpose |
+|--------|-----------|---------|
+| `render/svg_utils.py` | `safe_col_id`, `nice_ticks`, `fmt_tick`, `svg_empty` | SVG chart helpers |
+| `render/format_utils.py` | `human_bytes`, `fmt_num`, `fmt_compact` | Number formatting |
+
+---
 
 ## Configuration
 
-`ReportConfig` controls chunk size, sample sizes, distinct/top‑k sketch sizes, and correlation settings, plus logging and checkpointing. It also exposes `random_seed` to make sampling deterministic for reproducible visuals.
+`ReportConfig` controls all behavior:
 
-Key fields:
+| Parameter | Default | Effect |
+|-----------|---------|--------|
+| `chunk_size` | 200,000 | Rows per chunk |
+| `numeric_sample_size` | 20,000 | Reservoir size for quantiles |
+| `uniques_sketch_size` | 2,048 | KMV sketch size |
+| `top_k_size` | 50 | Misra-Gries capacity |
+| `compute_correlations` | `True` | Enable/disable correlation chips |
+| `corr_threshold` | 0.5 | Minimum \|r\| to display |
+| `random_seed` | `None` | Deterministic sampling |
+| `include_sample` | `True` | Include data sample in report |
 
-- `chunk_size`: rows per chunk (default 200k)
-- `numeric_sample_k`: reservoir size for numeric sampling (default 20k)
-- `uniques_k`: KMV sketch size (default 2048)
-- `topk_k`: Misra–Gries capacity (default 50)
-- `compute_correlations`: enable/disable streaming correlation chips
-- `corr_threshold`, `corr_max_cols`, `corr_max_per_col`
-- `include_sample`, `sample_rows`
-- Checkpointing: write periodic pickles and (optional) partial HTML
+---
 
-## Processed bytes & timing
+## Security & Correctness
 
-The report shows:
-- Processed bytes (≈): cumulative bytes processed across chunks (not process RSS)
-- Precise generation time in seconds (e.g., `0.02s`)
-
-## Security & correctness notes
-
-- HTML escaping: column names, labels, and chip text are escaped before rendering.
-- Missing/inf handling: NaN and ±Inf are excluded from moment calculations but reported separately.
-- Approximation badges: estimates are marked with `(≈)` or an `approx` badge.
+- **HTML escaping** — column names and labels are escaped before rendering
+- **Missing/Inf handling** — NaN and ±Inf excluded from moments, reported separately
+- **Approximation badges** — estimates marked with `(≈)` or `approx` badge
+- **Reproducibility** — set `random_seed` for deterministic results
 
 ## Extending
 
-- Add backends: polars/Arrow datasets or DuckDB scans can be plugged into the chunk iterator.
-- Add quantile sketches: t‑digest or KLL can replace the default reservoir for better tail accuracy.
-- Add new sections: drift comparisons, profile JSON export to file, CLI wrapper.
-
-## Complexity Analysis
-
-### Time Complexity
-
-All accumulators are designed for streaming processing with constant-time operations per element:
-
-- **NumericAccumulator**: O(1) per element for basic statistics, O(log k) for extreme tracking
-- **CategoricalAccumulator**: O(1) per element for sketches, O(log k) for top-k tracking
-- **DatetimeAccumulator**: O(1) per element for basic operations
-- **BooleanAccumulator**: O(1) per element for counting operations
-
-### Space Complexity
-
-Memory usage is bounded and independent of dataset size:
-
-- **KMV Sketch**: O(k) where k is the sketch size (default: 2,048)
-- **Reservoir Sampling**: O(s) where s is the sample size (default: 20,000)
-- **Misra-Gries Top-K**: O(k) where k is the number of top values (default: 50)
-- **Extreme Tracking**: O(k) where k is max extremes (default: 5)
-- **Chunk Metadata**: O(c) where c is max chunks tracked (default: 1,000)
-
-### Memory Optimization Features
-
-- **Bounded Exact Counting**: KMV switches from exact counting to approximation after tracking 100 unique values
-- **Heap-Based Extremes**: Uses heapq for O(log k) insertions instead of O(k) list operations
-- **Optional Chunk Metadata**: Can be disabled to save memory when visualization isn't needed
-- **Configurable Limits**: All memory usage can be tuned via configuration parameters
-
-### Performance Characteristics
-
-- **Scalability**: Can process datasets larger than available memory
-- **Memory Efficiency**: Sub-linear memory growth (typically <1KB per row)
-- **Processing Speed**: Optimized for streaming with minimal overhead
-- **Accuracy**: Maintains statistical accuracy while using bounded memory
+- **Backends** — polars/Arrow/DuckDB can be connected via the chunk iterator interface
+- **Quantile sketches** — t-digest or KLL can replace the default reservoir
+- **New sections** — drift comparisons, JSON export, CLI wrapper

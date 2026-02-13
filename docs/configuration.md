@@ -118,9 +118,9 @@ Correlation settings are available through the public `ComputeOptions` API.
 Enable/disable pairwise correlation computation.
 
 ```python
-from pysuricata import profile, ProfileConfig, ComputeOptions
+from pysuricata import profile, ReportConfig, ComputeOptions
 
-config = ProfileConfig(compute=ComputeOptions(
+config = ReportConfig(compute=ComputeOptions(
     compute_correlations=False  # Disable for speed
 ))
 report = profile(df, config=config)
@@ -131,7 +131,7 @@ report = profile(df, config=config)
 Minimum |r| to report.
 
 ```python
-config = ProfileConfig(compute=ComputeOptions(
+config = ReportConfig(compute=ComputeOptions(
     corr_threshold=0.7  # Only strong correlations
 ))
 ```
@@ -141,7 +141,7 @@ config = ProfileConfig(compute=ComputeOptions(
 Maximum columns for correlation computation. Skip if exceeded.
 
 ```python
-config = ProfileConfig(compute=ComputeOptions(
+config = ReportConfig(compute=ComputeOptions(
     corr_max_cols=100  # Higher limit
 ))
 ```
@@ -151,7 +151,7 @@ config = ProfileConfig(compute=ComputeOptions(
 Maximum correlations to show per column.
 
 ```python
-config = ProfileConfig(compute=ComputeOptions(
+config = ReportConfig(compute=ComputeOptions(
     corr_max_per_col=5  # Show top 5
 ))
 ```
@@ -306,6 +306,3 @@ config.compute.chunk_size = -1  # Invalid
 - [Advanced Features](advanced.md) - Advanced usage patterns
 - [API Reference](api.md) - Complete API documentation
 
----
-
-*Last updated: 2025-10-12*

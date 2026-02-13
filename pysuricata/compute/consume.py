@@ -99,17 +99,37 @@ def _to_bool_array_pandas(s: pd.Series) -> List[Optional[bool]]:  # type: ignore
         arr = s.astype("boolean").tolist()
         return [None if x is pd.NA else bool(x) for x in arr]
 
-    def _coerce(v: Any) -> Optional[bool]:
-        if v is None or (isinstance(v, float) and math.isnan(v)):
-            return None
-        vs = str(v).strip().lower()
-        if vs in {"true", "1", "t", "yes", "y"}:
-            return True
-        if vs in {"false", "0", "f", "no", "n"}:
-            return False
-        return None
+    # Vectorized boolean coercion using pandas string operations
+    try:
+        lower = s.astype(str).str.strip().str.lower()
+        true_mask = lower.isin({"true", "1", "t", "yes", "y"})
+        false_mask = lower.isin({"false", "0", "f", "no", "n"})
 
-    return [_coerce(v) for v in s.tolist()]
+        # Build result array using numpy for speed
+        # Default None, set True/False based on masks
+        true_np = true_mask.to_numpy()
+        false_np = false_mask.to_numpy()
+        result: List[Optional[bool]] = [None] * len(s)
+        true_indices = np.where(true_np)[0]
+        false_indices = np.where(false_np)[0]
+        for i in true_indices:
+            result[i] = True
+        for i in false_indices:
+            result[i] = False
+        return result
+    except Exception:
+        # Fallback to per-value coercion for edge cases
+        def _coerce(v: Any) -> Optional[bool]:
+            if v is None or (isinstance(v, float) and math.isnan(v)):
+                return None
+            vs = str(v).strip().lower()
+            if vs in {"true", "1", "t", "yes", "y"}:
+                return True
+            if vs in {"false", "0", "f", "no", "n"}:
+                return False
+            return None
+
+        return [_coerce(v) for v in s.tolist()]
 
 
 def _to_datetime_ns_array_pandas(s: pd.Series) -> List[Optional[int]]:  # type: ignore[name-defined]

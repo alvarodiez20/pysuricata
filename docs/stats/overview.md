@@ -12,62 +12,71 @@ PySuricata analyzes **four variable types** with specialized algorithms for each
 ### Numeric Variables
 
 **Exact statistics** using Welford/Pébay streaming algorithms:
+
 - Mean, variance, standard deviation
 - Skewness, kurtosis
 - Min, max, range
 
 **Approximate statistics** using probabilistic data structures:
+
 - Quantiles (reservoir sampling)
 - Distinct count (KMV sketch)
 - Histograms (adaptive binning)
 
 **Key formulas:**
-\[
+
+$$
 \bar{x} = \frac{1}{n}\sum x_i, \quad s^2 = \frac{1}{n-1}\sum (x_i - \bar{x})^2
-\]
+$$
 
 **→ [Full Documentation](numeric.md)**
 
 ### Categorical Variables
 
 **Analysis includes:**
+
 - Top-k values (Misra-Gries algorithm)
 - Distinct count (KMV sketch)
 - Entropy and Gini impurity
 - String statistics
 
 **Key formulas:**
-\[
+
+$$
 H(X) = -\sum p(x) \log_2 p(x), \quad \text{Gini}(X) = 1 - \sum p(x)^2
-\]
+$$
 
 **→ [Full Documentation](categorical.md)**
 
 ### DateTime Variables
 
 **Temporal analysis:**
+
 - Hour, day-of-week, month distributions
 - Monotonicity detection
-- Timeline visualizations
+- Time span and sampling rate
 
 **Key formulas:**
-\[
-\Delta t = \max(t) - \min(t), \quad M = \frac{n_{\text{increasing}}}{n-1}
-\]
+
+$$
+M = \frac{n_{\uparrow}}{n - 1}, \quad r = \frac{n}{\Delta t}
+$$
 
 **→ [Full Documentation](datetime.md)**
 
 ### Boolean Variables
 
 **Binary analysis:**
-- True/false counts and ratios
-- Entropy calculation
+
+- True/False proportions
+- Entropy and balance metrics
 - Imbalance detection
 
 **Key formulas:**
-\[
-H = -p \log_2(p) - (1-p)\log_2(1-p)
-\]
+
+$$
+H = -p \log_2(p) - (1-p) \log_2(1-p)
+$$
 
 **→ [Full Documentation](boolean.md)**
 
@@ -75,64 +84,38 @@ H = -p \log_2(p) - (1-p)\log_2(1-p)
 
 ### Correlations
 
-Streaming Pearson correlation between numeric columns.
+Streaming Pearson correlation between numeric columns, using pairwise co-moment tracking. Correlations above a configurable threshold are reported.
 
-\[
-r_{XY} = \frac{\sum(x_i - \bar{x})(y_i - \bar{y})}{\sqrt{\sum(x_i - \bar{x})^2}\sqrt{\sum(y_i - \bar{y})^2}}
-\]
-
-**→ [Full Documentation](../analytics/correlations.md)**
+$$
+r_{xy} = \frac{\text{Cov}(X, Y)}{s_X \cdot s_Y}
+$$
 
 ### Missing Values
 
-Intelligent missing data analysis with chunk-level tracking.
+Per-column and dataset-wide missing value analysis:
 
-\[
-MR = \frac{n_{\text{missing}}}{n_{\text{total}}}
-\]
-
-**→ [Full Documentation](../analytics/missing-values.md)**
+- Missing count and percentage per column
+- Top missing columns visualization
+- Missing pattern detection
 
 ## Algorithms
 
-### Streaming Statistics
+All statistics use **single-pass streaming algorithms** with bounded memory:
 
-- **Welford's algorithm**: Online mean/variance
-- **Pébay's formulas**: Parallel merging
-
-**→ [Full Documentation](../algorithms/streaming.md)**
-
-### Sketch Algorithms
-
-- **KMV**: Distinct count estimation
-- **Misra-Gries**: Top-k heavy hitters
-- **Reservoir sampling**: Uniform sampling
-
-**→ [Full Documentation](../algorithms/sketches.md)**
+| Algorithm | Used for | Space |
+|-----------|----------|-------|
+| Welford/Pébay | Mean, variance, skewness, kurtosis | O(1) |
+| Reservoir sampling | Quantiles, histograms | O(s) |
+| KMV sketch | Distinct count | O(k) |
+| Misra-Gries | Top-k frequent values | O(k) |
 
 ## Guarantees
 
-| Method | Type | Error |
-|--------|------|-------|
-| Mean, variance | Exact | Machine precision |
-| Skewness, kurtosis | Exact | Machine precision |
-| Distinct (KMV) | Approximate | ~2% (k=2048) |
-| Top-k (Misra-Gries) | Guarantee | All freq > n/k found |
-| Quantiles (reservoir) | Exact | From uniform sample |
+- **Exact:** moments (mean, variance, skewness, kurtosis), min/max, counts
+- **Approximate:** quantiles (within ±1 percentile), distinct count (~2.2% error with default k=2048)
+- **Deterministic:** set `random_seed` for reproducible reservoir sampling
 
 ## See Also
 
-- [Numeric Analysis](numeric.md) - Complete numeric documentation
-- [Categorical Analysis](categorical.md) - Categorical methods
-- [DateTime Analysis](datetime.md) - Temporal analysis
-- [Boolean Analysis](boolean.md) - Binary variables
-- [Streaming Algorithms](../algorithms/streaming.md) - Algorithm details
-- [Sketch Algorithms](../algorithms/sketches.md) - Probabilistic structures
-
----
-
-*Last updated: 2025-10-12*
-
-
-
-
+- [Streaming Algorithms](../algorithms/streaming.md) — Algorithm details
+- [Sketch Algorithms](../algorithms/sketches.md) — Probabilistic structures

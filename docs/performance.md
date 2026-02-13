@@ -142,16 +142,9 @@ Time(n) ≈ k × n
 
 where k is constant per row processing time.
 
-### Comparison to Competitors
+### Streaming Advantage
 
-| Library | Memory (1M+ rows) | Streaming |
-|---------|-------------------|----------|
-| **pysuricata** | **~50 MB** (constant) | ✅ Yes |
-| pandas-profiling | 1.2 GB | ❌ No |
-| sweetviz | 1.1 GB | ❌ No |
-| pandas-eda | 1.0 GB | ❌ No |
-
-> PySuricata's key advantage is **bounded memory usage** - competitors cannot process datasets larger than RAM.
+Because PySuricata processes data in chunks, memory stays bounded regardless of dataset size. Tools that load the full dataset into memory cannot process datasets larger than available RAM.
 
 ## Advanced Configuration
 
@@ -259,11 +252,4 @@ assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 - [Configuration Guide](configuration.md) - All configuration options
 - [Examples](examples.md) - Real-world use cases
 - [Advanced Features](advanced.md) - Power user tips
-
----
-
-*Last updated: 2025-10-12*
-
-
-
 

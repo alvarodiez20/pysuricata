@@ -544,10 +544,4 @@ print(f"Gini: {country_stats['gini']:.3f}")
 - [Data Quality](../analytics/quality.md) - Quality metrics
 - [Configuration Guide](../configuration.md) - All parameters
 
----
-
-*Last updated: 2025-10-12*
-
-
-
 

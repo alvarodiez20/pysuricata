@@ -436,10 +436,4 @@ Columns with True, False, and many NULLs:
 - [Data Quality](../analytics/quality.md) - Quality metrics
 - [Configuration Guide](../configuration.md) - All parameters
 
----
-
-*Last updated: 2025-10-12*
-
-
-
 

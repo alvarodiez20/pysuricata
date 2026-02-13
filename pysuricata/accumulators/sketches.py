@@ -39,11 +39,11 @@ class KMV:
 
     def add_many(self, values: Sequence[Any]) -> None:
         """Batch add values to KMV sketch for improved performance.
-        
+
         Args:
             values: Sequence of values to add
         """
-        if not values:
+        if len(values) == 0:
             return
             
         # Convert all values to bytes and hash them in batch
@@ -359,6 +359,43 @@ class MisraGries:
         for key in to_del:
             del self.counters[key]
 
+    def add_many(self, values: Sequence[Any]) -> None:
+        """Batch add values to MisraGries sketch for improved performance.
+
+        Pre-counts occurrences in the batch, then applies weighted updates.
+        This avoids per-value Python overhead when the batch has many repeats.
+
+        Args:
+            values: Sequence of values to add
+        """
+        if len(values) == 0:
+            return
+
+        # Pre-count values in the batch for weighted updates
+        batch_counts: Dict[Any, int] = {}
+        for v in values:
+            if v in batch_counts:
+                batch_counts[v] += 1
+            else:
+                batch_counts[v] = 1
+
+        # Apply weighted updates — existing keys first (cheap), then new keys
+        for val, count in batch_counts.items():
+            if val in self.counters:
+                self.counters[val] += count
+            elif len(self.counters) < self.k:
+                self.counters[val] = count
+            else:
+                # Decrement all counters by count and prune
+                self.counters[val] = count
+                min_count = min(self.counters.values())
+                if min_count > 0:
+                    self.counters = {
+                        k: v - min_count
+                        for k, v in self.counters.items()
+                        if v - min_count > 0
+                    }
+
     def items(self) -> List[Tuple[Any, int]]:
         # items are approximate; a second pass could refine if needed
         return sorted(self.counters.items(), key=lambda kv: (-kv[1], str(kv[0])[:64]))
@@ -413,8 +450,8 @@ class RowKMV:
         except Exception:
             return
         try:
-            # Better row-hash: hash the tuple of all column hashes
-            # This prevents XOR collisions that can occur with similar numeric values
+            # Vectorized row hashing: combine column hashes using a polynomial hash
+            # instead of per-row tuple construction + hash()
 
             # Get hash for each column
             col_hashes = {}
@@ -423,15 +460,16 @@ class RowKMV:
                     dtype="uint64", copy=False
                 )
 
-            # Combine hashes properly (not with XOR)
+            # Combine column hashes using a rolling polynomial hash (vectorized)
             n_rows = len(df)
-            for i in range(n_rows):
-                # Create tuple of all column hashes for this row
-                row_tuple = tuple(col_hashes[c][i] for c in df.columns)
-                # Hash the tuple (collision-resistant)
-                row_hash = hash(row_tuple)
-                self.kmv.add(row_hash)
+            columns = list(df.columns)
+            combined = col_hashes[columns[0]].copy()
+            _PRIME = np.uint64(2654435761)
+            for c in columns[1:]:
+                combined = combined * _PRIME + col_hashes[c]
 
+            # Batch add combined hashes to KMV sketch
+            self.kmv.add_many(combined)
             self.rows += n_rows
 
         except Exception:
@@ -452,24 +490,19 @@ class RowKMV:
             if hasattr(df, "hash_rows"):
                 h = df.hash_rows().to_numpy()
                 self.rows += int(h.size)
-                for v in h:
-                    self.kmv.add(int(v))
+                # Batch add hashes to KMV sketch instead of per-value loop
+                self.kmv.add_many(h)
                 return
 
-            # Improved fallback: tuple-based hashing instead of XOR
-            # This prevents collisions with similar numeric values
-            row_hashes = []
-            for i in range(df.height):
-                row_tuple = tuple(df.row(i))
-                row_hash = hash(row_tuple)
-                row_hashes.append(row_hash)
-
-            self.rows += len(row_hashes)
-            for h in row_hashes:
-                self.kmv.add(h)
+            # Fallback: use pandas vectorized path
+            try:
+                pdf = df.to_pandas()
+                self.update_from_pandas(pdf)
+            except Exception:
+                self.rows += min(2000, df.height)
 
         except Exception:
-            # Final fallback: use pandas path which now has improved hashing
+            # Final fallback: use pandas path which has vectorized hashing
             try:
                 sample = df.head(min(2000, df.height)).to_pandas()
                 self.update_from_pandas(sample)

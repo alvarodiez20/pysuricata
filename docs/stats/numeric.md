@@ -33,154 +33,55 @@ For each numeric column, the report includes:
 - **Confidence intervals**: 95% CI for mean
 - **Correlations**: top correlations with other numeric columns (optional)
 
-## Quality Flags and Indicators
+## Quality Flags
 
-Numeric variable cards display **quality flags** (colored chips) that highlight important data characteristics and potential issues. These flags are automatically detected based on statistical thresholds and help you quickly identify data quality concerns or interesting patterns.
+Numeric variable cards display **quality flags** (colored chips) to highlight data characteristics. Flags are detected automatically based on statistical thresholds.
 
-### Flag Categories
+### 🔴 Critical Issues
 
-#### 🔴 Critical Issues (Red Flags)
+| Flag | Threshold | Impact | Action |
+|------|-----------|--------|--------|
+| **Missing** (>20%) | >20% values missing | Bias in analysis, imputation needed | Investigate data collection |
+| **Has ∞** | Any ±∞ present | Overflow, division by zero, or corruption | Exclude or cap infinite values |
+| **Zero-inflated** (≥50%) | ≥50% zeros | Sparse data or data quality issue | Use zero-inflated models |
+| **Constant** | All values identical | Zero variance, no information | Remove column |
+| **Quasi-constant** | >95% same value | Limited information content | Review column utility |
+| **Many outliers** | High outlier proportion | Skewed mean and std | Robust statistics or capping |
+| **Heavy-tailed** | \|kurtosis\| > 3 | Extreme values, unreliable classical stats | Robust methods or transformations |
 
-**Missing** (>20%)
-- **Threshold**: More than 20% of values are missing
-- **Impact**: Significant data loss may bias analysis and require imputation
-- **Action**: Investigate data collection process, consider imputation strategies
+### 🟠 Distribution Warnings
 
-**Has ∞**
-- **Threshold**: Any infinite values (±∞) present
-- **Impact**: Indicates calculation overflow, division by zero, or data corruption
-- **Action**: Investigate source of infinities, may need to exclude or cap values
+| Flag | Threshold | Impact | Action |
+|------|-----------|--------|--------|
+| **Missing** (≤20%) | 0–20% missing | Minor bias risk | Monitor, document pattern |
+| **Has negatives** (>10%) | >10% negative | Unexpected for some metrics (age, price) | Verify domain expectations |
+| **Skewed Right** | Skewness > 1 | Long right tail, mean > median | Log transform or report median |
+| **Skewed Left** | Skewness < −1 | Long left tail, mean < median | Transform or non-parametric methods |
+| **Discrete** | Low unique count | Behaves like categorical | Consider as categorical/ordinal |
+| **Heaping** | Clustering at round numbers | Rounding or self-reporting | Aware of artificial clustering |
+| **Possibly bimodal** | Bimodality coefficient high | Two populations or processes | Investigate subgroups |
+| **Some outliers** | 0.3–1% outliers | Minor effect on statistics | Review if valid extremes |
+| **Zero-inflated** (<50%) | 30–50% zeros | Affects distribution shape | Consider zero-inflated models |
 
-**Zero-inflated** (≥50%)
-- **Threshold**: 50% or more values are exactly zero
-- **Impact**: May indicate sparse data, special zero category, or data quality issue
-- **Action**: Consider zero-inflated models or separate analysis of zeros vs non-zeros
+### 🟢 Positive Characteristics
 
-**Constant**
-- **Threshold**: All non-missing values are identical
-- **Impact**: Zero variance, column provides no information for modeling
-- **Action**: Consider removing column or investigating data collection
+| Flag | Threshold | Benefit |
+|------|-----------|---------|
+| **Positive-only** | All values > 0 | Safe for log transform, geometric mean |
+| **≈ Normal (JB)** | Jarque-Bera test passes | Parametric tests valid |
+| **Log-scale?** | Range + skewness suggest log | May reveal hidden patterns |
+| **Monotonic ↑** | Weakly increasing | Index, timestamp, or cumulative |
+| **Monotonic ↓** | Weakly decreasing | Countdown or reverse-sorted |
 
-**Quasi-constant**
-- **Threshold**: Very low cardinality (typically >95% same value)
-- **Impact**: Limited information content, may not be useful for analysis
-- **Action**: Review if column adds value to analysis
+### Badges
 
-**Many outliers**
-- **Threshold**: High proportion of outliers detected (varies by method)
-- **Impact**: Outliers may skew mean, standard deviation, and other statistics
-- **Action**: Investigate outliers, consider robust statistics or capping
+| Badge | Meaning |
+|-------|---------|
+| `Numeric` | Continuous or discrete numeric column |
+| Data type (e.g., `int64`) | Source precision, range, and memory usage |
+| `approx` | Statistics use sampling or approximation |
 
-**Heavy-tailed**
-- **Threshold**: High excess kurtosis (typically |kurtosis| > 3)
-- **Impact**: More extreme values than normal distribution, classical statistics may be unreliable
-- **Action**: Use robust statistics, consider transformations, or non-parametric methods
-
-#### 🟠 Distribution Warnings (Orange Flags)
-
-**Missing** (≤20%)
-- **Threshold**: 0% to 20% missing values
-- **Impact**: Minor concern, may introduce slight bias
-- **Action**: Monitor data quality, document missingness pattern
-
-**Has negatives** (>10%)
-- **Threshold**: More than 10% of values are negative
-- **Impact**: May be unexpected for metrics that should be positive (age, price, count, etc.)
-- **Action**: Verify this is expected for your data domain
-
-**Skewed Right**
-- **Threshold**: Positive skewness detected (typically > 1)
-- **Impact**: Long right tail, mean > median, affects parametric assumptions
-- **Action**: Consider log transformation or report median instead of mean
-
-**Skewed Left**
-- **Threshold**: Negative skewness detected (typically < -1)
-- **Impact**: Long left tail, mean < median, affects parametric assumptions
-- **Action**: Consider transformation or non-parametric methods
-
-**Discrete**
-- **Threshold**: Low unique count relative to sample size
-- **Impact**: Column may behave more like categorical than continuous
-- **Action**: Consider treating as categorical or ordinal
-
-**Heaping**
-- **Threshold**: Values cluster at round numbers (detected via digit analysis)
-- **Impact**: May indicate measurement precision issues, rounding, or self-reporting
-- **Action**: Be aware of artificial clustering in distribution analysis
-
-**Possibly bimodal**
-- **Threshold**: Bimodality coefficient suggests two modes
-- **Impact**: May represent two distinct populations or processes
-- **Action**: Investigate if data contains meaningful subgroups
-
-**Some outliers**
-- **Threshold**: Moderate outliers present (0.3% < outliers ≤ 1%)
-- **Impact**: Minor outlier presence may slightly affect statistics
-- **Action**: Review outlier values, consider if they're valid extreme values
-
-**Zero-inflated** (<50%)
-- **Threshold**: 30-50% zero values (significant but not dominant)
-- **Impact**: High zero percentage affects distribution shape
-- **Action**: Consider zero-inflated models if modeling zeros separately
-
-#### 🟢 Positive Characteristics (Green Flags)
-
-**Positive-only**
-- **Threshold**: All values > 0, no zeros or negatives
-- **Impact**: Safe for log transformation, geometric mean, etc.
-- **Benefit**: Simplifies many analyses and transformations
-
-**≈ Normal (JB)**
-- **Threshold**: Jarque-Bera test passes (typically JB χ² < critical value)
-- **Impact**: Data approximately follows normal distribution
-- **Benefit**: Parametric tests valid, mean/std are appropriate summaries
-
-**Log-scale?**
-- **Threshold**: Log transformation would improve distribution (based on range and skewness)
-- **Impact**: Suggests log scale may reveal patterns
-- **Benefit**: May linearize relationships, normalize distribution
-
-**Monotonic ↑**
-- **Threshold**: Values strictly or weakly increase
-- **Impact**: May be index, timestamp, cumulative value, or sorted data
-- **Benefit**: Indicates ordering or temporal relationship
-
-**Monotonic ↓**
-- **Threshold**: Values strictly or weakly decrease
-- **Impact**: May be countdown, priority, or reverse-sorted data
-- **Benefit**: Indicates ordering relationship
-
-### Additional Badges
-
-**`Numeric` Badge**
-- Always present on numeric variable cards
-- Indicates this is a continuous or discrete numeric column
-- Distinguished from categorical, datetime, or boolean types
-
-**Data Type Chip** (e.g., `int64`, `float64`, `uint8`)
-- Shows the specific data type from the source dataframe
-- Important for understanding precision, range, and memory usage
-- Helps identify potential overflow or underflow issues
-
-**`approx` Badge**
-- Appears when statistics use sampling or approximation
-- Indicates quantiles, unique counts, or other metrics are estimated
-- Typical when dataset is large and full data scan isn't used
-- Approximations are still statistically valid with high accuracy
-
-### Interpreting Multiple Flags
-
-A column can display multiple flags simultaneously. Common combinations:
-
-- **`Missing` + `Skewed Right`**: Incomplete data with asymmetric distribution
-- **`Zero-inflated` + `Positive-only`**: Many zeros, but no negatives
-- **`Heavy-tailed` + `Many outliers`**: Extreme values with fat tails
-- **`Discrete` + `Heaping`**: Categorical-like integers with rounding
-
-**Best Practice**: Address flags by priority:
-1. 🔴 Red flags first (data quality issues)
-2. 🟠 Orange flags next (distribution concerns)
-3. 🟢 Use green flags to inform analysis approach
+**Multiple flags** can appear together. Address by priority: 🔴 first → 🟠 next → 🟢 to inform approach.
 
 ## Mathematical Definitions
 
@@ -738,6 +639,4 @@ print(f"Skewness: {amount_stats['skewness']}")
 - [Sketch Algorithms](../algorithms/sketches.md) - KMV, HyperLogLog, KLL
 - [Configuration Guide](../configuration.md) - All parameters
 
----
 
-*Last updated: 2025-10-12*
