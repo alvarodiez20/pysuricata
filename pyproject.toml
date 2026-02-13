@@ -56,8 +56,6 @@ dev = [
     "requests>=2.32.3",
     "ruff>=0.11.2",
     "pre-commit>=3.6.2",
-    "ipykernel>=6.30.1",
-    "ydata-profiling>=4.17.0",
     "setuptools>=80.9.0",
 ]
 
@@ -91,7 +89,7 @@ pysuricata = [
     ]
 
 [tool.ruff]
-target-version = "py39"
+target-version = "py310"
 line-length = 88
 
 [tool.ruff.lint]
