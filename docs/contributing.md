@@ -11,7 +11,7 @@ Thank you for considering contributing to PySuricata! This guide will help you g
 
 ### Prerequisites
 
-- Python 3.9+ 
+- Python 3.10+ 
 - `uv` package manager (recommended) or `pip`
 - Git
 

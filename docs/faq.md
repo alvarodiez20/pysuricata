@@ -35,13 +35,13 @@ pip install pysuricata[polars]
 
 **Optional:** polars (install with `pip install pysuricata[polars]`)
 
-PySuricata requires Python 3.9+.
+PySuricata requires Python 3.10+.
 
 ### Why is my installation failing?
 
 Common issues:
 
-1. **Python version** — PySuricata requires Python 3.9+:
+1. **Python version** — PySuricata requires Python 3.10+:
    ```bash
    python --version
    ```
