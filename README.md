@@ -62,7 +62,7 @@ This is a real report generated from the Titanic dataset (891 rows × 12 columns
 
 <div align="center">
   <a href="https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html">
-    <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/docs/assets/report_demo.gif" alt="PySuricata Titanic Report Demo" width="600">
+    <img src="docs/assets/report_demo.gif" alt="PySuricata Titanic Report Demo" width="600">
   </a>
   <p><a href="https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html"><strong>▶ Open the live interactive report →</strong></a></p>
 </div>
