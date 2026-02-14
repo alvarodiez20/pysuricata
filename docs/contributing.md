@@ -11,7 +11,7 @@ Thank you for considering contributing to PySuricata! This guide will help you g
 
 ### Prerequisites
 
-- Python 3.9+ 
+- Python 3.10+ 
 - `uv` package manager (recommended) or `pip`
 - Git
 
@@ -339,18 +339,9 @@ Interpretation: ...
 
 ## Getting Help
 
-- 💬 [GitHub Discussions](https://github.com/alvarodiez20/pysuricata/discussions)
-- 🐛 [GitHub Issues](https://github.com/alvarodiez20/pysuricata/issues)
-- 📧 Email: alvarodiez20@gmail.com
+- [GitHub Discussions](https://github.com/alvarodiez20/pysuricata/discussions)
+- [GitHub Issues](https://github.com/alvarodiez20/pysuricata/issues)
 
 ## License
 
 By contributing, you agree that your contributions will be licensed under the MIT License.
-
----
-
-Thank you for contributing to PySuricata! 🎉
-
-
-
-

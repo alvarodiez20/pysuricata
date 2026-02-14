@@ -53,6 +53,7 @@ nav:
       - Performance Tips: performance.md
   - Technical Reference:
       - API Reference: api.md
+      - Complexity Analysis: complexity-analysis.md
       - Statistical Methods:
           - Overview: stats/overview.md
           - Numeric Analysis: stats/numeric.md
@@ -68,7 +69,10 @@ nav:
           - Streaming Statistics: algorithms/streaming.md
           - Sketch Algorithms: algorithms/sketches.md
           - Reservoir Sampling: algorithms/sampling.md
-  - Architecture: architecture.md
+  - Architecture:
+      - Overview: architecture.md
+      - Architecture Diagrams: architecture-diagrams.md
+      - Sequence Diagrams: sequence-diagrams-complexity.md
   - Contributing: contributing.md
   - FAQ: faq.md
   - About:
@@ -120,5 +124,5 @@ extra_css:
   - stylesheets/extra.css
 
 extra_javascript:
-  - https://polyfill.io/v3/polyfill.min.js?features=es6
+  - javascripts/mathjax.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js

@@ -1,273 +1,177 @@
 # Complexity Analysis
 
-This document provides a detailed analysis of the time and space complexity of PySuricata's streaming data processing algorithms, including the memory leak fixes implemented.
-
 ## Overview
 
-PySuricata uses streaming algorithms to process datasets of any size with bounded memory usage. The key insight is that all statistical computations can be performed using small, mergeable state that grows sub-linearly with the dataset size.
+PySuricata processes data in a **single pass** using streaming algorithms. All statistics are computed incrementally from small, fixed-size state — memory usage depends on configuration parameters, not dataset size.
 
-## Core Algorithms
+**Key property:** For a dataset with *n* rows and *p* columns, PySuricata uses O(p · k) memory where *k* is the sketch/sample size (constant), making total memory independent of *n*.
 
-### 1. KMV (K-Minimum Values) Sketch
+### Summary
 
-**Purpose**: Approximate distinct count estimation for categorical columns.
+| Component | Time per value | Space | Dominant parameter |
+|-----------|---------------|-------|--------------------|
+| Streaming moments | O(1) | O(1) | — |
+| Reservoir sampling | O(1) | O(s) | `numeric_sample_size` (default: 20,000) |
+| KMV distinct count | O(log k) | O(k) | `uniques_sketch_size` (default: 2,048) |
+| Misra-Gries top-k | O(1) amortized | O(k) | `top_k_size` (default: 50) |
+| Extreme tracking | O(log k) | O(k) | `max_extremes` (default: 5) |
+| Correlations | O(p) per value | O(p²) | Number of numeric columns |
 
-**Algorithm**: Maintains the k smallest hash values seen, estimates distinct count as `k / (kth_smallest_hash / 2^64)`.
+**Total per numeric column:** O(s + k) ≈ 22 KB with defaults
 
-**Time Complexity**:
-- `add(value)`: O(log k) - Binary search and insert
-- `estimate()`: O(1) - Direct calculation
-- `merge(other)`: O(k log k) - Merge and sort
+**Total per categorical column:** O(k) ≈ 18 KB with defaults
 
-**Space Complexity**: O(k) where k is the sketch size (default: 2,048)
+**DateTime and Boolean columns:** O(1)
 
-**Memory Optimization**: 
-- **Before Fix**: Used unbounded `_exact_values` set for exact counting, causing O(n) memory growth
-- **After Fix**: Bounded `_exact_counter` dict with `_max_exact_tracking` limit (default: 100)
-- **Transition**: Switches from exact counting to approximation when limit is reached
+---
 
-**Memory Usage**: 
-- Exact mode: O(min(n, max_exact_tracking))
-- Approximation mode: O(k)
-- Total: O(min(n, max_exact_tracking) + k)
+## Algorithms
 
-### 2. Reservoir Sampling
+### Streaming Moments (Welford/Pébay)
 
-**Purpose**: Maintains a uniform random sample for quantile estimation and histogram generation.
+**Purpose:** Exact mean, variance, skewness, kurtosis in a single pass.
 
-**Algorithm**: Replace elements in the reservoir with probability `sample_size / total_elements_seen`.
+- **Update:** O(1) per value — maintains running sums of powers of deviations
+- **Merge:** O(1) — Pébay's formulas combine two partial states exactly
+- **Finalize:** O(1)
+- **Space:** O(1) — six floating-point accumulators (n, μ, M₂, M₃, M₄)
 
-**Time Complexity**:
-- `add(value)`: O(1) - Constant time replacement
-- `get_sample()`: O(1) - Direct access to reservoir
-- `merge(other)`: O(s) - Merge two reservoirs
+This is numerically stable — it avoids the catastrophic cancellation of naïve Σx² − nμ² formulas.
 
-**Space Complexity**: O(s) where s is the sample size (default: 20,000)
+**Reference:** Welford (1962), Pébay (2008)
 
-**Memory Usage**: Constant O(s) regardless of dataset size.
+### Reservoir Sampling
 
-### 3. Misra-Gries Top-K
+**Purpose:** Maintain a uniform random sample for quantile estimation and histograms.
 
-**Purpose**: Tracks the most frequent values in categorical columns.
+- **Update:** O(1) per value — include with probability s/i, replacing a random element
+- **Merge:** O(s) — weighted combination of two reservoirs
+- **Finalize:** O(s log s) — sort for quantile computation
+- **Space:** O(s) where s = `numeric_sample_size`
 
-**Algorithm**: Maintains a counter for each of the k most frequent values, decrements all counters when a new value is added.
+Every subset of size s from the stream has equal probability of being the sample.
 
-**Time Complexity**:
-- `add(value)`: O(1) - Constant time update
-- `items()`: O(k) - Return top-k items
-- `merge(other)`: O(k) - Merge counters
+**Reference:** Vitter (1985)
 
-**Space Complexity**: O(k) where k is the number of top values (default: 50)
+### KMV (K-Minimum Values) Sketch
 
-**Memory Usage**: Constant O(k) regardless of dataset size.
+**Purpose:** Approximate distinct count estimation.
 
-### 4. Extreme Tracking (Fixed)
+- **Update:** O(log k) — hash value, maintain min-heap of k smallest hashes
+- **Merge:** O(k log k) — union two heaps, keep k smallest
+- **Estimate:** d̂ = (k − 1) / x_k where x_k is the k-th smallest hash
+- **Space:** O(k) where k = `uniques_sketch_size`
+- **Error:** ~1/√k relative error — with k=2048, approximately 2.2%
 
-**Purpose**: Tracks the minimum and maximum values with their indices.
+The implementation transitions from exact counting (for low-cardinality columns) to approximate estimation when the number of distinct values exceeds a threshold.
 
-**Algorithm**: Uses bounded heaps to maintain the k smallest and k largest values.
+**Reference:** Bar-Yossef et al. (2002)
 
-**Time Complexity**:
-- `update(values, indices)`: O(n log k) - Process n values, each taking O(log k)
-- `get_extremes()`: O(k log k) - Extract and sort from heaps
-- `merge(other)`: O(k log k) - Merge heaps
+### Misra-Gries (Top-K Frequent Values)
 
-**Space Complexity**: O(k) where k is max extremes (default: 5)
+**Purpose:** Find the most frequent values in a stream.
 
-**Memory Optimization**:
-- **Before Fix**: Used lists that grew temporarily to O(k × chunks) during processing
-- **After Fix**: Uses `heapq` for bounded heaps with O(k) space
-- **Heap Implementation**: Min-heap for minimums, negated max-heap for maximums
+- **Update:** O(1) amortized — increment counter or decrement all
+- **Merge:** O(k) — sum counters from two states
+- **Finalize:** O(k log k) — sort by frequency
+- **Space:** O(k) where k = `top_k_size`
+- **Guarantee:** Any value with true frequency > n/k is included in the output
 
-**Memory Usage**: Constant O(k) regardless of dataset size or number of chunks.
+Frequency estimates are within ±n/k of the true count.
 
-### 5. Streaming Moments (Welford's Algorithm)
+**Reference:** Misra & Gries (1982)
 
-**Purpose**: Computes mean, variance, skewness, and kurtosis in a single pass.
+### Extreme Tracking
 
-**Algorithm**: Maintains running sums of powers of deviations from the mean.
+**Purpose:** Track the minimum and maximum values with their row indices.
 
-**Time Complexity**:
-- `update(values)`: O(n) - Process n values
-- `get_stats()`: O(1) - Direct calculation from moments
-- `merge(other)`: O(1) - Merge moment statistics
+- **Update:** O(log k) per value — bounded heap operations
+- **Merge:** O(k log k) — merge and truncate heaps
+- **Space:** O(k) where k = `max_extremes` (default: 5)
 
-**Space Complexity**: O(1) - Constant space for moment statistics
+Uses a min-heap for minimums and a negated max-heap for maximums.
 
-**Memory Usage**: Constant O(1) regardless of dataset size.
+### Correlations
 
-### 6. Chunk Metadata Tracking (Optimized)
+**Purpose:** Streaming Pearson correlation between all pairs of numeric columns.
 
-**Purpose**: Tracks per-chunk statistics for visualization.
+- **Update:** O(p) per value — update co-moment for each column pair
+- **Finalize:** O(p²) — compute correlations from co-moments
+- **Space:** O(p²) — stores pairwise co-moments
 
-**Algorithm**: Maintains lists of chunk boundaries and missing counts.
+This is the most expensive component. For datasets with many numeric columns, disable with `compute_correlations = False` or increase `corr_threshold`.
 
-**Time Complexity**:
-- `mark_chunk_boundary()`: O(1) - Append to lists
-- `finalize()`: O(c) - Process c chunks
+---
 
-**Space Complexity**: O(c) where c is max chunks tracked (default: 1,000)
-
-**Memory Optimization**:
-- **Before Fix**: Unbounded lists growing O(num_chunks)
-- **After Fix**: Optional tracking with `enable_chunk_metadata` flag and `max_chunks` limit
-- **Bounded Growth**: Switches to summary mode when limit is exceeded
-
-**Memory Usage**:
-- Enabled: O(min(num_chunks, max_chunks))
-- Disabled: O(1)
-
-## Accumulator Complexity
+## Accumulator Breakdown
 
 ### NumericAccumulator
 
-**Components**:
-- StreamingMoments: O(1) space
-- ReservoirSampler: O(s) space
-- KMV: O(k) space
-- ExtremeTracker: O(k) space
-- MisraGries: O(k) space
-- StreamingHistogram: O(b) space (b = bins)
+| Component | Space |
+|-----------|-------|
+| StreamingMoments | O(1) |
+| ReservoirSampler | O(s) |
+| KMV sketch | O(k) |
+| ExtremeTracker | O(k) |
+| MisraGries | O(k) |
+| Histogram bins | O(b) |
+| **Total** | **O(s + k + b)** |
 
-**Total Space Complexity**: O(s + k + b) where:
-- s = sample_size (default: 20,000)
-- k = sketch_size (default: 2,048)
-- b = histogram_bins (default: 25)
-
-**Time Complexity per Element**: O(1) for basic operations, O(log k) for extremes
+With defaults: s=20,000, k=2,048, b=25
 
 ### CategoricalAccumulator
 
-**Components**:
-- KMV: O(k) space
-- MisraGries: O(k) space
-- String length tracking: O(1) space
-
-**Total Space Complexity**: O(k)
-
-**Time Complexity per Element**: O(1) for basic operations, O(log k) for top-k
+| Component | Space |
+|-----------|-------|
+| KMV sketch (original) | O(k) |
+| KMV sketch (lowercase) | O(k) |
+| KMV sketch (trimmed) | O(k) |
+| MisraGries | O(k) |
+| String length tracking | O(1) |
+| **Total** | **O(k)** |
 
 ### DatetimeAccumulator
 
-**Components**:
-- Min/Max tracking: O(1) space
-- Frequency counters: O(1) space
+Fixed-size counters: hour (24), weekday (7), month (12), plus min/max tracking.
 
-**Total Space Complexity**: O(1)
-
-**Time Complexity per Element**: O(1)
+**Total:** O(1)
 
 ### BooleanAccumulator
 
-**Components**:
-- Counters: O(1) space
+Two counters (true, false) plus missing count.
 
-**Total Space Complexity**: O(1)
+**Total:** O(1)
 
-**Time Complexity per Element**: O(1)
+---
 
-## Memory Leak Analysis
+## Configuration Impact
 
-### Before Fixes
+| Parameter | Effect on memory | Effect on accuracy |
+|-----------|-----------------|-------------------|
+| `chunk_size` ↑ | More rows in memory per iteration | No effect on final accuracy |
+| `numeric_sample_size` ↑ | Larger reservoir per numeric column | Better quantile estimates |
+| `uniques_sketch_size` ↑ | Larger KMV sketch per column | Better distinct count accuracy |
+| `top_k_size` ↑ | More frequent values tracked | More comprehensive top-k |
+| `compute_correlations` off | Saves O(p²) | No correlations reported |
 
-**KMV Memory Leak**:
-- **Cause**: `_exact_values` set grew unboundedly for low-cardinality columns
-- **Impact**: O(n) memory growth where n is the number of unique values
-- **Example**: Gender column with 2 unique values would store all 1M+ values
+---
 
-**ExtremeTracker Memory Leak**:
-- **Cause**: Temporary lists grew to O(k × chunks) during processing
-- **Impact**: Memory spikes proportional to number of chunks processed
-- **Example**: 1000 chunks × 5 extremes = 5000 temporary list elements
+## Performance Optimizations (v0.0.14)
 
-**Chunk Metadata Memory Leak**:
-- **Cause**: Unbounded lists for chunk boundaries and missing counts
-- **Impact**: O(num_chunks) memory growth
-- **Example**: 10,000 chunks would store 10,000 boundary values
+Several hot paths were vectorized to reduce per-value Python overhead:
 
-### After Fixes
+| Optimization | Change |
+|---|---|
+| KMV/MisraGries updates | Per-value `add()` → batch `add_many()` with pre-counted values |
+| Missing/Inf counting | Python loop → vectorized `np.isnan()` / `np.isinf()` |
+| Row hashing (duplicates) | Per-row tuple + `hash()` → vectorized polynomial hash via numpy |
+| Boolean coercion | Per-value `str().lower()` → pandas vectorized `str.strip().str.lower()` |
+| Correlation finite masks | Recomputed per pair → pre-computed once per column, reused |
 
-**KMV Fix**:
-- **Solution**: Bounded `_exact_counter` with transition to approximation
-- **Memory**: O(min(n, max_exact_tracking) + k)
-- **Benefit**: Constant memory usage for large datasets
+## References
 
-**ExtremeTracker Fix**:
-- **Solution**: Heap-based implementation with bounded space
-- **Memory**: O(k) constant space
-- **Benefit**: No memory spikes during processing
-
-**Chunk Metadata Fix**:
-- **Solution**: Optional tracking with configurable limits
-- **Memory**: O(min(num_chunks, max_chunks)) or O(1) if disabled
-- **Benefit**: Configurable memory usage based on needs
-
-## Performance Characteristics
-
-### Scalability
-
-- **Dataset Size**: Can process datasets larger than available memory
-- **Memory Growth**: Sub-linear (typically <1KB per row)
-- **Processing Speed**: Optimized for streaming with minimal overhead
-- **Accuracy**: Maintains statistical accuracy while using bounded memory
-
-### Memory Efficiency
-
-**Per Row Memory Usage**:
-- NumericAccumulator: ~0.1-0.5 bytes per row
-- CategoricalAccumulator: ~0.05-0.2 bytes per row
-- DatetimeAccumulator: ~0.01 bytes per row
-- BooleanAccumulator: ~0.01 bytes per row
-
-**Total Memory Usage**:
-- Base: ~50-100 MB for default configuration
-- Per Column: ~1-5 MB depending on data type
-- Per Million Rows: ~100-500 MB additional
-
-### Configuration Impact
-
-**Memory vs. Accuracy Trade-offs**:
-- `numeric_sample_size`: Larger = better accuracy, more memory
-- `uniques_sketch_size`: Larger = better distinct count accuracy, more memory
-- `top_k_size`: Larger = more top values tracked, more memory
-- `max_extremes`: Larger = more extreme values tracked, more memory
-- `enable_chunk_metadata`: Disable to save memory when visualization not needed
-
-## Validation Results
-
-### Memory Leak Fix Validation
-
-**Test Results** (200k rows, 6 columns):
-- **Memory Growth**: 27.64 MB (target: <100 MB) ✅
-- **Peak Memory**: 11.44 MB (target: <200 MB) ✅
-- **Processing Time**: 22.87 seconds
-- **Memory Efficiency**: <0.1 bytes per row ✅
-
-**Stress Test Results** (1M rows):
-- **Memory Growth**: <200 MB ✅
-- **Peak Memory**: <500 MB ✅
-- **Memory per Row**: <1KB ✅
-
-### Performance Impact
-
-**Before Fixes**:
-- Memory growth: O(n) for low-cardinality columns
-- Memory spikes: O(k × chunks) during processing
-- Unbounded growth: O(num_chunks) for metadata
-
-**After Fixes**:
-- Memory growth: O(1) constant
-- Memory spikes: Eliminated
-- Bounded growth: O(k) with configurable limits
-
-## Conclusion
-
-The memory leak fixes successfully transform PySuricata from a memory-intensive system to a truly streaming system with bounded memory usage. The key improvements are:
-
-1. **Bounded Data Structures**: All components now use bounded memory
-2. **Heap-Based Algorithms**: Efficient O(log k) operations for extreme tracking
-3. **Configuration Control**: Fine-grained control over memory usage vs. accuracy trade-offs
-4. **Optional Features**: Chunk metadata can be disabled to save memory
-5. **Sub-linear Growth**: Memory usage grows sub-linearly with dataset size
-
-These optimizations enable PySuricata to process datasets of any size on memory-constrained systems while maintaining statistical accuracy and performance.
+1. Welford, B.P. (1962), "Note on a Method for Calculating Corrected Sums of Squares and Products", *Technometrics*, 4(3): 419–420
+2. Pébay, P. (2008), "Formulas for Robust, One-Pass Parallel Computation of Covariances and Arbitrary-Order Statistical Moments", Sandia Report SAND2008-6212
+3. Bar-Yossef, Z. et al. (2002), "Counting Distinct Elements in a Data Stream", *RANDOM*
+4. Misra, J. & Gries, D. (1982), "Finding repeated elements", *Science of Computer Programming*, 2(2): 143–152
+5. Vitter, J.S. (1985), "Random Sampling with a Reservoir", *ACM TOMS*, 11(1): 37–57

@@ -1,140 +1,176 @@
-# Usage
+---
+title: Basic Usage
+description: How to generate reports and access statistics with PySuricata
+---
 
-## Basic
+# Basic Usage
+
+## Generating an HTML Report
+
+The simplest way to use PySuricata is to generate an HTML report from a DataFrame:
 
 ```python
 import pandas as pd
 from pysuricata import profile
 
 df = pd.read_csv("data.csv")
-rep = profile(df)
-rep.save_html("report.html")
+report = profile(df)
+report.save_html("report.html")
 ```
 
-### Also save stats as JSON
+Open `report.html` in any browser. The file is self-contained — no external assets needed.
 
-```python
-from pysuricata import profile
+## Using Polars
 
-rep = profile(df)
-rep.save_json("report.json")
+PySuricata works natively with polars DataFrames and LazyFrames. Install polars support with:
+
+```bash
+pip install pysuricata[polars]
 ```
 
-## Streaming large in-memory data
-
-```python
-from pysuricata import profile, ReportConfig
-import pandas as pd
-
-cfg = ReportConfig()
-
-# From an iterable/generator yielding pandas DataFrame chunks
-def chunk_iter():
-    for i in range(10):
-        yield pd.read_csv(f"/data/part-{i}.csv")  # you pre-chunk externally
-
-rep = profile((ch for ch in chunk_iter()), config=cfg)
-rep.save_html("report.html")
-```
-
-## Streaming polars
+Then use it the same way:
 
 ```python
 import polars as pl
 from pysuricata import profile
 
-df = pl.read_parquet("/data/big.parquet")
-rep = profile(df)  # eager or LazyFrame supported
-rep.save_html("report.html")
+# Eager DataFrame
+df = pl.read_csv("data.csv")
+report = profile(df)
+report.save_html("report.html")
+
+# LazyFrame — PySuricata collects it in chunks internally
+lf = pl.scan_csv("large_file.csv")
+report = profile(lf)
+report.save_html("report.html")
 ```
 
-### Streaming with polars iterables and LazyFrame
+## Streaming Large Datasets
 
-Keep Polars end‑to‑end. The engine consumes either Pandas or Polars chunks.
+For datasets that don't fit in memory, pass a generator yielding DataFrame chunks:
 
-Iterable of Polars DataFrames:
+=== "Pandas"
 
-```python
-import polars as pl
-from pysuricata import profile, ReportConfig
+    ```python
+    import pandas as pd
+    from pysuricata import profile
 
-df = pl.DataFrame({
-    "a": list(range(100_000)),
-    "b": [float(i) if i % 5 else None for i in range(100_000)],
-})
+    def read_in_chunks():
+        for i in range(10):
+            yield pd.read_csv(f"data/part-{i}.csv")
 
-step = 20_000
-chunks = (df.slice(i, min(step, df.height - i)) for i in range(0, df.height, step))
-rep = profile(chunks, config=ReportConfig())
-rep.save_html("polars_iterable_report.html")
-```
+    report = profile(read_in_chunks())
+    report.save_html("report.html")
+    ```
 
-Polars LazyFrame (windowed collect under the hood):
+=== "Pandas chunked reader"
 
-```python
-import polars as pl
-from pysuricata import profile, ReportConfig, ComputeOptions
+    ```python
+    import pandas as pd
+    from pysuricata import profile
 
-lf = (
-    pl.LazyFrame({
-        "x": list(range(200_000)),
-        "y": [float(i) if i % 7 else None for i in range(200_000)],
-        "z": ["a" if i % 2 else "b" for i in range(200_000)],
-    })
-    .with_columns(pl.col("x") * 2)
-)
+    # pandas read_csv has a built-in chunksize parameter
+    chunks = pd.read_csv("large_file.csv", chunksize=200_000)
+    report = profile(chunks)
+    report.save_html("report.html")
+    ```
 
-cfg = ReportConfig(compute=ComputeOptions(chunk_size=50_000))
-rep = profile(lf, config=cfg)
-rep.save_html("polars_lazy_report.html")
-```
+=== "Polars"
 
-## Deterministic visuals (reproducible sampling)
+    ```python
+    import polars as pl
+    from pysuricata import profile
 
-Use `random_seed` to make histogram sampling deterministic across runs.
+    df = pl.read_parquet("large_file.parquet")
 
-```python
-from pysuricata import profile, ReportConfig
+    # Manually slice into chunks
+    step = 200_000
+    chunks = (df.slice(i, min(step, df.height - i)) for i in range(0, df.height, step))
 
-cfg = ReportConfig()
-cfg.compute.random_seed = 42
-rep = profile(df, config=cfg)
-```
+    report = profile(chunks)
+    report.save_html("report.html")
+    ```
 
-## Programmatic summary
+Each chunk is processed and discarded, so memory stays bounded regardless of total dataset size.
 
-Ask for a compact JSON-like dictionary of stats:
+## Getting Statistics Without HTML
+
+Use `summarize()` to get a dictionary of statistics without generating an HTML report:
 
 ```python
 from pysuricata import summarize
-summary = summarize(df)
-print(summary["dataset"])           # rows_est, cols, missing_cells, duplicates, top-missing
-print(summary["columns"]["amount"]) # per-column stats by type
+
+stats = summarize(df)
+
+# Dataset-level statistics
+print(stats["dataset"])
+# {'rows_est': 891, 'cols': 12, 'missing_cells_pct': 8.7, ...}
+
+# Per-column statistics
+print(stats["columns"]["age"])
+# {'mean': 29.7, 'std': 14.5, 'min': 0.42, 'max': 80.0, ...}
 ```
 
-### Processed bytes and timing
+This is useful for CI/CD quality checks:
 
-The report displays:
-- Processed bytes (≈): total bytes handled across chunks (not peak RSS)
-- Precise generation time in seconds (e.g., 0.02s)
+```python
+stats = summarize(df)
+assert stats["dataset"]["missing_cells_pct"] < 5.0
+assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
+```
 
-## End-to-end minimal example
+## Saving Stats as JSON
+
+```python
+report = profile(df)
+report.save_json("stats.json")
+```
+
+## Reproducible Reports
+
+Set `random_seed` to make histogram sampling deterministic across runs:
+
+```python
+from pysuricata import profile, ReportConfig
+
+config = ReportConfig()
+config.compute.random_seed = 42
+
+report = profile(df, config=config)
+# Same report every time with the same data
+```
+
+## End-to-End Example
+
+A complete example covering all four column types:
 
 ```python
 import pandas as pd
 from pysuricata import profile, ReportConfig
 
-df = pd.DataFrame(
-    {
-        "amount": [1.0, 2.5, None, 4.0, 5.5],
-        "country": ["US", "US", "DE", None, "FR"],
-        "ts": pd.to_datetime(["2021-01-01", "2021-01-02", None, "2021-01-04", "2021-01-05"]),
-        "flag": [True, False, True, None, False],
-    }
-)
+df = pd.DataFrame({
+    "amount": [1.0, 2.5, None, 4.0, 5.5],
+    "country": ["US", "US", "DE", None, "FR"],
+    "ts": pd.to_datetime(["2021-01-01", "2021-01-02", None, "2021-01-04", "2021-01-05"]),
+    "flag": [True, False, True, None, False],
+})
 
-cfg = ReportConfig()
-cfg.compute.random_seed = 0
-rep = profile(df, config=cfg)
-rep.save_html("report.html")
+config = ReportConfig()
+config.compute.random_seed = 0
+
+report = profile(df, config=config)
+report.save_html("report.html")
 ```
+
+This generates a report with:
+
+- **amount** analyzed as numeric (mean, std, histogram, outliers)
+- **country** analyzed as categorical (top values, distinct count, entropy)
+- **ts** analyzed as datetime (range, day-of-week distribution)
+- **flag** analyzed as boolean (true/false ratio, balance score)
+
+## See Also
+
+- [Configuration Guide](configuration.md) — All available options
+- [Advanced Features](advanced.md) — Streaming from multiple sources, distributed processing
+- [Examples Gallery](examples.md) — More real-world use cases

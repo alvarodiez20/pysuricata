@@ -211,6 +211,10 @@ def render_html_snapshot(
     description_editor_path = os.path.join(static_dir, "js", "description-editor.js")
     description_editor_content = load_script(description_editor_path)
 
+    # Load Chart.js for inline embedding (self-contained reports)
+    chartjs_path = os.path.join(static_dir, "js", "chart.min.js")
+    chartjs_content = load_script(chartjs_path)
+
     # Combine all scripts
     combined_script_content = (
         script_content
@@ -287,6 +291,7 @@ def render_html_snapshot(
     html = template.format(
         favicon=favicon_tag,
         css=css_tag,
+        chartjs_inline=chartjs_content,
         script=combined_script_content,
         logo=logo_html,
         report_title=report_title or cfg.title,

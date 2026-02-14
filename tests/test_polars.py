@@ -60,6 +60,8 @@ def test_profile_polars_lazyframe_windowed():
             "z": ["a" if i % 2 else "b" for i in range(n)],
         }
     ).with_columns(pl.col("x") * 2)
-    # LazyFrame is not supported, should raise an error
-    with pytest.raises(RuntimeError, match="Unsupported input type"):
-        profile(lf, config=ProfileConfig(compute=ComputeOptions(chunk_size=17)))
+    # LazyFrame should be supported (collected internally)
+    rep = profile(lf, config=ProfileConfig(compute=ComputeOptions(chunk_size=17)))
+    assert rep.html and isinstance(rep.html, str)
+    assert isinstance(rep.stats, dict)
+

@@ -1,413 +1,254 @@
 # Why PySuricata?
 
-**PySuricata** is a lightweight, high-performance Python library for exploratory data analysis (EDA) that generates self-contained HTML reports. Built on cutting-edge streaming algorithms, it's designed to handle datasets of any size with minimal memory footprint and maximum accuracy.
+PySuricata is a Python library for generating HTML data profiling reports from pandas or polars DataFrames. Its main design choice is a **streaming architecture**: data is processed in chunks, so memory usage stays bounded regardless of dataset size.
 
-## Key Advantages
+This page explains the design decisions behind PySuricata and when it might be a good fit for your workflow.
 
-### 🚀 True Streaming Architecture
+---
 
-Unlike competitors that load entire datasets into memory, PySuricata uses **streaming algorithms** that process data in bounded memory:
+## Streaming Architecture
 
-- **Memory-efficient**: Process datasets larger than RAM with O(1) or O(log n) memory per column
-- **Constant updates**: O(1) amortized time per value using Welford/Pébay algorithms
-- **Mergeable state**: Combine results from multiple chunks/threads/nodes exactly
+Most profiling tools load the entire dataset into memory to compute statistics. PySuricata takes a different approach — it processes data **one chunk at a time**, updating lightweight accumulators as it goes.
 
-### ⚡ Performance Comparison
+```python
+from pysuricata import profile, ReportConfig
 
-| Library | Memory (1M+ rows) | Streaming | Dependencies |
-|---------|-------------------|-----------|-------------|
-| **pysuricata** | **~50 MB** (constant) | ✅ Yes | pandas only |
-| pandas-profiling | 1.2+ GB | ❌ No | 20+ packages |
-| ydata-profiling | 1.2+ GB | ❌ No | 25+ packages |
-| sweetviz | 1.1+ GB | ❌ No | 15+ packages |
-| pandas-eda | 1.0+ GB | ❌ No | 10+ packages |
+# PySuricata processes data in chunks internally
+config = ReportConfig()
+config.compute.chunk_size = 200_000  # 200k rows per chunk (default)
 
-!!! note "Key Advantage"
-    PySuricata maintains ~50MB memory usage regardless of dataset size, while competitors require memory proportional to data.
+report = profile(df, config=config)
+```
 
-### 📦 Minimal Dependencies
+This means:
 
-**PySuricata core dependencies:**
-- pandas (or polars)
-- markdown
-- Built-in Python stdlib
+- **Memory is bounded by chunk size**, not dataset size. A 10 GB dataset uses roughly the same memory as a 100 MB one.
+- **Each row is read exactly once** — there's no second pass over the data.
+- **Accumulators are mergeable** — statistics computed on separate chunks (or machines) can be combined exactly.
 
-**Total installed size:** ~10 MB
+You can also pass a generator of DataFrames for datasets that don't fit in memory at all:
 
-**Competitors:**
-- pandas-profiling/ydata-profiling: 100+ MB (includes scipy, matplotlib, seaborn, etc.)
-- sweetviz: 80+ MB (includes matplotlib, scipy, statsmodels)
+```python
+import pandas as pd
+from pysuricata import profile
 
-### 🎯 Mathematical Accuracy
+def read_in_parts():
+    for i in range(100):
+        yield pd.read_parquet(f"data/part-{i}.parquet")
 
-PySuricata implements **proven algorithms** with mathematical guarantees:
+# Processes 100 files without loading them all at once
+report = profile(read_in_parts())
+report.save_html("large_dataset_report.html")
+```
 
-#### Exact Statistics (Welford/Pébay)
-- Mean, variance, skewness, kurtosis computed exactly
-- Numerically stable (avoids catastrophic cancellation)
-- Exactly mergeable across chunks
+---
 
-#### Approximate Statistics (Probabilistic Data Structures)
-- **KMV sketch** for distinct counts: error ε ≈ 1/√k
-- **Misra-Gries** for top-k: frequency within n/k
-- **Reservoir sampling**: uniform probability guarantees
+## Algorithms
 
-All approximations are **unbiased** and come with **error bounds**.
+PySuricata uses well-known streaming algorithms from the academic literature. Here's what it computes and how:
 
-### 🔄 Framework Flexibility
+### Exact Statistics — Welford & Pébay
 
-Unified API for multiple dataframe libraries:
+Mean, variance, skewness, and kurtosis are computed **exactly** using Welford's online algorithm, extended with Pébay's merge formulas for combining results across chunks.
+
+```python
+# Conceptually, this is what happens per value:
+n += 1
+delta = value - mean
+mean += delta / n
+M2 += delta * (value - mean)
+# variance = M2 / (n - 1)
+```
+
+These formulas are **numerically stable** (they avoid the catastrophic cancellation that can happen with naive sum-of-squares approaches) and **exactly mergeable** (combining two partial results gives the same answer as processing all data at once).
+
+**References:**
+
+- Welford, B.P. (1962), "Note on a Method for Calculating Corrected Sums of Squares and Products", *Technometrics*
+- Pébay, P. (2008), "Formulas for Robust, One-Pass Parallel Computation of Covariances and Arbitrary-Order Statistical Moments", Sandia Report
+
+### Approximate Statistics — Sketches and Sampling
+
+Some statistics can't be computed exactly in a single pass with bounded memory. PySuricata uses probabilistic data structures with known error bounds:
+
+| Algorithm | Purpose | Space | Error Bound |
+|-----------|---------|-------|-------------|
+| **KMV sketch** | Distinct count estimation | O(k), default k=2048 | ε ≈ 1/√k (~2.2%) |
+| **Misra-Gries** | Top-k frequent values | O(k), default k=50 | Finds all items with frequency > n/k |
+| **Reservoir sampling** | Uniform random sample | O(s), default s=20,000 | Exact probability k/n per item |
+
+These are standard algorithms with well-understood properties. The error bounds are **theoretical guarantees**, not empirical estimates.
+
+---
+
+## Pandas and Polars Support
+
+PySuricata works natively with both pandas and polars DataFrames. The same `profile()` function handles both:
 
 === "Pandas"
+
     ```python
     import pandas as pd
     from pysuricata import profile
-    
+
     df = pd.read_csv("data.csv")
     report = profile(df)
     report.save_html("report.html")
     ```
 
 === "Polars"
+
     ```python
     import polars as pl
     from pysuricata import profile
-    
+
     df = pl.read_csv("data.csv")
     report = profile(df)
     report.save_html("report.html")
     ```
 
-=== "Streaming"
+=== "Polars LazyFrame"
+
     ```python
-    import pandas as pd
+    import polars as pl
     from pysuricata import profile
-    
-    def chunk_generator():
-        for i in range(10):
-            yield pd.read_csv(f"part-{i}.csv")
-    
-    report = profile(chunk_generator())
+
+    lf = pl.scan_csv("large_file.csv")
+    report = profile(lf)
     report.save_html("report.html")
     ```
 
-### 📄 Portable Reports
+---
 
-Reports are **single HTML files** with:
+## Self-Contained Reports
 
-- Inline CSS and JavaScript (no external dependencies)
-- Inline SVG charts (no image files)
-- Base64-encoded logo (completely self-contained)
-- **Shareable** via email, cloud storage, or static hosting
+PySuricata generates a **single HTML file** with everything inlined:
 
-Competitors often require:
-- Separate CSS/JS files
-- Image directories
-- External CDN links (breaks without internet)
+- CSS styles embedded in `<style>` tags
+- JavaScript embedded in `<script>` tags
+- Charts rendered as inline SVG (no image files)
+- Logo encoded as base64
 
-### ⚙️ Deep Customization
+The resulting file can be opened in any browser, shared via email, hosted on a static server, or committed to a repository. There are no external assets to manage.
 
-Extensive configuration without code modification:
+---
+
+## Configuration
+
+All processing parameters are exposed through `ReportConfig`:
 
 ```python
 from pysuricata import profile, ReportConfig
 
 config = ReportConfig()
-config.compute.chunk_size = 250_000
-config.compute.numeric_sample_size = 50_000
-config.compute.uniques_sketch_size = 4096
-config.compute.top_k_size = 100
-config.compute.random_seed = 42  # Deterministic sampling
+
+# Processing
+config.compute.chunk_size = 250_000       # Rows per chunk
+config.compute.numeric_sample_size = 50_000  # Sample size for quantiles
+config.compute.random_seed = 42           # Deterministic sampling
+
+# Analysis
 config.compute.compute_correlations = True
-config.compute.corr_threshold = 0.5
+config.compute.corr_threshold = 0.5       # Min |r| to display
+config.compute.top_k_size = 100           # Top values to track
+config.compute.uniques_sketch_size = 4096 # KMV sketch size
+
+# Rendering
+config.render.title = "My Report"
+config.render.description = "Custom **markdown** description"
+config.render.include_sample = True
+config.render.sample_rows = 10
 
 report = profile(df, config=config)
 ```
 
-### 📊 Comprehensive Analysis
+Setting `random_seed` makes reports **reproducible** — the same data with the same seed produces the same output.
 
-PySuricata analyzes **four variable types** with specialized algorithms:
+---
 
-#### Numeric Variables
-- Moments (mean, variance, skewness, kurtosis)
-- Quantiles (exact or KLL/t-digest)
-- Outliers (IQR, MAD, z-score)
-- Histograms (Freedman-Diaconis binning)
-- Streaming correlations
+## What PySuricata Analyzes
 
-#### Categorical Variables
-- Top-k values (Misra-Gries)
-- Distinct count (KMV sketch)
-- Entropy, Gini impurity
-- String length statistics
-- Case/trim variants
+PySuricata detects the type of each column and applies specialized analysis:
 
-#### DateTime Variables
-- Temporal range and coverage
-- Hour/day-of-week/month distributions
-- Monotonicity detection
-- Gap analysis
-- Timeline visualizations
+| Column Type | Statistics | Visualization |
+|-------------|-----------|---------------|
+| **Numeric** | Mean, variance, skewness, kurtosis, quantiles, IQR/MAD/z-score outliers | Histogram (SVG) |
+| **Categorical** | Top-k values, distinct count, entropy, Gini impurity, string length stats | Donut chart (SVG) |
+| **DateTime** | Range, hour/day/month distributions, monotonicity coefficient | Timeline (SVG) |
+| **Boolean** | True/false ratios, entropy, balance score, imbalance ratio | Balance bar (SVG) |
 
-#### Boolean Variables
-- True/false ratios
-- Entropy calculation
-- Imbalance detection
-- Balance scores
+Additionally, PySuricata computes:
 
-## Detailed Comparisons
+- **Streaming correlations** (Pearson r) between numeric columns
+- **Missing value analysis** per column and per chunk
+- **Duplicate row estimation** using KMV hashing
 
-### vs. pandas-profiling / ydata-profiling
+---
 
-| Feature | PySuricata | pandas-profiling |
-|---------|------------|------------------|
-| **Memory model** | Streaming (bounded) | In-memory (full dataset) |
-| **Large datasets** | ✅ GB to TB | ❌ Limited by RAM |
-| **Speed** | Fast (O(n) single pass) | Slow (multiple passes) |
-| **Dependencies** | Minimal (~10 MB) | Heavy (100+ MB) |
-| **Report format** | Single HTML | HTML + assets |
-| **Polars support** | ✅ Native | ❌ Convert required |
-| **Exact algorithms** | Welford/Pébay | NumPy/SciPy |
-| **Configurability** | High (all parameters) | Medium |
-| **Reproducible** | ✅ Seeded sampling | Partial |
+## Use Cases
 
-**When to use pandas-profiling:**
-- Small datasets (< 100 MB)
-- Need interactive widgets
-- Want correlation heatmaps with color scales
+### Data Quality Checks in Pipelines
 
-**When to use PySuricata:**
-- Large datasets (> 1 GB)
-- Memory-constrained environments
-- Production pipelines (reproducibility)
-- Need portable reports
-- Streaming data sources
-
-### vs. sweetviz
-
-| Feature | PySuricata | Sweetviz |
-|---------|------------|----------|
-| **Dataset comparison** | Single dataset | Compare two datasets |
-| **Memory efficiency** | ✅ Streaming | ❌ In-memory |
-| **Visualizations** | SVG (lightweight) | Matplotlib (heavy) |
-| **Statistical depth** | High (full moments) | Medium |
-| **Speed** | Fast | Medium |
-| **Customization** | High | Low |
-
-**When to use Sweetviz:**
-- Comparing train/test splits
-- Need target variable analysis
-- Visual comparison is primary goal
-
-**When to use PySuricata:**
-- Single dataset profiling
-- Large datasets
-- Need mathematical rigor
-- Production deployment
-
-### vs. pandas-eda
-
-| Feature | PySuricata | pandas-eda |
-|---------|------------|------------|
-| **Scope** | Full EDA | Basic statistics |
-| **Missing values** | Advanced (chunk dist.) | Basic summary |
-| **Algorithm sophistication** | High (sketches) | Low (exact only) |
-| **Large datasets** | ✅ Streaming | ❌ In-memory |
-| **Documentation** | Comprehensive | Minimal |
-
-## Real-World Use Cases
-
-### 1. Data Quality Monitoring (Production)
+Use `summarize()` to get statistics as a dictionary, without generating HTML:
 
 ```python
 from pysuricata import summarize
 
-# In your data pipeline
 stats = summarize(df)
+
+# Assert data quality thresholds
 assert stats["dataset"]["missing_cells_pct"] < 5.0
 assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
+
+# Access per-column statistics
+print(f"Mean age: {stats['columns']['age']['mean']:.1f}")
+print(f"Distinct countries: {stats['columns']['country']['distinct']}")
 ```
 
-### 2. Large Dataset Profiling (Research)
+### Profiling Large Datasets
 
-```python
-# Profile 10GB dataset in bounded memory
-def read_large_dataset():
-    for part in range(100):
-        yield pd.read_parquet(f"data/part-{part}.parquet")
-
-report = profile(read_large_dataset())
-report.save_html("large_dataset_report.html")
-```
-
-### 3. Reproducible Reports (ML Pipelines)
-
-```python
-# Deterministic sampling for CI/CD
-config = ReportConfig()
-config.compute.random_seed = 42
-
-report = profile(df, config=config)
-# Same report on every run
-```
-
-### 4. Memory-Constrained Environments (Edge/IoT)
-
-```python
-# Profile on device with 512 MB RAM
-config = ReportConfig()
-config.compute.chunk_size = 10_000
-config.compute.numeric_sample_size = 5_000
-
-report = profile(df, config=config)
-```
-
-## Performance Benchmarks
-
-### Memory Usage
-
-```mermaid
-graph LR
-    A[Dataset Size] --> B[1 GB]
-    A --> C[10 GB]
-    A --> D[100 GB]
-    B --> E[PySuricata: 50 MB]
-    B --> F[pandas-profiling: 1.2 GB]
-    C --> G[PySuricata: 50 MB]
-    C --> H[pandas-profiling: OOM]
-    D --> I[PySuricata: 50 MB]
-    D --> J[pandas-profiling: OOM]
-```
-
-### Processing Time
-
-Measured on Apple Silicon (M-series) with Python 3.13:
-
-| Dataset Size | Processing Time | Throughput |
-|--------------|-----------------|------------|
-| 10K rows | ~3s | ~3,000 rows/s |
-| 100K rows | ~13s | ~8,000 rows/s |
-| 1M rows | ~3 min | ~5,500 rows/s |
-| 10M rows | ~30 min | ~5,500 rows/s |
-
-### Scalability
-
-PySuricata scales **linearly** with dataset size with **constant memory**:
-- 1M rows → ~3 min, 50 MB
-- 10M rows → ~30 min, 50 MB
-- 100M rows → ~5 hours, 50 MB
-
-Competitors fail (OOM) on large datasets while PySuricata handles them in bounded memory.
-
-## Algorithm Innovation
-
-### Streaming Moments (Welford + Pébay)
-
-**Update complexity:** O(1) per value  
-**Space complexity:** O(1) per column  
-**Numerical stability:** Excellent (no catastrophic cancellation)
-
-```python
-# Exact mean/variance in single pass
-for value in stream:
-    n += 1
-    delta = value - mean
-    mean += delta / n
-    M2 += delta * (value - mean)
-variance = M2 / (n - 1)
-```
-
-### K-Minimum Values (KMV) for Cardinality
-
-**Update complexity:** O(log k) per value  
-**Space complexity:** O(k) per column  
-**Error bound:** ε ≈ 1/√k  
-**Unbiased:** E[estimate] = true_cardinality
-
-```python
-# Estimate distinct count with k=2048
-n_distinct ≈ (k - 1) / kth_smallest_hash
-# Error: ~2.2% (95% confidence)
-```
-
-### Misra-Gries for Top-K
-
-**Update complexity:** O(k) per value (amortized O(1))  
-**Space complexity:** O(k) per column  
-**Accuracy:** Frequency estimate within n/k  
-**Guaranteed:** All items with freq > n/k found
-
-## Community & Ecosystem
-
-### Active Development
-- Regular releases on PyPI
-- CI/CD with 90%+ test coverage
-- Comprehensive documentation
-- Responsive issue tracking
-
-### Integrations
-- Works with pandas, polars
-- Compatible with Jupyter notebooks
-- Integrates with MLflow, Weights & Biases
-- Exports JSON for custom processing
-
-### Support
-- Detailed documentation with examples
-- Mathematical references for algorithms
-- Active GitHub discussions
-- Community contributions welcome
-
-## Getting Started
-
-Install via pip:
-
-```bash
-pip install pysuricata
-```
-
-Generate your first report:
+When your data doesn't fit in memory, pass a generator:
 
 ```python
 import pandas as pd
-from pysuricata import profile
+from pysuricata import profile, ReportConfig
 
-df = pd.read_csv("your_data.csv")
-report = profile(df)
-report.save_html("report.html")
+config = ReportConfig()
+config.compute.chunk_size = 100_000
+config.compute.random_seed = 42
+
+def read_chunks():
+    for chunk in pd.read_csv("large_file.csv", chunksize=100_000):
+        yield chunk
+
+report = profile(read_chunks(), config=config)
+report.save_html("large_report.html")
 ```
 
-## Learn More
+### Jupyter Notebooks
 
-- [Quick Start Guide](quickstart.md) - Get up and running in 5 minutes
-- [Configuration](configuration.md) - Customize every aspect
-- [Performance Tips](performance.md) - Optimize for your use case
-- [Statistical Methods](stats/overview.md) - Understand the algorithms
-- [API Reference](api.md) - Complete function documentation
+Reports render inline in notebooks:
 
-## Conclusion
+```python
+from pysuricata import profile
 
-**Choose PySuricata when you need:**
+report = profile(df)
+report  # Auto-displays inline
 
-✅ Memory efficiency for large datasets  
-✅ Proven algorithms with mathematical guarantees  
-✅ Fast, single-pass processing  
-✅ Portable, self-contained reports  
-✅ Minimal dependencies  
-✅ Framework flexibility (pandas/polars)  
-✅ Production-ready reliability  
-✅ Deep customization  
-
-**Choose competitors when you need:**
-
-- Interactive widgets (pandas-profiling)
-- Dataset comparison views (sweetviz)
-- Correlation heatmaps with color scales
-- Small datasets only
+# Or with custom height
+report.display_in_notebook(height="800px")
+```
 
 ---
 
-Ready to profile your data? [Get started →](quickstart.md)
+
+---
 
 
+## Learn More
 
-
+- [Quick Start](quickstart.md) — Generate your first report
+- [Configuration](configuration.md) — All available options
+- [Statistical Methods](stats/overview.md) — Algorithm details and formulas
+- [Architecture Diagrams](architecture-diagrams.md) — Visual overview of the processing pipeline
+- [API Reference](api.md) — Function signatures and parameters

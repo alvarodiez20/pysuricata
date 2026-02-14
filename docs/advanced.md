@@ -118,10 +118,3 @@ report = profile(filtered_generator())
 - [Performance Tips](performance.md) - Optimization
 - [Examples](examples.md) - More use cases
 
----
-
-*Last updated: 2025-10-12*
-
-
-
-
