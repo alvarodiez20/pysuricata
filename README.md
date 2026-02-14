@@ -56,16 +56,7 @@ report = profile(df)
 report.save_html("titanic_report.html")
 ```
 
-### Example Report
-
-This is a real report generated from the Titanic dataset (891 rows × 12 columns):
-
-<div align="center">
-  <a href="https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html">
-    <img src="docs/assets/report_demo.gif" alt="PySuricata Titanic Report Demo" width="600">
-  </a>
-  <p><a href="https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html"><strong>▶ Open the live interactive report →</strong></a></p>
-</div>
+**[▶ See a live example report →](https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html)**
 
 ## Features
 
@@ -86,6 +77,8 @@ PySuricata uses well-known streaming algorithms from the academic literature:
 | **KMV sketch** | Distinct count estimation (~2.2% error) | O(log k) per value | O(k) |
 | **Misra-Gries** | Top-k frequent values | O(1) amortized | O(k) |
 | **Reservoir sampling** | Uniform random sample for quantiles | O(1) per value | O(s) |
+
+*k = sketch size (default 1024), s = sample size (default 10 000)*
 
 All statistics are computed in a **single pass** over the data.
 
