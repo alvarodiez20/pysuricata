@@ -1,28 +1,25 @@
 name: CI
 
 on:
-  push:
-    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
   version-check:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Check version was updated
         run: |
           # Get current version from pyproject.toml
-          CURRENT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])" 2>/dev/null || python -c "import toml; print(toml.load('pyproject.toml')['project']['version'])")
+          CURRENT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
 
           # Get previous version from main branch
           git fetch origin main
-          PREV_VERSION=$(git show origin/main:pyproject.toml | python -c "import sys, tomllib; print(tomllib.load(sys.stdin.buffer)['project']['version'])" 2>/dev/null || git show origin/main:pyproject.toml | python -c "import sys, toml; print(toml.load(sys.stdin)['project']['version'])")
+          PREV_VERSION=$(git show origin/main:pyproject.toml | python -c "import sys, tomllib; print(tomllib.load(sys.stdin.buffer)['project']['version'])")
 
           echo "Current version: $CURRENT_VERSION"
           echo "Previous version: $PREV_VERSION"
@@ -35,6 +32,24 @@ jobs:
             echo "✓ Version updated: $PREV_VERSION → $CURRENT_VERSION"
           fi
 
+  changelog-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check changelog was updated
+        run: |
+          git fetch origin main
+          if git diff origin/main -- docs/changelog.md | grep -q '^+'; then
+            echo "✓ Changelog has been updated"
+          else
+            echo "⚠️  Warning: docs/changelog.md has not been updated"
+            echo "Please add a changelog entry for your changes"
+            exit 1
+          fi
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -43,10 +58,10 @@ jobs:
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
