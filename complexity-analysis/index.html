@@ -13,6 +13,10 @@
         <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/complexity-analysis/">
       
       
+        <link rel="prev" href="../api/">
+      
+      
+        <link rel="next" href="../stats/overview/">
       
       
       <link rel="icon" href="../assets/favicon.ico">
@@ -279,10 +283,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../api/" class="md-tabs__link">
           
   
@@ -302,17 +308,20 @@
   
   
   
-    <li class="md-tabs__item">
-      <a href="../architecture/" class="md-tabs__link">
-        
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
   
   
     
   
   Architecture
 
-      </a>
-    </li>
+        </a>
+      </li>
+    
   
 
       
@@ -758,8 +767,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -771,23 +782,28 @@
       
         
       
+        
+      
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
             
   
   
@@ -800,7 +816,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Technical Reference
@@ -834,6 +850,242 @@
                 
   
   
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Complexity Analysis
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Complexity Analysis
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#overview" class="md-nav__link">
+    <span class="md-ellipsis">
+      Overview
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Overview">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      Summary
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#algorithms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Algorithms
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Algorithms">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#streaming-moments-welfordpebay" class="md-nav__link">
+    <span class="md-ellipsis">
+      Streaming Moments (Welford/Pébay)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#reservoir-sampling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reservoir Sampling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#kmv-k-minimum-values-sketch" class="md-nav__link">
+    <span class="md-ellipsis">
+      KMV (K-Minimum Values) Sketch
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#misra-gries-top-k-frequent-values" class="md-nav__link">
+    <span class="md-ellipsis">
+      Misra-Gries (Top-K Frequent Values)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#extreme-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extreme Tracking
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#correlations" class="md-nav__link">
+    <span class="md-ellipsis">
+      Correlations
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accumulator-breakdown" class="md-nav__link">
+    <span class="md-ellipsis">
+      Accumulator Breakdown
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Accumulator Breakdown">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#numericaccumulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      NumericAccumulator
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#categoricalaccumulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      CategoricalAccumulator
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#datetimeaccumulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      DatetimeAccumulator
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#booleanaccumulator" class="md-nav__link">
+    <span class="md-ellipsis">
+      BooleanAccumulator
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configuration-impact" class="md-nav__link">
+    <span class="md-ellipsis">
+      Configuration Impact
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#performance-optimizations-v0014" class="md-nav__link">
+    <span class="md-ellipsis">
+      Performance Optimizations (v0.0.14)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#references" class="md-nav__link">
+    <span class="md-ellipsis">
+      References
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
   
   
     
@@ -854,18 +1106,21 @@
     
       
       
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_2" >
         
           
-          <label class="md-nav__link" for="__nav_4_2" id="__nav_4_2_label" tabindex="0">
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="">
             
   
   
@@ -878,8 +1133,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_2_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_2">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
             <span class="md-nav__icon md-icon"></span>
             Statistical Methods
           </label>
@@ -1031,17 +1286,20 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
             
   
   
@@ -1054,8 +1312,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_3">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
             <span class="md-nav__icon md-icon"></span>
             Advanced Analytics
           </label>
@@ -1182,17 +1440,20 @@
       
       
         
+          
+          
+        
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
             
   
   
@@ -1205,8 +1466,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             Algorithms
           </label>
@@ -1302,9 +1563,33 @@
   
   
   
-    <li class="md-nav__item">
-      <a href="../architecture/" class="md-nav__link">
+    
+    
+      
         
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
   
   
   <span class="md-ellipsis">
@@ -1313,7 +1598,88 @@
   </span>
   
 
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture-diagrams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture Diagrams
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sequence-diagrams-complexity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sequence Diagrams
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
     </li>
   
 
@@ -1484,194 +1850,283 @@
 
 
 <h1 id="complexity-analysis">Complexity Analysis</h1>
-<p>This document provides a detailed analysis of the time and space complexity of PySuricata's streaming data processing algorithms, including the memory leak fixes implemented.</p>
 <h2 id="overview">Overview</h2>
-<p>PySuricata uses streaming algorithms to process datasets of any size with bounded memory usage. The key insight is that all statistical computations can be performed using small, mergeable state that grows sub-linearly with the dataset size.</p>
-<h2 id="core-algorithms">Core Algorithms</h2>
-<h3 id="1-kmv-k-minimum-values-sketch">1. KMV (K-Minimum Values) Sketch</h3>
-<p><strong>Purpose</strong>: Approximate distinct count estimation for categorical columns.</p>
-<p><strong>Algorithm</strong>: Maintains the k smallest hash values seen, estimates distinct count as <code>k / (kth_smallest_hash / 2^64)</code>.</p>
-<p><strong>Time Complexity</strong>:
-- <code>add(value)</code>: O(log k) - Binary search and insert
-- <code>estimate()</code>: O(1) - Direct calculation
-- <code>merge(other)</code>: O(k log k) - Merge and sort</p>
-<p><strong>Space Complexity</strong>: O(k) where k is the sketch size (default: 2,048)</p>
-<p><strong>Memory Optimization</strong>: 
-- <strong>Before Fix</strong>: Used unbounded <code>_exact_values</code> set for exact counting, causing O(n) memory growth
-- <strong>After Fix</strong>: Bounded <code>_exact_counter</code> dict with <code>_max_exact_tracking</code> limit (default: 100)
-- <strong>Transition</strong>: Switches from exact counting to approximation when limit is reached</p>
-<p><strong>Memory Usage</strong>: 
-- Exact mode: O(min(n, max_exact_tracking))
-- Approximation mode: O(k)
-- Total: O(min(n, max_exact_tracking) + k)</p>
-<h3 id="2-reservoir-sampling">2. Reservoir Sampling</h3>
-<p><strong>Purpose</strong>: Maintains a uniform random sample for quantile estimation and histogram generation.</p>
-<p><strong>Algorithm</strong>: Replace elements in the reservoir with probability <code>sample_size / total_elements_seen</code>.</p>
-<p><strong>Time Complexity</strong>:
-- <code>add(value)</code>: O(1) - Constant time replacement
-- <code>get_sample()</code>: O(1) - Direct access to reservoir
-- <code>merge(other)</code>: O(s) - Merge two reservoirs</p>
-<p><strong>Space Complexity</strong>: O(s) where s is the sample size (default: 20,000)</p>
-<p><strong>Memory Usage</strong>: Constant O(s) regardless of dataset size.</p>
-<h3 id="3-misra-gries-top-k">3. Misra-Gries Top-K</h3>
-<p><strong>Purpose</strong>: Tracks the most frequent values in categorical columns.</p>
-<p><strong>Algorithm</strong>: Maintains a counter for each of the k most frequent values, decrements all counters when a new value is added.</p>
-<p><strong>Time Complexity</strong>:
-- <code>add(value)</code>: O(1) - Constant time update
-- <code>items()</code>: O(k) - Return top-k items
-- <code>merge(other)</code>: O(k) - Merge counters</p>
-<p><strong>Space Complexity</strong>: O(k) where k is the number of top values (default: 50)</p>
-<p><strong>Memory Usage</strong>: Constant O(k) regardless of dataset size.</p>
-<h3 id="4-extreme-tracking-fixed">4. Extreme Tracking (Fixed)</h3>
-<p><strong>Purpose</strong>: Tracks the minimum and maximum values with their indices.</p>
-<p><strong>Algorithm</strong>: Uses bounded heaps to maintain the k smallest and k largest values.</p>
-<p><strong>Time Complexity</strong>:
-- <code>update(values, indices)</code>: O(n log k) - Process n values, each taking O(log k)
-- <code>get_extremes()</code>: O(k log k) - Extract and sort from heaps
-- <code>merge(other)</code>: O(k log k) - Merge heaps</p>
-<p><strong>Space Complexity</strong>: O(k) where k is max extremes (default: 5)</p>
-<p><strong>Memory Optimization</strong>:
-- <strong>Before Fix</strong>: Used lists that grew temporarily to O(k × chunks) during processing
-- <strong>After Fix</strong>: Uses <code>heapq</code> for bounded heaps with O(k) space
-- <strong>Heap Implementation</strong>: Min-heap for minimums, negated max-heap for maximums</p>
-<p><strong>Memory Usage</strong>: Constant O(k) regardless of dataset size or number of chunks.</p>
-<h3 id="5-streaming-moments-welfords-algorithm">5. Streaming Moments (Welford's Algorithm)</h3>
-<p><strong>Purpose</strong>: Computes mean, variance, skewness, and kurtosis in a single pass.</p>
-<p><strong>Algorithm</strong>: Maintains running sums of powers of deviations from the mean.</p>
-<p><strong>Time Complexity</strong>:
-- <code>update(values)</code>: O(n) - Process n values
-- <code>get_stats()</code>: O(1) - Direct calculation from moments
-- <code>merge(other)</code>: O(1) - Merge moment statistics</p>
-<p><strong>Space Complexity</strong>: O(1) - Constant space for moment statistics</p>
-<p><strong>Memory Usage</strong>: Constant O(1) regardless of dataset size.</p>
-<h3 id="6-chunk-metadata-tracking-optimized">6. Chunk Metadata Tracking (Optimized)</h3>
-<p><strong>Purpose</strong>: Tracks per-chunk statistics for visualization.</p>
-<p><strong>Algorithm</strong>: Maintains lists of chunk boundaries and missing counts.</p>
-<p><strong>Time Complexity</strong>:
-- <code>mark_chunk_boundary()</code>: O(1) - Append to lists
-- <code>finalize()</code>: O(c) - Process c chunks</p>
-<p><strong>Space Complexity</strong>: O(c) where c is max chunks tracked (default: 1,000)</p>
-<p><strong>Memory Optimization</strong>:
-- <strong>Before Fix</strong>: Unbounded lists growing O(num_chunks)
-- <strong>After Fix</strong>: Optional tracking with <code>enable_chunk_metadata</code> flag and <code>max_chunks</code> limit
-- <strong>Bounded Growth</strong>: Switches to summary mode when limit is exceeded</p>
-<p><strong>Memory Usage</strong>:
-- Enabled: O(min(num_chunks, max_chunks))
-- Disabled: O(1)</p>
-<h2 id="accumulator-complexity">Accumulator Complexity</h2>
-<h3 id="numericaccumulator">NumericAccumulator</h3>
-<p><strong>Components</strong>:
-- StreamingMoments: O(1) space
-- ReservoirSampler: O(s) space
-- KMV: O(k) space
-- ExtremeTracker: O(k) space
-- MisraGries: O(k) space
-- StreamingHistogram: O(b) space (b = bins)</p>
-<p><strong>Total Space Complexity</strong>: O(s + k + b) where:
-- s = sample_size (default: 20,000)
-- k = sketch_size (default: 2,048)
-- b = histogram_bins (default: 25)</p>
-<p><strong>Time Complexity per Element</strong>: O(1) for basic operations, O(log k) for extremes</p>
-<h3 id="categoricalaccumulator">CategoricalAccumulator</h3>
-<p><strong>Components</strong>:
-- KMV: O(k) space
-- MisraGries: O(k) space
-- String length tracking: O(1) space</p>
-<p><strong>Total Space Complexity</strong>: O(k)</p>
-<p><strong>Time Complexity per Element</strong>: O(1) for basic operations, O(log k) for top-k</p>
-<h3 id="datetimeaccumulator">DatetimeAccumulator</h3>
-<p><strong>Components</strong>:
-- Min/Max tracking: O(1) space
-- Frequency counters: O(1) space</p>
-<p><strong>Total Space Complexity</strong>: O(1)</p>
-<p><strong>Time Complexity per Element</strong>: O(1)</p>
-<h3 id="booleanaccumulator">BooleanAccumulator</h3>
-<p><strong>Components</strong>:
-- Counters: O(1) space</p>
-<p><strong>Total Space Complexity</strong>: O(1)</p>
-<p><strong>Time Complexity per Element</strong>: O(1)</p>
-<h2 id="memory-leak-analysis">Memory Leak Analysis</h2>
-<h3 id="before-fixes">Before Fixes</h3>
-<p><strong>KMV Memory Leak</strong>:
-- <strong>Cause</strong>: <code>_exact_values</code> set grew unboundedly for low-cardinality columns
-- <strong>Impact</strong>: O(n) memory growth where n is the number of unique values
-- <strong>Example</strong>: Gender column with 2 unique values would store all 1M+ values</p>
-<p><strong>ExtremeTracker Memory Leak</strong>:
-- <strong>Cause</strong>: Temporary lists grew to O(k × chunks) during processing
-- <strong>Impact</strong>: Memory spikes proportional to number of chunks processed
-- <strong>Example</strong>: 1000 chunks × 5 extremes = 5000 temporary list elements</p>
-<p><strong>Chunk Metadata Memory Leak</strong>:
-- <strong>Cause</strong>: Unbounded lists for chunk boundaries and missing counts
-- <strong>Impact</strong>: O(num_chunks) memory growth
-- <strong>Example</strong>: 10,000 chunks would store 10,000 boundary values</p>
-<h3 id="after-fixes">After Fixes</h3>
-<p><strong>KMV Fix</strong>:
-- <strong>Solution</strong>: Bounded <code>_exact_counter</code> with transition to approximation
-- <strong>Memory</strong>: O(min(n, max_exact_tracking) + k)
-- <strong>Benefit</strong>: Constant memory usage for large datasets</p>
-<p><strong>ExtremeTracker Fix</strong>:
-- <strong>Solution</strong>: Heap-based implementation with bounded space
-- <strong>Memory</strong>: O(k) constant space
-- <strong>Benefit</strong>: No memory spikes during processing</p>
-<p><strong>Chunk Metadata Fix</strong>:
-- <strong>Solution</strong>: Optional tracking with configurable limits
-- <strong>Memory</strong>: O(min(num_chunks, max_chunks)) or O(1) if disabled
-- <strong>Benefit</strong>: Configurable memory usage based on needs</p>
-<h2 id="performance-characteristics">Performance Characteristics</h2>
-<h3 id="scalability">Scalability</h3>
+<p>PySuricata processes data in a <strong>single pass</strong> using streaming algorithms. All statistics are computed incrementally from small, fixed-size state — memory usage depends on configuration parameters, not dataset size.</p>
+<p><strong>Key property:</strong> For a dataset with <em>n</em> rows and <em>p</em> columns, PySuricata uses O(p · k) memory where <em>k</em> is the sketch/sample size (constant), making total memory independent of <em>n</em>.</p>
+<h3 id="summary">Summary</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Time per value</th>
+<th>Space</th>
+<th>Dominant parameter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Streaming moments</td>
+<td>O(1)</td>
+<td>O(1)</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Reservoir sampling</td>
+<td>O(1)</td>
+<td>O(s)</td>
+<td><code>numeric_sample_size</code> (default: 20,000)</td>
+</tr>
+<tr>
+<td>KMV distinct count</td>
+<td>O(log k)</td>
+<td>O(k)</td>
+<td><code>uniques_sketch_size</code> (default: 2,048)</td>
+</tr>
+<tr>
+<td>Misra-Gries top-k</td>
+<td>O(1) amortized</td>
+<td>O(k)</td>
+<td><code>top_k_size</code> (default: 50)</td>
+</tr>
+<tr>
+<td>Extreme tracking</td>
+<td>O(log k)</td>
+<td>O(k)</td>
+<td><code>max_extremes</code> (default: 5)</td>
+</tr>
+<tr>
+<td>Correlations</td>
+<td>O(p) per value</td>
+<td>O(p²)</td>
+<td>Number of numeric columns</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Total per numeric column:</strong> O(s + k) ≈ 22 KB with defaults</p>
+<p><strong>Total per categorical column:</strong> O(k) ≈ 18 KB with defaults</p>
+<p><strong>DateTime and Boolean columns:</strong> O(1)</p>
+<hr />
+<h2 id="algorithms">Algorithms</h2>
+<h3 id="streaming-moments-welfordpebay">Streaming Moments (Welford/Pébay)</h3>
+<p><strong>Purpose:</strong> Exact mean, variance, skewness, kurtosis in a single pass.</p>
 <ul>
-<li><strong>Dataset Size</strong>: Can process datasets larger than available memory</li>
-<li><strong>Memory Growth</strong>: Sub-linear (typically &lt;1KB per row)</li>
-<li><strong>Processing Speed</strong>: Optimized for streaming with minimal overhead</li>
-<li><strong>Accuracy</strong>: Maintains statistical accuracy while using bounded memory</li>
+<li><strong>Update:</strong> O(1) per value — maintains running sums of powers of deviations</li>
+<li><strong>Merge:</strong> O(1) — Pébay's formulas combine two partial states exactly</li>
+<li><strong>Finalize:</strong> O(1)</li>
+<li><strong>Space:</strong> O(1) — six floating-point accumulators (n, μ, M₂, M₃, M₄)</li>
 </ul>
-<h3 id="memory-efficiency">Memory Efficiency</h3>
-<p><strong>Per Row Memory Usage</strong>:
-- NumericAccumulator: ~0.1-0.5 bytes per row
-- CategoricalAccumulator: ~0.05-0.2 bytes per row
-- DatetimeAccumulator: ~0.01 bytes per row
-- BooleanAccumulator: ~0.01 bytes per row</p>
-<p><strong>Total Memory Usage</strong>:
-- Base: ~50-100 MB for default configuration
-- Per Column: ~1-5 MB depending on data type
-- Per Million Rows: ~100-500 MB additional</p>
-<h3 id="configuration-impact">Configuration Impact</h3>
-<p><strong>Memory vs. Accuracy Trade-offs</strong>:
-- <code>numeric_sample_size</code>: Larger = better accuracy, more memory
-- <code>uniques_sketch_size</code>: Larger = better distinct count accuracy, more memory
-- <code>top_k_size</code>: Larger = more top values tracked, more memory
-- <code>max_extremes</code>: Larger = more extreme values tracked, more memory
-- <code>enable_chunk_metadata</code>: Disable to save memory when visualization not needed</p>
-<h2 id="validation-results">Validation Results</h2>
-<h3 id="memory-leak-fix-validation">Memory Leak Fix Validation</h3>
-<p><strong>Test Results</strong> (200k rows, 6 columns):
-- <strong>Memory Growth</strong>: 27.64 MB (target: &lt;100 MB) ✅
-- <strong>Peak Memory</strong>: 11.44 MB (target: &lt;200 MB) ✅
-- <strong>Processing Time</strong>: 22.87 seconds
-- <strong>Memory Efficiency</strong>: &lt;0.1 bytes per row ✅</p>
-<p><strong>Stress Test Results</strong> (1M rows):
-- <strong>Memory Growth</strong>: &lt;200 MB ✅
-- <strong>Peak Memory</strong>: &lt;500 MB ✅
-- <strong>Memory per Row</strong>: &lt;1KB ✅</p>
-<h3 id="performance-impact">Performance Impact</h3>
-<p><strong>Before Fixes</strong>:
-- Memory growth: O(n) for low-cardinality columns
-- Memory spikes: O(k × chunks) during processing
-- Unbounded growth: O(num_chunks) for metadata</p>
-<p><strong>After Fixes</strong>:
-- Memory growth: O(1) constant
-- Memory spikes: Eliminated
-- Bounded growth: O(k) with configurable limits</p>
-<h2 id="conclusion">Conclusion</h2>
-<p>The memory leak fixes successfully transform PySuricata from a memory-intensive system to a truly streaming system with bounded memory usage. The key improvements are:</p>
+<p>This is numerically stable — it avoids the catastrophic cancellation of naïve Σx² − nμ² formulas.</p>
+<p><strong>Reference:</strong> Welford (1962), Pébay (2008)</p>
+<h3 id="reservoir-sampling">Reservoir Sampling</h3>
+<p><strong>Purpose:</strong> Maintain a uniform random sample for quantile estimation and histograms.</p>
+<ul>
+<li><strong>Update:</strong> O(1) per value — include with probability s/i, replacing a random element</li>
+<li><strong>Merge:</strong> O(s) — weighted combination of two reservoirs</li>
+<li><strong>Finalize:</strong> O(s log s) — sort for quantile computation</li>
+<li><strong>Space:</strong> O(s) where s = <code>numeric_sample_size</code></li>
+</ul>
+<p>Every subset of size s from the stream has equal probability of being the sample.</p>
+<p><strong>Reference:</strong> Vitter (1985)</p>
+<h3 id="kmv-k-minimum-values-sketch">KMV (K-Minimum Values) Sketch</h3>
+<p><strong>Purpose:</strong> Approximate distinct count estimation.</p>
+<ul>
+<li><strong>Update:</strong> O(log k) — hash value, maintain min-heap of k smallest hashes</li>
+<li><strong>Merge:</strong> O(k log k) — union two heaps, keep k smallest</li>
+<li><strong>Estimate:</strong> d̂ = (k − 1) / x_k where x_k is the k-th smallest hash</li>
+<li><strong>Space:</strong> O(k) where k = <code>uniques_sketch_size</code></li>
+<li><strong>Error:</strong> ~1/√k relative error — with k=2048, approximately 2.2%</li>
+</ul>
+<p>The implementation transitions from exact counting (for low-cardinality columns) to approximate estimation when the number of distinct values exceeds a threshold.</p>
+<p><strong>Reference:</strong> Bar-Yossef et al. (2002)</p>
+<h3 id="misra-gries-top-k-frequent-values">Misra-Gries (Top-K Frequent Values)</h3>
+<p><strong>Purpose:</strong> Find the most frequent values in a stream.</p>
+<ul>
+<li><strong>Update:</strong> O(1) amortized — increment counter or decrement all</li>
+<li><strong>Merge:</strong> O(k) — sum counters from two states</li>
+<li><strong>Finalize:</strong> O(k log k) — sort by frequency</li>
+<li><strong>Space:</strong> O(k) where k = <code>top_k_size</code></li>
+<li><strong>Guarantee:</strong> Any value with true frequency &gt; n/k is included in the output</li>
+</ul>
+<p>Frequency estimates are within ±n/k of the true count.</p>
+<p><strong>Reference:</strong> Misra &amp; Gries (1982)</p>
+<h3 id="extreme-tracking">Extreme Tracking</h3>
+<p><strong>Purpose:</strong> Track the minimum and maximum values with their row indices.</p>
+<ul>
+<li><strong>Update:</strong> O(log k) per value — bounded heap operations</li>
+<li><strong>Merge:</strong> O(k log k) — merge and truncate heaps</li>
+<li><strong>Space:</strong> O(k) where k = <code>max_extremes</code> (default: 5)</li>
+</ul>
+<p>Uses a min-heap for minimums and a negated max-heap for maximums.</p>
+<h3 id="correlations">Correlations</h3>
+<p><strong>Purpose:</strong> Streaming Pearson correlation between all pairs of numeric columns.</p>
+<ul>
+<li><strong>Update:</strong> O(p) per value — update co-moment for each column pair</li>
+<li><strong>Finalize:</strong> O(p²) — compute correlations from co-moments</li>
+<li><strong>Space:</strong> O(p²) — stores pairwise co-moments</li>
+</ul>
+<p>This is the most expensive component. For datasets with many numeric columns, disable with <code>compute_correlations = False</code> or increase <code>corr_threshold</code>.</p>
+<hr />
+<h2 id="accumulator-breakdown">Accumulator Breakdown</h2>
+<h3 id="numericaccumulator">NumericAccumulator</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>StreamingMoments</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td>ReservoirSampler</td>
+<td>O(s)</td>
+</tr>
+<tr>
+<td>KMV sketch</td>
+<td>O(k)</td>
+</tr>
+<tr>
+<td>ExtremeTracker</td>
+<td>O(k)</td>
+</tr>
+<tr>
+<td>MisraGries</td>
+<td>O(k)</td>
+</tr>
+<tr>
+<td>Histogram bins</td>
+<td>O(b)</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>O(s + k + b)</strong></td>
+</tr>
+</tbody>
+</table>
+<p>With defaults: s=20,000, k=2,048, b=25</p>
+<h3 id="categoricalaccumulator">CategoricalAccumulator</h3>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th>Space</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KMV sketch (original)</td>
+<td>O(k)</td>
+</tr>
+<tr>
+<td>KMV sketch (lowercase)</td>
+<td>O(k)</td>
+</tr>
+<tr>
+<td>KMV sketch (trimmed)</td>
+<td>O(k)</td>
+</tr>
+<tr>
+<td>MisraGries</td>
+<td>O(k)</td>
+</tr>
+<tr>
+<td>String length tracking</td>
+<td>O(1)</td>
+</tr>
+<tr>
+<td><strong>Total</strong></td>
+<td><strong>O(k)</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="datetimeaccumulator">DatetimeAccumulator</h3>
+<p>Fixed-size counters: hour (24), weekday (7), month (12), plus min/max tracking.</p>
+<p><strong>Total:</strong> O(1)</p>
+<h3 id="booleanaccumulator">BooleanAccumulator</h3>
+<p>Two counters (true, false) plus missing count.</p>
+<p><strong>Total:</strong> O(1)</p>
+<hr />
+<h2 id="configuration-impact">Configuration Impact</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Effect on memory</th>
+<th>Effect on accuracy</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>chunk_size</code> ↑</td>
+<td>More rows in memory per iteration</td>
+<td>No effect on final accuracy</td>
+</tr>
+<tr>
+<td><code>numeric_sample_size</code> ↑</td>
+<td>Larger reservoir per numeric column</td>
+<td>Better quantile estimates</td>
+</tr>
+<tr>
+<td><code>uniques_sketch_size</code> ↑</td>
+<td>Larger KMV sketch per column</td>
+<td>Better distinct count accuracy</td>
+</tr>
+<tr>
+<td><code>top_k_size</code> ↑</td>
+<td>More frequent values tracked</td>
+<td>More comprehensive top-k</td>
+</tr>
+<tr>
+<td><code>compute_correlations</code> off</td>
+<td>Saves O(p²)</td>
+<td>No correlations reported</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="performance-optimizations-v0014">Performance Optimizations (v0.0.14)</h2>
+<p>Several hot paths were vectorized to reduce per-value Python overhead:</p>
+<table>
+<thead>
+<tr>
+<th>Optimization</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KMV/MisraGries updates</td>
+<td>Per-value <code>add()</code> → batch <code>add_many()</code> with pre-counted values</td>
+</tr>
+<tr>
+<td>Missing/Inf counting</td>
+<td>Python loop → vectorized <code>np.isnan()</code> / <code>np.isinf()</code></td>
+</tr>
+<tr>
+<td>Row hashing (duplicates)</td>
+<td>Per-row tuple + <code>hash()</code> → vectorized polynomial hash via numpy</td>
+</tr>
+<tr>
+<td>Boolean coercion</td>
+<td>Per-value <code>str().lower()</code> → pandas vectorized <code>str.strip().str.lower()</code></td>
+</tr>
+<tr>
+<td>Correlation finite masks</td>
+<td>Recomputed per pair → pre-computed once per column, reused</td>
+</tr>
+</tbody>
+</table>
+<h2 id="references">References</h2>
 <ol>
-<li><strong>Bounded Data Structures</strong>: All components now use bounded memory</li>
-<li><strong>Heap-Based Algorithms</strong>: Efficient O(log k) operations for extreme tracking</li>
-<li><strong>Configuration Control</strong>: Fine-grained control over memory usage vs. accuracy trade-offs</li>
-<li><strong>Optional Features</strong>: Chunk metadata can be disabled to save memory</li>
-<li><strong>Sub-linear Growth</strong>: Memory usage grows sub-linearly with dataset size</li>
+<li>Welford, B.P. (1962), "Note on a Method for Calculating Corrected Sums of Squares and Products", <em>Technometrics</em>, 4(3): 419–420</li>
+<li>Pébay, P. (2008), "Formulas for Robust, One-Pass Parallel Computation of Covariances and Arbitrary-Order Statistical Moments", Sandia Report SAND2008-6212</li>
+<li>Bar-Yossef, Z. et al. (2002), "Counting Distinct Elements in a Data Stream", <em>RANDOM</em></li>
+<li>Misra, J. &amp; Gries, D. (1982), "Finding repeated elements", <em>Science of Computer Programming</em>, 2(2): 143–152</li>
+<li>Vitter, J.S. (1985), "Random Sampling with a Reservoir", <em>ACM TOMS</em>, 11(1): 37–57</li>
 </ol>
-<p>These optimizations enable PySuricata to process datasets of any size on memory-constrained systems while maintaining statistical accuracy and performance.</p>
 
 
 
@@ -1749,7 +2204,7 @@
     
       <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
-        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+        <script src="../javascripts/mathjax.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       
