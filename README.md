@@ -60,10 +60,9 @@ report.save_html("titanic_report.html")
 This is a real report generated from the Titanic dataset (891 rows × 12 columns):
 
 <div align="center">
-  <a href="https://alvarodiez20.github.io/pysuricata/">
-    <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/docs/assets/report_preview.png" alt="PySuricata Titanic Report" width="700">
+  <a href="https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html">
+    <strong>▶ View the live interactive Titanic report →</strong>
   </a>
-  <p><a href="https://alvarodiez20.github.io/pysuricata/"><strong>▶ Open the live interactive report →</strong></a></p>
 </div>
 
 ## Features
