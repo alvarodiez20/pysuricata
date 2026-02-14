@@ -31,7 +31,7 @@ All notable changes to PySuricata are documented here.
 - **`report_preview.png`** — Replaced with link to live interactive report on GitHub Pages
 - Stale dates from stats documentation pages
 
-## [0.0.14] - 2026-01-03
+## [0.0.14] - 2026-01-14
 
 ### Added
 - **Polars LazyFrame support** — LazyFrames are now automatically collected before profiling
