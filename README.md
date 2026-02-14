@@ -7,6 +7,7 @@
 [![codecov](https://codecov.io/gh/alvarodiez20/pysuricata/branch/main/graph/badge.svg)](https://codecov.io/gh/alvarodiez20/pysuricata)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://alvarodiez20.github.io/pysuricata/)
 [![Downloads](https://static.pepy.tech/badge/pysuricata)](https://pepy.tech/project/pysuricata)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-alvarodiez20-blue?logo=linkedin)](https://www.linkedin.com/in/alvarodiez20/)
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/pysuricata/static/images/logo_suricata_transparent.png" alt="PySuricata Logo" width="300">
@@ -55,16 +56,7 @@ report = profile(df)
 report.save_html("titanic_report.html")
 ```
 
-### Example Report
-
-This is a real report generated from the Titanic dataset (891 rows × 12 columns):
-
-<div align="center">
-  <a href="https://alvarodiez20.github.io/pysuricata/">
-    <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/docs/assets/report_preview.png" alt="PySuricata Titanic Report" width="700">
-  </a>
-  <p><a href="https://alvarodiez20.github.io/pysuricata/"><strong>▶ Open the live interactive report →</strong></a></p>
-</div>
+**[▶ See a live example report →](https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html)**
 
 ## Features
 
@@ -79,12 +71,14 @@ This is a real report generated from the Titanic dataset (891 rows × 12 columns
 
 PySuricata uses well-known streaming algorithms from the academic literature:
 
-| Algorithm | Purpose | Complexity |
-|-----------|---------|------------|
-| **Welford/Pébay** | Exact mean, variance, skewness, kurtosis | O(1) per value, mergeable |
-| **KMV sketch** | Distinct count estimation | O(log k) per value, ~2.2% error |
-| **Misra-Gries** | Top-k frequent values | O(1) amortized, guaranteed |
-| **Reservoir sampling** | Uniform random sample for quantiles | O(1) per value, exact probability |
+| Algorithm | Purpose | Time | Space |
+|-----------|---------|------|-------|
+| **Welford/Pébay** | Exact mean, variance, skewness, kurtosis | O(1) per value | O(1) |
+| **KMV sketch** | Distinct count estimation (~2.2% error) | O(log k) per value | O(k) |
+| **Misra-Gries** | Top-k frequent values | O(1) amortized | O(k) |
+| **Reservoir sampling** | Uniform random sample for quantiles | O(1) per value | O(s) |
+
+*k = sketch size (default 1024), s = sample size (default 10 000)*
 
 All statistics are computed in a **single pass** over the data.
 

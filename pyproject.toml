@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysuricata"
-version = "0.0.14"
+version = "0.0.15"
 description = "A lightweight EDA tool inspired by the curious nature of suricates. Built just for fun 🔬."
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
@@ -57,6 +57,8 @@ dev = [
     "ruff>=0.11.2",
     "pre-commit>=3.6.2",
     "setuptools>=80.9.0",
+    "ipykernel>=7.2.0",
+    "nbconvert>=7.17.0",
 ]
 
 [tool.setuptools]

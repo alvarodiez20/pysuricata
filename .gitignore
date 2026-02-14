@@ -95,4 +95,4 @@ fix_*.py
 update_*.py
 
 # MkDocs build output
-site/
+site/examples/*.html
