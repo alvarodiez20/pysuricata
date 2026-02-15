@@ -268,6 +268,10 @@ class ExtremeTracker:
     def update(self, values: np.ndarray, indices: Optional[np.ndarray] = None) -> None:
         """Update with new values and their indices.
 
+        Uses np.argpartition to pre-filter to only the k smallest and k largest
+        candidates, then pushes only those to the heaps. This reduces the Python
+        loop from O(n) to O(k) per call.
+
         Args:
             values: Array of values
             indices: Optional array of indices corresponding to values
@@ -286,10 +290,25 @@ class ExtremeTracker:
         finite_values = values[finite_mask]
         finite_indices = indices[finite_mask]
 
-        # Process each value individually to maintain heap properties
-        for value, index in zip(finite_values, finite_indices):
-            self._add_to_min_heap(index, float(value))
-            self._add_to_max_heap(index, float(value))
+        k = self.max_extremes
+        n = len(finite_values)
+
+        if n <= 2 * k:
+            # Small array — process all values directly
+            for value, index in zip(finite_values, finite_indices):
+                self._add_to_min_heap(index, float(value))
+                self._add_to_max_heap(index, float(value))
+        else:
+            # Pre-filter with np.argpartition — O(n) numpy, then O(k) Python
+            # Find k smallest candidates for min heap
+            min_partition = np.argpartition(finite_values, k)[:k]
+            for idx in min_partition:
+                self._add_to_min_heap(finite_indices[idx], float(finite_values[idx]))
+
+            # Find k largest candidates for max heap
+            max_partition = np.argpartition(finite_values, -k)[-k:]
+            for idx in max_partition:
+                self._add_to_max_heap(finite_indices[idx], float(finite_values[idx]))
 
     def _add_to_min_heap(self, index: Any, value: float) -> None:
         """Add value to min heap (tracking minimums)."""

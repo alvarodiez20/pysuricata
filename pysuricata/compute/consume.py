@@ -67,20 +67,34 @@ def _to_numeric_array_pandas(s: pd.Series) -> np.ndarray:  # type: ignore[name-d
 
     - If the Series is already numeric (including pandas nullable ints),
       avoid the overhead of `pd.to_numeric` and go straight to NumPy.
+    - Timedelta/Duration dtypes are converted to total seconds.
     - Otherwise, coerce with `pd.to_numeric(errors='coerce')`.
     """
     try:
-        # Fast path for numeric dtypes (exclude booleans)
         if pd is not None:
             from pandas.api import types as pdt  # type: ignore
 
             dt = getattr(s, "dtype", None)
-            if (
-                dt is not None
-                and not pdt.is_bool_dtype(dt)
-                and pdt.is_numeric_dtype(dt)
-            ):
-                return s.to_numpy(dtype="float64", copy=False)
+            if dt is not None:
+                # Timedelta → total seconds (float64)
+                if pdt.is_timedelta64_dtype(dt):
+                    return s.dt.total_seconds().to_numpy(dtype="float64", copy=False)
+
+                # Fast path for numeric dtypes (exclude booleans)
+                if not pdt.is_bool_dtype(dt) and pdt.is_numeric_dtype(dt):
+                    return s.to_numpy(dtype="float64", copy=False)
+
+                # ArrowDtype duration → total seconds
+                if hasattr(dt, "pyarrow_dtype"):
+                    try:
+                        import pyarrow as pa
+
+                        if pa.types.is_duration(dt.pyarrow_dtype):
+                            # Convert arrow duration to pandas timedelta then total_seconds
+                            td = s.dt.total_seconds()
+                            return td.to_numpy(dtype="float64", copy=False)
+                    except Exception:
+                        pass
     except Exception:
         # Fall through to the coercion path on any failure
         pass

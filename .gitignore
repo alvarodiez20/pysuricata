@@ -96,3 +96,11 @@ update_*.py
 
 # MkDocs build output
 site/examples/*.html
+site/*
+
+# Agents
+.agents/    
+.claude/    
+
+# Examples
+examples/*.html

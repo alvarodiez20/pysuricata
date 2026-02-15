@@ -28,15 +28,19 @@ def _to_numeric_array_polars(s: pl.Series) -> np.ndarray:  # type: ignore[name-d
     if pl is None:
         raise RuntimeError("polars not available")
     try:
-        # Fast path for already numeric types - avoid unnecessary casting
-        if s.dtype in [
-            pl.Float64,
-            pl.Float32,
-            pl.Int64,
-            pl.Int32,
-            pl.UInt64,
-            pl.UInt32,
-        ]:
+        dtype = s.dtype
+
+        # Duration → total seconds (float64)
+        if dtype == pl.Duration:
+            return s.dt.total_seconds().to_numpy()
+
+        # Time → seconds since midnight (float64)
+        if dtype == pl.Time:
+            # pl.Time stores nanoseconds since midnight internally
+            return s.cast(pl.Duration).dt.total_seconds().to_numpy()
+
+        # Fast path for already numeric types using polars' own check
+        if dtype.is_numeric():
             return s.to_numpy()
 
         # Best-effort numeric casting; keep NaN for invalid

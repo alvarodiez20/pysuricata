@@ -573,7 +573,7 @@ class StreamingHistogram:
         self._add_to_bin(value)
 
     def add_many(self, values: Sequence[float]) -> None:
-        """Add multiple values to the histogram.
+        """Add multiple values to the histogram using vectorized bin assignment.
 
         Args:
             values: Sequence of numeric values
@@ -581,26 +581,38 @@ class StreamingHistogram:
         if len(values) == 0:
             return
 
-        # Find min/max of new values
-        min_val = min(values)
-        max_val = max(values)
+        arr = np.asarray(values, dtype=float)
+        finite_mask = np.isfinite(arr)
+        arr = arr[finite_mask]
+        if len(arr) == 0:
+            return
+
+        min_val = float(np.min(arr))
+        max_val = float(np.max(arr))
 
         if not self._initialized:
-            # First batch - initialize bounds and create bins
             self.min_val = min_val
             self.max_val = max_val
             self._create_bins()
             self._initialized = True
         else:
-            # Update bounds if needed
             if min_val < self.min_val or max_val > self.max_val:
                 self._expand_range(
                     min(min_val, self.min_val), max(max_val, self.max_val)
                 )
 
-        # Add all values to bins
-        for value in values:
-            self._add_to_bin(value)
+        if not self.bin_edges or len(self.counts) == 0:
+            return
+
+        # Vectorized bin assignment — single np.digitize call for all values
+        bin_indices = np.digitize(arr, self.bin_edges) - 1
+        np.clip(bin_indices, 0, len(self.counts) - 1, out=bin_indices)
+
+        # Vectorized counting with np.bincount
+        bin_counts = np.bincount(bin_indices, minlength=len(self.counts))
+        for i in range(len(self.counts)):
+            self.counts[i] += int(bin_counts[i])
+        self.total_count += len(arr)
 
     def _create_bins(self) -> None:
         """Create initial bin edges and counts."""
