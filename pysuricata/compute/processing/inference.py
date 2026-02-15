@@ -237,22 +237,44 @@ class UnifiedTypeInferrer:
             return ProcessingResult.error_result("pandas not available")
 
         try:
-            dtype_str = str(s.dtype)
+            dtype = s.dtype
+            dtype_str = str(dtype)
 
             # Fast path for explicit types
-            if pd.api.types.is_numeric_dtype(s.dtype):
-                return ProcessingResult.success_result("numeric")
-            elif pd.api.types.is_bool_dtype(s.dtype):
+            if pd.api.types.is_bool_dtype(dtype):
                 return ProcessingResult.success_result("boolean")
-            elif pd.api.types.is_datetime64_any_dtype(s.dtype):
+            elif pd.api.types.is_numeric_dtype(dtype):
+                return ProcessingResult.success_result("numeric")
+            elif pd.api.types.is_datetime64_any_dtype(dtype):
                 return ProcessingResult.success_result("datetime")
-
-            # Pattern-based inference
-            if re.search("int|float|^UInt|^Int|^Float", dtype_str, re.I):
+            elif pd.api.types.is_timedelta64_dtype(dtype):
+                # Timedelta is fundamentally numeric (total seconds)
                 return ProcessingResult.success_result("numeric")
-            elif re.search("bool", dtype_str, re.I):
+
+            # ArrowDtype explicit handling (pyarrow-backed DataFrames)
+            if hasattr(dtype, "pyarrow_dtype"):
+                import pyarrow as pa
+
+                pa_type = dtype.pyarrow_dtype
+                if pa.types.is_boolean(pa_type):
+                    return ProcessingResult.success_result("boolean")
+                elif pa.types.is_integer(pa_type) or pa.types.is_floating(pa_type) or pa.types.is_decimal(pa_type):
+                    return ProcessingResult.success_result("numeric")
+                elif pa.types.is_timestamp(pa_type) or pa.types.is_date(pa_type):
+                    return ProcessingResult.success_result("datetime")
+                elif pa.types.is_duration(pa_type):
+                    return ProcessingResult.success_result("numeric")
+                else:
+                    return ProcessingResult.success_result("categorical")
+
+            # Pattern-based inference for remaining string-based dtype detection
+            if re.search(r"int|float|^UInt|^Int|^Float", dtype_str, re.I):
+                return ProcessingResult.success_result("numeric")
+            elif re.search(r"bool", dtype_str, re.I):
                 return ProcessingResult.success_result("boolean")
-            elif re.search("datetime", dtype_str, re.I):
+            elif re.search(r"datetime|timedelta", dtype_str, re.I):
+                if "timedelta" in dtype_str.lower():
+                    return ProcessingResult.success_result("numeric")
                 return ProcessingResult.success_result("datetime")
 
             # Sample-based inference for object types
@@ -284,23 +306,22 @@ class UnifiedTypeInferrer:
         try:
             dtype = s.dtype
 
-            # Fast path for explicit types
-            if dtype in [
-                pl.Float64,
-                pl.Float32,
-                pl.Int64,
-                pl.Int32,
-                pl.UInt64,
-                pl.UInt32,
-            ]:
+            # Fast path: use polars' own numeric check (covers all int/uint/float variants)
+            if dtype.is_numeric():
                 return ProcessingResult.success_result("numeric")
             elif dtype == pl.Boolean:
                 return ProcessingResult.success_result("boolean")
             elif dtype in [pl.Datetime, pl.Date]:
                 return ProcessingResult.success_result("datetime")
+            elif dtype == pl.Duration:
+                # Duration is fundamentally numeric (total seconds)
+                return ProcessingResult.success_result("numeric")
+            elif dtype == pl.Time:
+                # Time-of-day mapped to numeric (seconds since midnight)
+                return ProcessingResult.success_result("numeric")
 
             # For string types, try to infer more specific types
-            if dtype == pl.Utf8:
+            if dtype in (pl.Utf8, pl.String):
                 if self.strategy in [
                     InferenceStrategy.AGGRESSIVE,
                     InferenceStrategy.BALANCED,
@@ -308,6 +329,15 @@ class UnifiedTypeInferrer:
                     return self._sample_based_inference_polars(s)
                 else:
                     return ProcessingResult.success_result("categorical")
+
+            # Nested types (Struct, List, Array) — fall through to categorical
+            # but log a warning if logger is available
+            if dtype in (pl.Struct, pl.List) or str(dtype).startswith("list[") or str(dtype).startswith("struct"):
+                self.logger.debug(
+                    "Column '%s' has nested type '%s'; treating as categorical",
+                    getattr(s, "name", "?"),
+                    dtype,
+                )
 
             # Default to categorical
             return ProcessingResult.success_result("categorical")

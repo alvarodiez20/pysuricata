@@ -50,6 +50,8 @@ class DatetimeSummary:
     weekend_ratio: float = 0.0
     business_hours_ratio: float = 0.0
     seasonal_pattern: Optional[str] = None
+    # Source timezone (before UTC conversion)
+    source_timezone: Optional[str] = None
     # Missing fields for renderer compatibility
     unique_est: int = 0
     chunk_metadata: Optional[Sequence[Tuple[int, int, int]]] = None
@@ -100,18 +102,33 @@ class DatetimeAccumulator:
             else None
         )
 
+        # Source timezone (captured before UTC conversion)
+        self._source_timezone: Optional[str] = None
+
         # Interval tracking for temporal analysis with memory bounds
         self._intervals: List[float] = []
         self._last_ts: Optional[int] = None
 
     def set_dtype(self, dtype_str: str) -> None:
-        """Set the data type string.
+        """Set the data type string and extract timezone metadata.
 
         Args:
             dtype_str: String representation of the data type
         """
         try:
             self._dtype_str = str(dtype_str)
+            # Extract timezone from dtype string (e.g. "datetime64[ns, US/Eastern]")
+            if "," in dtype_str:
+                tz_part = dtype_str.split(",", 1)[1].rstrip("]").strip()
+                if tz_part and tz_part != "UTC":
+                    self._source_timezone = tz_part
+            elif "tz=" in dtype_str.lower():
+                # Polars-style: Datetime(time_unit='us', time_zone='Europe/Berlin')
+                import re
+
+                m = re.search(r"time_zone=['\"]([^'\"]+)['\"]", dtype_str)
+                if m and m.group(1) != "UTC":
+                    self._source_timezone = m.group(1)
         except Exception:
             self._dtype_str = "datetime"
 
@@ -375,6 +392,7 @@ class DatetimeAccumulator:
             weekend_ratio=weekend_ratio,
             business_hours_ratio=business_hours_ratio,
             seasonal_pattern=seasonal_pattern,
+            source_timezone=self._source_timezone,
             unique_est=self._uniques.estimate(),
             chunk_metadata=chunk_metadata,
         )

@@ -42,6 +42,8 @@ class CategoricalSummary:
     gini_impurity: float = 0.0
     most_common_ratio: float = 0.0
     diversity_ratio: float = 0.0
+    # Advisory dtype suggestion
+    dtype_suggestion: Optional["DtypeSuggestion"] = None
 
 
 class CategoricalAccumulator:
@@ -172,26 +174,23 @@ class CategoricalAccumulator:
         # Vectorized sketch updates using value_counts for efficiency
         try:
             value_counts = str_values.value_counts()
-            
-            # Batch update sketches
+
+            # Update sketches — one add per unique value (KMV only needs one),
+            # weighted add for MisraGries frequency tracking
             for value, count in value_counts.items():
-                # Update KMV sketch
-                for _ in range(count):
-                    self._uniques.add(value)
-                
-                # Update MisraGries sketch
-                for _ in range(count):
-                    self._topk.add(value)
-                
-                # Update variant tracking if enabled
+                # KMV only tracks distinct values — one add is sufficient
+                self._uniques.add(value)
+
+                # MisraGries supports weighted add for frequency counting
+                self._topk.add(value, w=int(count))
+
+                # Variant tracking — one add per unique variant is sufficient for KMV
                 if self.config.enable_case_variants and self._uniques_lower:
-                    for _ in range(count):
-                        self._uniques_lower.add(value.lower())
-                
+                    self._uniques_lower.add(value.lower())
+
                 if self.config.enable_trim_variants and self._uniques_strip:
-                    for _ in range(count):
-                        self._uniques_strip.add(value.strip())
-                
+                    self._uniques_strip.add(value.strip())
+
                 # Update special value tracking
                 if value == "" or value == "0":
                     self._empty_zero += count
@@ -212,10 +211,9 @@ class CategoricalAccumulator:
                 lengths = str_values.str.len()
                 self._len_sum += lengths.sum()
                 self._len_n += len(lengths)
-                
-                # Add lengths to reservoir sampler
-                for length in lengths:
-                    self._len_sample.add(float(length))
+
+                # Batch add lengths to reservoir sampler
+                self._len_sample.add_many(lengths.to_numpy(dtype=float))
             except Exception:
                 # Fallback to individual processing
                 for value in str_values:
@@ -387,6 +385,9 @@ class CategoricalAccumulator:
         # Determine if approximation was used
         approx = len(top_items) < self.config.top_k_size
 
+        # Compute advisory dtype suggestion
+        dtype_suggestion = self._compute_dtype_suggestion()
+
         return CategoricalSummary(
             name=self.name,
             count=self.count,
@@ -405,7 +406,33 @@ class CategoricalAccumulator:
             gini_impurity=gini_impurity,
             most_common_ratio=most_common_ratio,
             diversity_ratio=diversity_ratio,
+            dtype_suggestion=dtype_suggestion,
         )
+
+    def _compute_dtype_suggestion(self) -> Optional["DtypeSuggestion"]:
+        """Compute advisory dtype suggestion for categorical columns.
+
+        Returns:
+            DtypeSuggestion if a better dtype exists, None otherwise
+        """
+        if self.count == 0:
+            return None
+
+        current = self._dtype_str.lower()
+        unique_est = self._uniques.estimate()
+
+        # object columns with low cardinality → suggest CategoricalDtype
+        if current == "object" and unique_est > 0 and unique_est < 1000:
+            from .numeric import DtypeSuggestion
+
+            return DtypeSuggestion(
+                current_dtype=self._dtype_str,
+                suggested_dtype="category",
+                reason=f"Low cardinality (~{unique_est} unique values)",
+                estimated_savings_pct=0.0,  # varies widely
+            )
+
+        return None
 
     def _calculate_percentile(
         self, values: List[float], percentile: float

@@ -7,6 +7,14 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.16] - 2026-02-15
+
+### Added
+- **Polars nested type support** — Structs and Lists are now gracefully handled as categorical variables (with debug warnings) instead of causing inference errors
+
+### Changed
+- **Performance optimization** — optimized `_safe_compute` to use NumPy arrays for type checks, reducing overhead in large datasets
+
 ## [0.0.15] - 2026-02-14
 
 ### Added
