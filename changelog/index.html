@@ -1633,6 +1633,39 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0016-2026-02-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      [0.0.16] - 2026-02-15
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.16] - 2026-02-15">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0015-2026-02-14" class="md-nav__link">
     <span class="md-ellipsis">
       [0.0.15] - 2026-02-14
@@ -1643,7 +1676,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+  <a href="#added_1" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1661,7 +1694,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_1" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
     </span>
@@ -1694,7 +1727,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
+  <a href="#added_2" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1712,7 +1745,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
     </span>
@@ -1736,7 +1769,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_2" class="md-nav__link">
+  <a href="#added_3" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1754,7 +1787,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_2" class="md-nav__link">
+  <a href="#changed_3" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
     </span>
@@ -1778,7 +1811,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_3" class="md-nav__link">
+  <a href="#added_4" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1837,8 +1870,17 @@
 
 <h1 id="changelog">Changelog</h1>
 <p>All notable changes to PySuricata are documented here.</p>
-<h2 id="0015-2026-02-14">[0.0.15] - 2026-02-14</h2>
+<h2 id="0016-2026-02-15">[0.0.16] - 2026-02-15</h2>
 <h3 id="added">Added</h3>
+<ul>
+<li><strong>Polars nested type support</strong> — Structs and Lists are now gracefully handled as categorical variables (with debug warnings) instead of causing inference errors</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><strong>Performance optimization</strong> — optimized <code>_safe_compute</code> to use NumPy arrays for type checks, reducing overhead in large datasets</li>
+</ul>
+<h2 id="0015-2026-02-14">[0.0.15] - 2026-02-14</h2>
+<h3 id="added_1">Added</h3>
 <ul>
 <li><strong>Python 3.14 CI testing</strong> — Added Python 3.14 to CI test matrix</li>
 <li><strong>Changelog CI check</strong> — PRs now require a changelog entry</li>
@@ -1850,7 +1892,7 @@
 <li><strong>Code/equation styling</strong> — Changed code and math colors from green to standard gray</li>
 <li><strong>Memory stress test</strong> — Bumped threshold from 200→250 MB for Python 3.14 compatibility</li>
 </ul>
-<h3 id="changed">Changed</h3>
+<h3 id="changed_1">Changed</h3>
 <ul>
 <li><strong>Dropped Python 3.9</strong> — Minimum version is now Python 3.10</li>
 <li><strong>CI runs on PR only</strong> — Tests no longer run on push to main (CD handles releases)</li>
@@ -1865,7 +1907,7 @@
 <li>Stale dates from stats documentation pages</li>
 </ul>
 <h2 id="0014-2026-01-14">[0.0.14] - 2026-01-14</h2>
-<h3 id="added_1">Added</h3>
+<h3 id="added_2">Added</h3>
 <ul>
 <li><strong>Polars LazyFrame support</strong> — LazyFrames are now automatically collected before profiling</li>
 <li><strong>ReportConfig alias</strong> — Added <code>ReportConfig</code> as an alias for <code>ProfileConfig</code> for better API discoverability</li>
@@ -1874,12 +1916,12 @@
 <ul>
 <li><strong>Self-contained HTML reports</strong> — HTML reports no longer depend on external CDN (Chart.js is now inlined)</li>
 </ul>
-<h3 id="changed_1">Changed</h3>
+<h3 id="changed_2">Changed</h3>
 <ul>
 <li><strong>Lighter dependencies</strong> — Removed unused dependencies: <code>matplotlib</code>, <code>seaborn</code>, <code>ipywidgets</code></li>
 </ul>
 <h2 id="0013-2026-01-02">[0.0.13] - 2026-01-02</h2>
-<h3 id="added_2">Added</h3>
+<h3 id="added_3">Added</h3>
 <ul>
 <li><strong>CLI tool</strong> — New command-line interface with <code>pysuricata profile</code> and <code>pysuricata summarize</code> commands</li>
 <li><strong>Comprehensive stress tests</strong> — New <code>test_complexity_analysis.py</code> with time/space profiling</li>
@@ -1889,12 +1931,12 @@
 <ul>
 <li><strong>Memory leak fixes</strong> — Resolved memory leaks in KMV sketch, ExtremeTracker, and chunk metadata</li>
 </ul>
-<h3 id="changed_2">Changed</h3>
+<h3 id="changed_3">Changed</h3>
 <ul>
 <li><strong>Realistic benchmarks</strong> — Updated README and docs with measured performance figures</li>
 </ul>
 <h2 id="0011-2025-12-xx">[0.0.11] - 2025-12-XX</h2>
-<h3 id="added_3">Added</h3>
+<h3 id="added_4">Added</h3>
 <ul>
 <li>Enhanced documentation with mathematical formulas</li>
 <li>Comprehensive examples gallery</li>
