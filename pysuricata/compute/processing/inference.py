@@ -470,14 +470,15 @@ class UnifiedTypeInferrer:
             except Exception:
                 pass
 
-            # Try boolean conversion
+            # Try boolean conversion for string data (AGGRESSIVE only)
             if self.strategy == InferenceStrategy.AGGRESSIVE:
                 try:
-                    bs = sample.cast(pl.Boolean, strict=False)
-                    null_count = bs.null_count()
-                    if (
-                        sample_size - null_count
-                    ) / sample_size > 0.8:  # 80% success rate
+                    # Convert to lowercase strings and check if they are boolean-like
+                    lower_sample = sample.cast(pl.Utf8).str.to_lowercase()
+                    bool_mask = lower_sample.is_in(
+                        ["true", "false", "1", "0", "yes", "no"]
+                    )
+                    if bool_mask.sum() / sample_size > 0.8:  # 80% success rate
                         return ProcessingResult.success_result("boolean")
                 except Exception:
                     pass
@@ -487,7 +488,7 @@ class UnifiedTypeInferrer:
 
         except Exception as e:
             return ProcessingResult.error_result(
-                f"Sample-based inference failed: {str(e)}"
+                f"Sample-based polars inference failed: {str(e)}"
             )
 
     def _initialize_type_patterns(self) -> dict[str, re.Pattern]:
