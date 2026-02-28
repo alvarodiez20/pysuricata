@@ -280,14 +280,3 @@
   stroke: #34d399;
   /* emerald-400 */
 }
-
-/* Download button icon */
-#pysuricata-report .quick a[data-action="download-report"] svg {
-  color: #8b5cf6;
-  /* violet-500 */
-}
-
-#pysuricata-report:not(.light) .quick a[data-action="download-report"] svg {
-  color: #a78bfa;
-  /* violet-400 */
-}

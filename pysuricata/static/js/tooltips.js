@@ -9,7 +9,7 @@
  * @author PySuricata Team
  */
 
-(function() {
+(function () {
   'use strict';
 
   const ROOT_ID = 'pysuricata-report';
@@ -497,6 +497,11 @@
 
       // Handle mouse enter on quality flags
       root.addEventListener('mouseenter', (e) => {
+        // Prevent triggering on inner elements if already inside
+        if (e.relatedTarget && e.target.contains && e.target.contains(e.relatedTarget)) {
+          return;
+        }
+
         const flag = e.target.closest('.quality-flags .flag');
         if (flag) {
           const flagText = flag.textContent.trim();
@@ -532,23 +537,29 @@
       root.addEventListener('mouseleave', (e) => {
         const flag = e.target.closest('.quality-flags .flag');
         if (flag) {
-          this.hideTooltip();
+          if (!flag.contains(e.relatedTarget)) {
+            this.hideTooltip();
+          }
           return;
         }
 
         const barFill = e.target.closest('.completeness-bar-dual .bar-fill');
         if (barFill) {
-          const originalTitle = barFill.getAttribute('data-original-title');
-          if (originalTitle) {
-            barFill.setAttribute('title', originalTitle);
+          if (!barFill.contains(e.relatedTarget)) {
+            const originalTitle = barFill.getAttribute('data-original-title');
+            if (originalTitle) {
+              barFill.setAttribute('title', originalTitle);
+            }
+            this.hideTooltip();
           }
-          this.hideTooltip();
           return;
         }
 
         const headerChip = e.target.closest('.header-tooltip');
         if (headerChip) {
-          this.hideTooltip();
+          if (!headerChip.contains(e.relatedTarget)) {
+            this.hideTooltip();
+          }
         }
       }, true);
 
@@ -665,7 +676,7 @@
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               if (node.classList && (node.classList.contains('quality-flags') ||
-                  node.classList.contains('missing-values-section-redesign'))) {
+                node.classList.contains('missing-values-section-redesign'))) {
                 // Re-initialize tooltips and align bars for new content
                 setTimeout(() => {
                   initializeTooltips();
