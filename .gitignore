@@ -104,3 +104,4 @@ site/*
 
 # Examples
 examples/*.html
+examples/test_*

@@ -84,8 +84,8 @@ class EngineConfig:
     # Boolean detection options
     enable_auto_boolean_detection: bool = True
     boolean_detection_min_samples: int = 100
-    boolean_detection_max_zero_ratio: float = 0.95
-    boolean_detection_require_name_pattern: bool = True
+    boolean_detection_max_zero_ratio: float = 0.80
+    boolean_detection_require_name_pattern: bool = False
     force_column_types: dict[str, str] | None = None
 
     # Missing columns display options

@@ -3,7 +3,11 @@ from __future__ import annotations
 import hashlib
 import random
 from collections.abc import Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import polars as pl
 
 import numpy as np
 
@@ -447,10 +451,10 @@ class RowKMV:
         self.kmv = KMV(k)
         self.rows = 0
 
-    def update_from_pandas(self, df: pd.DataFrame) -> None:  # type: ignore[name-defined]  # noqa: F821
+    def update_from_pandas(self, df: pd.DataFrame) -> None:
         try:
-            import pandas as pd  # type: ignore
-        except Exception:
+            import pandas as pd
+        except ImportError:
             return
         try:
             # Vectorized row hashing: combine column hashes using a polynomial hash
@@ -483,11 +487,7 @@ class RowKMV:
                 self.kmv.add(s)
             self.rows += n
 
-    def update_from_polars(self, df: pl.DataFrame) -> None:  # type: ignore[name-defined]  # noqa: F821
-        try:
-            pass  # type: ignore
-        except Exception:
-            return
+    def update_from_polars(self, df: pl.DataFrame) -> None:
         try:
             # Polars' hash_rows() is already correct - hashes entire rows properly
             if hasattr(df, "hash_rows"):

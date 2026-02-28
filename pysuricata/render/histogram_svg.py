@@ -8,6 +8,7 @@ and provides better integration with the existing tooltip system.
 
 from __future__ import annotations
 
+import html as _html
 import math
 from dataclasses import dataclass
 
@@ -537,10 +538,4 @@ class SVGHistogramRenderer:
 
     def safe_html_escape(self, text: str) -> str:
         """Escape HTML special characters."""
-        return (
-            text.replace("&", "&amp;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace('"', "&quot;")
-            .replace("'", "&#x27;")
-        )
+        return _html.escape(str(text))

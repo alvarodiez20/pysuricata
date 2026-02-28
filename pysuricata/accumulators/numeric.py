@@ -186,6 +186,9 @@ class NumericAccumulator:
         self._current_chunk_missing = 0  # Missing in current chunk
         self._current_chunk_rows = 0  # Total rows in current chunk
 
+        # Chunk counter for throttling extreme tracking (incremented by consume layer)
+        self._extreme_update_counter: int = 0
+
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string efficiently.
 
@@ -703,6 +706,8 @@ class NumericAccumulator:
         self._bytes_seen = 0
         self._corr_top = []
 
+        self._extreme_update_counter = 0
+
         # Reset all components efficiently
         self._moments.reset()
         self._sample = ReservoirSampler(self.config.sample_size)
@@ -968,6 +973,9 @@ class NumericAccumulator:
             abs_vals = np.abs(finite_values)
             # Round to 10 decimal places to avoid floating-point noise
             rounded = np.round(abs_vals, 10)
+            # Values >= 1e8 would overflow int64 when scaled by 1e10; use fallback.
+            if rounded.size > 0 and rounded.max() >= 1e8:
+                raise OverflowError("values too large for int64 scaled cast")
             # Scale up by 10^10 to convert to integers, then find trailing zeros
             scaled = np.round(rounded * 1e10).astype(np.int64)
             # Remove trailing zeros to find the last significant digit

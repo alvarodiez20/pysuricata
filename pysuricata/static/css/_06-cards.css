@@ -589,18 +589,24 @@
 }
 
 /* Enhanced hover state for all flags (tooltip system handles them) */
-#pysuricata-report .quality-flags .flag {
+#pysuricata-report .quality-flags .flag,
+#pysuricata-report .var-card__header .badge,
+#pysuricata-report .var-card__header .dtype {
   cursor: help;
   transition: all 0.2s ease;
 }
 
-#pysuricata-report .quality-flags .flag:hover {
+#pysuricata-report .quality-flags .flag:hover,
+#pysuricata-report .var-card__header .badge:hover,
+#pysuricata-report .var-card__header .dtype:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   z-index: 10;
 }
 
-#pysuricata-report:not(.light) .quality-flags .flag:hover {
+#pysuricata-report:not(.light) .quality-flags .flag:hover,
+#pysuricata-report:not(.light) .var-card__header .badge:hover,
+#pysuricata-report:not(.light) .var-card__header .dtype:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 

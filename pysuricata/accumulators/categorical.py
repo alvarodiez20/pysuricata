@@ -387,8 +387,8 @@ class CategoricalAccumulator:
         most_common_ratio = self._calculate_most_common_ratio(top_items)
         diversity_ratio = self._calculate_diversity_ratio()
 
-        # Determine if approximation was used
-        approx = len(top_items) < self.config.top_k_size
+        # Determine if approximation was used: tracker is full → unique count is estimated
+        approx = len(top_items) >= self.config.top_k_size
 
         # Compute advisory dtype suggestion
         dtype_suggestion = self._compute_dtype_suggestion()

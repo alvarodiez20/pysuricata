@@ -244,7 +244,101 @@
       description: 'The data distribution suggests that a logarithmic scale might be more appropriate for visualization and analysis.',
       severity: 'info',
       category: 'visualization'
+    },
+
+    // Approx badge
+    'approx': {
+      title: 'Approximate Statistics',
+      description: 'This column has more unique values than the tracker can hold exactly (default: 50). The unique count shown is an estimate from a cardinality sketch (KMV algorithm). Frequency counts for the most common values remain exact; only the total distinct-value count is approximated.',
+      severity: 'info',
+      category: 'data-quality'
+    },
+
+    // Semantic column type badges
+    'numeric': {
+      title: 'Numeric',
+      description: 'This column contains continuous or discrete numerical data. Suitable for statistical analysis, aggregations, histograms, and mathematical operations.',
+      severity: 'info',
+      category: 'column-type'
+    },
+    'categorical': {
+      title: 'Categorical',
+      description: 'This column contains discrete labels or groups. Values are treated as distinct categories without inherent ordering. Suitable for frequency analysis and grouping.',
+      severity: 'info',
+      category: 'column-type'
+    },
+    'boolean': {
+      title: 'Boolean',
+      description: 'This column is a binary variable with exactly two values (True/False or 1/0). Represents yes/no, on/off, or presence/absence. Suitable for proportion and imbalance analysis.',
+      severity: 'info',
+      category: 'column-type'
+    },
+    'datetime': {
+      title: 'DateTime',
+      description: 'This column contains temporal data representing dates and/or times. Enables time-series analysis, trend detection, and temporal aggregations.',
+      severity: 'info',
+      category: 'column-type'
     }
+  };
+
+  /**
+   * Tooltip definitions for pandas/polars dtype strings shown in the dtype chip.
+   */
+  /**
+   * Dtype tooltip definitions keyed case-sensitively by dtype string.
+   * int64 = NumPy non-nullable; Int64 = pandas nullable (ExtensionDtype).
+   * getDtypeTooltipContent() does a case-sensitive lookup first, then
+   * a case-insensitive fallback for dtypes not listed here.
+   */
+  const DTYPE_TOOLTIP_DEFINITIONS = {
+    // ── NumPy signed integers (non-nullable) ──────────────────────────────
+    'int8':   { title: 'int8',   description: '8-bit signed integer. Range: −128 to 127. Very memory efficient for small integer data.' },
+    'int16':  { title: 'int16',  description: '16-bit signed integer. Range: −32,768 to 32,767.' },
+    'int32':  { title: 'int32',  description: '32-bit signed integer. Range: −2.1 billion to 2.1 billion.' },
+    'int64':  { title: 'int64',  description: '64-bit signed integer. Range: −9.2×10¹⁸ to 9.2×10¹⁸. Default integer type in pandas. Cannot hold NA; becomes float64 when NaN is introduced.' },
+    // ── NumPy unsigned integers ────────────────────────────────────────────
+    'uint8':  { title: 'uint8',  description: '8-bit unsigned integer. Range: 0 to 255. Common for image pixel values and small non-negative counts.' },
+    'uint16': { title: 'uint16', description: '16-bit unsigned integer. Range: 0 to 65,535.' },
+    'uint32': { title: 'uint32', description: '32-bit unsigned integer. Range: 0 to 4.3 billion.' },
+    'uint64': { title: 'uint64', description: '64-bit unsigned integer. Range: 0 to 1.8×10¹⁹.' },
+    // ── Pandas nullable integers (ExtensionDtype, capital first letter) ────
+    'Int8':   { title: 'Int8 (nullable)',   description: 'Pandas nullable 8-bit integer. Supports NA without silent conversion to float. Requires pandas ≥ 1.0.' },
+    'Int16':  { title: 'Int16 (nullable)',  description: 'Pandas nullable 16-bit integer. Supports NA without silent conversion to float.' },
+    'Int32':  { title: 'Int32 (nullable)',  description: 'Pandas nullable 32-bit integer. Supports NA without silent conversion to float.' },
+    'Int64':  { title: 'Int64 (nullable)',  description: 'Pandas nullable 64-bit integer. Supports NA without silent conversion to float. Preferred over int64 when missing values are expected.' },
+    'UInt8':  { title: 'UInt8 (nullable)',  description: 'Pandas nullable unsigned 8-bit integer. Range: 0 to 255. Supports NA.' },
+    'UInt16': { title: 'UInt16 (nullable)', description: 'Pandas nullable unsigned 16-bit integer. Range: 0 to 65,535. Supports NA.' },
+    'UInt32': { title: 'UInt32 (nullable)', description: 'Pandas nullable unsigned 32-bit integer. Range: 0 to 4.3 billion. Supports NA.' },
+    'UInt64': { title: 'UInt64 (nullable)', description: 'Pandas nullable unsigned 64-bit integer. Range: 0 to 1.8×10¹⁹. Supports NA.' },
+    // ── Floats ─────────────────────────────────────────────────────────────
+    'float16': { title: 'float16', description: 'Half-precision float. ~3 significant decimal digits. Very compact but limited range; rarely used for data analysis.' },
+    'float32': { title: 'float32', description: 'Single-precision float. ~7 significant decimal digits. Common in ML model inputs.' },
+    'float64': { title: 'float64', description: 'Double-precision float. ~15 significant decimal digits. Default float type in pandas. Used automatically when int columns gain NaN values.' },
+    'Float32': { title: 'Float32 (nullable)', description: 'Pandas nullable single-precision float. Supports NA as a first-class value without ambiguity.' },
+    'Float64': { title: 'Float64 (nullable)', description: 'Pandas nullable double-precision float. Supports NA as a first-class value without ambiguity.' },
+    // ── Booleans ───────────────────────────────────────────────────────────
+    'bool':    { title: 'bool',             description: 'NumPy boolean (True/False). No NA support — a missing value silently converts the column to object.' },
+    'boolean': { title: 'boolean (nullable)', description: 'Pandas nullable boolean. Supports True, False, and NA as distinct states. Preferred when missing values are possible.' },
+    // ── Text / generic object ──────────────────────────────────────────────
+    'object': { title: 'object', description: 'Generic Python object dtype. Typically used for strings, but can hold any Python value. Slower and more memory-hungry than typed dtypes.' },
+    'string': { title: 'string (StringDtype)', description: 'Pandas explicit string type. Better NA handling and performance than object. Use pd.StringDtype() or dtype="string".' },
+    // ── Datetime ───────────────────────────────────────────────────────────
+    'datetime64[ns]':    { title: 'datetime64[ns]',    description: 'Datetime with nanosecond precision. Covers ~1678–2262 CE. The standard pandas datetime dtype.' },
+    'datetime64[us]':    { title: 'datetime64[us]',    description: 'Datetime with microsecond precision. Wider range than [ns]: ~290,000 years.' },
+    'datetime64[ms]':    { title: 'datetime64[ms]',    description: 'Datetime with millisecond precision.' },
+    'datetime64[s]':     { title: 'datetime64[s]',     description: 'Datetime with second precision.' },
+    'datetime64':        { title: 'datetime64',        description: 'Datetime type (precision unspecified). Pandas typically uses nanosecond precision internally.' },
+    // ── Timedelta ──────────────────────────────────────────────────────────
+    'timedelta64[ns]':   { title: 'timedelta64[ns]',   description: 'Duration/time difference with nanosecond precision. Result of subtracting two datetime64 values.' },
+    'timedelta64[us]':   { title: 'timedelta64[us]',   description: 'Duration with microsecond precision.' },
+    'timedelta64[ms]':   { title: 'timedelta64[ms]',   description: 'Duration with millisecond precision.' },
+    'timedelta64[s]':    { title: 'timedelta64[s]',    description: 'Duration with second precision.' },
+    'timedelta64':       { title: 'timedelta64',       description: 'Time duration type (precision unspecified).' },
+    // ── Categorical ────────────────────────────────────────────────────────
+    'category': { title: 'category (CategoricalDtype)', description: 'Pandas categorical type. Stores repeated values efficiently using integer codes. Ideal for low-cardinality string or ordinal columns.' },
+    // ── Complex ────────────────────────────────────────────────────────────
+    'complex64':  { title: 'complex64',  description: '64-bit complex number (two 32-bit floats for real and imaginary parts).' },
+    'complex128': { title: 'complex128', description: '128-bit complex number (two 64-bit floats). Default complex type in NumPy.' }
   };
 
   /**
@@ -301,17 +395,47 @@
     }
 
     /**
+     * Get tooltip content for a dtype chip.
+     * Case-sensitive lookup first (int64 ≠ Int64), then case-insensitive fallback.
+     * @param {string} dtypeText - The dtype string (e.g. "int64", "Int64", "object")
+     * @returns {Object} Tooltip content object
+     */
+    getDtypeTooltipContent(dtypeText) {
+      const raw = dtypeText.trim();
+      // 1. Exact case-sensitive match (distinguishes int64 from Int64)
+      if (DTYPE_TOOLTIP_DEFINITIONS[raw]) return DTYPE_TOOLTIP_DEFINITIONS[raw];
+      // 2. Strip tz/unit suffix for datetime variants like "datetime64[ns, UTC]"
+      const baseRaw = raw.replace(/\[.*\]$/, '').trim();
+      if (baseRaw !== raw && DTYPE_TOOLTIP_DEFINITIONS[baseRaw]) return DTYPE_TOOLTIP_DEFINITIONS[baseRaw];
+      // 3. Case-insensitive fallback
+      const lower = raw.toLowerCase();
+      const baseLower = baseRaw.toLowerCase();
+      for (const key of Object.keys(DTYPE_TOOLTIP_DEFINITIONS)) {
+        if (key.toLowerCase() === lower) return DTYPE_TOOLTIP_DEFINITIONS[key];
+      }
+      for (const key of Object.keys(DTYPE_TOOLTIP_DEFINITIONS)) {
+        if (key.toLowerCase() === baseLower) return DTYPE_TOOLTIP_DEFINITIONS[key];
+      }
+      return {
+        title: dtypeText,
+        description: 'The raw data type of this column as stored in memory.'
+      };
+    }
+
+    /**
      * Show tooltip for an element.
      * @param {HTMLElement} element - The element to show tooltip for
      * @param {string} flagText - The flag text
      * @param {Object} headerTooltipData - Optional header tooltip data
+     * @param {string} dtypeText - Optional dtype string for dtype chip tooltips
      */
-    showTooltip(element, flagText, headerTooltipData = null) {
+    showTooltip(element, flagText, headerTooltipData = null, dtypeText = null) {
       if (!this.tooltip || !element) return;
 
       let content;
       let isHeaderTooltip = false;
       let isBarFillTooltip = false;
+      let isDtypeTooltip = false;
 
       if (headerTooltipData) {
         // Header tooltip
@@ -322,6 +446,10 @@
           description: def.getDescription(headerTooltipData.value),
           category: def.category
         };
+      } else if (dtypeText !== null) {
+        // Dtype chip tooltip
+        isDtypeTooltip = true;
+        content = this.getDtypeTooltipContent(dtypeText);
       } else if (element.classList.contains('bar-fill')) {
         // Bar-fill tooltip (simple text display)
         isBarFillTooltip = true;
@@ -331,7 +459,7 @@
           category: 'data-completeness'
         };
       } else {
-        // Quality flag tooltip
+        // Quality flag or semantic type badge tooltip
         content = this.getTooltipContent(flagText);
 
         // Read threshold and value from data attributes
@@ -355,6 +483,17 @@
           <div class="tooltip-description">${content.description}</div>
           <div class="tooltip-footer">
             <span class="tooltip-category">📋 ${this.escapeHtml(content.category)}</span>
+          </div>
+        `;
+      } else if (isDtypeTooltip) {
+        // Dtype chip tooltip — informational, no severity badge
+        this.tooltip.innerHTML = `
+          <div class="tooltip-header">
+            <span class="tooltip-title">${this.escapeHtml(content.title)}</span>
+          </div>
+          <div class="tooltip-description">${this.escapeHtml(content.description)}</div>
+          <div class="tooltip-footer">
+            <span class="tooltip-category">📋 dtype</span>
           </div>
         `;
       } else if (isBarFillTooltip) {
@@ -509,6 +648,20 @@
           return;
         }
 
+        // Handle semantic type badge tooltips
+        const badge = e.target.closest('.var-card__header .badge');
+        if (badge) {
+          this.showTooltip(badge, badge.textContent.trim());
+          return;
+        }
+
+        // Handle dtype chip tooltips
+        const dtypeChip = e.target.closest('.var-card__header .dtype');
+        if (dtypeChip) {
+          this.showTooltip(dtypeChip, null, null, dtypeChip.textContent.trim());
+          return;
+        }
+
         // Handle bar-fill tooltips
         const barFill = e.target.closest('.completeness-bar-dual .bar-fill');
         if (barFill) {
@@ -538,6 +691,22 @@
         const flag = e.target.closest('.quality-flags .flag');
         if (flag) {
           if (!flag.contains(e.relatedTarget)) {
+            this.hideTooltip();
+          }
+          return;
+        }
+
+        const badge = e.target.closest('.var-card__header .badge');
+        if (badge) {
+          if (!badge.contains(e.relatedTarget)) {
+            this.hideTooltip();
+          }
+          return;
+        }
+
+        const dtypeChip = e.target.closest('.var-card__header .dtype');
+        if (dtypeChip) {
+          if (!dtypeChip.contains(e.relatedTarget)) {
             this.hideTooltip();
           }
           return;
@@ -583,6 +752,18 @@
         if (flag) {
           const flagText = flag.textContent.trim();
           this.showTooltip(flag, flagText);
+          return;
+        }
+
+        const badge = e.target.closest('.var-card__header .badge');
+        if (badge) {
+          this.showTooltip(badge, badge.textContent.trim());
+          return;
+        }
+
+        const dtypeChip = e.target.closest('.var-card__header .dtype');
+        if (dtypeChip) {
+          this.showTooltip(dtypeChip, null, null, dtypeChip.textContent.trim());
           return;
         }
 
