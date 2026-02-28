@@ -883,7 +883,12 @@ class NumericAccumulator:
             return None, None
 
         # Convert to numpy array for efficient processing
-        arr = np.array(values)
+        try:
+            arr = np.array(values, dtype=float)
+        except Exception:
+            # Fallback for mixed types
+            arr = np.array([float(x) for x in values if x is not None], dtype=float)
+
         finite_values = arr[np.isfinite(arr)]
 
         if len(finite_values) < 2:
@@ -894,23 +899,30 @@ class NumericAccumulator:
         diffs = np.diff(sorted_values)
 
         # Filter out zero differences
-        non_zero_diffs = diffs[diffs > 0]
+        non_zero_diffs = np.asarray(diffs[diffs > 0], dtype=float)
 
         if len(non_zero_diffs) == 0:
             return None, None
 
         # Find the most common non-zero difference (granularity step)
         # Use histogram to find the most frequent difference
+        # Specify range explicitly and use python's min/max to avoid NumPy 2.1 _NoValue pointer bug when reloaded by pytest-cov
+        range_min, range_max = float(min(non_zero_diffs)), float(max(non_zero_diffs))
         hist, bin_edges = np.histogram(
-            non_zero_diffs, bins=min(50, len(non_zero_diffs))
+            non_zero_diffs,
+            bins=int(min(50, len(non_zero_diffs))),
+            range=(range_min, range_max)
+            if range_min < range_max
+            else (range_min, range_min + 1.0),
         )
         if len(hist) > 0:
-            most_frequent_bin = np.argmax(hist)
+            most_frequent_bin = int(np.argmax(hist))
             gran_step = (
-                bin_edges[most_frequent_bin] + bin_edges[most_frequent_bin + 1]
-            ) / 2
+                float(bin_edges[most_frequent_bin] + bin_edges[most_frequent_bin + 1])
+                / 2.0
+            )
         else:
-            gran_step = np.min(non_zero_diffs)
+            gran_step = float(np.min(non_zero_diffs))
 
         # Calculate decimal places
         if gran_step > 0:
@@ -938,7 +950,12 @@ class NumericAccumulator:
             return float("nan")
 
         # Convert to numpy array for efficient processing
-        arr = np.array(values)
+        try:
+            arr = np.array(values, dtype=float)
+        except Exception:
+            # Fallback for mixed types
+            arr = np.array([float(x) for x in values if x is not None], dtype=float)
+
         finite_values = arr[np.isfinite(arr)]
 
         if len(finite_values) == 0:

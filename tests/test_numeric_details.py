@@ -64,3 +64,112 @@ def test_numeric_details_tabs_present():
     # Content sniff
     assert "Top correlations" in html or "Correlations" in html
     assert "Min values" in html and "Max values" in html
+
+
+def test_numeric_card_missing_chunk_visualization():
+    from pysuricata.render.numeric_card import NumericCardRenderer
+
+    s = make_numeric_summary()
+    s.chunk_metadata = [(0, 9, 2), (10, 19, 0)]  # Start, end, missing
+    renderer = NumericCardRenderer()
+
+    # Test _build_dataprep_spectrum_visualization
+    html = renderer._build_dataprep_spectrum_visualization(s)
+    assert "spectrum-segment" in html
+    assert 'data-missing="2"' in html
+
+    # Test empty metadata behavior
+    s.chunk_metadata = []
+    assert renderer._build_dataprep_spectrum_visualization(s) == ""
+
+    # Test simulate chunk distribution
+    s.count = 2000
+    s.missing = 100
+    chunks = renderer._simulate_chunk_distribution(s)
+    assert len(chunks) >= 2
+    assert sum(c["missing"] for c in chunks) == 100
+
+    # Test insights generation
+    insights = renderer._generate_missing_insights(chunks, 5.0)
+    assert "overall_missing_pct" in insights
+    assert "max_missing_pct" in insights
+    assert "severity" in insights
+    assert insights["total_chunks"] == len(chunks)
+
+    # Test complete chunk visualization render
+    viz_html = renderer._render_chunk_visualization(chunks, insights, s)
+    assert "chunk-bar-container" in viz_html
+    assert "chunk-bar-fill" in viz_html
+
+
+def test_numeric_card_outliers_severity_and_tables():
+    from pysuricata.render.numeric_card import NumericCardRenderer
+
+    s = make_numeric_summary()
+    s.q1 = 10.0
+    s.q3 = 20.0
+    s.iqr = 10.0
+    s.median = 15.0
+    s.mad = 2.0
+    renderer = NumericCardRenderer()
+
+    # IQR Severity
+    assert (
+        renderer._get_outlier_severity(50.0, "IQR", s)[1] == "extreme"
+    )  # 3x IQR (score=3.0)
+    assert (
+        renderer._get_outlier_severity(41.0, "IQR", s)[1] == "high"
+    )  # 2.1x IQR (score=2.1)
+    assert (
+        renderer._get_outlier_severity(26.0, "IQR", s)[1] == "moderate"
+    )  # 1.6x IQR (score=0.6)
+
+    # MAD Severity
+    assert renderer._get_outlier_severity(25.0, "MAD", s)[1] == "extreme"  # 5x MAD
+    assert renderer._get_outlier_severity(21.0, "MAD", s)[1] == "high"  # 3x MAD
+    assert renderer._get_outlier_severity(18.0, "MAD", s)[1] == "moderate"  # 1.5x MAD
+
+    # Fallback Severity
+    assert renderer._get_outlier_severity(20.0, "UNKNOWN", s)[1] == "moderate"
+
+    # Test enhanced outliers table with empty list
+    s.outliers_iqr = 10
+    empty_summary = renderer._format_enhanced_outliers_table([], {}, s, "high")
+    assert "0 outliers" in empty_summary
+
+    # Test enhanced outliers table with actual data
+    outliers = [(41.0, ["IQR"]), (21.0, ["MAD"]), (50.0, ["IQR", "MAD"])]
+    idx_map = {41.0: ["i0"], 21.0: ["i1"], 50.0: ["i2"]}
+    table_html = renderer._format_enhanced_outliers_table(outliers, idx_map, s, "high")
+    assert "High Outliers" in table_html
+    assert "Extreme:" in table_html
+
+
+def test_numeric_card_correlation_and_missing_tables():
+    from pysuricata.render.numeric_card import NumericCardRenderer
+
+    s = make_numeric_summary()
+    renderer = NumericCardRenderer()
+
+    # Correlation table
+    s.corr_top = [("col_b", 0.95), ("col_c", -0.85)]
+    corr_html = renderer._build_correlation_table(s)
+    assert "col_b" in corr_html
+    assert "0.95" in corr_html
+    assert "col_c" in corr_html
+    assert "-0.85" in corr_html
+    assert "correlation" in corr_html
+
+    s.corr_top = []
+    assert "no-correlations" in renderer._build_correlation_table(s)
+
+    # Missing table empty
+    s.missing = 0
+    assert "0.0%" in renderer._build_missing_values_table(s)
+
+    # Extremes table empty handling
+    s.min_items = []
+    s.max_items = []
+    extremes_html = renderer._build_extremes_table(s)
+    assert "—" in extremes_html
+    assert "extremes" in extremes_html
