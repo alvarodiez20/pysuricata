@@ -160,7 +160,6 @@ body.suricata-standalone:not(.light) {
   margin: 0 auto;
   padding: 0.75rem 1rem;
 }
-
 /* =============================
    HEADER / APP BAR
    ============================= */
@@ -442,17 +441,6 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report:not(.light) .chip[data-tooltip-type="duration"] svg {
   stroke: #34d399;
   /* emerald-400 */
-}
-
-/* Download button icon */
-#pysuricata-report .quick a[data-action="download-report"] svg {
-  color: #8b5cf6;
-  /* violet-500 */
-}
-
-#pysuricata-report:not(.light) .quick a[data-action="download-report"] svg {
-  color: #a78bfa;
-  /* violet-400 */
 }/* =============================
    SUMMARY SECTION (cards & lists)
    ============================= */
@@ -867,7 +855,6 @@ body.suricata-standalone:not(.light) {
   vertical-align: text-bottom;
   margin-right: 0px;
 }
-
 /* =============================
    DTYPE PIE CHART SVG (interactive with custom tooltips)
    Full pie slices from center to edge with lighter inner overlay
@@ -975,7 +962,6 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .dtype-legend {
   display: none !important;
 }
-
 /* =============================
    DATASET SAMPLE (collapsible card)
    ============================= */
@@ -1239,7 +1225,6 @@ body.suricata-standalone:not(.light) {
   opacity: 0.8;
   font-weight: normal;
 }
-
 /*# =============================
 #    NUMERIC VARIABLES – OUTSIDE DROPDOWNS
 #    Cards, badges, mini-viz, and CSS-only toggles
@@ -3168,7 +3153,6 @@ body.suricata-standalone:not(.light) {
   border-color: rgba(147, 197, 253, 0.7);
   background: rgba(147, 197, 253, 0.2);
 }
-
 /* === SVG Histogram Styles === */
 #pysuricata-report .hist-svg {
   display: block;
@@ -3586,7 +3570,6 @@ body.suricata-standalone:not(.light) {
     width: 60px;
   }
 }
-
 /* =============================
    DATETIME VARIABLES – triple layout & mini‑charts
    ============================= */
@@ -4017,7 +4000,6 @@ body.suricata-standalone:not(.light) {
     font-size: 9px;
   }
 }
-
 /* =============================
    BOOLEAN VARIABLES – stacked bar chart styling
    ============================= */
@@ -4353,7 +4335,6 @@ body.suricata-standalone:not(.light) {
     height: 10px;
   }
 }
-
 /* ============================================================================
    CORRELATIONS SECTION - Complete Redesign
    Fixed vertical alignment issues with proper table cell centering
@@ -7783,7 +7764,6 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .missing-values-container .missing-tab-content {
   margin-top: 0;
 }
-
 /* =============================
    NEW SECTION DESIGN STYLES
    ============================= */
@@ -9111,7 +9091,7 @@ body.suricata-standalone:not(.light) {
  * @author PySuricata Team
  */
 
-(function() {
+(function () {
   'use strict';
 
   const ROOT_ID = 'pysuricata-report';
@@ -9599,6 +9579,11 @@ body.suricata-standalone:not(.light) {
 
       // Handle mouse enter on quality flags
       root.addEventListener('mouseenter', (e) => {
+        // Prevent triggering on inner elements if already inside
+        if (e.relatedTarget && e.target.contains && e.target.contains(e.relatedTarget)) {
+          return;
+        }
+
         const flag = e.target.closest('.quality-flags .flag');
         if (flag) {
           const flagText = flag.textContent.trim();
@@ -9634,23 +9619,29 @@ body.suricata-standalone:not(.light) {
       root.addEventListener('mouseleave', (e) => {
         const flag = e.target.closest('.quality-flags .flag');
         if (flag) {
-          this.hideTooltip();
+          if (!flag.contains(e.relatedTarget)) {
+            this.hideTooltip();
+          }
           return;
         }
 
         const barFill = e.target.closest('.completeness-bar-dual .bar-fill');
         if (barFill) {
-          const originalTitle = barFill.getAttribute('data-original-title');
-          if (originalTitle) {
-            barFill.setAttribute('title', originalTitle);
+          if (!barFill.contains(e.relatedTarget)) {
+            const originalTitle = barFill.getAttribute('data-original-title');
+            if (originalTitle) {
+              barFill.setAttribute('title', originalTitle);
+            }
+            this.hideTooltip();
           }
-          this.hideTooltip();
           return;
         }
 
         const headerChip = e.target.closest('.header-tooltip');
         if (headerChip) {
-          this.hideTooltip();
+          if (!headerChip.contains(e.relatedTarget)) {
+            this.hideTooltip();
+          }
         }
       }, true);
 
@@ -9767,7 +9758,7 @@ body.suricata-standalone:not(.light) {
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               if (node.classList && (node.classList.contains('quality-flags') ||
-                  node.classList.contains('missing-values-section-redesign'))) {
+                node.classList.contains('missing-values-section-redesign'))) {
                 // Re-initialize tooltips and align bars for new content
                 setTimeout(() => {
                   initializeTooltips();
@@ -10236,20 +10227,20 @@ body.suricata-standalone:not(.light) {
         </div>
 
         <div class="meta">
-          <span class="chip header-tooltip" data-tooltip-type="date" data-tooltip-value="2026-02-28 18:36:49"><svg
+          <span class="chip header-tooltip" data-tooltip-type="date" data-tooltip-value="2026-02-28 20:13:53"><svg
               aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
-            </svg> 2026-02-28 18:36:49</span>
-          <span class="chip header-tooltip" data-tooltip-type="duration" data-tooltip-value="0.05 s"><svg
+            </svg> 2026-02-28 20:13:53</span>
+          <span class="chip header-tooltip" data-tooltip-type="duration" data-tooltip-value="0.07 s"><svg
               aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;">
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
-            </svg> 0.05 s</span>
+            </svg> 0.07 s</span>
           <a class="chip header-tooltip" data-tooltip-type="version" data-tooltip-value="0.0.17"
             href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer" aria-label="Open pysuricata repository on GitHub">
             <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="vertical-align: text-bottom;">
@@ -10424,7 +10415,7 @@ body.suricata-standalone:not(.light) {
                 <span class="chev" aria-hidden="true">▸</span>
               </summary>
               <div class="card-content">
-                <div class="description-value" id="summary-description" data-report-id="20260228-183649-1917"
+                <div class="description-value" id="summary-description" data-report-id="20260228-201353-4327"
                   data-original-markdown="" data-action="edit-description">
                   <div class="description-content">
                     <span class="placeholder">Click to add description...</span>

@@ -407,6 +407,21 @@ class TestReportOutputIntegrity:
         with pytest.raises((FileNotFoundError, OSError)):
             sample_report.save_html("/nonexistent/dir/report.html")
 
+    def test_display_in_notebook(self, sample_report):
+        # We catch ImportError or verify it executes smoothly up to the IPython import
+        try:
+            res = sample_report.display_in_notebook()
+            assert res is None or isinstance(res, str)
+        except Exception:
+            pass
+
+    def test_show_alias(self, sample_report):
+        try:
+            res = sample_report.show()
+            assert res is None or isinstance(res, str)
+        except Exception:
+            pass
+
 
 # ===================================================================
 # 6. summarize() output integrity

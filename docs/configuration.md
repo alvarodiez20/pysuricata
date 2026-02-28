@@ -156,6 +156,46 @@ config = ReportConfig(compute=ComputeOptions(
 ))
 ```
 
+### Checkpointing Configuration
+
+For long-running profiles overriding millions of rows across many chunks, you can save periodic lightweight states to disk to prevent data loss.
+
+**`checkpoint_every_n_chunks: int = 0`**
+
+Number of chunks between checkpoints. Set to > 0 to enable checkpointing.
+
+```python
+config.compute.checkpoint_every_n_chunks = 10  # Checkpoint every 10 chunks
+```
+
+**`checkpoint_dir: str = None`**
+
+Directory to save checkpoint files. Defaults to current working directory or the directory of the final HTML report.
+
+```python
+config.compute.checkpoint_dir = "/tmp/pysuricata_checkpoints"
+```
+
+**`checkpoint_prefix: str = "pysuricata_ckpt"`**
+
+Prefix for checkpoint filenames.
+
+```python
+config.compute.checkpoint_prefix = "daily_sales_job"
+```
+
+**`checkpoint_max_to_keep: int = 3`**
+
+Maximum number of recent checkpoint files to keep before rotating out older ones.
+
+**`checkpoint_write_html: bool = False`**
+
+Whether to write a preview HTML snapshot alongside the binary pickle state.
+
+```python
+config.compute.checkpoint_write_html = True  # Useful for monitoring progress
+```
+
 ## RenderOptions
 
 Control report display and formatting.

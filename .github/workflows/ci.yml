@@ -104,3 +104,11 @@ jobs:
 
       - name: Build docs
         run: uv run mkdocs build --strict
+
+      - name: Upload example report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: titanic-report-ci
+          path: docs/assets/titanic_report.html
+          if-no-files-found: warn
