@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..adapters import PandasAdapter, PolarsAdapter
 from ..core.protocols import DataAdapter
@@ -40,7 +40,7 @@ class EngineManager:
             management and selection.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: logging.Logger | None = None):
         """Initializes the EngineManager.
 
         Args:
@@ -48,7 +48,7 @@ class EngineManager:
                 will be created.
         """
         self.logger = logger or logging.getLogger(__name__)
-        self._adapters: Dict[str, DataAdapter] = {}
+        self._adapters: dict[str, DataAdapter] = {}
         self._register_default_adapters()
 
     def _register_default_adapters(self) -> None:
@@ -59,14 +59,14 @@ class EngineManager:
         is not found.
         """
         try:
-            import pandas as pd
+            import pandas as pd  # noqa: F401
 
             self._adapters["pandas"] = PandasAdapter()
         except ImportError:
             self.logger.warning("pandas not available, skipping pandas adapter")
 
         try:
-            import polars as pl
+            import polars as pl  # noqa: F401
 
             self._adapters["polars"] = PolarsAdapter()
         except ImportError:
@@ -170,7 +170,7 @@ class EngineManager:
         self._adapters[name] = adapter
         self.logger.info(f"Registered adapter: {name}")
 
-    def get_available_adapters(self) -> Dict[str, str]:
+    def get_available_adapters(self) -> dict[str, str]:
         """Returns a dictionary of available engine adapters.
 
         Returns:
@@ -198,9 +198,9 @@ class StreamingEngine:
 
     def __init__(
         self,
-        engine_manager: Optional[EngineManager] = None,
-        chunker: Optional[AdaptiveChunker] = None,
-        logger: Optional[logging.Logger] = None,
+        engine_manager: EngineManager | None = None,
+        chunker: AdaptiveChunker | None = None,
+        logger: logging.Logger | None = None,
     ):
         """Initializes the StreamingEngine.
 
@@ -323,6 +323,7 @@ class StreamingEngine:
             checkpoint_manager = None
             if config.checkpoint_every_n_chunks > 0:
                 from ...checkpoint import maybe_make_manager
+
                 checkpoint_manager = maybe_make_manager(config, None)
 
             # Track chunk index for logging and checkpointing
@@ -344,24 +345,27 @@ class StreamingEngine:
 
                 n_rows += chunk_size
                 total_missing_cells += chunk_missing
-                
+
                 # Increment chunk counter
                 chunk_idx += 1
-                
+
                 # Log progress every N chunks
-                if config.log_every_n_chunks > 0 and chunk_idx % config.log_every_n_chunks == 0:
+                if (
+                    config.log_every_n_chunks > 0
+                    and chunk_idx % config.log_every_n_chunks == 0
+                ):
                     self.logger.info(
                         "Processed chunk %d: %d rows total, %d missing cells",
                         chunk_idx,
                         n_rows,
-                        total_missing_cells
+                        total_missing_cells,
                     )
-                
+
                 # Create checkpoint every N chunks
                 if checkpoint_manager and config.checkpoint_every_n_chunks > 0:
                     if chunk_idx % config.checkpoint_every_n_chunks == 0:
                         from ...checkpoint import make_state_snapshot
-                        
+
                         # Calculate memory usage on-demand for checkpointing
                         checkpoint_mem_bytes = 0
                         for acc in accs.values():
@@ -369,7 +373,7 @@ class StreamingEngine:
                                 checkpoint_mem_bytes += acc._bytes_seen
                             elif hasattr(acc, "_mem_bytes"):
                                 checkpoint_mem_bytes += acc._mem_bytes
-                        
+
                         state = make_state_snapshot(
                             kinds=kinds,
                             accs=accs,
@@ -379,12 +383,13 @@ class StreamingEngine:
                             chunk_idx=chunk_idx,
                             first_columns=first_columns,
                             sample_section_html=sample_section_html,
-                            cfg=config
+                            cfg=config,
                         )
                         # Generate partial HTML if configured
                         html_snapshot = None
                         if config.checkpoint_write_html:
                             from ...render.html import render_html_snapshot
+
                             html_snapshot = render_html_snapshot(
                                 kinds=kinds,
                                 accs=accs,
@@ -397,9 +402,9 @@ class StreamingEngine:
                                 report_title=f"Checkpoint at Chunk {chunk_idx}",
                                 sample_section_html=sample_section_html,
                                 chunk_metadata=chunk_metadata,
-                                corr_est=corr_est
+                                corr_est=corr_est,
                             )
-                        
+
                         checkpoint_manager.save(chunk_idx, state, html_snapshot)
                         self.logger.info("Checkpoint created at chunk %d", chunk_idx)
 
@@ -442,7 +447,7 @@ class StreamingEngine:
                 duration=duration,
             )
 
-    def maybe_corr_estimator(self, kinds, config) -> Optional[Any]:
+    def maybe_corr_estimator(self, kinds, config) -> Any | None:
         """Creates a streaming correlation estimator if conditions are met.
 
         A correlation estimator is created if the following conditions are met:
@@ -474,7 +479,7 @@ class StreamingEngine:
             self.logger.warning(f"Failed to create correlation estimator: {e}")
             return None
 
-    def get_engine_info(self) -> Dict[str, Any]:
+    def get_engine_info(self) -> dict[str, Any]:
         """Returns a dictionary with information about the engine.
 
         This information can be used for debugging and monitoring.

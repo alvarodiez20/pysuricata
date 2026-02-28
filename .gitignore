@@ -99,8 +99,8 @@ site/examples/*.html
 site/*
 
 # Agents
-.agents/    
-.claude/    
+.agents/
+.claude/
 
 # Examples
 examples/*.html

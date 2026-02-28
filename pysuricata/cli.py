@@ -44,9 +44,15 @@ For more information, visit: https://github.com/alvarodiez20/pysuricata
         help="Generate an HTML profiling report",
         description="Analyze a dataset and generate a comprehensive HTML report.",
     )
-    profile_parser.add_argument("file", type=str, help="Path to the data file (CSV or Parquet)")
     profile_parser.add_argument(
-        "--output", "-o", type=str, required=True, help="Output path for the HTML report"
+        "file", type=str, help="Path to the data file (CSV or Parquet)"
+    )
+    profile_parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        required=True,
+        help="Output path for the HTML report",
     )
     profile_parser.add_argument(
         "--title", "-t", type=str, default=None, help="Custom title for the report"
@@ -81,9 +87,15 @@ For more information, visit: https://github.com/alvarodiez20/pysuricata
         help="Output statistics as JSON (no HTML)",
         description="Analyze a dataset and output statistics as JSON.",
     )
-    summarize_parser.add_argument("file", type=str, help="Path to the data file (CSV or Parquet)")
     summarize_parser.add_argument(
-        "--output", "-o", type=str, default=None, help="Output path for JSON (default: stdout)"
+        "file", type=str, help="Path to the data file (CSV or Parquet)"
+    )
+    summarize_parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        default=None,
+        help="Output path for JSON (default: stdout)",
     )
     summarize_parser.add_argument(
         "--seed", "-s", type=int, default=None, help="Random seed for reproducibility"
@@ -129,7 +141,9 @@ def load_data(file_path: str):
     elif suffix == ".json":
         return pd.read_json(file_path)
     else:
-        raise ValueError(f"Unsupported file format: {suffix}. Use CSV, Parquet, or JSON.")
+        raise ValueError(
+            f"Unsupported file format: {suffix}. Use CSV, Parquet, or JSON."
+        )
 
 
 def cmd_profile(args: argparse.Namespace) -> int:

@@ -58,11 +58,11 @@ from pysuricata import summarize
 
 def check_quality(df):
     stats = summarize(df)
-    
+
     # Assertions
     assert stats["dataset"]["missing_cells_pct"] < 5.0
     assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
-    
+
     for col, col_stats in stats["columns"].items():
         if "unique" in col.lower():
             # Expect high cardinality for ID columns
@@ -77,7 +77,3 @@ def check_quality(df):
 ---
 
 *Last updated: 2025-10-12*
-
-
-
-

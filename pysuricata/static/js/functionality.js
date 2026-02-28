@@ -1,95 +1,131 @@
-function toggleDarkModeScoped() {
-  const root = document.getElementById('pysuricata-report');
-  if (!root) return;
-  root.classList.toggle('light');
-
-  const body = document.body;
-  if (body && body.classList.contains('suricata-standalone')) {
-    body.classList.toggle('light');
-  }
-
-  const icon = document.getElementById('toggle-icon');
-  if (icon) icon.textContent = root.classList.contains('light') ? '🌙' : '☀️';
-}
-
-function downloadReport() {
-  try {
-    // Grab only our report
-    var root = document.getElementById('pysuricata-report');
-    if (!root) throw new Error('Report root not found');
-
-    // Keep current theme
-    var isLight = root.classList.contains('light');
-    var title = (document.title && document.title.trim()) || 'PySuricata Report';
-
-    // Favicon (embedded/base64 if present)
-    var fav = document.querySelector('link[rel="icon"][href^="data:image"]');
-    var favHTML = fav ? fav.outerHTML : '';
-
-    // Pull only our inline styles (look for our selectors)
-    var styles = Array.from(document.querySelectorAll('style'))
-      .filter(s => /#pysuricata-report|suricata-standalone/.test(s.textContent || ''))
-      .map(s => s.textContent)
-      .join('\n');
-
-    // Include dark-mode toggle script if present
-    var toggleScriptEl = Array.from(document.querySelectorAll('script'))
-      .find(s => /toggleDarkMode/.test(s.textContent || ''));
-    var toggleScript = toggleScriptEl ? toggleScriptEl.textContent : '';
-
-    // Build a clean, standalone document
-    var standalone = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title}</title>
-${favHTML}
-<style>${styles}</style>
-<script>${toggleScript}<\/script>
-</head>
-<body class="suricata-standalone${isLight ? ' light' : ''}">
-${root.outerHTML}
-</body>
-</html>`;
-
-    // Download
-    var blob = new Blob([standalone], { type: 'text/html;charset=utf-8' });
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a');
-    a.href = url;
-    var ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
-    a.download = 'pysuricata-report-' + ts + '.html';
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 0);
-  } catch (e) {
-    console.error('Download failed', e);
-  }
-  return false; // prevent default navigation
-}
-
-// --- Scroll to top functionality for logo/report icon ---
+/* --- Core action handlers (no inline onclick) --- */
 (function () {
-  const ROOT_ID = 'pysuricata-report';
+  'use strict';
 
-  // Add click handler for logo to scroll to top
+  var ROOT_ID = 'pysuricata-report';
+
+  function toggleDarkMode() {
+    var root = document.getElementById(ROOT_ID);
+    if (!root) return;
+    root.classList.toggle('light');
+
+    var body = document.body;
+    if (body && body.classList.contains('suricata-standalone')) {
+      body.classList.toggle('light');
+    }
+
+    var icon = document.getElementById('toggle-icon');
+    if (icon) {
+      var moonSvg = '<svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>';
+      var sunSvg = '<svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>';
+      icon.innerHTML = root.classList.contains('light') ? moonSvg : sunSvg;
+    }
+  }
+
+  function downloadReport() {
+    try {
+      var root = document.getElementById(ROOT_ID);
+      if (!root) throw new Error('Report root not found');
+
+      var isLight = root.classList.contains('light');
+      var title = (document.title && document.title.trim()) || 'PySuricata Report';
+
+      var fav = document.querySelector('link[rel="icon"][href^="data:image"]');
+      var favHTML = fav ? fav.outerHTML : '';
+
+      var styles = Array.from(document.querySelectorAll('style'))
+        .filter(function (s) { return /#pysuricata-report|suricata-standalone/.test(s.textContent || ''); })
+        .map(function (s) { return s.textContent; })
+        .join('\n');
+
+      var toggleScriptEl = Array.from(document.querySelectorAll('script'))
+        .find(function (s) { return /toggleDarkMode/.test(s.textContent || ''); });
+      var toggleScript = toggleScriptEl ? toggleScriptEl.textContent : '';
+
+      var standalone = '<!DOCTYPE html>\n<html lang="en">\n<head>\n' +
+        '<meta charset="utf-8">\n<meta name="viewport" content="width=device-width,initial-scale=1">\n' +
+        '<title>' + title + '</title>\n' + favHTML + '\n' +
+        '<style>' + styles + '</style>\n' +
+        '<script>' + toggleScript + '<\/script>\n' +
+        '</head>\n<body class="suricata-standalone' + (isLight ? ' light' : '') + '">\n' +
+        root.outerHTML + '\n</body>\n</html>';
+
+      var blob = new Blob([standalone], { type: 'text/html;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      var ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      a.download = 'pysuricata-report-' + ts + '.html';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 0);
+    } catch (e) {
+      console.error('Download failed', e);
+    }
+  }
+
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // Delegated click handler for data-action attributes
   document.addEventListener('click', function (e) {
-    const logo = e.target.closest('#logo-container, .logo');
-    if (!logo) return;
+    var actionEl = e.target.closest('[data-action]');
+    if (!actionEl) return;
 
-    const root = document.getElementById(ROOT_ID);
-    if (!root || !root.contains(logo)) return;
+    var root = document.getElementById(ROOT_ID);
+    if (!root || !root.contains(actionEl)) return;
 
-    // Smooth scroll to top
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
-
-    e.preventDefault();
-    return false;
+    var action = actionEl.getAttribute('data-action');
+    switch (action) {
+      case 'scroll-to-top':
+        scrollToTop();
+        e.preventDefault();
+        break;
+      case 'download-report':
+        downloadReport();
+        e.preventDefault();
+        break;
+      case 'toggle-dark-mode':
+        toggleDarkMode();
+        break;
+      case 'toggle-pin':
+        if (window._pysuricataTogglePin) window._pysuricataTogglePin();
+        break;
+      case 'edit-description':
+        if (typeof startDescriptionEdit === 'function') startDescriptionEdit();
+        break;
+    }
   });
+
+  // Sample details toggle text
+  var sampleDetails = document.getElementById('sample-details');
+  if (sampleDetails) {
+    sampleDetails.addEventListener('toggle', function () {
+      var textEl = document.getElementById('sample-toggle-text');
+      if (textEl) {
+        textEl.textContent = sampleDetails.open ? 'Hide sample' : 'Show sample';
+      }
+    });
+  } else {
+    // Retry on DOMContentLoaded if not yet available
+    document.addEventListener('DOMContentLoaded', function () {
+      var el = document.getElementById('sample-details');
+      if (el) {
+        el.addEventListener('toggle', function () {
+          var textEl = document.getElementById('sample-toggle-text');
+          if (textEl) {
+            textEl.textContent = el.open ? 'Hide sample' : 'Show sample';
+          }
+        });
+      }
+    });
+  }
+
+  // Expose for backward compatibility (e.g. downloaded reports)
+  window.toggleDarkModeScoped = toggleDarkMode;
+  window.downloadReport = downloadReport;
+  window.scrollToTop = scrollToTop;
 })();
 
 // --- Header pin/unpin toggle (scoped to #pysuricata-report) ---
@@ -119,12 +155,15 @@ ${root.outerHTML}
     }
   }
 
-  // Public toggle for inline onclick hooks
-  window.toggleHeaderPinScoped = function () {
+  // Public toggle — called via data-action delegation
+  function togglePin() {
     const current = (function () { try { return localStorage.getItem(STORAGE_KEY) !== 'false'; } catch (e) { return true; } })();
     setPinned(!current);
     return false;
-  };
+  }
+  window._pysuricataTogglePin = togglePin;
+  // Legacy alias for backward compatibility (downloaded reports)
+  window.toggleHeaderPinScoped = togglePin;
 
   // Insert a pin link into the quick nav if one isn't present
   function ensurePinButton() {
@@ -136,7 +175,7 @@ ${root.outerHTML}
     a.id = PIN_BTN_ID;
     a.title = 'Unpin header';
     a.setAttribute('aria-label', 'Unpin header');
-    a.setAttribute('onclick', 'return toggleHeaderPinScoped()');
+    a.setAttribute('data-action', 'toggle-pin');
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('aria-hidden', 'true');
     svg.setAttribute('viewBox', '0 0 16 16');
@@ -505,172 +544,6 @@ ${root.outerHTML}
   }, { passive: true });
 })();
 
-/* --- Variables section and controls --- */
-(function () {
-  // Variables section controls
-  let searchTerm = '';
-  let currentFilter = 'all';
-  const SEARCH_DEBOUNCE = 300;
-
-  function setupVariablesControls() {
-    const controls = document.querySelector('.vars-controls');
-    const cardsGrid = document.getElementById('cards-grid');
-    const pagination = document.getElementById('pagination');
-
-    if (!controls || !cardsGrid) return;
-
-    // Hide controls if there are 10 or fewer variables
-    const totalCards = cardsGrid.children.length;
-    if (totalCards <= 10) {
-      if (controls) controls.style.display = 'none';
-      if (pagination) pagination.style.display = 'none';
-      return;
-    }
-
-    setupSearch();
-    setupFilters();
-    setupPagination();
-    applyFilters();
-  }
-
-  function setupSearch() {
-    const searchInput = document.getElementById('search-input');
-
-    if (!searchInput) return;
-
-    let timeout;
-    searchInput.addEventListener('input', (e) => {
-      clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        searchTerm = e.target.value.toLowerCase();
-        applyFilters();
-      }, SEARCH_DEBOUNCE);
-    });
-  }
-
-  function setupFilters() {
-    document.querySelectorAll('.tab').forEach(tab => {
-      tab.addEventListener('click', (e) => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        e.target.classList.add('active');
-        currentFilter = e.target.dataset.filter;
-        applyFilters();
-      });
-    });
-  }
-
-  function setupPagination() {
-    const prevBtn = document.getElementById('prev-btn');
-    const nextBtn = document.getElementById('next-btn');
-    const paginationInfo = document.getElementById('pagination-info');
-
-    if (!prevBtn || !nextBtn || !paginationInfo) return;
-
-    let currentPage = 1;
-    const cardsPerPage = 10;
-
-    function updatePagination() {
-      const cards = Array.from(document.querySelectorAll('.var-card:not([style*="display: none"])'));
-      const totalPages = Math.ceil(cards.length / cardsPerPage);
-
-      prevBtn.disabled = currentPage === 1;
-      nextBtn.disabled = currentPage === totalPages || totalPages === 0;
-
-      const start = (currentPage - 1) * cardsPerPage + 1;
-      const end = Math.min(currentPage * cardsPerPage, cards.length);
-
-      if (cards.length === 0) {
-        paginationInfo.textContent = 'No variables found';
-      } else {
-        paginationInfo.textContent = `Showing ${start}-${end} of ${cards.length}`;
-      }
-
-      // Show/hide cards based on current page
-      cards.forEach((card, index) => {
-        const shouldShow = index >= (currentPage - 1) * cardsPerPage &&
-          index < currentPage * cardsPerPage;
-        card.style.display = shouldShow ? 'block' : 'none';
-      });
-    }
-
-    prevBtn.addEventListener('click', () => {
-      if (currentPage > 1) {
-        currentPage--;
-        updatePagination();
-      }
-    });
-
-    nextBtn.addEventListener('click', () => {
-      const cards = Array.from(document.querySelectorAll('.var-card:not([style*="display: none"])'));
-      const totalPages = Math.ceil(cards.length / cardsPerPage);
-      if (currentPage < totalPages) {
-        currentPage++;
-        updatePagination();
-      }
-    });
-
-    // Store update function for use in applyFilters
-    window.updatePagination = updatePagination;
-  }
-
-  function applyFilters() {
-    const cards = document.querySelectorAll('.var-card');
-
-    cards.forEach(card => {
-      const cardName = card.querySelector('.var-card__header h3')?.textContent?.toLowerCase() || '';
-      const cardType = card.dataset.type || '';
-
-      const matchesSearch = !searchTerm || cardName.includes(searchTerm);
-      const matchesFilter = currentFilter === 'all' || cardType === currentFilter;
-
-      if (matchesSearch && matchesFilter) {
-        card.style.display = 'block';
-      } else {
-        card.style.display = 'none';
-      }
-    });
-
-    // Update pagination if it exists
-    if (window.updatePagination) {
-      window.updatePagination();
-    }
-  }
-
-  // Run now if DOM is already loaded (e.g., inside notebooks), else on DOMContentLoaded
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    try {
-      setupVariablesControls();
-    } catch (e) { }
-  } else {
-    document.addEventListener('DOMContentLoaded', () => {
-      try {
-        setupVariablesControls();
-      } catch (e) { }
-    });
-  }
-})();
-
-/**
- * Smoothly scroll to the top of the page when the logo is clicked
- */
-function scrollToTop() {
-  window.scrollTo({
-    top: 0,
-    behavior: 'smooth'
-  });
-}
-
-function toggleSampleText(detailsElement) {
-  const textElement = document.getElementById('sample-toggle-text');
-  if (!textElement) return;
-
-  if (detailsElement.open) {
-    textElement.textContent = 'Hide sample';
-  } else {
-    textElement.textContent = 'Show sample';
-  }
-}
-
 /* Missing Values Section Tab Switching - Redesigned Two-Tab Interface */
 (function () {
   function initMissingValuesTabs() {
@@ -726,11 +599,3 @@ function toggleSampleText(detailsElement) {
   // Also try after a short delay to catch dynamically rendered content
   setTimeout(initMissingValuesTabs, 100);
 })();
-
-/* Toggle description text */
-function toggleDescriptionText(detailsEl) {
-  const toggleText = document.getElementById('description-toggle-text');
-  if (toggleText) {
-    toggleText.textContent = detailsEl.open ? 'Description' : 'Description';
-  }
-}

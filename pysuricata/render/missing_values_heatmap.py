@@ -7,9 +7,6 @@ across all columns simultaneously, with support for hundreds of columns.
 
 from __future__ import annotations
 
-import html as _html
-from typing import Dict, List, Tuple
-
 
 class MissingValuesHeatmapRenderer:
     """Renders cross-column missing values heatmap for dataset-level analysis."""
@@ -21,8 +18,8 @@ class MissingValuesHeatmapRenderer:
 
     def render_heatmap(
         self,
-        per_column_chunk_metadata: Dict[str, List[Tuple[int, int, int]]],
-        column_names: List[str],
+        per_column_chunk_metadata: dict[str, list[tuple[int, int, int]]],
+        column_names: list[str],
         total_rows: int,
     ) -> str:
         """Render cross-column missing values heatmap.
@@ -112,7 +109,7 @@ class MissingValuesHeatmapRenderer:
 
     def _build_heatmap_rows(
         self,
-        columns_data: List[Tuple[str, List[Tuple[int, int, int]], int]],
+        columns_data: list[tuple[str, list[tuple[int, int, int]], int]],
         total_rows: int,
     ) -> str:
         """Build heatmap rows for given columns.

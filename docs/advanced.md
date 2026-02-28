@@ -41,11 +41,11 @@ def multi_source_generator():
     # Source 1: CSV files
     for i in range(10):
         yield pd.read_csv(f"batch_{i}.csv")
-    
+
     # Source 2: Parquet files
     for i in range(5):
         yield pd.read_parquet(f"archive_{i}.parquet")
-    
+
     # Source 3: Database
     for chunk in pd.read_sql("SELECT * FROM logs", conn, chunksize=100_000):
         yield chunk
@@ -117,4 +117,3 @@ report = profile(filtered_generator())
 - [Configuration](configuration.md) - All parameters
 - [Performance Tips](performance.md) - Optimization
 - [Examples](examples.md) - More use cases
-

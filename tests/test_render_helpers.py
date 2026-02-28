@@ -1,7 +1,5 @@
-import math
-
-from pysuricata.render.format_utils import human_bytes, fmt_num, fmt_compact
-from pysuricata.render.svg_utils import safe_col_id, nice_ticks, fmt_tick, svg_empty
+from pysuricata.render.format_utils import fmt_compact, fmt_num, human_bytes
+from pysuricata.render.svg_utils import fmt_tick, nice_ticks, safe_col_id, svg_empty
 
 
 def test_human_bytes_basic():
@@ -12,14 +10,16 @@ def test_human_bytes_basic():
 
 
 def test_fmt_num_variants():
-    assert fmt_num(1234.5678) == "1,235" or fmt_num(1234.5678) == "1,235"  # locale-insensitive
+    assert (
+        fmt_num(1234.5678) == "1,235" or fmt_num(1234.5678) == "1,235"
+    )  # locale-insensitive
     assert fmt_num(float("nan")) == "NaN"
     assert fmt_num(float("inf")) == "NaN"
     assert fmt_num(None) == "—"
 
 
 def test_fmt_compact_variants():
-    assert fmt_compact(1234.5678) in {"1235", "1.235e+03", "1.235e+03"}
+    assert fmt_compact(1234.5678) in {"1235", "1.235e+03"}
     assert fmt_compact(None) == "—"
     assert fmt_compact(float("nan")) == "—"
     assert fmt_compact("42.0") in {"42", "42.0"}
@@ -48,10 +48,9 @@ def test_nice_ticks_monotonic_and_equal_bounds():
 
 def test_fmt_tick_thresholds():
     # coarse step -> integers
-    assert fmt_tick(999.4, 1.0) in {"999", "999"}
+    assert fmt_tick(999.4, 1.0) in {"999"}
     assert fmt_tick(1000.0, 1.0) in {"1,000", "1000"}
     # fractional steps
     assert fmt_tick(0.1234, 0.1) == "0.1" or fmt_tick(0.1234, 0.1) == "0.1"
     s = fmt_tick(0.0099, 0.01)
     assert s in {"0.01", "0.0"}
-

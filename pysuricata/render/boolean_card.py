@@ -5,21 +5,6 @@ from .card_config import DEFAULT_BOOL_CONFIG
 from .card_types import BooleanStats, QualityFlags
 
 
-def ordinal_number(n):
-    """Convert a number to its ordinal form with superscript suffix (1ˢᵗ, 2ⁿᵈ, 3ʳᵈ, 4ᵗʰ, etc.)"""
-    # Keep the number normal size, only make the suffix superscript
-    number_str = str(n)
-
-    # Add ordinal suffix (only the suffix is superscript)
-    if 10 <= n % 100 <= 20:
-        suffix = "ᵗʰ"
-    else:
-        suffix_map = {1: "ˢᵗ", 2: "ⁿᵈ", 3: "ʳᵈ"}
-        suffix = suffix_map.get(n % 10, "ᵗʰ")
-
-    return f"{number_str}{suffix}"
-
-
 class BooleanCardRenderer(CardRenderer):
     """Renders boolean data cards."""
 

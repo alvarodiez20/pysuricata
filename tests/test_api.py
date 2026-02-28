@@ -4,13 +4,13 @@ from collections.abc import Iterable
 import pandas as pd
 import pytest
 
-from pysuricata.api import _coerce_input  # type: ignore
-from pysuricata.api import _to_engine_config  # type: ignore
 from pysuricata.api import (
     ComputeOptions,
     ProfileConfig,
     RenderOptions,
     Report,
+    _coerce_input,  # type: ignore
+    _to_engine_config,  # type: ignore
     profile,
     summarize,
 )

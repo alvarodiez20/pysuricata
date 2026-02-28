@@ -11,8 +11,9 @@ def test_load_template_ok(tmp_path):
 
 
 def test_load_template_missing(tmp_path):
-    from pysuricata.utils import load_template
     import pytest
+
+    from pysuricata.utils import load_template
 
     with pytest.raises(FileNotFoundError):
         load_template(str(tmp_path / "missing.html"))
@@ -60,7 +61,9 @@ def test_embed_image_ok(tmp_path):
     img_path.write_bytes(data)
     from pysuricata.utils import embed_image
 
-    tag = embed_image(str(img_path), element_id="logo", alt_text="Logo", mime_type="image/png")
+    tag = embed_image(
+        str(img_path), element_id="logo", alt_text="Logo", mime_type="image/png"
+    )
     assert tag.startswith('<img id="logo"')
     assert 'alt="Logo"' in tag
     assert 'src="data:image/png;base64,' in tag
@@ -74,7 +77,9 @@ def test_embed_image_missing(tmp_path):
 
 def test_embed_favicon_ok(tmp_path):
     ico = tmp_path / "fav.ico"
-    ico.write_bytes(b"\x00\x00\x01\x00")  # minimal bytes; not a real icon but fine for base64
+    ico.write_bytes(
+        b"\x00\x00\x01\x00"
+    )  # minimal bytes; not a real icon but fine for base64
     from pysuricata.utils import embed_favicon
 
     link = embed_favicon(str(ico))
@@ -86,4 +91,3 @@ def test_embed_favicon_missing(tmp_path):
     from pysuricata.utils import embed_favicon
 
     assert embed_favicon(str(tmp_path / "missing.ico")) == ""
-

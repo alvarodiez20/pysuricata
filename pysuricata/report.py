@@ -26,7 +26,7 @@ from __future__ import annotations
 import logging
 import random as _py_random
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -57,7 +57,7 @@ class ReportOrchestrator:
 
     def __init__(
         self,
-        config: Optional[EngineConfig] = None,
+        config: EngineConfig | None = None,
     ):
         """Initialize the report orchestrator.
 
@@ -111,7 +111,7 @@ class ReportOrchestrator:
 
     def _build_manifest_inputs(
         self, kinds, accs, first_columns
-    ) -> Tuple[Any, Any, int, int, Any]:
+    ) -> tuple[Any, Any, int, int, Any]:
         """Build the manifest for final processing."""
         with _SectionTimer(
             self.logger, "Compute top-missing, duplicates & quick metrics"
@@ -122,7 +122,7 @@ class ReportOrchestrator:
             miss_list = self._compute_top_missing(kinds_map)
             return kinds_map, col_order, n_rows, n_cols, miss_list
 
-    def _build_kinds_map(self, kinds, accs) -> Dict[str, Tuple[str, Any]]:
+    def _build_kinds_map(self, kinds, accs) -> dict[str, tuple[str, Any]]:
         """Return name -> (kind, accumulator) map for all known columns."""
         return {
             **{name: ("numeric", accs[name]) for name in kinds.numeric if name in accs},
@@ -139,9 +139,9 @@ class ReportOrchestrator:
             **{name: ("boolean", accs[name]) for name in kinds.boolean if name in accs},
         }
 
-    def _compute_top_missing(self, kinds_map) -> List[Tuple[str, float, int]]:
+    def _compute_top_missing(self, kinds_map) -> list[tuple[str, float, int]]:
         """Compute per-column missing percentage and counts, sorted descending by pct."""
-        miss_list: List[Tuple[str, float, int]] = []
+        miss_list: list[tuple[str, float, int]] = []
         for name, (_kind, acc) in kinds_map.items():
             miss = int(getattr(acc, "missing", 0))
             cnt = int(getattr(acc, "count", 0)) + miss
@@ -150,7 +150,7 @@ class ReportOrchestrator:
         miss_list.sort(key=lambda t: t[1], reverse=True)
         return miss_list
 
-    def _compute_col_order(self, first_columns, kinds) -> List[str]:
+    def _compute_col_order(self, first_columns, kinds) -> list[str]:
         """Prefer the original first chunk order when available; otherwise by kinds."""
         prefer = list(first_columns) if first_columns else []
         valid = set(kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean)
@@ -158,7 +158,7 @@ class ReportOrchestrator:
             kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean
         )
 
-    def _compute_dataset_shape(self, kinds_map, row_kmv) -> Tuple[int, int]:
+    def _compute_dataset_shape(self, kinds_map, row_kmv) -> tuple[int, int]:
         """Return (n_rows, n_cols) for the dataset used by manifest/reporting.
 
         Rows are estimated from the row-KMV tracker; columns from the kinds map.
@@ -197,9 +197,9 @@ class ReportOrchestrator:
         total_missing_cells,
         approx_mem_bytes,
         sample_section_html,
-        report_title: Optional[str] = None,
-        chunk_metadata: Optional[List[Tuple[int, int, int]]] = None,
-        corr_est: Optional[Any] = None,
+        report_title: str | None = None,
+        chunk_metadata: list[tuple[int, int, int]] | None = None,
+        corr_est: Any | None = None,
     ) -> str:
         """Render the final HTML report."""
         with _SectionTimer(self.logger, "Render final HTML"):
@@ -227,7 +227,7 @@ class ReportOrchestrator:
         n_cols: int,
         total_missing_cells: int,
         approx_mem_bytes: int = 0,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         """Build the programmatic summary."""
         dataset_summary = {
             "rows_est": int(n_rows),
@@ -249,7 +249,7 @@ class ReportOrchestrator:
             ],
         }
 
-        columns_summary: Dict[str, Dict[str, Any]] = {}
+        columns_summary: dict[str, dict[str, Any]] = {}
         for name in col_order:
             kind, acc = kinds_map[name]
             if kind == "numeric":
@@ -327,11 +327,11 @@ class ReportOrchestrator:
         self,
         source: Any,
         *,
-        output_file: Optional[str] = None,
-        report_title: Optional[str] = None,
+        output_file: str | None = None,
+        report_title: str | None = None,
         return_summary: bool = False,
         compute_only: bool = False,
-    ) -> str | Tuple[str, dict]:
+    ) -> str | tuple[str, dict]:
         """Build a streaming EDA report from in-memory data.
 
         This method orchestrates the complete report generation process:
@@ -439,12 +439,12 @@ class ReportOrchestrator:
 def build_report(
     source: Any,
     *,
-    config: Optional[EngineConfig] = None,
-    output_file: Optional[str] = None,
-    report_title: Optional[str] = None,
+    config: EngineConfig | None = None,
+    output_file: str | None = None,
+    report_title: str | None = None,
     return_summary: bool = False,
     compute_only: bool = False,
-) -> str | Tuple[str, dict]:
+) -> str | tuple[str, dict]:
     """Build a streaming EDA report from in-memory data.
 
     This function orchestrates the complete report generation process:

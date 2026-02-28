@@ -9,11 +9,10 @@ from __future__ import annotations
 
 import logging
 from enum import Enum
-from typing import Any, List, Optional, Union
+from typing import Any
 
 import numpy as np
 
-from ..core.exceptions import ConversionError
 from ..core.types import ProcessingResult
 
 try:
@@ -50,7 +49,7 @@ class UnifiedConverter:
     def __init__(
         self,
         strategy: ConversionStrategy = ConversionStrategy.ZERO_COPY,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
     ):
         """Initialize the unified converter.
 
@@ -86,7 +85,7 @@ class UnifiedConverter:
         except Exception as e:
             return ProcessingResult.error_result(f"Conversion failed: {str(e)}")
 
-    def to_boolean(self, series: Any) -> ProcessingResult[List[Optional[bool]]]:
+    def to_boolean(self, series: Any) -> ProcessingResult[list[bool | None]]:
         """Convert series to boolean values.
 
         Args:
@@ -107,7 +106,7 @@ class UnifiedConverter:
         except Exception as e:
             return ProcessingResult.error_result(f"Boolean conversion failed: {str(e)}")
 
-    def to_datetime_ns(self, series: Any) -> ProcessingResult[List[Optional[int]]]:
+    def to_datetime_ns(self, series: Any) -> ProcessingResult[list[int | None]]:
         """Convert series to datetime nanoseconds.
 
         Args:
@@ -244,9 +243,7 @@ class UnifiedConverter:
                 f"Polars numeric conversion failed: {str(e)}"
             )
 
-    def _pandas_to_boolean(
-        self, s: pd.Series
-    ) -> ProcessingResult[List[Optional[bool]]]:
+    def _pandas_to_boolean(self, s: pd.Series) -> ProcessingResult[list[bool | None]]:
         """Convert pandas series to boolean values.
 
         Args:
@@ -260,7 +257,7 @@ class UnifiedConverter:
 
         try:
 
-            def _coerce(v: Any) -> Optional[bool]:
+            def _coerce(v: Any) -> bool | None:
                 if pd.isna(v):
                     return None
                 if isinstance(v, bool):
@@ -283,9 +280,7 @@ class UnifiedConverter:
                 f"Pandas boolean conversion failed: {str(e)}"
             )
 
-    def _polars_to_boolean(
-        self, s: pl.Series
-    ) -> ProcessingResult[List[Optional[bool]]]:
+    def _polars_to_boolean(self, s: pl.Series) -> ProcessingResult[list[bool | None]]:
         """Convert polars series to boolean values.
 
         Args:
@@ -313,7 +308,7 @@ class UnifiedConverter:
 
     def _pandas_to_datetime_ns(
         self, s: pd.Series
-    ) -> ProcessingResult[List[Optional[int]]]:
+    ) -> ProcessingResult[list[int | None]]:
         """Convert pandas series to datetime nanoseconds.
 
         Args:
@@ -345,7 +340,7 @@ class UnifiedConverter:
 
     def _polars_to_datetime_ns(
         self, s: pl.Series
-    ) -> ProcessingResult[List[Optional[int]]]:
+    ) -> ProcessingResult[list[int | None]]:
         """Convert polars series to datetime nanoseconds.
 
         Args:

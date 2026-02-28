@@ -99,5 +99,8 @@ jobs:
         run: |
           uv sync --dev
 
+      - name: Regenerate example report
+        run: uv run python scripts/regenerate_example_report.py
+
       - name: Build docs
         run: uv run mkdocs build --strict

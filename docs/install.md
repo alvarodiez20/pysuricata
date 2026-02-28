@@ -3,13 +3,18 @@
 Install from PyPI:
 
 ```bash
+# using uv (recommended)
+uv add pysuricata
+
+# or using pip
 pip install pysuricata
 ```
 
-Optional: install `polars` to use polars DataFrames directly:
+Optional: install polars support for polars DataFrames:
 
 ```bash
-pip install polars
+uv add pysuricata[polars]
+# or: pip install pysuricata[polars]
 ```
 
 Verify your installation:

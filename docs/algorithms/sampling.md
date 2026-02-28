@@ -15,7 +15,7 @@ class ReservoirSampler:
         self.k = k
         self.reservoir = []
         self.n = 0
-    
+
     def add(self, item):
         self.n += 1
         if len(self.reservoir) < self.k:
@@ -66,7 +66,3 @@ P(\text{in sample}) = \frac{k}{i} \cdot \frac{i}{n} = \frac{k}{n}
 ---
 
 *Last updated: 2025-10-12*
-
-
-
-

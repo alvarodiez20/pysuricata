@@ -252,4 +252,3 @@ assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 - [Configuration Guide](configuration.md) - All configuration options
 - [Examples](examples.md) - Real-world use cases
 - [Advanced Features](advanced.md) - Power user tips
-

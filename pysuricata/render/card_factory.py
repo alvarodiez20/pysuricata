@@ -1,6 +1,6 @@
 """Card factory for creating appropriate card renderers."""
 
-from typing import Any, Union
+from typing import Any
 
 from .boolean_card import BooleanCardRenderer
 from .card_types import BooleanStats, CategoricalStats, DateTimeStats, NumericStats
@@ -25,7 +25,7 @@ class CardFactory:
         return self._renderers.get(data_type)
 
     def render_card(
-        self, stats: Union[NumericStats, CategoricalStats, DateTimeStats, BooleanStats]
+        self, stats: NumericStats | CategoricalStats | DateTimeStats | BooleanStats
     ) -> str:
         """Render a card using the appropriate renderer."""
         # Determine data type from stats object

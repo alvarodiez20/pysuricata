@@ -1,0 +1,293 @@
+/* =============================
+   HEADER / APP BAR
+   ============================= */
+#pysuricata-report .appbar {
+  background: var(--appbar-bg);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--divider);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  transition: background .2s ease, border-color .2s ease;
+}
+
+#pysuricata-report.unpinned .appbar {
+  position: static;
+}
+
+/* 2-row grid, logo spans both rows */
+#pysuricata-report .header-grid {
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  /* slightly larger logo column */
+  grid-template-rows: auto auto;
+  grid-template-areas:
+    "logo title"
+    "logo meta";
+  column-gap: 0.5rem;
+  row-gap: 0.2rem;
+  /* a touch more breathing room between lines */
+  align-items: center;
+}
+
+/* Logo */
+#pysuricata-report .header-grid .logo {
+  grid-area: logo;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  /* ensure visible area */
+  width: 100%;
+  background: none;
+}
+
+/* Ensure embedded logo images render */
+#pysuricata-report #logo img {
+  height: 60px;
+  /* slightly larger image */
+  width: auto;
+  display: block;
+}
+
+/* Default: show light, hide dark */
+#pysuricata-report #logo #logo-dark {
+  display: none;
+}
+
+/* In dark mode, swap visibility */
+#pysuricata-report:not(.light) #logo #logo-light {
+  display: none;
+}
+
+#pysuricata-report:not(.light) #logo #logo-dark {
+  display: block;
+}
+
+/* Top row: title (left), nav + toggle (right) */
+#pysuricata-report .title-nav {
+  grid-area: title;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+#pysuricata-report .title-nav h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+#pysuricata-report .nav-and-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* Quick links - minimal clean design with no default background */
+#pysuricata-report .quick {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+#pysuricata-report .header-grid .quick a,
+#pysuricata-report .header-grid .quick a:visited {
+  color: inherit;
+  text-decoration: none;
+}
+
+#pysuricata-report .quick a {
+  font-weight: 600;
+  font-size: 0.9rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  background: transparent;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+/* Hover state - subtle background only, no border, no underline */
+#pysuricata-report .quick a:hover {
+  background: rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+#pysuricata-report:not(.light) .quick a:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* Active state - shows current section */
+#pysuricata-report .quick a.active {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+#pysuricata-report:not(.light) .quick a.active {
+  background: rgba(59, 130, 246, 0.12);
+  color: #60a5fa;
+}
+
+/* Focus state - accessibility */
+#pysuricata-report .quick a:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Toggle button (monochrome) */
+#pysuricata-report .appbar .toggle-button {
+  position: static;
+  border: none;
+  background: transparent;
+  font-size: 1.3rem;
+  cursor: pointer;
+  padding: 0.3rem;
+  border-radius: 50%;
+  color: inherit;
+  transition: background-color 0.2s, transform 0.2s;
+}
+
+#pysuricata-report .appbar .toggle-button:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+  transform: scale(1.1);
+}
+
+#pysuricata-report:not(.light) .appbar .toggle-button:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Bottom row: metadata left-aligned under title */
+#pysuricata-report .meta {
+  grid-area: meta;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+
+/* Pin button placement and hover styling */
+#pysuricata-report .meta #pin-button {
+  margin-left: auto;
+}
+
+#pysuricata-report .icon-btn:hover {
+  background: var(--chip-bg);
+  filter: brightness(1.05);
+}
+
+#pysuricata-report .icon-btn:focus-visible {
+  outline: 2px solid #4ea3f1;
+  outline-offset: 2px;
+}
+
+#pysuricata-report #pin-button {
+  border: none;
+}
+
+
+#pysuricata-report .chip {
+  padding: 0.35rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.85rem;
+  line-height: 1;
+  background: var(--chip-bg-light);
+  border: 1px solid var(--chip-br-light);
+}
+
+#pysuricata-report:not(.light) .chip {
+  background: var(--chip-bg-dark);
+  border-color: var(--chip-br-dark);
+}
+
+/* Responsive header tweaks */
+@media (max-width: 768px) {
+  #pysuricata-report .title-nav {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.4rem;
+  }
+}
+
+@media (max-width: 560px) {
+  #pysuricata-report .header-grid {
+    grid-template-columns: 66px 1fr;
+  }
+
+  #pysuricata-report .header-grid .logo img {
+    height: 50px;
+  }
+}
+
+#pysuricata-report .icon-btn {
+  border: 1px solid var(--chip-br-light);
+  background: transparent;
+  border-radius: 9999px;
+  width: 32px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: inherit;
+  /* SVGs use currentColor */
+  transition: color .25s ease, background-color .2s ease, transform .12s ease;
+}
+
+#pysuricata-report:not(.light) .icon-btn {
+  border-color: var(--chip-br-dark);
+}
+
+/* ── Colored header icons ─────────────────────────────── */
+/* Moon icon (shown in light mode → click to go dark) */
+#pysuricata-report.light #toggle-icon svg {
+  stroke: #6366f1;
+  /* indigo-500 */
+}
+
+/* Sun icon (shown in dark mode → click to go light) */
+#pysuricata-report:not(.light) #toggle-icon svg {
+  stroke: #f59e0b;
+  /* amber-500 */
+}
+
+/* Calendar chip icon */
+#pysuricata-report .chip[data-tooltip-type="date"] svg {
+  stroke: #0ea5e9;
+  /* sky-500 */
+}
+
+#pysuricata-report:not(.light) .chip[data-tooltip-type="date"] svg {
+  stroke: #38bdf8;
+  /* sky-400 */
+}
+
+/* Clock chip icon */
+#pysuricata-report .chip[data-tooltip-type="duration"] svg {
+  stroke: #10b981;
+  /* emerald-500 */
+}
+
+#pysuricata-report:not(.light) .chip[data-tooltip-type="duration"] svg {
+  stroke: #34d399;
+  /* emerald-400 */
+}
+
+/* Download button icon */
+#pysuricata-report .quick a[data-action="download-report"] svg {
+  color: #8b5cf6;
+  /* violet-500 */
+}
+
+#pysuricata-report:not(.light) .quick a[data-action="download-report"] svg {
+  color: #a78bfa;
+  /* violet-400 */
+}

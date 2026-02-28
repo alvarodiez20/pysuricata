@@ -50,7 +50,3 @@ dup_pct = (exact_duplicates / len(df)) * 100
 ---
 
 *Last updated: 2025-10-12*
-
-
-
-

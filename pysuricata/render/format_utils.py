@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-from typing import Optional, Union
 
 
 def human_bytes(n: int) -> str:
@@ -24,7 +23,7 @@ def human_bytes(n: int) -> str:
         size /= 1024.0
 
 
-def fmt_num(x: Optional[Union[int, float]]) -> str:
+def fmt_num(x: int | float | None) -> str:
     """Format a number in a compact, human-friendly way.
 
     - None -> em dash
@@ -112,7 +111,7 @@ def fmt_compact_scientific(x: object, threshold: float = 1_000_000) -> str:
             return str(x)
 
 
-def human_time(seconds: Optional[Union[int, float]]) -> str:
+def human_time(seconds: int | float | None) -> str:
     """Format a time duration in seconds into a human-readable format.
 
     Args:
@@ -165,6 +164,21 @@ def human_time(seconds: Optional[Union[int, float]]) -> str:
 
     except Exception:
         return str(seconds)
+
+
+def ordinal_number(n: int) -> str:
+    """Convert a number to its ordinal form with superscript suffix.
+
+    Examples:
+        1 -> "1ˢᵗ", 2 -> "2ⁿᵈ", 3 -> "3ʳᵈ", 4 -> "4ᵗʰ", 11 -> "11ᵗʰ"
+    """
+    number_str = str(n)
+    if 10 <= n % 100 <= 20:
+        suffix = "\u1d57\u02b0"
+    else:
+        suffix_map = {1: "\u02e2\u1d57", 2: "\u207f\u1d48", 3: "\u02b3\u1d48"}
+        suffix = suffix_map.get(n % 10, "\u1d57\u02b0")
+    return f"{number_str}{suffix}"
 
 
 # Legacy aliases for backward compatibility

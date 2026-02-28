@@ -1,0 +1,335 @@
+/* =============================
+   BOOLEAN VARIABLES – stacked bar chart styling
+   ============================= */
+
+/* Theme tokens for boolean segments */
+#pysuricata-report {
+  --bool-true: #10b981;
+  /* teal-500 */
+  --bool-false: #ef4444;
+  /* red-500 */
+  --bool-miss: #9ca3af;
+  /* gray-400 */
+}
+
+#pysuricata-report {
+  --bool-true: #10b981;
+  /* emerald-500 */
+  --bool-false: #ef4444;
+  /* red-500 */
+  --bool-miss: #9ca3af;
+  /* gray-400 */
+}
+
+#pysuricata-report:not(.light) {
+  --bool-true: #34d399;
+  /* teal-400 */
+  --bool-false: #f87171;
+  /* red-400 */
+  --bool-miss: #9ca3af;
+  /* gray-400 (kept neutral) */
+}
+
+/* Inline stacked bar SVG */
+#pysuricata-report .bool-svg {
+  width: 100%;
+  height: 48px;
+  /* matches your compact chart lane */
+  display: block;
+}
+
+#pysuricata-report .bool-svg .seg {
+  shape-rendering: crispEdges;
+  opacity: .92;
+}
+
+#pysuricata-report .bool-svg .label {
+  fill: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, .35);
+  stroke-width: 2px;
+}
+
+#pysuricata-report .bool-svg .seg.false {
+  fill: var(--bool-false);
+}
+
+#pysuricata-report .bool-svg .seg.true {
+  fill: var(--bool-true);
+}
+
+#pysuricata-report .bool-svg .seg.missing {
+  fill: var(--bool-miss);
+  opacity: .65;
+}
+
+/* Rounded ends look better on short charts */
+#pysuricata-report .bool-svg .seg {
+  rx: 2;
+  ry: 2;
+}
+
+/* When boolean chart sits in the chart cell, make sure it aligns vertically like others */
+#pysuricata-report .var-card__body .triple-row .chart .bool-svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Optional: compact labels in boolean tables (inherits your kv table look) */
+#pysuricata-report .var-card__body .triple-row .stats-left table.kv,
+#pysuricata-report .var-card__body .triple-row .stats-right table.kv {
+  table-layout: fixed;
+}
+
+#pysuricata-report .var-card__body .triple-row .stats-left table.kv th,
+#pysuricata-report .var-card__body .triple-row .stats-left table.kv td,
+#pysuricata-report .var-card__body .triple-row .stats-right table.kv th,
+#pysuricata-report .var-card__body .triple-row .stats-right table.kv td {
+  white-space: nowrap;
+}
+
+/* Only apply ellipsis to td (values), not th (labels) */
+#pysuricata-report .var-card__body .triple-row .stats-left table.kv td,
+#pysuricata-report .var-card__body .triple-row .stats-right table.kv td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+
+/* Theme-aware Boolean Chart Styling */
+.boolean-chart.enhanced {
+  padding: 16px;
+  background: var(--chart-bg-light, linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%));
+  border-radius: 12px;
+  border: 1px solid var(--chart-border-light, #e2e8f0);
+  box-shadow: var(--chart-shadow-light, 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06));
+  transition: all 0.3s ease;
+}
+
+.boolean-chart.enhanced:hover {
+  box-shadow: var(--chart-shadow-hover-light, 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05));
+  transform: translateY(-2px);
+}
+
+.chart-container {
+  position: relative;
+}
+
+.bool-svg.enhanced {
+  border-radius: 10px;
+  background: var(--svg-bg-light, white);
+  box-shadow: var(--svg-shadow-light, inset 0 2px 4px rgba(0, 0, 0, 0.06));
+}
+
+/* Enhanced segment styling with hover effects */
+.seg.enhanced {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  stroke: var(--segment-stroke-light, rgba(255, 255, 255, 0.2));
+  stroke-width: 1;
+}
+
+.seg.enhanced:hover {
+  transform: scaleY(1.1);
+  transform-origin: center;
+  filter: brightness(1.1) var(--segment-shadow-hover-light, drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15)));
+  stroke-width: 2;
+  stroke: var(--segment-stroke-hover-light, rgba(255, 255, 255, 0.4));
+}
+
+.seg.true.enhanced:hover {
+  filter: brightness(1.15) var(--segment-shadow-true-light, drop-shadow(0 4px 8px rgba(16, 185, 129, 0.3)));
+}
+
+.seg.false.enhanced:hover {
+  filter: brightness(1.15) var(--segment-shadow-false-light, drop-shadow(0 4px 8px rgba(239, 68, 68, 0.3)));
+}
+
+.seg.missing.enhanced:hover {
+  filter: brightness(1.15) var(--segment-shadow-missing-light, drop-shadow(0 4px 8px rgba(107, 114, 128, 0.3)));
+}
+
+/* Enhanced label styling */
+.label.enhanced {
+  transition: all 0.2s ease;
+  text-shadow: var(--label-shadow-light, 0 1px 2px rgba(0, 0, 0, 0.5));
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.seg.enhanced:hover+.label.enhanced,
+.seg.enhanced:hover~.label.enhanced {
+  font-size: 13px;
+  font-weight: 700;
+  text-shadow: var(--label-shadow-hover-light, 0 2px 4px rgba(0, 0, 0, 0.7));
+}
+
+/* Chart legend styling */
+.chart-legend {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 12px;
+  padding: 8px 0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--legend-bg-light, rgba(255, 255, 255, 0.8));
+  border: 1px solid var(--legend-border-light, rgba(0, 0, 0, 0.1));
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.legend-item:hover {
+  background: var(--legend-bg-hover-light, rgba(255, 255, 255, 1));
+  box-shadow: var(--legend-shadow-hover-light, 0 2px 4px rgba(0, 0, 0, 0.1));
+  transform: translateY(-1px);
+}
+
+.legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  box-shadow: var(--legend-color-shadow-light, 0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.legend-color.true {
+  background: linear-gradient(135deg, #10b981, #059669);
+}
+
+.legend-color.false {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.legend-color.missing {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+.legend-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--legend-text-light, #374151);
+}
+
+/* Animation for chart loading */
+@keyframes chartLoad {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.boolean-chart.enhanced {
+  animation: chartLoad 0.5s ease-out;
+}
+
+/* Dark theme overrides */
+#pysuricata-report:not(.light) .boolean-chart.enhanced {
+  background: var(--chart-bg-dark, linear-gradient(135deg, #1f2937 0%, #111827 100%));
+  border-color: var(--chart-border-dark, #374151);
+  box-shadow: var(--chart-shadow-dark, 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2));
+}
+
+#pysuricata-report:not(.light) .boolean-chart.enhanced:hover {
+  box-shadow: var(--chart-shadow-hover-dark, 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3));
+}
+
+#pysuricata-report:not(.light) .bool-svg.enhanced {
+  background: var(--svg-bg-dark, #1f2937);
+  box-shadow: var(--svg-shadow-dark, inset 0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+#pysuricata-report:not(.light) .seg.enhanced {
+  stroke: var(--segment-stroke-dark, rgba(255, 255, 255, 0.1));
+}
+
+#pysuricata-report:not(.light) .seg.enhanced:hover {
+  filter: brightness(1.1) var(--segment-shadow-hover-dark, drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)));
+  stroke: var(--segment-stroke-hover-dark, rgba(255, 255, 255, 0.2));
+}
+
+#pysuricata-report:not(.light) .seg.true.enhanced:hover {
+  filter: brightness(1.15) var(--segment-shadow-true-dark, drop-shadow(0 4px 8px rgba(16, 185, 129, 0.4)));
+}
+
+#pysuricata-report:not(.light) .seg.false.enhanced:hover {
+  filter: brightness(1.15) var(--segment-shadow-false-dark, drop-shadow(0 4px 8px rgba(239, 68, 68, 0.4)));
+}
+
+#pysuricata-report:not(.light) .seg.missing.enhanced:hover {
+  filter: brightness(1.15) var(--segment-shadow-missing-dark, drop-shadow(0 4px 8px rgba(107, 114, 128, 0.4)));
+}
+
+#pysuricata-report:not(.light) .label.enhanced {
+  text-shadow: var(--label-shadow-dark, 0 1px 2px rgba(0, 0, 0, 0.8));
+}
+
+#pysuricata-report:not(.light) .seg.enhanced:hover+.label.enhanced,
+#pysuricata-report:not(.light) .seg.enhanced:hover~.label.enhanced {
+  text-shadow: var(--label-shadow-hover-dark, 0 2px 4px rgba(0, 0, 0, 0.9));
+}
+
+#pysuricata-report:not(.light) .legend-item {
+  background: var(--legend-bg-dark, rgba(31, 41, 55, 0.8));
+  border-color: var(--legend-border-dark, rgba(255, 255, 255, 0.1));
+}
+
+#pysuricata-report:not(.light) .legend-item:hover {
+  background: var(--legend-bg-hover-dark, rgba(31, 41, 55, 1));
+  box-shadow: var(--legend-shadow-hover-dark, 0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+#pysuricata-report:not(.light) .legend-color {
+  box-shadow: var(--legend-color-shadow-dark, 0 1px 2px rgba(0, 0, 0, 0.4));
+}
+
+#pysuricata-report:not(.light) .legend-label {
+  color: var(--legend-text-dark, #d1d5db);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chart-legend {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .legend-item {
+    font-size: 11px;
+  }
+
+  .legend-color {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .chart-legend {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .legend-item {
+    font-size: 11px;
+  }
+
+  .legend-color {
+    width: 10px;
+    height: 10px;
+  }
+}

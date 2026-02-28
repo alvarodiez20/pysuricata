@@ -6,8 +6,8 @@ the compute system, enabling dependency injection and better testability.
 
 from __future__ import annotations
 
-from abc import abstractmethod
-from typing import Any, Dict, Iterator, List, Optional, Protocol, Sequence, Tuple
+from collections.abc import Iterator, Sequence
+from typing import Any, Protocol
 
 from .types import ColumnKinds, ProcessingResult
 
@@ -22,7 +22,7 @@ class DataAdapter(Protocol):
 
     def infer_and_build(
         self, data: Any, config: Any
-    ) -> Tuple[ColumnKinds, Dict[str, Any]]:
+    ) -> tuple[ColumnKinds, dict[str, Any]]:
         """Infer column types and build accumulators.
 
         Args:
@@ -59,9 +59,9 @@ class DataAdapter(Protocol):
     def consume_chunk(
         self,
         data: Any,
-        accs: Dict[str, Any],
+        accs: dict[str, Any],
         kinds: ColumnKinds,
-        logger: Optional[Any] = None,
+        logger: Any | None = None,
     ) -> None:
         """Consume a data chunk and update accumulators.
 
@@ -73,9 +73,7 @@ class DataAdapter(Protocol):
         """
         ...
 
-    def update_corr(
-        self, frame: Any, corr_est: Any, logger: Optional[Any] = None
-    ) -> None:
+    def update_corr(self, frame: Any, corr_est: Any, logger: Any | None = None) -> None:
         """Update correlation estimator with new data.
 
         Args:
@@ -106,7 +104,7 @@ class ChunkProcessor(Protocol):
     """
 
     def process_chunk(
-        self, chunk: Any, accs: Dict[str, Any], kinds: ColumnKinds
+        self, chunk: Any, accs: dict[str, Any], kinds: ColumnKinds
     ) -> None:
         """Process a single data chunk.
 
@@ -204,16 +202,16 @@ class MetricsComputer(Protocol):
     def build_manifest_inputs(
         self,
         kinds: ColumnKinds,
-        accs: Dict[str, Any],
+        accs: dict[str, Any],
         row_kmv: Any,
         first_columns: Sequence[str],
     ) -> ProcessingResult[
-        Tuple[
-            Dict[str, Tuple[str, Any]],
-            List[str],
+        tuple[
+            dict[str, tuple[str, Any]],
+            list[str],
             int,
             int,
-            List[Tuple[str, float, int]],
+            list[tuple[str, float, int]],
         ]
     ]:
         """Build manifest inputs for summary generation.
@@ -231,9 +229,9 @@ class MetricsComputer(Protocol):
 
     def apply_correlation_chips(
         self,
-        accs: Dict[str, Any],
+        accs: dict[str, Any],
         kinds: ColumnKinds,
-        top_map: Dict[str, Any],
+        top_map: dict[str, Any],
     ) -> ProcessingResult[None]:
         """Apply correlation chips to accumulators.
 
@@ -249,14 +247,14 @@ class MetricsComputer(Protocol):
 
     def build_summary(
         self,
-        kinds_map: Dict[str, Tuple[str, Any]],
-        col_order: List[str],
+        kinds_map: dict[str, tuple[str, Any]],
+        col_order: list[str],
         row_kmv: Any,
         total_missing_cells: int,
         n_rows: int,
         n_cols: int,
-        miss_list: List[Tuple[str, float, int]],
-    ) -> ProcessingResult[Optional[Dict[str, Any]]]:
+        miss_list: list[tuple[str, float, int]],
+    ) -> ProcessingResult[dict[str, Any] | None]:
         """Build programmatic summary from processed data.
 
         Args:

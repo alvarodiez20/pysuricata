@@ -4,7 +4,8 @@ import glob
 import gzip
 import os
 import pickle
-from typing import Any, List, Mapping, Optional, Tuple
+from collections.abc import Mapping
+from typing import Any
 
 
 class CheckpointManager:
@@ -27,7 +28,7 @@ class CheckpointManager:
         self.keep = max(1, int(keep))
         self.write_html = write_html
 
-    def _glob(self, ext: str) -> List[str]:
+    def _glob(self, ext: str) -> list[str]:
         return sorted(
             glob.glob(os.path.join(self.directory, f"{self.prefix}_chunk*.{ext}"))
         )
@@ -53,8 +54,8 @@ class CheckpointManager:
                 pass
 
     def save(
-        self, chunk_idx: int, state: Mapping[str, Any], html: Optional[str] = None
-    ) -> Tuple[str, Optional[str]]:
+        self, chunk_idx: int, state: Mapping[str, Any], html: str | None = None
+    ) -> tuple[str, str | None]:
         pkl_path = self._path_for(chunk_idx, "pkl.gz")
         with gzip.open(pkl_path, "wb") as f:
             pickle.dump(state, f, protocol=pickle.HIGHEST_PROTOCOL)
@@ -106,7 +107,7 @@ def make_state_snapshot(
     }
 
 
-def maybe_make_manager(cfg: Any, output_file: Optional[str]) -> Optional[CheckpointManager]:
+def maybe_make_manager(cfg: Any, output_file: str | None) -> CheckpointManager | None:
     """Factory for an optional checkpoint manager based on config.
 
     Returns None when checkpointing is disabled via config.

@@ -172,11 +172,11 @@ def pebay_merge(n_a, mean_a, M2_a, n_b, mean_b, M2_b):
     n = n_a + n_b
     if n == 0:
         return 0, 0.0, 0.0
-    
+
     delta = mean_b - mean_a
     mean = mean_a + delta * n_b / n
     M2 = M2_a + M2_b + delta**2 * n_a * n_b / n
-    
+
     return n, mean, M2
 ```
 
@@ -209,12 +209,12 @@ def moments_update(n, mean, M2, M3, M4, x):
     delta_n = delta / n_new
     delta_n2 = delta_n * delta_n
     term1 = delta * delta_n * n
-    
+
     mean_new = mean + delta_n
     M4_new = M4 + term1 * delta_n2 * (n_new*n_new - 3*n_new + 3) + 6*delta_n2*M2 - 4*delta_n*M3
     M3_new = M3 + term1 * delta_n * (n_new - 2) - 3*delta_n*M2
     M2_new = M2 + term1
-    
+
     return n_new, mean_new, M2_new, M3_new, M4_new
 ```
 
@@ -227,25 +227,25 @@ def pebay_merge_moments(n_a, mean_a, M2_a, M3_a, M4_a,
     n = n_a + n_b
     if n == 0:
         return 0, 0.0, 0.0, 0.0, 0.0
-    
+
     delta = mean_b - mean_a
     delta2 = delta * delta
     delta3 = delta2 * delta
     delta4 = delta3 * delta
-    
+
     mean = mean_a + delta * n_b / n
-    
+
     M2 = M2_a + M2_b + delta2 * n_a * n_b / n
-    
+
     M3 = M3_a + M3_b + \
          delta3 * n_a * n_b * (n_a - n_b) / (n * n) + \
          3 * delta * (n_a * M2_b - n_b * M2_a) / n
-    
+
     M4 = M4_a + M4_b + \
          delta4 * n_a * n_b * (n_a*n_a - n_a*n_b + n_b*n_b) / (n * n * n) + \
          6 * delta2 * (n_a*n_a * M2_b + n_b*n_b * M2_a) / (n * n) + \
          4 * delta * (n_a * M3_b - n_b * M3_a) / n
-    
+
     return n, mean, M2, M3, M4
 ```
 
@@ -256,21 +256,21 @@ def compute_shape(n, M2, M3, M4):
     """Compute skewness and excess kurtosis"""
     if n < 3:
         return None, None
-    
+
     variance = M2 / (n - 1)
     if variance == 0:
         return None, None
-    
+
     # Skewness (g1)
     g1 = (n / ((n-1) * (n-2))) * (M3 / n) / (variance ** 1.5)
-    
+
     if n < 4:
         return g1, None
-    
+
     # Excess kurtosis (g2)
     g2 = ((n * (n+1)) / ((n-1) * (n-2) * (n-3))) * (M4 / n) / (variance ** 2) - \
          (3 * (n-1) ** 2) / ((n-2) * (n-3))
-    
+
     return g1, g2
 ```
 
@@ -327,10 +327,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 def parallel_moments(data, n_threads=4):
     chunks = np.array_split(data, n_threads)
-    
+
     with ThreadPoolExecutor(max_workers=n_threads) as executor:
         states = list(executor.map(map_chunk, chunks))
-    
+
     return reduce_moments(states)
 ```
 
@@ -346,7 +346,7 @@ class StreamingMoments:
         self.M2 = 0.0
         self.M3 = 0.0
         self.M4 = 0.0
-    
+
     def update(self, values: np.ndarray):
         """Update with array of values"""
         for x in values:
@@ -354,7 +354,7 @@ class StreamingMoments:
                 continue
             self.n, self.mean, self.M2, self.M3, self.M4 = \
                 moments_update(self.n, self.mean, self.M2, self.M3, self.M4, x)
-    
+
     def merge(self, other: 'StreamingMoments'):
         """Merge with another moments object"""
         self.n, self.mean, self.M2, self.M3, self.M4 = \
@@ -362,16 +362,16 @@ class StreamingMoments:
                 self.n, self.mean, self.M2, self.M3, self.M4,
                 other.n, other.mean, other.M2, other.M3, other.M4
             )
-    
+
     def finalize(self):
         """Compute final statistics"""
         if self.n < 2:
             return {"mean": self.mean, "variance": None, "skewness": None, "kurtosis": None}
-        
+
         variance = self.M2 / (self.n - 1)
         std = math.sqrt(variance)
         skewness, kurtosis = compute_shape(self.n, self.M2, self.M3, self.M4)
-        
+
         return {
             "count": self.n,
             "mean": self.mean,
@@ -390,17 +390,17 @@ class StreamingMoments:
 def test_welford_equivalence():
     """Verify Welford = two-pass"""
     data = np.random.randn(10000)
-    
+
     # Welford
     n, mean, M2 = 0, 0.0, 0.0
     for x in data:
         n, mean, M2 = welford_update(n, mean, M2, x)
     var_welford = M2 / (n - 1)
-    
+
     # Two-pass
     mean_twopass = np.mean(data)
     var_twopass = np.var(data, ddof=1)
-    
+
     assert np.isclose(mean, mean_twopass)
     assert np.isclose(var_welford, var_twopass)
 
@@ -408,16 +408,16 @@ def test_pebay_merge():
     """Verify merge = concatenate"""
     data_a = np.random.randn(5000)
     data_b = np.random.randn(3000)
-    
+
     # Separate
     state_a = compute_moments(data_a)
     state_b = compute_moments(data_b)
     merged = pebay_merge_moments(*state_a, *state_b)
-    
+
     # Combined
     data_combined = np.concatenate([data_a, data_b])
     combined = compute_moments(data_combined)
-    
+
     assert np.allclose(merged, combined)
 ```
 
@@ -442,7 +442,3 @@ def test_pebay_merge():
 ---
 
 *Last updated: 2025-10-12*
-
-
-
-

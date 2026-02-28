@@ -400,6 +400,27 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
         import pandas as pd
 
         if isinstance(data, pd.DataFrame):
+            # Deduplicate column names to prevent engine crash
+            # (df[name] returns a DataFrame instead of Series when duplicates exist)
+            if data.columns.duplicated().any():
+                import warnings
+
+                seen: dict[str, int] = {}
+                new_cols: list[str] = []
+                for col in data.columns:
+                    if col in seen:
+                        seen[col] += 1
+                        new_cols.append(f"{col}_{seen[col]}")
+                    else:
+                        seen[col] = 0
+                        new_cols.append(col)
+                data = data.copy()
+                data.columns = new_cols
+                warnings.warn(
+                    "DataFrame has duplicate column names. "
+                    "Columns were renamed with numeric suffixes to avoid errors.",
+                    stacklevel=3,
+                )
             return data
     except ImportError:
         pass

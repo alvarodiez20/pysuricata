@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -76,17 +76,17 @@ class NumericSummary:
     # Advanced analytics (approximate)
     int_like: bool = False
     unique_ratio_approx: float = float("nan")
-    hist_counts: Optional[List[int]] = None
-    top_values: List[Tuple[float, int]] = field(default_factory=list)
+    hist_counts: list[int] | None = None
+    top_values: list[tuple[float, int]] = field(default_factory=list)
     # Reservoir sample for advanced analytics
-    sample_vals: Optional[List[float]] = None
+    sample_vals: list[float] | None = None
     # True distribution histogram data
-    true_histogram_edges: Optional[List[float]] = None
-    true_histogram_counts: Optional[List[int]] = None
+    true_histogram_edges: list[float] | None = None
+    true_histogram_counts: list[int] | None = None
     # Quality metrics
     heap_pct: float = float("nan")
-    gran_decimals: Optional[int] = None
-    gran_step: Optional[float] = None
+    gran_decimals: int | None = None
+    gran_step: float | None = None
     bimodal: bool = False
     ci_lo: float = float("nan")
     ci_hi: float = float("nan")
@@ -95,18 +95,18 @@ class NumericSummary:
     mono_inc: bool = False
     mono_dec: bool = False
     dtype_str: str = "numeric"
-    corr_top: List[Tuple[str, float]] = field(default_factory=list)
+    corr_top: list[tuple[str, float]] = field(default_factory=list)
     sample_scale: float = 1.0
     # Extremes with global indices
-    min_items: List[Tuple[Any, float]] = field(default_factory=list)
-    max_items: List[Tuple[Any, float]] = field(default_factory=list)
+    min_items: list[tuple[Any, float]] = field(default_factory=list)
+    max_items: list[tuple[Any, float]] = field(default_factory=list)
     # Chunk metadata for spectrum visualization
-    chunk_metadata: Optional[List[Tuple[int, int, int]]] = (
+    chunk_metadata: list[tuple[int, int, int]] | None = (
         None  # (start_row, end_row, missing_count)
     )
     corr_threshold: float = 0.5  # Threshold used for correlation filtering
     # Advisory dtype suggestion (None = no suggestion / current dtype is optimal)
-    dtype_suggestion: Optional[DtypeSuggestion] = None
+    dtype_suggestion: DtypeSuggestion | None = None
 
 
 class NumericAccumulator:
@@ -117,7 +117,7 @@ class NumericAccumulator:
     precision, reliability, and comprehensive statistical analysis capabilities.
     """
 
-    def __init__(self, name: str, config: Optional[NumericConfig] = None):
+    def __init__(self, name: str, config: NumericConfig | None = None):
         """Initialize numeric accumulator with optimized components.
 
         Args:
@@ -135,7 +135,7 @@ class NumericAccumulator:
         self.inf = 0
         self._int_like_all = True
         self._dtype_str = "numeric"
-        self._corr_top: List[Tuple[str, float]] = []
+        self._corr_top: list[tuple[str, float]] = []
         self._corr_threshold: float = 0.5
 
         # Memory tracking for big data optimization
@@ -172,8 +172,8 @@ class NumericAccumulator:
         # Per-column chunk tracking for accurate missing value reporting
         if self.config.enable_chunk_metadata:
             # Pre-allocate arrays for bounded memory usage
-            self._chunk_boundaries: List[int] = []
-            self._chunk_missing: List[int] = []
+            self._chunk_boundaries: list[int] = []
+            self._chunk_missing: list[int] = []
             self._chunk_metadata_enabled = True
             self._chunk_count = 0
         else:
@@ -182,7 +182,7 @@ class NumericAccumulator:
             self._chunk_missing = None
             self._chunk_metadata_enabled = False
             self._chunk_count = 0
-        
+
         self._current_chunk_missing = 0  # Missing in current chunk
         self._current_chunk_rows = 0  # Total rows in current chunk
 
@@ -197,7 +197,7 @@ class NumericAccumulator:
         except Exception:
             self._dtype_str = "numeric"
 
-    def set_corr_top(self, items: List[Tuple[str, float]]) -> None:
+    def set_corr_top(self, items: list[tuple[str, float]]) -> None:
         """Set top correlated columns for analytics.
 
         Args:
@@ -359,7 +359,7 @@ class NumericAccumulator:
             self._outlier_detector.update(finite_values)
 
     def update_extremes(
-        self, pairs_min: List[Tuple[Any, float]], pairs_max: List[Tuple[Any, float]]
+        self, pairs_min: list[tuple[Any, float]], pairs_max: list[tuple[Any, float]]
     ) -> None:
         """Update extreme values from external source with batch processing.
 
@@ -400,7 +400,7 @@ class NumericAccumulator:
             self._current_chunk_missing = 0
             self._current_chunk_rows = 0
             return
-        
+
         # Check if we've exceeded the maximum number of chunks to track
         if self._chunk_count >= self.config.max_chunks:
             # Switch to summary mode - stop tracking individual chunks
@@ -408,19 +408,19 @@ class NumericAccumulator:
             self._current_chunk_missing = 0
             self._current_chunk_rows = 0
             return
-        
+
         # Record chunk metadata
         cumulative_rows = self.count + self.missing
         self._chunk_boundaries.append(cumulative_rows)
         self._chunk_missing.append(self._current_chunk_missing)
         self._chunk_count += 1
-        
+
         # Reset for next chunk
         self._current_chunk_missing = 0
         self._current_chunk_rows = 0
 
     def finalize(
-        self, chunk_metadata: Optional[List[Tuple[int, int, int]]] = None
+        self, chunk_metadata: list[tuple[int, int, int]] | None = None
     ) -> NumericSummary:
         """Finalize accumulator and return comprehensive summary statistics.
 
@@ -582,7 +582,7 @@ class NumericAccumulator:
             dtype_suggestion=dtype_suggestion,
         )
 
-    def _compute_quantiles(self, values: List[float]) -> dict[str, float]:
+    def _compute_quantiles(self, values: list[float]) -> dict[str, float]:
         """Compute quantiles from sample values using optimized algorithms.
 
         Args:
@@ -650,7 +650,7 @@ class NumericAccumulator:
         jb = n * (skew**2 / 6 + kurtosis**2 / 24)
         return float(jb)
 
-    def get_performance_metrics(self) -> Optional[PerformanceMetrics]:
+    def get_performance_metrics(self) -> PerformanceMetrics | None:
         """Get performance metrics for production monitoring.
 
         Returns:
@@ -719,7 +719,7 @@ class NumericAccumulator:
 
     def _compute_dtype_suggestion(
         self, min_val: float, max_val: float, int_like: bool
-    ) -> Optional[DtypeSuggestion]:
+    ) -> DtypeSuggestion | None:
         """Compute advisory dtype suggestion based on observed data range.
 
         Args:
@@ -769,7 +769,7 @@ class NumericAccumulator:
 
         # float64 → float32 if range fits
         if current == "float64" and not int_like:
-            f32_max = 3.4028235e+38
+            f32_max = 3.4028235e38
             if abs(min_val) <= f32_max and abs(max_val) <= f32_max:
                 return DtypeSuggestion(
                     current_dtype=self._dtype_str,
@@ -800,7 +800,7 @@ class NumericAccumulator:
     @staticmethod
     def _smallest_int_dtype(
         min_val: float, max_val: float, nullable: bool
-    ) -> Optional[str]:
+    ) -> str | None:
         """Find the smallest integer dtype that can hold the observed range.
 
         Args:
@@ -811,7 +811,12 @@ class NumericAccumulator:
         Returns:
             Dtype string or None if no downcasting is possible
         """
-        if math.isnan(min_val) or math.isnan(max_val) or math.isinf(min_val) or math.isinf(max_val):
+        if (
+            math.isnan(min_val)
+            or math.isnan(max_val)
+            or math.isinf(min_val)
+            or math.isinf(max_val)
+        ):
             return None
 
         # Use pandas nullable types when there are missing values
@@ -839,7 +844,7 @@ class NumericAccumulator:
 
     def _compute_confidence_interval(
         self, mean: float, se: float, n: int
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Compute 95% confidence interval for the mean.
 
         Args:
@@ -864,8 +869,8 @@ class NumericAccumulator:
         return mean - margin_of_error, mean + margin_of_error
 
     def _compute_granularity(
-        self, values: List[float]
-    ) -> Tuple[Optional[float], Optional[int]]:
+        self, values: list[float]
+    ) -> tuple[float | None, int | None]:
         """Compute granularity analysis of the data.
 
         Args:
@@ -920,7 +925,7 @@ class NumericAccumulator:
 
         return float(gran_step), decimal_places
 
-    def _compute_heaping_percentage(self, values: List[float]) -> float:
+    def _compute_heaping_percentage(self, values: list[float]) -> float:
         """Compute heaping percentage (percentage of values ending in 0 or 5).
 
         Args:

@@ -7,8 +7,9 @@ optimized for big data processing with vectorized operations and comprehensive e
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, Optional, Sequence
+from typing import Any
 
 import numpy as np
 
@@ -42,7 +43,7 @@ class BooleanAccumulator:
     on large datasets while maintaining reliability and comprehensive error handling.
     """
 
-    def __init__(self, name: str, config: Optional[BooleanConfig] = None):
+    def __init__(self, name: str, config: BooleanConfig | None = None):
         """Initialize boolean accumulator.
 
         Args:
@@ -103,7 +104,7 @@ class BooleanAccumulator:
             values: Numpy array of values
         """
         # Create masks for different value types
-        none_mask = values == None
+        none_mask = np.array([v is None for v in values])
         nan_mask = np.array([isinstance(v, float) and math.isnan(v) for v in values])
         missing_mask = none_mask | nan_mask
 

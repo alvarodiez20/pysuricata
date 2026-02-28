@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from .card_base import CardRenderer, QualityAssessor, TableBuilder
 from .card_config import DEFAULT_CAT_CONFIG, DEFAULT_CHART_DIMS
 from .card_types import BarData, CategoricalStats, QualityFlags
+from .format_utils import ordinal_number
 
 
 class CategoricalCardRenderer(CardRenderer):
@@ -321,7 +322,13 @@ class CategoricalCardRenderer(CardRenderer):
         ]
 
         for i, (label, c, p, val) in enumerate(
-            zip(bar_data.labels, bar_data.counts, bar_data.percentages, bar_data.values)
+            zip(
+                bar_data.labels,
+                bar_data.counts,
+                bar_data.percentages,
+                bar_data.values,
+                strict=False,
+            )
         ):
             y = margin_top + i * (bar_h + bar_gap)
             x0 = margin_left
@@ -548,7 +555,7 @@ class CategoricalCardRenderer(CardRenderer):
             pct = (int(count) / total_nonnull) * 100.0 if total_nonnull else 0.0
 
             # Add ranking indicator for top values
-            rank_icon = self._ordinal_number(i + 1)
+            rank_icon = ordinal_number(i + 1)
 
             # Format categorical value with proper escaping
             formatted_value = self.safe_html_escape(str(value))
@@ -570,20 +577,6 @@ class CategoricalCardRenderer(CardRenderer):
             f"<tbody>{body}</tbody>"
             "</table>"
         )
-
-    def _ordinal_number(self, n: int) -> str:
-        """Convert a number to its ordinal form with superscript suffix (1ˢᵗ, 2ⁿᵈ, 3ʳᵈ, 4ᵗʰ, etc.)"""
-        # Keep the number normal size, only make the suffix superscript
-        number_str = str(n)
-
-        # Add ordinal suffix (only the suffix is superscript)
-        if 10 <= n % 100 <= 20:
-            suffix = "ᵗʰ"
-        else:
-            suffix_map = {1: "ˢᵗ", 2: "ⁿᵈ", 3: "ʳᵈ"}
-            suffix = suffix_map.get(n % 10, "ᵗʰ")
-
-        return f"{number_str}{suffix}"
 
     def _build_missing_values_table(
         self, stats: CategoricalStats, miss_pct: float

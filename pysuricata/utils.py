@@ -1,5 +1,7 @@
 import base64
+import glob
 import os
+from functools import lru_cache
 
 
 def load_template(template_path: str) -> str:
@@ -12,7 +14,7 @@ def load_template(template_path: str) -> str:
     Returns:
         str: The content of the HTML template.
     """
-    with open(template_path, "r", encoding="utf-8") as f:
+    with open(template_path, encoding="utf-8") as f:
         return f.read()
 
 
@@ -20,18 +22,40 @@ def load_css(css_path: str) -> str:
     """
     Load a CSS file and return its content wrapped in a <style> tag.
     Optimized for performance - no @import resolution needed.
-    
+
     Args:
         css_path (str): The file path to the CSS file.
-        
+
     Returns:
         str: A string with the CSS content wrapped in a <style> tag, or an empty string if the file is not found.
     """
     if os.path.exists(css_path):
-        with open(css_path, "r", encoding="utf-8") as f:
+        with open(css_path, encoding="utf-8") as f:
             css_content = f.read()
         return f"<style>{css_content}</style>"
     return ""
+
+
+@lru_cache(maxsize=4)
+def load_css_dir(css_dir: str) -> str:
+    """Read _*.css partials from a directory, concatenate in sorted order, wrap in <style>.
+
+    Result is cached so repeated calls (e.g. generating multiple reports) pay no I/O cost.
+
+    Args:
+        css_dir: Path to the directory containing _*.css partial files.
+
+    Returns:
+        A string with the concatenated CSS wrapped in a <style> tag,
+        or an empty string if no partials are found.
+    """
+    parts = []
+    for path in sorted(glob.glob(os.path.join(css_dir, "_*.css"))):
+        with open(path, encoding="utf-8") as f:
+            parts.append(f.read())
+    if not parts:
+        return ""
+    return f"<style>{''.join(parts)}</style>"
 
 
 def embed_image(
@@ -86,6 +110,6 @@ def load_script(script_path: str) -> str:
         str: The JavaScript content as a string, or an empty string if the file is not found.
     """
     if os.path.exists(script_path):
-        with open(script_path, "r", encoding="utf-8") as f:
+        with open(script_path, encoding="utf-8") as f:
             return f.read()
     return ""

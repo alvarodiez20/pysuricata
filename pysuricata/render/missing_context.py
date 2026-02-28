@@ -7,13 +7,11 @@ missing values views (Option B).
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
-
 
 def build_missing_values_context(
     current_column: str,
-    per_column_chunk_metadata: Optional[Dict[str, List[Tuple[int, int, int]]]],
-    all_column_names: List[str],
+    per_column_chunk_metadata: dict[str, list[tuple[int, int, int]]] | None,
+    all_column_names: list[str],
 ) -> str:
     """Build context and navigation for a column's missing values section.
 
@@ -84,7 +82,7 @@ def build_missing_values_context(
     return context_html
 
 
-def _build_navigation_buttons(prev_col: Optional[str], next_col: Optional[str]) -> str:
+def _build_navigation_buttons(prev_col: str | None, next_col: str | None) -> str:
     """Build previous/next navigation buttons.
 
     Args:
@@ -101,8 +99,8 @@ def _build_navigation_buttons(prev_col: Optional[str], next_col: Optional[str]) 
         prev_col_id = safe_col_id(prev_col)
         prev_display = prev_col if len(prev_col) <= 20 else prev_col[:17] + "..."
         prev_button = f"""
-        <button class="nav-column-btn prev" 
-                onclick="document.getElementById('{prev_col_id}').scrollIntoView({{behavior: 'smooth', block: 'center'}}); 
+        <button class="nav-column-btn prev"
+                onclick="document.getElementById('{prev_col_id}').scrollIntoView({{behavior: 'smooth', block: 'center'}});
                          document.getElementById('{prev_col_id}').querySelector('.details-toggle').click();"
                 title="Previous column with missing values: {prev_col}">
             ← <code>{prev_display}</code>
@@ -117,7 +115,7 @@ def _build_navigation_buttons(prev_col: Optional[str], next_col: Optional[str]) 
         next_display = next_col if len(next_col) <= 20 else next_col[:17] + "..."
         next_button = f"""
         <button class="nav-column-btn next"
-                onclick="document.getElementById('{next_col_id}').scrollIntoView({{behavior: 'smooth', block: 'center'}}); 
+                onclick="document.getElementById('{next_col_id}').scrollIntoView({{behavior: 'smooth', block: 'center'}});
                          document.getElementById('{next_col_id}').querySelector('.details-toggle').click();"
                 title="Next column with missing values: {next_col}">
             <code>{next_display}</code> →

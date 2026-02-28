@@ -272,21 +272,21 @@ class DatetimeAccumulator:
         self.name = name
         self.count = 0
         self.missing = 0
-        
+
         # Range tracking
         self.min_ts = None
         self.max_ts = None
-        
+
         # Distribution counters
         self.hour_counts = [0] * 24
         self.weekday_counts = [0] * 7
         self.month_counts = [0] * 12
-        
+
         # Monotonicity tracking
         self.prev_ts = None
         self.monotonic_inc = 0
         self.monotonic_dec = 0
-    
+
     def update(self, values: pd.Series):
         """Update with chunk of timestamps"""
         # Convert to UTC
@@ -294,7 +294,7 @@ class DatetimeAccumulator:
         # Count by hour/day/month
         # Track monotonicity
         pass
-    
+
     def finalize(self) -> DatetimeSummary:
         """Compute final statistics"""
         # Compute span
@@ -439,5 +439,3 @@ Timestamps > current time:
 - [Numeric Analysis](numeric.md) - For temporal metrics as numbers
 - [Data Quality](../analytics/quality.md) - Quality checks
 - [Configuration Guide](../configuration.md) - All parameters
-
-

@@ -1,0 +1,107 @@
+/* =============================
+   DTYPE PIE CHART SVG (interactive with custom tooltips)
+   Full pie slices from center to edge with lighter inner overlay
+   ============================= */
+#pysuricata-report .dtype-donut-svg {
+  display: block;
+  margin: 8px auto;
+  cursor: pointer;
+  border-radius: 50%;
+  overflow: visible;
+}
+
+/* Background circle - ensures complete appearance */
+#pysuricata-report .donut-background {
+  fill: #f0f0f0;
+  opacity: 0.15;
+}
+
+#pysuricata-report:not(.light) .donut-background {
+  fill: #555;
+  opacity: 0.2;
+}
+
+/* Segment hover effects - highlight on hover */
+#pysuricata-report .segment-path {
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+#pysuricata-report .segment-path:hover {
+  opacity: 0.85;
+  filter: brightness(1.15);
+  stroke: rgba(255, 255, 255, 0.6);
+  stroke-width: 2;
+}
+
+/* Dark mode - adjust stroke color for hover */
+#pysuricata-report:not(.light) .segment-path:hover {
+  stroke: rgba(255, 255, 255, 0.4);
+}
+
+/* Inner segments - subtle overlay matching original CSS exactly */
+#pysuricata-report .segment-inner {
+  fill: rgba(0, 0, 0, 0.06);
+  pointer-events: none;
+  transition: fill 0.2s ease;
+}
+
+#pysuricata-report:not(.light) .segment-inner {
+  fill: rgba(255, 255, 255, 0.08);
+}
+
+/* Center circle - subtle background color */
+#pysuricata-report .donut-center {
+  fill: var(--chip-bg-light);
+}
+
+#pysuricata-report:not(.light) .donut-center {
+  fill: var(--chip-bg-dark);
+}
+
+/* Custom Donut Chart Tooltip - Matches Histogram Style */
+#pysuricata-report .donut-tooltip {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+  display: none;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(20, 20, 20, 0.92);
+  color: #fff;
+  font-size: .85rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
+}
+
+#pysuricata-report.light .donut-tooltip {
+  background: rgba(255, 255, 255, 0.96);
+  color: #111;
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+#pysuricata-report .donut-tooltip .type-label {
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+#pysuricata-report .donut-tooltip .type-stats {
+  font-size: 0.8rem;
+}
+
+#pysuricata-report .donut-tooltip .line {
+  margin: 2px 0;
+}
+
+#pysuricata-report .donut-tooltip .muted {
+  opacity: .75;
+}
+
+/* Legacy: Hide old dtype-legend if it exists */
+#pysuricata-report .dtype-legend {
+  display: none !important;
+}

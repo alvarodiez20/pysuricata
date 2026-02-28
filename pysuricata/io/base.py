@@ -3,13 +3,13 @@ from __future__ import annotations
 import time
 import warnings
 from abc import ABC, abstractmethod
+from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Iterator, Optional, Protocol, Sequence, Union
+from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
-    import pandas as pd
-    import polars as pl
+    pass
 
 # Type aliases for better readability
 FrameLike = Any  # engine-native frame (e.g., pandas.DataFrame)
@@ -29,7 +29,7 @@ class ChunkingConfig:
     """Configuration for chunking operations."""
 
     chunk_size: int = 200_000
-    columns: Optional[Sequence[str]] = None
+    columns: Sequence[str] | None = None
     force_in_memory: bool = False
     memory_limit_mb: int = 1024
 
@@ -279,7 +279,6 @@ class PolarsChunkingStrategy(ChunkingStrategy):
         self, data: Any, config: ChunkingConfig
     ) -> Iterator[DataFrameProtocol]:
         """Chunk eager polars DataFrame."""
-        import polars as pl
 
         step = config.chunk_size
         n = data.height
@@ -300,7 +299,6 @@ class PolarsChunkingStrategy(ChunkingStrategy):
         self, data: Any, config: ChunkingConfig
     ) -> Iterator[DataFrameProtocol]:
         """Chunk lazy polars DataFrame."""
-        import polars as pl
 
         lf = data
         if config.columns is not None:
@@ -352,7 +350,7 @@ class ChunkingEngine:
         ]
 
     def chunk_data(
-        self, data: Any, config: Optional[ChunkingConfig] = None
+        self, data: Any, config: ChunkingConfig | None = None
     ) -> Iterator[DataFrameProtocol]:
         """
         Main entry point for chunking data.
@@ -382,7 +380,7 @@ class ChunkingEngine:
         )
 
     def chunk_data_with_metrics(
-        self, data: Any, config: Optional[ChunkingConfig] = None
+        self, data: Any, config: ChunkingConfig | None = None
     ) -> tuple[Iterator[DataFrameProtocol], ChunkingMetrics]:
         """
         Chunk data and return metrics.
@@ -441,10 +439,10 @@ _default_engine = ChunkingEngine()
 
 
 def iter_chunks(
-    data: Union[FrameLike, Iterator[FrameLike]],
+    data: FrameLike | Iterator[FrameLike],
     *,
-    chunk_size: Optional[int] = 200_000,
-    columns: Optional[Sequence[str]] = None,
+    chunk_size: int | None = 200_000,
+    columns: Sequence[str] | None = None,
 ) -> Iterator[FrameLike]:
     """
     Yield DataFrame chunks from in-memory objects only.
@@ -469,8 +467,8 @@ def iter_chunks(
 def chunk_data(
     data: Any,
     *,
-    chunk_size: Optional[int] = None,
-    columns: Optional[Sequence[str]] = None,
+    chunk_size: int | None = None,
+    columns: Sequence[str] | None = None,
     force_in_memory: bool = False,
     memory_limit_mb: int = 1024,
 ) -> Iterator[DataFrameProtocol]:
@@ -499,8 +497,8 @@ def chunk_data(
 def chunk_data_with_metrics(
     data: Any,
     *,
-    chunk_size: Optional[int] = None,
-    columns: Optional[Sequence[str]] = None,
+    chunk_size: int | None = None,
+    columns: Sequence[str] | None = None,
     force_in_memory: bool = False,
     memory_limit_mb: int = 1024,
 ) -> tuple[Iterator[DataFrameProtocol], ChunkingMetrics]:

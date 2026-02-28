@@ -2,16 +2,11 @@
 
 import html as _html
 import math
-from typing import Any, List, Optional, Sequence, Tuple, Union
-
-import numpy as np
 
 from .card_config import (
     DEFAULT_CSS_CLASSES,
     DEFAULT_QUALITY_THRESHOLDS,
     EPSILON,
-    MAD_OUTLIER_THRESHOLD,
-    MAD_SCALE_FACTOR,
 )
 from .card_types import QualityFlags
 from .format_utils import fmt_compact as _fmt_compact
@@ -19,7 +14,6 @@ from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
 from .format_utils import fmt_num as _fmt_num
 from .format_utils import human_bytes as _human_bytes
 from .svg_utils import _format_pow10_label as _fmt_pow10_label
-from .svg_utils import fmt_tick as _fmt_tick
 from .svg_utils import nice_log_ticks_from_log10 as _nice_log_ticks_from_log10
 from .svg_utils import nice_ticks as _nice_ticks
 from .svg_utils import safe_col_id as _safe_col_id
@@ -41,11 +35,11 @@ class CardRenderer:
         """Generate safe column ID for HTML."""
         return _safe_col_id(name)
 
-    def format_number(self, value: Union[int, float]) -> str:
+    def format_number(self, value: int | float) -> str:
         """Format number for display."""
         return _fmt_num(value)
 
-    def format_compact(self, value: Union[int, float]) -> str:
+    def format_compact(self, value: int | float) -> str:
         """Format number in compact notation."""
         return _fmt_compact(value)
 
@@ -241,7 +235,7 @@ class TableBuilder:
     def __init__(self, css_classes=None):
         self.css = css_classes or DEFAULT_CSS_CLASSES
 
-    def build_key_value_table(self, data: List[Tuple[str, str, Optional[str]]]) -> str:
+    def build_key_value_table(self, data: list[tuple[str, str, str | None]]) -> str:
         """Build a key-value table.
 
         Args:
@@ -353,7 +347,7 @@ class TableBuilder:
         )
 
 
-def format_hist_bin_labels(x0: float, x1: float, scale: str) -> Tuple[str, str]:
+def format_hist_bin_labels(x0: float, x1: float, scale: str) -> tuple[str, str]:
     """Return compact labels for a histogram bin range with scientific notation for large numbers."""
     if scale == "log":
         try:
@@ -397,7 +391,7 @@ def compute_x_ticks_and_labels(x_min: float, x_max: float, scale: str):
             # Take more ticks if available
             x_ticks = ticks_all[: min(3, len(ticks_all))]
 
-        lbl_map = {t: lbl for t, lbl in zip(ticks_all, labels_all)}
+        lbl_map = {t: lbl for t, lbl in zip(ticks_all, labels_all, strict=False)}
         return (
             x_ticks,
             1.0,

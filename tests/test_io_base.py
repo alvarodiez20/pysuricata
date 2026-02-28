@@ -1,8 +1,7 @@
 """Tests for the io.base module."""
 
 import warnings
-from typing import Iterator, List
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock
 
 import pytest
 

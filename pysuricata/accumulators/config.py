@@ -7,7 +7,6 @@ enabling fine-tuned control over memory usage, accuracy, and performance charact
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 
 @dataclass
@@ -168,7 +167,7 @@ class AccumulatorConfig:
     boolean: BooleanConfig = field(default_factory=BooleanConfig)
     enable_performance_tracking: bool = False
     enable_error_recovery: bool = True
-    max_memory_mb: Optional[int] = None
+    max_memory_mb: int | None = None
 
     @classmethod
     def from_legacy_config(cls, cfg) -> AccumulatorConfig:

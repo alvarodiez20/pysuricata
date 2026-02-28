@@ -6,13 +6,17 @@ with comprehensive error handling, validation, and performance optimizations for
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from .config import CategoricalConfig
 from .sketches import KMV, MisraGries, ReservoirSampler
+
+if TYPE_CHECKING:
+    from .numeric import DtypeSuggestion
 
 
 @dataclass
@@ -27,12 +31,12 @@ class CategoricalSummary:
     count: int
     missing: int
     unique_est: int
-    top_items: List[Tuple[str, int]]
+    top_items: list[tuple[str, int]]
     approx: bool
     # extras for alignment
     mem_bytes: int = 0
-    avg_len: Optional[float] = None
-    len_p90: Optional[int] = None
+    avg_len: float | None = None
+    len_p90: int | None = None
     empty_zero: int = 0
     case_variants_est: int = 0
     trim_variants_est: int = 0
@@ -43,7 +47,7 @@ class CategoricalSummary:
     most_common_ratio: float = 0.0
     diversity_ratio: float = 0.0
     # Advisory dtype suggestion
-    dtype_suggestion: Optional["DtypeSuggestion"] = None
+    dtype_suggestion: DtypeSuggestion | None = None
 
 
 class CategoricalAccumulator:
@@ -54,7 +58,7 @@ class CategoricalAccumulator:
     processing massive datasets efficiently.
     """
 
-    def __init__(self, name: str, config: Optional[CategoricalConfig] = None):
+    def __init__(self, name: str, config: CategoricalConfig | None = None):
         """Initialize categorical accumulator.
 
         Args:
@@ -113,7 +117,7 @@ class CategoricalAccumulator:
         return self._uniques.estimate()
 
     @property
-    def avg_len(self) -> Optional[float]:
+    def avg_len(self) -> float | None:
         """Get average string length for compatibility."""
         if self._len_n > 0:
             return self._len_sum / self._len_n
@@ -131,6 +135,7 @@ class CategoricalAccumulator:
         # Convert to pandas Series for vectorized operations
         try:
             import pandas as pd
+
             s = pd.Series(arr) if not isinstance(arr, pd.Series) else arr
         except ImportError:
             # Fallback to original implementation if pandas not available
@@ -148,7 +153,7 @@ class CategoricalAccumulator:
 
         # Get valid (non-missing) values
         valid_values = s[~missing_mask]
-        
+
         if len(valid_values) == 0:
             return
 
@@ -227,22 +232,22 @@ class CategoricalAccumulator:
 
     def _update_sketches(self, value: str) -> None:
         """Update sketching algorithms with a single value.
-        
+
         Args:
             value: String value to add to sketches
         """
         self._uniques.add(value)
         self._topk.add(value)
-        
+
         if self.config.enable_case_variants and self._uniques_lower:
             self._uniques_lower.add(value.lower())
-        
+
         if self.config.enable_trim_variants and self._uniques_strip:
             self._uniques_strip.add(value.strip())
 
     def _update_length_stats(self, value: str) -> None:
         """Update string length statistics.
-        
+
         Args:
             value: String value to process
         """
@@ -254,7 +259,7 @@ class CategoricalAccumulator:
 
     def _update_special_values(self, value: str) -> None:
         """Update special value tracking.
-        
+
         Args:
             value: String value to check
         """
@@ -409,7 +414,7 @@ class CategoricalAccumulator:
             dtype_suggestion=dtype_suggestion,
         )
 
-    def _compute_dtype_suggestion(self) -> Optional["DtypeSuggestion"]:
+    def _compute_dtype_suggestion(self) -> DtypeSuggestion | None:
         """Compute advisory dtype suggestion for categorical columns.
 
         Returns:
@@ -435,8 +440,8 @@ class CategoricalAccumulator:
         return None
 
     def _calculate_percentile(
-        self, values: List[float], percentile: float
-    ) -> Optional[int]:
+        self, values: list[float], percentile: float
+    ) -> int | None:
         """Calculate percentile of values efficiently.
 
         Args:
@@ -463,7 +468,7 @@ class CategoricalAccumulator:
         d1 = sorted_values[c] * (k - f)
         return int(d0 + d1)
 
-    def _calculate_entropy(self, top_items: List[Tuple[str, int]]) -> float:
+    def _calculate_entropy(self, top_items: list[tuple[str, int]]) -> float:
         """Calculate Shannon entropy of the distribution.
 
         Args:
@@ -487,7 +492,7 @@ class CategoricalAccumulator:
 
         return entropy
 
-    def _calculate_gini_impurity(self, top_items: List[Tuple[str, int]]) -> float:
+    def _calculate_gini_impurity(self, top_items: list[tuple[str, int]]) -> float:
         """Calculate Gini impurity of the distribution.
 
         Args:
@@ -510,7 +515,7 @@ class CategoricalAccumulator:
 
         return gini
 
-    def _calculate_most_common_ratio(self, top_items: List[Tuple[str, int]]) -> float:
+    def _calculate_most_common_ratio(self, top_items: list[tuple[str, int]]) -> float:
         """Calculate ratio of the most common value.
 
         Args:

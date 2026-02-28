@@ -218,10 +218,13 @@ class SVGHistogramRenderer:
         )
 
         # Generate SVG
+        safe_title = self.safe_html_escape(title) if title else "data"
         svg_parts = [
             f'<svg class="hist-svg" width="{self.config.width}" height="{self.config.height}" '
             f'viewBox="0 0 {self.config.width} {self.config.height}" '
-            f'role="img" aria-label="Histogram for {title}">'
+            f'role="img" aria-labelledby="hist-title-{col_id}">',
+            f'<title id="hist-title-{col_id}">Histogram for {safe_title}</title>',
+            f"<desc>Distribution chart with {len(hist_data.edges) - 1 if len(hist_data.edges) > 0 else 0} bins</desc>",
         ]
 
         # Add grid
@@ -250,10 +253,13 @@ class SVGHistogramRenderer:
 
     def _render_empty_histogram(self, title: str) -> str:
         """Render an empty histogram when no data is available."""
+        safe_title = self.safe_html_escape(title) if title else "data"
         svg_parts = [
             f'<svg class="hist-svg" width="{self.config.width}" height="{self.config.height}" '
             f'viewBox="0 0 {self.config.width} {self.config.height}" '
-            f'role="img" aria-label="Empty histogram for {title}">'
+            f'role="img" aria-labelledby="hist-empty-title">',
+            f'<title id="hist-empty-title">Empty histogram for {safe_title}</title>',
+            "<desc>No data available for visualization</desc>",
         ]
 
         # Add "No data" message
@@ -309,7 +315,7 @@ class SVGHistogramRenderer:
         bar_width = inner_width / len(hist_data.counts)
 
         for i, (count, center) in enumerate(
-            zip(hist_data.counts, hist_data.bin_centers)
+            zip(hist_data.counts, hist_data.bin_centers, strict=False)
         ):
             if count == 0:
                 continue
@@ -454,7 +460,7 @@ class SVGHistogramRenderer:
             tick_labels = [self._format_tick_label_standardized(v) for v in tick_values]
 
         # Render ticks and labels
-        for tick_val, tick_label in zip(tick_values, tick_labels):
+        for tick_val, tick_label in zip(tick_values, tick_labels, strict=False):
             # Calculate position - bin_centers are always in linear space
             # (for log scale, they were converted back in _prepare_histogram_data)
             val_min = hist_data.bin_centers.min()

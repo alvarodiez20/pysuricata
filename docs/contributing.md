@@ -11,7 +11,7 @@ Thank you for considering contributing to PySuricata! This guide will help you g
 
 ### Prerequisites
 
-- Python 3.10+ 
+- Python 3.10+
 - `uv` package manager (recommended) or `pip`
 - Git
 
@@ -79,13 +79,13 @@ Example:
 ```python
 def compute_mean(values: np.ndarray) -> float:
     """Compute arithmetic mean of values.
-    
+
     Args:
         values: Array of numeric values
-        
+
     Returns:
         Mean value
-        
+
     Raises:
         ValueError: If array is empty
     """
@@ -194,13 +194,13 @@ Test individual functions/classes in isolation.
 def test_welford_mean():
     """Test Welford mean computation"""
     from pysuricata.accumulators.algorithms import StreamingMoments
-    
+
     moments = StreamingMoments()
     values = [1.0, 2.0, 3.0, 4.0, 5.0]
-    
+
     for v in values:
         moments.update(np.array([v]))
-    
+
     result = moments.finalize()
     assert abs(result["mean"] - 3.0) < 1e-10
 ```
@@ -214,7 +214,7 @@ def test_full_profile():
     """Test end-to-end profiling"""
     df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})
     report = profile(df)
-    
+
     assert report.html is not None
     assert len(report.stats["columns"]) == 2
 ```
@@ -233,10 +233,10 @@ def test_welford_matches_numpy(values):
     moments = StreamingMoments()
     for v in values:
         moments.update(np.array([v]))
-    
+
     result = moments.finalize()
     expected = np.mean(values)
-    
+
     assert abs(result["mean"] - expected) < 1e-6
 ```
 
@@ -272,11 +272,11 @@ pysuricata/
 class NumericAccumulator:
     def __init__(self, ...):
         self._new_stat = 0  # Add state
-    
+
     def update(self, values):
         # Update new statistic
         self._new_stat += some_computation(values)
-    
+
     def finalize(self):
         return NumericSummary(
             ...

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysuricata"
-version = "0.0.16"
+version = "0.0.17"
 description = "A lightweight EDA tool inspired by the curious nature of suricates. Built just for fun 🔬."
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
@@ -106,13 +106,21 @@ select = [
 ]
 ignore = [
     "E501",  # line too long, handled by black
+    "E402",  # module-level import not at top — intentional in __init__, config, render
+    "E731",  # lambda assignment — used for legacy aliases in format_utils
+    "E741",  # ambiguous variable name — used in list comprehensions (l in labels)
     "B008",  # do not perform function calls in argument defaults
+    "B028",  # stacklevel in warnings — render modules use default
+    "C416",  # unnecessary dict comprehension — readability preference
     "C901",  # too complex
+    "UP007", # Union type hint — keep for Python 3.10 compat
+    "UP038", # isinstance with tuple — deprecated rule, tuple form is valid
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"tests/*" = ["S101"]
+"tests/*" = ["S101", "B007", "F841"]
+"pysuricata/render/*" = ["B007", "F841"]  # computed-but-unused vars kept for readability
 
 [tool.ruff.lint.isort]
 known-first-party = ["pysuricata"]

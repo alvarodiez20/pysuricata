@@ -275,21 +275,21 @@ from pysuricata import summarize
 def validate_data_quality(df):
     """Validate data quality, raise if fails"""
     stats = summarize(df)
-    
+
     # Check missing data
     missing_pct = stats["dataset"]["missing_cells_pct"]
     assert missing_pct < 5.0, f"Too many missing values: {missing_pct:.1f}%"
-    
+
     # Check duplicates
     dup_pct = stats["dataset"]["duplicate_rows_pct_est"]
     assert dup_pct < 1.0, f"Too many duplicates: {dup_pct:.1f}%"
-    
+
     # Check specific columns
     for col in ["customer_id", "transaction_id"]:
         col_stats = stats["columns"][col]
         assert col_stats["distinct"] == col_stats["count"], \
             f"{col} has duplicates"
-    
+
     print("✓ Data quality checks passed")
 
 # Use in pipeline
@@ -374,7 +374,7 @@ report.save_json("report.json")
 import json
 with open("report.json") as f:
     stats = json.load(f)
-    
+
 # Custom visualization
 import matplotlib.pyplot as plt
 missing = {col: s["missing_pct"] for col, s in stats["columns"].items()}
@@ -418,7 +418,3 @@ for col in df_train.columns:
 ---
 
 *Last updated: 2025-10-12*
-
-
-
-

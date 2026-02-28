@@ -64,4 +64,3 @@ def test_profile_polars_lazyframe_windowed():
     rep = profile(lf, config=ProfileConfig(compute=ComputeOptions(chunk_size=17)))
     assert rep.html and isinstance(rep.html, str)
     assert isinstance(rep.stats, dict)
-

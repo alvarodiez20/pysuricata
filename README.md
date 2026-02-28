@@ -11,9 +11,9 @@
 
 <div align="center">
   <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/pysuricata/static/images/logo_suricata_transparent.png" alt="PySuricata Logo" width="300">
-  
+
   <h3>Exploratory Data Analysis for Python, Built on Streaming Algorithms</h3>
-  
+
   <p>
     <a href="#quick-start">Quick Start</a> •
     <a href="https://alvarodiez20.github.io/pysuricata/">Documentation</a> •
@@ -34,13 +34,18 @@ Data is processed in chunks using streaming algorithms, so memory usage stays bo
 ### Installation
 
 ```bash
+# using uv (recommended)
+uv add pysuricata
+
+# or using pip
 pip install pysuricata
 ```
 
-With polars support:
+With polars support (optional):
 
 ```bash
-pip install pysuricata[polars]
+uv add pysuricata[polars]
+# or: pip install pysuricata[polars]
 ```
 
 ### Generate a Report
@@ -63,7 +68,7 @@ report.save_html("titanic_report.html")
 - **Streaming architecture** — Data is processed in configurable chunks, keeping memory bounded. Useful for datasets that don't fit in RAM.
 - **Pandas and Polars** — Works natively with `pandas.DataFrame`, `polars.DataFrame`, and `polars.LazyFrame`.
 - **Self-contained HTML** — Single file with inline CSS, JS, and SVG charts. No external assets needed.
-- **Configurable** — Control chunk sizes, sample sizes, sketch parameters, and correlation thresholds via `ReportConfig`.
+- **Configurable** — Control chunk sizes, sample sizes, sketch parameters, and correlation thresholds via `ProfileConfig` (aliased as `ReportConfig`).
 - **Reproducible** — Seeded random sampling produces deterministic results across runs.
 - **CLI tool** — Profile datasets from the command line.
 

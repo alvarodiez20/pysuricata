@@ -1,7 +1,5 @@
 """DateTime card rendering functionality."""
 
-from typing import Optional
-
 import numpy as np
 
 try:  # optional
@@ -212,7 +210,7 @@ class DateTimeCardRenderer(CardRenderer):
 
         return self.table_builder.build_key_value_table(data)
 
-    def _format_timestamp(self, ts: Optional[int], multiline: bool = True) -> str:
+    def _format_timestamp(self, ts: int | None, multiline: bool = True) -> str:
         """Format a UTC nanoseconds epoch as readable datetime string.
 
         Args:
@@ -281,9 +279,9 @@ class DateTimeCardRenderer(CardRenderer):
 
     def _build_timeline_svg(
         self,
-        sample: Optional[list[int]],
-        tmin: Optional[int],
-        tmax: Optional[int],
+        sample: list[int] | None,
+        tmin: int | None,
+        tmax: int | None,
         column_name: str,
         *,
         bins: int = 60,
@@ -324,7 +322,8 @@ class DateTimeCardRenderer(CardRenderer):
 
             centers = (edges[:-1] + edges[1:]) / 2.0
             pts = " ".join(
-                f"{sx(x):.2f},{sy(float(c)):.2f}" for x, c in zip(centers, counts)
+                f"{sx(x):.2f},{sy(float(c)):.2f}"
+                for x, c in zip(centers, counts, strict=False)
             )
             y_ticks, _ = _nice_ticks(0, y_max, 5)
 

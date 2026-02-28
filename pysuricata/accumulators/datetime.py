@@ -10,7 +10,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -30,18 +30,18 @@ class DatetimeSummary:
     name: str
     count: int
     missing: int
-    min_ts: Optional[int]
-    max_ts: Optional[int]
-    by_hour: List[int]  # 24 counts
-    by_dow: List[int]  # 7 counts, Monday=0
-    by_month: List[int]  # 12 counts, Jan=1 index => store 12-length
+    min_ts: int | None
+    max_ts: int | None
+    by_hour: list[int]  # 24 counts
+    by_dow: list[int]  # 7 counts, Monday=0
+    by_month: list[int]  # 12 counts, Jan=1 index => store 12-length
     by_year: dict[int, int]  # Dynamic year counts
     # v2 additions
     dtype_str: str = "datetime"
     mono_inc: bool = False
     mono_dec: bool = False
     mem_bytes: int = 0
-    sample_ts: Optional[List[int]] = None
+    sample_ts: list[int] | None = None
     sample_scale: float = 1.0
     # Temporal analysis
     time_span_days: float = 0.0
@@ -49,12 +49,12 @@ class DatetimeSummary:
     interval_std_seconds: float = 0.0
     weekend_ratio: float = 0.0
     business_hours_ratio: float = 0.0
-    seasonal_pattern: Optional[str] = None
+    seasonal_pattern: str | None = None
     # Source timezone (before UTC conversion)
-    source_timezone: Optional[str] = None
+    source_timezone: str | None = None
     # Missing fields for renderer compatibility
     unique_est: int = 0
-    chunk_metadata: Optional[Sequence[Tuple[int, int, int]]] = None
+    chunk_metadata: Sequence[tuple[int, int, int]] | None = None
 
 
 class DatetimeAccumulator:
@@ -65,7 +65,7 @@ class DatetimeAccumulator:
     processing for large-scale time-series datasets.
     """
 
-    def __init__(self, name: str, config: Optional[DatetimeConfig] = None):
+    def __init__(self, name: str, config: DatetimeConfig | None = None):
         """Initialize datetime accumulator.
 
         Args:
@@ -82,8 +82,8 @@ class DatetimeAccumulator:
         self._mem_bytes = 0
 
         # Temporal bounds for efficient range tracking
-        self._min_ts: Optional[int] = None
-        self._max_ts: Optional[int] = None
+        self._min_ts: int | None = None
+        self._max_ts: int | None = None
 
         # Temporal pattern tracking with pre-allocated arrays
         self.by_hour = [0] * 24
@@ -103,11 +103,11 @@ class DatetimeAccumulator:
         )
 
         # Source timezone (captured before UTC conversion)
-        self._source_timezone: Optional[str] = None
+        self._source_timezone: str | None = None
 
         # Interval tracking for temporal analysis with memory bounds
-        self._intervals: List[float] = []
-        self._last_ts: Optional[int] = None
+        self._intervals: list[float] = []
+        self._last_ts: int | None = None
 
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string and extract timezone metadata.
@@ -138,16 +138,16 @@ class DatetimeAccumulator:
         return self._uniques.estimate()
 
     @property
-    def min_ts(self) -> Optional[int]:
+    def min_ts(self) -> int | None:
         """Get minimum timestamp for compatibility."""
         return self._min_ts
 
     @property
-    def max_ts(self) -> Optional[int]:
+    def max_ts(self) -> int | None:
         """Get maximum timestamp for compatibility."""
         return self._max_ts
 
-    def update(self, arr_ns: Sequence[Optional[int]]) -> None:
+    def update(self, arr_ns: Sequence[int | None]) -> None:
         """Update accumulator with timestamp values in nanoseconds using vectorized processing.
 
         Args:
@@ -300,7 +300,7 @@ class DatetimeAccumulator:
             if len(self._intervals) > 10000:
                 self._intervals = self._intervals[-5000:]
 
-    def _update_fallback(self, arr_ns: Sequence[Optional[int]]) -> None:
+    def _update_fallback(self, arr_ns: Sequence[int | None]) -> None:
         """Fallback processing for problematic timestamps with robust error handling.
 
         Args:
@@ -348,7 +348,9 @@ class DatetimeAccumulator:
         except (ValueError, TypeError):
             pass
 
-    def finalize(self, chunk_metadata: Optional[List[Tuple[int, int, int]]] = None) -> DatetimeSummary:
+    def finalize(
+        self, chunk_metadata: list[tuple[int, int, int]] | None = None
+    ) -> DatetimeSummary:
         """Finalize accumulator and return comprehensive summary statistics.
 
         Returns:
@@ -461,7 +463,7 @@ class DatetimeAccumulator:
 
         return business_ratio
 
-    def _detect_seasonal_pattern(self) -> Optional[str]:
+    def _detect_seasonal_pattern(self) -> str | None:
         """Detect seasonal patterns in the data with advanced analysis.
 
         Returns:

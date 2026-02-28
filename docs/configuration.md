@@ -305,4 +305,3 @@ config.compute.chunk_size = -1  # Invalid
 - [Performance Tips](performance.md) - Optimization strategies
 - [Advanced Features](advanced.md) - Advanced usage patterns
 - [API Reference](api.md) - Complete API documentation
-

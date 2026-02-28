@@ -6,7 +6,6 @@ test cases covering edge cases, configuration options, and integration scenarios
 
 from unittest.mock import Mock
 
-import numpy as np
 import pandas as pd
 import pytest
 

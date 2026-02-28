@@ -1,6 +1,4 @@
-import math
-
-from pysuricata.render.svg_utils import nice_log_ticks_from_log10, _format_pow10_label
+from pysuricata.render.svg_utils import _format_pow10_label, nice_log_ticks_from_log10
 
 
 def test_nice_log_ticks_from_log10_basic_span():
