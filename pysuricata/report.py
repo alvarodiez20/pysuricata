@@ -23,9 +23,11 @@ Example:
 
 from __future__ import annotations
 
+import contextlib
 import logging
 import random as _py_random
 import time
+from collections.abc import Iterator
 from typing import Any
 
 import numpy as np
@@ -79,6 +81,29 @@ class ReportOrchestrator:
         logger = self.config.logger or logging.getLogger(__name__)
         logger.setLevel(self.config.log_level)
         return logger
+
+    @staticmethod
+    @contextlib.contextmanager
+    def _isolated_global_rng() -> Iterator[None]:
+        """Leave the caller's global RNG state exactly as it was found.
+
+        Sampling is seeded from ``config.random_seed`` for reproducibility, and
+        the sketches draw from the process-global numpy and stdlib generators --
+        so seeding necessarily clobbers whatever state the caller had. A notebook
+        that seeds its own experiment and then profiles a frame would silently
+        have its RNG reset. Snapshot on the way in, restore on the way out.
+
+        Note this makes profiling *invisible* to the caller's RNG; it does not
+        make sampling thread-safe. Per-accumulator generators are still required
+        before per-column threading can be reproducible.
+        """
+        np_state = np.random.get_state()
+        py_state = _py_random.getstate()
+        try:
+            yield
+        finally:
+            np.random.set_state(np_state)
+            _py_random.setstate(py_state)
 
     def _setup_random_seeds(self) -> None:
         """Configure random seeds for reproducible results."""
@@ -271,6 +296,12 @@ class ReportOrchestrator:
                     "outliers_iqr_est": s.outliers_iqr,
                     "approx": bool(s.approx),
                     "mem_bytes": s.mem_bytes,
+                    # Correlations are computed and applied before this point, but
+                    # used to reach the HTML report only -- summarize() dropped
+                    # them, so the JSON contract was strictly weaker than the HTML.
+                    "corr_top": [
+                        (str(other), float(r)) for other, r in (s.corr_top or [])
+                    ],
                 }
             elif kind == "categorical":
                 s = acc.finalize()
@@ -324,6 +355,30 @@ class ReportOrchestrator:
         self.logger.info("Report generation complete in %.2fs", elapsed_time)
 
     def build_report(
+        self,
+        source: Any,
+        *,
+        output_file: str | None = None,
+        report_title: str | None = None,
+        return_summary: bool = False,
+        compute_only: bool = False,
+    ) -> str | tuple[str, dict]:
+        """Build a streaming EDA report, leaving the caller's RNG untouched.
+
+        See :meth:`_build_report` for the full description; this wrapper exists
+        only to guarantee the global RNG snapshot is restored even if report
+        generation raises.
+        """
+        with self._isolated_global_rng():
+            return self._build_report(
+                source,
+                output_file=output_file,
+                report_title=report_title,
+                return_summary=return_summary,
+                compute_only=compute_only,
+            )
+
+    def _build_report(
         self,
         source: Any,
         *,

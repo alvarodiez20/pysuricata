@@ -8,13 +8,62 @@ import numpy as np
 class StreamingCorr:
     """Lightweight streaming correlation estimator for numeric columns.
 
-    Maintains pairwise running sums sufficient to compute Pearson correlation
-    at the end without holding full data in memory.
+    Maintains pairwise co-moments (Welford/Chan) rather than raw power sums, so
+    Pearson correlation can be computed at the end without holding the data.
+
+    Raw power sums are the obvious encoding and the wrong one: recovering the
+    variance as ``sx2 - sx*sx/n`` subtracts two nearly equal large numbers. For a
+    column of timestamps-as-int, IDs, or prices near 1e6, those two terms agree
+    to within the last bits of a float64 and the variance collapses to zero or
+    below -- reporting "no correlation" for perfectly correlated data. Centring
+    each batch on its own mean keeps every quantity small and well-conditioned.
     """
 
     def __init__(self, columns: Sequence[str]):
         self.cols = list(columns)
         self.pairs: dict[tuple[str, str], dict[str, float]] = {}
+
+    def _accumulate_pair(
+        self, key: tuple[str, str], x: np.ndarray, y: np.ndarray
+    ) -> None:
+        """Fold one batch of paired observations into the running co-moments."""
+        n_b = float(x.size)
+        if n_b <= 0:
+            return
+
+        mean_x_b = float(np.mean(x))
+        mean_y_b = float(np.mean(y))
+        dx_b = x - mean_x_b
+        dy_b = y - mean_y_b
+        m2x_b = float(np.dot(dx_b, dx_b))
+        m2y_b = float(np.dot(dy_b, dy_b))
+        cxy_b = float(np.dot(dx_b, dy_b))
+
+        st = self.pairs.get(key)
+        if st is None:
+            self.pairs[key] = {
+                "n": n_b,
+                "mean_x": mean_x_b,
+                "mean_y": mean_y_b,
+                "m2x": m2x_b,
+                "m2y": m2y_b,
+                "cxy": cxy_b,
+            }
+            return
+
+        # Chan's pairwise merge, applied to both variances and the covariance.
+        n_a = st["n"]
+        n = n_a + n_b
+        delta_x = mean_x_b - st["mean_x"]
+        delta_y = mean_y_b - st["mean_y"]
+        scale = n_a * n_b / n
+
+        st["m2x"] += m2x_b + delta_x * delta_x * scale
+        st["m2y"] += m2y_b + delta_y * delta_y * scale
+        st["cxy"] += cxy_b + delta_x * delta_y * scale
+        st["mean_x"] += delta_x * n_b / n
+        st["mean_y"] += delta_y * n_b / n
+        st["n"] = n
 
     def update_from_pandas(self, df: pd.DataFrame) -> None:  # type: ignore[name-defined]  # noqa: F821
         try:
@@ -53,31 +102,7 @@ class StreamingCorr:
                 m = fi & finite_masks[cj]
                 if not m.any():
                     continue
-                x = xi[m]
-                y = yj[m]
-                n = float(x.size)
-                sx = float(np.sum(x))
-                sy = float(np.sum(y))
-                sx2 = float(np.sum(x * x))
-                sy2 = float(np.sum(y * y))
-                sxy = float(np.sum(x * y))
-                key = (ci, cj)
-                if key not in self.pairs:
-                    self.pairs[key] = {
-                        "n": 0.0,
-                        "sx": 0.0,
-                        "sy": 0.0,
-                        "sx2": 0.0,
-                        "sy2": 0.0,
-                        "sxy": 0.0,
-                    }
-                st = self.pairs[key]
-                st["n"] += n
-                st["sx"] += sx
-                st["sy"] += sy
-                st["sx2"] += sx2
-                st["sy2"] += sy2
-                st["sxy"] += sxy
+                self._accumulate_pair((ci, cj), xi[m], yj[m])
 
     def update_from_polars(self, df: pl.DataFrame) -> None:  # type: ignore[name-defined]  # noqa: F821
         try:
@@ -119,44 +144,18 @@ class StreamingCorr:
                 m = fi & finite_masks_pl[cj]
                 if not m.any():
                     continue
-                x = xi[m]
-                y = yj[m]
-                n = float(x.size)
-                sx = float(np.sum(x))
-                sy = float(np.sum(y))
-                sx2 = float(np.sum(x * x))
-                sy2 = float(np.sum(y * y))
-                sxy = float(np.sum(x * y))
-                key = (ci, cj)
-                if key not in self.pairs:
-                    self.pairs[key] = {
-                        "n": 0.0,
-                        "sx": 0.0,
-                        "sy": 0.0,
-                        "sx2": 0.0,
-                        "sy2": 0.0,
-                        "sxy": 0.0,
-                    }
-                st = self.pairs[key]
-                st["n"] += n
-                st["sx"] += sx
-                st["sy"] += sy
-                st["sx2"] += sx2
-                st["sy2"] += sy2
-                st["sxy"] += sxy
+                self._accumulate_pair((ci, cj), xi[m], yj[m])
 
     def top_map(self, *, threshold: float = 0.5, max_per_col: int = 10):
         def corr_from(st):
-            n = st["n"]
-            sx, sy = st["sx"], st["sy"]
-            sx2, sy2, sxy = st["sx2"], st["sy2"], st["sxy"]
-            vx = max(0.0, sx2 - sx * sx / n)
-            vy = max(0.0, sy2 - sy * sy / n)
-            cov = sxy - sx * sy / n
-            denom = (vx * vy) ** 0.5
-            if denom <= 0:
+            if st["n"] < 2:
                 return 0.0
-            return float(cov / denom)
+            denom = (st["m2x"] * st["m2y"]) ** 0.5
+            if denom <= 0:
+                # A genuinely constant column, not a cancellation artefact:
+                # correlation is undefined, and 0.0 is the honest report.
+                return 0.0
+            return float(max(-1.0, min(1.0, st["cxy"] / denom)))
 
         col_map: dict[str, list[tuple[str, float]]] = {c: [] for c in self.cols}
         for (a, b), st in self.pairs.items():
