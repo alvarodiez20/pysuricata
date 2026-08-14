@@ -1633,6 +1633,39 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0019-2026-08-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      [0.0.19] - 2026-08-14
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.19] - 2026-08-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0018-2026-08-14" class="md-nav__link">
     <span class="md-ellipsis">
       [0.0.18] - 2026-08-14
@@ -1652,7 +1685,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+  <a href="#added_1" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1661,7 +1694,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_1" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
     </span>
@@ -1694,7 +1727,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
+  <a href="#added_2" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1703,7 +1736,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_1" class="md-nav__link">
+  <a href="#changed_2" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
     </span>
@@ -1754,7 +1787,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_2" class="md-nav__link">
+  <a href="#added_3" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1763,7 +1796,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_2" class="md-nav__link">
+  <a href="#changed_3" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
     </span>
@@ -1787,7 +1820,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_3" class="md-nav__link">
+  <a href="#added_4" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1805,7 +1838,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_3" class="md-nav__link">
+  <a href="#changed_4" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
     </span>
@@ -1838,7 +1871,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_4" class="md-nav__link">
+  <a href="#added_5" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1856,7 +1889,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_4" class="md-nav__link">
+  <a href="#changed_5" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
     </span>
@@ -1880,7 +1913,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_5" class="md-nav__link">
+  <a href="#added_6" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1898,7 +1931,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#changed_5" class="md-nav__link">
+  <a href="#changed_6" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
     </span>
@@ -1922,7 +1955,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_6" class="md-nav__link">
+  <a href="#added_7" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1981,6 +2014,16 @@
 
 <h1 id="changelog">Changelog</h1>
 <p>All notable changes to PySuricata are documented here.</p>
+<h2 id="0019-2026-08-14">[0.0.19] - 2026-08-14</h2>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>The accuracy oracle now runs in CI</strong> — a new <code>Accuracy</code> workflow runs <code>benchmarks/accuracy.py</code> on every pull request. The six statistical bugs fixed in 0.0.18 were only findable because that suite exists; nothing ran it automatically, so they could have regressed silently. This is the Phase 0 exit criterion from <code>docs/roadmap.md</code>.</li>
+<li><strong>Slow end-to-end invariants run on every push to <code>main</code></strong> — the chunked-vs-unchunked checks take tens of seconds per case, so they stay off the pull-request path but gate the branch.</li>
+</ul>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><strong><code>xfail_strict</code> is enabled</strong> — an <code>xfail</code>-marked test that starts passing (XPASS) now fails the build instead of passing quietly, so a fixed bug cannot leave a stale marker behind claiming it is still broken.</li>
+</ul>
 <h2 id="0018-2026-08-14">[0.0.18] - 2026-08-14</h2>
 <p>Correctness release. <code>benchmarks/accuracy.py</code> — a new statistical oracle that
 checks chunked results against unchunked ones and against NumPy — shipped six
@@ -1994,13 +2037,13 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Correlations collapsed to 0.00 on large-mean columns</strong> — the naive <code>sx2 - sx*sx/n</code> variance cancels catastrophically for timestamps-as-int, IDs or prices near 1e6, and <code>max(0.0, …)</code> hid it. Switched to Welford/Chan pairwise co-moments.</li>
 <li><strong>Skewness used the sample variance in its denominator</strong> — g1 is defined against the population second moment; the n−1 form biased it by ((n−1)/n)^1.5 and never converged away.</li>
 </ul>
-<h3 id="added">Added</h3>
+<h3 id="added_1">Added</h3>
 <ul>
 <li><strong><code>corr_top</code> in <code>summarize()</code> output</strong> — correlations were computed and rendered into the HTML report but never emitted in the JSON summary, so the programmatic contract was strictly weaker than the visual one.</li>
 <li><strong><code>benchmarks/</code> accuracy oracle and performance harness</strong>, plus <code>docs/roadmap.md</code>.</li>
 <li><strong><code>no-commit-to-branch</code> pre-commit hook</strong> — work reaches <code>main</code> only through a pull request.</li>
 </ul>
-<h3 id="changed">Changed</h3>
+<h3 id="changed_1">Changed</h3>
 <ul>
 <li>The pre-commit <code>ruff</code> pin and the dev-group <code>ruff</code> had drifted either side of the <code>UP038</code> rule's removal, so pre-commit rejected code that CI accepted. Both now pin the same version.</li>
 </ul>
@@ -2028,7 +2071,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)))</span>
 </span></code></pre></div>
 <p>Set <code>enable_auto_boolean_detection=False</code> to turn the promotion off entirely.</p>
-<h3 id="added_1">Added</h3>
+<h3 id="added_2">Added</h3>
 <ul>
 <li><strong>CSS integrity test suite</strong> — <code>test_css_integrity.py</code> with 9 automated checks (file presence, selector coverage, <code>!important</code> budget, breakpoint standardization, inline handler removal)</li>
 <li><strong>Pre-commit hooks</strong> — <code>.pre-commit-config.yaml</code> with trailing-whitespace, end-of-file-fixer, check-yaml/toml, ruff lint+format, and fast pytest</li>
@@ -2036,7 +2079,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Extended dtype inference</strong> — pyarrow-backed columns (<code>pd.ArrowDtype</code>) are now classified by their underlying Arrow type instead of falling through to categorical; pandas <code>timedelta64</code> and polars <code>Duration</code>/<code>Time</code> are treated as numeric; polars <code>String</code> is recognized alongside the legacy <code>Utf8</code> alias</li>
 <li><strong>Vendored Titanic dataset</strong> — <code>docs/assets/titanic.csv</code> is now committed, so <code>scripts/regenerate_example_report.py</code> and the docs CI jobs no longer depend on network access</li>
 </ul>
-<h3 id="changed_1">Changed</h3>
+<h3 id="changed_2">Changed</h3>
 <ul>
 <li><strong>CSS modularization</strong> — Replaced monolithic <code>style.css</code> (8,742 lines) with 14 scoped partials (<code>_00-tokens.css</code> through <code>_13-utilities.css</code>), loaded via <code>load_css_dir()</code> with caching</li>
 <li><strong>Inline event handler removal</strong> — Replaced all inline <code>onclick</code>/<code>onchange</code> handlers with <code>data-action</code> attributes and delegated event listeners</li>
@@ -2061,16 +2104,16 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><code>style.css</code> (monolithic), <code>style.css.backup</code>, <code>style_updated.css</code>, <code>chart.min.js</code>, <code>functionality.js.backup</code>, <code>cards_new.py</code></li>
 </ul>
 <h2 id="0016-2026-02-15">[0.0.16] - 2026-02-15</h2>
-<h3 id="added_2">Added</h3>
+<h3 id="added_3">Added</h3>
 <ul>
 <li><strong>Polars nested type support</strong> — Structs and Lists are now gracefully handled as categorical variables (with debug warnings) instead of causing inference errors</li>
 </ul>
-<h3 id="changed_2">Changed</h3>
+<h3 id="changed_3">Changed</h3>
 <ul>
 <li><strong>Performance optimization</strong> — optimized <code>_safe_compute</code> to use NumPy arrays for type checks, reducing overhead in large datasets</li>
 </ul>
 <h2 id="0015-2026-02-14">[0.0.15] - 2026-02-14</h2>
-<h3 id="added_3">Added</h3>
+<h3 id="added_4">Added</h3>
 <ul>
 <li><strong>Python 3.14 CI testing</strong> — Added Python 3.14 to CI test matrix</li>
 <li><strong>Changelog CI check</strong> — PRs now require a changelog entry</li>
@@ -2082,7 +2125,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Code/equation styling</strong> — Changed code and math colors from green to standard gray</li>
 <li><strong>Memory stress test</strong> — Bumped threshold from 200→250 MB for Python 3.14 compatibility</li>
 </ul>
-<h3 id="changed_3">Changed</h3>
+<h3 id="changed_4">Changed</h3>
 <ul>
 <li><strong>Dropped Python 3.9</strong> — Minimum version is now Python 3.10</li>
 <li><strong>CI runs on PR only</strong> — Tests no longer run on push to main (CD handles releases)</li>
@@ -2097,7 +2140,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li>Stale dates from stats documentation pages</li>
 </ul>
 <h2 id="0014-2026-01-14">[0.0.14] - 2026-01-14</h2>
-<h3 id="added_4">Added</h3>
+<h3 id="added_5">Added</h3>
 <ul>
 <li><strong>Polars LazyFrame support</strong> — LazyFrames are now automatically collected before profiling</li>
 <li><strong>ReportConfig alias</strong> — Added <code>ReportConfig</code> as an alias for <code>ProfileConfig</code> for better API discoverability</li>
@@ -2106,12 +2149,12 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <ul>
 <li><strong>Self-contained HTML reports</strong> — HTML reports no longer depend on external CDN (Chart.js is now inlined)</li>
 </ul>
-<h3 id="changed_4">Changed</h3>
+<h3 id="changed_5">Changed</h3>
 <ul>
 <li><strong>Lighter dependencies</strong> — Removed unused dependencies: <code>matplotlib</code>, <code>seaborn</code>, <code>ipywidgets</code></li>
 </ul>
 <h2 id="0013-2026-01-02">[0.0.13] - 2026-01-02</h2>
-<h3 id="added_5">Added</h3>
+<h3 id="added_6">Added</h3>
 <ul>
 <li><strong>CLI tool</strong> — New command-line interface with <code>pysuricata profile</code> and <code>pysuricata summarize</code> commands</li>
 <li><strong>Comprehensive stress tests</strong> — New <code>test_complexity_analysis.py</code> with time/space profiling</li>
@@ -2121,12 +2164,12 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <ul>
 <li><strong>Memory leak fixes</strong> — Resolved memory leaks in KMV sketch, ExtremeTracker, and chunk metadata</li>
 </ul>
-<h3 id="changed_5">Changed</h3>
+<h3 id="changed_6">Changed</h3>
 <ul>
 <li><strong>Realistic benchmarks</strong> — Updated README and docs with measured performance figures</li>
 </ul>
 <h2 id="0011-2025-12-xx">[0.0.11] - 2025-12-XX</h2>
-<h3 id="added_6">Added</h3>
+<h3 id="added_7">Added</h3>
 <ul>
 <li>Enhanced documentation with mathematical formulas</li>
 <li>Comprehensive examples gallery</li>
