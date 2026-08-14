@@ -62,16 +62,40 @@ Accumulators never see the frame, only arrays.
 
 ## Current priorities
 
-See `docs/roadmap.md` for the full plan, the measured numbers behind it, and the
-market analysis. Ordering, shortest version:
+See `docs/roadmap.md` (v2, re-audited at 0.0.21) for the measured numbers behind
+this. Shortest version:
 
-1. **Correctness first.** `benchmarks/accuracy.py` has six `xfail`-marked tests,
-   each pointing at a live bug with a file and line. Fix them, delete the markers.
-   Three are critical: generator sources drop chunk 0, reservoir sampling is
-   biased, and the M3/M4 batch merge is wrong for multi-chunk data.
-2. **Then pure-Python performance.** SHA-1 in the KMV sketch is ~36% of runtime
-   and `format="mixed"` date sniffing is ~21%. Neither needs Rust.
-3. **Then publish benchmarks**, then the native core.
+Phase 0 is **done**: all six statistical bugs are fixed, the accuracy oracle is
+at 578 lines with zero xfails, and it runs in CI. Do not regress it — a change
+that makes `benchmarks/accuracy.py` fail is wrong even if it is faster.
 
-Do not start on `native/` before 1 and 2 are done — the numbers only mean
-something against a measured, already-clean baseline.
+1. **Finish Phase 1 (pure Python, no Rust), in measured value order:**
+   - Gate Misra-Gries off high-cardinality numeric columns. It is **35%** of the
+     numeric accumulator and `numeric_card.py:462` discards its output on the
+     float columns where it never applies.
+   - Apply the KMV threshold pre-filter in `_batch_add_hashes` — **8.8×**,
+     three lines, estimates provably identical. Code and proof in
+     `benchmarks/proposed_kernels.py`.
+   - Vectorise `DatetimeAccumulator.update`. Four per-row Python loops,
+     4.7 us/value, the most expensive column kind in the library.
+   - Drop `format="mixed"` (`inference.py:384`, `consume.py:162`) for
+     try-explicit-formats-first on a 200-row sample.
+   - Vectorised Algorithm L (also in `proposed_kernels.py`) — **4.9×**, and
+     bit-identical, which the naive Algorithm R rewrite is not.
+   - `np.diff` for `MonotonicityDetector.update` — 61×.
+2. **Then publish the benchmarks.** 9.1× vs ydata-profiling and 13× less
+   marginal memory, both currently unmentioned in the README.
+3. **Then the native core — KMV first, moments last.** The measured
+   decomposition says moments are **1.3%** of the numeric path and KMV is
+   **50%**; the original ordering had this backwards.
+
+Measurement discipline, learned the hard way on this codebase: `cProfile` charges
+per Python call and badly over-weights kernels that make many small ones. It
+ranked the reservoir at ~30% of self time when swapping in a 5×-faster one moved
+wall clock by 4%. Confirm any hot-spot ranking against wall clock with the
+profiler off before acting on it.
+
+Five items from the v1 audit are still open — first-chunk type decisions, the
+2,000-row `RowKMV` fallback cap, chunk-local extreme indices, the dead
+`corr_max_cols` option, and the pre-1906 datetime window. All six items that had
+a failing test got fixed; all five without one did not. Write the test first.

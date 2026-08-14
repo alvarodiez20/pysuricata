@@ -7,6 +7,17 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.23] - 2026-08-14
+
+**2.30x faster than 0.0.20** on the mixed benchmark suite (200,000 x 14: 3.190s
+-> 1.384s), with the sampling guarantees from 0.0.18 intact.
+
+### Changed
+- **Reservoir acceptances are scheduled in bulk** — Algorithm L's schedule depends only on the random generator and the reservoir size, never on the data, so there is no reason to derive it one acceptance at a time in Python. Writing the recurrence as a cumulative sum makes every term a vectorised array operation: `log W = cumsum(log u)/k`, `skip = floor(log v / log(1-W))`, `index = base + cumsum(skip) + i`. Accumulation drops from 59.1% to 49.9% of self time. The schedule is still generated from the draw sequence alone, so the sample remains identical however the stream is chunked.
+
+### Added
+- Tests covering the schedule's block boundary — a stream long enough to force several refills must still give an identical sample for 1, 13 and 977 chunks — plus strictly-increasing acceptance indices, in-range slot choices, and an implementation-independent check that the sample mean tracks the population.
+
 ## [0.0.22] - 2026-08-14
 
 Completes Phase 1 of `docs/roadmap.md`. **Report generation is 1.99x faster than
