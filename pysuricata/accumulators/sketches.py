@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import bisect
 import hashlib
-import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -16,9 +15,9 @@ import numpy as np
 _TINY = 5e-324
 # Sentinel "no further acceptances": larger than any realistic stream index.
 _NO_MORE_ACCEPTANCES = 1 << 62
-# Uniform draws are taken a block at a time; scalar np.random calls are dominated
-# by interpreter overhead.
-_DRAW_BLOCK = 4096
+# Acceptances are scheduled a block at a time. The schedule depends only on the
+# generator and k, so computing it in bulk costs nothing in correctness.
+_SCHEDULE_BLOCK = 2048
 
 
 # splitmix64 finalisation constants (Steele et al.). A distinct-count sketch
@@ -280,71 +279,85 @@ class ReservoirSampler:
     median, IQR, MAD and histogram stable across chunk sizes.
 
     Algorithm L samples a geometric skip and jumps straight to the next element
-    it will accept, so it costs about ``k * ln(n / k)`` random draws rather than
-    one per element -- roughly 145k draws for 10M rows into k=20k, instead of 10M.
+    it accepts, so it costs about ``k * ln(n / k)`` random draws rather than one
+    per element -- roughly 145k draws for 10M rows into k=20k, instead of 10M.
+
+    The acceptance schedule depends only on the generator and on k, never on the
+    data, so it is computed in bulk ahead of time rather than one acceptance at a
+    time. Writing the recurrence out makes this explicit: with ``u`` and ``v``
+    uniform,
+
+        log W_i = cumsum(log u)_i / k
+        skip_i  = floor(log v_i / log(1 - W_i))
+        index_i = base + cumsum(skip)_i + i
+
+    every term of which is a vectorised array operation. Because the schedule is
+    generated from the draw sequence alone, it is identical however the stream is
+    later split into chunks.
     """
 
-    __slots__ = ("k", "_buf", "_seen", "_w", "_next", "_draws", "_draw_i")
+    __slots__ = (
+        "k",
+        "_buf",
+        "_seen",
+        "_logw",
+        "_next",
+        "_sched_idx",
+        "_sched_slot",
+        "_sched_pos",
+    )
 
     def __init__(self, k: int = 20_000) -> None:
         self.k = int(k)
         self._buf: list[float] = []
         self._seen: int = 0
-        # Algorithm L skip state. Only meaningful once the reservoir is full;
+        # Algorithm L state carried between schedule blocks. _logw is log(W);
         # _next is the stream index (0-based) of the next element to accept.
-        self._w: float = 1.0
+        self._logw: float = 0.0
         self._next: int = -1
-        # Pre-drawn uniforms, consumed by _uniform().
-        self._draws: np.ndarray = np.empty(0, dtype=float)
-        self._draw_i: int = 0
+        self._sched_idx: np.ndarray = np.empty(0, dtype=np.int64)
+        self._sched_slot: np.ndarray = np.empty(0, dtype=np.int64)
+        self._sched_pos: int = 0
 
-    def _uniform(self) -> float:
-        """One uniform draw, taken from a pre-filled block.
+    def _extend_schedule(self, base: int) -> None:
+        """Compute the next block of acceptance indices and target slots."""
+        u = np.random.random(_SCHEDULE_BLOCK)
+        v = np.random.random(_SCHEDULE_BLOCK)
+        np.maximum(u, _TINY, out=u)
+        np.maximum(v, _TINY, out=v)
 
-        Algorithm L needs two draws per acceptance, and a scalar
-        ``np.random.random()`` call costs far more in interpreter overhead than
-        the number it returns. Drawing a block at a time amortises that away
-        while keeping ``np.random`` as the source, so seeding still controls the
-        sample.
-        """
-        if self._draw_i >= self._draws.size:
-            self._draws = np.random.random(_DRAW_BLOCK)
-            self._draw_i = 0
-        u = self._draws[self._draw_i]
-        self._draw_i += 1
-        return u if u > 0.0 else _TINY
+        logw = self._logw + np.cumsum(np.log(u)) / self.k
+        # log1p(-w) rather than log(1 - w): w is close to 1 early on, where the
+        # subtraction would lose most of its significant digits.
+        denom = np.log1p(-np.exp(logw))
+        with np.errstate(divide="ignore", invalid="ignore"):
+            skips = np.floor(np.log(v) / denom)
+        # denom == 0 means w has saturated and no further element is accepted.
+        skips = np.where(np.isfinite(skips), skips, float(_NO_MORE_ACCEPTANCES))
 
-    def _draw_skip(self) -> int:
-        """Number of elements to pass over before the next acceptance."""
-        # log1p(-w) is log(1 - w) without the cancellation for small w.
-        denom = math.log1p(-self._w) if self._w < 1.0 else 0.0
-        if denom >= 0.0:
-            # w has underflowed to 0 (or saturated); no further acceptances.
-            return _NO_MORE_ACCEPTANCES
-        return int(math.log(self._uniform()) / denom)
+        idx = base + np.cumsum(skips) + np.arange(_SCHEDULE_BLOCK, dtype=float)
+        idx = np.minimum(idx, float(_NO_MORE_ACCEPTANCES))
 
-    def _advance_w(self) -> None:
-        self._w *= math.exp(math.log(self._uniform()) / self.k)
+        self._sched_idx = idx.astype(np.int64)
+        self._sched_slot = (np.random.random(_SCHEDULE_BLOCK) * self.k).astype(np.int64)
+        self._sched_pos = 0
+        self._logw = float(logw[-1])
+        self._next = int(self._sched_idx[0])
+
+    def _advance_schedule(self) -> None:
+        """Move to the next scheduled acceptance, refilling the block if spent."""
+        self._sched_pos += 1
+        if self._sched_pos >= self._sched_idx.size:
+            self._extend_schedule(self._next)
+        else:
+            self._next = int(self._sched_idx[self._sched_pos])
 
     def _start_skipping(self) -> None:
-        """Initialise the skip state the moment the reservoir first fills."""
-        self._w = 1.0
-        self._advance_w()
-        # Standard formulation with i = k-1 as the last processed index:
-        # the first candidate is therefore at index _seen + skip.
-        self._next = self._seen + self._draw_skip()
-
-    def _accept(self, value: float) -> None:
-        """Evict a uniformly chosen slot and schedule the next acceptance."""
-        # Scale a buffered uniform instead of a scalar np.random.randint call:
-        # _uniform() is in (0, 1), so this lands in [0, k-1].
-        self._buf[int(self._uniform() * self.k)] = value
-        self._advance_w()
-        skip = self._draw_skip()
-        if skip >= _NO_MORE_ACCEPTANCES:
-            self._next = _NO_MORE_ACCEPTANCES
-        else:
-            self._next += skip + 1
+        """Initialise the schedule the moment the reservoir first fills."""
+        self._logw = 0.0
+        # Standard formulation with i = k-1 as the last processed index, so the
+        # first candidate sits at _seen + skip.
+        self._extend_schedule(self._seen)
 
     def add_many(self, arr: Sequence[float]) -> None:
         """Add a batch of values, preserving the uniform-sampling guarantee.
@@ -369,8 +382,12 @@ class ReservoirSampler:
                 return
 
         end = self._seen + len(arr)
+        buf = self._buf
         while self._next < end:
-            self._accept(float(arr[self._next - self._seen]))
+            buf[int(self._sched_slot[self._sched_pos])] = float(
+                arr[self._next - self._seen]
+            )
+            self._advance_schedule()
         self._seen = end
 
     def add(self, x: float) -> None:
@@ -381,7 +398,8 @@ class ReservoirSampler:
                 self._start_skipping()
             return
         if self._seen == self._next:
-            self._accept(float(x))
+            self._buf[int(self._sched_slot[self._sched_pos])] = float(x)
+            self._advance_schedule()
         self._seen += 1
 
     def values(self) -> list[float]:

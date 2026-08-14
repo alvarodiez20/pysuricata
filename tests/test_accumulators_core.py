@@ -383,3 +383,61 @@ class TestGranularityDegenerateRanges:
     def test_ordinary_integers_still_work(self):
         step, _ = self._granularity([0.0, 5.0, 10.0, 15.0, 20.0])
         assert step == pytest.approx(5.0, rel=1e-6)
+
+
+class TestReservoirSchedule:
+    """The acceptance schedule is precomputed in blocks.
+
+    Correctness depends on the block boundaries falling at points determined by
+    the draw sequence alone. If a refill were triggered by where a chunk happens
+    to end, the sample would stop being chunk-invariant.
+    """
+
+    def test_invariant_across_many_schedule_refills(self):
+        """Enough acceptances to cross the block boundary several times."""
+        from pysuricata.accumulators.sketches import _SCHEDULE_BLOCK
+
+        values = np.arange(500_000, dtype=np.float64)
+        samples = []
+        for n_chunks in (1, 13, 977):
+            np.random.seed(5)
+            r = ReservoirSampler(4000)
+            for chunk in np.array_split(values, n_chunks):
+                r.add_many(chunk)
+            samples.append(sorted(r.values()))
+
+        # k * ln(n/k) acceptances, comfortably more than one block.
+        assert 4000 * np.log(500_000 / 4000) > 2 * _SCHEDULE_BLOCK
+        assert samples[1] == samples[0]
+        assert samples[2] == samples[0]
+
+    def test_schedule_indices_are_strictly_increasing(self):
+        np.random.seed(3)
+        r = ReservoirSampler(200)
+        r.add_many(np.arange(50_000, dtype=np.float64))
+        idx = r._sched_idx
+        assert np.all(np.diff(idx) > 0)
+
+    def test_slots_stay_in_range(self):
+        np.random.seed(4)
+        r = ReservoirSampler(128)
+        r.add_many(np.arange(200_000, dtype=np.float64))
+        assert r._sched_slot.min() >= 0
+        assert r._sched_slot.max() < r.k
+
+    def test_sample_mean_tracks_the_population(self):
+        """End-to-end statistical check, independent of implementation."""
+        n = 400_000
+        values = np.arange(n, dtype=np.float64)
+        means = []
+        for seed in range(25):
+            np.random.seed(seed)
+            r = ReservoirSampler(2000)
+            for chunk in np.array_split(values, 11):
+                r.add_many(chunk)
+            means.append(float(np.mean(r.values())))
+        expected = (n - 1) / 2
+        # se of one sample mean is (n/sqrt(12))/sqrt(k); across 25 trials it
+        # shrinks by another sqrt(25).
+        se = (n / np.sqrt(12)) / np.sqrt(2000) / np.sqrt(25)
+        assert abs(float(np.mean(means)) - expected) < 4 * se
