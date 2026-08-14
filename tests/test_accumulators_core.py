@@ -347,3 +347,39 @@ class TestHashingAtScale:
         s = KMV(2048)
         s.add_many(np.arange(300_000, dtype=float))
         assert s.estimate() > 200_000
+
+
+class TestGranularityDegenerateRanges:
+    """Granularity detection histograms the gaps between sorted values.
+
+    A strictly positive spread is not enough to bin: when the gaps differ only
+    in the last bits of a float, every computed edge rounds to the same value.
+    numpy >= 2.5 raises "Too many bins for data range" rather than returning
+    degenerate bins, so this has to be handled before the call.
+    """
+
+    @staticmethod
+    def _granularity(values):
+        from pysuricata.accumulators.numeric import NumericAccumulator
+
+        acc = NumericAccumulator("c")
+        return acc._compute_granularity(list(values))
+
+    def test_denormal_scale_values_do_not_raise(self):
+        step, _ = self._granularity([1e-15 * i for i in range(10)])
+        assert step == pytest.approx(1e-15, rel=1e-6)
+
+    @pytest.mark.parametrize("scale", [1e-300, 1e-15, 1.0, 1e15])
+    def test_evenly_spaced_values_report_their_step(self, scale):
+        step, _ = self._granularity([scale * i for i in range(10)])
+        assert step == pytest.approx(scale, rel=1e-6)
+
+    def test_constant_column_has_no_granularity(self):
+        assert self._granularity([3.0] * 10) == (None, None)
+
+    def test_single_value_has_no_granularity(self):
+        assert self._granularity([3.0]) == (None, None)
+
+    def test_ordinary_integers_still_work(self):
+        step, _ = self._granularity([0.0, 5.0, 10.0, 15.0, 20.0])
+        assert step == pytest.approx(5.0, rel=1e-6)

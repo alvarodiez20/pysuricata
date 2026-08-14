@@ -763,25 +763,37 @@ class NumericAccumulator:
         if len(non_zero_diffs) == 0:
             return None, None
 
-        # Find the most common non-zero difference (granularity step)
-        # Use histogram to find the most frequent difference
+        # Find the most common non-zero difference (granularity step) by
+        # histogramming the differences.
         # Specify range explicitly and use python's min/max to avoid NumPy 2.1 _NoValue pointer bug when reloaded by pytest-cov
         range_min, range_max = float(min(non_zero_diffs)), float(max(non_zero_diffs))
-        hist, bin_edges = np.histogram(
-            non_zero_diffs,
-            bins=int(min(50, len(non_zero_diffs))),
-            range=(range_min, range_max)
-            if range_min < range_max
-            else (range_min, range_min + 1.0),
-        )
-        if len(hist) > 0:
-            most_frequent_bin = int(np.argmax(hist))
-            gran_step = (
-                float(bin_edges[most_frequent_bin] + bin_edges[most_frequent_bin + 1])
-                / 2.0
-            )
+        n_bins = int(min(50, len(non_zero_diffs)))
+
+        # A strictly positive spread is not sufficient. The bins must also be
+        # wide enough to be representable: for values around 1e-15 whose spread
+        # is ~1e-31, every computed edge rounds to the same float64 and numpy
+        # (>= 2.5) rejects the call outright rather than silently returning
+        # degenerate bins. When the differences are all equal to within
+        # floating-point resolution there is nothing to histogram anyway -- the
+        # granularity simply *is* that difference.
+        spread = range_max - range_min
+        min_representable = float(np.spacing(max(abs(range_min), abs(range_max))))
+        if n_bins < 1 or spread <= min_representable * n_bins:
+            gran_step = float(np.median(non_zero_diffs))
         else:
-            gran_step = float(np.min(non_zero_diffs))
+            hist, bin_edges = np.histogram(
+                non_zero_diffs, bins=n_bins, range=(range_min, range_max)
+            )
+            if len(hist) > 0:
+                most_frequent_bin = int(np.argmax(hist))
+                gran_step = (
+                    float(
+                        bin_edges[most_frequent_bin] + bin_edges[most_frequent_bin + 1]
+                    )
+                    / 2.0
+                )
+            else:
+                gran_step = float(np.min(non_zero_diffs))
 
         # Calculate decimal places
         if gran_step > 0:
