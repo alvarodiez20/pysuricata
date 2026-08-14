@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import html as _html
 import os
+import re
 import time
 from datetime import datetime, timezone
 from typing import Any
@@ -25,6 +26,11 @@ from .format_utils import human_time as _human_time
 from .markdown_utils import render_markdown_to_html
 from .missing_columns import create_missing_columns_renderer
 from .svg_utils import safe_col_id as _safe_col_id
+
+# Template placeholders are bare identifiers in braces ({report_title}). Anything
+# else that looks brace-wrapped -- CSS custom properties, JS object literals --
+# either fails to match or resolves to no key and is left verbatim.
+_PLACEHOLDER_RE = re.compile(r"\{(\w+)\}")
 
 
 def render_html_snapshot(
@@ -294,50 +300,57 @@ def render_html_snapshot(
         boolean=len(kinds.boolean),
     )
 
-    # Use .replace() for ALL placeholders instead of .format() because CSS
-    # custom properties ({--var-name}) and JavaScript ({}, destructuring, etc.)
-    # contain literal curly braces that Python's .format() interprets as named
-    # placeholders, causing KeyError crashes.
+    # Substitution is done with a single regex pass rather than str.format()
+    # because CSS custom properties ({--var-name}) and JavaScript braces would be
+    # read by .format() as named placeholders and raise KeyError. A single pass is
+    # also required for correctness: with sequential str.replace() calls, a value
+    # substituted early (e.g. a user-supplied title containing "{report_date}")
+    # would itself be rescanned and expanded by a later replacement.
     replacements = {
-        "{css}": css_tag,
-        "{ script }": combined_script_content,
-        "{favicon}": favicon_tag,
-        "{logo}": logo_html,
-        "{report_title}": report_title or cfg.title,
-        "{report_date}": report_date,
-        "{report_id}": report_id,
-        "{pysuricata_version}": pysuricata_version,
-        "{report_duration}": _human_time(duration_seconds),
-        "{repo_url}": repo_url,
-        "{n_rows}": f"{n_rows:,}",
-        "{n_cols}": f"{n_cols:,}",
-        "{memory_usage}": _human_bytes(approx_mem_bytes) if approx_mem_bytes else "—",
-        "{missing_overall}": missing_overall,
-        "{duplicates_overall}": duplicates_overall,
-        "{numeric_cols}": str(len(kinds.numeric)),
-        "{categorical_cols}": str(len(kinds.categorical)),
-        "{datetime_cols}": str(len(kinds.datetime)),
-        "{bool_cols}": str(len(kinds.boolean)),
-        "{dtype_donut_svg}": dtype_donut_svg,
-        "{top_missing_list}": top_missing_list,
-        "{n_unique_cols}": f"{n_cols:,}",
-        "{constant_cols}": f"{constant_cols:,}",
-        "{high_card_cols}": f"{high_card_cols:,}",
-        "{date_min}": date_min,
-        "{date_max}": date_max,
-        "{text_cols}": f"{text_cols:,}",
-        "{avg_text_len}": avg_text_len,
-        "{dataset_sample_section}": sample_section_html or "",
-        "{variables_section}": variables_section_html,
-        "{correlations_section}": correlations_section_html,
-        "{missing_values_section}": missing_values_section_html,
-        "{description_html}": description_html,
-        "{description_attr}": description_attr,
+        "css": css_tag,
+        "script": combined_script_content,
+        "favicon": favicon_tag,
+        "logo": logo_html,
+        "report_title": report_title or cfg.title,
+        "report_date": report_date,
+        "report_id": report_id,
+        "pysuricata_version": pysuricata_version,
+        "report_duration": _human_time(duration_seconds),
+        "repo_url": repo_url,
+        "n_rows": f"{n_rows:,}",
+        "n_cols": f"{n_cols:,}",
+        "memory_usage": _human_bytes(approx_mem_bytes) if approx_mem_bytes else "—",
+        "missing_overall": missing_overall,
+        "duplicates_overall": duplicates_overall,
+        "numeric_cols": str(len(kinds.numeric)),
+        "categorical_cols": str(len(kinds.categorical)),
+        "datetime_cols": str(len(kinds.datetime)),
+        "bool_cols": str(len(kinds.boolean)),
+        "dtype_donut_svg": dtype_donut_svg,
+        "top_missing_list": top_missing_list,
+        "n_unique_cols": f"{n_cols:,}",
+        "constant_cols": f"{constant_cols:,}",
+        "high_card_cols": f"{high_card_cols:,}",
+        "date_min": date_min,
+        "date_max": date_max,
+        "text_cols": f"{text_cols:,}",
+        "avg_text_len": avg_text_len,
+        "dataset_sample_section": sample_section_html or "",
+        "variables_section": variables_section_html,
+        "correlations_section": correlations_section_html,
+        "missing_values_section": missing_values_section_html,
+        "description_html": description_html,
+        "description_attr": description_attr,
     }
-    html = template
-    for placeholder, value in replacements.items():
-        html = html.replace(placeholder, str(value))
-    return html
+
+    def _resolve(match: re.Match[str]) -> str:
+        key = match.group(1)
+        if key in replacements:
+            return str(replacements[key])
+        # Unknown key: leave the original text untouched so CSS/JS braces survive.
+        return match.group(0)
+
+    return _PLACEHOLDER_RE.sub(_resolve, template)
 
 
 def render_empty_html(title: str) -> str:

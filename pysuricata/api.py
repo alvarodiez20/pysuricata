@@ -408,17 +408,34 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
             if data.columns.duplicated().any():
                 import warnings
 
-                seen: dict[str, int] = {}
+                # Every existing name is already taken, so a generated suffix must
+                # never collide with one (e.g. columns ["a", "a", "a_1"] must not
+                # rename the second "a" to "a_1").
+                taken: set[str] = set(data.columns)
+                counters: dict[str, int] = {}
                 new_cols: list[str] = []
+                emitted: set[str] = set()
                 for col in data.columns:
-                    if col in seen:
-                        seen[col] += 1
-                        new_cols.append(f"{col}_{seen[col]}")
-                    else:
-                        seen[col] = 0
+                    if col not in emitted:
+                        emitted.add(col)
                         new_cols.append(col)
-                data = data.copy()
+                        continue
+                    suffix = counters.get(col, 0)
+                    while True:
+                        suffix += 1
+                        candidate = f"{col}_{suffix}"
+                        if candidate not in taken:
+                            break
+                    counters[col] = suffix
+                    taken.add(candidate)
+                    emitted.add(candidate)
+                    new_cols.append(candidate)
+                # Shallow copy: only the column axis is rewritten, never the blocks.
+                data = data.copy(deep=False)
                 data.columns = new_cols
+                assert not data.columns.duplicated().any(), (
+                    "column deduplication failed to produce unique names"
+                )
                 warnings.warn(
                     "DataFrame has duplicate column names. "
                     "Columns were renamed with numeric suffixes to avoid errors.",

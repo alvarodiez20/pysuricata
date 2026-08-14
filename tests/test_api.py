@@ -450,3 +450,46 @@ def test_report_repr_edge_cases():
     }
     rep = Report(html="<html>complex</html>", stats=complex_stats)
     assert rep._repr_html_() == "<html>complex</html>"
+
+
+def test_coerce_input_deduplicates_columns():
+    """Duplicate column names are renamed to unique names with a warning."""
+    df = pd.DataFrame([[1, 2], [3, 4]], columns=["a", "a"])
+    with pytest.warns(UserWarning, match="duplicate column names"):
+        out = _coerce_input(df)
+    assert list(out.columns) == ["a", "a_1"]
+
+
+def test_coerce_input_dedup_avoids_existing_names():
+    """A generated suffix must not collide with a column name already present.
+
+    Regression test: ["a", "a", "a_1"] used to produce ["a", "a_1", "a_1"], which
+    left the frame duplicated and crashed the engine with
+    "'DataFrame' object has no attribute 'dtype'".
+    """
+    for cols in (
+        ["a", "a", "a_1"],
+        ["a_1", "a", "a"],
+        ["a", "a_1", "a", "a_2", "a"],
+    ):
+        df = pd.DataFrame([list(range(len(cols)))] * 3, columns=cols)
+        with pytest.warns(UserWarning, match="duplicate column names"):
+            out = _coerce_input(df)
+        assert not out.columns.duplicated().any(), f"{cols} -> {list(out.columns)}"
+        assert len(out.columns) == len(cols)
+
+
+def test_coerce_input_leaves_unique_columns_untouched():
+    """No warning and no copy semantics change for well-formed frames."""
+    df = pd.DataFrame({"a": [1, 2], "b": [3, 4]})
+    out = _coerce_input(df)
+    assert out is df
+    assert list(out.columns) == ["a", "b"]
+
+
+def test_profile_survives_duplicate_columns_colliding_with_suffix():
+    """End-to-end: the frame that used to crash the engine now profiles."""
+    df = pd.DataFrame([[1, 2, 3], [4, 5, 6]], columns=["a", "a", "a_1"])
+    with pytest.warns(UserWarning, match="duplicate column names"):
+        rep = profile(df)
+    assert "<html" in rep.html.lower()
