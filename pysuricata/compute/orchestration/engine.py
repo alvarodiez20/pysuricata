@@ -391,7 +391,9 @@ class StreamingEngine:
             corr_est = self.maybe_corr_estimator(kinds, config)
 
             # Process first chunk
-            adapter.consume_chunk(first_chunk, accs, kinds, config, self.logger)
+            adapter.consume_chunk(
+                first_chunk, accs, kinds, config, self.logger, row_offset=0
+            )
             if corr_est is not None:
                 adapter.update_corr(first_chunk, corr_est, self.logger)
             adapter.update_row_kmv(first_chunk, row_kmv)
@@ -427,8 +429,16 @@ class StreamingEngine:
 
             # Process remaining chunks
             for chunk in chunks:
+<<<<<<< HEAD
                 chunk = _select_columns(chunk, column_subset)
                 adapter.consume_chunk(chunk, accs, kinds, config, self.logger)
+=======
+                # current_row is the global index of this chunk's first row, so
+                # extreme-value indices come out global rather than chunk-local.
+                adapter.consume_chunk(
+                    chunk, accs, kinds, config, self.logger, row_offset=current_row
+                )
+>>>>>>> bcb4bdb (fix: make extreme values exact and their row indices global)
                 if corr_est is not None:
                     adapter.update_corr(chunk, corr_est, self.logger)
                 adapter.update_row_kmv(chunk, row_kmv)

@@ -96,6 +96,8 @@ class BaseAdapter(DataAdapter, ABC):
         kinds: ColumnKinds,
         config: Any | None = None,
         logger: Any | None = None,
+        *,
+        row_offset: int = 0,
     ) -> None:
         """Consume a data chunk and update accumulators.
 

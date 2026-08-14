@@ -108,6 +108,8 @@ def consume_chunk_polars(
     kinds: ColumnKinds,
     config: Any | None = None,
     logger: logging.Logger | None = None,
+    *,
+    row_offset: int = 0,
 ) -> None:  # type: ignore[name-defined]
     if pl is None:
         raise RuntimeError("polars not available")

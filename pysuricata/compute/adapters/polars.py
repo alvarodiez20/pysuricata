@@ -249,6 +249,8 @@ class PolarsAdapter(BaseAdapter):
         kinds: ColumnKinds,
         config: Any | None = None,
         logger: Any | None = None,
+        *,
+        row_offset: int = 0,
     ) -> None:
         """Consume a polars DataFrame chunk and update accumulators.
 
@@ -266,7 +268,7 @@ class PolarsAdapter(BaseAdapter):
         from ..consume_polars import consume_chunk_polars
 
         # Use the existing polars consume function
-        consume_chunk_polars(data, accs, kinds, config, logger)
+        consume_chunk_polars(data, accs, kinds, config, logger, row_offset=row_offset)
 
     def update_corr(self, frame: Any, corr_est: Any, logger: Any | None = None) -> None:
         """Update correlation estimator with polars DataFrame.

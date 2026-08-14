@@ -246,6 +246,8 @@ class PandasAdapter(BaseAdapter):
         kinds: ColumnKinds,
         config: Any | None = None,
         logger: Any | None = None,
+        *,
+        row_offset: int = 0,
     ) -> None:
         """Consume a pandas DataFrame chunk and update accumulators.
 
@@ -263,7 +265,7 @@ class PandasAdapter(BaseAdapter):
         from ..consume import consume_chunk_pandas
 
         # Use the existing pandas consume function
-        consume_chunk_pandas(data, accs, kinds, config, logger)
+        consume_chunk_pandas(data, accs, kinds, config, logger, row_offset=row_offset)
 
     def update_corr(self, frame: Any, corr_est: Any, logger: Any | None = None) -> None:
         """Update correlation estimator with pandas DataFrame.
