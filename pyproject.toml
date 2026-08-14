@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysuricata"
-version = "0.0.18"
+version = "0.0.19"
 description = "A lightweight EDA tool inspired by the curious nature of suricates. Built just for fun 🔬."
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
@@ -132,6 +132,11 @@ known-first-party = ["pysuricata"]
 markers = [
     "benchmark: marks tests as slow benchmarks (deselect with '-m \"not benchmark\"')",
 ]
+# An xfail that starts passing is a fixed bug with a stale marker, and it must
+# not pass silently. With this on, XPASS fails the build and the marker has to
+# be removed deliberately. Note a marker written with an explicit strict=False
+# still opts out -- don't write one.
+xfail_strict = true
 
 [tool.uv]
 constraint-dependencies = [

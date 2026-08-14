@@ -1,0 +1,58 @@
+name: Accuracy
+
+# The statistical oracle. This is what makes every later optimisation
+# verifiable: it checks chunked results against unchunked ones and against
+# NumPy, so a kernel rewrite can be shown to have stayed correct rather than
+# merely to have got faster.
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+
+jobs:
+  accuracy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      # xfail_strict is on, so a bug that has been fixed while its marker is
+      # still in place fails here rather than passing quietly.
+      - name: Statistical accuracy oracle
+        run: uv run pytest benchmarks/accuracy.py -v
+
+  # The end-to-end chunked-vs-unchunked invariant takes tens of seconds per
+  # case, so it is kept off the PR path and run on every push to main.
+  accuracy-slow:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --all-extras
+
+      - name: Accuracy oracle including slow end-to-end invariants
+        run: uv run pytest benchmarks/accuracy.py -v --run-slow
