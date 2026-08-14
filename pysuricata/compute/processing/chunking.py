@@ -228,18 +228,17 @@ class AdaptiveChunker:
         Returns:
             Optimal chunk size.
         """
-        if self.strategy == ChunkingStrategy.FIXED_SIZE:
+        # An explicitly requested size is honoured, clamped only to the bounds
+        # this chunker was constructed with. Blending it with a heuristic
+        # (previously 0.7*optimal + 0.3*requested) meant a documented option
+        # never produced the behaviour it documented: asking for 50,000 rows
+        # silently gave something else, which makes chunk-dependent behaviour
+        # impossible to reason about or test.
+        if requested_size:
             return max(self.min_chunk_size, min(requested_size, self.max_chunk_size))
 
-        # For adaptive strategies, analyze the data
-        optimal_size = self.adaptive_chunk_size(source)
-
-        # Blend with requested size
-        if self.strategy == ChunkingStrategy.ADAPTIVE:
-            # Use weighted average
-            return int(0.7 * optimal_size + 0.3 * requested_size)
-        else:
-            return optimal_size
+        # No size requested: size it from the data.
+        return self.adaptive_chunk_size(source)
 
     def _analyze_dataframe_characteristics(self, df: Any) -> int:
         """Analyze DataFrame characteristics to determine optimal chunk size.
