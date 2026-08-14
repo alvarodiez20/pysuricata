@@ -18,6 +18,9 @@ _NO_MORE_ACCEPTANCES = 1 << 62
 # Acceptances are scheduled a block at a time. The schedule depends only on the
 # generator and k, so computing it in bulk costs nothing in correctness.
 _SCHEDULE_BLOCK = 2048
+# Rows stringified into the sketch when vectorised row hashing fails. This
+# bounds the sketch's input only -- never the row count.
+_HASH_FALLBACK_SAMPLE = 2000
 
 
 # splitmix64 finalisation constants (Steele et al.). A distinct-count sketch
@@ -518,6 +521,10 @@ class RowKMV:
     def __init__(self, k: int = 8192) -> None:
         self.kmv = KMV(k)
         self.rows = 0
+        # Set when a chunk's rows could not be hashed, so the distinct-row
+        # sketch has seen fewer rows than ``rows``. The row count stays exact
+        # either way; only the duplicate estimate degrades.
+        self.duplicates_degraded = False
 
     def update_from_pandas(self, df: pd.DataFrame) -> None:
         try:
@@ -548,12 +555,12 @@ class RowKMV:
             self.rows += n_rows
 
         except Exception:
-            # Conservative fallback: sample a few stringified rows
-            n = min(2000, len(df))
-            sample = df.head(n).astype(str).agg("|".join, axis=1)
-            for s in sample:
-                self.kmv.add(s)
-            self.rows += n
+            # Vectorised hashing failed for this chunk. Only the *sketch* has to
+            # fall back to a sample -- the row count must not, because it is what
+            # the report prints as "Rows" and what every missing-percentage
+            # divides by. Counting the sample here truncated a 50,000-row chunk
+            # to 2,000 and silently corrupted both.
+            self._degraded_update(len(df), df.head(_HASH_FALLBACK_SAMPLE))
 
     def update_from_polars(self, df: pl.DataFrame) -> None:
         try:
@@ -570,19 +577,49 @@ class RowKMV:
                 pdf = df.to_pandas()
                 self.update_from_pandas(pdf)
             except Exception:
-                self.rows += min(2000, df.height)
+                self._degraded_update(df.height, None)
 
         except Exception:
-            # Final fallback: use pandas path which has vectorized hashing
+            # Final fallback. As above, the sample bounds what the sketch sees,
+            # never what the row count records.
+            sample = None
             try:
-                sample = df.head(min(2000, df.height)).to_pandas()
-                self.update_from_pandas(sample)
+                sample = df.head(min(_HASH_FALLBACK_SAMPLE, df.height)).to_pandas()
             except Exception:
-                self.rows += min(2000, df.height)
+                sample = None
+            self._degraded_update(df.height, sample)
+
+    def _degraded_update(self, n_rows: int, sample: Any) -> None:
+        """Record every row, but feed the sketch only what could be hashed.
+
+        Args:
+            n_rows: The true number of rows in the chunk. Always counted.
+            sample: A small frame to stringify into the sketch, or None if even
+                that is not possible.
+        """
+        if sample is not None:
+            try:
+                joined = sample.astype(str).agg("|".join, axis=1)
+                for value in joined:
+                    self.kmv.add(value)
+                if len(sample) < n_rows:
+                    self.duplicates_degraded = True
+            except Exception:
+                self.duplicates_degraded = True
+        else:
+            self.duplicates_degraded = True
+        self.rows += int(n_rows)
 
     def approx_duplicates(self) -> tuple[int, float]:
+        """Estimated duplicate rows and their percentage.
+
+        When ``duplicates_degraded`` is set the sketch has seen only part of the
+        data, so the distinct count is an underestimate and this figure an
+        overestimate. The result is clamped to the row count so it can never
+        exceed what was actually read.
+        """
         uniq = self.kmv.estimate()
-        d = max(0, self.rows - uniq)
+        d = max(0, min(self.rows, self.rows - uniq))
         pct = (d / self.rows * 100.0) if self.rows else 0.0
         return d, pct
 

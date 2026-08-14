@@ -21,7 +21,7 @@ class DataAdapter(Protocol):
     """
 
     def infer_and_build(
-        self, data: Any, config: Any
+        self, data: Any, config: Any, *, first_chunk_is_whole: bool = True
     ) -> tuple[ColumnKinds, dict[str, Any]]:
         """Infer column types and build accumulators.
 

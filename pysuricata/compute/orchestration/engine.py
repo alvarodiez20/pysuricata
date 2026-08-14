@@ -48,6 +48,29 @@ def _is_exhaustible_iterator(source: Any) -> bool:
         return False
 
 
+def _first_chunk_is_whole_dataset(source: Any, first_chunk: Any) -> bool:
+    """Return True only when the first chunk provably contains every row.
+
+    Type inference reclassifies a numeric column as categorical from the
+    distinct-value ratio of the first chunk. That is sound evidence when the
+    chunk is the whole column and unsound otherwise: a sorted column, or one
+    with a leading run of a single value, gives a prefix that looks
+    low-cardinality while the column is not -- and the decision is never
+    revisited.
+
+    An exhaustible iterator is treated as streaming even if it happens to yield
+    only one chunk, because finding that out would mean consuming it.
+    """
+    try:
+        if pd is not None and isinstance(source, pd.DataFrame):
+            return len(first_chunk) == len(source)
+        if pl is not None and isinstance(source, pl.DataFrame):
+            return first_chunk.height == source.height
+    except Exception:
+        return False
+    return False
+
+
 class EngineManager:
     """Manages engine adapters and their selection.
 
@@ -327,7 +350,15 @@ class StreamingEngine:
             except StopIteration:
                 return ProcessingResult.error_result("Empty source")
 
-            kinds, accs = adapter.infer_and_build(first_chunk, config)
+            # Whether this first chunk is the entire dataset decides how much
+            # weight type inference may put on it. If more chunks follow, the
+            # chunk's distinct-value ratio says nothing reliable about the
+            # column, so reclassification heuristics must not fire.
+            first_chunk_is_whole = _first_chunk_is_whole_dataset(source, first_chunk)
+
+            kinds, accs = adapter.infer_and_build(
+                first_chunk, config, first_chunk_is_whole=first_chunk_is_whole
+            )
             corr_est = self.maybe_corr_estimator(kinds, config)
 
             # Process first chunk
