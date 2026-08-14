@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import bisect
 import hashlib
 import math
 from collections.abc import Sequence
@@ -15,15 +16,91 @@ import numpy as np
 _TINY = 5e-324
 # Sentinel "no further acceptances": larger than any realistic stream index.
 _NO_MORE_ACCEPTANCES = 1 << 62
+# Uniform draws are taken a block at a time; scalar np.random calls are dominated
+# by interpreter overhead.
+_DRAW_BLOCK = 4096
+
+
+# splitmix64 finalisation constants (Steele et al.). A distinct-count sketch
+# needs uniformity and avalanche, not preimage resistance -- SHA-1 was doing a
+# cryptographer's job for a statistician's problem, at roughly a third of total
+# runtime.
+_SPLITMIX_A = np.uint64(0xBF58476D1CE4E5B9)
+_SPLITMIX_B = np.uint64(0x94D049BB133111EB)
+_U64_MASK = (1 << 64) - 1
+
+
+def _mix64(z: int) -> int:
+    """splitmix64 finaliser for a single already-64-bit value."""
+    z &= _U64_MASK
+    z ^= z >> 30
+    z = (z * 0xBF58476D1CE4E5B9) & _U64_MASK
+    z ^= z >> 27
+    z = (z * 0x94D049BB133111EB) & _U64_MASK
+    return z ^ (z >> 31)
+
+
+def _mix64_array(values: np.ndarray) -> np.ndarray:
+    """Vectorised splitmix64 finaliser over a uint64 array.
+
+    Unsigned overflow is the algorithm, not an error, so the wrap warnings are
+    suppressed rather than avoided.
+    """
+    z = values.astype(np.uint64, copy=True)
+    with np.errstate(over="ignore", invalid="ignore"):
+        z ^= z >> np.uint64(30)
+        z *= _SPLITMIX_A
+        z ^= z >> np.uint64(27)
+        z *= _SPLITMIX_B
+        z ^= z >> np.uint64(31)
+    return z
+
+
+def _hash_numeric_array(arr: np.ndarray) -> np.ndarray:
+    """Hash a numeric array by its bit pattern, without boxing a Python object.
+
+    -0.0 is canonicalised to 0.0 so the two do not count as distinct values --
+    the old ``str(v)`` path made them distinct, which was wrong.
+    """
+    as_f64 = np.ascontiguousarray(arr, dtype=np.float64)
+    bits = as_f64.view(np.uint64).copy()
+    bits[as_f64 == 0.0] = np.uint64(0)
+    return _mix64_array(bits)
+
+
+def _hash_value(v: Any) -> int:
+    """Hash one arbitrary value to 64 bits.
+
+    Real numbers are hashed by bit pattern so the result agrees with
+    ``_hash_numeric_array`` -- the vectorised and scalar paths must produce the
+    same hash for the same value, or the exact counter double-counts it.
+    """
+    if v is None:
+        return _u64(b"__NULL__")
+    if isinstance(v, bool):
+        # Before the int branch: bool is a subclass of int.
+        return _mix64(1 if v else 0)
+    if isinstance(v, (int, float, np.integer, np.floating)):
+        as_float = float(v)
+        if as_float != as_float:  # NaN: every NaN is the same distinct value
+            return _mix64(int(np.float64(np.nan).view(np.uint64)))
+        if as_float == 0.0:  # -0.0 and 0.0 are the same value
+            return _mix64(0)
+        return _mix64(int(np.float64(as_float).view(np.uint64)))
+    if isinstance(v, bytes):
+        return _u64(v)
+    return _u64(str(v).encode("utf-8", "ignore"))
 
 
 def _u64(x: bytes) -> int:
-    """Return a 64-bit unsigned integer hash from bytes using SHA1.
+    """Return a 64-bit unsigned integer hash from bytes.
 
-    Fast enough and avoids external dependencies. Uses the first 8 bytes
-    of the sha1 digest to build an unsigned 64-bit integer.
+    blake2b with an 8-byte digest gives 64 bits directly, with no slicing of a
+    wider digest, and is markedly cheaper than SHA-1 here. Values that are
+    already 64-bit should go through ``_mix64``/``_hash_numeric_array`` instead
+    of being formatted into bytes at all.
     """
-    return int.from_bytes(hashlib.sha1(x).digest()[:8], "big", signed=False)
+    return int.from_bytes(hashlib.blake2b(x, digest_size=8).digest(), "big")
 
 
 class KMV:
@@ -57,190 +134,107 @@ class KMV:
         if len(values) == 0:
             return
 
-        # Convert all values to bytes and hash them in batch
-        try:
-            import numpy as np
+        # Fast path: a numeric ndarray can be hashed by bit pattern, vectorised,
+        # without allocating a Python object per row. The generic path below
+        # formats every value into bytes first, which for a float column meant
+        # one str() and one digest per row.
+        if isinstance(values, np.ndarray) and values.dtype.kind in "fiub":
+            self._offer_hashes(_hash_numeric_array(values))
+            return
 
-            # Convert values to bytes
-            byte_values = []
-            for v in values:
-                if v is None:
-                    byte_values.append(b"__NULL__")
-                elif isinstance(v, bytes):
-                    byte_values.append(v)
-                else:
-                    byte_values.append(str(v).encode("utf-8", "ignore"))
+        hashes = np.fromiter(
+            (_hash_value(v) for v in values), dtype=np.uint64, count=len(values)
+        )
+        self._offer_hashes(hashes)
 
-            # Batch hash computation
-            hashes = np.array([_u64(bv) for bv in byte_values], dtype=np.uint64)
+    def _offer_hashes(self, hashes: np.ndarray) -> None:
+        """Feed a batch of 64-bit hashes into exact mode, then the sketch.
 
-            # Process in exact mode if still using exact tracking
-            if self._use_exact:
-                for i, bv in enumerate(byte_values):
-                    if bv in self._exact_counter:
-                        self._exact_counter[bv] += 1
-                    else:
-                        if len(self._exact_counter) >= self._max_exact_tracking:
-                            # Switch to approximation mode
-                            self._use_exact = False
-                            # Convert existing exact values to KMV hashes
-                            for exact_value in self._exact_counter:
-                                h = _u64(exact_value)
-                                self._add_hash_to_kmv(h)
-                            self._exact_counter.clear()
-                            # Process remaining values in approximation mode
-                            remaining_hashes = hashes[i:]
-                            self._batch_add_hashes(remaining_hashes)
-                            return
-                        else:
-                            self._exact_counter[bv] = 1
-            else:
-                # Process all hashes in approximation mode
-                self._batch_add_hashes(hashes)
+        The exact counter is keyed by hash rather than by the value's bytes, so
+        every entry point -- vectorised, generic and scalar -- agrees on the key
+        for a given value. Keying two paths differently would count the same
+        value twice.
+        """
+        if not self._use_exact:
+            self._batch_add_hashes(hashes)
+            return
 
-        except ImportError:
-            # Fallback to individual processing if numpy not available
-            for v in values:
-                self.add(v)
+        uniques, counts = np.unique(hashes, return_counts=True)
+        for idx, (h, c) in enumerate(
+            zip(uniques.tolist(), counts.tolist(), strict=True)
+        ):
+            if h in self._exact_counter:
+                self._exact_counter[h] += int(c)
+                continue
+            if len(self._exact_counter) >= self._max_exact_tracking:
+                self._spill_exact_to_kmv()
+                # Only the not-yet-recorded tail: the spill already moved every
+                # hash counted so far into the sketch, and re-offering them
+                # would count them twice.
+                self._batch_add_hashes(uniques[idx:])
+                return
+            self._exact_counter[h] = int(c)
+
+    def _spill_exact_to_kmv(self) -> None:
+        """Leave exact mode, moving everything counted so far into the sketch."""
+        self._use_exact = False
+        for existing in self._exact_counter:
+            self._add_hash_to_kmv(existing)
+        self._exact_counter.clear()
 
     def _add_hash_to_kmv(self, h: int) -> None:
-        """Add a single hash to the KMV sketch.
+        """Insert one hash, keeping _values sorted, distinct and at most k long.
 
-        Args:
-            h: Hash value to add
+        Distinctness is the sketch's core invariant: the estimator reads
+        len(_values) as a distinct count when below k, and the kth smallest hash
+        above it. A repeated hash inserted twice inflates both.
         """
+        pos = bisect.bisect_left(self._values, h)
+        if pos < len(self._values) and self._values[pos] == h:
+            return  # already present
         if len(self._values) < self.k:
-            self._values.append(h)
-            if len(self._values) == self.k:
-                self._values.sort()
-        else:
-            if h < self._values[-1]:
-                # Binary search and insert
-                lo, hi = 0, self.k - 1
-                while lo < hi:
-                    mid = (lo + hi) // 2
-                    if self._values[mid] < h:
-                        lo = mid + 1
-                    else:
-                        hi = mid
-                self._values.insert(lo, h)
-                del self._values[self.k]
+            self._values.insert(pos, h)
+        elif h < self._values[-1]:
+            self._values.insert(pos, h)
+            del self._values[self.k :]
 
     def _batch_add_hashes(self, hashes: np.ndarray) -> None:
-        """Batch add hashes to KMV sketch using numpy operations.
+        """Merge a batch of hashes, keeping the k smallest distinct ones.
 
         Args:
-            hashes: Array of hash values to add
+            hashes: Array of hash values to add.
         """
         if len(hashes) == 0:
             return
 
-        # Fill KMV sketch first if not full
-        if len(self._values) < self.k:
-            needed = min(self.k - len(self._values), len(hashes))
-            self._values.extend(hashes[:needed])
-            hashes = hashes[needed:]
-            if len(self._values) == self.k:
-                self._values.sort()
-
-        # Process remaining hashes
-        if len(hashes) > 0:
-            # Filter hashes that are smaller than the largest in KMV
-            max_hash = self._values[-1] if self._values else 0
-            candidate_mask = hashes < max_hash
-            candidate_hashes = hashes[candidate_mask]
-
-            if len(candidate_hashes) > 0:
-                # Add candidates to existing values and sort
-                self._values.extend(candidate_hashes)
-                self._values.sort()
-
-                # Keep only the k smallest
-                if len(self._values) > self.k:
-                    self._values = self._values[: self.k]
+        incoming = np.unique(np.asarray(hashes, dtype=np.uint64))
+        if self._values:
+            existing = np.asarray(self._values, dtype=np.uint64)
+            combined = np.union1d(existing, incoming)
+        else:
+            combined = incoming
+        self._values = combined[: self.k].tolist()
 
     def add(self, v: Any) -> None:
-        # Convert value to bytes for consistent hashing
-        if v is None:
-            v = b"__NULL__"
-        elif isinstance(v, bytes):
-            pass
-        else:
-            v = str(v).encode("utf-8", "ignore")
+        """Add a single value.
 
-        # Track unique values exactly if we're still in exact mode
+        Routes through the same hash and the same exact-counter key as the batch
+        paths. The previous implementation keyed the counter by the value's
+        bytes while spilling used a re-derived hash, and on the spill branch it
+        inserted the current hash twice.
+        """
+        h = _hash_value(v)
+
         if self._use_exact:
-            if v in self._exact_counter:
-                self._exact_counter[v] += 1
-            else:
-                # Check if we've hit the limit for exact tracking
-                if len(self._exact_counter) >= self._max_exact_tracking:
-                    # Switch to approximation mode
-                    self._use_exact = False
-                    # Convert existing exact values to KMV hashes before clearing
-                    for exact_value in self._exact_counter:
-                        h = _u64(exact_value)
-                        if len(self._values) < self.k:
-                            self._values.append(h)
-                        else:
-                            # Insert if smaller than largest
-                            if h < self._values[-1]:
-                                # Binary search and insert
-                                lo, hi = 0, self.k - 1
-                                while lo < hi:
-                                    mid = (lo + hi) // 2
-                                    if self._values[mid] < h:
-                                        lo = mid + 1
-                                    else:
-                                        hi = mid
-                                self._values.insert(lo, h)
-                                del self._values[self.k]
-                    # Sort the values after adding all
-                    if len(self._values) > 1:
-                        self._values.sort()
-                    # Clear the counter to free memory
-                    self._exact_counter.clear()
-                    # Add the current value to KMV sketch
-                    h = _u64(v)
-                    if len(self._values) < self.k:
-                        self._values.append(h)
-                        if len(self._values) == self.k:
-                            self._values.sort()
-                    else:
-                        if h < self._values[-1]:
-                            lo, hi = 0, self.k - 1
-                            while lo < hi:
-                                mid = (lo + hi) // 2
-                                if self._values[mid] < h:
-                                    lo = mid + 1
-                                else:
-                                    hi = mid
-                            self._values.insert(lo, h)
-                            del self._values[self.k]
-                else:
-                    self._exact_counter[v] = 1
+            if h in self._exact_counter:
+                self._exact_counter[h] += 1
+                return
+            if len(self._exact_counter) < self._max_exact_tracking:
+                self._exact_counter[h] = 1
+                return
+            self._spill_exact_to_kmv()
 
-        # Use KMV approximation if we're not in exact mode
-        if not self._use_exact:
-            h = _u64(v)
-            if len(self._values) < self.k:
-                self._values.append(h)
-                if len(self._values) == self.k:
-                    self._values.sort()
-            else:
-                # maintain k-smallest set (max-heap simulation via last element after sort)
-                if h < self._values[-1]:
-                    # insert in sorted order (k is small)
-                    lo, hi = 0, self.k - 1
-                    while lo < hi:
-                        mid = (lo + hi) // 2
-                        if self._values[mid] < h:
-                            lo = mid + 1
-                        else:
-                            hi = mid
-                    self._values.insert(lo, h)
-                    # trim to size
-                    del self._values[self.k]
+        self._add_hash_to_kmv(h)
 
     @property
     def is_exact(self) -> bool:
@@ -270,10 +264,10 @@ class KMV:
         memory = 0
         # _values list: k integers * 8 bytes each
         memory += len(self._values) * 8
-        # _exact_counter: dict overhead + key bytes + value ints
-        memory += len(self._exact_counter) * (32 + 8)  # rough estimate
-        for key in self._exact_counter:
-            memory += len(key)  # actual key bytes
+        # _exact_counter: dict overhead plus a 64-bit hash key and an int count.
+        # Keys are hashes now, not the original value bytes, so the per-entry
+        # cost is fixed rather than proportional to value length.
+        memory += len(self._exact_counter) * (32 + 8 + 8)
         return memory
 
 
@@ -290,7 +284,7 @@ class ReservoirSampler:
     one per element -- roughly 145k draws for 10M rows into k=20k, instead of 10M.
     """
 
-    __slots__ = ("k", "_buf", "_seen", "_w", "_next")
+    __slots__ = ("k", "_buf", "_seen", "_w", "_next", "_draws", "_draw_i")
 
     def __init__(self, k: int = 20_000) -> None:
         self.k = int(k)
@@ -300,6 +294,25 @@ class ReservoirSampler:
         # _next is the stream index (0-based) of the next element to accept.
         self._w: float = 1.0
         self._next: int = -1
+        # Pre-drawn uniforms, consumed by _uniform().
+        self._draws: np.ndarray = np.empty(0, dtype=float)
+        self._draw_i: int = 0
+
+    def _uniform(self) -> float:
+        """One uniform draw, taken from a pre-filled block.
+
+        Algorithm L needs two draws per acceptance, and a scalar
+        ``np.random.random()`` call costs far more in interpreter overhead than
+        the number it returns. Drawing a block at a time amortises that away
+        while keeping ``np.random`` as the source, so seeding still controls the
+        sample.
+        """
+        if self._draw_i >= self._draws.size:
+            self._draws = np.random.random(_DRAW_BLOCK)
+            self._draw_i = 0
+        u = self._draws[self._draw_i]
+        self._draw_i += 1
+        return u if u > 0.0 else _TINY
 
     def _draw_skip(self) -> int:
         """Number of elements to pass over before the next acceptance."""
@@ -308,12 +321,10 @@ class ReservoirSampler:
         if denom >= 0.0:
             # w has underflowed to 0 (or saturated); no further acceptances.
             return _NO_MORE_ACCEPTANCES
-        u = max(float(np.random.random()), _TINY)
-        return int(math.log(u) / denom)
+        return int(math.log(self._uniform()) / denom)
 
     def _advance_w(self) -> None:
-        u = max(float(np.random.random()), _TINY)
-        self._w *= math.exp(math.log(u) / self.k)
+        self._w *= math.exp(math.log(self._uniform()) / self.k)
 
     def _start_skipping(self) -> None:
         """Initialise the skip state the moment the reservoir first fills."""
@@ -325,7 +336,9 @@ class ReservoirSampler:
 
     def _accept(self, value: float) -> None:
         """Evict a uniformly chosen slot and schedule the next acceptance."""
-        self._buf[int(np.random.randint(0, self.k))] = value
+        # Scale a buffered uniform instead of a scalar np.random.randint call:
+        # _uniform() is in (0, 1), so this lands in [0, k-1].
+        self._buf[int(self._uniform() * self.k)] = value
         self._advance_w()
         skip = self._draw_skip()
         if skip >= _NO_MORE_ACCEPTANCES:
