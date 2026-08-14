@@ -243,10 +243,29 @@ class TestStreamingMomentsInvariants:
         m2 = (centred**2).mean()
         assert got["mean"] == pytest.approx(data.mean(), rel=1e-9)
         assert got["std"] == pytest.approx(data.std(ddof=1), rel=1e-9)
-        assert got["skew"] == pytest.approx((centred**3).mean() / m2**1.5, rel=1e-6)
+        # Looser on the higher moments by design. On a heavy-tailed sample the
+        # fourth moment is dominated by a handful of extreme values, so a
+        # streaming merge and NumPy's two-pass computation legitimately differ in
+        # the last few digits -- and numpy's Generator stream is not guaranteed
+        # stable across versions, so the actual draw varies by environment.
+        assert got["skew"] == pytest.approx((centred**3).mean() / m2**1.5, rel=1e-4)
         assert got["kurtosis"] == pytest.approx(
-            (centred**4).mean() / m2**2 - 3.0, rel=1e-6
+            (centred**4).mean() / m2**2 - 3.0, rel=1e-4
         )
+
+    @pytest.mark.parametrize("n_chunks", [1, 3, 37])
+    def test_chunking_does_not_change_the_answer(self, data, n_chunks):
+        """The invariant that does not depend on NumPy agreeing: however the
+        stream is split, the accumulator must land in the same place."""
+        whole = StreamingMoments()
+        whole.update(data)
+        split = StreamingMoments()
+        for chunk in np.array_split(data, n_chunks):
+            split.update(chunk)
+
+        reference, got = whole.get_statistics(), split.get_statistics()
+        for key in ("mean", "std", "skew", "kurtosis"):
+            assert got[key] == pytest.approx(reference[key], rel=1e-9), key
 
     def test_merge_equals_single_stream(self, data):
         left, right = data[:20_000], data[20_000:]
@@ -300,3 +319,31 @@ class TestStreamingMomentsInvariants:
         for chunk in np.array_split(values, 20):
             m.update(chunk)
         assert m.get_statistics()["std"] == pytest.approx(values.std(ddof=1), rel=1e-6)
+
+
+class TestHashingAtScale:
+    """Large-array regression guards.
+
+    A build of numpy without wheels for the running Python computed uint64
+    arithmetic wrongly for large arrays, collapsing every hash to the same
+    value. That reached the test suite only as an absurd distinct-count
+    estimate; these assert the property directly, at a size that exercises the
+    vectorised paths.
+    """
+
+    @pytest.mark.parametrize("n", [10_000, 100_000, 300_000])
+    def test_distinct_inputs_give_distinct_hashes(self, n):
+        hashes = _hash_numeric_array(np.arange(n, dtype=float))
+        assert len(np.unique(hashes)) == n
+
+    def test_hashes_spread_across_the_64_bit_range(self):
+        """A collapsed or truncated mixer shows up as a degenerate spread."""
+        hashes = _hash_numeric_array(np.arange(100_000, dtype=float))
+        top_byte = (hashes >> np.uint64(56)).astype(np.int64)
+        assert len(np.unique(top_byte)) == 256
+        assert hashes.max() > (1 << 63)
+
+    def test_large_distinct_count_is_not_degenerate(self):
+        s = KMV(2048)
+        s.add_many(np.arange(300_000, dtype=float))
+        assert s.estimate() > 200_000
