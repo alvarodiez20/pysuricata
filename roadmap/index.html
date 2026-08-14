@@ -1,0 +1,2513 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Exploratory data analysis reports for pandas DataFrames">
+      
+      
+      
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/roadmap/">
+      
+      
+      
+      
+      <link rel="icon" href="../assets/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>PySuricata roadmap — performance, correctness, positioning - PySuricata</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="light-green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pysuricata-roadmap-performance-correctness-positioning" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PySuricata" class="md-header__button md-logo" aria-label="PySuricata" data-md-component="logo">
+      
+  <img src="../assets/favicon.ico" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PySuricata
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              PySuricata roadmap — performance, correctness, positioning
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="light-green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="light-green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/alvarodiez20/pysuricata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    alvarodiez20/pysuricata
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../why-pysuricata/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../usage/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Technical Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../about-suricatas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PySuricata" class="md-nav__button md-logo" aria-label="PySuricata" data-md-component="logo">
+      
+  <img src="../assets/favicon.ico" alt="logo">
+
+    </a>
+    PySuricata
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/alvarodiez20/pysuricata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    alvarodiez20/pysuricata
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../why-pysuricata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Why PySuricata?
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quick Start
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Examples Gallery
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Basic Usage
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Advanced Features
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Tips
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Technical Reference
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Technical Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../complexity-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Complexity Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Statistical Methods
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            Statistical Methods
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/numeric/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Numeric Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/categorical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Categorical Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/datetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    DateTime Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/boolean/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Boolean Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Advanced Analytics
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Analytics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../analytics/correlations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Correlations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../analytics/missing-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Missing Values
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../analytics/duplicates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Duplicate Detection
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../analytics/quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Data Quality
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Algorithms
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            Algorithms
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../algorithms/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Streaming Statistics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../algorithms/sketches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sketch Algorithms
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../algorithms/sampling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reservoir Sampling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture-diagrams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture Diagrams
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sequence-diagrams-complexity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sequence Diagrams
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    About
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            About
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about-suricatas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    About Suricatas
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="pysuricata-roadmap-performance-correctness-positioning">PySuricata roadmap — performance, correctness, positioning</h1>
+<p>Written 14 Aug 2026. Every number here was measured with the harness in
+<code>benchmarks/</code>, against <code>pysuricata 0.0.16</code>, Python 3.11.15, pandas 2.3.3,
+numpy 2.4.4, ydata-profiling 4.18.4, on a 2-core x86-64 Linux container with a
+measured 26.0 GB/s streaming read. <strong>Re-run before publishing anything</strong> — your
+machine will give different absolute numbers and the same ratios.</p>
+<p>A rendered version of this document with charts exists as the
+<code>pysuricata-roadmap</code> artifact.</p>
+<hr />
+<h2 id="the-short-version">The short version</h2>
+<p>PySuricata already beats ydata-profiling by a wide margin and nobody knows,
+because it has never been measured or published. Meanwhile a third of its runtime
+goes to SHA-1 hashing that no sketch needs, a fifth goes to <code>dateutil</code> parsing
+dates one row at a time, and six statistical bugs make chunked results disagree
+with unchunked ones.</p>
+<p>A native Rust core is the right project. It is not the <em>next</em> project.</p>
+<table>
+<thead>
+<tr>
+<th>Measured today</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>vs ydata-profiling, 25k x 14 mixed frame</td>
+<td><strong>7.9x</strong> faster wall clock (1.77 s vs 13.98 s)</td>
+</tr>
+<tr>
+<td>vs ydata-profiling, marginal memory</td>
+<td><strong>11x</strong> less (28 MB vs 313 MB above the ~150 MB interpreter floor)</td>
+</tr>
+<tr>
+<td>Runtime in SHA-1</td>
+<td><strong>~36%</strong> of profiled self time</td>
+</tr>
+<tr>
+<td>Runtime in <code>dateutil</code></td>
+<td><strong>20.7%</strong></td>
+</tr>
+<tr>
+<td>Correctness bugs with a reproducing test</td>
+<td><strong>6</strong></td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="phase-0-trust-2-weekends">Phase 0 — Trust (2 weekends)</h2>
+<p>Nothing else matters if the numbers are wrong, and an optimisation you cannot
+verify is a liability.</p>
+<p><code>benchmarks/accuracy.py</code> ships six <code>xfail</code>-marked tests. Each names a file and
+line. Fix, delete the marker, move on. When one starts passing while the marker
+is still there, pytest reports XPASS and tells you.</p>
+<p><strong>Exit criterion:</strong> the accuracy suite passes with zero xfails, and CI runs it on
+every PR.</p>
+<h3 id="the-bugs">The bugs</h3>
+<h4 id="critical-generator-sources-silently-drop-chunk-0">CRITICAL — generator sources silently drop chunk 0</h4>
+<p><code>compute/orchestration/engine.py:127</code></p>
+<p><code>next(iter(data))</code> is used to sniff which adapter to build, consuming the first
+chunk. <code>chunks_from_source</code> then iterates the already-advanced generator. The
+documented "stream chunks larger than RAM" API — the headline feature — silently
+omits the first chunk from every statistic, and a one-chunk generator reports
+"Empty source".</p>
+<p>Fix: wrap in <code>itertools.chain([first], rest)</code>, or sniff from a peeked copy.
+Half an hour.</p>
+<h4 id="critical-reservoir-sampling-is-biased">CRITICAL — reservoir sampling is biased</h4>
+<p><code>accumulators/sketches.py:311-324</code></p>
+<p><code>add_many</code> draws <code>np.random.randint(1, seen + len(arr) + 1, size=len(arr))</code> — one
+uniform over the <em>post-batch</em> count for every element. True reservoir sampling
+requires each element <code>i</code> to be accepted with probability <code>k/(seen+i)</code>, a
+denominator that grows <em>within</em> the batch. Early elements are under-weighted,
+late ones over-weighted, and the bias grows with chunk size.</p>
+<p>Every quantile, the median, IQR, MAD, outlier counts and the histogram come from
+this reservoir, so accuracy silently degrades as chunk size grows — the opposite
+of what the docs imply.</p>
+<p>Fix: Algorithm L (Li 1994). Implemented in <code>native/src/reservoir.rs</code>; the
+pure-Python version is ~25 lines. It is also much cheaper: ~145k random draws for
+10M rows into k=20k, instead of 10M.</p>
+<h4 id="critical-skewness-and-kurtosis-are-wrong-for-multi-chunk-data">CRITICAL — skewness and kurtosis are wrong for multi-chunk data</h4>
+<p><code>accumulators/algorithms.py:138-162</code></p>
+<p><code>StreamingMoments._update_vectorized</code>'s M3/M4 batch merge is commented "simplified
+for performance". It is not Pébay's formula. The M3 cross term is
+<code>3*delta*M2_B/n_B</code> where it should be <code>3*delta*(n_A*M2_B - n_B*M2_A)/n</code>, and M4
+has the same defect.</p>
+<p>Results are correct for single-chunk data and wrong for everything else — which is
+exactly why it survived. The <code>merge()</code> method twelve lines below has the correct
+formula, so the two code paths in the same class disagree with each other.</p>
+<p>Fix: build a <code>StreamingMoments</code> from the batch and call the existing correct
+<code>merge()</code>. Net deletion of code. Reference implementation in
+<code>native/src/moments.rs</code>.</p>
+<h4 id="serious-profile-resets-the-callers-global-rng">SERIOUS — <code>profile()</code> resets the caller's global RNG</h4>
+<p><code>report.py:88-89</code></p>
+<p><code>np.random.seed(seed)</code> and <code>random.seed(seed)</code> are process-global, and the default
+seed is 0. A notebook that seeds its own experiment and then profiles a frame has
+its RNG state silently reset. It also makes per-column threading impossible to do
+reproducibly, so this blocks the parallelism work.</p>
+<p>Fix: per-accumulator <code>np.random.Generator</code>. Mechanical, ~6 call sites.</p>
+<h4 id="serious-correlations-collapse-to-000-on-large-mean-columns">SERIOUS — correlations collapse to 0.00 on large-mean columns</h4>
+<p><code>compute/analysis/correlation.py:153-158</code></p>
+<p><code>vx = max(0.0, sx2 - sx*sx/n)</code> is the textbook catastrophic-cancellation form. For
+timestamps-as-int, IDs, or prices around 1e6, the two terms differ only in the
+last bits of float64 and the variance collapses to zero — then the function
+returns <code>0.0</code>, silently reporting "no correlation". The <code>max(0.0, ...)</code> hides the
+symptom instead of surfacing it.</p>
+<p>Fix: Welford/Chan pairwise co-moments — the same merge already needed for M2.</p>
+<h4 id="moderate-skewness-uses-the-sample-variance-in-the-denominator">MODERATE — skewness uses the sample variance in the denominator</h4>
+<p><code>accumulators/algorithms.py:192</code></p>
+<p>g1 is <code>(m3/n) / (m2/n)^1.5</code> using the <em>population</em> second moment. The code divides
+by <code>variance**1.5</code> with the n-1 form, a systematic scale error of <code>((n-1)/n)^1.5</code>.
+Small, but it never converges away, and it means the numbers do not match scipy.</p>
+<h3 id="bugs-without-a-test-yet">Bugs without a test yet</h3>
+<ul>
+<li><strong>Column types decided from the first chunk alone</strong> — <code>engine.py:294</code>,
+  <code>inference.py:545</code>. <code>should_reclassify_numeric_as_categorical</code> uses
+  <code>unique_count / total_count &lt; 0.05</code> over one chunk. A 100M-row numeric column
+  with 10M distinct values can be permanently classified categorical because its
+  first 200k rows had nine. Fix: defer the decision, or use the KMV estimate
+  rather than a chunk-local ratio.</li>
+<li><strong>Row count silently truncates to 2,000 on the hash fallback</strong> —
+  <code>accumulators/sketches.py:483-488</code>. If vectorised row hashing raises for any
+  chunk, the <code>except</code> path contributes at most 2,000 rows to <code>row_kmv.rows</code>. That
+  value is what the report displays as "Rows" (<code>render/html.py:62</code>) and what
+  <code>missing_cells_pct</code> divides by. Fix: always add <code>len(df)</code>; let only the
+  duplicate <em>estimate</em> degrade, and mark it approximate.</li>
+<li><strong>Extreme-value row indices are chunk-local</strong> — <code>consume.py:240-254</code>,
+  <code>consume_polars.py:186-190</code>. The engine tracks a global row offset but never
+  passes it down, so "row 4,182 had the maximum" is wrong for every chunk after
+  the first. Extremes are also only sampled every 5th chunk
+  (<code>_extreme_update_counter % 5</code>), so the reported min/max can miss the true
+  extremes entirely. Fix: pass the offset; make min/max exact (O(1) per chunk) and
+  keep the throttle only for top-k <em>with indices</em>.</li>
+<li><strong>Documented options that do nothing</strong> — <code>ComputeOptions.columns</code>
+  (<code>api.py:208</code>) is validated but never reaches the engine. <code>corr_max_cols</code>
+  (<code>api.py:277</code>) is declared, validated, copied into config, and never read — a
+  1,000-column frame builds 499,500 pairs despite a documented cap of 50.
+  <code>chunk_size</code> is blended (<code>0.7*optimal + 0.3*requested</code>, <code>chunking.py:240</code>) so
+  the user never gets what they asked for. Fix: wire them up or delete them from
+  the docs.</li>
+<li><strong>Timestamps before 1906 counted as missing</strong> — <code>accumulators/datetime.py:230</code>.
+  The validity window is <code>[-2e18, 1e20]</code> ns; the lower bound is 1906-05-13.
+  Birthdates and historical records are silently reclassified as nulls. Fix:
+  widen to the int64 datetime64[ns] range (1677-2262).</li>
+</ul>
+<h3 id="why-these-were-not-caught">Why these were not caught</h3>
+<p>The test suite is 41 files and ~304 KB — but roughly <strong>2.3 KB of it covers the
+accumulators</strong>, which are ~2,600 lines of the statistical core. There is no test
+anywhere that chunked results equal unchunked results, and none that any statistic
+matches NumPy. Five of the six bugs are in the numerical core.</p>
+<hr />
+<h2 id="phase-1-free-performance-2-3-weekends">Phase 1 — Free performance (2-3 weekends)</h2>
+<p>No Rust, no new dependencies, no API change.</p>
+<p><code>python -m benchmarks.hotspots --suite mixed</code> on a 50,000 x 14 frame, 2.4 s
+unprofiled, self time by subsystem:</p>
+<table>
+<thead>
+<tr>
+<th>Subsystem</th>
+<th>Share</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>accumulate</td>
+<td>28.8%</td>
+</tr>
+<tr>
+<td>date parsing</td>
+<td>20.7%</td>
+</tr>
+<tr>
+<td>unclassified</td>
+<td>17.3%</td>
+</tr>
+<tr>
+<td>hashing (SHA-1)</td>
+<td>13.4%</td>
+</tr>
+<tr>
+<td>pandas / numpy</td>
+<td>7.1%</td>
+</tr>
+<tr>
+<td>list sorting</td>
+<td>5.5%</td>
+</tr>
+<tr>
+<td>render</td>
+<td>4.9%</td>
+</tr>
+<tr>
+<td>type inference</td>
+<td>1.6%</td>
+</tr>
+</tbody>
+</table>
+<p><code>accumulate</code> is dominated by <code>sketches.py</code> <code>add_many</code> (0.589 + 0.234 + 0.135 s
+self), which is the KMV ingest path. Adding its SHA-1 cost (<code>_u64</code> 0.365 s,
+<code>digest</code> 0.174 s) and the list sorts it triggers (0.264 s), <strong>the distinct-count
+sketch alone is ~36% of profiled self time.</strong></p>
+<h3 id="the-work">The work</h3>
+<ol>
+<li><strong>Replace SHA-1 with a 64-bit mixer</strong> — <code>accumulators/sketches.py:11</code>.
+   A cryptographic hash resisting preimage attacks is doing a job that needs
+   uniformity and avalanche and nothing else. Measured <strong>755x</strong> on the hash alone.</li>
+<li><strong>Replace the sorted list with a bounded heap</strong> — <code>sketches.py:124</code>.
+   <code>_batch_add_hashes</code> does <code>list.extend(...)</code> then <code>list.sort()</code> on every chunk,
+   over boxed Python ints. Measured <strong>12.3x</strong> on the full ingest.</li>
+<li><strong>Give <code>RowKMV</code> a direct hash path</strong> — <code>sketches.py:454</code>. It computes a
+   perfectly good vectorised <code>uint64</code> row hash with
+   <code>pd.util.hash_pandas_object</code>, then hands it to <code>KMV.add_many</code>, which calls
+   <code>str(v).encode()</code> and <code>hashlib.sha1</code> on every one of those uint64s. For a
+   10M-row frame that is 10M string formats and 10M SHA-1 digests to re-hash
+   values that were already uniformly distributed.</li>
+<li><strong>Fix the date sniff</strong> — <code>compute/processing/inference.py:383</code>. Every object
+   column runs up to 10,000 rows through
+   <code>pd.to_datetime(..., format="mixed")</code> as an "is this a date?" test.
+   <code>format="mixed"</code> disables pandas' vectorised parser and falls back to
+   <code>dateutil</code>, one row at a time, in Python: 166,302 <code>get_token</code> calls and 34,737
+   <code>_strptime</code> calls in a single 50k-row profile. Try a small set of explicit
+   formats first, sample 200 rows not 10,000, short-circuit on dtype.</li>
+<li><strong><code>np.diff</code> for monotonicity</strong> — <code>accumulators/algorithms.py:422</code>.
+   <code>MonotonicityDetector.update</code> iterates every value in Python. Measured <strong>61x</strong>
+   from three lines of NumPy. No Rust required.</li>
+<li><strong><code>heapq.heappushpop</code> for extremes</strong> — <code>algorithms.py:332</code>.
+   <code>_add_to_min_heap</code> does an O(k) <code>max()</code> scan plus a full <code>heapify</code> per insert,
+   on a data structure whose entire purpose is O(log k) inserts.</li>
+<li><strong>Delete duplicated passes</strong> — <code>adapters/pandas.py:217</code> <code>missing_cells</code> runs a
+   full <code>isnull().sum().sum()</code> per chunk, duplicating work the accumulators
+   already did.</li>
+</ol>
+<p><strong>Exit criterion:</strong> <code>hotspots.py</code> shows hashing and date parsing under 5% each,
+and the <code>mixed</code> suite is &gt;= 2x faster than v0.0.17 with byte-identical output.</p>
+<hr />
+<h2 id="phase-2-publish-1-2-weekends">Phase 2 — Publish (1-2 weekends)</h2>
+<p>Run <code>python -m benchmarks.end_to_end --markdown results.md</code>. Put the table and the
+environment block in the README and in <code>docs/benchmarks.md</code>.</p>
+<p>Rules for anything published:</p>
+<ul>
+<li>Same DataFrame object for every tool, generated from a seeded RNG.</li>
+<li>Separate subprocess per tool (the harness already does this).</li>
+<li>Report peak RSS and output size next to wall time.</li>
+<li>Never compare a <code>minimal=True</code> incumbent run against a full PySuricata run, or
+  the reverse, without labelling it. Someone will check.</li>
+<li>State the version of every package involved.</li>
+<li><strong>Publish the failures.</strong> "ydata-profiling raised MemoryError at 5M x 40 on a
+  16 GB machine" is more persuasive, and more honest, than a bar chart — and their
+  own issue tracker corroborates it.</li>
+</ul>
+<p>Also: comment on ydata-profiling issue
+<a href="https://github.com/Data-Centric-AI-Community/fg-data-profiling/issues/1129">#1129</a>,
+open since October 2022 asking for polars support that PySuricata already has.</p>
+<p><strong>Exit criterion:</strong> a benchmarks page exists, one post is live, and the polars
+issue has a link to the docs.</p>
+<hr />
+<h2 id="phase-3-native-core-4-6-weekends">Phase 3 — Native core (4-6 weekends)</h2>
+<p>The crate in <code>native/</code> already builds, ships an abi3 wheel, passes 20 Rust unit
+tests and 35 Python agreement tests, and releases the GIL (measured 91% parallel
+efficiency on 2 threads).</p>
+<table>
+<thead>
+<tr>
+<th>Module</th>
+<th>Replaces</th>
+<th>Design</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>hashing.rs</code></td>
+<td>SHA-1 in <code>_u64</code></td>
+<td>splitmix64 for already-64-bit values; wyhash-style multiply-fold for bytes, three independent accumulator chains in the bulk loop. Includes an avalanche test.</td>
+</tr>
+<tr>
+<td><code>kmv.rs</code></td>
+<td>the sorted Python list</td>
+<td>Fixed-capacity binary max-heap over a flat <code>Vec&lt;u64&gt;</code>. 8 KiB at k=1024, cache-resident; the common case rejects in one compare against the root. Reports its own relative standard error.</td>
+</tr>
+<tr>
+<td><code>moments.rs</code></td>
+<td>the "simplified" merge</td>
+<td>Pébay's pairwise merge + a 32 KiB-tiled two-pass scan. Two passes per tile, both hitting L1, so DRAM traffic is paid once.</td>
+</tr>
+<tr>
+<td><code>reservoir.rs</code></td>
+<td>the biased sampler</td>
+<td>Algorithm L with geometric skips, xoshiro256++ seeded per instance.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="measured-kernel-costs-1m-rows-nsrow-best-of-5-7">Measured kernel costs (1M rows, ns/row, best of 5-7)</h3>
+<table>
+<thead>
+<tr>
+<th>Kernel</th>
+<th style="text-align: right;">Before</th>
+<th style="text-align: right;">After</th>
+<th style="text-align: right;">Ratio</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>hash a value</td>
+<td style="text-align: right;">1138</td>
+<td style="text-align: right;">1.5</td>
+<td style="text-align: right;">755x</td>
+</tr>
+<tr>
+<td>KMV ingest</td>
+<td style="text-align: right;">107</td>
+<td style="text-align: right;">8.7</td>
+<td style="text-align: right;">12.3x</td>
+</tr>
+<tr>
+<td>monotonicity (NumPy, not Rust)</td>
+<td style="text-align: right;">71</td>
+<td style="text-align: right;">1.2</td>
+<td style="text-align: right;">61x</td>
+</tr>
+<tr>
+<td>full numeric column</td>
+<td style="text-align: right;">32</td>
+<td style="text-align: right;">6.5</td>
+<td style="text-align: right;">4.9x</td>
+</tr>
+<tr>
+<td>reservoir sampling</td>
+<td style="text-align: right;">13</td>
+<td style="text-align: right;">7.2</td>
+<td style="text-align: right;">1.8x + unbiased</td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-instructive-failure">The instructive failure</h3>
+<p>The first native numeric kernel — one fused single pass, Welford per value — came
+out at <strong>0.7x the speed of NumPy's multi-pass version</strong>. Fewer passes over memory,
+and it lost. Welford's update has a division and a loop-carried dependency on
+every element, so the scalar loop stalls on latency while NumPy's passes vectorise
+cleanly.</p>
+<p>Blocking the array into 32 KiB L1-resident tiles, computing moments about the
+<em>tile</em> mean in a second L1-only pass, splitting the accumulators into four
+independent chains, and replacing the per-value <code>ln()</code> with a renormalised running
+product took it from 19.1 to 11.2 ns/row — same arithmetic, 1.7x from layout
+alone. At that point it does the whole column's work 2.9x faster than NumPy needs
+for the same set of quantities, and 4.9x if the geometric mean is skipped.</p>
+<h3 id="distribution-decisions-worth-keeping">Distribution decisions worth keeping</h3>
+<ul>
+<li><strong>Separate package, not a separate build backend.</strong> <code>pysuricata</code> stays a
+  pure-Python setuptools wheel; <code>pysuricata-core</code> is a maturin wheel;
+  <code>pysuricata[fast]</code> joins them. Making the root project maturin-built would force
+  a per-platform matrix on every release and break the current one-step CD. This
+  is what Polars does — its top-level PyPI package is a 0.8 MB pure-Python
+  dispatcher over separate <code>polars-runtime-*</code> packages.</li>
+<li><strong>abi3 while you can.</strong> One wheel per platform instead of one per Python minor.
+  For reference: pydantic-core ships 137 wheels totalling 277 MB because it needs
+  version-specific CPython internals; tokenizers ships 17 abi3 wheels at 75 MB.
+  Caveat: abi3 does not yet exist for free-threaded builds — 3.13t/3.14t need
+  version-specific wheels today.</li>
+<li><strong>The Python path stays forever</strong>, as the reference implementation the oracle
+  diffs against. The moment it is deleted, "is the Rust right?" becomes
+  unanswerable.</li>
+</ul>
+<h3 id="prerequisites-in-the-python-side">Prerequisites in the Python side</h3>
+<ol>
+<li>Move private attribute reads out of the engine. It reaches into
+   <code>acc._bytes_seen</code>, <code>acc._uniques.estimate()</code>, <code>acc._min_ts</code>
+   (<code>engine.py:371</code>, <code>render/html.py:80,100</code>). Put them behind properties first.</li>
+<li>Replace the <code>isinstance</code> dispatch in the consume loop
+   (<code>consume_polars.py:170,193,200</code>) with a <code>kind</code> tag, so a native accumulator
+   does not have to subclass the Python class.</li>
+<li>Give the native types <code>__reduce__</code> — <code>KmvSketch</code> has one, <code>NumericKernel</code> needs
+   one, because <code>engine.py:377</code> pickles accumulators for checkpointing.</li>
+<li>Add the categorical kernel. Biggest remaining win: the current path calls
+   <code>Series.tolist()</code>, allocating one Python object per row, before Misra-Gries
+   sees anything. <code>hash_arrow_utf8</code> in the crate already hashes an Arrow UTF-8
+   buffer in place.</li>
+</ol>
+<p><strong>Exit criterion:</strong> <code>pip install pysuricata[fast]</code> works on
+Linux/macOS/Windows x x86-64/arm64, and the accuracy suite passes identically with
+both backends.</p>
+<hr />
+<h2 id="phase-4-report-v2-3-4-weekends">Phase 4 — Report v2 (3-4 weekends)</h2>
+<p>The <code>titanic_report.html</code> example is <strong>1.18 MB for 891 rows x 12 columns</strong>, of
+which ~855 KB is fixed cost independent of the data:</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th style="text-align: right;">Bytes</th>
+<th style="text-align: right;">Share</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>base64 PNG logos + favicon</td>
+<td style="text-align: right;">578,278</td>
+<td style="text-align: right;">49%</td>
+</tr>
+<tr>
+<td>CSS</td>
+<td style="text-align: right;">210,218</td>
+<td style="text-align: right;">18%</td>
+</tr>
+<tr>
+<td>inline SVG</td>
+<td style="text-align: right;">181,627</td>
+<td style="text-align: right;">15%</td>
+</tr>
+<tr>
+<td>markup</td>
+<td style="text-align: right;">138,500</td>
+<td style="text-align: right;">12%</td>
+</tr>
+<tr>
+<td>JS</td>
+<td style="text-align: right;">67,257</td>
+<td style="text-align: right;">6%</td>
+</tr>
+</tbody>
+</table>
+<p>In order of value per hour:</p>
+<ol>
+<li><strong>Drop the base64 PNGs</strong> for inline SVG. -576 KB, one afternoon, zero risk.</li>
+<li><strong>Emit a JSON payload.</strong> <code>report.py::_build_summary</code> already produces a
+   JSON-safe per-column mapping — it is what <code>summarize()</code> returns. Nothing in
+   <code>render/</code> imports <code>json</code> today. Adding
+   <code>&lt;script type="application/json"&gt;</code> unlocks everything below.</li>
+<li><strong>Stop pre-rendering six histograms per column.</strong> <code>card_config.py:23</code> emits 3
+   bin options x 2 scales, all hidden with CSS. 100 numeric columns is 600 SVGs.
+   Draw one from the payload and re-bin client-side.</li>
+<li><strong>Real theming.</strong> Dark is currently the default with <code>.light</code> as the override,
+   using manually paired <code>--x-light</code>/<code>--x-dark</code> tokens and no
+   <code>prefers-color-scheme</code> anywhere. Move to <code>[data-theme]</code> + a media-query
+   default, collapse the pairs into one semantic scale, sweep the ~310 stray hex
+   values (<code>_12-missing.css</code> alone has 121).</li>
+<li><strong>Chart colours in CSS, not Python.</strong> <code>histogram_svg.py:33-40</code> bakes <code>#3b82f6</code>
+   into <code>fill=</code> attributes, so themes never reach the charts.</li>
+<li><strong>Replace <code>str.replace</code> templating.</strong> <code>render/html.py:301-339</code> runs sequential
+   replacements over the whole document, so a replacement value containing another
+   placeholder gets re-expanded, and a column named <code>{n_rows}</code> collides.</li>
+</ol>
+<p><strong>Constraint to design around:</strong> the self-download button
+(<code>functionality.js:25-65</code>) re-serialises the live DOM, finding styles by the regex
+<code>/#pysuricata-report|suricata-standalone/</code> and the script by <code>/toggleDarkMode/</code>.
+Any restructuring — external assets, ES modules, a renamed function, scoped styles
+— breaks it <em>silently</em>. Write a test that downloads and re-opens the report before
+touching the render layer.</p>
+<p><strong>Two additions that show statistical taste:</strong></p>
+<ul>
+<li><strong>Show the uncertainty.</strong> "~12,400 distinct (+/-3%)" is more trustworthy than
+  "12,437", and the native <code>KmvSketch</code> already returns its relative standard
+  error. No competitor does this, because none of them have an error bound to
+  report.</li>
+<li><strong>Make the histogram honest.</strong> The streaming histogram redistributes counts by
+  bin centre whenever the range expands (<code>sketches.py:658</code>), which is lossy in a
+  way the reader cannot see. Either switch to a KLL/t-digest sketch with a real
+  error bound, or label the chart as estimated from an n-value sample.</li>
+</ul>
+<p><strong>Exit criterion:</strong> the Titanic report is under 250 KB, charts re-render on bin
+change without a page of hidden SVG, and the report respects OS theme.</p>
+<hr />
+<h2 id="phase-5-differentiate-ongoing">Phase 5 — Differentiate (ongoing)</h2>
+<p>In priority order:</p>
+<ol>
+<li><strong><code>pysuricata check</code></strong> — a CI gate with an exit code and a thresholds file.</li>
+<li><strong><code>compare(df_a, df_b)</code></strong> — drift. The accumulators are mergeable, which makes
+   this cheap.</li>
+<li><strong>Direct Parquet / Arrow / DuckDB input</strong> without a pandas round-trip.</li>
+<li><strong>Column-level threading</strong>, once the RNG is per-accumulator.</li>
+</ol>
+<p><strong>Exit criterion:</strong> at least one thing PySuricata does that no incumbent does,
+documented on the front page.</p>
+<hr />
+<h2 id="market-as-of-august-2026">Market, as of August 2026</h2>
+<p>The incumbent layer is unusually unsettled. In the last twelve months:
+ydata-profiling was renamed to <strong>fg-data-profiling</strong> and transferred to a new
+GitHub org with an EOL notice on the old package; Great Expectations' OSS
+stewardship moved to <strong>Fivetran</strong> (May 2026); and Soda Core <strong>relicensed from
+Apache-2.0 to the source-available Elastic License 2.0</strong> (January 2026),
+triggering a Canonical fork.</p>
+<table>
+<thead>
+<tr>
+<th>Tool</th>
+<th style="text-align: right;">Stars</th>
+<th style="text-align: right;">Downloads/mo</th>
+<th>Backend</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ydata / fg-data-profiling</td>
+<td style="text-align: right;">13.7k</td>
+<td style="text-align: right;">~1.76M</td>
+<td>pandas, Spark</td>
+<td>renamed + transferred; ~20 runtime deps incl. numba</td>
+</tr>
+<tr>
+<td>great_expectations</td>
+<td style="text-align: right;">11.5k</td>
+<td style="text-align: right;">~26.9M</td>
+<td>pandas, Spark, SQL</td>
+<td>Fivetran stewardship; validation, not profiling</td>
+</tr>
+<tr>
+<td>evidently</td>
+<td style="text-align: right;">7.5k</td>
+<td style="text-align: right;">~1.26M</td>
+<td>pandas</td>
+<td>active — ML/LLM drift</td>
+</tr>
+<tr>
+<td>dtale</td>
+<td style="text-align: right;">5.2k</td>
+<td style="text-align: right;">~53.6k</td>
+<td>pandas</td>
+<td>active — interactive GUI, different product</td>
+</tr>
+<tr>
+<td>lux</td>
+<td style="text-align: right;">5.4k</td>
+<td style="text-align: right;">~1.4k</td>
+<td>pandas</td>
+<td>abandoned (no release since Feb 2022)</td>
+</tr>
+<tr>
+<td>pandasgui</td>
+<td style="text-align: right;">3.3k</td>
+<td style="text-align: right;">~3.2k</td>
+<td>pandas</td>
+<td>likely abandoned</td>
+</tr>
+<tr>
+<td>sweetviz</td>
+<td style="text-align: right;">3.1k</td>
+<td style="text-align: right;">~154k</td>
+<td>pandas</td>
+<td>active but narrow — owns dataset <em>comparison</em></td>
+</tr>
+<tr>
+<td>soda-core</td>
+<td style="text-align: right;">2.4k</td>
+<td style="text-align: right;">~3.5M</td>
+<td>12 warehouses</td>
+<td>no longer OSI open source</td>
+</tr>
+<tr>
+<td>dataprep</td>
+<td style="text-align: right;">2.2k</td>
+<td style="text-align: right;">~9.2k</td>
+<td>pandas, Dask</td>
+<td>abandoned (no release since Aug 2022)</td>
+</tr>
+<tr>
+<td>skimpy</td>
+<td style="text-align: right;">517</td>
+<td style="text-align: right;">~12.7k</td>
+<td>pandas + polars</td>
+<td>active — console only, no HTML report</td>
+</tr>
+<tr>
+<td>pointblank (Posit)</td>
+<td style="text-align: right;">455</td>
+<td style="text-align: right;">~28.9k</td>
+<td>Narwhals + Ibis</td>
+<td>very active; CI-first CLI</td>
+</tr>
+<tr>
+<td><strong>pysuricata</strong></td>
+<td style="text-align: right;">7</td>
+<td style="text-align: right;">~59</td>
+<td>pandas + polars</td>
+<td>the only streaming/bounded-memory profiler</td>
+</tr>
+</tbody>
+</table>
+<h3 id="what-users-complain-about">What users complain about</h3>
+<ul>
+<li><strong>"Pandas profiling becoming too slow : un-usable"</strong> — ydata #743, open since
+  March 2021. "With 10k rows and 30 columns, it takes more than 2mins."</li>
+<li><strong>"MemoryError: Unable to allocate 20.0 PiB"</strong> — ydata #1435, on a <em>10-row</em>
+  DataFrame. And #1597: 1.72 TiB requested for a 5.6M x 9 frame on a 256 GB
+  machine. Their own docs list this as a known, unfixed class of bug with "filter
+  out large outliers first" as the workaround.</li>
+<li><strong>Dependency collisions</strong> — yfinance #2464: "[0.2.59] breaks ydata-profiling
+  dependency (numba)". An unrelated package's release broke installs for everyone
+  with ydata-profiling in the same requirements file.</li>
+<li><strong>Polars support</strong> — ydata #1129, opened October 2022, still labelled
+  <code>needs-triage</code>.</li>
+</ul>
+<h3 id="gaps">Gaps</h3>
+<table>
+<thead>
+<tr>
+<th>Gap</th>
+<th>Status elsewhere</th>
+<th>PySuricata</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Bounded-memory / out-of-core profiling</td>
+<td>Asked for since 2016 (pandas-profiling #26, #57). No incumbent does single-pass streaming.</td>
+<td>Architecture already there; needs the generator bug fixed and a headline number</td>
+</tr>
+<tr>
+<td>Polars-native end to end</td>
+<td>Only skimpy (console) and pointblank (validation)</td>
+<td>Shipped — DataFrame + LazyFrame</td>
+</tr>
+<tr>
+<td>Profiler as a CI gate</td>
+<td>GX / Soda / pointblank all gate CI, but all require authoring expectations first. No profiler gates on shape alone.</td>
+<td>Half-built: <code>summarize()</code> exists; no CLI exit code, no thresholds file</td>
+</tr>
+<tr>
+<td>PII detection in OSS</td>
+<td>ydata has it, paywalled behind YData Fabric. OSS core has none.</td>
+<td>Open</td>
+</tr>
+<tr>
+<td>Dataset comparison / drift</td>
+<td>sweetviz for pandas; evidently at the monitoring layer. The leader has no built-in compare.</td>
+<td>Open — accumulators are mergeable, so this is cheap</td>
+</tr>
+<tr>
+<td>Install weight</td>
+<td>ydata pulls ~20 packages including numba/llvmlite</td>
+<td>4 deps, and <code>psutil</code> appears unused — drop it</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="positioning">Positioning</h2>
+<p>Current PyPI description: "A lightweight EDA tool inspired by the curious nature
+of suricates. Built just for fun." Charming, and why nobody installs it.</p>
+<blockquote>
+<p><strong>The data profiler that fits in CI.</strong> Single-pass streaming algorithms, bounded
+memory regardless of dataset size, pandas and polars native, four dependencies,
+one self-contained HTML file — or JSON and an exit code.</p>
+</blockquote>
+<p>Every clause there is something an incumbent cannot say. "Faster than
+ydata-profiling" is not — anyone can claim that, and it invites a benchmark
+argument you win narrowly. "Profiles a dataset larger than your RAM in constant
+memory" is a categorical difference.</p>
+<p><strong>Lead with memory, not speed:</strong></p>
+<ul>
+<li>It follows from the architecture rather than from tuning, so it cannot be closed
+  by the incumbent shipping a patch.</li>
+<li>The incumbent's most-reported failure is a MemoryError, which they document as
+  unfixed.</li>
+<li>It makes the CI story credible: a profiler that runs in a 512 MB runner on a
+  40 GB Parquet file is a genuinely new thing.</li>
+<li>Speed follows anyway. It is the second sentence.</li>
+</ul>
+<h3 id="two-adoption-paths-both-real">Two adoption paths, both real</h3>
+<p>uv (753 points on HN), DuckDB (926), marimo (448) and Polars (238) all had loud
+moments built on one benchmarkable number stated everywhere. But <strong>narwhals never
+cleared 4 points on HN</strong> and is now a declared dependency of 28 projects including
+pandera, plotly, altair and scikit-lego — adoption through direct maintainer
+outreach and being useful infrastructure.</p>
+<p>Worth knowing: <strong>no EDA or profiling tool has ever cleared 50 points on Hacker
+News.</strong> Either the category has never had a benchmark-led launch and you would be
+first, or people install profilers and forget them rather than evangelising them.
+Plan for both. The narwhals move here is to make <code>summarize()</code> a stable,
+documented, versioned JSON contract other tools can build on.</p>
+<hr />
+<h2 id="writing-plan">Writing plan</h2>
+<p>Eight posts, each publishable the weekend the corresponding work lands, each with
+a concrete artefact behind it.</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Post</th>
+<th>Angle</th>
+<th>After phase</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>I wrote one test file and found six statistical bugs in my own library</td>
+<td>The chunked-vs-unchunked invariant, the "simplified for performance" comment, the reservoir bias. Builds trust before it makes a claim.</td>
+<td>0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Your profiler is spending a third of its time on SHA-1</td>
+<td>Why a cryptographic hash ended up in a distinct-count sketch, and a 755x measurement. Generalises past this library.</td>
+<td>1</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Profiling a dataset larger than RAM, in constant memory</td>
+<td>The architecture piece. Welford/Pébay, KMV, Misra-Gries, Algorithm L, and a flat memory curve. The positioning post.</td>
+<td>2</td>
+</tr>
+<tr>
+<td>4</td>
+<td>My one-pass Rust kernel was slower than NumPy's eleven passes</td>
+<td>The best one. Dependency chains, division latency, and how 32 KiB tiling turned it into a win. CS:APP ch. 5-6 with a measurement at each step.</td>
+<td>3</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Shipping a Rust extension without breaking <code>pip install</code></td>
+<td>Separate <code>-core</code> package, abi3, the wheel matrix. Evergreen, and what people actually get stuck on.</td>
+<td>3</td>
+</tr>
+<tr>
+<td>6</td>
+<td>A 1.2 MB HTML report for 891 rows — where it all went</td>
+<td>Byte-level teardown and diet.</td>
+<td>4</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Data profiling as a CI check</td>
+<td>Gate a PR on shape drift without authoring an expectation. Aim at the dbt/Airflow audience.</td>
+<td>5</td>
+</tr>
+<tr>
+<td>8</td>
+<td>Reporting uncertainty in a data profile</td>
+<td>Sketch error bounds; why every other tool reports estimates as facts.</td>
+<td>4-5</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Where:</strong> own site first (canonical), then cross-post — never Medium as primary.
+Show HN only for posts 3 and 4, the ones with a number in the title,
+Tue-Thu 8-10am ET, one shot each. r/Python (1, 2, 4, 5), r/datascience (3, 7),
+r/dataengineering (3, 7), Lobsters (2, 4, 5). LinkedIn as a technical summary with
+the chart, not an announcement — the chart is what travels.</p>
+<hr />
+<h2 id="csapp-mapping">CS:APP mapping</h2>
+<table>
+<thead>
+<tr>
+<th>Chapter</th>
+<th>Task</th>
+<th>The measurement</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2 — Information</td>
+<td>The geometric mean in <code>moments.rs</code> accumulates a running <em>product</em> and renormalises with a hand-written <code>frexp</code> reading the exponent field out of the bit pattern, instead of one <code>ln()</code> per value.</td>
+<td><code>scan_numeric(arr, None, False)</code> vs <code>True</code>: 6.5 vs 11.2 ns/row</td>
+</tr>
+<tr>
+<td>3 — Machine code</td>
+<td>Read the disassembly of the tiled scan (<code>cargo asm</code> / <code>objdump -d</code>). Confirm pass A vectorised to <code>addpd</code>/<code>maxpd</code> and pass B didn't spill.</td>
+<td>Packed vs scalar instructions in the inner loop</td>
+</tr>
+<tr>
+<td>5 — Optimising</td>
+<td>Why the one-pass kernel was slower. Welford has a loop-carried dependency with a division; four independent accumulator chains break it.</td>
+<td>19.1 -&gt; 11.2 ns/row with identical arithmetic. Compute the CPE by hand and compare to the latency bound of <code>divsd</code>.</td>
+</tr>
+<tr>
+<td>6 — Memory hierarchy</td>
+<td>The 32 KiB tile. Sweep <code>TILE</code> from 256 to 262144 and plot ns/row.</td>
+<td>The sweep shows L1, L2 and L3 as inflections. Best figure for post #4, twenty minutes to produce.</td>
+</tr>
+<tr>
+<td>6 — roofline</td>
+<td><code>kernels.py</code>'s <code>% roofline</code> column.</td>
+<td>26.0 GB/s here. NumPy's multi-pass column scan at 21%, the tiled scan at 4.7% — and knowing which means "optimise the code" vs "reduce the traffic".</td>
+</tr>
+<tr>
+<td>12 — Concurrency</td>
+<td><code>py.detach()</code> and per-column accumulation on a thread pool. The blocker is the global RNG, which is why the seeding bug is on the critical path.</td>
+<td>Already measured: 91% parallel efficiency on 2 threads, <code>gil_released=True</code></td>
+</tr>
+</tbody>
+</table>
+<p>Study habit worth adopting: for each chapter, add <em>one</em> benchmark to <code>kernels.py</code>
+that demonstrates the chapter's central claim on this codebase. By the end you
+have a benchmark suite, a set of figures, your study notes, and post #4.</p>
+<hr />
+<h2 id="reading-the-roofline-column">Reading the roofline column</h2>
+<p><code>benchmarks/kernels.py</code> measures how fast the machine streams a float64 array,
+then reports every kernel against that ceiling.</p>
+<table>
+<thead>
+<tr>
+<th>Reading</th>
+<th>Means</th>
+<th>Do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>&lt; 20% of roofline</strong></td>
+<td>The instruction stream is the bottleneck. Nowhere near memory-limited.</td>
+<td>Better code: a native kernel, fewer branches, more ILP.</td>
+</tr>
+<tr>
+<td><strong>&gt; 70% of roofline</strong></td>
+<td>Saturating memory bandwidth for the traffic generated.</td>
+<td>Generate less traffic. Fuse passes; nothing else will help.</td>
+</tr>
+</tbody>
+</table>
+<p>NumPy's multi-pass column scan sits at 21% — not badly written, just reading the
+column many times over. The tiled native scan sits at 4.7%, doing the same work in
+a fifth of the time with headroom left. That contrast <em>is</em> the argument for a
+native core, stated as a number rather than a vibe — and it also says when to
+stop.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/alvarodiez20" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.tracking", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "toc.integrate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
