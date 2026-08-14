@@ -6,6 +6,7 @@ operations, including adapter selection, chunking, and streaming coordination.
 
 from __future__ import annotations
 
+import itertools
 import logging
 import time
 from typing import Any
@@ -25,6 +26,26 @@ try:
     import polars as pl
 except ImportError:
     pl = None
+
+
+def _is_exhaustible_iterator(source: Any) -> bool:
+    """Return True if consuming from ``source`` permanently loses those items.
+
+    Generators and file readers are their own iterator, so anything read out of
+    them during adapter sniffing can never be read again. Re-iterable containers
+    (lists, tuples) and DataFrames hand out a fresh iterator each time and are
+    therefore safe to peek at directly.
+    """
+    if isinstance(source, (str, bytes)):
+        return False
+    if pd is not None and isinstance(source, pd.DataFrame):
+        return False
+    if pl is not None and isinstance(source, (pl.DataFrame, pl.LazyFrame)):
+        return False
+    try:
+        return iter(source) is source
+    except TypeError:
+        return False
 
 
 class EngineManager:
@@ -261,8 +282,23 @@ class StreamingEngine:
         start_time = time.time()
 
         try:
+            # Adapter sniffing has to look at a real chunk, but reading one out of
+            # a generator would consume it for good -- the chunk loop below would
+            # then start at chunk 1 and every statistic would silently omit chunk 0.
+            # Peek once, sniff from the peeked chunk, and splice it back onto the
+            # front of the stream.
+            sniff_target = source
+            if _is_exhaustible_iterator(source):
+                stream = iter(source)
+                try:
+                    first_chunk_peek = next(stream)
+                except StopIteration:
+                    return ProcessingResult.error_result("Empty source")
+                sniff_target = first_chunk_peek
+                source = itertools.chain([first_chunk_peek], stream)
+
             # Select appropriate adapter
-            adapter_result = self.engine_manager.select_adapter(source)
+            adapter_result = self.engine_manager.select_adapter(sniff_target)
             if not adapter_result.success:
                 return ProcessingResult.error_result(
                     f"Adapter selection failed: {adapter_result.error}"

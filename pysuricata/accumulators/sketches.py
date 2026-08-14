@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-import random
+import math
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any
 
@@ -10,6 +10,11 @@ if TYPE_CHECKING:
     import polars as pl
 
 import numpy as np
+
+# Smallest value fed to log() so a 0.0 draw cannot produce -inf.
+_TINY = 5e-324
+# Sentinel "no further acceptances": larger than any realistic stream index.
+_NO_MORE_ACCEPTANCES = 1 << 62
 
 
 def _u64(x: bytes) -> int:
@@ -273,66 +278,98 @@ class KMV:
 
 
 class ReservoirSampler:
-    """Reservoir sampler for numeric/datetime values to approximate quantiles/histograms."""
+    """Uniform reservoir sample of a stream, via Algorithm L (Li, 1994).
 
-    __slots__ = ("k", "_buf", "_seen")
+    Every element that has been seen is in the sample with probability k/n,
+    independent of its position in the stream and of how the stream happened to
+    be split into chunks. That independence is what makes the derived quantiles,
+    median, IQR, MAD and histogram stable across chunk sizes.
+
+    Algorithm L samples a geometric skip and jumps straight to the next element
+    it will accept, so it costs about ``k * ln(n / k)`` random draws rather than
+    one per element -- roughly 145k draws for 10M rows into k=20k, instead of 10M.
+    """
+
+    __slots__ = ("k", "_buf", "_seen", "_w", "_next")
 
     def __init__(self, k: int = 20_000) -> None:
         self.k = int(k)
         self._buf: list[float] = []
         self._seen: int = 0
+        # Algorithm L skip state. Only meaningful once the reservoir is full;
+        # _next is the stream index (0-based) of the next element to accept.
+        self._w: float = 1.0
+        self._next: int = -1
+
+    def _draw_skip(self) -> int:
+        """Number of elements to pass over before the next acceptance."""
+        # log1p(-w) is log(1 - w) without the cancellation for small w.
+        denom = math.log1p(-self._w) if self._w < 1.0 else 0.0
+        if denom >= 0.0:
+            # w has underflowed to 0 (or saturated); no further acceptances.
+            return _NO_MORE_ACCEPTANCES
+        u = max(float(np.random.random()), _TINY)
+        return int(math.log(u) / denom)
+
+    def _advance_w(self) -> None:
+        u = max(float(np.random.random()), _TINY)
+        self._w *= math.exp(math.log(u) / self.k)
+
+    def _start_skipping(self) -> None:
+        """Initialise the skip state the moment the reservoir first fills."""
+        self._w = 1.0
+        self._advance_w()
+        # Standard formulation with i = k-1 as the last processed index:
+        # the first candidate is therefore at index _seen + skip.
+        self._next = self._seen + self._draw_skip()
+
+    def _accept(self, value: float) -> None:
+        """Evict a uniformly chosen slot and schedule the next acceptance."""
+        self._buf[int(np.random.randint(0, self.k))] = value
+        self._advance_w()
+        skip = self._draw_skip()
+        if skip >= _NO_MORE_ACCEPTANCES:
+            self._next = _NO_MORE_ACCEPTANCES
+        else:
+            self._next += skip + 1
 
     def add_many(self, arr: Sequence[float]) -> None:
-        """Optimized batch addition using numpy random generation.
+        """Add a batch of values, preserving the uniform-sampling guarantee.
 
         Args:
-            arr: Sequence of float values to add
+            arr: Sequence of float values to add.
         """
         if len(arr) == 0:
             return
 
-        try:
-            import numpy as np
+        arr = np.asarray(arr, dtype=float)
 
-            arr = np.asarray(arr, dtype=float)
-        except ImportError:
-            # Fallback to original implementation if numpy not available
-            for x in arr:
-                self.add(float(x))
-            return
-
-        # Fill reservoir first if not full
+        # Fill the reservoir before any sampling decision is made.
         if len(self._buf) < self.k:
             needed = min(self.k - len(self._buf), len(arr))
-            self._buf.extend(arr[:needed])
-            arr = arr[needed:]
+            self._buf.extend(arr[:needed].tolist())
             self._seen += needed
+            arr = arr[needed:]
+            if len(self._buf) >= self.k:
+                self._start_skipping()
+            if len(arr) == 0:
+                return
 
-        # Process remaining elements with batch random generation
-        if len(arr) > 0:
-            # Generate random numbers for replacement decisions
-            random_vals = np.random.randint(1, self._seen + len(arr) + 1, size=len(arr))
-
-            # Determine which elements to replace
-            replace_mask = random_vals <= self.k
-            replace_indices = random_vals[replace_mask] - 1
-
-            # Replace elements in batch (convert to Python list for indexing)
-            if len(replace_indices) > 0:
-                replace_values = arr[replace_mask]
-                for i, val in zip(replace_indices, replace_values, strict=False):
-                    self._buf[i] = val
-
-            self._seen += len(arr)
+        end = self._seen + len(arr)
+        while self._next < end:
+            self._accept(float(arr[self._next - self._seen]))
+        self._seen = end
 
     def add(self, x: float) -> None:
-        self._seen += 1
         if len(self._buf) < self.k:
-            self._buf.append(x)
-        else:
-            j = random.randint(1, self._seen)
-            if j <= self.k:
-                self._buf[j - 1] = x
+            self._buf.append(float(x))
+            self._seen += 1
+            if len(self._buf) >= self.k:
+                self._start_skipping()
+            return
+        if self._seen == self._next:
+            self._accept(float(x))
+        self._seen += 1
 
     def values(self) -> list[float]:
         return self._buf

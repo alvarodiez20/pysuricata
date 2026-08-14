@@ -117,49 +117,24 @@ class StreamingMoments:
             self._m4 = np.sum(deviations * deviations * deviations * deviations)
             return
 
-        # Merge batch statistics using Chan's algorithm for numerical stability
-        old_count = self.count
-        old_mean = self._mean
+        # Summarise the batch about its own mean, then fold it in with the
+        # pairwise merge below. merge() implements Pebay's formulas, which are
+        # exact for any split; the inline "simplified" M3/M4 update that used to
+        # live here was not, so skew and kurtosis drifted as soon as the data
+        # arrived in more than one chunk -- and disagreed with merge() on the
+        # same data. Geometric-mean state is updated above, so this temporary
+        # deliberately carries none of it.
+        deviations = finite_values - new_mean
+        squared = deviations * deviations
 
-        # Update count and mean
-        self.count += n_new
-        delta_mean = new_mean - old_mean
-        self._mean = old_mean + delta_mean * n_new / self.count
+        batch = StreamingMoments()
+        batch.count = n_new
+        batch._mean = new_mean
+        batch._m2 = float(np.sum(squared))
+        batch._m3 = float(np.sum(squared * deviations))
+        batch._m4 = float(np.sum(squared * squared))
 
-        # Calculate deviations for the new batch
-        new_deviations = finite_values - new_mean
-
-        # Update moments using Chan's algorithm
-        # M2 update
-        delta_m2 = np.sum(new_deviations * new_deviations)
-        self._m2 += delta_m2 + delta_mean * delta_mean * old_count * n_new / self.count
-
-        # M3 update (simplified for performance - exact formula is complex)
-        delta_m3 = np.sum(new_deviations * new_deviations * new_deviations)
-        self._m3 += (
-            delta_m3
-            + 3 * delta_mean * delta_m2 / n_new
-            + delta_mean**3
-            * old_count
-            * n_new
-            * (old_count - n_new)
-            / (self.count * self.count)
-        )
-
-        # M4 update (simplified for performance)
-        delta_m4 = np.sum(
-            new_deviations * new_deviations * new_deviations * new_deviations
-        )
-        self._m4 += (
-            delta_m4
-            + 4 * delta_mean * delta_m3 / n_new
-            + 6 * delta_mean**2 * delta_m2 / n_new
-            + delta_mean**4
-            * old_count
-            * n_new
-            * (old_count**2 - old_count * n_new + n_new**2)
-            / (self.count**3)
-        )
+        self.merge(batch)
 
     def get_statistics(self) -> dict[str, float]:
         """Get computed statistics.
@@ -187,10 +162,14 @@ class StreamingMoments:
         se = std / math.sqrt(self.count) if self.count > 0 else 0.0
         cv = std / abs(mean) if mean != 0 else 0.0
 
-        # Higher moments
-        if self.count > 2 and variance > 0:
-            skew = (self._m3 / self.count) / (variance**1.5)
-            kurtosis = (self._m4 / self.count) / (variance**2) - 3
+        # Higher moments. g1 and g2 are defined against the *population* second
+        # moment m2/n, not the sample variance with its n-1 denominator; using
+        # the latter scales skew by ((n-1)/n)^1.5 and kurtosis by ((n-1)/n)^2,
+        # a bias that never converges away and does not match scipy.
+        m2_pop = self._m2 / self.count if self.count > 0 else 0.0
+        if self.count > 2 and m2_pop > 0:
+            skew = (self._m3 / self.count) / (m2_pop**1.5)
+            kurtosis = (self._m4 / self.count) / (m2_pop**2) - 3
         else:
             skew = 0.0
             kurtosis = 0.0
