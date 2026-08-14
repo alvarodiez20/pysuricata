@@ -1972,11 +1972,11 @@
     G3 --&gt; H
     G4 --&gt; H
 
-    H --&gt; I["Load + inline static assets\nstyle.css · functionality.js\nchart.min.js (inlined)"]
+    H --&gt; I["Load + inline static assets\n_00..._13 CSS partials · functionality.js\ntooltips.js · description-editor.js"]
     I --&gt; J["CorrelationsSectionRenderer\nrender_section — O(m²)"]
     J --&gt; K_node["MissingValuesSectionRenderer\nrender_section — O(cols)"]
     K_node --&gt; L["DonutChartRenderer\nrender_dtype_donut — SVG"]
-    L --&gt; M["Template assembly\nreport_template.html.format\n~40 template variables"]
+    L --&gt; M["Template assembly\nreport_template.html\n~35 placeholders, single regex pass"]
     M --&gt; N["Self-contained HTML\n~1.2–1.6 MB typical"]</code></pre>
 <h3 id="rendering-cost-breakdown">Rendering Cost Breakdown</h3>
 <table>

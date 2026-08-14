@@ -826,6 +826,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#checkpointing-long-running-profiles" class="md-nav__link">
+    <span class="md-ellipsis">
+      Checkpointing Long-Running Profiles
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
       See Also
@@ -1817,6 +1826,20 @@
 </span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>        <span class="k">yield</span> <span class="n">chunk</span><span class="p">[</span><span class="n">chunk</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;active&quot;</span><span class="p">]</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">filtered_generator</span><span class="p">())</span>
+</span></code></pre></div>
+<h2 id="checkpointing-long-running-profiles">Checkpointing Long-Running Profiles</h2>
+<p>For multi-hour pipelines analyzing massive datasets (i.e. over 100M rows), you can enable disk checkpoints. This saves the profiling state every <code>N</code> chunks, allowing you to resume or investigate partial state if the job is interrupted.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ReportConfig</span><span class="p">()</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Checkpoint roughly every 10 million rows assuming chunk_size is 500,000</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">500_000</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">checkpoint_every_n_chunks</span> <span class="o">=</span> <span class="mi">20</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">checkpoint_dir</span> <span class="o">=</span> <span class="s2">&quot;/tmp/pysuricata/nightly&quot;</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="c1"># Optionally dump a preview HTML page alongside the serialized pickle state</span>
+</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">checkpoint_write_html</span> <span class="o">=</span> <span class="kc">True</span>
+</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
+</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">multi_source_generator</span><span class="p">(),</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="see-also">See Also</h2>
 <ul>
