@@ -48,7 +48,7 @@ class PandasAdapter(BaseAdapter):
             raise ImportError("pandas is required for PandasAdapter")
 
     def infer_and_build(
-        self, data: Any, config: Any
+        self, data: Any, config: Any, *, first_chunk_is_whole: bool = True
     ) -> tuple[ColumnKinds, dict[str, Any]]:
         """Infer column types and build accumulators for pandas data.
 
@@ -161,8 +161,16 @@ class PandasAdapter(BaseAdapter):
 
                     accs[col_name] = BooleanAccumulator(col_name)
                     accs[col_name].set_dtype(str(data[col_name].dtype))
-                else:
-                    # Check if this numeric column should be reclassified as categorical
+                elif first_chunk_is_whole:
+                    # Reclassification reads the distinct-value ratio of this
+                    # chunk. That is only evidence about the column when the
+                    # chunk *is* the column: on a stream, an unrepresentative
+                    # prefix -- sorted data, a leading run of one value -- would
+                    # permanently mislabel it, and nothing revisits the decision.
+                    # A 285,000-row column with 244,255 distinct values was
+                    # classified categorical because its first 45,000 rows held
+                    # nine. Streamed numeric columns therefore stay numeric,
+                    # which still reports top values via Misra-Gries.
                     try:
                         unique_count = data[col_name].nunique()
                         total_count = len(data[col_name])
