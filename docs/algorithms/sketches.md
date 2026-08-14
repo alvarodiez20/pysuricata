@@ -43,14 +43,14 @@ class KMV:
     def __init__(self, k):
         self.k = k
         self.heap = []  # Max-heap of k smallest hashes
-    
+
     def add(self, value):
         h = self._hash(value)
         if len(self.heap) < self.k:
             heapq.heappush(self.heap, -h)  # Negative for max-heap
         elif h < -self.heap[0]:
             heapq.heapreplace(self.heap, -h)
-    
+
     def estimate(self):
         if len(self.heap) == 0:
             return 0
@@ -58,7 +58,7 @@ class KMV:
             return len(self.heap)
         kth_min = -self.heap[0]
         return (self.k - 1) / kth_min if kth_min > 0 else float('inf')
-    
+
     def _hash(self, value):
         return int(hashlib.md5(str(value).encode()).hexdigest(), 16) / (2**128)
 ```
@@ -104,7 +104,7 @@ class MisraGries:
     def __init__(self, k):
         self.k = k
         self.counts = {}
-    
+
     def add(self, item):
         if item in self.counts:
             self.counts[item] += 1
@@ -119,7 +119,7 @@ class MisraGries:
                     to_remove.append(key)
             for key in to_remove:
                 del self.counts[key]
-    
+
     def top_k(self):
         return sorted(self.counts.items(), key=lambda x: -x[1])
 ```
@@ -194,7 +194,7 @@ class ReservoirSampler:
         self.k = k
         self.reservoir = []
         self.n = 0
-    
+
     def add(self, item):
         self.n += 1
         if len(self.reservoir) < self.k:
@@ -203,7 +203,7 @@ class ReservoirSampler:
             j = random.randint(0, self.n - 1)
             if j < self.k:
                 self.reservoir[j] = item
-    
+
     def get_sample(self):
         return self.reservoir.copy()
 ```
@@ -343,7 +343,3 @@ self._uniques = KMV(config.uniques_sketch_size)  # Distinct count
 ---
 
 *Last updated: 2025-10-12*
-
-
-
-

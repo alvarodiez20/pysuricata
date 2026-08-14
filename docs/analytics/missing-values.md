@@ -135,19 +135,19 @@ class MissingColumnsAnalyzer:
     MIN_THRESHOLD_PCT = 0.5
     MAX_INITIAL_DISPLAY = 8
     MAX_EXPANDED_DISPLAY = 25
-    
+
     def analyze_missing_columns(self, miss_list, n_cols, n_rows):
         """Analyze and filter missing columns"""
         # Filter significant missing
         significant = [
-            item for item in miss_list 
+            item for item in miss_list
             if item[1] >= self.MIN_THRESHOLD_PCT
         ]
-        
+
         # Determine limits
         initial_limit = self._get_initial_display_limit(n_cols, n_rows)
         expanded_limit = self._get_expanded_display_limit(n_cols, n_rows)
-        
+
         # Build result
         return MissingColumnsResult(
             initial_columns=significant[:initial_limit],
@@ -307,7 +307,3 @@ for col, col_stats in stats["columns"].items():
 ---
 
 *Last updated: 2025-10-12*
-
-
-
-

@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import logging
 import time
+from collections.abc import Iterator
 from enum import Enum
-from typing import Any, Dict, Iterator, Optional, Union
+from typing import Any
 
 from ..core.exceptions import ChunkingError
-from ..core.types import ChunkMetadata, ProcessingResult
+from ..core.types import ProcessingResult
 
 try:
     import pandas as pd
@@ -51,7 +52,7 @@ class AdaptiveChunker:
     def __init__(
         self,
         strategy: ChunkingStrategy = ChunkingStrategy.ADAPTIVE,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
         default_chunk_size: int = 10000,
         max_chunk_size: int = 1000000,
         min_chunk_size: int = 1000,
@@ -71,8 +72,8 @@ class AdaptiveChunker:
         self.max_chunk_size = max_chunk_size
         self.min_chunk_size = min_chunk_size
 
-        self.chunk_size_cache: Dict[type, int] = {}
-        self.performance_metrics: Dict[str, Any] = {
+        self.chunk_size_cache: dict[type, int] = {}
+        self.performance_metrics: dict[str, Any] = {
             "total_chunks": 0,
             "total_rows": 0,
             "total_time": 0.0,
@@ -451,7 +452,7 @@ class AdaptiveChunker:
             self.performance_metrics["total_time"] / total_chunks
         )
 
-    def get_performance_metrics(self) -> Dict[str, Any]:
+    def get_performance_metrics(self) -> dict[str, Any]:
         """Get performance metrics for chunking operations.
 
         Returns:

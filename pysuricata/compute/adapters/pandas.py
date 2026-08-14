@@ -7,7 +7,7 @@ protocol, optimized for pandas DataFrames and Series.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 
@@ -31,9 +31,9 @@ class PandasAdapter(BaseAdapter):
 
     def __init__(
         self,
-        converter: Optional[UnifiedConverter] = None,
-        inferrer: Optional[UnifiedTypeInferrer] = None,
-        logger: Optional[logging.Logger] = None,
+        converter: UnifiedConverter | None = None,
+        inferrer: UnifiedTypeInferrer | None = None,
+        logger: logging.Logger | None = None,
     ):
         """Initialize the pandas adapter.
 
@@ -49,7 +49,7 @@ class PandasAdapter(BaseAdapter):
 
     def infer_and_build(
         self, data: Any, config: Any
-    ) -> tuple[ColumnKinds, Dict[str, Any]]:
+    ) -> tuple[ColumnKinds, dict[str, Any]]:
         """Infer column types and build accumulators for pandas data.
 
         Args:
@@ -234,10 +234,10 @@ class PandasAdapter(BaseAdapter):
     def consume_chunk(
         self,
         data: Any,
-        accs: Dict[str, Any],
+        accs: dict[str, Any],
         kinds: ColumnKinds,
-        config: Optional[Any] = None,
-        logger: Optional[Any] = None,
+        config: Any | None = None,
+        logger: Any | None = None,
     ) -> None:
         """Consume a pandas DataFrame chunk and update accumulators.
 
@@ -257,9 +257,7 @@ class PandasAdapter(BaseAdapter):
         # Use the existing pandas consume function
         consume_chunk_pandas(data, accs, kinds, config, logger)
 
-    def update_corr(
-        self, frame: Any, corr_est: Any, logger: Optional[Any] = None
-    ) -> None:
+    def update_corr(self, frame: Any, corr_est: Any, logger: Any | None = None) -> None:
         """Update correlation estimator with pandas DataFrame.
 
         Args:
@@ -311,7 +309,7 @@ class PandasAdapter(BaseAdapter):
         """
         return isinstance(data, pd.DataFrame)
 
-    def get_pandas_info(self) -> Dict[str, Any]:
+    def get_pandas_info(self) -> dict[str, Any]:
         """Get pandas-specific information.
 
         Returns:

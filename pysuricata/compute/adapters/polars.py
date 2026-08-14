@@ -7,7 +7,7 @@ protocol, optimized for polars DataFrames and Series.
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 
@@ -31,9 +31,9 @@ class PolarsAdapter(BaseAdapter):
 
     def __init__(
         self,
-        converter: Optional[UnifiedConverter] = None,
-        inferrer: Optional[UnifiedTypeInferrer] = None,
-        logger: Optional[logging.Logger] = None,
+        converter: UnifiedConverter | None = None,
+        inferrer: UnifiedTypeInferrer | None = None,
+        logger: logging.Logger | None = None,
     ):
         """Initialize the polars adapter.
 
@@ -49,7 +49,7 @@ class PolarsAdapter(BaseAdapter):
 
     def infer_and_build(
         self, data: Any, config: Any
-    ) -> tuple[ColumnKinds, Dict[str, Any]]:
+    ) -> tuple[ColumnKinds, dict[str, Any]]:
         """Infer column types and build accumulators for polars data.
 
         Args:
@@ -239,10 +239,10 @@ class PolarsAdapter(BaseAdapter):
     def consume_chunk(
         self,
         data: Any,
-        accs: Dict[str, Any],
+        accs: dict[str, Any],
         kinds: ColumnKinds,
-        config: Optional[Any] = None,
-        logger: Optional[Any] = None,
+        config: Any | None = None,
+        logger: Any | None = None,
     ) -> None:
         """Consume a polars DataFrame chunk and update accumulators.
 
@@ -262,9 +262,7 @@ class PolarsAdapter(BaseAdapter):
         # Use the existing polars consume function
         consume_chunk_polars(data, accs, kinds, config, logger)
 
-    def update_corr(
-        self, frame: Any, corr_est: Any, logger: Optional[Any] = None
-    ) -> None:
+    def update_corr(self, frame: Any, corr_est: Any, logger: Any | None = None) -> None:
         """Update correlation estimator with polars DataFrame.
 
         Args:
@@ -316,7 +314,7 @@ class PolarsAdapter(BaseAdapter):
         """
         return isinstance(data, pl.DataFrame)
 
-    def get_polars_info(self) -> Dict[str, Any]:
+    def get_polars_info(self) -> dict[str, Any]:
         """Get polars-specific information.
 
         Returns:

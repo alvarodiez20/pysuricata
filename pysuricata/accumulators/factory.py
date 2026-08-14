@@ -7,7 +7,7 @@ characteristics for processing massive datasets.
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..compute.core.types import ColumnKinds
 from ..config import EngineConfig
@@ -27,8 +27,8 @@ from .numeric import NumericAccumulator
 def build_accumulators(
     kinds: ColumnKinds,
     cfg: EngineConfig,
-    accumulator_config: Optional[AccumulatorConfig] = None,
-) -> Dict[str, Any]:
+    accumulator_config: AccumulatorConfig | None = None,
+) -> dict[str, Any]:
     """Build high-performance accumulator instances optimized for big data processing.
 
     This function creates accumulator instances for each column based on
@@ -54,7 +54,7 @@ def build_accumulators(
     # Validate configuration for production reliability
     accumulator_config.validate()
 
-    accs: Dict[str, Any] = {}
+    accs: dict[str, Any] = {}
 
     try:
         # Create numeric accumulators with optimized configuration
@@ -93,7 +93,7 @@ def create_accumulator_config(
     top_k_size: int = 50,
     enable_performance_tracking: bool = False,
     enable_error_recovery: bool = True,
-    max_memory_mb: Optional[int] = None,
+    max_memory_mb: int | None = None,
 ) -> AccumulatorConfig:
     """Create a production-grade accumulator configuration with optimized defaults.
 
@@ -131,7 +131,7 @@ def create_accumulator_config(
     )
 
 
-def get_accumulator_info() -> Dict[str, Any]:
+def get_accumulator_info() -> dict[str, Any]:
     """Get comprehensive information about available accumulator types.
 
     Returns:

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysuricata"
-version = "0.0.16"
+version = "0.0.17"
 description = "A lightweight EDA tool inspired by the curious nature of suricates. Built just for fun 🔬."
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
@@ -51,6 +51,7 @@ dev = [
     "mkdocs-material>=9.6.18",
     "mkdocstrings>=0.30.0",
     "mkdocstrings-python>=1.18.0",
+    "pyarrow>=17.0.0",  # test-only: exercises the pd.ArrowDtype inference branch
     "pytest>=8.3.5",
     "pytest-cov>=6.0.0",
     "requests>=2.32.3",
@@ -93,6 +94,9 @@ pysuricata = [
 [tool.ruff]
 target-version = "py310"
 line-length = 88
+# Notebooks are teaching material: pyupgrade-style rewrites hurt readability there.
+# Declared here (not only in .pre-commit-config.yaml) so pre-commit and CI agree.
+extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = [
@@ -106,13 +110,20 @@ select = [
 ]
 ignore = [
     "E501",  # line too long, handled by black
+    "E402",  # module-level import not at top — intentional in __init__, config, render
+    "E731",  # lambda assignment — used for legacy aliases in format_utils
+    "E741",  # ambiguous variable name — used in list comprehensions (l in labels)
     "B008",  # do not perform function calls in argument defaults
+    "B028",  # stacklevel in warnings — render modules use default
+    "C416",  # unnecessary dict comprehension — readability preference
     "C901",  # too complex
+    "UP007", # Union type hint — keep for Python 3.10 compat
 ]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-"tests/*" = ["S101"]
+"tests/*" = ["S101", "B007", "F841"]
+"pysuricata/render/*" = ["B007", "F841"]  # computed-but-unused vars kept for readability
 
 [tool.ruff.lint.isort]
 known-first-party = ["pysuricata"]

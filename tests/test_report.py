@@ -1,6 +1,5 @@
 import os
 import tempfile
-from pathlib import Path
 
 import pytest
 
@@ -192,7 +191,7 @@ def test_build_report_with_output_file():
 
         # Check that file was written
         assert os.path.exists(output_file)
-        with open(output_file, "r") as f:
+        with open(output_file) as f:
             file_content = f.read()
         assert "<html" in file_content.lower()
     finally:
@@ -299,7 +298,7 @@ def test_report_orchestrator_with_output_file():
 
         # Check that file was written
         assert os.path.exists(output_file)
-        with open(output_file, "r") as f:
+        with open(output_file) as f:
             file_content = f.read()
         assert "<html" in file_content.lower()
     finally:

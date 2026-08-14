@@ -2,16 +2,11 @@
 
 import html as _html
 import math
-from typing import Any, List, Optional, Sequence, Tuple, Union
-
-import numpy as np
 
 from .card_config import (
     DEFAULT_CSS_CLASSES,
     DEFAULT_QUALITY_THRESHOLDS,
     EPSILON,
-    MAD_OUTLIER_THRESHOLD,
-    MAD_SCALE_FACTOR,
 )
 from .card_types import QualityFlags
 from .format_utils import fmt_compact as _fmt_compact
@@ -19,7 +14,6 @@ from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
 from .format_utils import fmt_num as _fmt_num
 from .format_utils import human_bytes as _human_bytes
 from .svg_utils import _format_pow10_label as _fmt_pow10_label
-from .svg_utils import fmt_tick as _fmt_tick
 from .svg_utils import nice_log_ticks_from_log10 as _nice_log_ticks_from_log10
 from .svg_utils import nice_ticks as _nice_ticks
 from .svg_utils import safe_col_id as _safe_col_id
@@ -32,6 +26,8 @@ class CardRenderer:
     def __init__(self):
         self.css = DEFAULT_CSS_CLASSES
         self.thresholds = DEFAULT_QUALITY_THRESHOLDS
+        self.quality_assessor = QualityAssessor()
+        self.table_builder = TableBuilder()
 
     def safe_html_escape(self, text: str) -> str:
         """Safely escape HTML content."""
@@ -41,11 +37,11 @@ class CardRenderer:
         """Generate safe column ID for HTML."""
         return _safe_col_id(name)
 
-    def format_number(self, value: Union[int, float]) -> str:
+    def format_number(self, value: int | float) -> str:
         """Format number for display."""
         return _fmt_num(value)
 
-    def format_compact(self, value: Union[int, float]) -> str:
+    def format_compact(self, value: int | float) -> str:
         """Format number in compact notation."""
         return _fmt_compact(value)
 
@@ -56,6 +52,116 @@ class CardRenderer:
     def create_empty_svg(self, svg_class: str, width: int, height: int) -> str:
         """Create empty SVG placeholder."""
         return _svg_empty(svg_class, width, height)
+
+    def _build_approx_badge(self, approx: bool) -> str:
+        """Return an 'approx' badge if values are approximate, else empty string."""
+        return '<span class="badge">approx</span>' if approx else ""
+
+    def _build_chunk_distribution_simple(self, stats, total_values: int) -> str:
+        """Build chunk-level missing values distribution bar.
+
+        Args:
+            stats: Any stats object that may carry a ``chunk_metadata`` attribute.
+            total_values: Pre-computed total row count (present + missing).
+        """
+        chunk_metadata = getattr(stats, "chunk_metadata", None)
+        if not chunk_metadata:
+            return ""
+        if total_values == 0:
+            return ""
+
+        segments_html = ""
+        max_missing_pct = 0.0
+        num_chunks = len(chunk_metadata)
+
+        for start_row, end_row, missing_count in chunk_metadata:
+            chunk_size = end_row - start_row + 1
+            missing_pct = (
+                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
+            )
+            width_pct = (chunk_size / total_values) * 100.0
+
+            if missing_pct > max_missing_pct:
+                max_missing_pct = missing_pct
+
+            if missing_pct <= 5:
+                severity = "low"
+            elif missing_pct <= 20:
+                severity = "medium"
+            else:
+                severity = "high"
+
+            segments_html += f"""
+            <div class="chunk-segment {severity}"
+                 style="width: {width_pct:.2f}%"
+                 data-start="{start_row}"
+                 data-end="{end_row}"
+                 data-missing="{missing_count}"
+                 data-total="{chunk_size}"
+                 data-pct="{missing_pct:.1f}"></div>
+            """
+
+        return f"""
+        <div class="chunk-distribution">
+            <h4 class="section-title">Missing Values per Chunk</h4>
+            <div class="chunk-info">
+                <span>{num_chunks} chunks analyzed</span>
+                <span>Peak: {max_missing_pct:.1f}%</span>
+            </div>
+            <div class="chunk-spectrum">
+                {segments_html}
+            </div>
+            <div class="chunk-legend">
+                <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
+                <span class="legend-item"><span class="color-box medium"></span>Medium (5-20%)</span>
+                <span class="legend-item"><span class="color-box high"></span>High (20%+)</span>
+            </div>
+        </div>
+        """
+
+    def _build_missing_values_table(
+        self,
+        present_count: int,
+        present_pct: float,
+        missing_count: int,
+        missing_pct: float,
+        stats,
+        total_values: int,
+    ) -> str:
+        """Build data completeness section (shared across all card types).
+
+        Args:
+            present_count: Number of non-missing rows.
+            present_pct: Pre-computed present percentage (0-100).
+            missing_count: Number of missing rows.
+            missing_pct: Pre-computed missing percentage (0-100).
+            stats: Any stats object (used for chunk_metadata access).
+            total_values: Total row count; passed to chunk distribution.
+        """
+        completeness_html = f"""
+        <div class="missing-analysis-header">
+            <h4 class="section-title">Data Completeness</h4>
+        </div>
+
+        <div class="completeness-container">
+            <div class="completeness-stats">
+                <span class="stat-item">
+                    <span class="stat-label">Present:</span>
+                    <span class="stat-value">{present_count:,} <span class="stat-pct">({present_pct:.1f}%)</span></span>
+                </span>
+                <span class="stat-item">
+                    <span class="stat-label">Missing:</span>
+                    <span class="stat-value">{missing_count:,} <span class="stat-pct">({missing_pct:.1f}%)</span></span>
+                </span>
+            </div>
+            <div class="completeness-bar">
+                <div class="bar-fill present" style="width: {present_pct:.1f}%" title="Present: {present_pct:.1f}%"></div>
+                <div class="bar-fill missing" style="width: {missing_pct:.1f}%" title="Missing: {missing_pct:.1f}%"></div>
+            </div>
+        </div>
+        """
+        chunk_html = self._build_chunk_distribution_simple(stats, total_values)
+        return completeness_html + chunk_html
 
 
 class QualityAssessor:
@@ -182,9 +288,15 @@ class QualityAssessor:
             ):
                 flags.dominant_category = True
 
-        # Case and trim variants
-        flags.case_variants = stats.case_variants_est > 0
-        flags.trim_variants = stats.trim_variants_est > 0
+        # Case and trim variants: flag only when lowercasing/stripping *reduces* the
+        # unique count, meaning there are genuine case or whitespace variants.
+        # A zero estimate means the feature is disabled — treat as no variants.
+        flags.case_variants = (
+            stats.case_variants_est > 0 and stats.unique_est > stats.case_variants_est
+        )
+        flags.trim_variants = (
+            stats.trim_variants_est > 0 and stats.unique_est > stats.trim_variants_est
+        )
 
         # Empty strings
         flags.empty_strings = stats.empty_zero > 0
@@ -241,7 +353,7 @@ class TableBuilder:
     def __init__(self, css_classes=None):
         self.css = css_classes or DEFAULT_CSS_CLASSES
 
-    def build_key_value_table(self, data: List[Tuple[str, str, Optional[str]]]) -> str:
+    def build_key_value_table(self, data: list[tuple[str, str, str | None]]) -> str:
         """Build a key-value table.
 
         Args:
@@ -353,7 +465,7 @@ class TableBuilder:
         )
 
 
-def format_hist_bin_labels(x0: float, x1: float, scale: str) -> Tuple[str, str]:
+def format_hist_bin_labels(x0: float, x1: float, scale: str) -> tuple[str, str]:
     """Return compact labels for a histogram bin range with scientific notation for large numbers."""
     if scale == "log":
         try:
@@ -397,7 +509,7 @@ def compute_x_ticks_and_labels(x_min: float, x_max: float, scale: str):
             # Take more ticks if available
             x_ticks = ticks_all[: min(3, len(ticks_all))]
 
-        lbl_map = {t: lbl for t, lbl in zip(ticks_all, labels_all)}
+        lbl_map = {t: lbl for t, lbl in zip(ticks_all, labels_all, strict=False)}
         return (
             x_ticks,
             1.0,

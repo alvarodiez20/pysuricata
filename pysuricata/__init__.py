@@ -30,7 +30,7 @@ def _patch_polars_date_range() -> None:
                     kwargs["end"] = kwargs.pop("high")
             return orig(*args, **kwargs)  # type: ignore[misc]
 
-        setattr(compat_date_range, "_pysuricata_patched", True)
+        compat_date_range._pysuricata_patched = True
         pl.date_range = compat_date_range  # type: ignore[attr-defined]
     except Exception:
         # Best-effort shim; silently ignore if API differs

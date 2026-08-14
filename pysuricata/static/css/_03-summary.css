@@ -1,0 +1,414 @@
+/* =============================
+   SUMMARY SECTION (cards & lists)
+   ============================= */
+#pysuricata-report #summary {
+  margin: 0.05rem 0 0.05rem;
+}
+
+#pysuricata-report #summary h2 {
+  margin: 0 0 .75rem;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+#pysuricata-report #summary .summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+#pysuricata-report #summary .summary-grid.second-row {
+  margin-top: 12px;
+}
+
+/* Auto-dense 3-column layout for second row */
+#pysuricata-report #summary .summary-grid.second-row {
+  grid-auto-flow: dense;
+  /* allow items to backfill gaps */
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+
+@media (max-width: 1024px) {
+  #pysuricata-report #summary .summary-grid.second-row {
+    grid-template-columns: repeat(2, minmax(180px, 1fr));
+  }
+}
+
+#pysuricata-report #summary .summary-card {
+  padding: 14px;
+  border-radius: 10px;
+  border: 1px solid var(--chip-br-light);
+  background: rgba(0, 0, 0, 0.02);
+}
+
+/* First row cards - keep compact */
+#pysuricata-report #summary .summary-grid:not(.second-row) .summary-card {
+  display: block;
+}
+
+/* Only apply min-height to second-row cards (Column types, Top missing, Quick insights) */
+#pysuricata-report #summary .summary-grid.second-row .summary-card {
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Better space distribution for Column types card */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child {
+  justify-content: space-between;
+}
+
+#pysuricata-report:not(.light) #summary .summary-card {
+  border-color: var(--chip-br-dark);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+#pysuricata-report #summary .summary-card .label {
+  font-size: .8rem;
+  opacity: .8;
+  margin: 0 0 12px;
+}
+
+#pysuricata-report #summary .summary-card .value {
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* Generic summary list (two-column rows). We EXCLUDE .top-missing here. */
+#pysuricata-report #summary .summary-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  row-gap: 4px;
+}
+
+#pysuricata-report #summary .summary-list:not(.top-missing) li {
+  display: flex;
+  justify-content: space-between;
+  gap: .75rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#pysuricata-report #summary .summary-list:not(.top-missing) li span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =============================
+   TOP MISSING COLUMNS (bars)
+   ============================= */
+/* The UL wrapper */
+#pysuricata-report #summary .summary-list.top-missing {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  /* do not stretch gaps between items */
+  align-content: flex-start;
+  gap: 16px;
+  /* uniform vertical spacing between rows */
+  margin: 0;
+  padding: 0;
+}
+
+/* Each LI is a 2-row grid: info row + bar row */
+#pysuricata-report .top-missing .missing-item {
+  display: grid;
+  grid-template-rows: auto 8px;
+  row-gap: 4px;
+  list-style: none;
+}
+
+/* Expandable content styling */
+#pysuricata-report .top-missing .expandable-content {
+  display: none;
+}
+
+#pysuricata-report .top-missing .expandable-content .missing-item {
+  opacity: 0.9;
+}
+
+/* Expand button styling */
+#pysuricata-report .expand-btn {
+  background: transparent;
+  border: 1px solid var(--chip-br-light);
+  border-radius: 6px;
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+  width: 100%;
+  justify-content: center;
+}
+
+#pysuricata-report:not(.light) .expand-btn {
+  border-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .expand-btn:hover {
+  background: var(--chip-bg);
+  border-color: var(--accent-color);
+  transform: translateY(-1px);
+}
+
+#pysuricata-report .expand-btn:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+#pysuricata-report .expand-icon {
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+#pysuricata-report .expand-btn[data-expanded="true"] .expand-icon {
+  transform: rotate(180deg);
+}
+
+/* Expand controls container */
+#pysuricata-report .expand-controls {
+  margin-top: 0.5rem;
+  list-style: none;
+}
+
+/* Info row: column name (left) + count/percent (right) */
+#pysuricata-report .missing-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+}
+
+/* Column name chip (code-like) */
+#pysuricata-report .missing-col {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.82rem;
+  padding: 0.15rem 0.4rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: inherit;
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pysuricata-report:not(.light) .missing-col {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+#pysuricata-report .missing-stats {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* Bar container */
+#pysuricata-report .missing-bar {
+  position: relative;
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.05));
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+#pysuricata-report:not(.light) .missing-bar {
+  background: linear-gradient(to right, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.05));
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Percentage fill. Width is set inline: style="width: 23.4%;" */
+#pysuricata-report .missing-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  display: block;
+  transition: all 0.3s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+#pysuricata-report .missing-fill.low {
+  background: linear-gradient(to right, #4ea3f1, #5db3ff);
+  box-shadow: 0 1px 3px rgba(78, 163, 241, 0.4);
+}
+
+#pysuricata-report .missing-fill.medium {
+  background: linear-gradient(to right, #f1c54e, #f5d165);
+  box-shadow: 0 1px 3px rgba(241, 197, 78, 0.4);
+}
+
+#pysuricata-report .missing-fill.high {
+  background: linear-gradient(to right, #f15e4e, #f57365);
+  box-shadow: 0 1px 3px rgba(241, 94, 78, 0.4);
+}
+
+/* Hover effects for missing bars */
+#pysuricata-report .missing-item:hover .missing-fill {
+  transform: scaleY(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#pysuricata-report .missing-item:hover .missing-fill.low {
+  box-shadow: 0 2px 4px rgba(78, 163, 241, 0.6);
+}
+
+#pysuricata-report .missing-item:hover .missing-fill.medium {
+  box-shadow: 0 2px 4px rgba(241, 197, 78, 0.6);
+}
+
+#pysuricata-report .missing-item:hover .missing-fill.high {
+  box-shadow: 0 2px 4px rgba(241, 94, 78, 0.6);
+}
+
+/* Dark mode adjustments for missing fills */
+#pysuricata-report:not(.light) .missing-fill.low {
+  background: linear-gradient(to right, #3b8ad1, #4a9ae1);
+}
+
+#pysuricata-report:not(.light) .missing-fill.medium {
+  background: linear-gradient(to right, #d1a53e, #e1b54e);
+}
+
+#pysuricata-report:not(.light) .missing-fill.high {
+  background: linear-gradient(to right, #d14e3e, #e15e4e);
+}
+
+/* =============================
+   COLUMN TYPES (pretty tiles)
+   ============================= */
+/* Target the first card in the second summary row ("Column types") */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+/* Turn each LI into a compact tile */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 16px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--chip-br-light);
+  background: rgba(0, 0, 0, 0.02);
+  transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
+}
+
+#pysuricata-report:not(.light) #summary .summary-grid.second-row .summary-card:first-child .summary-list li {
+  border-color: var(--chip-br-dark);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:hover {
+  transform: translateY(-1px);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+#pysuricata-report:not(.light) #summary .summary-grid.second-row .summary-card:first-child .summary-list li:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Color swatch before each tile (matches donut palette) */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li::before {
+  content: "";
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  margin-bottom: 6px;
+  border: 1px solid var(--chip-br-light);
+}
+
+#pysuricata-report:not(.light) #summary .summary-grid.second-row .summary-card:first-child .summary-list li::before {
+  border-color: var(--chip-br-dark);
+}
+
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(1)::before {
+  background: #4ea3f1;
+}
+
+/* Numeric */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(2)::before {
+  background: #8ac926;
+}
+
+/* Categorical */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(3)::before {
+  background: #ffca3a;
+}
+
+/* Datetime */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(4)::before {
+  background: #ff595e;
+}
+
+/* Boolean */
+
+/* Label (left span) becomes a subtle caption; value (right span) is bold/bigger */
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li span:first-child {
+  order: 2;
+  /* place under the value */
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li span:last-child {
+  order: 1;
+  /* show the number on top */
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+/* Responsive: stack to 2 columns on narrow screens */
+@media (max-width: 560px) {
+  #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* =============================
+   QUICK INSIGHTS (chip wall)
+   ============================= */
+#pysuricata-report .chip-wall {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#pysuricata-report .chip-wall li {
+  padding: 0.3rem 0.6rem;
+  border-radius: 9999px;
+  background: var(--chip-bg-light);
+  border: 1px solid var(--chip-br-light);
+}
+
+#pysuricata-report:not(.light) .chip-wall li {
+  background: var(--chip-bg-dark);
+  border-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .quick a svg {
+  vertical-align: text-bottom;
+  margin-right: 0px;
+}

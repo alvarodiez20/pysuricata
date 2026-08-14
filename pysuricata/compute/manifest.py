@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from typing import Any, Dict, List, Tuple
+from typing import Any
 
 from ..accumulators.protocols import FinalizableAccumulator
 from ..render.missing_columns import create_missing_columns_renderer
@@ -15,14 +15,14 @@ except Exception:  # pragma: no cover
 
 
 def build_summary(
-    kinds_map: Mapping[str, Tuple[str, FinalizableAccumulator]],
+    kinds_map: Mapping[str, tuple[str, FinalizableAccumulator]],
     col_order: Sequence[str],
     *,
     row_kmv: Any,
     total_missing_cells: int,
     n_rows: int,
     n_cols: int,
-    miss_list: Sequence[Tuple[str, float, int]] = (),
+    miss_list: Sequence[tuple[str, float, int]] = (),
 ) -> Mapping[str, Any]:
     """Construct a minimal, JSON-safe summary manifest.
 
@@ -50,7 +50,7 @@ def build_summary(
         "top_missing": _get_intelligent_top_missing(miss_list, n_rows, n_cols),
     }
 
-    columns_summary: Dict[str, Dict[str, Any]] = {}
+    columns_summary: dict[str, dict[str, Any]] = {}
     for name in col_order:
         kind, acc = kinds_map[name]
         if kind == "numeric":
@@ -109,8 +109,8 @@ def build_summary(
 
 
 def _get_intelligent_top_missing(
-    miss_list: Sequence[Tuple[str, float, int]], n_rows: int, n_cols: int
-) -> List[Dict[str, Any]]:
+    miss_list: Sequence[tuple[str, float, int]], n_rows: int, n_cols: int
+) -> list[dict[str, Any]]:
     """Get top missing columns (max 5) using the analyzer.
 
     Args:

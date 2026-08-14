@@ -1,0 +1,80 @@
+#pysuricata-report {
+  --divider-dark: rgba(255, 255, 255, 0.12);
+  --divider-light: rgba(0, 0, 0, 0.08);
+  --chip-bg-dark: rgba(255, 255, 255, 0.08);
+  --chip-bg-light: rgba(0, 0, 0, 0.06);
+  --chip-br-dark: rgba(255, 255, 255, 0.12);
+  --chip-br-light: rgba(0, 0, 0, 0.08);
+  --scroll-track: rgba(0, 0, 0, 0.06);
+  --scroll-thumb: rgba(0, 0, 0, 0.28);
+  --divider: var(--divider-light);
+  --chip-bg: var(--chip-bg-light);
+  --chip-br: var(--chip-br-light);
+  --appbar-bg-light: rgba(249, 249, 249, 0.86);
+  --appbar-bg-dark: rgba(51, 51, 51, 0.90);
+  --appbar-bg: var(--appbar-bg-light);
+  --anchor-offset: 88px;
+  /* offset for in-page anchors under sticky header */
+  --triple-left: 240px;
+  --triple-right: 240px;
+
+  /* Accent color for interactive elements */
+  --accent-color: #3b82f6;
+  /* blue-500 */
+
+  /* Boolean Chart Theme Variables */
+  --chart-bg-light: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  --chart-bg-dark: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  --chart-border-light: #e2e8f0;
+  --chart-border-dark: #374151;
+  --chart-shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --chart-shadow-dark: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --chart-shadow-hover-light: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --chart-shadow-hover-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+
+  --svg-bg-light: white;
+  --svg-bg-dark: #1f2937;
+  --svg-shadow-light: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+  --svg-shadow-dark: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+
+  --segment-stroke-light: rgba(255, 255, 255, 0.2);
+  --segment-stroke-dark: rgba(255, 255, 255, 0.1);
+  --segment-stroke-hover-light: rgba(255, 255, 255, 0.4);
+  --segment-stroke-hover-dark: rgba(255, 255, 255, 0.2);
+
+  --segment-shadow-hover-light: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
+  --segment-shadow-hover-dark: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
+  --segment-shadow-true-light: drop-shadow(0 4px 8px rgba(16, 185, 129, 0.3));
+  --segment-shadow-true-dark: drop-shadow(0 4px 8px rgba(16, 185, 129, 0.4));
+  --segment-shadow-false-light: drop-shadow(0 4px 8px rgba(239, 68, 68, 0.3));
+  --segment-shadow-false-dark: drop-shadow(0 4px 8px rgba(239, 68, 68, 0.4));
+  --segment-shadow-missing-light: drop-shadow(0 4px 8px rgba(107, 114, 128, 0.3));
+  --segment-shadow-missing-dark: drop-shadow(0 4px 8px rgba(107, 114, 128, 0.4));
+
+  --label-shadow-light: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --label-shadow-dark: 0 1px 2px rgba(0, 0, 0, 0.8);
+  --label-shadow-hover-light: 0 2px 4px rgba(0, 0, 0, 0.7);
+  --label-shadow-hover-dark: 0 2px 4px rgba(0, 0, 0, 0.9);
+
+  --legend-bg-light: rgba(255, 255, 255, 0.8);
+  --legend-bg-dark: rgba(31, 41, 55, 0.8);
+  --legend-bg-hover-light: rgba(255, 255, 255, 1);
+  --legend-bg-hover-dark: rgba(31, 41, 55, 1);
+  --legend-border-light: rgba(0, 0, 0, 0.1);
+  --legend-border-dark: rgba(255, 255, 255, 0.1);
+  --legend-shadow-hover-light: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --legend-shadow-hover-dark: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --legend-color-shadow-light: 0 1px 2px rgba(0, 0, 0, 0.2);
+  --legend-color-shadow-dark: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --legend-text-light: #374151;
+  --legend-text-dark: #d1d5db;
+}
+
+#pysuricata-report:not(.light) {
+  --scroll-track: rgba(255, 255, 255, 0.08);
+  --scroll-thumb: rgba(255, 255, 255, 0.32);
+  --divider: var(--divider-dark);
+  --chip-bg: var(--chip-bg-dark);
+  --chip-br: var(--chip-br-dark);
+  --appbar-bg: var(--appbar-bg-dark);
+}

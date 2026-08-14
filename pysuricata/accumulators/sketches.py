@@ -3,7 +3,11 @@ from __future__ import annotations
 import hashlib
 import random
 from collections.abc import Sequence
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import pandas as pd
+    import polars as pl
 
 import numpy as np
 
@@ -32,10 +36,12 @@ class KMV:
 
     def __init__(self, k: int = 2048, max_exact_tracking: int = 100) -> None:
         self.k = int(k)
-        self._values: List[int] = []  # store as integers in [0, 2^64)
-        self._exact_counter: Dict[bytes, int] = {}  # bounded counter for exact counting
+        self._values: list[int] = []  # store as integers in [0, 2^64)
+        self._exact_counter: dict[bytes, int] = {}  # bounded counter for exact counting
         self._use_exact = True  # start with exact mode for small datasets
-        self._max_exact_tracking = int(max_exact_tracking)  # max unique values to track exactly
+        self._max_exact_tracking = int(
+            max_exact_tracking
+        )  # max unique values to track exactly
 
     def add_many(self, values: Sequence[Any]) -> None:
         """Batch add values to KMV sketch for improved performance.
@@ -45,11 +51,11 @@ class KMV:
         """
         if len(values) == 0:
             return
-            
+
         # Convert all values to bytes and hash them in batch
         try:
             import numpy as np
-            
+
             # Convert values to bytes
             byte_values = []
             for v in values:
@@ -59,10 +65,10 @@ class KMV:
                     byte_values.append(v)
                 else:
                     byte_values.append(str(v).encode("utf-8", "ignore"))
-            
+
             # Batch hash computation
             hashes = np.array([_u64(bv) for bv in byte_values], dtype=np.uint64)
-            
+
             # Process in exact mode if still using exact tracking
             if self._use_exact:
                 for i, bv in enumerate(byte_values):
@@ -86,7 +92,7 @@ class KMV:
             else:
                 # Process all hashes in approximation mode
                 self._batch_add_hashes(hashes)
-                
+
         except ImportError:
             # Fallback to individual processing if numpy not available
             for v in values:
@@ -94,7 +100,7 @@ class KMV:
 
     def _add_hash_to_kmv(self, h: int) -> None:
         """Add a single hash to the KMV sketch.
-        
+
         Args:
             h: Hash value to add
         """
@@ -117,13 +123,13 @@ class KMV:
 
     def _batch_add_hashes(self, hashes: np.ndarray) -> None:
         """Batch add hashes to KMV sketch using numpy operations.
-        
+
         Args:
             hashes: Array of hash values to add
         """
         if len(hashes) == 0:
             return
-            
+
         # Fill KMV sketch first if not full
         if len(self._values) < self.k:
             needed = min(self.k - len(self._values), len(hashes))
@@ -131,22 +137,22 @@ class KMV:
             hashes = hashes[needed:]
             if len(self._values) == self.k:
                 self._values.sort()
-        
+
         # Process remaining hashes
         if len(hashes) > 0:
             # Filter hashes that are smaller than the largest in KMV
             max_hash = self._values[-1] if self._values else 0
             candidate_mask = hashes < max_hash
             candidate_hashes = hashes[candidate_mask]
-            
+
             if len(candidate_hashes) > 0:
                 # Add candidates to existing values and sort
                 self._values.extend(candidate_hashes)
                 self._values.sort()
-                
+
                 # Keep only the k smallest
                 if len(self._values) > self.k:
-                    self._values = self._values[:self.k]
+                    self._values = self._values[: self.k]
 
     def add(self, v: Any) -> None:
         # Convert value to bytes for consistent hashing
@@ -273,49 +279,50 @@ class ReservoirSampler:
 
     def __init__(self, k: int = 20_000) -> None:
         self.k = int(k)
-        self._buf: List[float] = []
+        self._buf: list[float] = []
         self._seen: int = 0
 
     def add_many(self, arr: Sequence[float]) -> None:
         """Optimized batch addition using numpy random generation.
-        
+
         Args:
             arr: Sequence of float values to add
         """
         if len(arr) == 0:
             return
-            
+
         try:
             import numpy as np
+
             arr = np.asarray(arr, dtype=float)
         except ImportError:
             # Fallback to original implementation if numpy not available
             for x in arr:
                 self.add(float(x))
             return
-        
+
         # Fill reservoir first if not full
         if len(self._buf) < self.k:
             needed = min(self.k - len(self._buf), len(arr))
             self._buf.extend(arr[:needed])
             arr = arr[needed:]
             self._seen += needed
-        
+
         # Process remaining elements with batch random generation
         if len(arr) > 0:
             # Generate random numbers for replacement decisions
             random_vals = np.random.randint(1, self._seen + len(arr) + 1, size=len(arr))
-            
+
             # Determine which elements to replace
             replace_mask = random_vals <= self.k
             replace_indices = random_vals[replace_mask] - 1
-            
+
             # Replace elements in batch (convert to Python list for indexing)
             if len(replace_indices) > 0:
                 replace_values = arr[replace_mask]
-                for i, val in zip(replace_indices, replace_values):
+                for i, val in zip(replace_indices, replace_values, strict=False):
                     self._buf[i] = val
-            
+
             self._seen += len(arr)
 
     def add(self, x: float) -> None:
@@ -327,7 +334,7 @@ class ReservoirSampler:
             if j <= self.k:
                 self._buf[j - 1] = x
 
-    def values(self) -> List[float]:
+    def values(self) -> list[float]:
         return self._buf
 
 
@@ -341,7 +348,7 @@ class MisraGries:
 
     def __init__(self, k: int = 50) -> None:
         self.k = int(k)
-        self.counters: Dict[Any, int] = {}
+        self.counters: dict[Any, int] = {}
 
     def add(self, x: Any, w: int = 1) -> None:
         if x in self.counters:
@@ -372,7 +379,7 @@ class MisraGries:
             return
 
         # Pre-count values in the batch for weighted updates
-        batch_counts: Dict[Any, int] = {}
+        batch_counts: dict[Any, int] = {}
         for v in values:
             if v in batch_counts:
                 batch_counts[v] += 1
@@ -396,7 +403,7 @@ class MisraGries:
                         if v - min_count > 0
                     }
 
-    def items(self) -> List[Tuple[Any, int]]:
+    def items(self) -> list[tuple[Any, int]]:
         # items are approximate; a second pass could refine if needed
         return sorted(self.counters.items(), key=lambda kv: (-kv[1], str(kv[0])[:64]))
 
@@ -444,10 +451,10 @@ class RowKMV:
         self.kmv = KMV(k)
         self.rows = 0
 
-    def update_from_pandas(self, df: pd.DataFrame) -> None:  # type: ignore[name-defined]
+    def update_from_pandas(self, df: pd.DataFrame) -> None:
         try:
-            import pandas as pd  # type: ignore
-        except Exception:
+            import pandas as pd
+        except ImportError:
             return
         try:
             # Vectorized row hashing: combine column hashes using a polynomial hash
@@ -480,11 +487,7 @@ class RowKMV:
                 self.kmv.add(s)
             self.rows += n
 
-    def update_from_polars(self, df: pl.DataFrame) -> None:  # type: ignore[name-defined]
-        try:
-            pass  # type: ignore
-        except Exception:
-            return
+    def update_from_polars(self, df: pl.DataFrame) -> None:
         try:
             # Polars' hash_rows() is already correct - hashes entire rows properly
             if hasattr(df, "hash_rows"):
@@ -509,7 +512,7 @@ class RowKMV:
             except Exception:
                 self.rows += min(2000, df.height)
 
-    def approx_duplicates(self) -> Tuple[int, float]:
+    def approx_duplicates(self) -> tuple[int, float]:
         uniq = self.kmv.estimate()
         d = max(0, self.rows - uniq)
         pct = (d / self.rows * 100.0) if self.rows else 0.0
@@ -544,11 +547,11 @@ class StreamingHistogram:
             bins: Number of histogram bins (default: 25)
         """
         self.bins = int(bins)
-        self.bin_edges: List[float] = []
-        self.counts: List[int] = []
+        self.bin_edges: list[float] = []
+        self.counts: list[int] = []
         self.total_count = 0
-        self.min_val: Optional[float] = None
-        self.max_val: Optional[float] = None
+        self.min_val: float | None = None
+        self.max_val: float | None = None
         self._initialized = False
 
     def add(self, value: float) -> None:
@@ -683,7 +686,7 @@ class StreamingHistogram:
                 if 0 <= new_bin_idx < len(self.counts):
                     self.counts[new_bin_idx] += count
 
-    def get_histogram_data(self) -> Tuple[List[float], List[int], int]:
+    def get_histogram_data(self) -> tuple[list[float], list[int], int]:
         """Get histogram data for rendering.
 
         Returns:

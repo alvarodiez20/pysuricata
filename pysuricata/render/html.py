@@ -2,13 +2,20 @@ from __future__ import annotations
 
 import html as _html
 import os
+import re
 import time
 from datetime import datetime, timezone
-from typing import Any, List, Optional
+from typing import Any
 
 from .._version import resolve_version as _resolve_pysuricata_version
 from ..compute.core.types import ColumnKinds
-from ..utils import embed_favicon, embed_image, load_css, load_script, load_template
+from ..utils import (
+    embed_favicon,
+    embed_image,
+    load_css_dir,
+    load_script,
+    load_template,
+)
 from .cards import render_bool_card as _render_bool_card
 from .cards import render_cat_card as _render_cat_card
 from .cards import render_dt_card as _render_dt_card
@@ -19,6 +26,11 @@ from .format_utils import human_time as _human_time
 from .markdown_utils import render_markdown_to_html
 from .missing_columns import create_missing_columns_renderer
 from .svg_utils import safe_col_id as _safe_col_id
+
+# Template placeholders are bare identifiers in braces ({report_title}). Anything
+# else that looks brace-wrapped -- CSS custom properties, JS object literals --
+# either fails to match or resolves to no key and is left verbatim.
+_PLACEHOLDER_RE = re.compile(r"\{(\w+)\}")
 
 
 def render_html_snapshot(
@@ -31,10 +43,10 @@ def render_html_snapshot(
     approx_mem_bytes: int,
     start_time: float,
     cfg: Any,
-    report_title: Optional[str],
+    report_title: str | None,
     sample_section_html: str,
-    chunk_metadata: Optional[list[tuple[int, int, int]]] = None,
-    corr_est: Optional[Any] = None,
+    chunk_metadata: list[tuple[int, int, int]] | None = None,
+    corr_est: Any | None = None,
 ) -> str:
     kinds_map = {
         **{name: ("numeric", accs[name]) for name in kinds.numeric},
@@ -127,7 +139,7 @@ def render_html_snapshot(
         for c in list(first_columns)
         if c in kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean
     ] or (kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean)
-    all_cards_list: List[str] = []
+    all_cards_list: list[str] = []
     for name in col_order:
         acc = accs[name]
         card_html = ""
@@ -166,7 +178,8 @@ def render_html_snapshot(
 
           <div class=\"vars-controls\">
             <div class=\"controls-row\">
-              <input type=\"text\" placeholder=\"Search columns...\" id=\"search-input\">
+              <label for=\"search-input\" class=\"sr-only\">Search columns</label>
+              <input type=\"text\" placeholder=\"Search columns...\" id=\"search-input\" aria-label=\"Search columns\">
               <div class=\"filter-buttons\">
                 <button class=\"tab active\" data-filter=\"all\">All</button>
                 <button class=\"tab\" data-filter=\"numeric\">Numeric</button>
@@ -195,8 +208,8 @@ def render_html_snapshot(
     template_dir = os.path.join(pkg_dir, "templates")
     template_path = os.path.join(template_dir, "report_template.html")
     template = load_template(template_path)
-    css_path = os.path.join(static_dir, "css", "style.css")
-    css_tag = load_css(css_path)
+    css_dir = os.path.join(static_dir, "css")
+    css_tag = load_css_dir(css_dir)
     script_path = os.path.join(static_dir, "js", "functionality.js")
     script_content = load_script(script_path)
 
@@ -210,10 +223,6 @@ def render_html_snapshot(
     # Add description editor
     description_editor_path = os.path.join(static_dir, "js", "description-editor.js")
     description_editor_content = load_script(description_editor_path)
-
-    # Load Chart.js for inline embedding (self-contained reports)
-    chartjs_path = os.path.join(static_dir, "js", "chart.min.js")
-    chartjs_content = load_script(chartjs_path)
 
     # Combine all scripts
     combined_script_content = (
@@ -248,12 +257,15 @@ def render_html_snapshot(
         static_dir, "images", "logo_suricata_transparent_dark_mode.png"
     )
     logo_light_img = embed_image(
-        logo_light_path, element_id="logo-light", alt_text="Logo", mime_type="image/png"
+        logo_light_path,
+        element_id="logo-light",
+        alt_text="PySuricata report logo",
+        mime_type="image/png",
     )
     logo_dark_img = embed_image(
         logo_dark_path,
         element_id="logo-dark",
-        alt_text="Logo (dark)",
+        alt_text="PySuricata report logo (dark mode)",
         mime_type="image/png",
     )
     logo_html = f'<span id="logo">{logo_light_img}{logo_dark_img}</span>'
@@ -288,44 +300,57 @@ def render_html_snapshot(
         boolean=len(kinds.boolean),
     )
 
-    html = template.format(
-        favicon=favicon_tag,
-        css=css_tag,
-        chartjs_inline=chartjs_content,
-        script=combined_script_content,
-        logo=logo_html,
-        report_title=report_title or cfg.title,
-        report_date=report_date,
-        report_id=report_id,
-        pysuricata_version=pysuricata_version,
-        report_duration=_human_time(duration_seconds),
-        repo_url=repo_url,
-        n_rows=f"{n_rows:,}",
-        n_cols=f"{n_cols:,}",
-        memory_usage=_human_bytes(approx_mem_bytes) if approx_mem_bytes else "—",
-        missing_overall=missing_overall,
-        duplicates_overall=duplicates_overall,
-        numeric_cols=len(kinds.numeric),
-        categorical_cols=len(kinds.categorical),
-        datetime_cols=len(kinds.datetime),
-        bool_cols=len(kinds.boolean),
-        dtype_donut_svg=dtype_donut_svg,
-        top_missing_list=top_missing_list,
-        n_unique_cols=f"{n_cols:,}",
-        constant_cols=f"{constant_cols:,}",
-        high_card_cols=f"{high_card_cols:,}",
-        date_min=date_min,
-        date_max=date_max,
-        text_cols=f"{text_cols:,}",
-        avg_text_len=avg_text_len,
-        dataset_sample_section=sample_section_html or "",
-        variables_section=variables_section_html,
-        correlations_section=correlations_section_html,
-        missing_values_section=missing_values_section_html,
-        description_html=description_html,
-        description_attr=description_attr,
-    )
-    return html
+    # Substitution is done with a single regex pass rather than str.format()
+    # because CSS custom properties ({--var-name}) and JavaScript braces would be
+    # read by .format() as named placeholders and raise KeyError. A single pass is
+    # also required for correctness: with sequential str.replace() calls, a value
+    # substituted early (e.g. a user-supplied title containing "{report_date}")
+    # would itself be rescanned and expanded by a later replacement.
+    replacements = {
+        "css": css_tag,
+        "script": combined_script_content,
+        "favicon": favicon_tag,
+        "logo": logo_html,
+        "report_title": report_title or cfg.title,
+        "report_date": report_date,
+        "report_id": report_id,
+        "pysuricata_version": pysuricata_version,
+        "report_duration": _human_time(duration_seconds),
+        "repo_url": repo_url,
+        "n_rows": f"{n_rows:,}",
+        "n_cols": f"{n_cols:,}",
+        "memory_usage": _human_bytes(approx_mem_bytes) if approx_mem_bytes else "—",
+        "missing_overall": missing_overall,
+        "duplicates_overall": duplicates_overall,
+        "numeric_cols": str(len(kinds.numeric)),
+        "categorical_cols": str(len(kinds.categorical)),
+        "datetime_cols": str(len(kinds.datetime)),
+        "bool_cols": str(len(kinds.boolean)),
+        "dtype_donut_svg": dtype_donut_svg,
+        "top_missing_list": top_missing_list,
+        "n_unique_cols": f"{n_cols:,}",
+        "constant_cols": f"{constant_cols:,}",
+        "high_card_cols": f"{high_card_cols:,}",
+        "date_min": date_min,
+        "date_max": date_max,
+        "text_cols": f"{text_cols:,}",
+        "avg_text_len": avg_text_len,
+        "dataset_sample_section": sample_section_html or "",
+        "variables_section": variables_section_html,
+        "correlations_section": correlations_section_html,
+        "missing_values_section": missing_values_section_html,
+        "description_html": description_html,
+        "description_attr": description_attr,
+    }
+
+    def _resolve(match: re.Match[str]) -> str:
+        key = match.group(1)
+        if key in replacements:
+            return str(replacements[key])
+        # Unknown key: leave the original text untouched so CSS/JS braces survive.
+        return match.group(0)
+
+    return _PLACEHOLDER_RE.sub(_resolve, template)
 
 
 def render_empty_html(title: str) -> str:

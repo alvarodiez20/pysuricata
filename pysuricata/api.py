@@ -25,6 +25,28 @@ from typing import TYPE_CHECKING, Any, Union
 from . import report
 from .config import EngineConfig as _EngineConfig
 
+
+def _convert_numpy_types(obj: Any) -> Any:
+    """Recursively convert numpy scalar/array types to native Python types.
+
+    Needed because ``json.dump`` cannot serialise numpy integers, floats, or
+    ndarrays out of the box.
+    """
+    import numpy as np
+
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: _convert_numpy_types(value) for key, value in obj.items()}
+    elif isinstance(obj, (list, tuple)):
+        return [_convert_numpy_types(item) for item in obj]
+    return obj
+
+
 # Type-only imports so pandas/polars/pyarrow remain optional
 if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd  # type: ignore
@@ -69,25 +91,6 @@ class Report:
         Args:
             path: Destination file path. Parent directories must exist.
         """
-
-        def _convert_numpy_types(obj):
-            """Convert numpy types to native Python types for JSON serialization."""
-            import numpy as np
-
-            if isinstance(obj, np.integer):
-                return int(obj)
-            elif isinstance(obj, np.floating):
-                return float(obj)
-            elif isinstance(obj, np.ndarray):
-                return obj.tolist()
-            elif isinstance(obj, dict):
-                return {key: _convert_numpy_types(value) for key, value in obj.items()}
-            elif isinstance(obj, (list, tuple)):
-                return [_convert_numpy_types(item) for item in obj]
-            else:
-                return obj
-
-        # Convert numpy types to native Python types
         converted_stats = _convert_numpy_types(self.stats)
 
         with open(path, "w", encoding="utf-8") as f:
@@ -264,8 +267,8 @@ class ComputeOptions:
     # Boolean detection options
     enable_auto_boolean_detection: bool = True
     boolean_detection_min_samples: int = 100
-    boolean_detection_max_zero_ratio: float = 0.95
-    boolean_detection_require_name_pattern: bool = True
+    boolean_detection_max_zero_ratio: float = 0.80
+    boolean_detection_require_name_pattern: bool = False
     force_column_types: dict[str, str] | None = None
 
     # Correlation analysis options
@@ -400,6 +403,44 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
         import pandas as pd
 
         if isinstance(data, pd.DataFrame):
+            # Deduplicate column names to prevent engine crash
+            # (df[name] returns a DataFrame instead of Series when duplicates exist)
+            if data.columns.duplicated().any():
+                import warnings
+
+                # Every existing name is already taken, so a generated suffix must
+                # never collide with one (e.g. columns ["a", "a", "a_1"] must not
+                # rename the second "a" to "a_1").
+                taken: set[str] = set(data.columns)
+                counters: dict[str, int] = {}
+                new_cols: list[str] = []
+                emitted: set[str] = set()
+                for col in data.columns:
+                    if col not in emitted:
+                        emitted.add(col)
+                        new_cols.append(col)
+                        continue
+                    suffix = counters.get(col, 0)
+                    while True:
+                        suffix += 1
+                        candidate = f"{col}_{suffix}"
+                        if candidate not in taken:
+                            break
+                    counters[col] = suffix
+                    taken.add(candidate)
+                    emitted.add(candidate)
+                    new_cols.append(candidate)
+                # Shallow copy: only the column axis is rewritten, never the blocks.
+                data = data.copy(deep=False)
+                data.columns = new_cols
+                assert not data.columns.duplicated().any(), (
+                    "column deduplication failed to produce unique names"
+                )
+                warnings.warn(
+                    "DataFrame has duplicate column names. "
+                    "Columns were renamed with numeric suffixes to avoid errors.",
+                    stacklevel=3,
+                )
             return data
     except ImportError:
         pass

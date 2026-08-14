@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..core.protocols import DataAdapter
 from ..core.types import ColumnKinds
@@ -30,9 +30,9 @@ class BaseAdapter(DataAdapter, ABC):
 
     def __init__(
         self,
-        converter: Optional[UnifiedConverter] = None,
-        inferrer: Optional[UnifiedTypeInferrer] = None,
-        logger: Optional[logging.Logger] = None,
+        converter: UnifiedConverter | None = None,
+        inferrer: UnifiedTypeInferrer | None = None,
+        logger: logging.Logger | None = None,
     ):
         """Initialize the base adapter.
 
@@ -52,7 +52,7 @@ class BaseAdapter(DataAdapter, ABC):
     @abstractmethod
     def infer_and_build(
         self, data: Any, config: Any
-    ) -> tuple[ColumnKinds, Dict[str, Any]]:
+    ) -> tuple[ColumnKinds, dict[str, Any]]:
         """Infer column types and build accumulators.
 
         Args:
@@ -92,10 +92,10 @@ class BaseAdapter(DataAdapter, ABC):
     def consume_chunk(
         self,
         data: Any,
-        accs: Dict[str, Any],
+        accs: dict[str, Any],
         kinds: ColumnKinds,
-        config: Optional[Any] = None,
-        logger: Optional[Any] = None,
+        config: Any | None = None,
+        logger: Any | None = None,
     ) -> None:
         """Consume a data chunk and update accumulators.
 
@@ -109,9 +109,7 @@ class BaseAdapter(DataAdapter, ABC):
         pass
 
     @abstractmethod
-    def update_corr(
-        self, frame: Any, corr_est: Any, logger: Optional[Any] = None
-    ) -> None:
+    def update_corr(self, frame: Any, corr_est: Any, logger: Any | None = None) -> None:
         """Update correlation estimator with new data.
 
         Args:
@@ -134,7 +132,7 @@ class BaseAdapter(DataAdapter, ABC):
         """
         pass
 
-    def get_adapter_info(self) -> Dict[str, Any]:
+    def get_adapter_info(self) -> dict[str, Any]:
         """Get adapter information.
 
         Returns:

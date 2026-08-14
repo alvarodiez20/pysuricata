@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, List, Optional, Tuple
+from typing import Any
 
 import numpy as np
 
@@ -23,19 +23,6 @@ from .algorithms import (
 )
 from .config import NumericConfig
 from .sketches import KMV, MisraGries, ReservoirSampler, StreamingHistogram, mad
-
-
-@dataclass
-class DtypeSuggestion:
-    """Advisory dtype optimization suggestion for a column.
-
-    This is purely informational -- the profiler never modifies input data.
-    """
-
-    current_dtype: str
-    suggested_dtype: str
-    reason: str
-    estimated_savings_pct: float = 0.0  # 0-100
 
 
 @dataclass
@@ -76,17 +63,17 @@ class NumericSummary:
     # Advanced analytics (approximate)
     int_like: bool = False
     unique_ratio_approx: float = float("nan")
-    hist_counts: Optional[List[int]] = None
-    top_values: List[Tuple[float, int]] = field(default_factory=list)
+    hist_counts: list[int] | None = None
+    top_values: list[tuple[float, int]] = field(default_factory=list)
     # Reservoir sample for advanced analytics
-    sample_vals: Optional[List[float]] = None
+    sample_vals: list[float] | None = None
     # True distribution histogram data
-    true_histogram_edges: Optional[List[float]] = None
-    true_histogram_counts: Optional[List[int]] = None
+    true_histogram_edges: list[float] | None = None
+    true_histogram_counts: list[int] | None = None
     # Quality metrics
     heap_pct: float = float("nan")
-    gran_decimals: Optional[int] = None
-    gran_step: Optional[float] = None
+    gran_decimals: int | None = None
+    gran_step: float | None = None
     bimodal: bool = False
     ci_lo: float = float("nan")
     ci_hi: float = float("nan")
@@ -95,18 +82,16 @@ class NumericSummary:
     mono_inc: bool = False
     mono_dec: bool = False
     dtype_str: str = "numeric"
-    corr_top: List[Tuple[str, float]] = field(default_factory=list)
+    corr_top: list[tuple[str, float]] = field(default_factory=list)
     sample_scale: float = 1.0
     # Extremes with global indices
-    min_items: List[Tuple[Any, float]] = field(default_factory=list)
-    max_items: List[Tuple[Any, float]] = field(default_factory=list)
+    min_items: list[tuple[Any, float]] = field(default_factory=list)
+    max_items: list[tuple[Any, float]] = field(default_factory=list)
     # Chunk metadata for spectrum visualization
-    chunk_metadata: Optional[List[Tuple[int, int, int]]] = (
+    chunk_metadata: list[tuple[int, int, int]] | None = (
         None  # (start_row, end_row, missing_count)
     )
     corr_threshold: float = 0.5  # Threshold used for correlation filtering
-    # Advisory dtype suggestion (None = no suggestion / current dtype is optimal)
-    dtype_suggestion: Optional[DtypeSuggestion] = None
 
 
 class NumericAccumulator:
@@ -117,7 +102,7 @@ class NumericAccumulator:
     precision, reliability, and comprehensive statistical analysis capabilities.
     """
 
-    def __init__(self, name: str, config: Optional[NumericConfig] = None):
+    def __init__(self, name: str, config: NumericConfig | None = None):
         """Initialize numeric accumulator with optimized components.
 
         Args:
@@ -135,7 +120,7 @@ class NumericAccumulator:
         self.inf = 0
         self._int_like_all = True
         self._dtype_str = "numeric"
-        self._corr_top: List[Tuple[str, float]] = []
+        self._corr_top: list[tuple[str, float]] = []
         self._corr_threshold: float = 0.5
 
         # Memory tracking for big data optimization
@@ -172,8 +157,8 @@ class NumericAccumulator:
         # Per-column chunk tracking for accurate missing value reporting
         if self.config.enable_chunk_metadata:
             # Pre-allocate arrays for bounded memory usage
-            self._chunk_boundaries: List[int] = []
-            self._chunk_missing: List[int] = []
+            self._chunk_boundaries: list[int] = []
+            self._chunk_missing: list[int] = []
             self._chunk_metadata_enabled = True
             self._chunk_count = 0
         else:
@@ -182,9 +167,12 @@ class NumericAccumulator:
             self._chunk_missing = None
             self._chunk_metadata_enabled = False
             self._chunk_count = 0
-        
+
         self._current_chunk_missing = 0  # Missing in current chunk
         self._current_chunk_rows = 0  # Total rows in current chunk
+
+        # Chunk counter for throttling extreme tracking (incremented by consume layer)
+        self._extreme_update_counter: int = 0
 
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string efficiently.
@@ -197,7 +185,7 @@ class NumericAccumulator:
         except Exception:
             self._dtype_str = "numeric"
 
-    def set_corr_top(self, items: List[Tuple[str, float]]) -> None:
+    def set_corr_top(self, items: list[tuple[str, float]]) -> None:
         """Set top correlated columns for analytics.
 
         Args:
@@ -359,7 +347,7 @@ class NumericAccumulator:
             self._outlier_detector.update(finite_values)
 
     def update_extremes(
-        self, pairs_min: List[Tuple[Any, float]], pairs_max: List[Tuple[Any, float]]
+        self, pairs_min: list[tuple[Any, float]], pairs_max: list[tuple[Any, float]]
     ) -> None:
         """Update extreme values from external source with batch processing.
 
@@ -400,7 +388,7 @@ class NumericAccumulator:
             self._current_chunk_missing = 0
             self._current_chunk_rows = 0
             return
-        
+
         # Check if we've exceeded the maximum number of chunks to track
         if self._chunk_count >= self.config.max_chunks:
             # Switch to summary mode - stop tracking individual chunks
@@ -408,19 +396,19 @@ class NumericAccumulator:
             self._current_chunk_missing = 0
             self._current_chunk_rows = 0
             return
-        
+
         # Record chunk metadata
         cumulative_rows = self.count + self.missing
         self._chunk_boundaries.append(cumulative_rows)
         self._chunk_missing.append(self._current_chunk_missing)
         self._chunk_count += 1
-        
+
         # Reset for next chunk
         self._current_chunk_missing = 0
         self._current_chunk_rows = 0
 
     def finalize(
-        self, chunk_metadata: Optional[List[Tuple[int, int, int]]] = None
+        self, chunk_metadata: list[tuple[int, int, int]] | None = None
     ) -> NumericSummary:
         """Finalize accumulator and return comprehensive summary statistics.
 
@@ -525,11 +513,6 @@ class NumericAccumulator:
             per_column_chunk_metadata if per_column_chunk_metadata else chunk_metadata
         )
 
-        # Compute advisory dtype suggestion
-        dtype_suggestion = self._compute_dtype_suggestion(
-            quantiles["min"], quantiles["max"], self._int_like_all
-        )
-
         return NumericSummary(
             name=self.name,
             count=self.count,
@@ -579,10 +562,9 @@ class NumericAccumulator:
             top_values=top_values,
             sample_scale=sample_scale,
             chunk_metadata=final_chunk_metadata,
-            dtype_suggestion=dtype_suggestion,
         )
 
-    def _compute_quantiles(self, values: List[float]) -> dict[str, float]:
+    def _compute_quantiles(self, values: list[float]) -> dict[str, float]:
         """Compute quantiles from sample values using optimized algorithms.
 
         Args:
@@ -650,7 +632,7 @@ class NumericAccumulator:
         jb = n * (skew**2 / 6 + kurtosis**2 / 24)
         return float(jb)
 
-    def get_performance_metrics(self) -> Optional[PerformanceMetrics]:
+    def get_performance_metrics(self) -> PerformanceMetrics | None:
         """Get performance metrics for production monitoring.
 
         Returns:
@@ -703,6 +685,8 @@ class NumericAccumulator:
         self._bytes_seen = 0
         self._corr_top = []
 
+        self._extreme_update_counter = 0
+
         # Reset all components efficiently
         self._moments.reset()
         self._sample = ReservoirSampler(self.config.sample_size)
@@ -717,129 +701,9 @@ class NumericAccumulator:
         if self._performance_metrics:
             self._performance_metrics.reset()
 
-    def _compute_dtype_suggestion(
-        self, min_val: float, max_val: float, int_like: bool
-    ) -> Optional[DtypeSuggestion]:
-        """Compute advisory dtype suggestion based on observed data range.
-
-        Args:
-            min_val: Minimum observed value
-            max_val: Maximum observed value
-            int_like: Whether all values appear to be integers
-
-        Returns:
-            DtypeSuggestion if a better dtype exists, None otherwise
-        """
-        if self.count == 0:
-            return None
-
-        current = self._dtype_str.lower()
-        has_missing = self.missing > 0
-
-        # Skip if dtype is already a Duration/Timedelta (converted to numeric internally)
-        if "timedelta" in current or "duration" in current:
-            return None
-
-        # float64 column where all values are integers → suggest int downcast
-        if int_like and "float" in current and self.inf == 0:
-            best_int = self._smallest_int_dtype(min_val, max_val, has_missing)
-            if best_int:
-                current_bytes = 8 if "64" in current else 4
-                suggested_bytes = self._dtype_byte_size(best_int)
-                savings = (1 - suggested_bytes / current_bytes) * 100
-                return DtypeSuggestion(
-                    current_dtype=self._dtype_str,
-                    suggested_dtype=best_int,
-                    reason=f"All values are integers in [{min_val:.0f}, {max_val:.0f}]",
-                    estimated_savings_pct=round(savings, 1),
-                )
-
-        # int64 column that fits in smaller int → suggest downcast
-        if int_like and "int" in current and "64" in current:
-            best_int = self._smallest_int_dtype(min_val, max_val, has_missing)
-            if best_int and best_int != current and "64" not in best_int:
-                suggested_bytes = self._dtype_byte_size(best_int)
-                savings = (1 - suggested_bytes / 8) * 100
-                return DtypeSuggestion(
-                    current_dtype=self._dtype_str,
-                    suggested_dtype=best_int,
-                    reason=f"Values fit in [{min_val:.0f}, {max_val:.0f}]",
-                    estimated_savings_pct=round(savings, 1),
-                )
-
-        # float64 → float32 if range fits
-        if current == "float64" and not int_like:
-            f32_max = 3.4028235e+38
-            if abs(min_val) <= f32_max and abs(max_val) <= f32_max:
-                return DtypeSuggestion(
-                    current_dtype=self._dtype_str,
-                    suggested_dtype="float32",
-                    reason="Value range fits in float32 precision",
-                    estimated_savings_pct=50.0,
-                )
-
-        return None
-
-    @staticmethod
-    def _dtype_byte_size(dtype_name: str) -> int:
-        """Get the byte size of a dtype from its name.
-
-        Args:
-            dtype_name: Dtype name like 'int8', 'UInt16', 'float32'
-
-        Returns:
-            Byte size (e.g. 1, 2, 4, 8)
-        """
-        import re
-
-        m = re.search(r"(\d+)$", dtype_name)
-        if m:
-            return int(m.group(1)) // 8
-        return 8  # default to 8 bytes
-
-    @staticmethod
-    def _smallest_int_dtype(
-        min_val: float, max_val: float, nullable: bool
-    ) -> Optional[str]:
-        """Find the smallest integer dtype that can hold the observed range.
-
-        Args:
-            min_val: Minimum value
-            max_val: Maximum value
-            nullable: Whether the column has missing values
-
-        Returns:
-            Dtype string or None if no downcasting is possible
-        """
-        if math.isnan(min_val) or math.isnan(max_val) or math.isinf(min_val) or math.isinf(max_val):
-            return None
-
-        # Use pandas nullable types when there are missing values
-        prefix = "Int" if nullable else "int"
-        u_prefix = "UInt" if nullable else "uint"
-
-        if min_val >= 0:
-            # Unsigned candidates
-            if max_val <= 255:
-                return f"{u_prefix}8"
-            elif max_val <= 65535:
-                return f"{u_prefix}16"
-            elif max_val <= 4294967295:
-                return f"{u_prefix}32"
-        else:
-            # Signed candidates
-            if -128 <= min_val and max_val <= 127:
-                return f"{prefix}8"
-            elif -32768 <= min_val and max_val <= 32767:
-                return f"{prefix}16"
-            elif -2147483648 <= min_val and max_val <= 2147483647:
-                return f"{prefix}32"
-
-        return None
-
     def _compute_confidence_interval(
         self, mean: float, se: float, n: int
-    ) -> Tuple[float, float]:
+    ) -> tuple[float, float]:
         """Compute 95% confidence interval for the mean.
 
         Args:
@@ -864,8 +728,8 @@ class NumericAccumulator:
         return mean - margin_of_error, mean + margin_of_error
 
     def _compute_granularity(
-        self, values: List[float]
-    ) -> Tuple[Optional[float], Optional[int]]:
+        self, values: list[float]
+    ) -> tuple[float | None, int | None]:
         """Compute granularity analysis of the data.
 
         Args:
@@ -878,7 +742,12 @@ class NumericAccumulator:
             return None, None
 
         # Convert to numpy array for efficient processing
-        arr = np.array(values)
+        try:
+            arr = np.array(values, dtype=float)
+        except Exception:
+            # Fallback for mixed types
+            arr = np.array([float(x) for x in values if x is not None], dtype=float)
+
         finite_values = arr[np.isfinite(arr)]
 
         if len(finite_values) < 2:
@@ -889,23 +758,30 @@ class NumericAccumulator:
         diffs = np.diff(sorted_values)
 
         # Filter out zero differences
-        non_zero_diffs = diffs[diffs > 0]
+        non_zero_diffs = np.asarray(diffs[diffs > 0], dtype=float)
 
         if len(non_zero_diffs) == 0:
             return None, None
 
         # Find the most common non-zero difference (granularity step)
         # Use histogram to find the most frequent difference
+        # Specify range explicitly and use python's min/max to avoid NumPy 2.1 _NoValue pointer bug when reloaded by pytest-cov
+        range_min, range_max = float(min(non_zero_diffs)), float(max(non_zero_diffs))
         hist, bin_edges = np.histogram(
-            non_zero_diffs, bins=min(50, len(non_zero_diffs))
+            non_zero_diffs,
+            bins=int(min(50, len(non_zero_diffs))),
+            range=(range_min, range_max)
+            if range_min < range_max
+            else (range_min, range_min + 1.0),
         )
         if len(hist) > 0:
-            most_frequent_bin = np.argmax(hist)
+            most_frequent_bin = int(np.argmax(hist))
             gran_step = (
-                bin_edges[most_frequent_bin] + bin_edges[most_frequent_bin + 1]
-            ) / 2
+                float(bin_edges[most_frequent_bin] + bin_edges[most_frequent_bin + 1])
+                / 2.0
+            )
         else:
-            gran_step = np.min(non_zero_diffs)
+            gran_step = float(np.min(non_zero_diffs))
 
         # Calculate decimal places
         if gran_step > 0:
@@ -920,7 +796,7 @@ class NumericAccumulator:
 
         return float(gran_step), decimal_places
 
-    def _compute_heaping_percentage(self, values: List[float]) -> float:
+    def _compute_heaping_percentage(self, values: list[float]) -> float:
         """Compute heaping percentage (percentage of values ending in 0 or 5).
 
         Args:
@@ -933,7 +809,12 @@ class NumericAccumulator:
             return float("nan")
 
         # Convert to numpy array for efficient processing
-        arr = np.array(values)
+        try:
+            arr = np.array(values, dtype=float)
+        except Exception:
+            # Fallback for mixed types
+            arr = np.array([float(x) for x in values if x is not None], dtype=float)
+
         finite_values = arr[np.isfinite(arr)]
 
         if len(finite_values) == 0:
@@ -946,6 +827,9 @@ class NumericAccumulator:
             abs_vals = np.abs(finite_values)
             # Round to 10 decimal places to avoid floating-point noise
             rounded = np.round(abs_vals, 10)
+            # Values >= 1e8 would overflow int64 when scaled by 1e10; use fallback.
+            if rounded.size > 0 and rounded.max() >= 1e8:
+                raise OverflowError("values too large for int64 scaled cast")
             # Scale up by 10^10 to convert to integers, then find trailing zeros
             scaled = np.round(rounded * 1e10).astype(np.int64)
             # Remove trailing zeros to find the last significant digit

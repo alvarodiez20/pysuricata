@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import logging
 import time
-from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
+from collections.abc import Mapping, Sequence
+from typing import Any
 
 from ..analysis.metrics import (
     build_kinds_map,
@@ -31,7 +32,7 @@ class ManifestBuilder:
     from processed data, including dataset summaries and column statistics.
     """
 
-    def __init__(self, logger: Optional[logging.Logger] = None):
+    def __init__(self, logger: logging.Logger | None = None):
         """Initialize the manifest builder.
 
         Args:
@@ -46,12 +47,12 @@ class ManifestBuilder:
         row_kmv: Any,
         first_columns: Sequence[str],
     ) -> ProcessingResult[
-        Tuple[
-            Dict[str, Tuple[str, Any]],
-            List[str],
+        tuple[
+            dict[str, tuple[str, Any]],
+            list[str],
             int,
             int,
-            List[Tuple[str, float, int]],
+            list[tuple[str, float, int]],
         ]
     ]:
         """Build manifest inputs for summary generation.
@@ -101,14 +102,14 @@ class ManifestBuilder:
 
     def build_summary(
         self,
-        kinds_map: Mapping[str, Tuple[str, Any]],
+        kinds_map: Mapping[str, tuple[str, Any]],
         col_order: Sequence[str],
         row_kmv: Any,
         total_missing_cells: int,
         n_rows: int,
         n_cols: int,
-        miss_list: Sequence[Tuple[str, float, int]],
-    ) -> ProcessingResult[Optional[Dict[str, Any]]]:
+        miss_list: Sequence[tuple[str, float, int]],
+    ) -> ProcessingResult[dict[str, Any] | None]:
         """Build programmatic summary from processed data.
 
         Args:
@@ -199,7 +200,7 @@ class ManifestBuilder:
                 duration=duration,
             )
 
-    def get_manifest_info(self) -> Dict[str, Any]:
+    def get_manifest_info(self) -> dict[str, Any]:
         """Get manifest builder information.
 
         Returns:

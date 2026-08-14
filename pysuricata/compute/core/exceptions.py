@@ -4,8 +4,6 @@ This module defines specific exception types for different error conditions
 in the compute pipeline, enabling better error handling and debugging.
 """
 
-from typing import Optional
-
 
 class ComputeError(Exception):
     """Base exception for all compute-related errors.
@@ -22,8 +20,8 @@ class ComputeError(Exception):
     def __init__(
         self,
         message: str,
-        details: Optional[str] = None,
-        error_code: Optional[str] = None,
+        details: str | None = None,
+        error_code: str | None = None,
     ):
         """Initialize the compute error.
 
@@ -54,7 +52,7 @@ class ChunkingError(ComputeError):
     such as invalid chunk sizes, unsupported data types, or memory issues.
     """
 
-    def __init__(self, message: str, chunk_size: Optional[int] = None, **kwargs):
+    def __init__(self, message: str, chunk_size: int | None = None, **kwargs):
         """Initialize the chunking error.
 
         Args:
@@ -73,7 +71,7 @@ class InferenceError(ComputeError):
     such as ambiguous data types or inference failures.
     """
 
-    def __init__(self, message: str, column_name: Optional[str] = None, **kwargs):
+    def __init__(self, message: str, column_name: str | None = None, **kwargs):
         """Initialize the inference error.
 
         Args:
@@ -95,8 +93,8 @@ class ConversionError(ComputeError):
     def __init__(
         self,
         message: str,
-        source_type: Optional[str] = None,
-        target_type: Optional[str] = None,
+        source_type: str | None = None,
+        target_type: str | None = None,
         **kwargs,
     ):
         """Initialize the conversion error.

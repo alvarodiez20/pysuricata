@@ -1,7 +1,6 @@
 """Configuration constants for card rendering."""
 
 from dataclasses import dataclass
-from typing import List, Tuple
 
 
 @dataclass(frozen=True)
@@ -21,7 +20,7 @@ class HistogramConfig:
     """Histogram configuration."""
 
     default_bins: int = 25
-    bin_options: Tuple[int, ...] = (10, 25, 50)
+    bin_options: tuple[int, ...] = (10, 25, 50)
     max_bins: int = 200
     min_bins: int = 10
     sample_cap: int = 200_000
@@ -32,7 +31,7 @@ class CategoricalConfig:
     """Categorical chart configuration."""
 
     default_topn: int = 10
-    topn_options: Tuple[int, ...] = (5, 10, 15)
+    topn_options: tuple[int, ...] = (5, 10, 15)
     max_display_rows: int = 15
     max_label_length: int = 24
     char_width: int = 7
@@ -213,5 +212,12 @@ DEFAULT_CSS_CLASSES = CSSClasses()
 # Common constants
 EPSILON = 1e-9
 NANOSECONDS_PER_SECOND = 1_000_000_000
+
+# Consistency constant for MAD (Median Absolute Deviation):
+# 1 / Phi^{-1}(3/4) = 1 / 0.6744897501960817 = 0.67448975
+# Makes MAD a consistent estimator for the standard deviation under normality.
 MAD_SCALE_FACTOR = 0.67448975
+
+# Modified Z-score threshold for outlier detection using MAD.
+# A value of 3.5 is recommended by Iglewicz & Hoaglin (1993).
 MAD_OUTLIER_THRESHOLD = 3.5

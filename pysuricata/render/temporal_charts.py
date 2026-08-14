@@ -189,7 +189,9 @@ class TemporalChartRenderer:
         # Start SVG
         svg_parts = [
             f'<svg class="temporal-chart" width="{w}" height="{h}" ',
-            f'viewBox="0 0 {w} {h}" role="img" aria-label="{title}">',
+            f'viewBox="0 0 {w} {h}" role="img" aria-labelledby="temp-title">',
+            f'<title id="temp-title">{title}</title>',
+            f"<desc>Bar chart showing {title.lower()} with {n_bars} bars</desc>",
         ]
 
         # Background grid
@@ -220,8 +222,6 @@ class TemporalChartRenderer:
             svg_parts.append(
                 f'<rect class="bar temporal-bar" '
                 f'x="{x:.1f}" y="{y:.1f}" width="{bw:.1f}" height="{bh:.1f}" '
-                f'fill="{self.bar_color}" fill-opacity="0.8" '
-                f'stroke="{self.bar_color}" stroke-width="1" '
                 f'data-count="{count}" data-pct="{pct:.1f}" data-label="{label}" '
                 f'rx="2" ry="2">'
                 f"</rect>"
@@ -280,7 +280,9 @@ class TemporalChartRenderer:
         h = self.height
 
         return f'''<svg class="temporal-chart empty" width="{w}" height="{h}"
-            viewBox="0 0 {w} {h}" role="img" aria-label="{title} (No Data)">
+            viewBox="0 0 {w} {h}" role="img" aria-labelledby="temp-empty-title">
+            <title id="temp-empty-title">{title} (No Data)</title>
+            <desc>No data available for this temporal distribution</desc>
             <text x="{w / 2}" y="{h / 2}" text-anchor="middle"
                 font-family="system-ui, sans-serif"
                 font-size="14px"

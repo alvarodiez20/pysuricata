@@ -1,7 +1,5 @@
 """DateTime card rendering functionality."""
 
-from typing import Optional
-
 import numpy as np
 
 try:  # optional
@@ -9,7 +7,7 @@ try:  # optional
 except Exception:  # pragma: no cover
     pd = None  # type: ignore
 
-from .card_base import CardRenderer, QualityAssessor, TableBuilder
+from .card_base import CardRenderer
 from .card_config import DEFAULT_CHART_DIMS, DEFAULT_DT_CONFIG
 from .card_types import DateTimeStats, QualityFlags
 from .svg_utils import nice_ticks as _nice_ticks
@@ -21,8 +19,6 @@ class DateTimeCardRenderer(CardRenderer):
 
     def __init__(self):
         super().__init__()
-        self.quality_assessor = QualityAssessor()
-        self.table_builder = TableBuilder()
         self.dt_config = DEFAULT_DT_CONFIG
         self.chart_dims = DEFAULT_CHART_DIMS
         self.temporal_renderer = TemporalChartRenderer()
@@ -184,8 +180,10 @@ class DateTimeCardRenderer(CardRenderer):
             density = count / time_span_days
             if density >= 1:
                 density_display = f"{density:.1f} records/day"
-            else:
+            elif density > 0:
                 density_display = f"{1 / density:.1f} days/record"
+            else:
+                density_display = "—"
         else:
             density_display = "—"
 
@@ -212,7 +210,7 @@ class DateTimeCardRenderer(CardRenderer):
 
         return self.table_builder.build_key_value_table(data)
 
-    def _format_timestamp(self, ts: Optional[int], multiline: bool = True) -> str:
+    def _format_timestamp(self, ts: int | None, multiline: bool = True) -> str:
         """Format a UTC nanoseconds epoch as readable datetime string.
 
         Args:
@@ -281,9 +279,9 @@ class DateTimeCardRenderer(CardRenderer):
 
     def _build_timeline_svg(
         self,
-        sample: Optional[list[int]],
-        tmin: Optional[int],
-        tmax: Optional[int],
+        sample: list[int] | None,
+        tmin: int | None,
+        tmax: int | None,
         column_name: str,
         *,
         bins: int = 60,
@@ -324,7 +322,8 @@ class DateTimeCardRenderer(CardRenderer):
 
             centers = (edges[:-1] + edges[1:]) / 2.0
             pts = " ".join(
-                f"{sx(x):.2f},{sy(float(c)):.2f}" for x, c in zip(centers, counts)
+                f"{sx(x):.2f},{sy(float(c)):.2f}"
+                for x, c in zip(centers, counts, strict=False)
             )
             y_ticks, _ = _nice_ticks(0, y_max, 5)
 
@@ -590,8 +589,7 @@ class DateTimeCardRenderer(CardRenderer):
         return f"{peak_year} ({by_year[peak_year]:,} records)"
 
     def _build_missing_values_table(self, stats: DateTimeStats) -> str:
-        """Build simple missing values analysis matching reference HTML."""
-        # Calculate missing data statistics
+        """Build simple missing values analysis."""
         total_values = stats.count + stats.missing
         missing_pct = (
             (stats.missing / max(1, total_values)) * 100.0 if total_values > 0 else 0.0
@@ -599,105 +597,9 @@ class DateTimeCardRenderer(CardRenderer):
         present_pct = (
             (stats.count / max(1, total_values)) * 100.0 if total_values > 0 else 0.0
         )
-
-        # Section 1: Data Completeness
-        completeness_html = f"""
-        <div class="missing-analysis-header">
-            <h4 class="section-title">Data Completeness</h4>
-        </div>
-
-        <div class="completeness-container">
-            <div class="completeness-stats">
-                <span class="stat-item">
-                    <span class="stat-label">Present:</span>
-                    <span class="stat-value">{stats.count:,} <span class="stat-pct">({present_pct:.1f}%)</span></span>
-                </span>
-                <span class="stat-item">
-                    <span class="stat-label">Missing:</span>
-                    <span class="stat-value">{stats.missing:,} <span class="stat-pct">({missing_pct:.1f}%)</span></span>
-                </span>
-            </div>
-            <div class="completeness-bar">
-                <div class="bar-fill present" style="width: {present_pct:.1f}%" title="Present: {present_pct:.1f}%"></div>
-                <div class="bar-fill missing" style="width: {missing_pct:.1f}%" title="Missing: {missing_pct:.1f}%"></div>
-            </div>
-        </div>
-        """
-
-        # Section 2: Chunk Distribution
-        chunk_html = self._build_chunk_distribution_simple(stats)
-
-        return completeness_html + chunk_html
-
-    def _build_chunk_distribution_simple(self, stats: DateTimeStats) -> str:
-        """Build simple chunk distribution visualization matching reference HTML.
-
-        Args:
-            stats: DateTimeStats object
-
-        Returns:
-            HTML string for chunk distribution
-        """
-        # Get chunk metadata
-        chunk_metadata = getattr(stats, "chunk_metadata", None)
-        if not chunk_metadata:
-            return ""
-
-        total_values = stats.count + stats.missing
-        if total_values == 0:
-            return ""
-
-        # Build segments
-        segments_html = ""
-        max_missing_pct = 0.0
-        num_chunks = len(chunk_metadata)
-
-        for start_row, end_row, missing_count in chunk_metadata:
-            chunk_size = end_row - start_row + 1
-            missing_pct = (
-                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
-            )
-            width_pct = (chunk_size / total_values) * 100.0
-
-            # Track peak
-            if missing_pct > max_missing_pct:
-                max_missing_pct = missing_pct
-
-            # Determine severity class (3 levels only)
-            if missing_pct <= 5:
-                severity = "low"
-            elif missing_pct <= 20:
-                severity = "medium"
-            else:
-                severity = "high"
-
-            segments_html += f"""
-            <div class="chunk-segment {severity}"
-                 style="width: {width_pct:.2f}%"
-                 data-start="{start_row}"
-                 data-end="{end_row}"
-                 data-missing="{missing_count}"
-                 data-total="{chunk_size}"
-                 data-pct="{missing_pct:.1f}"></div>
-            """
-
-        return f"""
-        <div class="chunk-distribution">
-            <h4 class="section-title">Missing Values Distribution</h4>
-            <div class="chunk-info">
-                <span>{num_chunks} chunks analyzed</span>
-                <span>Peak: {max_missing_pct:.1f}%</span>
-            </div>
-            <div class="chunk-spectrum">
-                {segments_html}
-            </div>
-            <div class="chunk-legend">
-                <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
-                <span class="legend-item"><span class="color-box medium"></span>Medium (5-20%)</span>
-                <span class="legend-item"><span class="color-box high"></span>High (20%+)</span>
-            </div>
-        </div>
-        """
+        return super()._build_missing_values_table(
+            stats.count, present_pct, stats.missing, missing_pct, stats, total_values
+        )
 
     def _get_missing_data_severity(self, missing_pct: float) -> tuple[str, str, str]:
         """Get missing data severity classification."""

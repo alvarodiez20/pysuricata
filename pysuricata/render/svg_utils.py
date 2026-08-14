@@ -9,7 +9,6 @@ favor predictable output for testing.
 
 import math
 import re
-from typing import List, Tuple
 
 import numpy as np
 
@@ -72,7 +71,7 @@ def _nice_num(rng: float, do_round: bool = True) -> float:
     return nice * (10**exp)
 
 
-def nice_ticks(vmin: float, vmax: float, n: int = 5) -> Tuple[List[float], float]:
+def nice_ticks(vmin: float, vmax: float, n: int = 5) -> tuple[list[float], float]:
     """Compute "nice" axis ticks covering [vmin, vmax].
 
     Produces at most ~50 ticks, evenly spaced using a "nice" step. If the
@@ -150,21 +149,23 @@ def _format_pow10_label(exp: int) -> str:
     try:
         if -6 <= exp <= 6:
             if exp >= 0:
-                return f"{int(10 ** exp):,}"
+                return f"{int(10**exp):,}"
             # exp < 0: generate decimal with leading 0.
-            frac = 10.0 ** exp
+            frac = 10.0**exp
             # choose precision to show at least |exp| decimals
             prec = min(8, max(1, -exp))
             s = f"{frac:.{prec}f}"
             # strip trailing zeros
-            s = s.rstrip('0').rstrip('.') if '.' in s else s
+            s = s.rstrip("0").rstrip(".") if "." in s else s
             return s
         return f"1e{exp:+d}".replace("+", "")
     except Exception:
         return f"1e{exp}"
 
 
-def nice_log_ticks_from_log10(log_min: float, log_max: float, max_ticks: int = 6) -> Tuple[List[float], List[str]]:
+def nice_log_ticks_from_log10(
+    log_min: float, log_max: float, max_ticks: int = 6
+) -> tuple[list[float], list[str]]:
     """Compute nice log-scale ticks given log10-domain bounds.
 
     Produces ticks at integer powers of ten (spaced by a step chosen so the
@@ -191,8 +192,8 @@ def nice_log_ticks_from_log10(log_min: float, log_max: float, max_ticks: int = 6
     emax = int(math.ceil(log_max))
     span = max(1, emax - emin)
     step_e = max(1, int(math.ceil(span / max(1, max_ticks - 1))))
-    ticks: List[float] = []
-    labels: List[str] = []
+    ticks: list[float] = []
+    labels: list[str] = []
     e = emin
     while e <= emax and len(ticks) < 50:
         ticks.append(float(e))
@@ -201,7 +202,9 @@ def nice_log_ticks_from_log10(log_min: float, log_max: float, max_ticks: int = 6
     return ticks, labels
 
 
-def svg_empty(css_class: str, width: int, height: int, aria_label: str = "no data") -> str:
+def svg_empty(
+    css_class: str, width: int, height: int, aria_label: str = "no data"
+) -> str:
     """Return a minimal empty SVG placeholder with a viewBox.
 
     Args:
@@ -215,5 +218,6 @@ def svg_empty(css_class: str, width: int, height: int, aria_label: str = "no dat
     """
     return (
         f'<svg class="{css_class}" width="{width}" height="{height}" '
-        f'viewBox="0 0 {width} {height}" aria-label="{aria_label}"></svg>'
+        f'viewBox="0 0 {width} {height}" role="img" aria-label="{aria_label}">'
+        f"<title>{aria_label}</title></svg>"
     )

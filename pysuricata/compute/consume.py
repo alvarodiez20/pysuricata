@@ -6,14 +6,17 @@ import logging
 import math
 import warnings
 from collections.abc import Iterable
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 try:  # optional
-    import pandas as pd  # type: ignore
-except Exception:  # pragma: no cover
-    pd = None  # type: ignore
+    import pandas as pd
+except ImportError:  # pragma: no cover
+    pd = None  # type: ignore[assignment]
+
+if TYPE_CHECKING:
+    import pandas as pd  # noqa: F811
 
 from ..accumulators import (
     BooleanAccumulator,
@@ -24,22 +27,28 @@ from ..accumulators import (
 from .core.types import ColumnKinds
 from .processing.inference import UnifiedTypeInferrer
 
+# Per-column memory estimates keyed by (column_name, dtype_string).
+# Module-level so it persists across chunks of the same profile() call but
+# is naturally scoped to the process; keying by dtype prevents stale reuse
+# when the same column name appears with a different dtype in a later call.
+_memory_cache: dict[tuple[str, str], float] = {}
 
-def _estimate_memory_per_row_fast(s: pd.Series) -> float:  # type: ignore[name-defined]
+
+def _estimate_memory_per_row_fast(s: pd.Series) -> float:
     """Fast memory estimation based on dtype instead of deep profiling.
-    
+
     This avoids the expensive memory_usage(deep=True) which traverses every string.
-    
+
     Args:
         s: pandas Series to estimate memory for
-        
+
     Returns:
         Estimated bytes per row
     """
     dtype = s.dtype
-    
+
     # Fast dtype-based estimation
-    if dtype == 'object':
+    if dtype == "object":
         # For object columns, estimate based on sample
         if len(s) > 0:
             # Sample first 100 values to estimate average string length
@@ -49,7 +58,7 @@ def _estimate_memory_per_row_fast(s: pd.Series) -> float:  # type: ignore[name-d
             avg_length = sample.astype(str).str.len().mean()
             return 8 + avg_length
         return 8  # Default for empty series
-    elif dtype == 'string':
+    elif dtype == "string":
         # String dtype - estimate based on sample
         if len(s) > 0:
             sample_size = min(100, len(s))
@@ -62,7 +71,7 @@ def _estimate_memory_per_row_fast(s: pd.Series) -> float:  # type: ignore[name-d
         return dtype.itemsize
 
 
-def _to_numeric_array_pandas(s: pd.Series) -> np.ndarray:  # type: ignore[name-defined]
+def _to_numeric_array_pandas(s: pd.Series) -> np.ndarray:
     """Best-effort fast path to float64 NumPy array with NaN for invalid.
 
     - If the Series is already numeric (including pandas nullable ints),
@@ -99,7 +108,7 @@ def _to_numeric_array_pandas(s: pd.Series) -> np.ndarray:  # type: ignore[name-d
         # Fall through to the coercion path on any failure
         pass
     try:
-        ns = pd.to_numeric(s, errors="coerce")  # type: ignore[operator]
+        ns = pd.to_numeric(s, errors="coerce")
         return ns.to_numpy(dtype="float64", copy=False)
     except Exception:
         # Last resort: NumPy coercion (may be slower for object dtype)
@@ -108,7 +117,7 @@ def _to_numeric_array_pandas(s: pd.Series) -> np.ndarray:  # type: ignore[name-d
         )
 
 
-def _to_bool_array_pandas(s: pd.Series) -> List[Optional[bool]]:  # type: ignore[name-defined]
+def _to_bool_array_pandas(s: pd.Series) -> list[bool | None]:
     if str(s.dtype).startswith("bool"):
         arr = s.astype("boolean").tolist()
         return [None if x is pd.NA else bool(x) for x in arr]
@@ -123,7 +132,7 @@ def _to_bool_array_pandas(s: pd.Series) -> List[Optional[bool]]:  # type: ignore
         # Default None, set True/False based on masks
         true_np = true_mask.to_numpy()
         false_np = false_mask.to_numpy()
-        result: List[Optional[bool]] = [None] * len(s)
+        result: list[bool | None] = [None] * len(s)
         true_indices = np.where(true_np)[0]
         false_indices = np.where(false_np)[0]
         for i in true_indices:
@@ -133,7 +142,7 @@ def _to_bool_array_pandas(s: pd.Series) -> List[Optional[bool]]:  # type: ignore
         return result
     except Exception:
         # Fallback to per-value coercion for edge cases
-        def _coerce(v: Any) -> Optional[bool]:
+        def _coerce(v: Any) -> bool | None:
             if v is None or (isinstance(v, float) and math.isnan(v)):
                 return None
             vs = str(v).strip().lower()
@@ -146,7 +155,7 @@ def _to_bool_array_pandas(s: pd.Series) -> List[Optional[bool]]:  # type: ignore
         return [_coerce(v) for v in s.tolist()]
 
 
-def _to_datetime_ns_array_pandas(s: pd.Series) -> List[Optional[int]]:  # type: ignore[name-defined]
+def _to_datetime_ns_array_pandas(s: pd.Series) -> list[int | None]:
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         try:
@@ -155,27 +164,23 @@ def _to_datetime_ns_array_pandas(s: pd.Series) -> List[Optional[int]]:  # type: 
             ds = pd.to_datetime(s, errors="coerce", utc=True)
     vals = ds.astype("int64", copy=False).tolist()
     NAT_INT = -9223372036854775808
-    out: List[Optional[int]] = []
+    out: list[int | None] = []
     for v in vals:
         out.append(None if v == NAT_INT else int(v))
     return out
 
 
-def _to_categorical_iter_pandas(s: pd.Series) -> Iterable[Any]:  # type: ignore[name-defined]
+def _to_categorical_iter_pandas(s: pd.Series) -> Iterable[Any]:
     return s.tolist()
 
 
 def consume_chunk_pandas(
     df: pd.DataFrame,
-    accs: Dict[str, Any],
+    accs: dict[str, Any],
     kinds: ColumnKinds,
-    config: Optional[Any] = None,
-    logger: Optional[logging.Logger] = None,
-) -> None:  # type: ignore[name-defined]
-    # Initialize memory cache if not present
-    if not hasattr(consume_chunk_pandas, '_memory_cache'):
-        consume_chunk_pandas._memory_cache = {}
-    
+    config: Any | None = None,
+    logger: logging.Logger | None = None,
+) -> None:
     # 1) Create accumulators for columns not seen in the first chunk
     for name in df.columns:
         if name in accs:
@@ -215,35 +220,25 @@ def consume_chunk_pandas(
                 logger.debug("column '%s' not present in this chunk; skipping", name)
             continue
         s = df[name]
-        
+
         # Get cached memory usage or calculate and cache it
-        if name not in consume_chunk_pandas._memory_cache:
+        cache_key = (name, str(s.dtype))
+        if cache_key not in _memory_cache:
             try:
                 # Use fast dtype-based estimation instead of expensive deep profiling
-                memory_per_row = _estimate_memory_per_row_fast(s)
-                consume_chunk_pandas._memory_cache[name] = memory_per_row
+                _memory_cache[cache_key] = _estimate_memory_per_row_fast(s)
             except Exception:
-                consume_chunk_pandas._memory_cache[name] = 0
-        
+                _memory_cache[cache_key] = 0
+
         # Use cached memory estimate
-        estimated_memory = int(consume_chunk_pandas._memory_cache[name] * len(s))
-        
+        estimated_memory = int(_memory_cache[cache_key] * len(s))
+
         if isinstance(acc, NumericAccumulator):
             arr = _to_numeric_array_pandas(s)
             acc.update(arr)
-            # Track memory usage using cached estimate
-            try:
-                acc.add_mem(estimated_memory)
-            except Exception:
-                pass
+            acc.add_mem(estimated_memory)
             # Track extremes with indices - only every 5 chunks for performance
-            # Initialize chunk counter if not exists
-            if not hasattr(acc, '_extreme_update_counter'):
-                acc._extreme_update_counter = 0
-            
             acc._extreme_update_counter += 1
-            
-            # Only update extremes every 5 chunks to reduce overhead
             if acc._extreme_update_counter % 5 == 0:
                 try:
                     finite = np.isfinite(arr)
@@ -258,25 +253,18 @@ def consume_chunk_pandas(
                             pairs_max = [(idx[i], float(vals[i])) for i in part_max]
                             acc.update_extremes(pairs_min, pairs_max)
                 except Exception:
-                    pass
+                    if logger:
+                        logger.debug(
+                            "extreme update failed for column '%s'", name, exc_info=True
+                        )
         elif isinstance(acc, BooleanAccumulator):
             arr = _to_bool_array_pandas(s)
             acc.update(arr)
-            try:
-                acc.add_mem(estimated_memory)
-            except Exception:
-                pass
+            acc.add_mem(estimated_memory)
         elif isinstance(acc, DatetimeAccumulator):
             arr = _to_datetime_ns_array_pandas(s)
             acc.update(arr)
-            try:
-                acc.add_mem(estimated_memory)
-            except Exception:
-                pass
+            acc.add_mem(estimated_memory)
         elif isinstance(acc, CategoricalAccumulator):
             acc.update(_to_categorical_iter_pandas(s))
-            # Add memory tracking for categorical columns using cached estimate
-            try:
-                acc.add_mem(estimated_memory)
-            except Exception:
-                pass
+            acc.add_mem(estimated_memory)

@@ -35,8 +35,9 @@ import logging
 import sys
 import threading
 import time
+from collections.abc import Callable
 from contextlib import contextmanager
-from typing import Any, Callable, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 # Type variables for generic function decorators
 F = TypeVar("F", bound=Callable[..., Any])
@@ -165,9 +166,9 @@ class SectionTimer:
 
     def __exit__(
         self,
-        exc_type: Optional[type],
-        exc_val: Optional[Exception],
-        exc_tb: Optional[Any],
+        exc_type: type | None,
+        exc_val: Exception | None,
+        exc_tb: Any | None,
     ) -> bool:
         """Exit the context and log timing information.
 
@@ -240,7 +241,7 @@ class CheckpointTimer(SectionTimer):
         self,
         logger: logging.Logger,
         label: str,
-        checkpoint_manager: Optional[Any] = None,
+        checkpoint_manager: Any | None = None,
         checkpoint_interval: float = 30.0,
         level: int = logging.INFO,
         **kwargs: Any,
@@ -271,7 +272,7 @@ class CheckpointTimer(SectionTimer):
         return self
 
     def maybe_checkpoint(
-        self, chunk_idx: int, state: dict[str, Any], html: Optional[str] = None
+        self, chunk_idx: int, state: dict[str, Any], html: str | None = None
     ) -> bool:
         """Create a checkpoint if enough time has passed.
 
@@ -311,7 +312,7 @@ class CheckpointTimer(SectionTimer):
 
 
 def timeit(
-    logger: Optional[logging.Logger] = None,
+    logger: logging.Logger | None = None,
     level: int = logging.INFO,
     *,
     include_args: bool = False,
@@ -431,7 +432,7 @@ def get_logger(name: str) -> logging.Logger:
     if not logger.handlers:
         # Set the logger level
         logger.setLevel(logging.INFO)
-        
+
         # Detect if we're in a Jupyter notebook environment
         def _is_jupyter_environment():
             try:
@@ -440,26 +441,26 @@ def get_logger(name: str) -> logging.Logger:
                 return True
             except NameError:
                 return False
-        
+
         # Use stdout for Jupyter notebooks, stderr for regular scripts
         if _is_jupyter_environment():
             stream = sys.stdout
         else:
             stream = sys.stderr
-        
+
         # Create a console handler with appropriate stream
         handler = logging.StreamHandler(stream)
         handler.setLevel(logging.INFO)
-        
+
         # Create a formatter
         formatter = logging.Formatter(
-            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
         handler.setFormatter(formatter)
-        
+
         # Add the handler to the logger
         logger.addHandler(handler)
-        
+
         # Prevent propagation to root logger to avoid duplicate messages
         logger.propagate = False
 
@@ -467,8 +468,8 @@ def get_logger(name: str) -> logging.Logger:
 
 
 def configure_logging(
-    level: Union[str, int] = logging.INFO,
-    format_string: Optional[str] = None,
+    level: str | int = logging.INFO,
+    format_string: str | None = None,
     stream: Any = sys.stderr,
 ) -> None:
     """Configure global logging settings for the application.

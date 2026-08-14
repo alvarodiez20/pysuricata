@@ -374,23 +374,23 @@ class CategoricalAccumulator:
         self.name = name
         self.count = 0
         self.missing = 0
-        
+
         # Top-k values
         self._topk = MisraGries(config.top_k_size)
-        
+
         # Distinct count
         self._uniques = KMV(config.uniques_sketch_size)
         self._uniques_lower = KMV(config.uniques_sketch_size)  # Case-insensitive
         self._uniques_strip = KMV(config.uniques_sketch_size)  # Trimmed
-        
+
         # String lengths
         self._len_sum = 0
         self._len_n = 0
         self._len_sample = ReservoirSampler(config.length_sample_size)
-        
+
         # Special values
         self._empty_count = 0
-    
+
     def update(self, values: pd.Series):
         """Update with chunk of values"""
         # Filter out missing
@@ -399,7 +399,7 @@ class CategoricalAccumulator:
         # Track string lengths
         # Count empty strings
         pass
-    
+
     def finalize(self) -> CategoricalSummary:
         """Compute final statistics"""
         # Get top values from Misra-Gries
@@ -543,5 +543,3 @@ print(f"Gini: {country_stats['gini']:.3f}")
 - [Sketch Algorithms](../algorithms/sketches.md) - KMV, Misra-Gries deep dive
 - [Data Quality](../analytics/quality.md) - Quality metrics
 - [Configuration Guide](../configuration.md) - All parameters
-
-

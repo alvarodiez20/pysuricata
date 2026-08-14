@@ -18,7 +18,7 @@ class TestCLIParser:
         """Test profile command parsing."""
         parser = create_parser()
         args = parser.parse_args(["profile", "data.csv", "--output", "report.html"])
-        
+
         assert args.command == "profile"
         assert args.file == "data.csv"
         assert args.output == "report.html"
@@ -26,17 +26,25 @@ class TestCLIParser:
     def test_parser_profile_with_options(self):
         """Test profile command with all options."""
         parser = create_parser()
-        args = parser.parse_args([
-            "profile", "data.csv",
-            "--output", "report.html",
-            "--seed", "42",
-            "--chunk-size", "50000",
-            "--sample-size", "10000",
-            "--no-correlations",
-            "--quiet",
-            "--title", "My Report"
-        ])
-        
+        args = parser.parse_args(
+            [
+                "profile",
+                "data.csv",
+                "--output",
+                "report.html",
+                "--seed",
+                "42",
+                "--chunk-size",
+                "50000",
+                "--sample-size",
+                "10000",
+                "--no-correlations",
+                "--quiet",
+                "--title",
+                "My Report",
+            ]
+        )
+
         assert args.seed == 42
         assert args.chunk_size == 50000
         assert args.sample_size == 10000
@@ -48,7 +56,7 @@ class TestCLIParser:
         """Test summarize command parsing."""
         parser = create_parser()
         args = parser.parse_args(["summarize", "data.csv"])
-        
+
         assert args.command == "summarize"
         assert args.file == "data.csv"
         assert args.output is None
@@ -57,7 +65,7 @@ class TestCLIParser:
         """Test summarize command with output file."""
         parser = create_parser()
         args = parser.parse_args(["summarize", "data.csv", "--output", "stats.json"])
-        
+
         assert args.output == "stats.json"
 
 
@@ -102,11 +110,13 @@ class TestCLICommands:
     def sample_csv(self):
         """Create a sample CSV file for testing."""
         with tempfile.NamedTemporaryFile(mode="w", suffix=".csv", delete=False) as f:
-            df = pd.DataFrame({
-                "numeric": np.random.randn(100),
-                "categorical": ["a", "b", "c", "d"] * 25,
-                "boolean": [True, False] * 50
-            })
+            df = pd.DataFrame(
+                {
+                    "numeric": np.random.randn(100),
+                    "categorical": ["a", "b", "c", "d"] * 25,
+                    "boolean": [True, False] * 50,
+                }
+            )
             df.to_csv(f.name, index=False)
             yield f.name
         os.unlink(f.name)
@@ -117,13 +127,15 @@ class TestCLICommands:
             output_path = f.name
 
         parser = create_parser()
-        args = parser.parse_args(["profile", sample_csv, "--output", output_path, "--quiet"])
-        
+        args = parser.parse_args(
+            ["profile", sample_csv, "--output", output_path, "--quiet"]
+        )
+
         result = cmd_profile(args)
-        
+
         assert result == 0
         assert os.path.exists(output_path)
-        
+
         with open(output_path) as f:
             content = f.read()
             assert "<!DOCTYPE html>" in content or "<html" in content
@@ -136,13 +148,10 @@ class TestCLICommands:
             output_path = f.name
 
         parser = create_parser()
-        args = parser.parse_args([
-            "profile", sample_csv,
-            "--output", output_path,
-            "--seed", "42",
-            "--quiet"
-        ])
-        
+        args = parser.parse_args(
+            ["profile", sample_csv, "--output", output_path, "--seed", "42", "--quiet"]
+        )
+
         result = cmd_profile(args)
         assert result == 0
 
@@ -151,12 +160,16 @@ class TestCLICommands:
     def test_cmd_profile_invalid_file(self):
         """Test profile command with invalid file."""
         parser = create_parser()
-        args = parser.parse_args([
-            "profile", "/nonexistent/file.csv",
-            "--output", "/tmp/report.html",
-            "--quiet"
-        ])
-        
+        args = parser.parse_args(
+            [
+                "profile",
+                "/nonexistent/file.csv",
+                "--output",
+                "/tmp/report.html",
+                "--quiet",
+            ]
+        )
+
         result = cmd_profile(args)
         assert result == 1  # Should fail
 
@@ -164,14 +177,14 @@ class TestCLICommands:
         """Test that summarize command outputs JSON."""
         parser = create_parser()
         args = parser.parse_args(["summarize", sample_csv, "--quiet"])
-        
+
         result = cmd_summarize(args)
-        
+
         assert result == 0
-        
+
         captured = capsys.readouterr()
         stats = json.loads(captured.out)
-        
+
         assert "dataset" in stats
         assert "columns" in stats
 
@@ -181,17 +194,15 @@ class TestCLICommands:
             output_path = f.name
 
         parser = create_parser()
-        args = parser.parse_args([
-            "summarize", sample_csv,
-            "--output", output_path,
-            "--quiet"
-        ])
-        
+        args = parser.parse_args(
+            ["summarize", sample_csv, "--output", output_path, "--quiet"]
+        )
+
         result = cmd_summarize(args)
-        
+
         assert result == 0
         assert os.path.exists(output_path)
-        
+
         with open(output_path) as f:
             stats = json.load(f)
             assert "dataset" in stats
@@ -205,15 +216,18 @@ class TestMain:
     def test_main_no_args(self, capsys):
         """Test main with no arguments shows help."""
         import sys
+
         original_argv = sys.argv
         sys.argv = ["pysuricata"]
-        
+
         try:
             result = main()
             assert result == 0
-            
+
             captured = capsys.readouterr()
-            assert "pysuricata" in captured.out.lower() or "usage" in captured.out.lower()
+            assert (
+                "pysuricata" in captured.out.lower() or "usage" in captured.out.lower()
+            )
         finally:
             sys.argv = original_argv
 

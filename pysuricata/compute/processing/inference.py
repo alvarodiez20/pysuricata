@@ -10,7 +10,7 @@ import logging
 import re
 import warnings
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any
 
 from ..core.types import ColumnKinds, InferenceResult, ProcessingResult
 
@@ -51,7 +51,7 @@ class UnifiedTypeInferrer:
     def __init__(
         self,
         strategy: InferenceStrategy = InferenceStrategy.BALANCED,
-        logger: Optional[logging.Logger] = None,
+        logger: logging.Logger | None = None,
         confidence_threshold: float = 0.8,
         sample_size: int = 10000,
     ):
@@ -68,7 +68,7 @@ class UnifiedTypeInferrer:
         self.confidence_threshold = confidence_threshold
         self.sample_size = sample_size
 
-        self._inference_cache: Dict[str, InferenceResult] = {}
+        self._inference_cache: dict[str, InferenceResult] = {}
         self._type_patterns = self._initialize_type_patterns()
 
     def infer_kinds(self, data: Any) -> ProcessingResult[ColumnKinds]:
@@ -258,7 +258,11 @@ class UnifiedTypeInferrer:
                 pa_type = dtype.pyarrow_dtype
                 if pa.types.is_boolean(pa_type):
                     return ProcessingResult.success_result("boolean")
-                elif pa.types.is_integer(pa_type) or pa.types.is_floating(pa_type) or pa.types.is_decimal(pa_type):
+                elif (
+                    pa.types.is_integer(pa_type)
+                    or pa.types.is_floating(pa_type)
+                    or pa.types.is_decimal(pa_type)
+                ):
                     return ProcessingResult.success_result("numeric")
                 elif pa.types.is_timestamp(pa_type) or pa.types.is_date(pa_type):
                     return ProcessingResult.success_result("datetime")
@@ -332,7 +336,11 @@ class UnifiedTypeInferrer:
 
             # Nested types (Struct, List, Array) — fall through to categorical
             # but log a warning if logger is available
-            if dtype in (pl.Struct, pl.List) or str(dtype).startswith("list[") or str(dtype).startswith("struct"):
+            if (
+                dtype in (pl.Struct, pl.List)
+                or str(dtype).startswith("list[")
+                or str(dtype).startswith("struct")
+            ):
                 self.logger.debug(
                     "Column '%s' has nested type '%s'; treating as categorical",
                     getattr(s, "name", "?"),
@@ -462,14 +470,15 @@ class UnifiedTypeInferrer:
             except Exception:
                 pass
 
-            # Try boolean conversion
+            # Try boolean conversion for string data (AGGRESSIVE only)
             if self.strategy == InferenceStrategy.AGGRESSIVE:
                 try:
-                    bs = sample.cast(pl.Boolean, strict=False)
-                    null_count = bs.null_count()
-                    if (
-                        sample_size - null_count
-                    ) / sample_size > 0.8:  # 80% success rate
+                    # Convert to lowercase strings and check if they are boolean-like
+                    lower_sample = sample.cast(pl.Utf8).str.to_lowercase()
+                    bool_mask = lower_sample.is_in(
+                        ["true", "false", "1", "0", "yes", "no"]
+                    )
+                    if bool_mask.sum() / sample_size > 0.8:  # 80% success rate
                         return ProcessingResult.success_result("boolean")
                 except Exception:
                     pass
@@ -479,10 +488,10 @@ class UnifiedTypeInferrer:
 
         except Exception as e:
             return ProcessingResult.error_result(
-                f"Sample-based inference failed: {str(e)}"
+                f"Sample-based polars inference failed: {str(e)}"
             )
 
-    def _initialize_type_patterns(self) -> Dict[str, re.Pattern]:
+    def _initialize_type_patterns(self) -> dict[str, re.Pattern]:
         """Initialize regex patterns for type detection.
 
         Returns:
@@ -498,7 +507,7 @@ class UnifiedTypeInferrer:
         """Clear the inference cache."""
         self._inference_cache.clear()
 
-    def get_cache_stats(self) -> Dict[str, Any]:
+    def get_cache_stats(self) -> dict[str, Any]:
         """Get cache statistics.
 
         Returns:
@@ -542,7 +551,7 @@ def should_reclassify_numeric_as_categorical(
 
 
 def should_reclassify_numeric_as_boolean(
-    series: Any, config: Any, logger: Optional[Any] = None
+    series: Any, config: Any, logger: Any | None = None
 ) -> bool:
     """Determine if a numeric column should be reclassified as boolean.
 

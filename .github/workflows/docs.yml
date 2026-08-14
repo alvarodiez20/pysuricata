@@ -29,6 +29,9 @@ jobs:
           uv sync --dev
           uv run python -c "import sys;print(sys.version)"
 
+      - name: Regenerate example report
+        run: uv run python scripts/regenerate_example_report.py
+
       - name: Build docs
         run: uv run mkdocs build --strict
 

@@ -50,6 +50,28 @@ jobs:
             exit 1
           fi
 
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install Dependencies
+        run: uv sync --dev
+
+      - name: Ruff lint
+        run: uv run ruff check .
+
+      - name: Ruff format
+        run: uv run ruff format --check .
+
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -99,5 +121,16 @@ jobs:
         run: |
           uv sync --dev
 
+      - name: Regenerate example report
+        run: uv run python scripts/regenerate_example_report.py
+
       - name: Build docs
         run: uv run mkdocs build --strict
+
+      - name: Upload example report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: titanic-report-ci
+          path: docs/assets/titanic_report.html
+          if-no-files-found: warn

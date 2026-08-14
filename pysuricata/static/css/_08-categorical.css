@@ -1,0 +1,321 @@
+/*# =============================================
+#   Categorical mini‑bars (Top‑N) – sizing + typography
+#   ============================================= */
+/* Make categorical variants fill the chart column just like histograms */
+#pysuricata-report .var-card__body .triple-row .chart .hist-variants .cat.variant {
+  height: 100%;
+}
+
+#pysuricata-report .var-card__body .triple-row .chart .hist-variants .cat.variant>svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Cat SVG styling (bars + labels) */
+#pysuricata-report .cat-svg text {
+  font-family: inherit;
+}
+
+#pysuricata-report .cat-svg .bar {
+  fill: var(--bar);
+  opacity: .9;
+}
+
+#pysuricata-report .cat-svg .bar-label {
+  font-size: 11px;
+  fill: var(--axis-text);
+}
+
+#pysuricata-report .cat-svg .bar-value {
+  font-size: 11px;
+  fill: var(--axis-text);
+}
+
+/* Optional: keep long label/value text from poking outside on very narrow cards */
+@media (max-width: 768px) {
+  #pysuricata-report .cat-svg .bar-value {
+    display: none;
+  }
+}
+
+/*# Responsive tweak for controls row stacking on narrow screens*/
+@media (max-width: 1024px) {
+  #pysuricata-report .card-controls {
+    grid-template-columns: 1fr;
+  }
+
+  #pysuricata-report .card-controls .controls-slot {
+    grid-column: 1;
+    justify-self: start;
+    margin-top: 6px;
+  }
+}
+
+
+/* =============================================
+   COMMON VALUES TABLE STYLING
+   ============================================= */
+
+/* Common Values Table - Professional styling matching report theme */
+#pysuricata-report .common-values-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin: 8px 0;
+  background: white;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+#pysuricata-report:not(.light) .common-values-table {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+#pysuricata-report .common-values-table thead th {
+  background: rgba(0, 0, 0, 0.05);
+  color: inherit;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 2px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report:not(.light) .common-values-table thead th {
+  background: rgba(255, 255, 255, 0.08);
+  border-bottom-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .common-values-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report:not(.light) .common-values-table td {
+  border-bottom-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .common-values-table .common-value {
+  text-align: right;
+  font-weight: 500;
+}
+
+#pysuricata-report .common-values-table .common-count {
+  text-align: center;
+  color: #666;
+}
+
+#pysuricata-report:not(.light) .common-values-table .common-count {
+  color: #aaa;
+}
+
+#pysuricata-report .common-values-table .common-pct {
+  text-align: right;
+  font-weight: 500;
+  color: #007acc;
+}
+
+#pysuricata-report:not(.light) .common-values-table .common-pct {
+  color: #4db8ff;
+}
+
+#pysuricata-report .common-values-table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+#pysuricata-report:not(.light) .common-values-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+#pysuricata-report .common-values-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* =============================================
+   HISTOGRAM TICK IMPROVEMENTS
+   ============================================= */
+
+/* =============================================
+   ENHANCED HISTOGRAM TICK STYLING
+   ============================================= */
+
+
+/* Enhanced major tick visibility */
+#pysuricata-report .tick-major {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.9;
+}
+
+/* Better tick label styling with improved readability */
+#pysuricata-report .tick-label {
+  font-size: 10px;
+  fill: currentColor;
+  opacity: 0.9;
+  font-weight: 500;
+}
+
+/* Specific improvements for log scale ticks */
+#pysuricata-report .hist[data-scale="log"] .tick-major {
+  stroke-width: 1.2;
+  opacity: 1;
+}
+
+#pysuricata-report .hist[data-scale="log"] .tick-label {
+  font-size: 11px;
+  font-weight: normal;
+  opacity: 1;
+}
+
+/* Ensure axis lines are visible */
+#pysuricata-report .axis {
+  stroke: currentColor;
+  stroke-width: 1.5;
+  opacity: 0.8;
+}
+
+/* =============================================
+   ENHANCED COMMON VALUES TABLE STYLING
+   ============================================= */
+
+/* Enhanced Common Values Table - Professional styling matching report theme */
+#pysuricata-report .common-values-table.enhanced {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin: 8px 0;
+  background: white;
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--chip-br-light);
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  border-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .common-values-table.enhanced thead th {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.02));
+  color: inherit;
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 2px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced thead th {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  border-bottom-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .common-values-table.enhanced td {
+  padding: 8px;
+  border-bottom: 1px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  vertical-align: middle;
+  text-align: center;
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced td {
+  border-bottom-color: var(--chip-br-dark);
+}
+
+/* Rank column styling */
+#pysuricata-report .common-values-table.enhanced .rank {
+  text-align: center;
+  font-weight: 600;
+  width: 40px;
+  font-size: 0.82rem;
+}
+
+/* Value column styling */
+#pysuricata-report .common-values-table.enhanced .common-value {
+  text-align: center;
+  font-weight: 500;
+  min-width: 80px;
+}
+
+/* Count column styling */
+#pysuricata-report .common-values-table.enhanced .common-count {
+  text-align: center;
+  color: #666;
+  min-width: 60px;
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced .common-count {
+  color: #aaa;
+}
+
+/* Percentage column styling */
+#pysuricata-report .common-values-table.enhanced .common-pct {
+  text-align: center;
+  font-weight: 500;
+  color: #007acc;
+  min-width: 60px;
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced .common-pct {
+  color: #4db8ff;
+}
+
+/* Progress bar column */
+#pysuricata-report .common-values-table.enhanced .progress-bar {
+  width: 100px;
+  padding: 4px 8px;
+  text-align: center;
+}
+
+#pysuricata-report .common-values-table.enhanced .bar-fill {
+  height: 6px;
+  background: linear-gradient(90deg, #007acc, #4db8ff);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced .bar-fill {
+  background: linear-gradient(90deg, #4db8ff, #66c2ff);
+}
+
+/* Row hover effects */
+#pysuricata-report .common-values-table.enhanced tbody tr:hover {
+  background: rgba(0, 0, 0, 0.02);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+#pysuricata-report:not(.light) .common-values-table.enhanced tbody tr:hover {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Top 3 rows special styling */
+#pysuricata-report .common-values-table.enhanced
+}
+
+#pysuricata-report .common-values-table.enhanced
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  #pysuricata-report .common-values-table.enhanced {
+    font-size: 0.7rem;
+  }
+
+  #pysuricata-report .common-values-table.enhanced .progress-bar {
+    width: 60px;
+  }
+}

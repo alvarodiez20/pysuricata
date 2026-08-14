@@ -161,11 +161,11 @@ flowchart TD
     G3 --> H
     G4 --> H
 
-    H --> I["Load + inline static assets\nstyle.css · functionality.js\nchart.min.js (inlined)"]
+    H --> I["Load + inline static assets\n_00..._13 CSS partials · functionality.js\ntooltips.js · description-editor.js"]
     I --> J["CorrelationsSectionRenderer\nrender_section — O(m²)"]
     J --> K_node["MissingValuesSectionRenderer\nrender_section — O(cols)"]
     K_node --> L["DonutChartRenderer\nrender_dtype_donut — SVG"]
-    L --> M["Template assembly\nreport_template.html.format\n~40 template variables"]
+    L --> M["Template assembly\nreport_template.html\n~35 placeholders, single regex pass"]
     M --> N["Self-contained HTML\n~1.2–1.6 MB typical"]
 ```
 

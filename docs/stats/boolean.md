@@ -229,14 +229,14 @@ class BooleanAccumulator:
         self.missing = 0
         self.true_count = 0
         self.false_count = 0
-    
+
     def update(self, values: pd.Series):
         """Update with chunk of values"""
         # Filter out missing
         # Count True values
         # Count False values
         pass
-    
+
     def finalize(self) -> BooleanSummary:
         """Compute final statistics"""
         # Compute percentages
@@ -253,7 +253,7 @@ class BooleanAccumulator:
             balance_score=self._compute_balance(),
             imbalance_ratio=self._compute_imbalance(),
         )
-    
+
     def _compute_entropy(self) -> float:
         if self.count == 0:
             return 0.0
@@ -261,13 +261,13 @@ class BooleanAccumulator:
         if p == 0.0 or p == 1.0:
             return 0.0
         return -(p * math.log2(p) + (1-p) * math.log2(1-p))
-    
+
     def _compute_balance(self) -> float:
         if self.count == 0:
             return 0.0
         p = self.true_count / self.count
         return 1.0 - abs(0.5 - p)
-    
+
     def _compute_imbalance(self) -> float:
         if self.count == 0:
             return 0.0
@@ -411,7 +411,7 @@ Columns with True, False, and many NULLs:
 
 **Interpretation:** May be ternary (True/False/Unknown) rather than binary.
 
-**Recommendation:** 
+**Recommendation:**
 - Report missing percentage
 - Consider as categorical instead
 - Imputation may not be appropriate
@@ -435,5 +435,3 @@ Columns with True, False, and many NULLs:
 - [Categorical Analysis](categorical.md) - For multi-class variables
 - [Data Quality](../analytics/quality.md) - Quality metrics
 - [Configuration Guide](../configuration.md) - All parameters
-
-

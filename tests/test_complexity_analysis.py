@@ -14,12 +14,11 @@ Claims to validate:
 import gc
 import time
 import tracemalloc
+from collections.abc import Iterator
 from dataclasses import dataclass
-from typing import Iterator
 
 import numpy as np
 import pandas as pd
-import polars as pl
 import psutil
 import pytest
 
@@ -47,7 +46,9 @@ def get_process_memory_mb() -> float:
     return process.memory_info().rss / 1024 / 1024
 
 
-def create_mixed_dataframe(n_rows: int, n_cols: int = 10, seed: int = 42) -> pd.DataFrame:
+def create_mixed_dataframe(
+    n_rows: int, n_cols: int = 10, seed: int = 42
+) -> pd.DataFrame:
     """Create a DataFrame with mixed column types for benchmarking.
 
     Args:
@@ -334,7 +335,9 @@ class TestComplexityAnalysis:
         time_claim_valid = actual_time < claim_time * 5  # Allow up to 5x slower
         status = "✅" if time_claim_valid else "❌"
         print(f"  {status} Time: claimed ~15s, actual {actual_time:.1f}s")
-        claims_validated.append(("processing_time", claim_time, actual_time, time_claim_valid))
+        claims_validated.append(
+            ("processing_time", claim_time, actual_time, time_claim_valid)
+        )
 
         # Claim 2: Peak memory ~50MB
         claim_memory = 50  # MB
@@ -342,7 +345,9 @@ class TestComplexityAnalysis:
         memory_claim_valid = actual_memory < claim_memory * 10  # Allow up to 500MB
         status = "✅" if memory_claim_valid else "❌"
         print(f"  {status} Peak Memory: claimed ~50MB, actual {actual_memory:.1f}MB")
-        claims_validated.append(("peak_memory", claim_memory, actual_memory, memory_claim_valid))
+        claims_validated.append(
+            ("peak_memory", claim_memory, actual_memory, memory_claim_valid)
+        )
 
         # Claim 3: Memory per row < 1KB
         claim_per_row = 1000  # bytes
@@ -350,7 +355,9 @@ class TestComplexityAnalysis:
         per_row_valid = actual_per_row < claim_per_row
         status = "✅" if per_row_valid else "❌"
         print(f"  {status} Memory/Row: claimed <1KB, actual {actual_per_row:.1f}B")
-        claims_validated.append(("memory_per_row", claim_per_row, actual_per_row, per_row_valid))
+        claims_validated.append(
+            ("memory_per_row", claim_per_row, actual_per_row, per_row_valid)
+        )
 
         # Summary
         print("\n  " + "=" * 50)
@@ -438,8 +445,10 @@ class TestPerformanceRegression:
             f"10K rows used too much memory: {result.peak_memory_mb:.1f}MB"
         )
 
-        print(f"\n✅ 10K baseline: {result.processing_time_seconds:.2f}s, "
-              f"{result.peak_memory_mb:.1f}MB peak")
+        print(
+            f"\n✅ 10K baseline: {result.processing_time_seconds:.2f}s, "
+            f"{result.peak_memory_mb:.1f}MB peak"
+        )
 
     @pytest.mark.benchmark
     def test_baseline_performance_100k_rows(self):
@@ -457,8 +466,10 @@ class TestPerformanceRegression:
             f"100K rows used too much memory: {result.peak_memory_mb:.1f}MB"
         )
 
-        print(f"\n✅ 100K baseline: {result.processing_time_seconds:.2f}s, "
-              f"{result.peak_memory_mb:.1f}MB peak")
+        print(
+            f"\n✅ 100K baseline: {result.processing_time_seconds:.2f}s, "
+            f"{result.peak_memory_mb:.1f}MB peak"
+        )
 
 
 if __name__ == "__main__":

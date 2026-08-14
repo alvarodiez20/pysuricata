@@ -1,6 +1,3 @@
-import math
-
-
 def test_safe_col_id_basic():
     from pysuricata.render.svg_utils import safe_col_id
 

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 import warnings
 from collections.abc import Iterable
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import numpy as np
 
@@ -51,14 +51,14 @@ def _to_numeric_array_polars(s: pl.Series) -> np.ndarray:  # type: ignore[name-d
         return np.asarray(s.to_list(), dtype="float64")
 
 
-def _to_bool_array_polars(s: pl.Series) -> List[Optional[bool]]:  # type: ignore[name-defined]
+def _to_bool_array_polars(s: pl.Series) -> list[bool | None]:  # type: ignore[name-defined]
     if pl is None:
         raise RuntimeError("polars not available")
     try:
         s2 = s.cast(pl.Boolean, strict=False)
         return [None if v is None else bool(v) for v in s2.to_list()]
     except Exception:
-        out: List[Optional[bool]] = []
+        out: list[bool | None] = []
         for v in s.to_list():
             if v is None:
                 out.append(None)
@@ -73,7 +73,7 @@ def _to_bool_array_polars(s: pl.Series) -> List[Optional[bool]]:  # type: ignore
         return out
 
 
-def _to_datetime_ns_array_polars(s: pl.Series) -> List[Optional[int]]:  # type: ignore[name-defined]
+def _to_datetime_ns_array_polars(s: pl.Series) -> list[int | None]:  # type: ignore[name-defined]
     if pl is None:
         raise RuntimeError("polars not available")
     with warnings.catch_warnings():
@@ -104,10 +104,10 @@ def _to_categorical_iter_polars(s: pl.Series) -> Iterable[Any]:  # type: ignore[
 
 def consume_chunk_polars(
     df: pl.DataFrame,
-    accs: Dict[str, Any],
+    accs: dict[str, Any],
     kinds: ColumnKinds,
-    config: Optional[Any] = None,
-    logger: Optional[logging.Logger] = None,
+    config: Any | None = None,
+    logger: logging.Logger | None = None,
 ) -> None:  # type: ignore[name-defined]
     if pl is None:
         raise RuntimeError("polars not available")

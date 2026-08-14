@@ -3,9 +3,10 @@
 import math
 from collections.abc import Sequence
 
-from .card_base import CardRenderer, QualityAssessor, TableBuilder
+from .card_base import CardRenderer
 from .card_config import DEFAULT_CAT_CONFIG, DEFAULT_CHART_DIMS
 from .card_types import BarData, CategoricalStats, QualityFlags
+from .format_utils import ordinal_number
 
 
 class CategoricalCardRenderer(CardRenderer):
@@ -13,8 +14,6 @@ class CategoricalCardRenderer(CardRenderer):
 
     def __init__(self):
         super().__init__()
-        self.quality_assessor = QualityAssessor()
-        self.table_builder = TableBuilder()
         self.cat_config = DEFAULT_CAT_CONFIG
         self.chart_dims = DEFAULT_CHART_DIMS
 
@@ -153,10 +152,6 @@ class CategoricalCardRenderer(CardRenderer):
             if flag_items
             else ""
         )
-
-    def _build_approx_badge(self, approx: bool) -> str:
-        """Build approximation badge if needed."""
-        return '<span class="badge">approx</span>' if approx else ""
 
     def _build_left_table(
         self, stats: CategoricalStats, miss_cls: str, miss_pct: float, cat_stats: dict
@@ -321,7 +316,13 @@ class CategoricalCardRenderer(CardRenderer):
         ]
 
         for i, (label, c, p, val) in enumerate(
-            zip(bar_data.labels, bar_data.counts, bar_data.percentages, bar_data.values)
+            zip(
+                bar_data.labels,
+                bar_data.counts,
+                bar_data.percentages,
+                bar_data.values,
+                strict=False,
+            )
         ):
             y = margin_top + i * (bar_h + bar_gap)
             x0 = margin_left
@@ -548,7 +549,7 @@ class CategoricalCardRenderer(CardRenderer):
             pct = (int(count) / total_nonnull) * 100.0 if total_nonnull else 0.0
 
             # Add ranking indicator for top values
-            rank_icon = self._ordinal_number(i + 1)
+            rank_icon = ordinal_number(i + 1)
 
             # Format categorical value with proper escaping
             formatted_value = self.safe_html_escape(str(value))
@@ -571,136 +572,17 @@ class CategoricalCardRenderer(CardRenderer):
             "</table>"
         )
 
-    def _ordinal_number(self, n: int) -> str:
-        """Convert a number to its ordinal form with superscript suffix (1ˢᵗ, 2ⁿᵈ, 3ʳᵈ, 4ᵗʰ, etc.)"""
-        # Keep the number normal size, only make the suffix superscript
-        number_str = str(n)
-
-        # Add ordinal suffix (only the suffix is superscript)
-        if 10 <= n % 100 <= 20:
-            suffix = "ᵗʰ"
-        else:
-            suffix_map = {1: "ˢᵗ", 2: "ⁿᵈ", 3: "ʳᵈ"}
-            suffix = suffix_map.get(n % 10, "ᵗʰ")
-
-        return f"{number_str}{suffix}"
-
     def _build_missing_values_table(
         self, stats: CategoricalStats, miss_pct: float
     ) -> str:
-        """Build simple missing values analysis matching reference HTML.
-
-        Args:
-            stats: CategoricalStats object containing missing data information
-            miss_pct: Pre-calculated missing percentage
-
-        Returns:
-            HTML string for the missing values analysis
-        """
-        # Calculate missing data statistics
+        """Build simple missing values analysis."""
         total_values = stats.count + stats.missing
         present_pct = (
             (stats.count / max(1, total_values)) * 100.0 if total_values > 0 else 0.0
         )
-
-        # Section 1: Data Completeness
-        completeness_html = f"""
-        <div class="missing-analysis-header">
-            <h4 class="section-title">Data Completeness</h4>
-        </div>
-
-        <div class="completeness-container">
-            <div class="completeness-stats">
-                <span class="stat-item">
-                    <span class="stat-label">Present:</span>
-                    <span class="stat-value">{stats.count:,} <span class="stat-pct">({present_pct:.1f}%)</span></span>
-                </span>
-                <span class="stat-item">
-                    <span class="stat-label">Missing:</span>
-                    <span class="stat-value">{stats.missing:,} <span class="stat-pct">({miss_pct:.1f}%)</span></span>
-                </span>
-            </div>
-            <div class="completeness-bar">
-                <div class="bar-fill present" style="width: {present_pct:.1f}%" title="Present: {present_pct:.1f}%"></div>
-                <div class="bar-fill missing" style="width: {miss_pct:.1f}%" title="Missing: {miss_pct:.1f}%"></div>
-            </div>
-        </div>
-        """
-
-        # Section 2: Chunk Distribution
-        chunk_html = self._build_chunk_distribution_simple(stats)
-
-        return completeness_html + chunk_html
-
-    def _build_chunk_distribution_simple(self, stats: CategoricalStats) -> str:
-        """Build simple chunk distribution visualization matching reference HTML.
-
-        Args:
-            stats: CategoricalStats object
-
-        Returns:
-            HTML string for chunk distribution
-        """
-        # Get chunk metadata
-        chunk_metadata = getattr(stats, "chunk_metadata", None)
-        if not chunk_metadata:
-            return ""
-
-        total_values = stats.count + stats.missing
-        if total_values == 0:
-            return ""
-
-        # Build segments
-        segments_html = ""
-        max_missing_pct = 0.0
-        num_chunks = len(chunk_metadata)
-
-        for start_row, end_row, missing_count in chunk_metadata:
-            chunk_size = end_row - start_row + 1
-            missing_pct = (
-                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
-            )
-            width_pct = (chunk_size / total_values) * 100.0
-
-            # Track peak
-            if missing_pct > max_missing_pct:
-                max_missing_pct = missing_pct
-
-            # Determine severity class (3 levels only)
-            if missing_pct <= 5:
-                severity = "low"
-            elif missing_pct <= 20:
-                severity = "medium"
-            else:
-                severity = "high"
-
-            segments_html += f"""
-            <div class="chunk-segment {severity}"
-                 style="width: {width_pct:.2f}%"
-                 data-start="{start_row}"
-                 data-end="{end_row}"
-                 data-missing="{missing_count}"
-                 data-total="{chunk_size}"
-                 data-pct="{missing_pct:.1f}"></div>
-            """
-
-        return f"""
-        <div class="chunk-distribution">
-            <h4 class="section-title">Missing Values Distribution</h4>
-            <div class="chunk-info">
-                <span>{num_chunks} chunks analyzed</span>
-                <span>Peak: {max_missing_pct:.1f}%</span>
-            </div>
-            <div class="chunk-spectrum">
-                {segments_html}
-            </div>
-            <div class="chunk-legend">
-                <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
-                <span class="legend-item"><span class="color-box medium"></span>Medium (5-20%)</span>
-                <span class="legend-item"><span class="color-box high"></span>High (20%+)</span>
-            </div>
-        </div>
-        """
+        return super()._build_missing_values_table(
+            stats.count, present_pct, stats.missing, miss_pct, stats, total_values
+        )
 
     def _build_dataprep_spectrum_visualization(self, stats: CategoricalStats) -> str:
         """Legacy method - no longer used."""

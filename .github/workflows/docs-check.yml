@@ -29,9 +29,16 @@ jobs:
         run: |
           uv sync --dev
 
+      - name: Regenerate example report
+        run: uv run python scripts/regenerate_example_report.py
+
       - name: Build docs (strict mode)
         run: uv run mkdocs build --strict
 
-
-
-
+      - name: Upload example report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: titanic-report
+          path: docs/assets/titanic_report.html
+          if-no-files-found: warn

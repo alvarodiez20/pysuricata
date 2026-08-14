@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Union
 
 import numpy as np
 
@@ -17,46 +17,46 @@ class NumericStats:
     missing: int
     unique_est: int
     approx: bool
-    min: Union[int, float]
-    max: Union[int, float]
-    mean: Union[int, float]
-    median: Union[int, float]
-    std: Union[int, float]
-    variance: Union[int, float]
-    se: Union[int, float]
-    cv: Union[int, float]
-    gmean: Union[int, float]
-    q1: Union[int, float]
-    q3: Union[int, float]
-    iqr: Union[int, float]
-    mad: Union[int, float]
-    skew: Union[int, float]
-    kurtosis: Union[int, float]
-    jb_chi2: Union[int, float]
-    ci_lo: Union[int, float]
-    ci_hi: Union[int, float]
-    gran_step: Optional[Union[int, float]]
-    gran_decimals: Optional[int]
-    heap_pct: Union[int, float]
+    min: int | float
+    max: int | float
+    mean: int | float
+    median: int | float
+    std: int | float
+    variance: int | float
+    se: int | float
+    cv: int | float
+    gmean: int | float
+    q1: int | float
+    q3: int | float
+    iqr: int | float
+    mad: int | float
+    skew: int | float
+    kurtosis: int | float
+    jb_chi2: int | float
+    ci_lo: int | float
+    ci_hi: int | float
+    gran_step: int | float | None
+    gran_decimals: int | None
+    heap_pct: int | float
     zeros: int
     negatives: int
     inf: int
     outliers_iqr: int
     int_like: bool
-    unique_ratio_approx: Optional[float]
+    unique_ratio_approx: float | None
     mono_inc: bool
     mono_dec: bool
     bimodal: bool
     mem_bytes: int
-    sample_vals: Optional[Sequence[float]]
+    sample_vals: Sequence[float] | None
     sample_scale: float
-    top_values: Optional[Sequence[Tuple[Any, int]]]
-    min_items: Optional[Sequence[Tuple[Any, Union[int, float]]]]
-    max_items: Optional[Sequence[Tuple[Any, Union[int, float]]]]
-    corr_top: Optional[Sequence[Tuple[str, float]]]
-    chunk_metadata: Optional[
-        Sequence[Tuple[int, int, int]]
-    ]  # (start_row, end_row, missing_count)
+    top_values: Sequence[tuple[Any, int]] | None
+    min_items: Sequence[tuple[Any, int | float]] | None
+    max_items: Sequence[tuple[Any, int | float]] | None
+    corr_top: Sequence[tuple[str, float]] | None
+    chunk_metadata: (
+        Sequence[tuple[int, int, int]] | None
+    )  # (start_row, end_row, missing_count)
     corr_threshold: float = 0.5  # Threshold used for correlation filtering
 
 
@@ -71,7 +71,7 @@ class CategoricalStats:
     unique_est: int
     approx: bool
     mem_bytes: int
-    top_items: Optional[Sequence[Tuple[str, int]]]
+    top_items: Sequence[tuple[str, int]] | None
     empty_zero: int
     case_variants_est: int
     trim_variants_est: int
@@ -86,16 +86,16 @@ class DateTimeStats:
     count: int
     missing: int
     mem_bytes: int
-    min_ts: Optional[int]
-    max_ts: Optional[int]
+    min_ts: int | None
+    max_ts: int | None
     mono_inc: bool
     mono_dec: bool
-    sample_ts: Optional[List[int]]
+    sample_ts: list[int] | None
     sample_scale: float
-    by_hour: Optional[List[int]]
-    by_dow: Optional[List[int]]
-    by_month: Optional[List[int]]
-    by_year: Optional[dict[int, int]]
+    by_hour: list[int] | None
+    by_dow: list[int] | None
+    by_month: list[int] | None
+    by_year: dict[int, int] | None
     # Temporal analysis fields
     unique_est: int = 0
     approx: bool = True  # unique_est uses KMV sketch, always approximate
@@ -104,8 +104,8 @@ class DateTimeStats:
     interval_std_seconds: float = 0.0
     weekend_ratio: float = 0.0
     business_hours_ratio: float = 0.0
-    seasonal_pattern: Optional[str] = None
-    chunk_metadata: Optional[Sequence[Tuple[int, int, int]]] = None
+    seasonal_pattern: str | None = None
+    chunk_metadata: Sequence[tuple[int, int, int]] | None = None
 
 
 @dataclass
@@ -166,8 +166,8 @@ class ChartMargins:
 class TickInfo:
     """Tick mark information."""
 
-    positions: List[float]
-    labels: Optional[List[str]]
+    positions: list[float]
+    labels: list[str] | None
     step: float
 
 
@@ -186,10 +186,10 @@ class HistogramData:
 class BarData:
     """Bar chart data structure."""
 
-    labels: List[str]
-    counts: List[int]
-    percentages: List[float]
-    values: List[float]
+    labels: list[str]
+    counts: list[int]
+    percentages: list[float]
+    values: list[float]
 
 
 @dataclass
@@ -206,6 +206,6 @@ class QuantileData:
 
 # Type aliases for better readability
 ColumnStats = Union[NumericStats, CategoricalStats, DateTimeStats, BooleanStats]
-ValueCount = Tuple[str, int]
-IndexValue = Tuple[Any, Union[int, float]]
-CorrelationPair = Tuple[str, float]
+ValueCount = tuple[str, int]
+IndexValue = tuple[Any, int | float]
+CorrelationPair = tuple[str, float]

@@ -10,11 +10,11 @@ import heapq
 import math
 import time
 from dataclasses import dataclass
-from typing import Any, List, Optional, Sequence, Tuple
+from typing import Any
 
 import numpy as np
 
-from .sketches import KMV, ReservoirSampler
+from .sketches import ReservoirSampler
 
 
 @dataclass
@@ -88,24 +88,24 @@ class StreamingMoments:
 
     def _update_vectorized(self, finite_values: np.ndarray) -> None:
         """Vectorized update using batch processing for Welford's algorithm.
-        
+
         This is significantly faster than per-value loops for large arrays.
         """
         n_new = len(finite_values)
         if n_new == 0:
             return
-            
+
         # Calculate batch statistics
         new_sum = np.sum(finite_values)
         new_mean = new_sum / n_new
-        
+
         # Update geometric mean for positive values
         pos_mask = finite_values > 0
         if pos_mask.any():
             pos_values = finite_values[pos_mask]
             self._log_sum_pos += np.sum(np.log(pos_values))
             self._pos_count += pos_mask.sum()
-        
+
         # For the first batch, initialize directly
         if self.count == 0:
             self.count = n_new
@@ -116,31 +116,50 @@ class StreamingMoments:
             self._m3 = np.sum(deviations * deviations * deviations)
             self._m4 = np.sum(deviations * deviations * deviations * deviations)
             return
-        
+
         # Merge batch statistics using Chan's algorithm for numerical stability
         old_count = self.count
         old_mean = self._mean
-        
+
         # Update count and mean
         self.count += n_new
         delta_mean = new_mean - old_mean
         self._mean = old_mean + delta_mean * n_new / self.count
-        
+
         # Calculate deviations for the new batch
         new_deviations = finite_values - new_mean
-        
+
         # Update moments using Chan's algorithm
         # M2 update
         delta_m2 = np.sum(new_deviations * new_deviations)
         self._m2 += delta_m2 + delta_mean * delta_mean * old_count * n_new / self.count
-        
+
         # M3 update (simplified for performance - exact formula is complex)
         delta_m3 = np.sum(new_deviations * new_deviations * new_deviations)
-        self._m3 += delta_m3 + 3 * delta_mean * delta_m2 / n_new + delta_mean**3 * old_count * n_new * (old_count - n_new) / (self.count * self.count)
-        
+        self._m3 += (
+            delta_m3
+            + 3 * delta_mean * delta_m2 / n_new
+            + delta_mean**3
+            * old_count
+            * n_new
+            * (old_count - n_new)
+            / (self.count * self.count)
+        )
+
         # M4 update (simplified for performance)
-        delta_m4 = np.sum(new_deviations * new_deviations * new_deviations * new_deviations)
-        self._m4 += delta_m4 + 4 * delta_mean * delta_m3 / n_new + 6 * delta_mean**2 * delta_m2 / n_new + delta_mean**4 * old_count * n_new * (old_count**2 - old_count * n_new + n_new**2) / (self.count**3)
+        delta_m4 = np.sum(
+            new_deviations * new_deviations * new_deviations * new_deviations
+        )
+        self._m4 += (
+            delta_m4
+            + 4 * delta_mean * delta_m3 / n_new
+            + 6 * delta_mean**2 * delta_m2 / n_new
+            + delta_mean**4
+            * old_count
+            * n_new
+            * (old_count**2 - old_count * n_new + n_new**2)
+            / (self.count**3)
+        )
 
     def get_statistics(self) -> dict[str, float]:
         """Get computed statistics.
@@ -261,11 +280,11 @@ class ExtremeTracker:
         self.max_extremes = max_extremes
         # Use separate heaps for min and max tracking
         # Min heap: (value, index) - tracks smallest values
-        self._min_heap: List[Tuple[float, Any]] = []
+        self._min_heap: list[tuple[float, Any]] = []
         # Max heap: (value, index) - tracks largest values (use max-heap by negating)
-        self._max_heap: List[Tuple[float, Any]] = []
+        self._max_heap: list[tuple[float, Any]] = []
 
-    def update(self, values: np.ndarray, indices: Optional[np.ndarray] = None) -> None:
+    def update(self, values: np.ndarray, indices: np.ndarray | None = None) -> None:
         """Update with new values and their indices.
 
         Uses np.argpartition to pre-filter to only the k smallest and k largest
@@ -295,7 +314,7 @@ class ExtremeTracker:
 
         if n <= 2 * k:
             # Small array — process all values directly
-            for value, index in zip(finite_values, finite_indices):
+            for value, index in zip(finite_values, finite_indices, strict=False):
                 self._add_to_min_heap(index, float(value))
                 self._add_to_max_heap(index, float(value))
         else:
@@ -337,16 +356,18 @@ class ExtremeTracker:
         else:
             # Heap is full, check if this is larger than the smallest value in the heap
             # Find the smallest original value in the heap (which should be replaced)
-            smallest_original = min(-negated_value for negated_value, _ in self._max_heap)
+            smallest_original = min(
+                -negated_value for negated_value, _ in self._max_heap
+            )
             if value > smallest_original:
                 # Replace the item with the smallest original value
-                for i, (negated_value, idx) in enumerate(self._max_heap):
+                for i, (negated_value, _idx) in enumerate(self._max_heap):
                     if -negated_value == smallest_original:
                         self._max_heap[i] = (-value, index)
                         heapq.heapify(self._max_heap)  # Restore heap property
                         break
 
-    def get_extremes(self) -> Tuple[List[Tuple[Any, float]], List[Tuple[Any, float]]]:
+    def get_extremes(self) -> tuple[list[tuple[Any, float]], list[tuple[Any, float]]]:
         """Get current extreme values.
 
         Returns:
@@ -355,11 +376,11 @@ class ExtremeTracker:
         # Extract min pairs (convert back from heap format)
         min_pairs = [(index, value) for value, index in self._min_heap]
         min_pairs.sort(key=lambda x: x[1])  # Sort by value
-        
+
         # Extract max pairs (convert back from heap format)
         max_pairs = [(index, -negated_value) for negated_value, index in self._max_heap]
         max_pairs.sort(key=lambda x: -x[1])  # Sort by value descending
-        
+
         return min_pairs, max_pairs
 
     def merge(self, other: ExtremeTracker) -> None:
@@ -371,7 +392,7 @@ class ExtremeTracker:
         # Merge min heaps
         for value, index in other._min_heap:
             self._add_to_min_heap(index, value)
-        
+
         # Merge max heaps
         for negated_value, index in other._max_heap:
             self._add_to_max_heap(index, -negated_value)
@@ -386,7 +407,7 @@ class MonotonicityDetector:
 
     def __init__(self):
         """Initialize monotonicity detector."""
-        self._last_value: Optional[float] = None
+        self._last_value: float | None = None
         self._mono_inc = True
         self._mono_dec = True
 
@@ -407,7 +428,7 @@ class MonotonicityDetector:
 
             self._last_value = value
 
-    def get_monotonicity(self) -> Tuple[bool, bool]:
+    def get_monotonicity(self) -> tuple[bool, bool]:
         """Get monotonicity status.
 
         Returns:
@@ -429,7 +450,7 @@ class OutlierDetector:
     providing robust outlier identification for streaming data.
     """
 
-    def __init__(self, methods: List[str] = None):
+    def __init__(self, methods: list[str] = None):
         """Initialize outlier detector.
 
         Args:
@@ -459,7 +480,7 @@ class OutlierDetector:
         """
         finite_values = values[np.isfinite(values)]
         if len(finite_values) == 0:
-            return {method: 0 for method in self.methods}
+            return dict.fromkeys(self.methods, 0)
 
         results = {}
 

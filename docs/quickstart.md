@@ -6,15 +6,27 @@ Get started with PySuricata in less than 5 minutes!
 
 Install pysuricata from PyPI:
 
-```bash
-pip install pysuricata
-```
+=== "uv (recommended)"
+    ```bash
+    uv add pysuricata
+    ```
 
-For polars support (optional):
+=== "pip"
+    ```bash
+    pip install pysuricata
+    ```
 
-```bash
-pip install pysuricata polars
-```
+For optional polars support:
+
+=== "uv (recommended)"
+    ```bash
+    uv add pysuricata[polars]
+    ```
+
+=== "pip"
+    ```bash
+    pip install pysuricata[polars]
+    ```
 
 ## Command Line Usage
 
@@ -41,7 +53,7 @@ See `pysuricata --help` for all options.
     ```python
     import pandas as pd
     from pysuricata import profile
-    
+
     # Load a dataset
     df = pd.read_csv("https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv")
     ```
@@ -50,7 +62,7 @@ See `pysuricata --help` for all options.
     ```python
     import polars as pl
     from pysuricata import profile
-    
+
     # Load a dataset
     df = pl.read_csv("https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv")
     ```
@@ -59,7 +71,7 @@ See `pysuricata --help` for all options.
     ```python
     import pandas as pd
     from pysuricata import profile
-    
+
     # Load directly from URL
     url = "https://raw.githubusercontent.com/mwaskom/seaborn-data/master/iris.csv"
     df = pd.read_csv(url)
@@ -223,8 +235,8 @@ config.compute.chunk_size = 200_000  # Default
 
 # Control sample sizes
 config.compute.numeric_sample_size = 20_000  # For quantiles/histograms
-config.compute.uniques_sketch_size = 2_048   # For distinct counts
-config.compute.top_k_size = 50               # For top values
+config.compute.max_uniques = 2_048            # For distinct counts
+config.compute.top_k = 50                     # For top values
 
 # Enable/disable correlations
 config.compute.compute_correlations = True
@@ -258,7 +270,7 @@ report = profile(df, config=config)
 config = ReportConfig()
 config.compute.chunk_size = 50_000  # Smaller chunks
 config.compute.numeric_sample_size = 5_000  # Smaller samples
-config.compute.uniques_sketch_size = 1_024  # Smaller sketches
+config.compute.max_uniques = 1_024  # Smaller sketches
 
 report = profile(df, config=config)
 ```
@@ -268,7 +280,7 @@ report = profile(df, config=config)
 ```python
 config = ReportConfig()
 config.compute.compute_correlations = False  # Skip correlations
-config.compute.top_k_size = 20  # Fewer top values
+config.compute.top_k = 20  # Fewer top values
 
 report = profile(df, config=config)
 ```
@@ -316,7 +328,3 @@ report.save_json("stats.json")
 ---
 
 Ready for more advanced features? Check out the [Advanced Guide](advanced.md).
-
-
-
-

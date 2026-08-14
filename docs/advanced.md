@@ -41,11 +41,11 @@ def multi_source_generator():
     # Source 1: CSV files
     for i in range(10):
         yield pd.read_csv(f"batch_{i}.csv")
-    
+
     # Source 2: Parquet files
     for i in range(5):
         yield pd.read_parquet(f"archive_{i}.parquet")
-    
+
     # Source 3: Database
     for chunk in pd.read_sql("SELECT * FROM logs", conn, chunksize=100_000):
         yield chunk
@@ -112,9 +112,26 @@ def filtered_generator():
 report = profile(filtered_generator())
 ```
 
+## Checkpointing Long-Running Profiles
+
+For multi-hour pipelines analyzing massive datasets (i.e. over 100M rows), you can enable disk checkpoints. This saves the profiling state every `N` chunks, allowing you to resume or investigate partial state if the job is interrupted.
+
+```python
+from pysuricata import profile, ReportConfig
+
+config = ReportConfig()
+# Checkpoint roughly every 10 million rows assuming chunk_size is 500,000
+config.compute.chunk_size = 500_000
+config.compute.checkpoint_every_n_chunks = 20
+config.compute.checkpoint_dir = "/tmp/pysuricata/nightly"
+# Optionally dump a preview HTML page alongside the serialized pickle state
+config.compute.checkpoint_write_html = True
+
+report = profile(multi_source_generator(), config=config)
+```
+
 ## See Also
 
 - [Configuration](configuration.md) - All parameters
 - [Performance Tips](performance.md) - Optimization
 - [Examples](examples.md) - More use cases
-

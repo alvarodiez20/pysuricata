@@ -1,0 +1,96 @@
+/* === SVG Histogram Styles === */
+#pysuricata-report .hist-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+#pysuricata-report .hist-svg .bar {
+  cursor: pointer;
+  transition: fill-opacity 0.2s ease, stroke-width 0.2s ease;
+}
+
+#pysuricata-report .hist-svg .bar:hover {
+  fill-opacity: 0.9;
+  stroke-width: 1.5;
+}
+
+#pysuricata-report .hist-svg .tick-label {
+  user-select: none;
+  pointer-events: none;
+}
+
+#pysuricata-report .hist-svg .hist-title {
+  font-weight: 600;
+  fill: currentColor;
+}
+
+#pysuricata-report .hist-svg .hist-empty {
+  font-style: italic;
+  opacity: 0.7;
+}
+
+/* Dark mode adjustments for SVG histograms */
+#pysuricata-report:not(.light) .hist-svg .tick-label {
+  fill: #ccc;
+}
+
+#pysuricata-report:not(.light) .hist-svg .hist-title {
+  fill: #f9f9f9;
+}
+
+#pysuricata-report:not(.light) .hist-svg .hist-empty {
+  fill: #999;
+}
+
+/* Ensure SVG histograms work with existing tooltip system */
+#pysuricata-report .hist-svg .bar[data-count] {
+  /* This ensures the existing tooltip JavaScript can find these elements */
+}
+
+
+#pysuricata-report .hist-svg .axis,
+#pysuricata-report .hist-svg .tick {
+  stroke: var(--axis);
+  stroke-width: 1;
+  shape-rendering: crispEdges;
+}
+
+#pysuricata-report .hist-svg .grid {
+  stroke: var(--axis);
+  stroke-opacity: .25;
+  stroke-dasharray: 2 2;
+  shape-rendering: crispEdges;
+}
+
+#pysuricata-report .hist-svg .tick-label {
+  font-size: 11px;
+  fill: var(--axis-text);
+}
+
+#pysuricata-report .hist-svg .tick.minor {
+  stroke-opacity: .6;
+}
+
+#pysuricata-report .hist-svg text {
+  font-family: inherit;
+}
+
+#pysuricata-report .hist-svg .bar {
+  fill: var(--bar);
+  opacity: .9;
+  pointer-events: auto;
+  border-radius: 6px 6px 0 0;
+}
+
+#pysuricata-report .hist-svg .axis-title {
+  font-size: 10px;
+  fill: var(--axis-text);
+}
+
+#pysuricata-report .hist-svg .axis-title.y {
+  dominant-baseline: middle;
+}
+
+/* Modern, centered bin buttons under the histogram */

@@ -1,0 +1,1934 @@
+/*# =============================
+#    NUMERIC VARIABLES – OUTSIDE DROPDOWNS
+#    Cards, badges, mini-viz, and CSS-only toggles
+# ============================= */
+#pysuricata-report #vars {
+  margin: 0.05rem 0;
+}
+
+#pysuricata-report #vars .section-title {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+/* Toolbar: search + toggles container */
+#pysuricata-report .var-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+#pysuricata-report .var-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#pysuricata-report .var-search input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--chip-br-light);
+  background: rgba(0, 0, 0, 0.02);
+  color: inherit;
+  min-width: 220px;
+}
+
+#pysuricata-report:not(.light) .var-search input[type="search"] {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .var-search input[type="search"]::placeholder {
+  opacity: .7;
+}
+
+/* Grid of variable cards */
+#pysuricata-report .var-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+/* Card */
+#pysuricata-report .var-card {
+  border: 1px solid var(--chip-br-light);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.02);
+  padding: 10px 12px;
+  transition: background-color .2s ease, transform .12s ease;
+  isolation: isolate;
+  /* keep absolutely/stacked children inside this card */
+}
+
+#pysuricata-report:not(.light) .var-card {
+  border-color: var(--chip-br-dark);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+#pysuricata-report .var-card:hover {
+  background: rgba(0, 0, 0, 0.04);
+  transform: translateY(-1px);
+}
+
+#pysuricata-report:not(.light) .var-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#pysuricata-report .var-card .head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+#pysuricata-report .var-card .title {
+  font-weight: 700;
+  font-size: 1rem;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pysuricata-report .var-card .dtype {
+  font-size: .78rem;
+  opacity: .8;
+}
+
+/* Stat badges row (count, missing %, unique, zeros %, negatives %, outliers) */
+#pysuricata-report .stat-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#pysuricata-report .stat-badges li {
+  padding: 0.28rem 0.5rem;
+  border-radius: 9999px;
+  background: var(--chip-bg-light);
+  border: 1px solid var(--chip-br-light);
+  font-size: .8rem;
+  line-height: 1;
+}
+
+#pysuricata-report:not(.light) .stat-badges li {
+  background: var(--chip-bg-dark);
+  border-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .stat-badges li.crit {
+  border-color: #f15e4e;
+}
+
+#pysuricata-report .stat-badges li.warn {
+  border-color: #f1c54e;
+}
+
+#pysuricata-report .stat-badges li.good {
+  border-color: #8ac926;
+}
+
+/* Hide numeric header chips */
+#pysuricata-report .stat-badges {
+  display: none;
+}
+
+/* Mini-viz area */
+#pysuricata-report .viz {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#pysuricata-report .viz .caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: .8rem;
+  opacity: .85;
+}
+
+/* CSS-only tabstrip for Histogram / ECDF (and presets) using :has() */
+#pysuricata-report .viz-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+#pysuricata-report .viz-tabs .tab-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+#pysuricata-report .viz-tabs input[type="radio"],
+#pysuricata-report .viz-tabs input[type="checkbox"] {
+  display: none;
+}
+
+#pysuricata-report .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  cursor: pointer;
+  border: 1px solid var(--chip-br-light);
+  background: var(--chip-bg-light);
+  font-size: .8rem;
+}
+
+#pysuricata-report:not(.light) .pill {
+  border-color: var(--chip-br-dark);
+  background: var(--chip-bg-dark);
+}
+
+#pysuricata-report .pill:hover {
+  filter: brightness(1.05);
+}
+
+#pysuricata-report .pill .kbd {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: .75rem;
+  opacity: .8;
+}
+
+/* Panels swapping with :has() */
+#pysuricata-report .viz-tabs .panels {
+  position: relative;
+}
+
+#pysuricata-report .viz-tabs .panel {
+  display: none;
+}
+
+/* Expect structure: [input.hist] [label] [input.ecdf] [label] [input.lin] [label] [input.log] [label] .panels > (.hist, .ecdf) */
+#pysuricata-report .viz-tabs:has(.hist-toggle:checked) .panel.hist {
+  display: block;
+}
+
+#pysuricata-report .viz-tabs:has(.ecdf-toggle:checked) .panel.ecdf {
+  display: block;
+}
+
+/* Scale toggles can swap pre-rendered SVGs via data-attrs on the .panel children */
+#pysuricata-report .svg-swap>.view {
+  display: none;
+}
+
+#pysuricata-report .viz-tabs:has(.scale-lin:checked) .svg-swap>.view[data-scale="lin"] {
+  display: block;
+}
+
+#pysuricata-report .viz-tabs:has(.scale-log:checked) .svg-swap>.view[data-scale="log"] {
+  display: block;
+}
+
+/* Binning toggles (10/20/50) showing the matching pre-rendered histogram */
+#pysuricata-report .svg-swap>.view[data-bins] {
+  display: none;
+}
+
+#pysuricata-report .viz-tabs:has(.bins-10:checked) .svg-swap>.view[data-bins="10"] {
+  display: block;
+}
+
+#pysuricata-report .viz-tabs:has(.bins-20:checked) .svg-swap>.view[data-bins="20"] {
+  display: block;
+}
+
+#pysuricata-report .viz-tabs:has(.bins-50:checked) .svg-swap>.view[data-bins="50"] {
+  display: block;
+}
+
+/* Stats table inside card */
+#pysuricata-report .stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+#pysuricata-report .stats-grid .label {
+  opacity: .75;
+}
+
+#pysuricata-report .stats-grid .value {
+  text-align: right;
+  font-weight: 600;
+}
+
+@media (min-width: 768px) {
+  #pysuricata-report .stats-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* Legacy correlation table styles removed - using .correlations-table.enhanced instead */
+
+/* Helper: muted small text and numeric alignment */
+#pysuricata-report .muted {
+  opacity: .8;
+}
+
+#pysuricata-report .small {
+  font-size: .85rem;
+}
+
+#pysuricata-report .tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* =============================
+   ACCESSIBILITY & FOCUS
+   ============================= */
+#pysuricata-report .pill:focus-visible,
+#pysuricata-report .var-search input[type="search"]:focus-visible,
+#pysuricata-report .var-card:focus-within {
+  outline: 2px solid #4ea3f1;
+  outline-offset: 2px;
+}
+
+/* =============================
+   OPTIONAL: sticky column actions row for wide screens
+   ============================= */
+@media (min-width: 1024px) {
+  #pysuricata-report .var-card .actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+  }
+}
+
+/* =============================
+   NUMERIC TABLE VIEW (one row per column)
+   ============================= */
+#pysuricata-report .wide-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#pysuricata-report table.var-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+#pysuricata-report table.var-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--chip-bg-light);
+  border: 1px solid var(--chip-br-light);
+  text-align: left;
+  padding: 8px 10px;
+}
+
+#pysuricata-report:not(.light) table.var-table thead th {
+  background: var(--chip-bg-dark);
+  border-color: var(--chip-br-dark);
+}
+
+#pysuricata-report table.var-table tbody td,
+#pysuricata-report table.var-table tbody th {
+  border: 1px solid var(--chip-br-light);
+  padding: 6px 8px;
+  vertical-align: middle;
+}
+
+#pysuricata-report:not(.light) table.var-table tbody td,
+#pysuricata-report:not(.light) table.var-table tbody th {
+  border-color: var(--chip-br-dark);
+}
+
+#pysuricata-report table.var-table tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+#pysuricata-report:not(.light) table.var-table tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+#pysuricata-report table.var-table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+#pysuricata-report:not(.light) table.var-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Name + dtype chip in first column */
+#pysuricata-report .var-table .colname {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#pysuricata-report .var-table .dtype {
+  font-size: .78rem;
+  opacity: .85;
+}
+
+/* Right-align numeric cells */
+#pysuricata-report .var-table td.num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* Threshold highlights */
+#pysuricata-report .var-table td.warn {
+  background: rgba(241, 197, 78, 0.18);
+}
+
+#pysuricata-report .var-table td.crit {
+  background: rgba(241, 94, 78, 0.18);
+  font-weight: 700;
+}
+
+/* (Removed sparkline sizing/styles; no longer used) */
+
+
+/* Map generic tokens used by the HTML to current theme vars */
+#pysuricata-report {
+  --border-color: var(--chip-br-light);
+  --axis: rgba(0, 0, 0, 0.45);
+  --axis-text: rgba(0, 0, 0, 0.65);
+  --bar: #60a5fa;
+}
+
+#pysuricata-report:not(.light) {
+  --border-color: var(--chip-br-dark);
+  --axis: rgba(255, 255, 255, 0.55);
+  --axis-text: rgba(255, 255, 255, 0.75);
+  --bar: #93c5fd;
+}
+
+/* Section title used by numeric section */
+#pysuricata-report .section-title {
+  margin: 0 0 .75rem;
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+/* Grid that holds the per-column cards */
+#pysuricata-report .cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(520px, 1fr));
+  gap: 16px;
+}
+
+/* Card header/body blocks added by report.py */
+#pysuricata-report .var-card__header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#pysuricata-report .var-card__header .title {
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pysuricata-report .var-card__header .dtype {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: var(--chip-bg-light);
+  border: 1px solid var(--chip-br-light);
+}
+
+#pysuricata-report:not(.light) .var-card__header .dtype {
+  background: var(--chip-bg-dark);
+  border-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .var-card__header .badge {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(96, 165, 250, .16);
+  color: #3b82f6;
+  border: 1px solid rgba(96, 165, 250, .35);
+}
+
+#pysuricata-report .var-card__body {
+  display: block;
+  /* let the inner .triple-row control layout */
+  padding: 12px 14px;
+}
+
+/* Semantic numeric coloring retained */
+#pysuricata-report td.num.warn {
+  color: #d97706;
+}
+
+#pysuricata-report td.num.crit {
+  color: #dc2626;
+}
+
+#pysuricata-report td.num.good {
+  color: #16a34a;
+}
+
+
+/* =============================================
+   Numeric cards: one per row, match container width
+   ============================================= */
+#pysuricata-report #vars .cards-grid {
+  display: grid;
+  grid-auto-flow: row;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: stretch;
+  /* stretch items to the track width */
+  align-items: stretch;
+  gap: 16px;
+  margin-left: 0;
+  margin-right: 0;
+}
+
+#pysuricata-report #vars .cards-grid>.var-card {
+  width: 100%;
+  max-width: none;
+  box-sizing: border-box;
+  /* borders/padding included */
+}
+
+/* # =============================================
+#    Numeric card – Details section & column name chip styling
+# =============================================*/
+
+/* Make the column name in the card header look like the top-missing chip */
+#pysuricata-report .var-card__header .colname {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 0.92rem;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: inherit;
+  max-width: 60ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pysuricata-report:not(.light) .var-card__header .colname {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+
+
+/* === SVG Histogram Styles === */
+
+/*# =====================================================
+#   Chip polish — unified look, header-compact variant, better colors
+#   ===================================================== # */
+
+/* Base quality chips */
+#pysuricata-report .quality-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+  margin: 2px 0 0;
+}
+
+#pysuricata-report .quality-flags .flag {
+  padding: 0.28rem 0.55rem;
+  border-radius: 9999px;
+  border: 1px solid var(--chip-br-light);
+  background: var(--chip-bg-light);
+  font-size: .8rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+#pysuricata-report:not(.light) .quality-flags .flag {
+  border-color: var(--chip-br-dark);
+  background: var(--chip-bg-dark);
+}
+
+/* Semantic colors — subtle backgrounds for emphasis */
+#pysuricata-report .quality-flags .flag.bad {
+  border-color: #f15e4e;
+  background: rgba(241, 94, 78, .12);
+}
+
+#pysuricata-report .quality-flags .flag.warn {
+  border-color: #f1c54e;
+  background: rgba(241, 197, 78, .12);
+}
+
+#pysuricata-report .quality-flags .flag.good {
+  border-color: #8ac926;
+  background: rgba(138, 201, 38, .12);
+}
+
+/* Enhanced hover state for all flags (tooltip system handles them) */
+#pysuricata-report .quality-flags .flag,
+#pysuricata-report .var-card__header .badge,
+#pysuricata-report .var-card__header .dtype {
+  cursor: help;
+  transition: all 0.2s ease;
+}
+
+#pysuricata-report .quality-flags .flag:hover,
+#pysuricata-report .var-card__header .badge:hover,
+#pysuricata-report .var-card__header .dtype:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+}
+
+#pysuricata-report:not(.light) .quality-flags .flag:hover,
+#pysuricata-report:not(.light) .var-card__header .badge:hover,
+#pysuricata-report:not(.light) .var-card__header .dtype:hover {
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Code-style tokens inside chips (e.g., correlated column names) */
+#pysuricata-report .quality-flags code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: .82em;
+  background: transparent;
+  padding: 0;
+}
+
+/* Header placement: chips inline next to dtype, compact size */
+#pysuricata-report .var-card__header .title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+#pysuricata-report .var-card__header .title .quality-flags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 0 6px;
+  padding: 0;
+  list-style: none;
+  max-width: 100%;
+}
+
+#pysuricata-report .var-card__header .title .quality-flags .flag {
+  padding: 0.18rem 0.45rem;
+  font-size: .76rem;
+  border-radius: 9999px;
+}
+
+/* When chips must wrap, keep header tidy */
+#pysuricata-report .var-card__header {
+  row-gap: 4px;
+}
+
+#pysuricata-report .var-card__header .dtype {
+  margin-right: 2px;
+}
+
+/* Info button for variable cards */
+#pysuricata-report .var-card__header {
+  position: relative;
+}
+
+#pysuricata-report .var-card__header .info-link {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: transparent;
+  color: rgba(0, 0, 0, 0.4);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+#pysuricata-report:not(.light) .var-card__header .info-link {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+#pysuricata-report .var-card__header .info-link:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: rgba(0, 0, 0, 0.7);
+  transform: scale(1.1);
+}
+
+#pysuricata-report:not(.light) .var-card__header .info-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+}
+
+#pysuricata-report .var-card__header .info-link svg {
+  display: block;
+  shape-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+
+/* === SVG Histogram Styles === */
+
+/*# =====================================================
+#   Unify sizes for header chips, Numeric badge, and dtype chip
+#   ===================================================== */
+#pysuricata-report .var-card__header .badge,
+#pysuricata-report .var-card__header .dtype,
+#pysuricata-report .var-card__header .title .quality-flags .flag {
+  display: inline-flex;
+  /* same vertical alignment */
+  align-items: center;
+  font-size: 0.82rem;
+  /* unified text size */
+  line-height: 1;
+  padding: 0.24rem 0.60rem;
+  /* unified padding */
+  border-radius: 10px;
+  /* unified shape */
+}
+
+/* Keep spacing tidy when wrapping */
+
+/* =====================================================
+   Compact header chips — smaller size so column name is more visible
+   ===================================================== */
+#pysuricata-report .var-card__header .badge,
+#pysuricata-report .var-card__header .dtype,
+#pysuricata-report .var-card__header .title .quality-flags .flag {
+  font-size: 0.74rem;
+  /* was ~0.82rem */
+  padding: 0.14rem 0.42rem;
+  /* was 0.24rem 0.60rem */
+  border-radius: 6px;
+  /* slightly tighter corners */
+}
+
+/* Reduce spacing between items so the header stays compact */
+#pysuricata-report .var-card__header .title {
+  gap: 6px;
+}
+
+#pysuricata-report .var-card__header .title .quality-flags {
+  gap: 4px;
+  margin-left: 4px;
+}
+
+
+/* layout is defined later in the file */
+
+/* === SVG Histogram Styles === */
+
+/*# =============================
+#   COMPACT MODE: header height & vertical rhythm
+# ============================= */
+/* Make header shorter without touching other containers */
+#pysuricata-report .appbar .container {
+  padding-top: 0.2rem;
+  padding-bottom: 0.2rem;
+}
+
+#pysuricata-report .header-grid {
+  row-gap: 0.2rem;
+  grid-template-columns: 78px 1fr;
+}
+
+#pysuricata-report .header-grid .logo img {
+  height: 54px;
+}
+
+#pysuricata-report .title-nav h1 {
+  font-size: 1.4rem;
+}
+
+#pysuricata-report .nav-and-toggle {
+  gap: 0.5rem;
+}
+
+#pysuricata-report .quick a {
+  padding: 0.25rem 0.6rem;
+}
+
+#pysuricata-report .meta {
+  gap: 0.4rem;
+}
+
+/* Reduce space between rows/sections a bit */
+
+
+/* --- Revert: use emoji-based dark/light icon (colored) --- */
+#pysuricata-report #toggle-icon {
+  font-size: 1.2rem;
+  /* visible emoji size */
+  width: auto;
+  height: auto;
+  line-height: 1;
+}
+
+#pysuricata-report #toggle-icon::before,
+#pysuricata-report #toggle-icon::after {
+  content: "";
+  display: none;
+}
+
+/*# --- Anchor offset so sections don't hide under the sticky header --- */
+#pysuricata-report #summary,
+#pysuricata-report #sample,
+#pysuricata-report #vars {
+  scroll-margin-top: var(--anchor-offset);
+}
+
+@media (max-width: 560px) {
+  #pysuricata-report {
+    --anchor-offset: 72px;
+  }
+}
+
+/* === Numeric card triple layout: two tables + histogram in one row === */
+#pysuricata-report .var-card__body .triple-row {
+  display: grid;
+  grid-template-columns: var(--triple-left) var(--triple-right) 1fr;
+  /* left stats, right stats, histogram */
+  gap: 12px;
+  align-items: end;
+  /* Align bottoms: table bottom rows align with histogram x-axis tick labels */
+}
+
+#pysuricata-report .var-card__body .triple-row .box {
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+}
+
+/* Make the histogram column stretch and the SVG fill it */
+#pysuricata-report .var-card__body .triple-row .chart {
+  display: flex;
+  flex-direction: column;
+}
+
+#pysuricata-report .var-card__body .triple-row .chart .hist-variants {
+  flex: 1 1 auto;
+  /* fills the available height so the SVG can match tables */
+}
+
+#pysuricata-report .var-card__body .triple-row .chart .hist-variants {
+  min-height: 260px;
+}
+
+#pysuricata-report .var-card__body .triple-row .chart .hist-variants .hist.variant {
+  height: 100%;
+}
+
+#pysuricata-report .var-card__body .triple-row .chart .hist-variants .hist.variant>svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Hide all variants by default; show only the one marked active */
+#pysuricata-report .hist-variants .variant {
+  display: none;
+}
+
+#pysuricata-report .hist-variants .variant.active {
+  display: block;
+}
+
+#pysuricata-report .var-card__body .triple-row .chart .hist-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#pysuricata-report .var-card__body .triple-row .chart .hist-controls {
+  margin-top: 6px;
+}
+
+#pysuricata-report .var-card__body .triple-row .chart .hist-status {
+  margin-top: 2px;
+  font-size: .85rem;
+  opacity: .85;
+}
+
+/* Make the histogram fill the same height as the tables */
+#pysuricata-report .var-card__body .triple-row {
+  align-items: end;
+  /* Align bottoms: ensure consistent alignment across all three columns */
+}
+
+#pysuricata-report .var-card__body .triple-row .chart {
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  align-self: stretch;
+  min-height: 0;
+  padding-bottom: 0;
+  /* Remove extra padding to let histogram's margin_bottom (40px) control spacing */
+}
+
+#pysuricata-report .var-card__body .triple-row .chart .hist-variants {
+  flex: 1 1 auto;
+  min-height: 200px;
+}
+
+/* Override any generic SVG sizing (e.g., .viz svg { height:80px }) so the hist grows */
+#pysuricata-report .var-card__body .triple-row .chart .hist-variants svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Stack on narrow screens */
+@media (max-width: 768px) {
+  #pysuricata-report .var-card__body .triple-row .chart .hist-variants {
+    min-height: 220px;
+  }
+}
+
+@media (max-width: 1024px) {
+  #pysuricata-report .var-card__body .triple-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+
+/* === Formatting: stats tables (left/right) inside triple layout === */
+#pysuricata-report .var-card__body .triple-row .stats-left table,
+#pysuricata-report .var-card__body .triple-row .stats-right table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: .92rem;
+  /* slightly smaller, modern */
+  line-height: 1.35;
+}
+
+/* Ensure tables have bottom margin to align with histogram tick labels */
+#pysuricata-report .var-card__body .triple-row .stats-left,
+#pysuricata-report .var-card__body .triple-row .stats-right {
+  padding-bottom: 0;
+  margin-bottom: 20px;
+  /* Aligns bottom row with x-axis tick labels (~20px below x-axis line) */
+}
+
+#pysuricata-report .var-card__body .triple-row .stats-left th,
+#pysuricata-report .var-card__body .triple-row .stats-left td,
+#pysuricata-report .var-card__body .triple-row .stats-right th,
+#pysuricata-report .var-card__body .triple-row .stats-right td {
+  padding: 6px 8px;
+  /* slightly tighter */
+  border: 0;
+  vertical-align: middle;
+}
+
+#pysuricata-report .var-card__body .triple-row .stats-left thead th,
+#pysuricata-report .var-card__body .triple-row .stats-right thead th {
+  background: transparent;
+  /* modern, flat header */
+  color: inherit;
+  border: 0;
+  font-weight: 600;
+  font-size: .9rem;
+  letter-spacing: .01em;
+  text-transform: none;
+}
+
+/* modern header–body divider */
+#pysuricata-report .var-card__body .triple-row .stats-left thead tr,
+#pysuricata-report .var-card__body .triple-row .stats-right thead tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+#pysuricata-report .var-card__body .triple-row .stats-left tbody tr:nth-child(even),
+#pysuricata-report .var-card__body .triple-row .stats-right tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+#pysuricata-report:not(.light) .var-card__body .triple-row .stats-left tbody tr:nth-child(even),
+#pysuricata-report:not(.light) .var-card__body .triple-row .stats-right tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+#pysuricata-report .var-card__body .triple-row .stats-left th[scope="row"],
+#pysuricata-report .var-card__body .triple-row .stats-right th[scope="row"] {
+  background: transparent;
+  font-weight: 600;
+}
+
+/* Row separators only (no cell borders) */
+#pysuricata-report .var-card__body .triple-row .stats-left tbody tr+tr>th,
+#pysuricata-report .var-card__body .triple-row .stats-left tbody tr+tr>td,
+#pysuricata-report .var-card__body .triple-row .stats-right tbody tr+tr>th,
+#pysuricata-report .var-card__body .triple-row .stats-right tbody tr+tr>td {
+  border-top: 1px solid var(--divider);
+}
+
+/* Subtle hover for modern feel */
+#pysuricata-report .var-card__body .triple-row .stats-left tbody tr:hover,
+#pysuricata-report .var-card__body .triple-row .stats-right tbody tr:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+#pysuricata-report:not(.light) .var-card__body .triple-row .stats-left tbody tr:hover,
+#pysuricata-report:not(.light) .var-card__body .triple-row .stats-right tbody tr:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* Clean, modern alignment */
+#pysuricata-report .var-card__body .triple-row .stats-left tbody td:first-child,
+#pysuricata-report .var-card__body .triple-row .stats-right tbody td:first-child {
+  color: var(--axis-text);
+}
+
+#pysuricata-report .var-card__body .triple-row .stats-left tbody td:last-child,
+#pysuricata-report .var-card__body .triple-row .stats-right tbody td:last-child {
+  text-align: right;
+  font-weight: normal;
+}
+
+/* Make left column labels bold in general var analysis tables */
+#pysuricata-report .var-card__body .triple-row .stats-left tbody th,
+#pysuricata-report .var-card__body .triple-row .stats-right tbody th {
+  font-weight: 600;
+}
+
+/* === Formatting: histogram SVG & axes inside cards === */
+
+#pysuricata-report .hist-controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  /* left (Details) | center (controls) | right spacer */
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#pysuricata-report .hist-controls .scale-group,
+#pysuricata-report .hist-controls .bin-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#pysuricata-report .hist-controls .details {
+  grid-column: 1;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+}
+
+#pysuricata-report .hist-controls .center-controls {
+  grid-column: 2;
+  justify-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* === Histogram hover tooltip === */
+#pysuricata-report {
+  position: relative;
+}
+
+/* anchor for absolute tooltip */
+#pysuricata-report .hist-tooltip {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+  display: none;
+  padding: 6px 8px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(20, 20, 20, 0.92);
+  color: #fff;
+  font-size: .85rem;
+  line-height: 1.25;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+
+#pysuricata-report.light .hist-tooltip {
+  background: rgba(255, 255, 255, 0.96);
+  color: #111;
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+#pysuricata-report .hist-tooltip .muted {
+  opacity: .75;
+  font-weight: 400;
+}
+
+#pysuricata-report .hist-tooltip strong {
+  font-weight: 700;
+}
+
+/* === Quality Flag Tooltips === */
+#pysuricata-report .quality-tooltip {
+  position: absolute;
+  z-index: 1000;
+  pointer-events: none;
+  display: none;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.92);
+  color: #f9f9f9;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 0.8rem;
+  line-height: 1.3;
+  max-width: 260px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
+}
+
+#pysuricata-report.light .quality-tooltip {
+  background: rgba(255, 255, 255, 0.96);
+  color: #111;
+  border-color: rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+}
+
+/* Tooltip header */
+#pysuricata-report .quality-tooltip .tooltip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+#pysuricata-report.light .quality-tooltip .tooltip-header {
+  border-bottom-color: rgba(0, 0, 0, 0.12);
+}
+
+#pysuricata-report .quality-tooltip .tooltip-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: inherit;
+}
+
+#pysuricata-report .quality-tooltip .tooltip-severity {
+  font-size: 0.7rem;
+  padding: 2px 5px;
+  border-radius: 3px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+#pysuricata-report .quality-tooltip .tooltip-severity.good {
+  background: rgba(34, 197, 94, 0.2);
+  color: #22c55e;
+}
+
+#pysuricata-report .quality-tooltip .tooltip-severity.warn {
+  background: rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+
+#pysuricata-report .quality-tooltip .tooltip-severity.bad {
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+#pysuricata-report .quality-tooltip .tooltip-severity.info {
+  background: rgba(59, 130, 246, 0.2);
+  color: #3b82f6;
+}
+
+/* Tooltip content */
+#pysuricata-report .quality-tooltip .tooltip-description {
+  margin-bottom: 4px;
+  color: inherit;
+  opacity: 0.9;
+}
+
+#pysuricata-report .quality-tooltip .tooltip-category {
+  font-size: 0.7rem;
+  opacity: 0.7;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#pysuricata-report.light .quality-tooltip .tooltip-category {
+  border-top-color: rgba(0, 0, 0, 0.08);
+}
+
+/* Tooltip threshold section */
+#pysuricata-report .quality-tooltip .tooltip-threshold {
+  font-size: 0.8rem;
+  padding: 6px 8px;
+  margin: 6px -2px;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Monaco, Consolas, monospace;
+  border-left: 3px solid rgba(59, 130, 246, 0.4);
+  color: inherit;
+}
+
+#pysuricata-report.light .quality-tooltip .tooltip-threshold {
+  background: rgba(59, 130, 246, 0.06);
+  border-left-color: rgba(59, 130, 246, 0.5);
+}
+
+#pysuricata-report .quality-tooltip .tooltip-threshold .threshold-label,
+#pysuricata-report .quality-tooltip .tooltip-threshold .value-label {
+  font-size: 0.75rem;
+  opacity: 0.75;
+  font-weight: normal;
+}
+
+#pysuricata-report .quality-tooltip .tooltip-threshold strong {
+  color: #3b82f6;
+  font-weight: 600;
+  margin: 0 4px;
+}
+
+#pysuricata-report.light .quality-tooltip .tooltip-threshold strong {
+  color: #2563eb;
+}
+
+#pysuricata-report .quality-tooltip .tooltip-threshold .threshold-separator {
+  opacity: 0.4;
+  margin: 0 6px;
+}
+
+/* Screen reader only content */
+#pysuricata-report .sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+
+
+/* === SVG Histogram Styles === */
+
+/*# =============================
+#    DETAILS BUTTON + FULL-WIDTH SECTION (pestañas)
+# =============================
+/* Make Details look like our pills and keep it steady (no movement on hover) */
+#pysuricata-report .details-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  border: 1px solid rgba(59, 130, 246, .45);
+  background: rgba(59, 130, 246, .12);
+  color: #1e40af;
+  cursor: pointer;
+  font: inherit;
+  font-size: .82rem;
+  line-height: 1;
+  box-shadow: none;
+  transition: background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+
+#pysuricata-report:not(.light) .details-toggle {
+  border-color: rgba(147, 197, 253, .55);
+  background: rgba(147, 197, 253, .18);
+  color: #bfdbfe;
+}
+
+#pysuricata-report .details-toggle:hover {
+  filter: none;
+  background: rgba(59, 130, 246, .18);
+}
+
+#pysuricata-report .details-toggle:focus-visible {
+  outline: 2px solid #4ea3f1;
+  outline-offset: 2px;
+}
+
+/* Optional caret that flips when open */
+#pysuricata-report .details-toggle::after {
+  content: "";
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid currentColor;
+  transition: transform .2s ease;
+}
+
+#pysuricata-report .details-toggle[aria-expanded="true"]::after {
+  transform: rotate(180deg);
+}
+
+/* Full-width details section placed below the triple row */
+#pysuricata-report .details-section {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--chip-br-light);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.02);
+}
+
+#pysuricata-report:not(.light) .details-section {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Tabs (pestañas) styling */
+#pysuricata-report .details-section .tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+#pysuricata-report .details-section .tabs [role="tab"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--chip-br-light);
+  background: var(--chip-bg-light);
+  color: inherit;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font: inherit;
+  font-size: .8rem;
+  line-height: 1;
+}
+
+#pysuricata-report:not(.light) .details-section .tabs [role="tab"] {
+  border-color: var(--chip-br-dark);
+  background: var(--chip-bg-dark);
+}
+
+#pysuricata-report .details-section .tabs [role="tab"].active {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: var(--accent-color);
+  border-bottom: 2px solid var(--accent-color);
+  color: #1e40af;
+  font-weight: 600;
+}
+
+#pysuricata-report:not(.light) .details-section .tabs [role="tab"].active {
+  background: rgba(96, 165, 250, 0.2);
+  border-color: var(--accent-color);
+  border-bottom: 2px solid var(--accent-color);
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+/* Tab panes visibility */
+#pysuricata-report .details-section .tab-panes .tab-pane {
+  display: none;
+}
+
+#pysuricata-report .details-section .tab-panes .tab-pane.active {
+  display: block;
+}
+
+/* Statistics + Quantiles side-by-side */
+#pysuricata-report .details-section .stats-quant {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  #pysuricata-report .details-section .stats-quant {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =============================
+   MATCH TABLE STYLING (like left/right stats tables)
+   ============================= */
+#pysuricata-report .details-section table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  font-size: .92rem;
+  line-height: 1.35;
+}
+
+#pysuricata-report .details-section thead th {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  font-weight: 600;
+  font-size: .9rem;
+  letter-spacing: .01em;
+}
+
+#pysuricata-report .details-section thead tr {
+  border-bottom: 1px solid var(--border-color);
+}
+
+#pysuricata-report .details-section tbody tr:nth-child(even) {
+  background: rgba(0, 0, 0, 0.015);
+}
+
+#pysuricata-report:not(.light) .details-section tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+#pysuricata-report .details-section tbody tr:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+#pysuricata-report:not(.light) .details-section tbody tr:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+#pysuricata-report .details-section tbody th[scope="row"] {
+  background: transparent;
+  font-weight: 600;
+}
+
+#pysuricata-report .details-section tbody tr+tr>th,
+#pysuricata-report .details-section tbody tr+tr>td {
+  border-top: 1px solid var(--divider);
+}
+
+#pysuricata-report .details-section tbody td:first-child {
+  color: var(--axis-text);
+}
+
+#pysuricata-report .details-section tbody td:last-child {
+  text-align: right;
+  font-weight: normal;
+}
+
+/* Ensure left column labels in details tables are bold */
+#pysuricata-report .details-section tbody th {
+  font-weight: 600;
+}
+
+/* =============================
+   HIST CONTROL BUTTONS (Linear/Log/Bins) unified look
+   ============================= */
+/* Base pill reset for control buttons (flatter look) */
+#pysuricata-report .hist-controls button {
+  appearance: none;
+  -webkit-appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 9999px;
+  font: inherit;
+  font-size: .82rem;
+  line-height: 1;
+  border: 1px solid transparent;
+  background: rgba(0, 0, 0, 0.04);
+  color: inherit;
+  cursor: pointer;
+  transition: background-color .15s ease, color .15s ease, border-color .15s ease;
+}
+
+/* SCALE group — blue */
+#pysuricata-report .hist-controls .scale-group button {
+  background: rgba(59, 130, 246, .10);
+  border-color: rgba(59, 130, 246, .25);
+  color: #1e40af;
+  /* blue-900 */
+}
+
+#pysuricata-report:not(.light) .hist-controls .scale-group button {
+  background: rgba(59, 130, 246, .18);
+  border-color: rgba(59, 130, 246, .30);
+  color: #bfdbfe;
+  /* blue-200 */
+}
+
+#pysuricata-report:not(.light) .hist-controls .scale-group button.active {
+  background: rgba(59, 130, 246, .35);
+  border-color: rgba(59, 130, 246, .50);
+  color: #dbeafe;
+  /* blue-100 */
+  font-weight: 600;
+}
+
+#pysuricata-report .hist-controls .scale-group button.active {
+  background: rgba(59, 130, 246, .28);
+  border-color: rgba(59, 130, 246, .45);
+  color: #1e3a8a;
+  /* blue-800 */
+  font-weight: 600;
+}
+
+/* BINS group — blue (slightly lighter to distinguish) */
+#pysuricata-report .hist-controls .bin-group button {
+  background: rgba(96, 165, 250, .10);
+  border-color: rgba(96, 165, 250, .22);
+  color: #1d4ed8;
+  /* blue-700 */
+}
+
+#pysuricata-report:not(.light) .hist-controls .bin-group button {
+  background: rgba(96, 165, 250, .18);
+  border-color: rgba(96, 165, 250, .30);
+  color: #dbeafe;
+  /* blue-100 */
+}
+
+#pysuricata-report:not(.light) .hist-controls .bin-group button.active {
+  background: rgba(96, 165, 250, .35);
+  border-color: rgba(96, 165, 250, .50);
+  color: #dbeafe;
+  /* blue-100 */
+  font-weight: 600;
+}
+
+#pysuricata-report .hist-controls .bin-group button.active {
+  background: rgba(96, 165, 250, .26);
+  border-color: rgba(96, 165, 250, .42);
+  color: #1e3a8a;
+  /* blue-800 */
+  font-weight: 600;
+}
+
+/* Hover effects (very light) */
+#pysuricata-report .hist-controls .scale-group button:hover {
+  background: rgba(59, 130, 246, .20);
+}
+
+#pysuricata-report .hist-controls .bin-group button:hover {
+  background: rgba(96, 165, 250, .22);
+}
+
+/* Align Details button row with the triple layout */
+#pysuricata-report .card-controls {
+  display: grid;
+  grid-template-columns: var(--triple-left) var(--triple-right) 1fr;
+  /* match .triple-row */
+  gap: 12px;
+  align-items: center;
+  margin-top: 0px;
+}
+
+#pysuricata-report .card-controls .details-slot {
+  grid-column: 1;
+  justify-self: start;
+}
+
+#pysuricata-report .card-controls .controls-slot {
+  grid-column: 3;
+  justify-self: center;
+}
+
+#pysuricata-report .card-controls .details-slot,
+#pysuricata-report .card-controls .controls-slot {
+  align-self: center;
+}
+
+/* In the controls row, the hist-controls wrapper only contains the center group; make it inline-flex and remove any top margin inherited from chart placement */
+#pysuricata-report .card-controls .hist-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+}
+
+#pysuricata-report .card-controls .hist-controls .center-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* === SVG Histogram Styles === */
+
+/* =============================================
+   ENHANCED MIN/MAX SECTIONS STYLING
+   ============================================= */
+
+/* Main extremes container */
+#pysuricata-report .extremes.stats-quant {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+/* Individual min/max subsections */
+#pysuricata-report .extremes .sub {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  border: 1px solid var(--chip-br-light);
+}
+
+#pysuricata-report:not(.light) .extremes .sub {
+  background: #2a2a2a;
+  color: #e0e0e0;
+  border-color: var(--chip-br-dark);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Section headers */
+#pysuricata-report .extremes .sub .hdr {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.03));
+  color: inherit;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: center;
+}
+
+#pysuricata-report:not(.light) .extremes .sub .hdr {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
+  border-bottom-color: var(--chip-br-dark);
+}
+
+/* Tables within min/max sections */
+#pysuricata-report .extremes .sub table.kv {
+  width: 100%;
+  margin: 0;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+#pysuricata-report .extremes .sub table.kv thead th {
+  background: rgba(0, 0, 0, 0.02);
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 8px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--chip-br-light);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report:not(.light) .extremes .sub table.kv thead th {
+  background: rgba(255, 255, 255, 0.04);
+  border-bottom-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .extremes .sub table.kv tbody td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--chip-br-light);
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report:not(.light) .extremes .sub table.kv tbody td {
+  border-bottom-color: var(--chip-br-dark);
+}
+
+#pysuricata-report .extremes .sub table.kv tbody tr:last-child td {
+  border-bottom: none;
+}
+
+#pysuricata-report .extremes .sub table.kv tbody tr:hover {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+#pysuricata-report:not(.light) .extremes .sub table.kv tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Numeric value styling in min/max tables */
+#pysuricata-report .extremes .sub table.kv td.num {
+  font-weight: 500;
+  /* Use default text color to match index column */
+}
+
+/* Outliers table styling */
+#pysuricata-report .outliers .sub table.kv td.method {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+#pysuricata-report .outliers .sub table.kv td.severity {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+#pysuricata-report .outliers .sub table.kv td.severity[data-severity="extreme"] {
+  color: #d73a49;
+}
+
+#pysuricata-report .outliers .sub table.kv td.severity[data-severity="high"] {
+  color: #f66a0a;
+}
+
+#pysuricata-report .outliers .sub table.kv td.severity[data-severity="moderate"] {
+  color: #0366d6;
+}
+
+/* Enhanced outliers section styling */
+#pysuricata-report .outlier-summary {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--chip-br-light);
+}
+
+#pysuricata-report .summary-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+/* Direction icon and label for outlier summaries (scoped to avoid conflicts) */
+#pysuricata-report .outlier-summary .direction-icon {
+  font-size: 1.2em;
+}
+
+#pysuricata-report .outlier-summary .direction-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+#pysuricata-report .outlier-count {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+#pysuricata-report .severity-breakdown {
+  display: flex;
+  gap: 12px;
+  font-size: 0.82rem;
+  flex-wrap: wrap;
+}
+
+#pysuricata-report .method-severity-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 4px;
+}
+
+#pysuricata-report:not(.light) .method-severity-group {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+#pysuricata-report .method-label {
+  font-weight: 600;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#pysuricata-report .severity-item {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+#pysuricata-report .severity-item.extreme {
+  background: rgba(215, 58, 73, 0.1);
+  color: #d73a49;
+}
+
+#pysuricata-report .severity-item.high {
+  background: rgba(246, 106, 10, 0.1);
+  color: #f66a0a;
+}
+
+#pysuricata-report .severity-item.moderate {
+  background: rgba(3, 102, 214, 0.1);
+  color: #0366d6;
+}
+
+/* Context note styling for outliers section */
+#pysuricata-report .context-note {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: rgba(3, 102, 214, 0.05);
+  border-left: 3px solid #0366d6;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+/* Outlier note styling for index information */
+#pysuricata-report .outlier-note {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: rgba(128, 128, 128, 0.05);
+  border-left: 3px solid #888;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+#pysuricata-report:not(.light) .outlier-note {
+  background: rgba(255, 255, 255, 0.03);
+  border-left-color: #aaa;
+}
+
+#pysuricata-report:not(.light) .context-note {
+  background: rgba(3, 102, 214, 0.1);
+  color: var(--text-secondary);
+}
+
+#pysuricata-report .context-note small {
+  display: block;
+  margin: 0;
+}
+
+
+
+/* Enhanced outliers table styling */
+#pysuricata-report .outliers-table.enhanced {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  margin-top: 8px;
+}
+
+#pysuricata-report .outliers-table.enhanced thead th {
+  background: var(--bg-tertiary);
+  padding: 8px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.82rem;
+  border-bottom: 2px solid var(--border-color);
+}
+
+#pysuricata-report .outliers-table.enhanced td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+#pysuricata-report .outliers-table.enhanced .rank {
+  text-align: center;
+  font-weight: 600;
+  width: 40px;
+}
+
+#pysuricata-report .outliers-table.enhanced .outlier-value {
+  font-weight: 500;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+}
+
+#pysuricata-report .outliers-table.enhanced tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+/* Sub-row styling for multi-method outliers */
+#pysuricata-report .outliers-table.enhanced .outlier-row-sub {
+  border-top: none;
+}
+
+#pysuricata-report .outliers-table.enhanced .outlier-row-sub td {
+  border-top: 1px dashed var(--border-color);
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+#pysuricata-report:not(.light) .outliers-table.enhanced thead th {
+  background: var(--bg-tertiary);
+  border-bottom-color: var(--border-color);
+}
+
+#pysuricata-report:not(.light) .outliers-table.enhanced tbody tr:hover {
+  background: var(--bg-hover);
+}
+
+/* Empty state styling */
+#pysuricata-report .extremes .sub .muted {
+  padding: 20px;
+  text-align: center;
+  color: #888;
+  font-style: italic;
+}
+
+#pysuricata-report:not(.light) .extremes .sub .muted {
+  color: #aaa;
+}
+
+/* Responsive design for min/max sections */
+@media (max-width: 768px) {
+  #pysuricata-report .extremes.stats-quant {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  #pysuricata-report .extremes .sub table.kv {
+    font-size: 0.75rem;
+  }
+
+  #pysuricata-report .extremes .sub .hdr {
+    font-size: 0.8rem;
+    padding: 10px 12px;
+  }
+}
+
+
+   BTN-SOFT ACTIVE STATE STYLING
+   ============================= */
+/* Add active state styling for btn-soft buttons to make selected state visible */
+#pysuricata-report .btn-soft.active {
+  background: rgba(59, 130, 246, .4);
+  border-color: #1e40af;
+  border-width: 2px;
+  color: #1e3a8a;
+  font-weight: 700;
+  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.3);
+}
+
+#pysuricata-report:not(.light) .btn-soft.active {
+  background: rgba(59, 130, 246, .35);
+  border-color: rgba(59, 130, 246, .50);
+  color: #dbeafe;
+  font-weight: 600;
+}
+
+#pysuricata-report:not(.light) .details-toggle[aria-expanded="true"] {
+  border-color: rgba(147, 197, 253, 0.7);
+  background: rgba(147, 197, 253, 0.2);
+}

@@ -47,7 +47,9 @@ class DonutChartRenderer:
         """Render an empty donut when no columns exist."""
         return f"""
         <svg class="dtype-donut-svg" viewBox="0 0 {self.width} {self.height}"
-             width="{self.width}" height="{self.height}">
+             width="{self.width}" height="{self.height}"
+             role="img" aria-labelledby="donut-title-empty">
+            <title id="donut-title-empty">Column type distribution: no data</title>
             <circle cx="{self.cx}" cy="{self.cy}" r="{self.outer_radius}"
                     fill="#e0e0e0" opacity="0.3"/>
             <circle cx="{self.cx}" cy="{self.cy}" r="{self.inner_radius}"
@@ -73,6 +75,13 @@ class DonutChartRenderer:
         # Check if only one segment type (100% case)
         non_zero_segments = [s for s in segments if s["count"] > 0]
 
+        # Build accessible description
+        desc_parts = [
+            f"{s['label']}: {s['count']} ({s['count'] / total * 100:.0f}%)"
+            for s in non_zero_segments
+        ]
+        desc_text = ", ".join(desc_parts)
+
         if len(non_zero_segments) == 1:
             # Special case: draw a full circle instead of arc to avoid SVG arc limitation
             # When arc = 360°, start point = end point, making arc invisible
@@ -80,7 +89,10 @@ class DonutChartRenderer:
             return f"""
         <svg class="dtype-donut-svg" viewBox="0 0 {self.width} {self.height}"
              width="{self.width}" height="{self.height}"
-             xmlns="http://www.w3.org/2000/svg">
+             xmlns="http://www.w3.org/2000/svg"
+             role="img" aria-labelledby="donut-title donut-desc">
+            <title id="donut-title">Column type distribution</title>
+            <desc id="donut-desc">{desc_text}</desc>
             <circle cx="{self.cx}" cy="{self.cy}" r="{self.outer_radius}"
                     fill="#f0f0f0" opacity="0.15" class="donut-background"/>
             <g class="donut-segments">
@@ -165,7 +177,10 @@ class DonutChartRenderer:
         return f"""
         <svg class="dtype-donut-svg" viewBox="0 0 {self.width} {self.height}"
              width="{self.width}" height="{self.height}"
-             xmlns="http://www.w3.org/2000/svg">
+             xmlns="http://www.w3.org/2000/svg"
+             role="img" aria-labelledby="donut-title-multi donut-desc-multi">
+            <title id="donut-title-multi">Column type distribution</title>
+            <desc id="donut-desc-multi">{desc_text}</desc>
             {background_circle}
             <g class="donut-segments">
                 {"".join(paths)}

@@ -1,0 +1,74 @@
+body.suricata-standalone {
+  margin: 0;
+  background-color: #f9f9f9;
+  /* default to light */
+  transition: background-color 0.3s ease;
+}
+
+body.suricata-standalone:not(.light) {
+  background-color: #333;
+  /* match dark theme */
+}
+
+
+#pysuricata-report {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background-color: #333;
+  color: #f9f9f9;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#pysuricata-report.light {
+  background-color: #f9f9f9;
+  color: #333;
+}
+
+#pysuricata-report h1 {
+  color: inherit;
+  margin: 0;
+}
+
+/* Global links (content areas). Header nav overrides these to inherit. */
+#pysuricata-report a {
+  color: #1e90ff;
+  text-decoration: none;
+}
+
+#pysuricata-report a:hover {
+  text-decoration: underline;
+}
+
+#pysuricata-report:not(.light) a {
+  color: #4ea3f1;
+}
+
+/* Tables */
+#pysuricata-report table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 20px;
+}
+
+#pysuricata-report th,
+#pysuricata-report td {
+  padding: 8px;
+  text-align: left;
+  border: 0;
+}
+
+#pysuricata-report th {
+  background: transparent;
+}
+
+#pysuricata-report.light th {
+  background: transparent;
+}
+
+/* Layout container */
+#pysuricata-report .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+}

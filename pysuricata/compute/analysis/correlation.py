@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Sequence, Tuple
+from collections.abc import Sequence
 
 import numpy as np
 
@@ -14,9 +14,9 @@ class StreamingCorr:
 
     def __init__(self, columns: Sequence[str]):
         self.cols = list(columns)
-        self.pairs: Dict[Tuple[str, str], Dict[str, float]] = {}
+        self.pairs: dict[tuple[str, str], dict[str, float]] = {}
 
-    def update_from_pandas(self, df: "pd.DataFrame") -> None:  # type: ignore[name-defined]
+    def update_from_pandas(self, df: pd.DataFrame) -> None:  # type: ignore[name-defined]  # noqa: F821
         try:
             import pandas as pd  # type: ignore
             from pandas.api import types as pdt  # type: ignore
@@ -25,7 +25,7 @@ class StreamingCorr:
         use_cols = [c for c in self.cols if c in df.columns]
         if len(use_cols) < 2:
             return
-        arrs: Dict[str, np.ndarray] = {}
+        arrs: dict[str, np.ndarray] = {}
         for c in use_cols:
             try:
                 # Fast path: skip pd.to_numeric for already-numeric columns
@@ -40,7 +40,7 @@ class StreamingCorr:
                 a = np.asarray(df[c].to_numpy(), dtype=float)
             arrs[c] = a
         # Pre-compute finite masks once per column to avoid redundant recomputation
-        finite_masks: Dict[str, np.ndarray] = {
+        finite_masks: dict[str, np.ndarray] = {
             c: np.isfinite(arrs[c]) for c in use_cols
         }
         for i in range(len(use_cols)):
@@ -79,7 +79,7 @@ class StreamingCorr:
                 st["sy2"] += sy2
                 st["sxy"] += sxy
 
-    def update_from_polars(self, df: "pl.DataFrame") -> None:  # type: ignore[name-defined]
+    def update_from_polars(self, df: pl.DataFrame) -> None:  # type: ignore[name-defined]  # noqa: F821
         try:
             import polars as pl  # type: ignore
         except Exception:
@@ -87,7 +87,7 @@ class StreamingCorr:
         use_cols = [c for c in self.cols if c in df.columns]
         if len(use_cols) < 2:
             return
-        arrs: Dict[str, np.ndarray] = {}
+        arrs: dict[str, np.ndarray] = {}
         for c in use_cols:
             try:
                 # Optimized correlation processing - add fast path for numeric types
@@ -106,7 +106,7 @@ class StreamingCorr:
                 a = np.asarray(df[c].to_list(), dtype=float)
             arrs[c] = a
         # Pre-compute finite masks once per column to avoid redundant recomputation
-        finite_masks_pl: Dict[str, np.ndarray] = {
+        finite_masks_pl: dict[str, np.ndarray] = {
             c: np.isfinite(arrs[c]) for c in use_cols
         }
         for i in range(len(use_cols)):
@@ -158,7 +158,7 @@ class StreamingCorr:
                 return 0.0
             return float(cov / denom)
 
-        col_map: Dict[str, list[tuple[str, float]]] = {c: [] for c in self.cols}
+        col_map: dict[str, list[tuple[str, float]]] = {c: [] for c in self.cols}
         for (a, b), st in self.pairs.items():
             r = corr_from(st)
             if abs(r) < float(threshold):
