@@ -114,3 +114,6 @@ examples/test_*
 native/target/
 **/*.rs.bk
 *.pdb
+
+# Build snapshot produced by uv's source-build machinery
+_snapshot.tar.gz

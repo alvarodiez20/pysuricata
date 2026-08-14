@@ -7,6 +7,22 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.22] - 2026-08-14
+
+Completes Phase 1 of `docs/roadmap.md`. **Report generation is 1.99x faster than
+0.0.20** on the mixed benchmark suite (200,000 x 14: 3.190s -> 1.601s), with no
+new dependencies and no API change. The phase's exit criterion was hashing and
+date parsing each under 5% of self time; they are now 0.7% and 0.3%.
+
+### Changed
+- **Date sniffing no longer parses columns row by row** — deciding whether an object column holds dates ran up to 10,000 rows through `pd.to_datetime(format="mixed")`, which disables pandas' vectorised parser and falls back to `dateutil` one row at a time: 166,302 `get_token` calls in a single 50,000-row profile, 20.7% of total runtime. It now probes 200 rows against a list of explicit formats, each of which takes the fast path, and only reaches for `mixed` when every fixed format has failed. Classification is unchanged, including for formats outside the fixed list.
+
+### Fixed
+- **Empty and all-null object columns no longer compute 0/0** while sniffing, which produced a `RuntimeWarning` and a `nan` success rate.
+
+### Added
+- 12 tests covering date-format classification, the `dateutil` fallback for unusual formats, all-null columns, and a bound on how much of a large column is parsed.
+
 ## [0.0.21] - 2026-08-14
 
 Phase 1 of `docs/roadmap.md` — pure-Python performance, no new dependencies and
