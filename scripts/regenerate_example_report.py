@@ -27,25 +27,26 @@ def main() -> int:
     import pysuricata
     from pysuricata.api import ProfileConfig, RenderOptions
 
-    # Use Titanic dataset — small, public, and well-known
+    # Use Titanic dataset — small, public, and well-known. The vendored copy is
+    # the source of truth so CI never depends on network reachability and the
+    # generated report stays byte-stable across runs.
     titanic_url = (
         "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
     )
+    local_path = os.path.join(REPO_ROOT, "docs", "assets", "titanic.csv")
     output_path = os.path.join(REPO_ROOT, "docs", "assets", "titanic_report.html")
 
     print(f"📦 PySuricata v{pysuricata.__version__}")
-    print("📥 Loading Titanic dataset from GitHub...")
 
-    try:
-        df = pd.read_csv(titanic_url)
-    except Exception:
-        # Fallback: try local file
-        local_path = os.path.join(REPO_ROOT, "docs", "assets", "titanic.csv")
-        if os.path.exists(local_path):
-            print(f"   ⚠ GitHub unavailable, using local {local_path}")
-            df = pd.read_csv(local_path)
-        else:
-            print("   ❌ Cannot download Titanic CSV and no local copy found.")
+    if os.path.exists(local_path):
+        print(f"📥 Loading Titanic dataset from {local_path}...")
+        df = pd.read_csv(local_path)
+    else:
+        print("📥 Local copy missing, downloading Titanic dataset from GitHub...")
+        try:
+            df = pd.read_csv(titanic_url)
+        except Exception as exc:
+            print(f"   ❌ No local copy and download failed: {exc}")
             return 1
 
     print(f"   ✓ {len(df)} rows × {len(df.columns)} columns")

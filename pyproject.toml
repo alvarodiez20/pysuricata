@@ -51,6 +51,7 @@ dev = [
     "mkdocs-material>=9.6.18",
     "mkdocstrings>=0.30.0",
     "mkdocstrings-python>=1.18.0",
+    "pyarrow>=17.0.0",  # test-only: exercises the pd.ArrowDtype inference branch
     "pytest>=8.3.5",
     "pytest-cov>=6.0.0",
     "requests>=2.32.3",
@@ -93,6 +94,9 @@ pysuricata = [
 [tool.ruff]
 target-version = "py310"
 line-length = 88
+# Notebooks are teaching material: pyupgrade-style rewrites hurt readability there.
+# Declared here (not only in .pre-commit-config.yaml) so pre-commit and CI agree.
+extend-exclude = ["*.ipynb"]
 
 [tool.ruff.lint]
 select = [
@@ -114,7 +118,6 @@ ignore = [
     "C416",  # unnecessary dict comprehension — readability preference
     "C901",  # too complex
     "UP007", # Union type hint — keep for Python 3.10 compat
-    "UP038", # isinstance with tuple — deprecated rule, tuple form is valid
 ]
 
 [tool.ruff.lint.per-file-ignores]
