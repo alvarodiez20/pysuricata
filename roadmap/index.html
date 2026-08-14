@@ -20,7 +20,7 @@
     
     
       
-        <title>PySuricata roadmap — performance, correctness, positioning - PySuricata</title>
+        <title>PySuricata roadmap v2 — re-audit at 0.0.21 - PySuricata</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#pysuricata-roadmap-performance-correctness-positioning" class="md-skip">
+        <a href="#pysuricata-roadmap-v2-re-audit-at-0021" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              PySuricata roadmap — performance, correctness, positioning
+              PySuricata roadmap v2 — re-audit at 0.0.21
             
           </span>
         </div>
@@ -1616,296 +1616,322 @@
   
 
 
-<h1 id="pysuricata-roadmap-performance-correctness-positioning">PySuricata roadmap — performance, correctness, positioning</h1>
-<p>Written 14 Aug 2026. Every number here was measured with the harness in
-<code>benchmarks/</code>, against <code>pysuricata 0.0.16</code>, Python 3.11.15, pandas 2.3.3,
-numpy 2.4.4, ydata-profiling 4.18.4, on a 2-core x86-64 Linux container with a
-measured 26.0 GB/s streaming read. <strong>Re-run before publishing anything</strong> — your
-machine will give different absolute numbers and the same ratios.</p>
-<p>A rendered version of this document with charts exists as the
-<code>pysuricata-roadmap</code> artifact.</p>
+<h1 id="pysuricata-roadmap-v2-re-audit-at-0021">PySuricata roadmap v2 — re-audit at 0.0.21</h1>
+<p>Supersedes the 0.0.16 plan. Every number was measured with the harness in
+<code>benchmarks/</code>, against this repo at <code>da33604</code> and <code>pysuricata==0.0.16</code> from PyPI,
+in separate venvs, interleaved, best of 3, GC disabled. Python 3.11.15,
+pandas 2.3.3, numpy 2.4.4, ydata-profiling 4.18.4, 2-core x86-64 Linux container.</p>
+<p>Absolute times on that box are noisier than in the first pass, so every
+version-to-version comparison here is interleaved on the same machine within the
+same minute. <strong>Re-run before publishing anything.</strong></p>
+<p>A rendered version with charts is the <code>pysuricata-roadmap</code> artifact.</p>
 <hr />
-<h2 id="the-short-version">The short version</h2>
-<p>PySuricata already beats ydata-profiling by a wide margin and nobody knows,
-because it has never been measured or published. Meanwhile a third of its runtime
-goes to SHA-1 hashing that no sketch needs, a fifth goes to <code>dateutil</code> parsing
-dates one row at a time, and six statistical bugs make chunked results disagree
-with unchunked ones.</p>
-<p>A native Rust core is the right project. It is not the <em>next</em> project.</p>
+<h2 id="where-things-stand">Where things stand</h2>
 <table>
 <thead>
 <tr>
-<th>Measured today</th>
+<th></th>
 <th></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>vs ydata-profiling, 25k x 14 mixed frame</td>
-<td><strong>7.9x</strong> faster wall clock (1.77 s vs 13.98 s)</td>
+<td>Flagged items closed</td>
+<td><strong>6 of 11</strong> — every one that had a failing test</td>
 </tr>
 <tr>
-<td>vs ydata-profiling, marginal memory</td>
-<td><strong>11x</strong> less (28 MB vs 313 MB above the ~150 MB interpreter floor)</td>
+<td>0.0.16 → 0.0.21, 200k × 14</td>
+<td><strong>1.24×</strong> (7.583 s → 6.118 s)</td>
 </tr>
 <tr>
-<td>Runtime in SHA-1</td>
-<td><strong>~36%</strong> of profiled self time</td>
+<td>vs ydata-profiling, 25k × 14</td>
+<td><strong>9.1×</strong> (1.83 s vs 16.72 s); was 7.9× at 0.0.16</td>
 </tr>
 <tr>
-<td>Runtime in <code>dateutil</code></td>
-<td><strong>20.7%</strong></td>
+<td>Peak RSS</td>
+<td>173 MB vs 459 MB; <strong>13×</strong> less above the ~150 MB interpreter floor</td>
 </tr>
 <tr>
-<td>Correctness bugs with a reproducing test</td>
-<td><strong>6</strong></td>
+<td>Hashing share of profiled self time</td>
+<td><strong>13.4% → 0.3%</strong></td>
+</tr>
+<tr>
+<td>Still available in pure Python</td>
+<td><strong>~2.5×</strong>, measured</td>
 </tr>
 </tbody>
 </table>
+<h3 id="what-went-well">What went well</h3>
+<p>Two things stand out beyond the fixes themselves.</p>
+<p>You didn't just clear the <code>xfail</code> markers — the oracle went from 464 to 578
+lines, gaining <code>TestReservoirInvariants</code>, <code>TestRngIsolation</code>, and three generator
+tests, including one asserting the RNG is restored <em>even when profiling raises</em>.</p>
+<p>And the reservoir fix went past the brief. Algorithm L gives a sample that is
+<strong>bit-identical across chunk sizes</strong>, not merely unbiased, and
+<code>test_sample_is_independent_of_chunking</code> now pins that. It is a stronger property
+than I specified — and it is why the obvious speedup for it is wrong (see below).</p>
 <hr />
-<h2 id="phase-0-trust-2-weekends">Phase 0 — Trust (2 weekends)</h2>
-<p>Nothing else matters if the numbers are wrong, and an optimisation you cannot
-verify is a liability.</p>
-<p><code>benchmarks/accuracy.py</code> ships six <code>xfail</code>-marked tests. Each names a file and
-line. Fix, delete the marker, move on. When one starts passing while the marker
-is still there, pytest reports XPASS and tells you.</p>
-<p><strong>Exit criterion:</strong> the accuracy suite passes with zero xfails, and CI runs it on
-every PR.</p>
-<h3 id="the-bugs">The bugs</h3>
-<h4 id="critical-generator-sources-silently-drop-chunk-0">CRITICAL — generator sources silently drop chunk 0</h4>
-<p><code>compute/orchestration/engine.py:127</code></p>
-<p><code>next(iter(data))</code> is used to sniff which adapter to build, consuming the first
-chunk. <code>chunks_from_source</code> then iterates the already-advanced generator. The
-documented "stream chunks larger than RAM" API — the headline feature — silently
-omits the first chunk from every statistic, and a one-chunk generator reports
-"Empty source".</p>
-<p>Fix: wrap in <code>itertools.chain([first], rest)</code>, or sniff from a peeked copy.
-Half an hour.</p>
-<h4 id="critical-reservoir-sampling-is-biased">CRITICAL — reservoir sampling is biased</h4>
-<p><code>accumulators/sketches.py:311-324</code></p>
-<p><code>add_many</code> draws <code>np.random.randint(1, seen + len(arr) + 1, size=len(arr))</code> — one
-uniform over the <em>post-batch</em> count for every element. True reservoir sampling
-requires each element <code>i</code> to be accepted with probability <code>k/(seen+i)</code>, a
-denominator that grows <em>within</em> the batch. Early elements are under-weighted,
-late ones over-weighted, and the bias grows with chunk size.</p>
-<p>Every quantile, the median, IQR, MAD, outlier counts and the histogram come from
-this reservoir, so accuracy silently degrades as chunk size grows — the opposite
-of what the docs imply.</p>
-<p>Fix: Algorithm L (Li 1994). Implemented in <code>native/src/reservoir.rs</code>; the
-pure-Python version is ~25 lines. It is also much cheaper: ~145k random draws for
-10M rows into k=20k, instead of 10M.</p>
-<h4 id="critical-skewness-and-kurtosis-are-wrong-for-multi-chunk-data">CRITICAL — skewness and kurtosis are wrong for multi-chunk data</h4>
-<p><code>accumulators/algorithms.py:138-162</code></p>
-<p><code>StreamingMoments._update_vectorized</code>'s M3/M4 batch merge is commented "simplified
-for performance". It is not Pébay's formula. The M3 cross term is
-<code>3*delta*M2_B/n_B</code> where it should be <code>3*delta*(n_A*M2_B - n_B*M2_A)/n</code>, and M4
-has the same defect.</p>
-<p>Results are correct for single-chunk data and wrong for everything else — which is
-exactly why it survived. The <code>merge()</code> method twelve lines below has the correct
-formula, so the two code paths in the same class disagree with each other.</p>
-<p>Fix: build a <code>StreamingMoments</code> from the batch and call the existing correct
-<code>merge()</code>. Net deletion of code. Reference implementation in
-<code>native/src/moments.rs</code>.</p>
-<h4 id="serious-profile-resets-the-callers-global-rng">SERIOUS — <code>profile()</code> resets the caller's global RNG</h4>
-<p><code>report.py:88-89</code></p>
-<p><code>np.random.seed(seed)</code> and <code>random.seed(seed)</code> are process-global, and the default
-seed is 0. A notebook that seeds its own experiment and then profiles a frame has
-its RNG state silently reset. It also makes per-column threading impossible to do
-reproducibly, so this blocks the parallelism work.</p>
-<p>Fix: per-accumulator <code>np.random.Generator</code>. Mechanical, ~6 call sites.</p>
-<h4 id="serious-correlations-collapse-to-000-on-large-mean-columns">SERIOUS — correlations collapse to 0.00 on large-mean columns</h4>
-<p><code>compute/analysis/correlation.py:153-158</code></p>
-<p><code>vx = max(0.0, sx2 - sx*sx/n)</code> is the textbook catastrophic-cancellation form. For
-timestamps-as-int, IDs, or prices around 1e6, the two terms differ only in the
-last bits of float64 and the variance collapses to zero — then the function
-returns <code>0.0</code>, silently reporting "no correlation". The <code>max(0.0, ...)</code> hides the
-symptom instead of surfacing it.</p>
-<p>Fix: Welford/Chan pairwise co-moments — the same merge already needed for M2.</p>
-<h4 id="moderate-skewness-uses-the-sample-variance-in-the-denominator">MODERATE — skewness uses the sample variance in the denominator</h4>
-<p><code>accumulators/algorithms.py:192</code></p>
-<p>g1 is <code>(m3/n) / (m2/n)^1.5</code> using the <em>population</em> second moment. The code divides
-by <code>variance**1.5</code> with the n-1 form, a systematic scale error of <code>((n-1)/n)^1.5</code>.
-Small, but it never converges away, and it means the numbers do not match scipy.</p>
-<h3 id="bugs-without-a-test-yet">Bugs without a test yet</h3>
-<ul>
-<li><strong>Column types decided from the first chunk alone</strong> — <code>engine.py:294</code>,
-  <code>inference.py:545</code>. <code>should_reclassify_numeric_as_categorical</code> uses
-  <code>unique_count / total_count &lt; 0.05</code> over one chunk. A 100M-row numeric column
-  with 10M distinct values can be permanently classified categorical because its
-  first 200k rows had nine. Fix: defer the decision, or use the KMV estimate
-  rather than a chunk-local ratio.</li>
-<li><strong>Row count silently truncates to 2,000 on the hash fallback</strong> —
-  <code>accumulators/sketches.py:483-488</code>. If vectorised row hashing raises for any
-  chunk, the <code>except</code> path contributes at most 2,000 rows to <code>row_kmv.rows</code>. That
-  value is what the report displays as "Rows" (<code>render/html.py:62</code>) and what
-  <code>missing_cells_pct</code> divides by. Fix: always add <code>len(df)</code>; let only the
-  duplicate <em>estimate</em> degrade, and mark it approximate.</li>
-<li><strong>Extreme-value row indices are chunk-local</strong> — <code>consume.py:240-254</code>,
-  <code>consume_polars.py:186-190</code>. The engine tracks a global row offset but never
-  passes it down, so "row 4,182 had the maximum" is wrong for every chunk after
-  the first. Extremes are also only sampled every 5th chunk
-  (<code>_extreme_update_counter % 5</code>), so the reported min/max can miss the true
-  extremes entirely. Fix: pass the offset; make min/max exact (O(1) per chunk) and
-  keep the throttle only for top-k <em>with indices</em>.</li>
-<li><strong>Documented options that do nothing</strong> — <code>ComputeOptions.columns</code>
-  (<code>api.py:208</code>) is validated but never reaches the engine. <code>corr_max_cols</code>
-  (<code>api.py:277</code>) is declared, validated, copied into config, and never read — a
-  1,000-column frame builds 499,500 pairs despite a documented cap of 50.
-  <code>chunk_size</code> is blended (<code>0.7*optimal + 0.3*requested</code>, <code>chunking.py:240</code>) so
-  the user never gets what they asked for. Fix: wire them up or delete them from
-  the docs.</li>
-<li><strong>Timestamps before 1906 counted as missing</strong> — <code>accumulators/datetime.py:230</code>.
-  The validity window is <code>[-2e18, 1e20]</code> ns; the lower bound is 1906-05-13.
-  Birthdates and historical records are silently reclassified as nulls. Fix:
-  widen to the int64 datetime64[ns] range (1677-2262).</li>
-</ul>
-<h3 id="why-these-were-not-caught">Why these were not caught</h3>
-<p>The test suite is 41 files and ~304 KB — but roughly <strong>2.3 KB of it covers the
-accumulators</strong>, which are ~2,600 lines of the statistical core. There is no test
-anywhere that chunked results equal unchunked results, and none that any statistic
-matches NumPy. Five of the six bugs are in the numerical core.</p>
-<hr />
-<h2 id="phase-1-free-performance-2-3-weekends">Phase 1 — Free performance (2-3 weekends)</h2>
-<p>No Rust, no new dependencies, no API change.</p>
-<p><code>python -m benchmarks.hotspots --suite mixed</code> on a 50,000 x 14 frame, 2.4 s
-unprofiled, self time by subsystem:</p>
+<h2 id="scorecard">Scorecard</h2>
+<h3 id="closed">Closed</h3>
 <table>
 <thead>
 <tr>
-<th>Subsystem</th>
-<th>Share</th>
+<th>Item</th>
+<th>How</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>accumulate</td>
-<td>28.8%</td>
+<td><strong>Generator drops chunk 0</strong> — <code>engine.py</code></td>
+<td>Peek-and-splice with <code>itertools.chain([first_chunk_peek], stream)</code>, sniffing from the peeked chunk. Three new tests including the one-chunk "Empty source" case and a generator-vs-DataFrame equivalence check.</td>
 </tr>
 <tr>
-<td>date parsing</td>
-<td>20.7%</td>
+<td><strong>Reservoir sampling biased</strong> — <code>sketches.py</code></td>
+<td>Full Algorithm L rewrite with geometric skips; five new invariant tests. <em>But</em> the implementation is a per-acceptance Python loop with four calls each — 5× slower than needed. Fix below.</td>
 </tr>
 <tr>
-<td>unclassified</td>
-<td>17.3%</td>
+<td><strong>M3/M4 batch merge wrong</strong> — <code>algorithms.py</code></td>
+<td>The batch now builds a <code>StreamingMoments</code> and delegates to the correct Pébay <code>merge()</code>, with a comment explaining why the old inline formula was wrong.</td>
 </tr>
 <tr>
-<td>hashing (SHA-1)</td>
-<td>13.4%</td>
+<td><strong>Global RNG reset</strong> — <code>report.py</code></td>
+<td>Solved with a save/restore context manager rather than per-accumulator generators. Verified: NumPy and stdlib state both survive, including on failure. <em>Residual:</em> the reservoir still draws from global <code>np.random</code>, so column-level threading remains blocked.</td>
 </tr>
 <tr>
-<td>pandas / numpy</td>
-<td>7.1%</td>
+<td><strong>Correlation cancellation</strong> — <code>correlation.py</code></td>
+<td>Chan pairwise co-moments (<code>mean_x</code>, <code>delta_x</code>, merged per batch).</td>
 </tr>
 <tr>
-<td>list sorting</td>
-<td>5.5%</td>
-</tr>
-<tr>
-<td>render</td>
-<td>4.9%</td>
-</tr>
-<tr>
-<td>type inference</td>
-<td>1.6%</td>
+<td><strong>Skewness denominator</strong> — <code>algorithms.py</code></td>
+<td><code>m2_pop = self._m2 / self.count</code>, then <code>skew = (m3/n) / m2_pop**1.5</code>. Matches scipy.</td>
 </tr>
 </tbody>
 </table>
-<p><code>accumulate</code> is dominated by <code>sketches.py</code> <code>add_many</code> (0.589 + 0.234 + 0.135 s
-self), which is the KMV ingest path. Adding its SHA-1 cost (<code>_u64</code> 0.365 s,
-<code>digest</code> 0.174 s) and the list sorts it triggers (0.264 s), <strong>the distinct-count
-sketch alone is ~36% of profiled self time.</strong></p>
-<h3 id="the-work">The work</h3>
-<ol>
-<li><strong>Replace SHA-1 with a 64-bit mixer</strong> — <code>accumulators/sketches.py:11</code>.
-   A cryptographic hash resisting preimage attacks is doing a job that needs
-   uniformity and avalanche and nothing else. Measured <strong>755x</strong> on the hash alone.</li>
-<li><strong>Replace the sorted list with a bounded heap</strong> — <code>sketches.py:124</code>.
-   <code>_batch_add_hashes</code> does <code>list.extend(...)</code> then <code>list.sort()</code> on every chunk,
-   over boxed Python ints. Measured <strong>12.3x</strong> on the full ingest.</li>
-<li><strong>Give <code>RowKMV</code> a direct hash path</strong> — <code>sketches.py:454</code>. It computes a
-   perfectly good vectorised <code>uint64</code> row hash with
-   <code>pd.util.hash_pandas_object</code>, then hands it to <code>KMV.add_many</code>, which calls
-   <code>str(v).encode()</code> and <code>hashlib.sha1</code> on every one of those uint64s. For a
-   10M-row frame that is 10M string formats and 10M SHA-1 digests to re-hash
-   values that were already uniformly distributed.</li>
-<li><strong>Fix the date sniff</strong> — <code>compute/processing/inference.py:383</code>. Every object
-   column runs up to 10,000 rows through
-   <code>pd.to_datetime(..., format="mixed")</code> as an "is this a date?" test.
-   <code>format="mixed"</code> disables pandas' vectorised parser and falls back to
-   <code>dateutil</code>, one row at a time, in Python: 166,302 <code>get_token</code> calls and 34,737
-   <code>_strptime</code> calls in a single 50k-row profile. Try a small set of explicit
-   formats first, sample 200 rows not 10,000, short-circuit on dtype.</li>
-<li><strong><code>np.diff</code> for monotonicity</strong> — <code>accumulators/algorithms.py:422</code>.
-   <code>MonotonicityDetector.update</code> iterates every value in Python. Measured <strong>61x</strong>
-   from three lines of NumPy. No Rust required.</li>
-<li><strong><code>heapq.heappushpop</code> for extremes</strong> — <code>algorithms.py:332</code>.
-   <code>_add_to_min_heap</code> does an O(k) <code>max()</code> scan plus a full <code>heapify</code> per insert,
-   on a data structure whose entire purpose is O(log k) inserts.</li>
-<li><strong>Delete duplicated passes</strong> — <code>adapters/pandas.py:217</code> <code>missing_cells</code> runs a
-   full <code>isnull().sum().sum()</code> per chunk, duplicating work the accumulators
-   already did.</li>
-</ol>
-<p><strong>Exit criterion:</strong> <code>hotspots.py</code> shows hashing and date parsing under 5% each,
-and the <code>mixed</code> suite is &gt;= 2x faster than v0.0.17 with byte-identical output.</p>
-<hr />
-<h2 id="phase-2-publish-1-2-weekends">Phase 2 — Publish (1-2 weekends)</h2>
-<p>Run <code>python -m benchmarks.end_to_end --markdown results.md</code>. Put the table and the
-environment block in the README and in <code>docs/benchmarks.md</code>.</p>
-<p>Rules for anything published:</p>
-<ul>
-<li>Same DataFrame object for every tool, generated from a seeded RNG.</li>
-<li>Separate subprocess per tool (the harness already does this).</li>
-<li>Report peak RSS and output size next to wall time.</li>
-<li>Never compare a <code>minimal=True</code> incumbent run against a full PySuricata run, or
-  the reverse, without labelling it. Someone will check.</li>
-<li>State the version of every package involved.</li>
-<li><strong>Publish the failures.</strong> "ydata-profiling raised MemoryError at 5M x 40 on a
-  16 GB machine" is more persuasive, and more honest, than a bar chart — and their
-  own issue tracker corroborates it.</li>
-</ul>
-<p>Also: comment on ydata-profiling issue
-<a href="https://github.com/Data-Centric-AI-Community/fg-data-profiling/issues/1129">#1129</a>,
-open since October 2022 asking for polars support that PySuricata already has.</p>
-<p><strong>Exit criterion:</strong> a benchmarks page exists, one post is live, and the polars
-issue has a link to the docs.</p>
-<hr />
-<h2 id="phase-3-native-core-4-6-weekends">Phase 3 — Native core (4-6 weekends)</h2>
-<p>The crate in <code>native/</code> already builds, ships an abi3 wheel, passes 20 Rust unit
-tests and 35 Python agreement tests, and releases the GIL (measured 91% parallel
-efficiency on 2 threads).</p>
+<h3 id="open">Open</h3>
 <table>
 <thead>
 <tr>
-<th>Module</th>
-<th>Replaces</th>
-<th>Design</th>
+<th>Item</th>
+<th>State</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>hashing.rs</code></td>
-<td>SHA-1 in <code>_u64</code></td>
-<td>splitmix64 for already-64-bit values; wyhash-style multiply-fold for bytes, three independent accumulator chains in the bulk loop. Includes an avalanche test.</td>
+<td><strong>Types decided from the first chunk</strong> — <code>inference.py:550</code></td>
+<td>Unchanged: <code>unique_count &lt; 10 or unique_ratio &lt; 0.05</code> over a single chunk.</td>
 </tr>
 <tr>
-<td><code>kmv.rs</code></td>
-<td>the sorted Python list</td>
-<td>Fixed-capacity binary max-heap over a flat <code>Vec&lt;u64&gt;</code>. 8 KiB at k=1024, cache-resident; the common case rejects in one compare against the root. Reports its own relative standard error.</td>
+<td><strong>Row count truncates to 2,000</strong> — <code>sketches.py:534,555,563</code></td>
+<td>Unchanged. Four <code>min(2000, ...)</code> sites in the <code>RowKMV</code> fallback still cap the contribution to <code>rows</code>.</td>
 </tr>
 <tr>
-<td><code>moments.rs</code></td>
-<td>the "simplified" merge</td>
-<td>Pébay's pairwise merge + a 32 KiB-tiled two-pass scan. Two passes per tile, both hitting L1, so DRAM traffic is paid once.</td>
+<td><strong>Extreme indices chunk-local</strong> — <code>consume.py:241</code></td>
+<td>Unchanged, including <code>_extreme_update_counter % 5</code>. Note the tracker is only <strong>0.8%</strong> of the numeric path, so the throttle buys nothing — drop it and make min/max exact.</td>
 </tr>
 <tr>
-<td><code>reservoir.rs</code></td>
-<td>the biased sampler</td>
-<td>Algorithm L with geometric skips, xoshiro256++ seeded per instance.</td>
+<td><strong>Dead options</strong> — <code>config.py:137</code>, <code>chunking.py:240</code></td>
+<td><code>corr_max_cols</code> is still declared, validated, copied into config, and never read by anything in <code>compute/</code>. The <code>0.7×optimal + 0.3×requested</code> chunk-size blend is unchanged.</td>
+</tr>
+<tr>
+<td><strong>Pre-1906 timestamps as missing</strong> — <code>datetime.py:230,316</code></td>
+<td>Unchanged; the <code>-2e18</code> bound is still 1906-05-13.</td>
 </tr>
 </tbody>
 </table>
-<h3 id="measured-kernel-costs-1m-rows-nsrow-best-of-5-7">Measured kernel costs (1M rows, ns/row, best of 5-7)</h3>
+<h3 id="phase-1-performance-items">Phase 1 performance items</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SHA-1 in the sketch</td>
+<td><strong>Done.</strong> blake2b-64 for bytes plus vectorised <code>_mix64_array</code>/<code>_hash_numeric_array</code>, and <code>RowKMV</code>'s uint64 row hashes go straight through it.</td>
+</tr>
+<tr>
+<td>KMV extend-then-sort</td>
+<td><strong>Done</strong> — now <code>np.unique</code> + <code>np.union1d</code>. Still sorts the whole batch every chunk; see the drop-in.</td>
+</tr>
+<tr>
+<td>Date sniff with <code>format="mixed"</code></td>
+<td><strong>Open</strong> at <code>inference.py:384</code> and <code>consume.py:162</code>. Still 19% of profiled self time.</td>
+</tr>
+<tr>
+<td>Monotonicity Python loop</td>
+<td><strong>Open.</strong> 8.5% of the numeric path; <code>np.diff</code> is 61× faster.</td>
+</tr>
+<tr>
+<td>ExtremeTracker heap</td>
+<td><strong>Deprioritise.</strong> Measured at 0.8%. I over-weighted this in August.</td>
+</tr>
+<tr>
+<td>Report v2 / native wiring</td>
+<td><strong>Not started</strong> — both are later phases, on schedule.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>The pattern worth naming: all six items with tests are closed; all five without
+are open.</strong> If you want the rest fixed, write the test first.</p>
+<hr />
+<h2 id="new-evidence-where-the-time-actually-is">New evidence: where the time actually is</h2>
+<p>In the first pass I ranked hot spots with <code>cProfile</code>. That was a mistake, now
+caught the hard way: the profiler put the new reservoir at ~30% of self time, but
+swapping in a 5×-faster one moved end-to-end wall clock by <strong>4%</strong>. cProfile
+charges per Python call and the reservoir makes millions of tiny ones.</p>
+<p>So this pass measures two ways, both on wall clock with the profiler off.</p>
+<h3 id="cost-per-column-kind-200000-rows">Cost per column kind, 200,000 rows</h3>
+<table>
+<thead>
+<tr>
+<th>Column kind</th>
+<th style="text-align: right;">ms/column</th>
+<th style="text-align: right;">ns/value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>datetime</td>
+<td style="text-align: right;"><strong>1067</strong></td>
+<td style="text-align: right;">5,335</td>
+</tr>
+<tr>
+<td>numeric</td>
+<td style="text-align: right;">483</td>
+<td style="text-align: right;">2,415</td>
+</tr>
+<tr>
+<td>categorical</td>
+<td style="text-align: right;">452</td>
+<td style="text-align: right;">2,260</td>
+</tr>
+<tr>
+<td>boolean</td>
+<td style="text-align: right;">70</td>
+<td style="text-align: right;">350</td>
+</tr>
+<tr>
+<td><em>render, all columns</em></td>
+<td style="text-align: right;"><em>26 total</em></td>
+<td style="text-align: right;"><em>3.3% of wall clock</em></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Render is 3% of wall clock.</strong> Report v2 is a size and UX project, not a
+performance one — worth knowing before spending a weekend on it expecting a
+speedup.</p>
+<h3 id="inside-the-numeric-accumulator">Inside the numeric accumulator</h3>
+<p>1M values in 5 chunks. <code>update()</code> totals 1,504 ns/value.</p>
+<table>
+<thead>
+<tr>
+<th>Component</th>
+<th style="text-align: right;">Share</th>
+<th style="text-align: right;">ns/value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>KMV distinct count</td>
+<td style="text-align: right;"><strong>50.2%</strong></td>
+<td style="text-align: right;">754</td>
+</tr>
+<tr>
+<td>Misra-Gries top-k</td>
+<td style="text-align: right;"><strong>35.3%</strong></td>
+<td style="text-align: right;">530</td>
+</tr>
+<tr>
+<td>ReservoirSampler</td>
+<td style="text-align: right;">10.2%</td>
+<td style="text-align: right;">154</td>
+</tr>
+<tr>
+<td>MonotonicityDetector</td>
+<td style="text-align: right;">8.5%</td>
+<td style="text-align: right;">128</td>
+</tr>
+<tr>
+<td>OutlierDetector</td>
+<td style="text-align: right;">6.3%</td>
+<td style="text-align: right;">94</td>
+</tr>
+<tr>
+<td>StreamingHistogram</td>
+<td style="text-align: right;">2.0%</td>
+<td style="text-align: right;">30</td>
+</tr>
+<tr>
+<td><strong>StreamingMoments</strong></td>
+<td style="text-align: right;"><strong>1.3%</strong></td>
+<td style="text-align: right;">19</td>
+</tr>
+<tr>
+<td>ExtremeTracker</td>
+<td style="text-align: right;">0.8%</td>
+<td style="text-align: right;">12</td>
+</tr>
+</tbody>
+</table>
+<h3 id="misra-gries-is-35-of-the-numeric-path-computing-something-meaningless">Misra-Gries is 35% of the numeric path, computing something meaningless</h3>
+<p><code>numeric.py:336</code> feeds every finite value to a top-k sketch. On a continuous
+float column every value is distinct, so the sketch does nothing but evict
+counters — and <code>numeric_card.py:462</code> discards the result when it comes back
+empty. That is 530 ns/value, more than a third of the whole numeric accumulator,
+for a top-k that is thrown away.</p>
+<p>Gate it on the KMV cardinality estimate (or simply on <code>int_like</code>) and that third
+disappears with no output change on the columns where it was never useful.</p>
+<hr />
+<h2 id="the-native-core-is-aimed-at-the-wrong-kernel">The native core is aimed at the wrong kernel</h2>
+<p><code>native/</code> was built around a fused numeric scan — Pébay moments, 32 KiB tiling,
+four accumulator chains. It works and the engineering stands. But the
+decomposition says <strong>moments are 1.3% of the numeric path</strong>. Making them
+infinitely fast buys 1.3%.</p>
+<p>The part that matters is the one treated as secondary: <code>kmv.rs</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Kernel</th>
+<th style="text-align: right;">Share of numeric path</th>
+<th style="text-align: right;">Current</th>
+<th style="text-align: right;">Native</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>KMV distinct count</strong></td>
+<td style="text-align: right;">50.2%</td>
+<td style="text-align: right;">754 ns</td>
+<td style="text-align: right;"><strong>8.7 ns</strong></td>
+</tr>
+<tr>
+<td>Reservoir</td>
+<td style="text-align: right;">10.2%</td>
+<td style="text-align: right;">154 ns</td>
+<td style="text-align: right;">7.2 ns</td>
+</tr>
+<tr>
+<td>Moments</td>
+<td style="text-align: right;">1.3%</td>
+<td style="text-align: right;">19 ns</td>
+<td style="text-align: right;">6.5 ns</td>
+</tr>
+</tbody>
+</table>
+<p>This does not make the crate a waste. The <code>moments.rs</code> tiling story is still the
+best post in the series — a measured 1.7× from layout alone, and an honest "my
+first attempt was slower than NumPy" — and its value is pedagogical, which is
+what you wanted from the CS:APP study. And <code>kmv.rs</code> plus <code>hash_arrow_utf8</code> are
+now the highest-value native work in the repo, because they attack 50% of the
+numeric path and (wired to polars' Arrow buffers) the categorical path too.</p>
+<p>What changes is the <em>order inside Phase 3</em>: ship the KMV kernel first, moments
+last.</p>
+<hr />
+<h2 id="two-verified-drop-ins-no-rust">Two verified drop-ins, no Rust</h2>
+<p>Both live in <code>benchmarks/proposed_kernels.py</code>. Run
+<code>python -m benchmarks.proposed_kernels</code> to re-verify and re-time on your machine.</p>
 <table>
 <thead>
 <tr>
@@ -1913,520 +1939,203 @@ efficiency on 2 threads).</p>
 <th style="text-align: right;">Before</th>
 <th style="text-align: right;">After</th>
 <th style="text-align: right;">Ratio</th>
+<th>Behaviour</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>hash a value</td>
-<td style="text-align: right;">1138</td>
-<td style="text-align: right;">1.5</td>
-<td style="text-align: right;">755x</td>
+<td><code>KMV.add_many</code></td>
+<td style="text-align: right;">633 ns/value</td>
+<td style="text-align: right;">72 ns/value</td>
+<td style="text-align: right;"><strong>8.8×</strong></td>
+<td>estimates <em>identical</em></td>
 </tr>
 <tr>
-<td>KMV ingest</td>
-<td style="text-align: right;">107</td>
-<td style="text-align: right;">8.7</td>
-<td style="text-align: right;">12.3x</td>
-</tr>
-<tr>
-<td>monotonicity (NumPy, not Rust)</td>
-<td style="text-align: right;">71</td>
-<td style="text-align: right;">1.2</td>
-<td style="text-align: right;">61x</td>
-</tr>
-<tr>
-<td>full numeric column</td>
-<td style="text-align: right;">32</td>
-<td style="text-align: right;">6.5</td>
-<td style="text-align: right;">4.9x</td>
-</tr>
-<tr>
-<td>reservoir sampling</td>
-<td style="text-align: right;">13</td>
-<td style="text-align: right;">7.2</td>
-<td style="text-align: right;">1.8x + unbiased</td>
+<td><code>ReservoirSampler.add_many</code></td>
+<td style="text-align: right;">144 ns/value</td>
+<td style="text-align: right;">29 ns/value</td>
+<td style="text-align: right;"><strong>4.9×</strong></td>
+<td>sample <em>bit-identical</em></td>
 </tr>
 </tbody>
 </table>
-<h3 id="the-instructive-failure">The instructive failure</h3>
-<p>The first native numeric kernel — one fused single pass, Welford per value — came
-out at <strong>0.7x the speed of NumPy's multi-pass version</strong>. Fewer passes over memory,
-and it lost. Welford's update has a division and a loop-carried dependency on
-every element, so the scalar loop stalls on latency while NumPy's passes vectorise
-cleanly.</p>
-<p>Blocking the array into 32 KiB L1-resident tiles, computing moments about the
-<em>tile</em> mean in a second L1-only pass, splitting the accumulators into four
-independent chains, and replacing the per-value <code>ln()</code> with a renormalised running
-product took it from 19.1 to 11.2 ns/row — same arithmetic, 1.7x from layout
-alone. At that point it does the whole column's work 2.9x faster than NumPy needs
-for the same set of quantities, and 4.9x if the geometric mean is skipped.</p>
-<h3 id="distribution-decisions-worth-keeping">Distribution decisions worth keeping</h3>
-<ul>
-<li><strong>Separate package, not a separate build backend.</strong> <code>pysuricata</code> stays a
-  pure-Python setuptools wheel; <code>pysuricata-core</code> is a maturin wheel;
-  <code>pysuricata[fast]</code> joins them. Making the root project maturin-built would force
-  a per-platform matrix on every release and break the current one-step CD. This
-  is what Polars does — its top-level PyPI package is a 0.8 MB pure-Python
-  dispatcher over separate <code>polars-runtime-*</code> packages.</li>
-<li><strong>abi3 while you can.</strong> One wheel per platform instead of one per Python minor.
-  For reference: pydantic-core ships 137 wheels totalling 277 MB because it needs
-  version-specific CPython internals; tokenizers ships 17 abi3 wheels at 75 MB.
-  Caveat: abi3 does not yet exist for free-threaded builds — 3.13t/3.14t need
-  version-specific wheels today.</li>
-<li><strong>The Python path stays forever</strong>, as the reference implementation the oracle
-  diffs against. The moment it is deleted, "is the Rust right?" becomes
-  unanswerable.</li>
-</ul>
-<h3 id="prerequisites-in-the-python-side">Prerequisites in the Python side</h3>
+<h3 id="1-kmv-reject-before-you-sort">1. KMV: reject before you sort</h3>
+<p><code>_batch_add_hashes</code> runs <code>np.unique</code> over the whole batch and <code>np.union1d</code>
+against the sketch, every chunk. But once the sketch is full, its k-th smallest
+hash is a hard admission threshold — nothing at or above it can ever enter. One
+vectorised compare discards over 99.9% of a batch before any sorting happens:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">size</span> <span class="o">&gt;=</span> <span class="n">k</span><span class="p">:</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="n">hashes</span> <span class="o">=</span> <span class="n">hashes</span><span class="p">[</span><span class="n">hashes</span> <span class="o">&lt;</span> <span class="n">values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]]</span>      <span class="c1"># the whole idea</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="k">if</span> <span class="n">hashes</span><span class="o">.</span><span class="n">size</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="k">return</span> <span class="n">values</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">incoming</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">hashes</span><span class="p">)</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">union1d</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">incoming</span><span class="p">)</span> <span class="k">if</span> <span class="n">values</span><span class="o">.</span><span class="n">size</span> <span class="k">else</span> <span class="n">incoming</span><span class="p">)[:</span><span class="n">k</span><span class="p">]</span>
+</span></code></pre></div>
+<p>Same fast-reject the native crate does against its heap root; worth 8.8× in plain
+NumPy too. Estimates are identical, not merely close — the pre-filter cannot
+change which hashes survive. Also carry over: keep <code>_values</code> as a NumPy array.
+The current code ends every batch with <code>.tolist()</code>, re-boxing k integers into
+Python objects per chunk.</p>
+<h3 id="2-reservoir-vectorise-algorithm-l-without-changing-a-single-draw">2. Reservoir: vectorise Algorithm L without changing a single draw</h3>
+<p><strong>The obvious fix is wrong, and your own test catches it.</strong> My first attempt was
+a vectorised Algorithm R — one draw per element, accept with probability k/n.
+Unbiased, 5× faster, and it fails <code>test_sample_is_independent_of_chunking</code>,
+because its draw <em>count</em> depends on batch sizes, so the same seed gives different
+samples at different chunk sizes. Your test caught a regression I was about to
+recommend.</p>
+<p>Algorithm L's acceptance schedule depends only on the draw sequence, never on
+chunking. So it can be generated 512 acceptances at a time in NumPy — the running
+<code>w</code> becomes a single <code>cumsum</code> of logs instead of one multiply per acceptance —
+with unconsumed acceptances cached so no draw is ever taken twice. Same uniforms,
+same order, same sample. Verified bit-identical at k ∈ {100, 2k, 20k}, n up to
+1M, chunk counts from 1 to 500.</p>
+<p><strong>Honest caveat:</strong> at 200k rows the reservoir swap is within noise end-to-end,
+because the reservoir is ~10% of one of four column kinds. The KMV one is the
+real end-to-end win. Both grow with row count while render and setup stay fixed,
+so measure at 1M+ rows — the size the streaming claim is about anyway.</p>
+<hr />
+<h2 id="the-datetime-accumulator-is-now-the-worst-thing-in-the-codebase">The datetime accumulator is now the worst thing in the codebase</h2>
+<p><strong>1,067 ms per column at 200,000 rows — 4.7 µs per value</strong>, more than twice the
+per-value cost of a numeric column. Conversion is only 33 ms of that; the rest is
+the accumulator, which contains <strong>four separate per-row Python loops</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Line</th>
+<th>What it does per row</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>datetime.py:54-56</code></td>
+<td><code>for ts in ts_array:</code> then <code>self._uniques.add(ts)</code> <em>and</em> <code>self._sample.add(float(ts))</code> — two scalar sketch calls per row, when both classes have batch entry points right there.</td>
+</tr>
+<tr>
+<td><code>datetime.py:76</code></td>
+<td><code>for i, ts in enumerate(timestamps)</code> to build a validity mask that <code>np.isfinite</code> plus a range compare would produce in one pass.</td>
+</tr>
+<tr>
+<td><code>datetime.py:120</code></td>
+<td><code>[datetime.fromtimestamp(ts) for ts in ts_seconds]</code> — one Python <code>datetime</code> object per row, allocated and discarded.</td>
+</tr>
+<tr>
+<td><code>datetime.py:123</code></td>
+<td><code>for dt in datetimes:</code> to tally hour/weekday patterns, which <code>Series.dt.hour.value_counts()</code> does vectorised.</td>
+</tr>
+</tbody>
+</table>
+<p>Add <code>consume.py:162</code>, which still parses with <code>format="mixed"</code>, and the datetime
+path is the least optimised in the library while being the most expensive per
+value. Entirely fixable with NumPy and pandas <code>.dt</code> accessors — no new
+algorithms, no Rust. <strong>Best value per hour on the whole list.</strong></p>
+<hr />
+<h2 id="revised-roadmap">Revised roadmap</h2>
+<h3 id="phase-0-trust-complete">Phase 0 — Trust ✅ complete</h3>
+<p>Six bugs fixed, oracle at 578 lines with 51 passing tests and zero xfails,
+running in CI on every PR.</p>
+<h3 id="phase-1-finish-free-performance-12-weekends">Phase 1 — Finish free performance (1–2 weekends)</h3>
+<p>In measured value order:</p>
 <ol>
-<li>Move private attribute reads out of the engine. It reaches into
-   <code>acc._bytes_seen</code>, <code>acc._uniques.estimate()</code>, <code>acc._min_ts</code>
-   (<code>engine.py:371</code>, <code>render/html.py:80,100</code>). Put them behind properties first.</li>
-<li>Replace the <code>isinstance</code> dispatch in the consume loop
-   (<code>consume_polars.py:170,193,200</code>) with a <code>kind</code> tag, so a native accumulator
-   does not have to subclass the Python class.</li>
-<li>Give the native types <code>__reduce__</code> — <code>KmvSketch</code> has one, <code>NumericKernel</code> needs
-   one, because <code>engine.py:377</code> pickles accumulators for checkpointing.</li>
-<li>Add the categorical kernel. Biggest remaining win: the current path calls
-   <code>Series.tolist()</code>, allocating one Python object per row, before Misra-Gries
-   sees anything. <code>hash_arrow_utf8</code> in the crate already hashes an Arrow UTF-8
-   buffer in place.</li>
+<li><strong>Gate Misra-Gries</strong> off high-cardinality numeric columns — 35% of the numeric
+   path for output that is discarded.</li>
+<li><strong>KMV pre-filter</strong> — 8.8×, three lines, identical estimates.</li>
+<li><strong>Vectorise the datetime accumulator's four loops</strong> — the most expensive
+   column kind, the least optimised code.</li>
+<li><strong>Drop <code>format="mixed"</code></strong> for try-explicit-formats-first on a 200-row sample.</li>
+<li><strong>Vectorised Algorithm L</strong> — 4.9×, bit-identical.</li>
+<li><strong><code>np.diff</code> for monotonicity</strong> — 61×.</li>
+<li><strong>Share the reservoir with <code>OutlierDetector</code></strong> instead of keeping a second 10k
+   one per numeric column.</li>
 </ol>
-<p><strong>Exit criterion:</strong> <code>pip install pysuricata[fast]</code> works on
-Linux/macOS/Windows x x86-64/arm64, and the accuracy suite passes identically with
-both backends.</p>
-<hr />
-<h2 id="phase-4-report-v2-3-4-weekends">Phase 4 — Report v2 (3-4 weekends)</h2>
-<p>The <code>titanic_report.html</code> example is <strong>1.18 MB for 891 rows x 12 columns</strong>, of
-which ~855 KB is fixed cost independent of the data:</p>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th style="text-align: right;">Bytes</th>
-<th style="text-align: right;">Share</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>base64 PNG logos + favicon</td>
-<td style="text-align: right;">578,278</td>
-<td style="text-align: right;">49%</td>
-</tr>
-<tr>
-<td>CSS</td>
-<td style="text-align: right;">210,218</td>
-<td style="text-align: right;">18%</td>
-</tr>
-<tr>
-<td>inline SVG</td>
-<td style="text-align: right;">181,627</td>
-<td style="text-align: right;">15%</td>
-</tr>
-<tr>
-<td>markup</td>
-<td style="text-align: right;">138,500</td>
-<td style="text-align: right;">12%</td>
-</tr>
-<tr>
-<td>JS</td>
-<td style="text-align: right;">67,257</td>
-<td style="text-align: right;">6%</td>
-</tr>
-</tbody>
-</table>
-<p>In order of value per hour:</p>
+<p><strong>Exit:</strong> <code>mixed</code> at 1M rows ≥2.5× faster than 0.0.21 with byte-identical report
+output, and the accuracy oracle passing unchanged.</p>
+<h3 id="phase-2-publish-1-weekend">Phase 2 — Publish (1 weekend)</h3>
+<p>Two numbers worth leading with: <strong>9.1×</strong> faster than ydata-profiling and <strong>13×</strong>
+less marginal memory, plus a version-over-version story. Put
+<code>end_to_end.py --markdown</code> output in the README and <code>docs/benchmarks.md</code>, and
+write post #1 — now stronger than planned, because you can end on the fix rather
+than the finding.</p>
+<p><strong>Exit:</strong> a benchmarks page with the environment block, one post live, and a
+comment on ydata-profiling
+<a href="https://github.com/Data-Centric-AI-Community/fg-data-profiling/issues/1129">#1129</a>
+linking your polars docs.</p>
+<h3 id="phase-3-native-core-reordered-35-weekends">Phase 3 — Native core, reordered (3–5 weekends)</h3>
+<p><strong>KMV first</strong>, not moments. Then <code>hash_arrow_utf8</code> wired to polars' Arrow buffers
+for the categorical path. Moments last, as the demo it turned out to be.</p>
+<p>Prerequisites unchanged: properties instead of private attribute reads in the
+engine (<code>engine.py:371</code>, <code>render/html.py:80,100</code>); a <code>kind</code> tag instead of
+<code>isinstance</code> dispatch (<code>consume_polars.py:170,193,200</code>); <code>__reduce__</code> on the
+native types for checkpointing (<code>engine.py:377</code>).</p>
+<p>Distribution decisions unchanged: separate <code>pysuricata-core</code> maturin wheel joined
+by a <code>pysuricata[fast]</code> extra, abi3-py310, and the pure-Python path kept forever
+as the reference the oracle diffs against.</p>
+<p><strong>Exit:</strong> <code>pip install pysuricata[fast]</code> works across the platform matrix and the
+oracle passes identically with both backends.</p>
+<h3 id="phase-4-report-v2-reframed-34-weekends">Phase 4 — Report v2, reframed (3–4 weekends)</h3>
+<p>Content unchanged, but go in knowing render is <strong>3%</strong> of wall clock: this is a
+size, shareability and theming project.</p>
+<p>Report is 1,180,196 bytes for 891 rows × 12 columns: <strong>592 KB base64 PNGs</strong>,
+210 KB CSS, 182 KB inline SVG, 139 KB markup, 71 KB JS, and no JSON payload.</p>
 <ol>
-<li><strong>Drop the base64 PNGs</strong> for inline SVG. -576 KB, one afternoon, zero risk.</li>
-<li><strong>Emit a JSON payload.</strong> <code>report.py::_build_summary</code> already produces a
-   JSON-safe per-column mapping — it is what <code>summarize()</code> returns. Nothing in
-   <code>render/</code> imports <code>json</code> today. Adding
-   <code>&lt;script type="application/json"&gt;</code> unlocks everything below.</li>
-<li><strong>Stop pre-rendering six histograms per column.</strong> <code>card_config.py:23</code> emits 3
-   bin options x 2 scales, all hidden with CSS. 100 numeric columns is 600 SVGs.
-   Draw one from the payload and re-bin client-side.</li>
-<li><strong>Real theming.</strong> Dark is currently the default with <code>.light</code> as the override,
-   using manually paired <code>--x-light</code>/<code>--x-dark</code> tokens and no
-   <code>prefers-color-scheme</code> anywhere. Move to <code>[data-theme]</code> + a media-query
-   default, collapse the pairs into one semantic scale, sweep the ~310 stray hex
-   values (<code>_12-missing.css</code> alone has 121).</li>
-<li><strong>Chart colours in CSS, not Python.</strong> <code>histogram_svg.py:33-40</code> bakes <code>#3b82f6</code>
-   into <code>fill=</code> attributes, so themes never reach the charts.</li>
-<li><strong>Replace <code>str.replace</code> templating.</strong> <code>render/html.py:301-339</code> runs sequential
-   replacements over the whole document, so a replacement value containing another
-   placeholder gets re-expanded, and a column named <code>{n_rows}</code> collides.</li>
+<li>Drop the base64 PNGs for inline SVG. −592 KB, one afternoon.</li>
+<li>Emit <code>&lt;script type="application/json"&gt;</code> — <code>report.py::_build_summary</code> already
+   produces the JSON-safe mapping; nothing in <code>render/</code> imports <code>json</code> today.</li>
+<li>Stop pre-rendering six SVGs per column (<code>card_config.py:23</code>).</li>
+<li>Real <code>prefers-color-scheme</code> theming; collapse the paired
+   <code>--x-light</code>/<code>--x-dark</code> tokens; sweep the ~310 stray hex values.</li>
+<li>Chart colours in CSS, not baked into <code>fill=</code> in <code>histogram_svg.py:33-40</code>.</li>
+<li>Replace the sequential <code>str.replace</code> templating in <code>render/html.py:301-339</code>.</li>
 </ol>
-<p><strong>Constraint to design around:</strong> the self-download button
-(<code>functionality.js:25-65</code>) re-serialises the live DOM, finding styles by the regex
-<code>/#pysuricata-report|suricata-standalone/</code> and the script by <code>/toggleDarkMode/</code>.
-Any restructuring — external assets, ES modules, a renamed function, scoped styles
-— breaks it <em>silently</em>. Write a test that downloads and re-opens the report before
-touching the render layer.</p>
-<p><strong>Two additions that show statistical taste:</strong></p>
-<ul>
-<li><strong>Show the uncertainty.</strong> "~12,400 distinct (+/-3%)" is more trustworthy than
-  "12,437", and the native <code>KmvSketch</code> already returns its relative standard
-  error. No competitor does this, because none of them have an error bound to
-  report.</li>
-<li><strong>Make the histogram honest.</strong> The streaming histogram redistributes counts by
-  bin centre whenever the range expands (<code>sketches.py:658</code>), which is lossy in a
-  way the reader cannot see. Either switch to a KLL/t-digest sketch with a real
-  error bound, or label the chart as estimated from an n-value sample.</li>
-</ul>
-<p><strong>Exit criterion:</strong> the Titanic report is under 250 KB, charts re-render on bin
-change without a page of hidden SVG, and the report respects OS theme.</p>
+<p><strong>Constraint:</strong> the self-download button (<code>functionality.js:25-65</code>) re-serialises
+the live DOM, finding styles by regex. Any restructuring breaks it <em>silently</em>.
+Write a download-and-reopen test first.</p>
+<p><strong>Exit:</strong> the Titanic report under 250 KB.</p>
+<h3 id="phase-5-differentiate-ongoing">Phase 5 — Differentiate (ongoing)</h3>
+<p><code>pysuricata check</code> as a CI gate; <code>compare(df_a, df_b)</code> for drift; direct
+Arrow/Parquet/DuckDB input. Column-level threading is still blocked by the
+reservoir's use of global <code>np.random</code> — the save/restore fix solved the
+user-visible symptom, not this. Per-accumulator <code>Generator</code> is still the
+prerequisite.</p>
 <hr />
-<h2 id="phase-5-differentiate-ongoing">Phase 5 — Differentiate (ongoing)</h2>
-<p>In priority order:</p>
+<h2 id="unchanged-from-v1">Unchanged from v1</h2>
+<p>The market analysis, positioning and writing plan have not changed materially.
+Summary, with the parts that got <em>stronger</em>:</p>
+<p><strong>Positioning.</strong> <em>The data profiler that fits in CI.</em> Single-pass streaming
+algorithms, bounded memory regardless of dataset size, pandas and polars native,
+four dependencies, one self-contained HTML file — or JSON and an exit code.
+Lead with memory, not speed: it follows from the architecture rather than from
+tuning, the incumbent's most-reported failure is a MemoryError they document as
+unfixed, and the gap held up under re-measurement at <strong>13×</strong>.</p>
+<p><strong>Market.</strong> ydata-profiling (13.7k stars, ~1.76M downloads/mo) renamed to
+fg-data-profiling and transferred orgs; Great Expectations' OSS stewardship moved
+to Fivetran; Soda Core relicensed to the Elastic License. Open gaps: bounded-memory
+profiling (asked for since 2016), polars-native end-to-end (ydata #1129 open since
+Oct 2022), profiler-as-CI-gate (every gate tool requires authoring expectations
+first), PII detection in OSS (ydata's is paywalled), dataset comparison.</p>
+<p><strong>Writing plan.</strong> Eight posts, each publishable when the matching work lands.
+Post #1 ("I wrote one test file and found six statistical bugs in my own
+library") is now stronger, and has a twist it didn't have before: the reservoir
+test you wrote caught a regression I was about to recommend to you.</p>
+<p>Show HN only for the posts with a number in the title. Publish the failures, not
+just the wins. Never compare a <code>minimal=True</code> incumbent run against a full
+PySuricata run without labelling it.</p>
+<p><strong>CS:APP mapping.</strong> Unchanged, with one addition: the reservoir episode is a
+clean chapter-5 example in Python — Algorithm L is asymptotically better
+(O(k·ln(n/k)) draws instead of O(n)) and empirically 5× slower than the
+vectorised form, because at k=20,000 and n=200,000 the asymptotics never get a
+chance to matter and per-acceptance interpreter overhead dominates. Asymptotic
+improvement and measured improvement are different claims.</p>
+<hr />
+<h2 id="this-weekend">This weekend</h2>
 <ol>
-<li><strong><code>pysuricata check</code></strong> — a CI gate with an exit code and a thresholds file.</li>
-<li><strong><code>compare(df_a, df_b)</code></strong> — drift. The accumulators are mergeable, which makes
-   this cheap.</li>
-<li><strong>Direct Parquet / Arrow / DuckDB input</strong> without a pandas round-trip.</li>
-<li><strong>Column-level threading</strong>, once the RNG is per-accumulator.</li>
+<li><code>python -m benchmarks.proposed_kernels</code> — watch both drop-ins verify and time
+   on your machine. Then paste the KMV pre-filter into <code>_batch_add_hashes</code>.</li>
+<li>Gate Misra-Gries. One condition removes 35% of the numeric accumulator.</li>
+<li>Vectorise <code>DatetimeAccumulator.update</code>. Four Python loops, 4.7 µs/value.</li>
+<li>Re-run the A/B at 1M rows and put the number in the README. You are sitting on
+   9.1× and 13× and still have not told anyone.</li>
+<li>Write post #1.</li>
 </ol>
-<p><strong>Exit criterion:</strong> at least one thing PySuricata does that no incumbent does,
-documented on the front page.</p>
-<hr />
-<h2 id="market-as-of-august-2026">Market, as of August 2026</h2>
-<p>The incumbent layer is unusually unsettled. In the last twelve months:
-ydata-profiling was renamed to <strong>fg-data-profiling</strong> and transferred to a new
-GitHub org with an EOL notice on the old package; Great Expectations' OSS
-stewardship moved to <strong>Fivetran</strong> (May 2026); and Soda Core <strong>relicensed from
-Apache-2.0 to the source-available Elastic License 2.0</strong> (January 2026),
-triggering a Canonical fork.</p>
-<table>
-<thead>
-<tr>
-<th>Tool</th>
-<th style="text-align: right;">Stars</th>
-<th style="text-align: right;">Downloads/mo</th>
-<th>Backend</th>
-<th>State</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>ydata / fg-data-profiling</td>
-<td style="text-align: right;">13.7k</td>
-<td style="text-align: right;">~1.76M</td>
-<td>pandas, Spark</td>
-<td>renamed + transferred; ~20 runtime deps incl. numba</td>
-</tr>
-<tr>
-<td>great_expectations</td>
-<td style="text-align: right;">11.5k</td>
-<td style="text-align: right;">~26.9M</td>
-<td>pandas, Spark, SQL</td>
-<td>Fivetran stewardship; validation, not profiling</td>
-</tr>
-<tr>
-<td>evidently</td>
-<td style="text-align: right;">7.5k</td>
-<td style="text-align: right;">~1.26M</td>
-<td>pandas</td>
-<td>active — ML/LLM drift</td>
-</tr>
-<tr>
-<td>dtale</td>
-<td style="text-align: right;">5.2k</td>
-<td style="text-align: right;">~53.6k</td>
-<td>pandas</td>
-<td>active — interactive GUI, different product</td>
-</tr>
-<tr>
-<td>lux</td>
-<td style="text-align: right;">5.4k</td>
-<td style="text-align: right;">~1.4k</td>
-<td>pandas</td>
-<td>abandoned (no release since Feb 2022)</td>
-</tr>
-<tr>
-<td>pandasgui</td>
-<td style="text-align: right;">3.3k</td>
-<td style="text-align: right;">~3.2k</td>
-<td>pandas</td>
-<td>likely abandoned</td>
-</tr>
-<tr>
-<td>sweetviz</td>
-<td style="text-align: right;">3.1k</td>
-<td style="text-align: right;">~154k</td>
-<td>pandas</td>
-<td>active but narrow — owns dataset <em>comparison</em></td>
-</tr>
-<tr>
-<td>soda-core</td>
-<td style="text-align: right;">2.4k</td>
-<td style="text-align: right;">~3.5M</td>
-<td>12 warehouses</td>
-<td>no longer OSI open source</td>
-</tr>
-<tr>
-<td>dataprep</td>
-<td style="text-align: right;">2.2k</td>
-<td style="text-align: right;">~9.2k</td>
-<td>pandas, Dask</td>
-<td>abandoned (no release since Aug 2022)</td>
-</tr>
-<tr>
-<td>skimpy</td>
-<td style="text-align: right;">517</td>
-<td style="text-align: right;">~12.7k</td>
-<td>pandas + polars</td>
-<td>active — console only, no HTML report</td>
-</tr>
-<tr>
-<td>pointblank (Posit)</td>
-<td style="text-align: right;">455</td>
-<td style="text-align: right;">~28.9k</td>
-<td>Narwhals + Ibis</td>
-<td>very active; CI-first CLI</td>
-</tr>
-<tr>
-<td><strong>pysuricata</strong></td>
-<td style="text-align: right;">7</td>
-<td style="text-align: right;">~59</td>
-<td>pandas + polars</td>
-<td>the only streaming/bounded-memory profiler</td>
-</tr>
-</tbody>
-</table>
-<h3 id="what-users-complain-about">What users complain about</h3>
-<ul>
-<li><strong>"Pandas profiling becoming too slow : un-usable"</strong> — ydata #743, open since
-  March 2021. "With 10k rows and 30 columns, it takes more than 2mins."</li>
-<li><strong>"MemoryError: Unable to allocate 20.0 PiB"</strong> — ydata #1435, on a <em>10-row</em>
-  DataFrame. And #1597: 1.72 TiB requested for a 5.6M x 9 frame on a 256 GB
-  machine. Their own docs list this as a known, unfixed class of bug with "filter
-  out large outliers first" as the workaround.</li>
-<li><strong>Dependency collisions</strong> — yfinance #2464: "[0.2.59] breaks ydata-profiling
-  dependency (numba)". An unrelated package's release broke installs for everyone
-  with ydata-profiling in the same requirements file.</li>
-<li><strong>Polars support</strong> — ydata #1129, opened October 2022, still labelled
-  <code>needs-triage</code>.</li>
-</ul>
-<h3 id="gaps">Gaps</h3>
-<table>
-<thead>
-<tr>
-<th>Gap</th>
-<th>Status elsewhere</th>
-<th>PySuricata</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Bounded-memory / out-of-core profiling</td>
-<td>Asked for since 2016 (pandas-profiling #26, #57). No incumbent does single-pass streaming.</td>
-<td>Architecture already there; needs the generator bug fixed and a headline number</td>
-</tr>
-<tr>
-<td>Polars-native end to end</td>
-<td>Only skimpy (console) and pointblank (validation)</td>
-<td>Shipped — DataFrame + LazyFrame</td>
-</tr>
-<tr>
-<td>Profiler as a CI gate</td>
-<td>GX / Soda / pointblank all gate CI, but all require authoring expectations first. No profiler gates on shape alone.</td>
-<td>Half-built: <code>summarize()</code> exists; no CLI exit code, no thresholds file</td>
-</tr>
-<tr>
-<td>PII detection in OSS</td>
-<td>ydata has it, paywalled behind YData Fabric. OSS core has none.</td>
-<td>Open</td>
-</tr>
-<tr>
-<td>Dataset comparison / drift</td>
-<td>sweetviz for pandas; evidently at the monitoring layer. The leader has no built-in compare.</td>
-<td>Open — accumulators are mergeable, so this is cheap</td>
-</tr>
-<tr>
-<td>Install weight</td>
-<td>ydata pulls ~20 packages including numba/llvmlite</td>
-<td>4 deps, and <code>psutil</code> appears unused — drop it</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="positioning">Positioning</h2>
-<p>Current PyPI description: "A lightweight EDA tool inspired by the curious nature
-of suricates. Built just for fun." Charming, and why nobody installs it.</p>
-<blockquote>
-<p><strong>The data profiler that fits in CI.</strong> Single-pass streaming algorithms, bounded
-memory regardless of dataset size, pandas and polars native, four dependencies,
-one self-contained HTML file — or JSON and an exit code.</p>
-</blockquote>
-<p>Every clause there is something an incumbent cannot say. "Faster than
-ydata-profiling" is not — anyone can claim that, and it invites a benchmark
-argument you win narrowly. "Profiles a dataset larger than your RAM in constant
-memory" is a categorical difference.</p>
-<p><strong>Lead with memory, not speed:</strong></p>
-<ul>
-<li>It follows from the architecture rather than from tuning, so it cannot be closed
-  by the incumbent shipping a patch.</li>
-<li>The incumbent's most-reported failure is a MemoryError, which they document as
-  unfixed.</li>
-<li>It makes the CI story credible: a profiler that runs in a 512 MB runner on a
-  40 GB Parquet file is a genuinely new thing.</li>
-<li>Speed follows anyway. It is the second sentence.</li>
-</ul>
-<h3 id="two-adoption-paths-both-real">Two adoption paths, both real</h3>
-<p>uv (753 points on HN), DuckDB (926), marimo (448) and Polars (238) all had loud
-moments built on one benchmarkable number stated everywhere. But <strong>narwhals never
-cleared 4 points on HN</strong> and is now a declared dependency of 28 projects including
-pandera, plotly, altair and scikit-lego — adoption through direct maintainer
-outreach and being useful infrastructure.</p>
-<p>Worth knowing: <strong>no EDA or profiling tool has ever cleared 50 points on Hacker
-News.</strong> Either the category has never had a benchmark-led launch and you would be
-first, or people install profilers and forget them rather than evangelising them.
-Plan for both. The narwhals move here is to make <code>summarize()</code> a stable,
-documented, versioned JSON contract other tools can build on.</p>
-<hr />
-<h2 id="writing-plan">Writing plan</h2>
-<p>Eight posts, each publishable the weekend the corresponding work lands, each with
-a concrete artefact behind it.</p>
-<table>
-<thead>
-<tr>
-<th>#</th>
-<th>Post</th>
-<th>Angle</th>
-<th>After phase</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>1</td>
-<td>I wrote one test file and found six statistical bugs in my own library</td>
-<td>The chunked-vs-unchunked invariant, the "simplified for performance" comment, the reservoir bias. Builds trust before it makes a claim.</td>
-<td>0</td>
-</tr>
-<tr>
-<td>2</td>
-<td>Your profiler is spending a third of its time on SHA-1</td>
-<td>Why a cryptographic hash ended up in a distinct-count sketch, and a 755x measurement. Generalises past this library.</td>
-<td>1</td>
-</tr>
-<tr>
-<td>3</td>
-<td>Profiling a dataset larger than RAM, in constant memory</td>
-<td>The architecture piece. Welford/Pébay, KMV, Misra-Gries, Algorithm L, and a flat memory curve. The positioning post.</td>
-<td>2</td>
-</tr>
-<tr>
-<td>4</td>
-<td>My one-pass Rust kernel was slower than NumPy's eleven passes</td>
-<td>The best one. Dependency chains, division latency, and how 32 KiB tiling turned it into a win. CS:APP ch. 5-6 with a measurement at each step.</td>
-<td>3</td>
-</tr>
-<tr>
-<td>5</td>
-<td>Shipping a Rust extension without breaking <code>pip install</code></td>
-<td>Separate <code>-core</code> package, abi3, the wheel matrix. Evergreen, and what people actually get stuck on.</td>
-<td>3</td>
-</tr>
-<tr>
-<td>6</td>
-<td>A 1.2 MB HTML report for 891 rows — where it all went</td>
-<td>Byte-level teardown and diet.</td>
-<td>4</td>
-</tr>
-<tr>
-<td>7</td>
-<td>Data profiling as a CI check</td>
-<td>Gate a PR on shape drift without authoring an expectation. Aim at the dbt/Airflow audience.</td>
-<td>5</td>
-</tr>
-<tr>
-<td>8</td>
-<td>Reporting uncertainty in a data profile</td>
-<td>Sketch error bounds; why every other tool reports estimates as facts.</td>
-<td>4-5</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Where:</strong> own site first (canonical), then cross-post — never Medium as primary.
-Show HN only for posts 3 and 4, the ones with a number in the title,
-Tue-Thu 8-10am ET, one shot each. r/Python (1, 2, 4, 5), r/datascience (3, 7),
-r/dataengineering (3, 7), Lobsters (2, 4, 5). LinkedIn as a technical summary with
-the chart, not an announcement — the chart is what travels.</p>
-<hr />
-<h2 id="csapp-mapping">CS:APP mapping</h2>
-<table>
-<thead>
-<tr>
-<th>Chapter</th>
-<th>Task</th>
-<th>The measurement</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>2 — Information</td>
-<td>The geometric mean in <code>moments.rs</code> accumulates a running <em>product</em> and renormalises with a hand-written <code>frexp</code> reading the exponent field out of the bit pattern, instead of one <code>ln()</code> per value.</td>
-<td><code>scan_numeric(arr, None, False)</code> vs <code>True</code>: 6.5 vs 11.2 ns/row</td>
-</tr>
-<tr>
-<td>3 — Machine code</td>
-<td>Read the disassembly of the tiled scan (<code>cargo asm</code> / <code>objdump -d</code>). Confirm pass A vectorised to <code>addpd</code>/<code>maxpd</code> and pass B didn't spill.</td>
-<td>Packed vs scalar instructions in the inner loop</td>
-</tr>
-<tr>
-<td>5 — Optimising</td>
-<td>Why the one-pass kernel was slower. Welford has a loop-carried dependency with a division; four independent accumulator chains break it.</td>
-<td>19.1 -&gt; 11.2 ns/row with identical arithmetic. Compute the CPE by hand and compare to the latency bound of <code>divsd</code>.</td>
-</tr>
-<tr>
-<td>6 — Memory hierarchy</td>
-<td>The 32 KiB tile. Sweep <code>TILE</code> from 256 to 262144 and plot ns/row.</td>
-<td>The sweep shows L1, L2 and L3 as inflections. Best figure for post #4, twenty minutes to produce.</td>
-</tr>
-<tr>
-<td>6 — roofline</td>
-<td><code>kernels.py</code>'s <code>% roofline</code> column.</td>
-<td>26.0 GB/s here. NumPy's multi-pass column scan at 21%, the tiled scan at 4.7% — and knowing which means "optimise the code" vs "reduce the traffic".</td>
-</tr>
-<tr>
-<td>12 — Concurrency</td>
-<td><code>py.detach()</code> and per-column accumulation on a thread pool. The blocker is the global RNG, which is why the seeding bug is on the critical path.</td>
-<td>Already measured: 91% parallel efficiency on 2 threads, <code>gil_released=True</code></td>
-</tr>
-</tbody>
-</table>
-<p>Study habit worth adopting: for each chapter, add <em>one</em> benchmark to <code>kernels.py</code>
-that demonstrates the chapter's central claim on this codebase. By the end you
-have a benchmark suite, a set of figures, your study notes, and post #4.</p>
-<hr />
-<h2 id="reading-the-roofline-column">Reading the roofline column</h2>
-<p><code>benchmarks/kernels.py</code> measures how fast the machine streams a float64 array,
-then reports every kernel against that ceiling.</p>
-<table>
-<thead>
-<tr>
-<th>Reading</th>
-<th>Means</th>
-<th>Do</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>&lt; 20% of roofline</strong></td>
-<td>The instruction stream is the bottleneck. Nowhere near memory-limited.</td>
-<td>Better code: a native kernel, fewer branches, more ILP.</td>
-</tr>
-<tr>
-<td><strong>&gt; 70% of roofline</strong></td>
-<td>Saturating memory bandwidth for the traffic generated.</td>
-<td>Generate less traffic. Fuse passes; nothing else will help.</td>
-</tr>
-</tbody>
-</table>
-<p>NumPy's multi-pass column scan sits at 21% — not badly written, just reading the
-column many times over. The tiled native scan sits at 4.7%, doing the same work in
-a fifth of the time with headroom left. That contrast <em>is</em> the argument for a
-native core, stated as a number rather than a vibe — and it also says when to
-stop.</p>
 
 
 
