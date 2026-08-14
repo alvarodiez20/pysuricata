@@ -39,7 +39,7 @@ try:
         get_accumulator_info,
         validate_accumulator_compatibility,
     )
-    from .numeric import DtypeSuggestion, NumericAccumulator, NumericSummary
+    from .numeric import NumericAccumulator, NumericSummary
 
     # Version information
     __version__ = "2.0.0"

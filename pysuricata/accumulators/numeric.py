@@ -26,19 +26,6 @@ from .sketches import KMV, MisraGries, ReservoirSampler, StreamingHistogram, mad
 
 
 @dataclass
-class DtypeSuggestion:
-    """Advisory dtype optimization suggestion for a column.
-
-    This is purely informational -- the profiler never modifies input data.
-    """
-
-    current_dtype: str
-    suggested_dtype: str
-    reason: str
-    estimated_savings_pct: float = 0.0  # 0-100
-
-
-@dataclass
 class NumericSummary:
     """Comprehensive summary statistics for numeric data.
 
@@ -105,8 +92,6 @@ class NumericSummary:
         None  # (start_row, end_row, missing_count)
     )
     corr_threshold: float = 0.5  # Threshold used for correlation filtering
-    # Advisory dtype suggestion (None = no suggestion / current dtype is optimal)
-    dtype_suggestion: DtypeSuggestion | None = None
 
 
 class NumericAccumulator:
@@ -528,11 +513,6 @@ class NumericAccumulator:
             per_column_chunk_metadata if per_column_chunk_metadata else chunk_metadata
         )
 
-        # Compute advisory dtype suggestion
-        dtype_suggestion = self._compute_dtype_suggestion(
-            quantiles["min"], quantiles["max"], self._int_like_all
-        )
-
         return NumericSummary(
             name=self.name,
             count=self.count,
@@ -582,7 +562,6 @@ class NumericAccumulator:
             top_values=top_values,
             sample_scale=sample_scale,
             chunk_metadata=final_chunk_metadata,
-            dtype_suggestion=dtype_suggestion,
         )
 
     def _compute_quantiles(self, values: list[float]) -> dict[str, float]:
@@ -721,131 +700,6 @@ class NumericAccumulator:
             self._outlier_detector.reset()
         if self._performance_metrics:
             self._performance_metrics.reset()
-
-    def _compute_dtype_suggestion(
-        self, min_val: float, max_val: float, int_like: bool
-    ) -> DtypeSuggestion | None:
-        """Compute advisory dtype suggestion based on observed data range.
-
-        Args:
-            min_val: Minimum observed value
-            max_val: Maximum observed value
-            int_like: Whether all values appear to be integers
-
-        Returns:
-            DtypeSuggestion if a better dtype exists, None otherwise
-        """
-        if self.count == 0:
-            return None
-
-        current = self._dtype_str.lower()
-        has_missing = self.missing > 0
-
-        # Skip if dtype is already a Duration/Timedelta (converted to numeric internally)
-        if "timedelta" in current or "duration" in current:
-            return None
-
-        # float64 column where all values are integers → suggest int downcast
-        if int_like and "float" in current and self.inf == 0:
-            best_int = self._smallest_int_dtype(min_val, max_val, has_missing)
-            if best_int:
-                current_bytes = 8 if "64" in current else 4
-                suggested_bytes = self._dtype_byte_size(best_int)
-                savings = (1 - suggested_bytes / current_bytes) * 100
-                return DtypeSuggestion(
-                    current_dtype=self._dtype_str,
-                    suggested_dtype=best_int,
-                    reason=f"All values are integers in [{min_val:.0f}, {max_val:.0f}]",
-                    estimated_savings_pct=round(savings, 1),
-                )
-
-        # int64 column that fits in smaller int → suggest downcast
-        if int_like and "int" in current and "64" in current:
-            best_int = self._smallest_int_dtype(min_val, max_val, has_missing)
-            if best_int and best_int != current and "64" not in best_int:
-                suggested_bytes = self._dtype_byte_size(best_int)
-                savings = (1 - suggested_bytes / 8) * 100
-                return DtypeSuggestion(
-                    current_dtype=self._dtype_str,
-                    suggested_dtype=best_int,
-                    reason=f"Values fit in [{min_val:.0f}, {max_val:.0f}]",
-                    estimated_savings_pct=round(savings, 1),
-                )
-
-        # float64 → float32 if range fits
-        if current == "float64" and not int_like:
-            f32_max = 3.4028235e38
-            if abs(min_val) <= f32_max and abs(max_val) <= f32_max:
-                return DtypeSuggestion(
-                    current_dtype=self._dtype_str,
-                    suggested_dtype="float32",
-                    reason="Value range fits in float32 precision",
-                    estimated_savings_pct=50.0,
-                )
-
-        return None
-
-    @staticmethod
-    def _dtype_byte_size(dtype_name: str) -> int:
-        """Get the byte size of a dtype from its name.
-
-        Args:
-            dtype_name: Dtype name like 'int8', 'UInt16', 'float32'
-
-        Returns:
-            Byte size (e.g. 1, 2, 4, 8)
-        """
-        import re
-
-        m = re.search(r"(\d+)$", dtype_name)
-        if m:
-            return int(m.group(1)) // 8
-        return 8  # default to 8 bytes
-
-    @staticmethod
-    def _smallest_int_dtype(
-        min_val: float, max_val: float, nullable: bool
-    ) -> str | None:
-        """Find the smallest integer dtype that can hold the observed range.
-
-        Args:
-            min_val: Minimum value
-            max_val: Maximum value
-            nullable: Whether the column has missing values
-
-        Returns:
-            Dtype string or None if no downcasting is possible
-        """
-        if (
-            math.isnan(min_val)
-            or math.isnan(max_val)
-            or math.isinf(min_val)
-            or math.isinf(max_val)
-        ):
-            return None
-
-        # Use pandas nullable types when there are missing values
-        prefix = "Int" if nullable else "int"
-        u_prefix = "UInt" if nullable else "uint"
-
-        if min_val >= 0:
-            # Unsigned candidates
-            if max_val <= 255:
-                return f"{u_prefix}8"
-            elif max_val <= 65535:
-                return f"{u_prefix}16"
-            elif max_val <= 4294967295:
-                return f"{u_prefix}32"
-        else:
-            # Signed candidates
-            if -128 <= min_val and max_val <= 127:
-                return f"{prefix}8"
-            elif -32768 <= min_val and max_val <= 32767:
-                return f"{prefix}16"
-            elif -2147483648 <= min_val and max_val <= 2147483647:
-                return f"{prefix}32"
-
-        return None
 
     def _compute_confidence_interval(
         self, mean: float, se: float, n: int

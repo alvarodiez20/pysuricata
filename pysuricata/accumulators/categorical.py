@@ -8,15 +8,12 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import numpy as np
 
 from .config import CategoricalConfig
 from .sketches import KMV, MisraGries, ReservoirSampler
-
-if TYPE_CHECKING:
-    from .numeric import DtypeSuggestion
 
 
 @dataclass
@@ -46,8 +43,6 @@ class CategoricalSummary:
     gini_impurity: float = 0.0
     most_common_ratio: float = 0.0
     diversity_ratio: float = 0.0
-    # Advisory dtype suggestion
-    dtype_suggestion: DtypeSuggestion | None = None
 
 
 class CategoricalAccumulator:
@@ -390,9 +385,6 @@ class CategoricalAccumulator:
         # Determine if approximation was used: tracker is full → unique count is estimated
         approx = len(top_items) >= self.config.top_k_size
 
-        # Compute advisory dtype suggestion
-        dtype_suggestion = self._compute_dtype_suggestion()
-
         return CategoricalSummary(
             name=self.name,
             count=self.count,
@@ -411,33 +403,7 @@ class CategoricalAccumulator:
             gini_impurity=gini_impurity,
             most_common_ratio=most_common_ratio,
             diversity_ratio=diversity_ratio,
-            dtype_suggestion=dtype_suggestion,
         )
-
-    def _compute_dtype_suggestion(self) -> DtypeSuggestion | None:
-        """Compute advisory dtype suggestion for categorical columns.
-
-        Returns:
-            DtypeSuggestion if a better dtype exists, None otherwise
-        """
-        if self.count == 0:
-            return None
-
-        current = self._dtype_str.lower()
-        unique_est = self._uniques.estimate()
-
-        # object columns with low cardinality → suggest CategoricalDtype
-        if current == "object" and unique_est > 0 and unique_est < 1000:
-            from .numeric import DtypeSuggestion
-
-            return DtypeSuggestion(
-                current_dtype=self._dtype_str,
-                suggested_dtype="category",
-                reason=f"Low cardinality (~{unique_est} unique values)",
-                estimated_savings_pct=0.0,  # varies widely
-            )
-
-        return None
 
     def _calculate_percentile(
         self, values: list[float], percentile: float
