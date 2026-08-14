@@ -1,0 +1,28 @@
+[package]
+name = "pysuricata-core"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+description = "Native streaming-statistics kernels for PySuricata"
+license = "MIT"
+repository = "https://github.com/alvarodiez20/pysuricata"
+
+[lib]
+name = "pysuricata_core"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# abi3-py310: one wheel per platform covers CPython 3.10+, instead of one per
+# minor version. Costs us access to version-specific CPython internals, which
+# these kernels do not need. (Note: abi3 is not yet available for free-threaded
+# builds — see PyO3's free-threading guide.)
+pyo3 = { version = "0.29", features = ["extension-module", "abi3-py310"] }
+numpy = "0.29"
+
+[profile.release]
+# The kernels are memory-bandwidth bound, not code-size bound: inline
+# aggressively across crate boundaries and let LLVM vectorise the fused scan.
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"

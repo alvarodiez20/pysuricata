@@ -105,3 +105,12 @@ site/*
 # Examples
 examples/*.html
 examples/test_*
+
+# Rust / native core (pysuricata-core)
+# Cargo.lock is deliberately NOT ignored: this crate ships wheels, so pinning
+# the exact dependency versions that built them is what makes a release
+# reproducible. (Ignoring it is the convention for library crates, not for
+# anything that produces a distributed artifact.)
+native/target/
+**/*.rs.bk
+*.pdb
