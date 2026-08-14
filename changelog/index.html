@@ -1633,6 +1633,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0020-2026-08-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      [0.0.20] - 2026-08-14
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.20] - 2026-08-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0019-2026-08-14" class="md-nav__link">
     <span class="md-ellipsis">
       [0.0.19] - 2026-08-14
@@ -1643,7 +1667,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+  <a href="#added_1" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1685,7 +1709,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
+  <a href="#added_2" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1727,7 +1751,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added_2" class="md-nav__link">
+  <a href="#added_3" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1787,7 +1811,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_3" class="md-nav__link">
+  <a href="#added_4" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1820,7 +1844,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_4" class="md-nav__link">
+  <a href="#added_5" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1871,7 +1895,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_5" class="md-nav__link">
+  <a href="#added_6" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1913,7 +1937,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_6" class="md-nav__link">
+  <a href="#added_7" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1955,7 +1979,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#added_7" class="md-nav__link">
+  <a href="#added_8" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -2014,8 +2038,14 @@
 
 <h1 id="changelog">Changelog</h1>
 <p>All notable changes to PySuricata are documented here.</p>
-<h2 id="0019-2026-08-14">[0.0.19] - 2026-08-14</h2>
+<h2 id="0020-2026-08-14">[0.0.20] - 2026-08-14</h2>
 <h3 id="added">Added</h3>
+<ul>
+<li><strong>Vendored the native core crate</strong> (<code>native/</code>) — the optional Rust kernels (<code>pysuricata-core</code>: hashing, KMV, moments, reservoir) are now tracked in git. Storing the source is not the same as starting Phase 3: nothing imports it, no build runs it, and the 37 native agreement tests in <code>benchmarks/accuracy.py</code> stay skipped until someone runs <code>maturin develop</code>. It was previously untracked working-tree state, one <code>git clean</code> from being lost.</li>
+<li><code>.gitignore</code> rules for Rust build artifacts. <code>Cargo.lock</code> is deliberately <em>not</em> ignored, since this crate ships wheels and pinning the versions that built them is what makes a release reproducible.</li>
+</ul>
+<h2 id="0019-2026-08-14">[0.0.19] - 2026-08-14</h2>
+<h3 id="added_1">Added</h3>
 <ul>
 <li><strong>The accuracy oracle now runs in CI</strong> — a new <code>Accuracy</code> workflow runs <code>benchmarks/accuracy.py</code> on every pull request. The six statistical bugs fixed in 0.0.18 were only findable because that suite exists; nothing ran it automatically, so they could have regressed silently. This is the Phase 0 exit criterion from <code>docs/roadmap.md</code>.</li>
 <li><strong>Slow end-to-end invariants run on every push to <code>main</code></strong> — the chunked-vs-unchunked checks take tens of seconds per case, so they stay off the pull-request path but gate the branch.</li>
@@ -2037,7 +2067,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Correlations collapsed to 0.00 on large-mean columns</strong> — the naive <code>sx2 - sx*sx/n</code> variance cancels catastrophically for timestamps-as-int, IDs or prices near 1e6, and <code>max(0.0, …)</code> hid it. Switched to Welford/Chan pairwise co-moments.</li>
 <li><strong>Skewness used the sample variance in its denominator</strong> — g1 is defined against the population second moment; the n−1 form biased it by ((n−1)/n)^1.5 and never converged away.</li>
 </ul>
-<h3 id="added_1">Added</h3>
+<h3 id="added_2">Added</h3>
 <ul>
 <li><strong><code>corr_top</code> in <code>summarize()</code> output</strong> — correlations were computed and rendered into the HTML report but never emitted in the JSON summary, so the programmatic contract was strictly weaker than the visual one.</li>
 <li><strong><code>benchmarks/</code> accuracy oracle and performance harness</strong>, plus <code>docs/roadmap.md</code>.</li>
@@ -2071,7 +2101,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 </span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)))</span>
 </span></code></pre></div>
 <p>Set <code>enable_auto_boolean_detection=False</code> to turn the promotion off entirely.</p>
-<h3 id="added_2">Added</h3>
+<h3 id="added_3">Added</h3>
 <ul>
 <li><strong>CSS integrity test suite</strong> — <code>test_css_integrity.py</code> with 9 automated checks (file presence, selector coverage, <code>!important</code> budget, breakpoint standardization, inline handler removal)</li>
 <li><strong>Pre-commit hooks</strong> — <code>.pre-commit-config.yaml</code> with trailing-whitespace, end-of-file-fixer, check-yaml/toml, ruff lint+format, and fast pytest</li>
@@ -2104,7 +2134,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><code>style.css</code> (monolithic), <code>style.css.backup</code>, <code>style_updated.css</code>, <code>chart.min.js</code>, <code>functionality.js.backup</code>, <code>cards_new.py</code></li>
 </ul>
 <h2 id="0016-2026-02-15">[0.0.16] - 2026-02-15</h2>
-<h3 id="added_3">Added</h3>
+<h3 id="added_4">Added</h3>
 <ul>
 <li><strong>Polars nested type support</strong> — Structs and Lists are now gracefully handled as categorical variables (with debug warnings) instead of causing inference errors</li>
 </ul>
@@ -2113,7 +2143,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Performance optimization</strong> — optimized <code>_safe_compute</code> to use NumPy arrays for type checks, reducing overhead in large datasets</li>
 </ul>
 <h2 id="0015-2026-02-14">[0.0.15] - 2026-02-14</h2>
-<h3 id="added_4">Added</h3>
+<h3 id="added_5">Added</h3>
 <ul>
 <li><strong>Python 3.14 CI testing</strong> — Added Python 3.14 to CI test matrix</li>
 <li><strong>Changelog CI check</strong> — PRs now require a changelog entry</li>
@@ -2140,7 +2170,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li>Stale dates from stats documentation pages</li>
 </ul>
 <h2 id="0014-2026-01-14">[0.0.14] - 2026-01-14</h2>
-<h3 id="added_5">Added</h3>
+<h3 id="added_6">Added</h3>
 <ul>
 <li><strong>Polars LazyFrame support</strong> — LazyFrames are now automatically collected before profiling</li>
 <li><strong>ReportConfig alias</strong> — Added <code>ReportConfig</code> as an alias for <code>ProfileConfig</code> for better API discoverability</li>
@@ -2154,7 +2184,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Lighter dependencies</strong> — Removed unused dependencies: <code>matplotlib</code>, <code>seaborn</code>, <code>ipywidgets</code></li>
 </ul>
 <h2 id="0013-2026-01-02">[0.0.13] - 2026-01-02</h2>
-<h3 id="added_6">Added</h3>
+<h3 id="added_7">Added</h3>
 <ul>
 <li><strong>CLI tool</strong> — New command-line interface with <code>pysuricata profile</code> and <code>pysuricata summarize</code> commands</li>
 <li><strong>Comprehensive stress tests</strong> — New <code>test_complexity_analysis.py</code> with time/space profiling</li>
@@ -2169,7 +2199,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Realistic benchmarks</strong> — Updated README and docs with measured performance figures</li>
 </ul>
 <h2 id="0011-2025-12-xx">[0.0.11] - 2025-12-XX</h2>
-<h3 id="added_7">Added</h3>
+<h3 id="added_8">Added</h3>
 <ul>
 <li>Enhanced documentation with mathematical formulas</li>
 <li>Comprehensive examples gallery</li>
