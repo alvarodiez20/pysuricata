@@ -48,6 +48,32 @@ def _is_exhaustible_iterator(source: Any) -> bool:
         return False
 
 
+def _select_columns(chunk: Any, columns: tuple[str, ...] | None) -> Any:
+    """Restrict a chunk to the configured column subset.
+
+    ``ComputeOptions.columns`` was documented and validated but never reached
+    the engine, so asking for three columns of a hundred profiled all hundred.
+    Applied per chunk rather than once at the source, because a streaming source
+    has no single frame to subset.
+
+    Names that are not present are ignored rather than raising: a stream may
+    legitimately vary, and refusing to profile anything because one column is
+    missing from one chunk would be worse than profiling what is there.
+    """
+    if not columns:
+        return chunk
+    available = getattr(chunk, "columns", None)
+    if available is None:
+        return chunk
+    keep = [c for c in columns if c in set(available)]
+    if not keep or len(keep) == len(list(available)):
+        return chunk
+    try:
+        return chunk[keep]
+    except Exception:
+        return chunk
+
+
 def _first_chunk_is_whole_dataset(source: Any, first_chunk: Any) -> bool:
     """Return True only when the first chunk provably contains every row.
 
@@ -350,6 +376,9 @@ class StreamingEngine:
             except StopIteration:
                 return ProcessingResult.error_result("Empty source")
 
+            column_subset = getattr(config, "columns", None)
+            first_chunk = _select_columns(first_chunk, column_subset)
+
             # Whether this first chunk is the entire dataset decides how much
             # weight type inference may put on it. If more chunks follow, the
             # chunk's distinct-value ratio says nothing reliable about the
@@ -398,6 +427,7 @@ class StreamingEngine:
 
             # Process remaining chunks
             for chunk in chunks:
+                chunk = _select_columns(chunk, column_subset)
                 adapter.consume_chunk(chunk, accs, kinds, config, self.logger)
                 if corr_est is not None:
                     adapter.update_corr(chunk, corr_est, self.logger)
@@ -540,7 +570,22 @@ class StreamingEngine:
             if not config.compute_correlations:
                 return None
 
-            return StreamingCorr(kinds.numeric)
+            # corr_max_cols was declared, documented, validated and copied into
+            # the config, then never read -- so a 1,000-column frame built
+            # 499,500 pairs despite a documented cap of 50. The cap has to apply
+            # here, before pair construction, because that is the quadratic part.
+            max_cols = int(getattr(config, "corr_max_cols", 0) or 0)
+            columns = list(kinds.numeric)
+            if 0 < max_cols < len(columns):
+                self.logger.info(
+                    "correlations limited to the first %d of %d numeric columns "
+                    "(corr_max_cols)",
+                    max_cols,
+                    len(columns),
+                )
+                columns = columns[:max_cols]
+
+            return StreamingCorr(columns)
 
         except Exception as e:
             self.logger.warning(f"Failed to create correlation estimator: {e}")

@@ -43,6 +43,7 @@ class EngineConfig:
         checkpoint_write_html: Whether to write HTML with checkpoints
         checkpoint_max_to_keep: Maximum number of checkpoints to retain
         force_chunk_in_memory: Force in-memory chunking
+        columns: Optional subset of column names to profile
         missing_columns_threshold_pct: Minimum missing percentage to display
         missing_columns_max_initial: Maximum columns shown initially
         missing_columns_max_expanded: Maximum columns shown when expanded
@@ -80,6 +81,8 @@ class EngineConfig:
 
     # In-memory chunking control
     force_chunk_in_memory: bool = False
+    # Optional subset of columns to profile. None means every column.
+    columns: tuple[str, ...] | None = None
 
     # Boolean detection options
     enable_auto_boolean_detection: bool = True
@@ -135,6 +138,11 @@ class EngineConfig:
             compute_correlations=getattr(opts, "compute_correlations", True),
             corr_threshold=getattr(opts, "corr_threshold", 0.5),
             corr_max_cols=getattr(opts, "corr_max_cols", 50),
+            columns=(
+                tuple(getattr(opts, "columns", None))
+                if getattr(opts, "columns", None)
+                else None
+            ),
             corr_max_per_col=getattr(opts, "corr_max_per_col", 10),
         )
 
