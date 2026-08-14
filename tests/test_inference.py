@@ -196,3 +196,169 @@ class TestReclassificationRules:
 
         s_other = pl.Series("other", [0, 1, 2, 0, 1, 0])
         assert should_reclassify_numeric_as_boolean(s_other, config) is False
+
+
+try:
+    import pyarrow as pa
+except ImportError:
+    pa = None
+
+
+class TestArrowBackedDtypes:
+    """Coverage for the pyarrow-backed (ArrowDtype) inference branch."""
+
+    @pytest.fixture
+    def inferrer(self):
+        return UnifiedTypeInferrer(strategy=InferenceStrategy.BALANCED)
+
+    @pytest.mark.skipif(pa is None, reason="pyarrow not installed")
+    @pytest.mark.parametrize(
+        ("arrow_type_name", "values", "expected"),
+        [
+            ("bool_", [True, False], "boolean"),
+            ("int64", [1, 2], "numeric"),
+            ("uint8", [1, 2], "numeric"),
+            ("float32", [1.0, 2.0], "numeric"),
+            ("string", ["a", "b"], "categorical"),
+        ],
+    )
+    def test_arrow_dtype_classification(
+        self, inferrer, arrow_type_name, values, expected
+    ):
+        # Build the dtype explicitly: the "<type>[pyarrow]" string form maps to
+        # pandas' StringDtype for strings, which is not an ArrowDtype at all.
+        dtype = pd.ArrowDtype(getattr(pa, arrow_type_name)())
+        s = pd.Series(values, dtype=dtype)
+        res = inferrer.infer_series_type(s)
+        assert res.success
+        assert res.data == expected
+
+    @pytest.mark.skipif(pa is None, reason="pyarrow not installed")
+    def test_arrow_temporal_dtypes(self, inferrer):
+        cases = [
+            (
+                pa.timestamp("ns"),
+                pd.to_datetime(["2020-01-01", "2020-01-02"]),
+                "datetime",
+            ),
+            (
+                pa.date32(),
+                pd.to_datetime(["2020-01-01", "2020-01-02"]).date,
+                "datetime",
+            ),
+            (pa.duration("ns"), pd.to_timedelta(["1 days", "2 days"]), "numeric"),
+        ]
+        for pa_type, values, expected in cases:
+            s = pd.Series(values, dtype=pd.ArrowDtype(pa_type))
+            res = inferrer.infer_series_type(s)
+            assert res.success
+            assert res.data == expected, f"{pa_type} -> {res.data}"
+
+    @pytest.mark.skipif(pa is None, reason="pyarrow not installed")
+    def test_arrow_decimal_is_numeric(self, inferrer):
+        import decimal
+
+        s = pd.Series(
+            [decimal.Decimal("1.5")], dtype=pd.ArrowDtype(pa.decimal128(10, 2))
+        )
+        res = inferrer.infer_series_type(s)
+        assert res.success
+        assert res.data == "numeric"
+
+
+class TestPandasTemporalDtypes:
+    @pytest.fixture
+    def inferrer(self):
+        return UnifiedTypeInferrer(strategy=InferenceStrategy.BALANCED)
+
+    def test_bool_is_not_classified_as_numeric(self, inferrer):
+        """pandas ``is_numeric_dtype`` returns True for bool, so order matters."""
+        res = inferrer.infer_series_type(pd.Series([True, False, True]))
+        assert res.success
+        assert res.data == "boolean"
+
+    def test_timedelta_is_numeric(self, inferrer):
+        s = pd.to_timedelta(pd.Series(["1 days", "2 days"]))
+        res = inferrer.infer_series_type(s)
+        assert res.success
+        assert res.data == "numeric"
+
+    def test_tz_aware_datetime_is_datetime(self, inferrer):
+        s = pd.to_datetime(pd.Series(["2020-01-01", "2020-01-02"])).dt.tz_localize(
+            "UTC"
+        )
+        res = inferrer.infer_series_type(s)
+        assert res.success
+        assert res.data == "datetime"
+
+
+@pytest.mark.skipif(pl is None, reason="polars not installed")
+class TestPolarsDtypes:
+    @pytest.fixture
+    def inferrer(self):
+        return UnifiedTypeInferrer(strategy=InferenceStrategy.BALANCED)
+
+    @pytest.mark.parametrize(
+        ("values", "dtype_name", "expected"),
+        [
+            ([1, 2, 3], "Int8", "numeric"),
+            ([1, 2, 3], "UInt16", "numeric"),
+            ([1.0, 2.0], "Float32", "numeric"),
+            ([True, False], "Boolean", "boolean"),
+            (["a", "b"], "String", "categorical"),
+        ],
+    )
+    def test_polars_scalar_dtypes(self, inferrer, values, dtype_name, expected):
+        s = pl.Series("c", values, dtype=getattr(pl, dtype_name))
+        res = inferrer.infer_series_type(s)
+        assert res.success
+        assert res.data == expected
+
+    def test_polars_duration_is_numeric(self, inferrer):
+        import datetime as _dt
+
+        s = pl.Series("c", [_dt.timedelta(days=1), _dt.timedelta(days=2)])
+        assert s.dtype == pl.Duration
+        res = inferrer.infer_series_type(s)
+        assert res.success
+        assert res.data == "numeric"
+
+    def test_polars_time_is_numeric(self, inferrer):
+        import datetime as _dt
+
+        s = pl.Series("c", [_dt.time(1, 0), _dt.time(2, 0)])
+        assert s.dtype == pl.Time
+        res = inferrer.infer_series_type(s)
+        assert res.success
+        assert res.data == "numeric"
+
+    def test_polars_date_is_datetime(self, inferrer):
+        import datetime as _dt
+
+        s = pl.Series("c", [_dt.date(2020, 1, 1), _dt.date(2020, 1, 2)])
+        res = inferrer.infer_series_type(s)
+        assert res.success
+        assert res.data == "datetime"
+
+    def test_polars_nested_types_fall_back_to_categorical(self, inferrer):
+        for s in (
+            pl.Series("c", [[1, 2], [3]]),
+            pl.Series("c", [{"a": 1}, {"a": 2}]),
+        ):
+            res = inferrer.infer_series_type(s)
+            assert res.success
+            assert res.data == "categorical"
+
+    def test_polars_aggressive_string_boolean(self, inferrer):
+        aggressive = UnifiedTypeInferrer(strategy=InferenceStrategy.AGGRESSIVE)
+        s = pl.Series("c", ["yes", "no", "yes", "no", "yes"])
+        res = aggressive.infer_series_type(s)
+        assert res.success
+        assert res.data == "boolean"
+
+    def test_polars_aggressive_plain_strings_stay_categorical(self, inferrer):
+        aggressive = UnifiedTypeInferrer(strategy=InferenceStrategy.AGGRESSIVE)
+        s = pl.Series("c", ["alpha", "beta", "gamma", "delta", "epsilon"])
+        res = aggressive.infer_series_type(s)
+        assert res.success
+        assert res.data == "categorical"

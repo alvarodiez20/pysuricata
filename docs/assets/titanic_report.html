@@ -441,7 +441,8 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report:not(.light) .chip[data-tooltip-type="duration"] svg {
   stroke: #34d399;
   /* emerald-400 */
-}/* =============================
+}
+/* =============================
    SUMMARY SECTION (cards & lists)
    ============================= */
 #pysuricata-report #summary {
@@ -1816,18 +1817,24 @@ body.suricata-standalone:not(.light) {
 }
 
 /* Enhanced hover state for all flags (tooltip system handles them) */
-#pysuricata-report .quality-flags .flag {
+#pysuricata-report .quality-flags .flag,
+#pysuricata-report .var-card__header .badge,
+#pysuricata-report .var-card__header .dtype {
   cursor: help;
   transition: all 0.2s ease;
 }
 
-#pysuricata-report .quality-flags .flag:hover {
+#pysuricata-report .quality-flags .flag:hover,
+#pysuricata-report .var-card__header .badge:hover,
+#pysuricata-report .var-card__header .dtype:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   z-index: 10;
 }
 
-#pysuricata-report:not(.light) .quality-flags .flag:hover {
+#pysuricata-report:not(.light) .quality-flags .flag:hover,
+#pysuricata-report:not(.light) .var-card__header .badge:hover,
+#pysuricata-report:not(.light) .var-card__header .dtype:hover {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -9326,7 +9333,101 @@ body.suricata-standalone:not(.light) {
       description: 'The data distribution suggests that a logarithmic scale might be more appropriate for visualization and analysis.',
       severity: 'info',
       category: 'visualization'
+    },
+
+    // Approx badge
+    'approx': {
+      title: 'Approximate Statistics',
+      description: 'This column has more unique values than the tracker can hold exactly (default: 50). The unique count shown is an estimate from a cardinality sketch (KMV algorithm). Frequency counts for the most common values remain exact; only the total distinct-value count is approximated.',
+      severity: 'info',
+      category: 'data-quality'
+    },
+
+    // Semantic column type badges
+    'numeric': {
+      title: 'Numeric',
+      description: 'This column contains continuous or discrete numerical data. Suitable for statistical analysis, aggregations, histograms, and mathematical operations.',
+      severity: 'info',
+      category: 'column-type'
+    },
+    'categorical': {
+      title: 'Categorical',
+      description: 'This column contains discrete labels or groups. Values are treated as distinct categories without inherent ordering. Suitable for frequency analysis and grouping.',
+      severity: 'info',
+      category: 'column-type'
+    },
+    'boolean': {
+      title: 'Boolean',
+      description: 'This column is a binary variable with exactly two values (True/False or 1/0). Represents yes/no, on/off, or presence/absence. Suitable for proportion and imbalance analysis.',
+      severity: 'info',
+      category: 'column-type'
+    },
+    'datetime': {
+      title: 'DateTime',
+      description: 'This column contains temporal data representing dates and/or times. Enables time-series analysis, trend detection, and temporal aggregations.',
+      severity: 'info',
+      category: 'column-type'
     }
+  };
+
+  /**
+   * Tooltip definitions for pandas/polars dtype strings shown in the dtype chip.
+   */
+  /**
+   * Dtype tooltip definitions keyed case-sensitively by dtype string.
+   * int64 = NumPy non-nullable; Int64 = pandas nullable (ExtensionDtype).
+   * getDtypeTooltipContent() does a case-sensitive lookup first, then
+   * a case-insensitive fallback for dtypes not listed here.
+   */
+  const DTYPE_TOOLTIP_DEFINITIONS = {
+    // ── NumPy signed integers (non-nullable) ──────────────────────────────
+    'int8':   { title: 'int8',   description: '8-bit signed integer. Range: −128 to 127. Very memory efficient for small integer data.' },
+    'int16':  { title: 'int16',  description: '16-bit signed integer. Range: −32,768 to 32,767.' },
+    'int32':  { title: 'int32',  description: '32-bit signed integer. Range: −2.1 billion to 2.1 billion.' },
+    'int64':  { title: 'int64',  description: '64-bit signed integer. Range: −9.2×10¹⁸ to 9.2×10¹⁸. Default integer type in pandas. Cannot hold NA; becomes float64 when NaN is introduced.' },
+    // ── NumPy unsigned integers ────────────────────────────────────────────
+    'uint8':  { title: 'uint8',  description: '8-bit unsigned integer. Range: 0 to 255. Common for image pixel values and small non-negative counts.' },
+    'uint16': { title: 'uint16', description: '16-bit unsigned integer. Range: 0 to 65,535.' },
+    'uint32': { title: 'uint32', description: '32-bit unsigned integer. Range: 0 to 4.3 billion.' },
+    'uint64': { title: 'uint64', description: '64-bit unsigned integer. Range: 0 to 1.8×10¹⁹.' },
+    // ── Pandas nullable integers (ExtensionDtype, capital first letter) ────
+    'Int8':   { title: 'Int8 (nullable)',   description: 'Pandas nullable 8-bit integer. Supports NA without silent conversion to float. Requires pandas ≥ 1.0.' },
+    'Int16':  { title: 'Int16 (nullable)',  description: 'Pandas nullable 16-bit integer. Supports NA without silent conversion to float.' },
+    'Int32':  { title: 'Int32 (nullable)',  description: 'Pandas nullable 32-bit integer. Supports NA without silent conversion to float.' },
+    'Int64':  { title: 'Int64 (nullable)',  description: 'Pandas nullable 64-bit integer. Supports NA without silent conversion to float. Preferred over int64 when missing values are expected.' },
+    'UInt8':  { title: 'UInt8 (nullable)',  description: 'Pandas nullable unsigned 8-bit integer. Range: 0 to 255. Supports NA.' },
+    'UInt16': { title: 'UInt16 (nullable)', description: 'Pandas nullable unsigned 16-bit integer. Range: 0 to 65,535. Supports NA.' },
+    'UInt32': { title: 'UInt32 (nullable)', description: 'Pandas nullable unsigned 32-bit integer. Range: 0 to 4.3 billion. Supports NA.' },
+    'UInt64': { title: 'UInt64 (nullable)', description: 'Pandas nullable unsigned 64-bit integer. Range: 0 to 1.8×10¹⁹. Supports NA.' },
+    // ── Floats ─────────────────────────────────────────────────────────────
+    'float16': { title: 'float16', description: 'Half-precision float. ~3 significant decimal digits. Very compact but limited range; rarely used for data analysis.' },
+    'float32': { title: 'float32', description: 'Single-precision float. ~7 significant decimal digits. Common in ML model inputs.' },
+    'float64': { title: 'float64', description: 'Double-precision float. ~15 significant decimal digits. Default float type in pandas. Used automatically when int columns gain NaN values.' },
+    'Float32': { title: 'Float32 (nullable)', description: 'Pandas nullable single-precision float. Supports NA as a first-class value without ambiguity.' },
+    'Float64': { title: 'Float64 (nullable)', description: 'Pandas nullable double-precision float. Supports NA as a first-class value without ambiguity.' },
+    // ── Booleans ───────────────────────────────────────────────────────────
+    'bool':    { title: 'bool',             description: 'NumPy boolean (True/False). No NA support — a missing value silently converts the column to object.' },
+    'boolean': { title: 'boolean (nullable)', description: 'Pandas nullable boolean. Supports True, False, and NA as distinct states. Preferred when missing values are possible.' },
+    // ── Text / generic object ──────────────────────────────────────────────
+    'object': { title: 'object', description: 'Generic Python object dtype. Typically used for strings, but can hold any Python value. Slower and more memory-hungry than typed dtypes.' },
+    'string': { title: 'string (StringDtype)', description: 'Pandas explicit string type. Better NA handling and performance than object. Use pd.StringDtype() or dtype="string".' },
+    // ── Datetime ───────────────────────────────────────────────────────────
+    'datetime64[ns]':    { title: 'datetime64[ns]',    description: 'Datetime with nanosecond precision. Covers ~1678–2262 CE. The standard pandas datetime dtype.' },
+    'datetime64[us]':    { title: 'datetime64[us]',    description: 'Datetime with microsecond precision. Wider range than [ns]: ~290,000 years.' },
+    'datetime64[ms]':    { title: 'datetime64[ms]',    description: 'Datetime with millisecond precision.' },
+    'datetime64[s]':     { title: 'datetime64[s]',     description: 'Datetime with second precision.' },
+    'datetime64':        { title: 'datetime64',        description: 'Datetime type (precision unspecified). Pandas typically uses nanosecond precision internally.' },
+    // ── Timedelta ──────────────────────────────────────────────────────────
+    'timedelta64[ns]':   { title: 'timedelta64[ns]',   description: 'Duration/time difference with nanosecond precision. Result of subtracting two datetime64 values.' },
+    'timedelta64[us]':   { title: 'timedelta64[us]',   description: 'Duration with microsecond precision.' },
+    'timedelta64[ms]':   { title: 'timedelta64[ms]',   description: 'Duration with millisecond precision.' },
+    'timedelta64[s]':    { title: 'timedelta64[s]',    description: 'Duration with second precision.' },
+    'timedelta64':       { title: 'timedelta64',       description: 'Time duration type (precision unspecified).' },
+    // ── Categorical ────────────────────────────────────────────────────────
+    'category': { title: 'category (CategoricalDtype)', description: 'Pandas categorical type. Stores repeated values efficiently using integer codes. Ideal for low-cardinality string or ordinal columns.' },
+    // ── Complex ────────────────────────────────────────────────────────────
+    'complex64':  { title: 'complex64',  description: '64-bit complex number (two 32-bit floats for real and imaginary parts).' },
+    'complex128': { title: 'complex128', description: '128-bit complex number (two 64-bit floats). Default complex type in NumPy.' }
   };
 
   /**
@@ -9383,17 +9484,47 @@ body.suricata-standalone:not(.light) {
     }
 
     /**
+     * Get tooltip content for a dtype chip.
+     * Case-sensitive lookup first (int64 ≠ Int64), then case-insensitive fallback.
+     * @param {string} dtypeText - The dtype string (e.g. "int64", "Int64", "object")
+     * @returns {Object} Tooltip content object
+     */
+    getDtypeTooltipContent(dtypeText) {
+      const raw = dtypeText.trim();
+      // 1. Exact case-sensitive match (distinguishes int64 from Int64)
+      if (DTYPE_TOOLTIP_DEFINITIONS[raw]) return DTYPE_TOOLTIP_DEFINITIONS[raw];
+      // 2. Strip tz/unit suffix for datetime variants like "datetime64[ns, UTC]"
+      const baseRaw = raw.replace(/\[.*\]$/, '').trim();
+      if (baseRaw !== raw && DTYPE_TOOLTIP_DEFINITIONS[baseRaw]) return DTYPE_TOOLTIP_DEFINITIONS[baseRaw];
+      // 3. Case-insensitive fallback
+      const lower = raw.toLowerCase();
+      const baseLower = baseRaw.toLowerCase();
+      for (const key of Object.keys(DTYPE_TOOLTIP_DEFINITIONS)) {
+        if (key.toLowerCase() === lower) return DTYPE_TOOLTIP_DEFINITIONS[key];
+      }
+      for (const key of Object.keys(DTYPE_TOOLTIP_DEFINITIONS)) {
+        if (key.toLowerCase() === baseLower) return DTYPE_TOOLTIP_DEFINITIONS[key];
+      }
+      return {
+        title: dtypeText,
+        description: 'The raw data type of this column as stored in memory.'
+      };
+    }
+
+    /**
      * Show tooltip for an element.
      * @param {HTMLElement} element - The element to show tooltip for
      * @param {string} flagText - The flag text
      * @param {Object} headerTooltipData - Optional header tooltip data
+     * @param {string} dtypeText - Optional dtype string for dtype chip tooltips
      */
-    showTooltip(element, flagText, headerTooltipData = null) {
+    showTooltip(element, flagText, headerTooltipData = null, dtypeText = null) {
       if (!this.tooltip || !element) return;
 
       let content;
       let isHeaderTooltip = false;
       let isBarFillTooltip = false;
+      let isDtypeTooltip = false;
 
       if (headerTooltipData) {
         // Header tooltip
@@ -9404,6 +9535,10 @@ body.suricata-standalone:not(.light) {
           description: def.getDescription(headerTooltipData.value),
           category: def.category
         };
+      } else if (dtypeText !== null) {
+        // Dtype chip tooltip
+        isDtypeTooltip = true;
+        content = this.getDtypeTooltipContent(dtypeText);
       } else if (element.classList.contains('bar-fill')) {
         // Bar-fill tooltip (simple text display)
         isBarFillTooltip = true;
@@ -9413,7 +9548,7 @@ body.suricata-standalone:not(.light) {
           category: 'data-completeness'
         };
       } else {
-        // Quality flag tooltip
+        // Quality flag or semantic type badge tooltip
         content = this.getTooltipContent(flagText);
 
         // Read threshold and value from data attributes
@@ -9437,6 +9572,17 @@ body.suricata-standalone:not(.light) {
           <div class="tooltip-description">${content.description}</div>
           <div class="tooltip-footer">
             <span class="tooltip-category">📋 ${this.escapeHtml(content.category)}</span>
+          </div>
+        `;
+      } else if (isDtypeTooltip) {
+        // Dtype chip tooltip — informational, no severity badge
+        this.tooltip.innerHTML = `
+          <div class="tooltip-header">
+            <span class="tooltip-title">${this.escapeHtml(content.title)}</span>
+          </div>
+          <div class="tooltip-description">${this.escapeHtml(content.description)}</div>
+          <div class="tooltip-footer">
+            <span class="tooltip-category">📋 dtype</span>
           </div>
         `;
       } else if (isBarFillTooltip) {
@@ -9591,6 +9737,20 @@ body.suricata-standalone:not(.light) {
           return;
         }
 
+        // Handle semantic type badge tooltips
+        const badge = e.target.closest('.var-card__header .badge');
+        if (badge) {
+          this.showTooltip(badge, badge.textContent.trim());
+          return;
+        }
+
+        // Handle dtype chip tooltips
+        const dtypeChip = e.target.closest('.var-card__header .dtype');
+        if (dtypeChip) {
+          this.showTooltip(dtypeChip, null, null, dtypeChip.textContent.trim());
+          return;
+        }
+
         // Handle bar-fill tooltips
         const barFill = e.target.closest('.completeness-bar-dual .bar-fill');
         if (barFill) {
@@ -9620,6 +9780,22 @@ body.suricata-standalone:not(.light) {
         const flag = e.target.closest('.quality-flags .flag');
         if (flag) {
           if (!flag.contains(e.relatedTarget)) {
+            this.hideTooltip();
+          }
+          return;
+        }
+
+        const badge = e.target.closest('.var-card__header .badge');
+        if (badge) {
+          if (!badge.contains(e.relatedTarget)) {
+            this.hideTooltip();
+          }
+          return;
+        }
+
+        const dtypeChip = e.target.closest('.var-card__header .dtype');
+        if (dtypeChip) {
+          if (!dtypeChip.contains(e.relatedTarget)) {
             this.hideTooltip();
           }
           return;
@@ -9665,6 +9841,18 @@ body.suricata-standalone:not(.light) {
         if (flag) {
           const flagText = flag.textContent.trim();
           this.showTooltip(flag, flagText);
+          return;
+        }
+
+        const badge = e.target.closest('.var-card__header .badge');
+        if (badge) {
+          this.showTooltip(badge, badge.textContent.trim());
+          return;
+        }
+
+        const dtypeChip = e.target.closest('.var-card__header .dtype');
+        if (dtypeChip) {
+          this.showTooltip(dtypeChip, null, null, dtypeChip.textContent.trim());
           return;
         }
 
@@ -10227,20 +10415,20 @@ body.suricata-standalone:not(.light) {
         </div>
 
         <div class="meta">
-          <span class="chip header-tooltip" data-tooltip-type="date" data-tooltip-value="2026-02-28 20:13:53"><svg
+          <span class="chip header-tooltip" data-tooltip-type="date" data-tooltip-value="2026-08-14 15:18:19"><svg
               aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;">
               <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
               <line x1="16" y1="2" x2="16" y2="6" />
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
-            </svg> 2026-02-28 20:13:53</span>
-          <span class="chip header-tooltip" data-tooltip-type="duration" data-tooltip-value="0.07 s"><svg
+            </svg> 2026-08-14 15:18:19</span>
+          <span class="chip header-tooltip" data-tooltip-type="duration" data-tooltip-value="0.05 s"><svg
               aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;">
               <circle cx="12" cy="12" r="10" />
               <polyline points="12 6 12 12 16 14" />
-            </svg> 0.07 s</span>
+            </svg> 0.05 s</span>
           <a class="chip header-tooltip" data-tooltip-type="version" data-tooltip-value="0.0.17"
             href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer" aria-label="Open pysuricata repository on GitHub">
             <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="vertical-align: text-bottom;">
@@ -10318,18 +10506,18 @@ body.suricata-standalone:not(.light) {
           <div class="summary-grid second-row">
             <div class="summary-card">
               <div class="label">Column types</div>
-
+              
         <svg class="dtype-donut-svg" viewBox="0 0 135 135"
              width="135" height="135"
              xmlns="http://www.w3.org/2000/svg"
              role="img" aria-labelledby="donut-title-multi donut-desc-multi">
             <title id="donut-title-multi">Column type distribution</title>
-            <desc id="donut-desc-multi">Numeric: 3 (25%), Categorical: 9 (75%)</desc>
-
+            <desc id="donut-desc-multi">Numeric: 3 (25%), Categorical: 8 (67%), Boolean: 1 (8%)</desc>
+            
             <circle cx="67.5" cy="67.5" r="67.5"
                     fill="#f0f0f0" opacity="0.15" class="donut-background"/>
             <g class="donut-segments">
-
+                
             <g class="donut-segment" data-type="numeric">
                 <path d="M 67.5,67.5 L 67.50,0.00 A 67.5,67.5 0 0,1 135.00,67.50 Z"
                       fill="#4ea3f1"
@@ -10340,35 +10528,46 @@ body.suricata-standalone:not(.light) {
                 </path>
             </g>
             <g class="donut-segment" data-type="categorical">
-                <path d="M 67.5,67.5 L 135.00,67.50 A 67.5,67.5 0 1,1 67.50,0.00 Z"
+                <path d="M 67.5,67.5 L 135.00,67.50 A 67.5,67.5 0 1,1 33.75,9.04 Z"
                       fill="#8ac926"
                       class="segment-path"
                       data-type="Categorical"
-                      data-count="9"
-                      data-percentage="75.0">
+                      data-count="8"
+                      data-percentage="66.7">
+                </path>
+            </g>
+            <g class="donut-segment" data-type="boolean">
+                <path d="M 67.5,67.5 L 33.75,9.04 A 67.5,67.5 0 0,1 67.50,0.00 Z"
+                      fill="#ff595e"
+                      class="segment-path"
+                      data-type="Boolean"
+                      data-count="1"
+                      data-percentage="8.3">
                 </path>
             </g>
             </g>
             <g class="donut-inner-segments">
-
+                
             <path d="M 67.5,67.5 L 67.50,17.50 A 50,50 0 0,1 117.50,67.50 Z"
                   class="segment-inner"/>
-            <path d="M 67.5,67.5 L 117.50,67.50 A 50,50 0 1,1 67.50,17.50 Z"
+            <path d="M 67.5,67.5 L 117.50,67.50 A 50,50 0 1,1 42.50,24.20 Z"
+                  class="segment-inner"/>
+            <path d="M 67.5,67.5 L 42.50,24.20 A 50,50 0 0,1 67.50,17.50 Z"
                   class="segment-inner"/>
             </g>
         </svg>
-
+        
               <ul class="summary-list">
                 <li><span>Numeric</span><span>3</span></li>
-                <li><span>Categorical</span><span>9</span></li>
+                <li><span>Categorical</span><span>8</span></li>
                 <li><span>Datetime</span><span>0</span></li>
-                <li><span>Boolean</span><span>0</span></li>
+                <li><span>Boolean</span><span>1</span></li>
               </ul>
             </div>
             <div class="summary-card">
               <div class="label">Top missing columns</div>
               <ul class="summary-list top-missing">
-
+                
             <li class="missing-item">
               <div class="missing-info">
                 <code class="missing-col" title="Cabin">Cabin</code>
@@ -10376,7 +10575,7 @@ body.suricata-standalone:not(.light) {
               </div>
               <div class="missing-bar"><div class="missing-fill high" style="width:77.1%;"></div></div>
             </li>
-
+            
             <li class="missing-item">
               <div class="missing-info">
                 <code class="missing-col" title="Age">Age</code>
@@ -10384,7 +10583,7 @@ body.suricata-standalone:not(.light) {
               </div>
               <div class="missing-bar"><div class="missing-fill medium" style="width:19.9%;"></div></div>
             </li>
-
+            
             <li class="missing-item">
               <div class="missing-info">
                 <code class="missing-col" title="Embarked">Embarked</code>
@@ -10392,7 +10591,7 @@ body.suricata-standalone:not(.light) {
               </div>
               <div class="missing-bar"><div class="missing-fill low" style="width:0.2%;"></div></div>
             </li>
-
+            
               </ul>
             </div>
             <div class="summary-card">
@@ -10402,7 +10601,7 @@ body.suricata-standalone:not(.light) {
                 <li>Constant cols: 0</li>
                 <li>High-card categoricals: 2</li>
                 <li>Date range: — → —</li>
-                <li>Text cols: 9 (avg len 5.2)</li>
+                <li>Text cols: 8 (avg len 5.8)</li>
               </ul>
             </div>
           </div>
@@ -10415,7 +10614,7 @@ body.suricata-standalone:not(.light) {
                 <span class="chev" aria-hidden="true">▸</span>
               </summary>
               <div class="card-content">
-                <div class="description-value" id="summary-description" data-report-id="20260228-201353-4327"
+                <div class="description-value" id="summary-description" data-report-id="20260814-151819-4818"
                   data-original-markdown="" data-action="edit-description">
                   <div class="description-content">
                     <span class="placeholder">Click to add description...</span>
@@ -10436,10 +10635,10 @@ body.suricata-standalone:not(.light) {
               <span class="chev" aria-hidden="true">▸</span>
             </summary>
             <div class="card-content">
-
+              
     <div class="sample-scroll"><table class="sample-table"><thead><tr><th></th><th>PassengerId</th><th>Survived</th><th>Pclass</th><th>Name</th><th>Sex</th><th>Age</th><th>SibSp</th><th>Parch</th><th>Ticket</th><th>Fare</th><th>Cabin</th><th>Embarked</th></tr></thead><tbody><tr><td><span class="num">495</span></td><td><span class="num">496</span></td><td><span class="num">0</span></td><td><span class="num">3</span></td><td>Yousseff, Mr. Gerious</td><td>male</td><td><span class="num">nan</span></td><td><span class="num">0</span></td><td><span class="num">0</span></td><td>2627</td><td><span class="num">14.4583</span></td><td>nan</td><td>C</td></tr><tr><td><span class="num">648</span></td><td><span class="num">649</span></td><td><span class="num">0</span></td><td><span class="num">3</span></td><td>Willey, Mr. Edward</td><td>male</td><td><span class="num">nan</span></td><td><span class="num">0</span></td><td><span class="num">0</span></td><td>S.O./P.P. 751</td><td><span class="num">7.55</span></td><td>nan</td><td>S</td></tr><tr><td><span class="num">278</span></td><td><span class="num">279</span></td><td><span class="num">0</span></td><td><span class="num">3</span></td><td>Rice, Master. Eric</td><td>male</td><td><span class="num">7.0</span></td><td><span class="num">4</span></td><td><span class="num">1</span></td><td>382652</td><td><span class="num">29.125</span></td><td>nan</td><td>Q</td></tr><tr><td><span class="num">31</span></td><td><span class="num">32</span></td><td><span class="num">1</span></td><td><span class="num">1</span></td><td>Spencer, Mrs. William Augustus (Marie Eugenie)</td><td>female</td><td><span class="num">nan</span></td><td><span class="num">1</span></td><td><span class="num">0</span></td><td>PC 17569</td><td><span class="num">146.5208</span></td><td>B78</td><td>C</td></tr><tr><td><span class="num">255</span></td><td><span class="num">256</span></td><td><span class="num">1</span></td><td><span class="num">3</span></td><td>Touma, Mrs. Darwis (Hanne Youssef Razi)</td><td>female</td><td><span class="num">29.0</span></td><td><span class="num">0</span></td><td><span class="num">2</span></td><td>2650</td><td><span class="num">15.2458</span></td><td>nan</td><td>C</td></tr><tr><td><span class="num">298</span></td><td><span class="num">299</span></td><td><span class="num">1</span></td><td><span class="num">1</span></td><td>Saalfeld, Mr. Adolphe</td><td>male</td><td><span class="num">nan</span></td><td><span class="num">0</span></td><td><span class="num">0</span></td><td>19988</td><td><span class="num">30.5</span></td><td>C106</td><td>S</td></tr><tr><td><span class="num">609</span></td><td><span class="num">610</span></td><td><span class="num">1</span></td><td><span class="num">1</span></td><td>Shutes, Miss. Elizabeth W</td><td>female</td><td><span class="num">40.0</span></td><td><span class="num">0</span></td><td><span class="num">0</span></td><td>PC 17582</td><td><span class="num">153.4625</span></td><td>C125</td><td>S</td></tr><tr><td><span class="num">318</span></td><td><span class="num">319</span></td><td><span class="num">1</span></td><td><span class="num">1</span></td><td>Wick, Miss. Mary Natalie</td><td>female</td><td><span class="num">31.0</span></td><td><span class="num">0</span></td><td><span class="num">2</span></td><td>36928</td><td><span class="num">164.8667</span></td><td>C7</td><td>S</td></tr><tr><td><span class="num">484</span></td><td><span class="num">485</span></td><td><span class="num">1</span></td><td><span class="num">1</span></td><td>Bishop, Mr. Dickinson H</td><td>male</td><td><span class="num">25.0</span></td><td><span class="num">1</span></td><td><span class="num">0</span></td><td>11967</td><td><span class="num">91.0792</span></td><td>B49</td><td>C</td></tr><tr><td><span class="num">367</span></td><td><span class="num">368</span></td><td><span class="num">1</span></td><td><span class="num">3</span></td><td>Moussa, Mrs. (Mantoura Boulos)</td><td>female</td><td><span class="num">nan</span></td><td><span class="num">0</span></td><td><span class="num">0</span></td><td>2626</td><td><span class="num">7.2292</span></td><td>nan</td><td>C</td></tr></tbody></table></div>
     <p class="muted small">Showing 10 randomly sampled rows from the first chunk.</p>
-
+    
             </div>
           </details>
         </section>
@@ -10448,8 +10647,8 @@ body.suricata-standalone:not(.light) {
         <section id="vars">
           <span id="numeric-vars" class="anchor-alias"></span>
           <h2 class="section-title">Variables</h2>
-
-          <p class="muted small">Analyzing 12 variables (3 numeric, 9 categorical, 0 datetime, 0 boolean).</p>
+          
+          <p class="muted small">Analyzing 12 variables (3 numeric, 8 categorical, 0 datetime, 1 boolean).</p>
 
           <div class="vars-controls">
             <div class="controls-row">
@@ -10467,14 +10666,14 @@ body.suricata-standalone:not(.light) {
           </div>
 
           <div class="cards-grid" id="cards-grid">
-
+            
         <article class="var-card" id="col_PassengerId" data-type="numeric" data-name="PassengerId">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname" title="PassengerId">PassengerId</span>
                     <span class="badge">Numeric</span>
                     <span class="dtype chip">int64</span>
-
+                    
                     <ul class='quality-flags'><li class="flag good">Positive‑only</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/numeric/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Numeric analysis" aria-label="View Numeric analysis documentation">
@@ -10813,7 +11012,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Numeric controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_PassengerId-details" aria-expanded="false">Details</button>
@@ -10832,8 +11031,8 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_PassengerId-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="stats">Statistics</button>
@@ -10912,7 +11111,7 @@ body.suricata-standalone:not(.light) {
                 <div class="bar-fill missing" style="width: 0.0%" title="Missing: 0.0%"></div>
             </div>
         </div>
-
+        
         <div class="chunk-distribution">
             <h4 class="section-title">Missing Values per Chunk</h4>
             <div class="chunk-info">
@@ -10920,7 +11119,7 @@ body.suricata-standalone:not(.light) {
                 <span>Peak: 0.0%</span>
             </div>
             <div class="chunk-spectrum">
-
+                
             <div class="chunk-segment low"
                  style="width: 100.00%"
                  data-start="0"
@@ -10928,7 +11127,7 @@ body.suricata-standalone:not(.light) {
                  data-missing="0"
                  data-total="891"
                  data-pct="0.0"></div>
-
+            
             </div>
             <div class="chunk-legend">
                 <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
@@ -10940,20 +11139,19 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
-        <article class="var-card" id="col_Survived" data-type="categorical" data-name="Survived">
+        
+        <article class="var-card" id="col_Survived" data-type="boolean" data-name="Survived">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Survived</span>
-                    <span class="badge">Categorical</span>
+                    <span class="badge">Boolean</span>
                     <span class="dtype chip">int64</span>
-                    <span class="badge">approx</span>
-                    <ul class="quality-flags"><li class="flag">Case variants</li><li class="flag">Trim variants</li><li class="flag">Empty strings</li></ul>
+                    
                 </div>
-                <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
+                <a href="https://alvarodiez20.github.io/pysuricata/stats/boolean/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Boolean analysis" aria-label="View Boolean analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
                 <path fill="currentColor" d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0zM6.5 5a.75.75 0 0 0 0 1.5h.5v2.5h-.5a.75.75 0 0 0 0 1.5h3a.75.75 0 0 0 0-1.5h-.5V6h-.5A.75.75 0 0 0 8 5.25H6.5zM8 3.5a.75.75 0 1 0 0 1.5.75.75 0 0 0 0-1.5z"/>
             </svg>
@@ -10961,41 +11159,30 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique (≈)</th><td class="num">2</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>0</code></td></tr><tr><th>Mode %</th><td class="num">61.6%</td></tr><tr><th>Empty strings</th><td class="num warn">549</td></tr></tbody></table></div>
-                    <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">0.9607</td></tr><tr><th>Rare levels</th><td class="num ">0 (0.0%)</td></tr><tr><th>Top 5 coverage</th><td class="num good">100.0%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Unique</th><td class="num">2</td></tr></tbody></table></div>
+                    <div class="box stats-right"><table class="kv"><tbody><tr><th>True</th><td class="num">342 (38.4%)</td></tr><tr><th>False</th><td class="num">549 (61.6%)</td></tr><tr><th>Processed bytes (≈)</th><td class="num">7.0 KB</td></tr></tbody></table></div>
                     <div class="box chart">
-        <div class="topn-chart">
-            <div class="hist-variants"><div class="cat variant active" id="col_Survived-cat-top-2" data-topn="2"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="288.00" height="69.00" rx="2" ry="2"><title>0
-549 rows (61.6%)</title></rect><text class="bar-label" x="114" y="45.50" text-anchor="end">0</text><text class="bar-value" x="402.00" y="45.50" text-anchor="end">549 (61.6%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="83.00" width="179.41" height="69.00" rx="2" ry="2"><title>1
-342 rows (38.4%)</title></rect><text class="bar-label" x="114" y="120.50" text-anchor="end">1</text><text class="bar-value" x="293.41" y="120.50" text-anchor="end">342 (38.4%)</text></g></svg></div></div>
+        <div class="chart-container">
+            <svg class="bool-svg" width="420" height="60" viewBox="0 0 420 60"><defs>    <linearGradient id="trueGradient" x1="0%" y1="0%" x2="0%" y2="100%">        <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />        <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />    </linearGradient>    <linearGradient id="falseGradient" x1="0%" y1="0%" x2="0%" y2="100%">        <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />        <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />    </linearGradient>    <linearGradient id="missingGradient" x1="0%" y1="0%" x2="0%" y2="100%">        <stop offset="0%" style="stop-color:#6b7280;stop-opacity:1" />        <stop offset="100%" style="stop-color:#4b5563;stop-opacity:1" />    </linearGradient>    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.1"/>    </filter></defs><rect class="seg false enhanced" x="4" y="4" width="253" height="52" fill="url(#falseGradient)" filter="url(#shadow)" rx="4" ry="4" data-count="549" data-percentage="61.6%" data-type="false"><title>False: 549 (61.6%)</title></rect><text class="label enhanced" x="130.5" y="32.0" text-anchor="middle" fill="white" font-weight="600" font-size="12">False 61.6%</text><rect class="seg true enhanced" x="257" y="4" width="158" height="52" fill="url(#trueGradient)" filter="url(#shadow)" rx="4" ry="4" data-count="342" data-percentage="38.4%" data-type="true"><title>True: 342 (38.4%)</title></rect><text class="label enhanced" x="336.0" y="32.0" text-anchor="middle" fill="white" font-weight="600" font-size="12">True 38.4%</text><rect class="seg missing enhanced" x="415" y="4" width="1" height="52" fill="url(#missingGradient)" filter="url(#shadow)" rx="4" ry="4" data-count="0" data-percentage="0.0%" data-type="missing"><title>Missing: 0 (0.0%)</title></rect></svg>
         </div>
         </div>
                 </div>
-
-        <div class="card-controls" role="group" aria-label="Column controls">
-            <div class="details-slot">
-                <button type="button" class="details-toggle btn-soft" aria-controls="col_Survived-details" aria-expanded="false">Details</button>
-            </div>
-            <div class="controls-slot">
-                <div class="hist-controls" data-topn="2">
-                    <div class="center-controls">
-                        <span>Top‑N:</span>
-                        <div class="bin-group"><button type="button" class="btn-soft active" data-topn="2">2</button></div>
+                <div class="card-controls" role="group" aria-label="Column controls">
+                    <div class="details-slot">
+                        <button type="button" class="details-toggle btn-soft" aria-controls="col_Survived-details" aria-expanded="false">Details</button>
                     </div>
+                    <div class="controls-slot"></div>
                 </div>
-            </div>
-        </div>
-
-
+                
         <section id="col_Survived-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
-                <button role="tab" class="active" data-tab="common">Common values</button>
-                <button role="tab" data-tab="normalize">Normalization</button>
+                <button role="tab" class="active" data-tab="breakdown">Breakdown</button>
                 <button role="tab" data-tab="missing">Missing Values</button>
             </nav>
             <div class="tab-panes">
-                <section class="tab-pane active" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='cat common-value'>0</td><td class='num common-count'>549</td><td class='num common-pct'>61.6%</td><td class='progress-bar'><div class='bar-fill' style='width:61.6%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='cat common-value'>1</td><td class='num common-count'>342</td><td class='num common-pct'>38.4%</td><td class='progress-bar'><div class='bar-fill' style='width:38.4%'></div></td></tr></tbody></table></section>
-                <section class="tab-pane" data-tab="normalize"><table class="kv"><thead><tr><th>Original</th><th>lower()</th><th>strip()</th></tr></thead><tbody><tr><td colspan=3>—</td></tr></tbody></table></section>
+                <section class="tab-pane active" data-tab="breakdown">
+                    <div class="sub"><div class="hdr">Value Distribution</div><table class="common-values-table enhanced"><thead><tr><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='num common-value'>False</td><td class='num common-count'>549</td><td class='num common-pct'>61.6%</td><td class='progress-bar'><div class='bar-fill' style='width:61.6%'></div></td></tr><tr class='common-row rank-2'><td class='num common-value'>True</td><td class='num common-count'>342</td><td class='num common-pct'>38.4%</td><td class='progress-bar'><div class='bar-fill' style='width:38.4%'></div></td></tr></tbody></table></div>
+                </section>
                 <section class="tab-pane" data-tab="missing">
                     <div class="sub"><div class="hdr">Missing Values</div>
         <div class="missing-analysis-header">
@@ -11022,18 +11209,18 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
         <article class="var-card" id="col_Pclass" data-type="categorical" data-name="Pclass">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Pclass</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">int64</span>
-                    <span class="badge">approx</span>
-                    <ul class="quality-flags"><li class="flag">Case variants</li><li class="flag">Trim variants</li></ul>
+                    
+                    
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -11043,7 +11230,7 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique (≈)</th><td class="num">3</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>3</code></td></tr><tr><th>Mode %</th><td class="num">55.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">3</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>3</code></td></tr><tr><th>Mode %</th><td class="num">55.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">1.439</td></tr><tr><th>Rare levels</th><td class="num ">0 (0.0%)</td></tr><tr><th>Top 5 coverage</th><td class="num good">100.0%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
@@ -11054,7 +11241,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Pclass-details" aria-expanded="false">Details</button>
@@ -11068,8 +11255,8 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_Pclass-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="common">Common values</button>
@@ -11105,18 +11292,18 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
         <article class="var-card" id="col_Name" data-type="categorical" data-name="Name">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Name</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">object</span>
-                    <span class="badge">approx</span>
-                    <ul class="quality-flags"><li class="flag warn">High cardinality</li><li class="flag">Case variants</li><li class="flag">Trim variants</li></ul>
+                    
+                    <ul class="quality-flags"><li class="flag warn">High cardinality</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -11126,7 +11313,7 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique (≈)</th><td class="num">892</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>Allison, Miss. Helen Loraine</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">892</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>Allison, Miss. Helen Loraine</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">0.264</td></tr><tr><th>Rare levels</th><td class="num ">24 (2.7%)</td></tr><tr><th>Top 5 coverage</th><td class="num warn">0.6%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
@@ -11164,7 +11351,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Name-details" aria-expanded="false">Details</button>
@@ -11178,8 +11365,8 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_Name-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="common">Common values</button>
@@ -11215,18 +11402,18 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
         <article class="var-card" id="col_Sex" data-type="categorical" data-name="Sex">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Sex</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">object</span>
-                    <span class="badge">approx</span>
-                    <ul class="quality-flags"><li class="flag">Case variants</li><li class="flag">Trim variants</li></ul>
+                    
+                    
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -11236,7 +11423,7 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique (≈)</th><td class="num">2</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>male</code></td></tr><tr><th>Mode %</th><td class="num">64.8%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">2</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>male</code></td></tr><tr><th>Mode %</th><td class="num">64.8%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">0.9362</td></tr><tr><th>Rare levels</th><td class="num ">0 (0.0%)</td></tr><tr><th>Top 5 coverage</th><td class="num good">100.0%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
@@ -11246,7 +11433,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Sex-details" aria-expanded="false">Details</button>
@@ -11260,8 +11447,8 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_Sex-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="common">Common values</button>
@@ -11297,17 +11484,17 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
         <article class="var-card" id="col_Age" data-type="numeric" data-name="Age">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname" title="Age">Age</span>
                     <span class="badge">Numeric</span>
                     <span class="dtype chip">float64</span>
-
+                    
                     <ul class='quality-flags'><li class="flag warn" data-threshold="≤20%" data-value="19.9%">Missing</li><li class="flag good">Positive‑only</li><li class="flag bad" data-threshold=">1%" data-value="1.5%">Many outliers</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/numeric/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Numeric analysis" aria-label="View Numeric analysis documentation">
@@ -11641,7 +11828,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Numeric controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Age-details" aria-expanded="false">Details</button>
@@ -11660,8 +11847,8 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_Age-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="stats">Statistics</button>
@@ -11698,7 +11885,7 @@ body.suricata-standalone:not(.light) {
                 <span class="direction-label">High Outliers</span>
                 <span class="outlier-count">7 outliers (1.0%) (showing top 7 of 11 total)</span>
             </div>
-
+            
             <div class="severity-breakdown">
                 <div class="method-severity-group">
                     <span class="method-label">IQR:</span>
@@ -11713,7 +11900,7 @@ body.suricata-standalone:not(.light) {
                     <span class="severity-item moderate">Moderate: 0</span>
                 </div>
             </div>
-
+            
             <div class="context-note"><small>💡 This shows the most extreme outliers from a representative sample. The general statistics show all 11 outliers (1.5%) in the full dataset.</small></div>
         </div>
         <table class="outliers-table enhanced"><thead><tr><th>Rank</th><th>Index</th><th>Value</th><th>Method</th><th>Severity</th></tr></thead><tbody><tr class='outlier-row rank-1'><td class='rank' rowspan='2'>1ˢᵗ</td><td class='index' rowspan='2'>630</td><td class='num outlier-value' rowspan='2'>80</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item high'>High (2.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-1'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.8× MAD)</span></td></tr><tr class='outlier-row rank-2'><td class='rank' rowspan='1'>2ⁿᵈ</td><td class='index' rowspan='1'>851</td><td class='num outlier-value' rowspan='1'>74</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item high'>High (2.0× IQR)</span></td></tr><tr class='outlier-row rank-3'><td class='rank' rowspan='1'>3ʳᵈ</td><td class='index' rowspan='1'>493</td><td class='num outlier-value' rowspan='1'>71</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item moderate'>Moderate (1.8× IQR)</span></td></tr><tr class='outlier-row rank-4'><td class='rank' rowspan='1'>4ᵗʰ</td><td class='index' rowspan='1'>116</td><td class='num outlier-value' rowspan='1'>70.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item moderate'>Moderate (1.8× IQR)</span></td></tr><tr class='outlier-row rank-5'><td class='rank' rowspan='1'>5ᵗʰ</td><td class='index' rowspan='1'>—</td><td class='num outlier-value' rowspan='1'>70</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item moderate'>Moderate (1.8× IQR)</span></td></tr><tr class='outlier-row rank-6'><td class='rank' rowspan='1'>6ᵗʰ</td><td class='index' rowspan='1'>—</td><td class='num outlier-value' rowspan='1'>66</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item moderate'>Moderate (1.6× IQR)</span></td></tr><tr class='outlier-row rank-7'><td class='rank' rowspan='1'>7ᵗʰ</td><td class='index' rowspan='1'>—</td><td class='num outlier-value' rowspan='1'>65</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item moderate'>Moderate (1.5× IQR)</span></td></tr></tbody></table><div class="outlier-note"><small>ℹ️ Index shown only for top/bottom extreme values tracked during profiling. Sample-based outliers may not have row indices.</small></div></div>
@@ -11752,7 +11939,7 @@ body.suricata-standalone:not(.light) {
                 <div class="bar-fill missing" style="width: 19.9%" title="Missing: 19.9%"></div>
             </div>
         </div>
-
+        
         <div class="chunk-distribution">
             <h4 class="section-title">Missing Values per Chunk</h4>
             <div class="chunk-info">
@@ -11760,7 +11947,7 @@ body.suricata-standalone:not(.light) {
                 <span>Peak: 19.9%</span>
             </div>
             <div class="chunk-spectrum">
-
+                
             <div class="chunk-segment medium"
                  style="width: 100.00%"
                  data-start="0"
@@ -11768,7 +11955,7 @@ body.suricata-standalone:not(.light) {
                  data-missing="177"
                  data-total="891"
                  data-pct="19.9"></div>
-
+            
             </div>
             <div class="chunk-legend">
                 <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
@@ -11780,18 +11967,18 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
         <article class="var-card" id="col_SibSp" data-type="categorical" data-name="SibSp">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">SibSp</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">int64</span>
-                    <span class="badge">approx</span>
-                    <ul class="quality-flags"><li class="flag">Case variants</li><li class="flag">Trim variants</li><li class="flag">Empty strings</li></ul>
+                    
+                    <ul class="quality-flags"><li class="flag">Empty strings</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -11801,7 +11988,7 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique (≈)</th><td class="num">7</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>0</code></td></tr><tr><th>Mode %</th><td class="num">68.2%</td></tr><tr><th>Empty strings</th><td class="num warn">608</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">7</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>0</code></td></tr><tr><th>Mode %</th><td class="num">68.2%</td></tr><tr><th>Empty strings</th><td class="num warn">608</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">1.339</td></tr><tr><th>Rare levels</th><td class="num ">2 (1.3%)</td></tr><tr><th>Top 5 coverage</th><td class="num good">98.7%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
@@ -11821,7 +12008,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_SibSp-details" aria-expanded="false">Details</button>
@@ -11835,8 +12022,8 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_SibSp-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="common">Common values</button>
@@ -11872,18 +12059,18 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
         <article class="var-card" id="col_Parch" data-type="categorical" data-name="Parch">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Parch</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">int64</span>
-                    <span class="badge">approx</span>
-                    <ul class="quality-flags"><li class="flag warn">Dominant category</li><li class="flag">Case variants</li><li class="flag">Trim variants</li><li class="flag">Empty strings</li></ul>
+                    
+                    <ul class="quality-flags"><li class="flag warn">Dominant category</li><li class="flag">Empty strings</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -11893,7 +12080,7 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique (≈)</th><td class="num">7</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>0</code></td></tr><tr><th>Mode %</th><td class="num">76.1%</td></tr><tr><th>Empty strings</th><td class="num warn">678</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">7</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>0</code></td></tr><tr><th>Mode %</th><td class="num">76.1%</td></tr><tr><th>Empty strings</th><td class="num warn">678</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">1.128</td></tr><tr><th>Rare levels</th><td class="num ">4 (1.7%)</td></tr><tr><th>Top 5 coverage</th><td class="num good">99.4%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
@@ -11913,7 +12100,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Parch-details" aria-expanded="false">Details</button>
@@ -11927,8 +12114,8 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_Parch-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="common">Common values</button>
@@ -11964,18 +12151,18 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
         <article class="var-card" id="col_Ticket" data-type="categorical" data-name="Ticket">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Ticket</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">object</span>
-                    <span class="badge">approx</span>
-                    <ul class="quality-flags"><li class="flag warn">High cardinality</li><li class="flag">Case variants</li><li class="flag">Trim variants</li></ul>
+                    
+                    <ul class="quality-flags"><li class="flag warn">High cardinality</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -11985,7 +12172,7 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique (≈)</th><td class="num">682</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>113043</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">682</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>113043</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">0.5169</td></tr><tr><th>Rare levels</th><td class="num ">47 (5.3%)</td></tr><tr><th>Top 5 coverage</th><td class="num warn">0.6%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
@@ -12023,7 +12210,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Ticket-details" aria-expanded="false">Details</button>
@@ -12037,8 +12224,8 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_Ticket-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="common">Common values</button>
@@ -12074,17 +12261,17 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
         <article class="var-card" id="col_Fare" data-type="numeric" data-name="Fare">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname" title="Fare">Fare</span>
                     <span class="badge">Numeric</span>
                     <span class="dtype chip">float64</span>
-
+                    
                     <ul class='quality-flags'><li class="flag warn" data-threshold=">1" data-value="4.77">Skewed Right</li><li class="flag bad" data-threshold="|kurtosis| > 3" data-value="33.12">Heavy‑tailed</li><li class="flag" data-threshold="Detected rounding" data-value="54.0%">Heaping</li><li class="flag bad" data-threshold=">1%" data-value="13.0%">Many outliers</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/numeric/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Numeric analysis" aria-label="View Numeric analysis documentation">
@@ -12354,7 +12541,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Numeric controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Fare-details" aria-expanded="false">Details</button>
@@ -12373,8 +12560,8 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_Fare-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="stats">Statistics</button>
@@ -12411,7 +12598,7 @@ body.suricata-standalone:not(.light) {
                 <span class="direction-label">High Outliers</span>
                 <span class="outlier-count">10 outliers (1.1%) (showing top 10 of 116 total)</span>
             </div>
-
+            
             <div class="severity-breakdown">
                 <div class="method-severity-group">
                     <span class="method-label">IQR:</span>
@@ -12426,7 +12613,7 @@ body.suricata-standalone:not(.light) {
                     <span class="severity-item moderate">Moderate: 0</span>
                 </div>
             </div>
-
+            
             <div class="context-note"><small>💡 This shows the most extreme outliers from a representative sample. The general statistics show all 116 outliers (13.0%) in the full dataset.</small></div>
         </div>
         <table class="outliers-table enhanced"><thead><tr><th>Rank</th><th>Index</th><th>Value</th><th>Method</th><th>Severity</th></tr></thead><tbody><tr class='outlier-row rank-1'><td class='rank' rowspan='2'>1ˢᵗ</td><td class='index' rowspan='2'>258</td><td class='num outlier-value' rowspan='2'>512.3</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (20.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-1'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (72.1× MAD)</span></td></tr><tr class='outlier-row rank-2'><td class='rank' rowspan='2'>2ⁿᵈ</td><td class='index' rowspan='2'>88</td><td class='num outlier-value' rowspan='2'>263</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (10.0× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-2'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (36.0× MAD)</span></td></tr><tr class='outlier-row rank-3'><td class='rank' rowspan='2'>3ʳᵈ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>262.4</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (10.0× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-3'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (35.9× MAD)</span></td></tr><tr class='outlier-row rank-4'><td class='rank' rowspan='2'>4ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>247.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (9.4× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-4'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (33.8× MAD)</span></td></tr><tr class='outlier-row rank-5'><td class='rank' rowspan='2'>5ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>227.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (8.5× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-5'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (30.9× MAD)</span></td></tr><tr class='outlier-row rank-6'><td class='rank' rowspan='2'>6ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>221.8</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (8.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-6'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (30.0× MAD)</span></td></tr><tr class='outlier-row rank-7'><td class='rank' rowspan='2'>7ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>211.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (7.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-7'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (28.5× MAD)</span></td></tr><tr class='outlier-row rank-8'><td class='rank' rowspan='2'>8ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>211.3</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (7.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-8'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (28.5× MAD)</span></td></tr><tr class='outlier-row rank-9'><td class='rank' rowspan='2'>9ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>164.9</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-9'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (21.8× MAD)</span></td></tr><tr class='outlier-row rank-10'><td class='rank' rowspan='2'>10ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>153.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-10'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (20.1× MAD)</span></td></tr></tbody></table><div class="outlier-note"><small>ℹ️ Index shown only for top/bottom extreme values tracked during profiling. Sample-based outliers may not have row indices.</small></div></div>
@@ -12465,7 +12652,7 @@ body.suricata-standalone:not(.light) {
                 <div class="bar-fill missing" style="width: 0.0%" title="Missing: 0.0%"></div>
             </div>
         </div>
-
+        
         <div class="chunk-distribution">
             <h4 class="section-title">Missing Values per Chunk</h4>
             <div class="chunk-info">
@@ -12473,7 +12660,7 @@ body.suricata-standalone:not(.light) {
                 <span>Peak: 0.0%</span>
             </div>
             <div class="chunk-spectrum">
-
+                
             <div class="chunk-segment low"
                  style="width: 100.00%"
                  data-start="0"
@@ -12481,7 +12668,7 @@ body.suricata-standalone:not(.light) {
                  data-missing="0"
                  data-total="891"
                  data-pct="0.0"></div>
-
+            
             </div>
             <div class="chunk-legend">
                 <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
@@ -12493,18 +12680,18 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
         <article class="var-card" id="col_Cabin" data-type="categorical" data-name="Cabin">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Cabin</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">object</span>
-                    <span class="badge">approx</span>
-                    <ul class="quality-flags"><li class="flag">Case variants</li><li class="flag">Trim variants</li><li class="flag bad">Missing</li></ul>
+                    
+                    <ul class="quality-flags"><li class="flag bad">Missing</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -12514,7 +12701,7 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">204</td></tr><tr><th>Unique (≈)</th><td class="num">148</td></tr><tr><th>Missing</th><td class="num crit">687 (77.1%)</td></tr><tr><th>Mode</th><td><code>—</code></td></tr><tr><th>Mode %</th><td class="num">0.0%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">204</td></tr><tr><th>Unique</th><td class="num">148</td></tr><tr><th>Missing</th><td class="num crit">687 (77.1%)</td></tr><tr><th>Mode</th><td><code>—</code></td></tr><tr><th>Mode %</th><td class="num">0.0%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">NaN</td></tr><tr><th>Rare levels</th><td class="num ">0 (0.0%)</td></tr><tr><th>Top 5 coverage</th><td class="num warn">0.0%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
@@ -12522,7 +12709,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Cabin-details" aria-expanded="false">Details</button>
@@ -12536,17 +12723,17 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_Cabin-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="common">Common values</button>
-
+                
                 <button role="tab" data-tab="missing">Missing Values</button>
             </nav>
             <div class="tab-panes">
                 <section class="tab-pane active" data-tab="common"><div class="muted">No common values to display</div></section>
-
+                
                 <section class="tab-pane" data-tab="missing">
                     <div class="sub"><div class="hdr">Missing Values</div>
         <div class="missing-analysis-header">
@@ -12573,18 +12760,18 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
         <article class="var-card" id="col_Embarked" data-type="categorical" data-name="Embarked">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Embarked</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">object</span>
-                    <span class="badge">approx</span>
-                    <ul class="quality-flags"><li class="flag warn">Dominant category</li><li class="flag">Case variants</li><li class="flag">Trim variants</li><li class="flag warn">Missing</li></ul>
+                    
+                    <ul class="quality-flags"><li class="flag warn">Dominant category</li><li class="flag warn">Missing</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -12594,7 +12781,7 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">889</td></tr><tr><th>Unique (≈)</th><td class="num">3</td></tr><tr><th>Missing</th><td class="num warn">2 (0.2%)</td></tr><tr><th>Mode</th><td><code>S</code></td></tr><tr><th>Mode %</th><td class="num">72.4%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">889</td></tr><tr><th>Unique</th><td class="num">3</td></tr><tr><th>Missing</th><td class="num warn">2 (0.2%)</td></tr><tr><th>Mode</th><td><code>S</code></td></tr><tr><th>Mode %</th><td class="num">72.4%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">1.097</td></tr><tr><th>Rare levels</th><td class="num ">0 (0.0%)</td></tr><tr><th>Top 5 coverage</th><td class="num good">100.0%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
@@ -12605,7 +12792,7 @@ body.suricata-standalone:not(.light) {
         </div>
         </div>
                 </div>
-
+                
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Embarked-details" aria-expanded="false">Details</button>
@@ -12619,8 +12806,8 @@ body.suricata-standalone:not(.light) {
                 </div>
             </div>
         </div>
-
-
+        
+                
         <section id="col_Embarked-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
                 <button role="tab" class="active" data-tab="common">Common values</button>
@@ -12656,10 +12843,10 @@ body.suricata-standalone:not(.light) {
                 </section>
             </div>
         </section>
-
+        
             </div>
         </article>
-
+        
           </div>
 
           <div class="pagination" id="pagination">
@@ -12667,28 +12854,28 @@ body.suricata-standalone:not(.light) {
             <div class="pages" id="page-numbers"></div>
             <button id="next-btn" >→</button>
           </div>
-
+    
         </section>
 
         <!-- Correlations Section -->
         <hr class="section-divider">
         <section id="correlations">
           <h2 class="section-title">Correlations</h2>
-
+          
         <div class="correlations-section-redesign">
             <div class="no-correlations-state">
                 <span class="icon">📊</span>
                 <p>No significant correlations found (threshold: 0.50)</p>
             </div>
         </div>
-
+        
         </section>
 
         <!-- Missing Values Section -->
         <hr class="section-divider">
         <section id="missing-values">
           <h2 class="section-title">Missing Values</h2>
-
+          
         <div class="missing-values-section-redesign">
             <div class="missing-tabs-header">
                 <div class="missing-tabs">
@@ -12699,51 +12886,51 @@ body.suricata-standalone:not(.light) {
             </div>
 
             <div class="missing-tab-content active" data-tab="completeness">
-
+                
         <div class="scrollable-list">
-
+            
             <div class="compact-row">
                 <code class="col-name missing-col" title="Cabin">Cabin</code>
-
+                
         <div class="completeness-bar-dual" title="Total: 891 values">
             <div class="bar-fill present" style="width: 22.9%"
                  title="Present: 204 (22.9%)"></div>
             <div class="bar-fill missing" style="width: 77.1%"
                  title="Missing: 687 (77.1%)"></div>
         </div>
-
+        
             </div>
-
+            
             <div class="compact-row">
                 <code class="col-name missing-col" title="Age">Age</code>
-
+                
         <div class="completeness-bar-dual" title="Total: 891 values">
             <div class="bar-fill present" style="width: 80.1%"
                  title="Present: 714 (80.1%)"></div>
             <div class="bar-fill missing" style="width: 19.9%"
                  title="Missing: 177 (19.9%)"></div>
         </div>
-
+        
             </div>
-
+            
             <div class="compact-row">
                 <code class="col-name missing-col" title="Embarked">Embarked</code>
-
+                
         <div class="completeness-bar-dual" title="Total: 890 values">
             <div class="bar-fill present" style="width: 99.8%"
                  title="Present: 888 (99.8%)"></div>
             <div class="bar-fill missing" style="width: 0.2%"
                  title="Missing: 2 (0.2%)"></div>
         </div>
-
+        
             </div>
-
+            
         </div>
-
+        
             </div>
 
             <div class="missing-tab-content" data-tab="chunks">
-
+                
         <div class="chunk-legend">
             <span class="legend-label">Missing per chunk:</span>
             <div class="legend-item">
@@ -12760,7 +12947,7 @@ body.suricata-standalone:not(.light) {
             </div>
         </div>
         <div class="scrollable-list">
-
+            
             <div class="compact-row">
                 <code class="col-name missing-col" title="Cabin">Cabin</code>
                 <div class="chunk-spectrum">
@@ -12774,7 +12961,7 @@ body.suricata-standalone:not(.light) {
                      data-pct="77.1"></div>
                 </div>
             </div>
-
+            
             <div class="compact-row">
                 <code class="col-name missing-col" title="Age">Age</code>
                 <div class="chunk-spectrum">
@@ -12788,7 +12975,7 @@ body.suricata-standalone:not(.light) {
                      data-pct="19.9"></div>
                 </div>
             </div>
-
+            
             <div class="compact-row">
                 <code class="col-name missing-col" title="Embarked">Embarked</code>
                 <div class="chunk-spectrum">
@@ -12802,12 +12989,12 @@ body.suricata-standalone:not(.light) {
                      data-pct="0.2"></div>
                 </div>
             </div>
-
+            
         </div>
-
+        
             </div>
         </div>
-
+        
         </section>
 
         <footer class="page" role="contentinfo">

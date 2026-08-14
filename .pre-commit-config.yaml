@@ -4,9 +4,13 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
     hooks:
+      # Generated reports are excluded: rewriting them here would make the
+      # committed file differ from what regenerate_example_report.py emits.
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
+        exclude: '^docs/assets/.*\.html$'
       - id: end-of-file-fixer
+        exclude: '^docs/assets/.*\.html$'
       - id: check-yaml
         args: [--unsafe]
       - id: check-toml
