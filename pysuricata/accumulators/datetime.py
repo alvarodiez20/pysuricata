@@ -15,6 +15,7 @@ import numpy as np
 
 from .algorithms import MonotonicityDetector
 from .config import DatetimeConfig
+from .protocols import AccumulatorKind, PicklableAccumulator
 from .sketches import KMV, ReservoirSampler
 
 # Validity window for nanosecond timestamps. The old bound of -2e18 ns is
@@ -114,7 +115,7 @@ class DatetimeSummary:
     chunk_metadata: Sequence[tuple[int, int, int]] | None = None
 
 
-class DatetimeAccumulator:
+class DatetimeAccumulator(PicklableAccumulator):
     """Production-grade datetime accumulator optimized for big data temporal analysis.
 
     This accumulator provides comprehensive temporal analysis with maximum performance
@@ -175,6 +176,16 @@ class DatetimeAccumulator:
         # Interval tracking for temporal analysis with memory bounds
         self._intervals: list[float] = []
         self._last_ts: int | None = None
+
+    @property
+    def kind(self) -> AccumulatorKind:
+        """Which column kind this accumulator handles.
+
+        Read instead of `isinstance`: a native accumulator will not be an
+        instance of this class, and the isinstance chain's order was
+        load-bearing without saying so anywhere.
+        """
+        return "datetime"
 
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string and extract timezone metadata.

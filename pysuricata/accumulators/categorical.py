@@ -13,6 +13,7 @@ from typing import Any
 import numpy as np
 
 from .config import CategoricalConfig
+from .protocols import AccumulatorKind, PicklableAccumulator
 from .sketches import KMV, MisraGries, ReservoirSampler
 
 
@@ -83,7 +84,7 @@ def _string_lengths(values: Any) -> np.ndarray:
     return lengths[np.maximum(codes, 0)]
 
 
-class CategoricalAccumulator:
+class CategoricalAccumulator(PicklableAccumulator):
     """Production-grade categorical accumulator optimized for big data.
 
     This accumulator provides comprehensive analysis of categorical data with
@@ -142,6 +143,16 @@ class CategoricalAccumulator:
 
         # Special value tracking
         self._empty_zero = 0
+
+    @property
+    def kind(self) -> AccumulatorKind:
+        """Which column kind this accumulator handles.
+
+        Read instead of `isinstance`: a native accumulator will not be an
+        instance of this class, and the isinstance chain's order was
+        load-bearing without saying so anywhere.
+        """
+        return "categorical"
 
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string.
