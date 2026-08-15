@@ -7,6 +7,18 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.37] - 2026-08-15
+
+UX-7 (#78).
+
+### Added
+- **`progress=` on `profile()` and `summarize()`.** A 1.8-million-cell profile produced 46 bytes of output, none of it progress — for the use case this library is positioned on, a hung process and a working one looked identical. `log_every_n_chunks` existed but routes to a logger that is off by default, so it is invisible unless you configure logging first, which is not what you think to do while waiting to find out whether anything is happening.
+
+  `True` reports; `"auto"` reports only when stderr is a terminal, so a redirect or a cron job stays quiet without being configured; a callable receives `chunks`, `rows` and `elapsed`. **Everything goes to stderr and nothing to stdout**, so a profile written to a pipe stays parseable. The line is throttled to stay readable and carries an ETA only when the row total is knowable — a generator source gets a counter and a rate, not an invented estimate.
+
+### Fixed
+- **A bad `progress` value could be silently discarded.** `_to_engine_config` falls back to a direct mapping inside a bare `except Exception`, so a value that fails validation deeper in becomes a *different configuration* rather than an error. `progress` is now validated at the public boundary, where the caller sees it.
+
 ## [0.0.36] - 2026-08-15
 
 UX-4, UX-6 and UX-11 (#75, #77, #82). Three findings with one shape: the

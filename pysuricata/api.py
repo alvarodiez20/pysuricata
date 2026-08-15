@@ -295,6 +295,9 @@ class ComputeOptions:
     max_uniques: int = 2_048
     top_k: int = 50
     random_seed: int | None = 0
+    # True, False, "auto", or a callable taking chunks/rows/elapsed. Always
+    # stderr, never stdout, so piped output stays parseable.
+    progress: Any = False
 
     # Logging and checkpointing
     log_every_n_chunks: int = 1
@@ -329,6 +332,21 @@ class ComputeOptions:
             raise ValueError("chunk_size must be positive")
         if self.log_every_n_chunks <= 0:
             raise ValueError("log_every_n_chunks must be positive")
+        # Validated here as well as on EngineConfig: _to_engine_config falls
+        # back to a direct mapping inside a bare `except Exception`, so an error
+        # raised further in becomes a silently different configuration rather
+        # than a message. Failing at the public boundary is the only place the
+        # caller reliably sees it.
+        if not (
+            self.progress is None
+            or isinstance(self.progress, bool)
+            or callable(self.progress)
+            or self.progress == "auto"
+        ):
+            raise ConfigurationError(
+                "progress must be True, False, 'auto' or a callable, got "
+                f"{self.progress!r}"
+            )
         if self.checkpoint_every_n_chunks < 0:
             raise ValueError("checkpoint_every_n_chunks must be non-negative")
         if self.checkpoint_max_to_keep <= 0:
@@ -614,6 +632,7 @@ _KEYWORD_OPTIONS = {
     "correlations": ("compute", "compute_correlations"),
     "seed": ("compute", "random_seed"),
     "title": ("render", "title"),
+    "progress": ("compute", "progress"),
 }
 
 # One word for an intent. ydata-profiling's single most-used API feature is
@@ -721,9 +740,9 @@ def profile(
             or the keyword options below.
         preset: ``"fast"`` or ``"thorough"``. One word for an intent, rather
             than working out which of twenty-one knobs to turn.
-        **options: The six most-reached-for settings, without the nesting:
+        **options: The most-reached-for settings, without the nesting:
             ``chunk_size``, ``columns``, ``sample``, ``correlations``, ``seed``,
-            ``title``.
+            ``title``, ``progress``.
 
     Returns:
         A :class:`Report` object containing the HTML and the computed stats

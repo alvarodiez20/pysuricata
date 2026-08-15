@@ -9,7 +9,7 @@ engine's configuration distinct from the public API config in
 
 import logging
 from dataclasses import dataclass
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 
 @dataclass
@@ -60,6 +60,9 @@ class EngineConfig:
     logger: logging.Logger | None = None
     log_level: int = logging.INFO
     log_every_n_chunks: int = 1  # set >1 to reduce verbosity on huge runs
+    # True, False, "auto", or a callable. "auto" reports only when stderr is a
+    # terminal, so redirected output stays clean without being configured.
+    progress: Any = False
     include_sample: bool = True
     sample_rows: int = 10
     # Correlations (optional, lightweight)
@@ -115,6 +118,7 @@ class EngineConfig:
             random_seed=opts.random_seed,
             # Add checkpointing parameters
             log_every_n_chunks=getattr(opts, "log_every_n_chunks", 1),
+            progress=getattr(opts, "progress", False),
             checkpoint_every_n_chunks=getattr(opts, "checkpoint_every_n_chunks", 0),
             checkpoint_dir=getattr(opts, "checkpoint_dir", None),
             checkpoint_prefix=getattr(opts, "checkpoint_prefix", "pysuricata_ckpt"),
@@ -169,6 +173,21 @@ class EngineConfig:
             val = getattr(self, name, None)
             if not (isinstance(val, int) and val >= 0):
                 raise ValueError(f"{name} must be a non-negative integer, got {val!r}")
+
+        # progress is True/False/"auto"/callable, not a count. It was briefly in
+        # the integer list above, where True passed only because isinstance(True,
+        # int) is True and a callable raised -- and the raise was swallowed by a
+        # bare except in _to_engine_config, so the setting silently vanished.
+        if not (
+            self.progress is None
+            or isinstance(self.progress, bool)
+            or callable(self.progress)
+            or self.progress == "auto"
+        ):
+            raise ValueError(
+                "progress must be True, False, 'auto' or a callable, got "
+                f"{self.progress!r}"
+            )
 
         # Correlation threshold must be within [0.0, 1.0]
         if not (0.0 <= float(self.corr_threshold) <= 1.0):
