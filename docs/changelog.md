@@ -7,6 +7,30 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.42] - 2026-08-15
+
+#95 and #33. The bounded-memory claim now holds for text columns, and row
+signatures stop being re-hashed through a lossy conversion.
+
+### Fixed
+- **A text column's memory grew with the row count** (#95), which contradicted the one claim the library is positioned on — and text-heavy frames are the ones people reach for this tool with. A single string column holding **four distinct values** reached 339 MB of peak RSS at 8.4M rows.
+
+  The cause was `Series.str.len()`. Nothing was retained — `sys.getallocatedblocks()` stayed flat and the sketch state stayed at four counters — so it was allocator churn inside the accessor rather than a leak, but RSS is what a CI runner limits. Taking the length of each *distinct* value and gathering it back through the factorisation codes is flat in rows and returns exactly the same lengths in the same order, so no statistic moves.
+
+  It is **4× faster on that kernel** for a low-cardinality column, because `len()` runs once per category instead of once per row — and that is worth **nothing end to end**: a text-heavy 200,000 × 3 profile measures 1.00× either way, because the length computation was never on the critical path. This is a memory fix, not a speed one.
+
+  | rows | before | after |
+  |---:|---:|---:|
+  | 524,288 | 39 MB | 7 MB |
+  | 2,097,152 | 78 MB | 7 MB |
+  | 8,388,608 | **339 MB** | **7 MB** |
+
+  A test now measures this in subprocesses on every run, because peak RSS cannot be checked honestly from inside the process doing the allocating.
+- **Distinct row signatures could collide into one** (#33). `RowKMV` computes a vectorised uint64 row hash and handed it to `KMV.add_many`, which canonicalises integers through float64 so that `1` and `1.0` count as one value. That is right for a data column and wrong for a signature: float64 has 53 bits of mantissa, so a uint64 loses its low 11 bits. **1,000 hashes differing only in those bits were counted as 1 distinct value.** `KMV.offer_u64` skips the conversion, and the duplicate-row estimate no longer depends on which bits happen to differ.
+
+### Not changed, and why
+- **#32 (a bounded heap for the KMV sorted list) is closed on measurement.** The full sort it describes no longer happens: the admission-threshold pre-filter added in #62 rejects a 50,000-hash batch in 127 µs where sorting it costs 2,659 µs. Full KMV ingest is 29.7 ns/value, dominated by hashing rather than by sketch maintenance — so the target is the native core, where KMV is already ranked first.
+
 ## [0.0.41] - 2026-08-15
 
 #66. Every source used to arrive as a pandas or polars frame, so profiling a

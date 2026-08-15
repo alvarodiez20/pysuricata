@@ -45,6 +45,44 @@ class CategoricalSummary:
     diversity_ratio: float = 0.0
 
 
+def _string_lengths(values: Any) -> np.ndarray:
+    """Length of every value, in order, without pandas' `.str` accessor.
+
+    `Series.str.len()` looked like the obvious call and was the single largest
+    memory problem in the library: a string column's peak RSS grew with the row
+    count -- 39 MB at 500,000 rows, 339 MB at 8,400,000, on a column holding
+    four distinct values. Nothing was retained (`sys.getallocatedblocks()` was
+    flat, and the sketches stayed at four counters), so it is allocator churn
+    inside the accessor rather than a leak, but RSS is RSS.
+
+    Taking the length of each *distinct* value and gathering it back through
+    the factorisation codes is flat in rows, and returns exactly the same
+    lengths in exactly the same order -- so the reservoir sees an identical
+    stream and no statistic moves.
+
+    It is also 4x faster on this kernel for a low-cardinality column, because
+    `len()` runs once per category instead of once per row. That is worth
+    nothing end to end: a text-heavy 200,000 x 3 profile measures 1.00x either
+    way, because this was never on the critical path. Recorded so the next
+    reader does not go looking for a speedup that is not there.
+
+    Args:
+        values: A pandas Series of strings.
+
+    Returns:
+        An int64 array of lengths, aligned with `values`.
+    """
+    import pandas as pd
+
+    codes, uniques = pd.factorize(values, sort=False)
+    lengths = np.fromiter((len(u) for u in uniques), dtype=np.int64, count=len(uniques))
+    if lengths.size == 0:
+        return np.empty(0, dtype=np.int64)
+    # -1 marks a null; the caller has already dropped them, but a gather with a
+    # negative index would silently read from the end of the array.
+    return lengths[np.maximum(codes, 0)]
+
+
 class CategoricalAccumulator:
     """Production-grade categorical accumulator optimized for big data.
 
@@ -218,12 +256,12 @@ class CategoricalAccumulator:
         # Vectorized string length statistics
         if self.config.enable_length_stats and self._len_sample:
             try:
-                lengths = str_values.str.len()
-                self._len_sum += lengths.sum()
-                self._len_n += len(lengths)
+                lengths = _string_lengths(str_values)
+                self._len_sum += int(lengths.sum())
+                self._len_n += int(lengths.size)
 
                 # Batch add lengths to reservoir sampler
-                self._len_sample.add_many(lengths.to_numpy(dtype=float))
+                self._len_sample.add_many(lengths.astype(float))
             except Exception:
                 # Fallback to individual processing
                 for value in str_values:

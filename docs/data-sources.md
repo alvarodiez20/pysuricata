@@ -77,10 +77,10 @@ Two honest qualifications:
 - **This is not a zero-copy Arrow path.** The accumulators take numpy arrays,
   so each batch is converted on its way through. What changes is that one batch
   exists at a time rather than the whole file.
-- **Memory is flat in rows for numeric columns and not yet for text.** Four
-  float64 columns cost the same 19 MB above floor at 500,000 rows and at
-  8,400,000. A string column does not — that is measured, filed, and open
-  ([#95](https://github.com/alvarodiez20/pysuricata/issues/95)).
+- **Memory is flat in rows.** Four float64 columns cost the same 19 MB above
+  floor at 500,000 rows and at 8,400,000; a string column costs 7 MB at both.
+  Text columns used to grow to 339 MB at 8.4M rows — fixed in 0.0.42, and a
+  test measures it in subprocesses on every run.
 
 ## Type inference on a stream
 

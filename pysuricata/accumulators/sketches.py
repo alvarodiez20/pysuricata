@@ -149,6 +149,32 @@ class KMV:
         )
         self._offer_hashes(hashes)
 
+    def offer_u64(self, values: np.ndarray) -> None:
+        """Add values that are **already 64-bit hashes**.
+
+        `add_many` treats an integer array as data: it canonicalises through
+        float64 so that `1` and `1.0` count as one distinct value. That is right
+        for a data column and wrong for a row signature, which is a uint64 that
+        already spans the full range — the float64 round-trip drops its low 11
+        bits, so two distinct rows can collide into one and inflate the
+        duplicate estimate.
+
+        `RowKMV` computes a perfectly good vectorised uint64 row hash and used
+        to hand it to `add_many`, which converted it to float64 and re-mixed it.
+        This is the path that skips both.
+
+        The values are still passed through splitmix64: a polynomial
+        combination of column hashes has structure in its low bits, and KMV
+        keeps the *smallest* hashes, so a non-uniform tail biases the estimate.
+
+        Args:
+            values: A uint64 array of precomputed hashes.
+        """
+        arr = np.asarray(values)
+        if arr.size == 0:
+            return
+        self._offer_hashes(_mix64_array(arr.astype(np.uint64, copy=False)))
+
     def _offer_hashes(self, hashes: np.ndarray) -> None:
         """Feed a batch of 64-bit hashes into exact mode, then the sketch.
 
@@ -707,8 +733,10 @@ class RowKMV:
             for c in columns[1:]:
                 combined = combined * _PRIME + col_hashes[c]
 
-            # Batch add combined hashes to KMV sketch
-            self.kmv.add_many(combined)
+            # Already 64-bit signatures: `add_many` would canonicalise them
+            # through float64, which drops the low 11 bits of a uint64 and lets
+            # distinct rows collide into one.
+            self.kmv.offer_u64(combined)
             self.rows += n_rows
 
         except Exception:
@@ -725,8 +753,8 @@ class RowKMV:
             if hasattr(df, "hash_rows"):
                 h = df.hash_rows().to_numpy()
                 self.rows += int(h.size)
-                # Batch add hashes to KMV sketch instead of per-value loop
-                self.kmv.add_many(h)
+                # As above: these are signatures, not data.
+                self.kmv.offer_u64(h)
                 return
 
             # Fallback: use pandas vectorized path
