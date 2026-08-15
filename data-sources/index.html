@@ -1865,7 +1865,8 @@ readers, Parquet files, and DuckDB relations.</p>
 </span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">summarize</span><span class="p">(</span><span class="n">pa</span><span class="o">.</span><span class="n">Table</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">df</span><span class="p">))</span>
 </span></code></pre></div>
 <p>DuckDB and pyarrow are <strong>not dependencies</strong>. The DuckDB path is duck-typed on
-<code>fetch_record_batch</code>, so nothing imports it; Parquet and Arrow reading needs
+the relation's batch-reader method — <code>to_arrow_reader</code>, or <code>fetch_record_batch</code>
+on older DuckDB — so nothing imports it; Parquet and Arrow reading needs
 <code>pyarrow</code>, and says so if it is missing.</p>
 <h2 id="streaming-a-query-not-a-table">Streaming a query, not a table</h2>
 <p>The DuckDB path is the one worth knowing about. A relation is a query that has
@@ -1904,10 +1905,10 @@ with <code>getrusage</code> in fresh subprocesses, above a 118 MB bare-import fl
 <li><strong>This is not a zero-copy Arrow path.</strong> The accumulators take numpy arrays,
   so each batch is converted on its way through. What changes is that one batch
   exists at a time rather than the whole file.</li>
-<li><strong>Memory is flat in rows for numeric columns and not yet for text.</strong> Four
-  float64 columns cost the same 19 MB above floor at 500,000 rows and at
-  8,400,000. A string column does not — that is measured, filed, and open
-  (<a href="https://github.com/alvarodiez20/pysuricata/issues/95">#95</a>).</li>
+<li><strong>Memory is flat in rows.</strong> Four float64 columns cost the same 19 MB above
+  floor at 500,000 rows and at 8,400,000; a string column costs 7 MB at both.
+  Text columns used to grow to 339 MB at 8.4M rows — fixed in 0.0.42, and a
+  test measures it in subprocesses on every run.</li>
 </ul>
 <h2 id="type-inference-on-a-stream">Type inference on a stream</h2>
 <p>One behaviour follows from streaming, and it is worth knowing before it
