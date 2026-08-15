@@ -502,6 +502,9 @@ class NumericAccumulator:
 
         # Get outlier detection results if enabled
         outliers_iqr, outliers_mod_zscore = 0, 0
+        # Bound up front: a column of nothing but inf leaves sample_values empty,
+        # and the branch below never runs.
+        mad_val = 0.0
         if self.enable_outlier_detection and sample_values:
             sample_arr = np.array(sample_values)
             q1, q3 = np.percentile(sample_arr, [25, 75])

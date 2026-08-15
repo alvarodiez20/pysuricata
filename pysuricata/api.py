@@ -20,6 +20,7 @@ import json
 import os
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Union
 
 from . import report
@@ -52,14 +53,36 @@ if TYPE_CHECKING:  # pragma: no cover
     import pandas as pd  # type: ignore
     import polars as pl  # type: ignore
 
-# Public data-like union: in-memory only (no file paths).
-# Accept single frames (pandas/polars), polars LazyFrame, or iterables of frames.
+# Public data-like union: a frame, a lazy frame, an iterable of chunks, or a
+# path to a file this library knows how to read.
 DataLike = Union[
     "pd.DataFrame",  # pandas
     "pl.DataFrame",  # polars eager
     "pl.LazyFrame",  # polars lazy
+    str,  # path to a .csv / .parquet / .json file
+    os.PathLike,
     cabc.Iterable,  # iterator/generator yielding pandas or polars DataFrames
 ]
+
+
+class PySuricataError(Exception):
+    """Base class for every error this library raises deliberately.
+
+    The public surface used to raise ``TypeError`` for an unsupported input,
+    ``ValueError`` for an unsupported file format and ``RuntimeError`` from the
+    engine for the same class of mistake, so a caller had to catch three types
+    to handle one situation. Everything raised on purpose now derives from this;
+    the specific types remain as subclasses so existing ``except TypeError``
+    handlers keep working.
+    """
+
+
+class UnsupportedDataError(PySuricataError, TypeError):
+    """The input is not something this library can profile."""
+
+
+class ConfigurationError(PySuricataError, ValueError):
+    """A configuration value is outside its documented range."""
 
 
 # Thin wrapper Report object with convenience methods
@@ -115,6 +138,21 @@ class Report:
             self.save_json(path)
         else:
             raise ValueError(f"Unknown extension for Report.save(): {ext}")
+
+    def __repr__(self) -> str:
+        """One line, not the whole document.
+
+        The dataclass default rendered every byte of ``html``, so a bare
+        ``report`` in a REPL printed over a megabyte and an exception
+        traceback carried the entire report inline.
+        """
+        dataset = self.stats.get("dataset", {}) if self.stats else {}
+        rows = dataset.get("rows_est")
+        cols = len(self.stats.get("columns", {})) if self.stats else 0
+        shape = f"{rows:,} rows" if isinstance(rows, int) else "unknown rows"
+        return (
+            f"<Report {shape} x {cols} columns, {len(self.html) / 1024:.0f} KB of HTML>"
+        )
 
     # Jupyter-friendly inline display
     def _repr_html_(self) -> str:  # pragma: no cover - visual
@@ -455,14 +493,56 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
     except ImportError:
         pass
 
+    # A path is the input people reach for first, and the CLI already accepts
+    # one -- `pysuricata profile data.csv` worked while `profile("data.csv")`
+    # raised TypeError. Same loader, same formats.
+    if isinstance(data, (str, os.PathLike)):
+        return _read_path(data)
+
     if isinstance(data, cabc.Iterable) and not isinstance(
-        data, (str, bytes, bytearray, cabc.Mapping)
+        data, (bytes, bytearray, cabc.Mapping)
     ):
         return data
 
-    raise TypeError(
-        "Unsupported data type for this API. Provide a pandas DataFrame, a polars DataFrame/LazyFrame, or an iterable of pandas/polars DataFrames."
+    raise UnsupportedDataError(
+        f"Cannot profile {type(data).__name__}. Provide a pandas DataFrame, a "
+        "polars DataFrame/LazyFrame, a path to a .csv/.parquet/.json file, or "
+        "an iterable of DataFrame chunks."
     )
+
+
+def _read_path(path: str | os.PathLike) -> pd.DataFrame:
+    """Load a CSV, Parquet or JSON file into a DataFrame.
+
+    Args:
+        path: Path to the file to read.
+
+    Returns:
+        The loaded pandas DataFrame.
+
+    Raises:
+        PySuricataError: If the file does not exist or the suffix is not one of
+            the supported formats.
+    """
+    import pandas as pd
+
+    resolved = Path(path)
+    if not resolved.exists():
+        raise PySuricataError(f"File not found: {resolved}")
+
+    readers = {
+        ".csv": pd.read_csv,
+        ".parquet": pd.read_parquet,
+        ".json": pd.read_json,
+    }
+    reader = readers.get(resolved.suffix.lower())
+    if reader is None:
+        raise UnsupportedDataError(
+            f"Cannot read '{resolved.name}': unsupported format "
+            f"'{resolved.suffix}'. Use .csv, .parquet or .json, or load it "
+            "yourself and pass the DataFrame."
+        )
+    return reader(resolved)
 
 
 def _to_engine_config(cfg: ProfileConfig) -> _EngineConfig:

@@ -7,6 +7,25 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.33] - 2026-08-15
+
+The first four of the twelve user-experience findings (#72, #79, #81, #83).
+
+### Fixed
+- **A numeric column's classification changed as the table grew.** `age` with 67 distinct values profiled as *numeric* in a 1,000-row frame and *categorical* in a 20,000-row one, because the rule fired on `unique_ratio < 0.05`. Every bounded integer — age, year, rating, day-of-month, HTTP status, state code — crossed the line purely by adding rows. The rule is now a cardinality **ceiling** (50 distinct, integral values only), which is stable under row count. For a profiler whose pitch is large data, a heuristic that degraded with scale was backwards.
+- **Whether reclassification ran at all depended on `chunk_size`.** The streaming guard asked whether the *first chunk* held every row, so an in-memory frame larger than one chunk was treated as a stream and skipped reclassification entirely — the same column came back categorical at 50,000 rows and numeric at 200,000. The question is about the source, not the chunk: an in-memory frame is fully known however the engine splits it. Streams are unaffected, and still stay numeric.
+- **`repr(report)` returned the whole document.** The dataclass default rendered every byte of `html`, so a bare `report` in a REPL printed over a megabyte and any traceback carried the report inline. It is now one line naming the shape and size.
+- **A column of nothing but infinities raised `UnboundLocalError`** in `finalize()`.
+
+### Added
+- **`profile()` and `summarize()` accept a file path**, `str` or `PathLike`, for `.csv`, `.parquet` and `.json` — the same formats the CLI has always read. `profile("data.csv")` raised `TypeError` while `pysuricata profile data.csv` worked.
+- **`py.typed`**, so annotations are visible to type checkers rather than inferring as `Any`.
+- **`__all__`**, so `dir(pysuricata)` is the public API rather than a list of internal submodules.
+- **`PySuricataError`**, one base for everything the library raises deliberately. `UnsupportedDataError` and `ConfigurationError` subclass it *and* the builtin they used to raise, so existing `except TypeError` / `except ValueError` handlers keep working.
+
+### Changed
+- A string argument is now read as a path, so passing an unusable one reports `File not found` rather than an unsupported-type error.
+
 ## [0.0.32] - 2026-08-15
 
 Documentation only; no library changes. **90 documented errors down to zero**,

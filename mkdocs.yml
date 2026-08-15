@@ -78,6 +78,7 @@ nav:
   - About:
       - About Suricatas: about-suricatas.md
       - Roadmap: roadmap.md
+      - "ADR: memory budget": adr/memory-budget.md
       - Changelog: changelog.md
 
 markdown_extensions:

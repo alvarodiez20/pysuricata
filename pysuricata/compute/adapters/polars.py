@@ -181,10 +181,16 @@ class PolarsAdapter(BaseAdapter):
                     # Streamed numeric columns therefore stay numeric, which
                     # still reports top values via Misra-Gries.
                     try:
-                        unique_count = data[col_name].n_unique()
+                        column = data[col_name]
+                        unique_count = column.n_unique()
                         total_count = data.height
+                        # Only whole numbers stand in for labels; a continuous
+                        # measurement that repeats is still a measurement.
+                        int_like = column.dtype.is_integer() or bool(
+                            column.drop_nulls().eq(column.drop_nulls().round(0)).all()
+                        )
                         if should_reclassify_numeric_as_categorical(
-                            unique_count, total_count
+                            unique_count, total_count, int_like=int_like
                         ):
                             if self.logger:
                                 self.logger.info(
