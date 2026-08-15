@@ -159,6 +159,8 @@ class AccumulatorConfig:
         enable_performance_tracking: Whether to track performance metrics
         enable_error_recovery: Whether to attempt error recovery on failures
         max_memory_mb: Maximum memory usage in MB (soft limit). Default: None (unlimited)
+        random_seed: Run seed from which each column's sampler seed is derived.
+            None draws from OS entropy, so samples differ between runs.
     """
 
     numeric: NumericConfig = field(default_factory=NumericConfig)
@@ -168,6 +170,7 @@ class AccumulatorConfig:
     enable_performance_tracking: bool = False
     enable_error_recovery: bool = True
     max_memory_mb: int | None = None
+    random_seed: int | None = None
 
     @classmethod
     def from_legacy_config(cls, cfg) -> AccumulatorConfig:
@@ -195,6 +198,7 @@ class AccumulatorConfig:
                 sample_size=getattr(cfg, "numeric_sample_k", 20_000),
                 uniques_sketch_size=getattr(cfg, "uniques_k", 2_048),
             ),
+            random_seed=getattr(cfg, "random_seed", None),
         )
 
     def validate(self) -> None:

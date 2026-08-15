@@ -83,7 +83,7 @@ class BooleanAccumulator:
         Args:
             arr: Sequence of values to process
         """
-        if not arr:
+        if len(arr) == 0:
             return
 
         # Convert to numpy array for efficient processing

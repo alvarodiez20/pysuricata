@@ -161,8 +161,7 @@ class TestReservoirSampler:
         values = np.arange(100_000, dtype=float)
         samples = []
         for n_chunks in (1, 7, 100):
-            np.random.seed(11)
-            r = ReservoirSampler(500)
+            r = ReservoirSampler(500, rng=np.random.default_rng(11))
             for chunk in np.array_split(values, n_chunks):
                 r.add_many(chunk)
             samples.append(sorted(r.values()))
@@ -171,8 +170,7 @@ class TestReservoirSampler:
 
     def test_every_slot_is_reachable(self):
         """Acceptance picks a slot uniformly; a scaling bug would strand slots."""
-        np.random.seed(1)
-        r = ReservoirSampler(100)
+        r = ReservoirSampler(100, rng=np.random.default_rng(1))
         r.add_many(np.arange(100_000, dtype=float))
         assert len(set(r.values())) == 100
 
@@ -182,8 +180,7 @@ class TestReservoirSampler:
         assert r.values() == []
 
     def test_interleaved_add_and_add_many(self):
-        np.random.seed(2)
-        r = ReservoirSampler(50)
+        r = ReservoirSampler(50, rng=np.random.default_rng(2))
         for i in range(100):
             r.add(float(i))
         r.add_many(np.arange(100, 300, dtype=float))
@@ -400,8 +397,7 @@ class TestReservoirSchedule:
         values = np.arange(500_000, dtype=np.float64)
         samples = []
         for n_chunks in (1, 13, 977):
-            np.random.seed(5)
-            r = ReservoirSampler(4000)
+            r = ReservoirSampler(4000, rng=np.random.default_rng(5))
             for chunk in np.array_split(values, n_chunks):
                 r.add_many(chunk)
             samples.append(sorted(r.values()))
@@ -412,15 +408,13 @@ class TestReservoirSchedule:
         assert samples[2] == samples[0]
 
     def test_schedule_indices_are_strictly_increasing(self):
-        np.random.seed(3)
-        r = ReservoirSampler(200)
+        r = ReservoirSampler(200, rng=np.random.default_rng(3))
         r.add_many(np.arange(50_000, dtype=np.float64))
         idx = r._sched_idx
         assert np.all(np.diff(idx) > 0)
 
     def test_slots_stay_in_range(self):
-        np.random.seed(4)
-        r = ReservoirSampler(128)
+        r = ReservoirSampler(128, rng=np.random.default_rng(4))
         r.add_many(np.arange(200_000, dtype=np.float64))
         assert r._sched_slot.min() >= 0
         assert r._sched_slot.max() < r.k
@@ -431,8 +425,7 @@ class TestReservoirSchedule:
         values = np.arange(n, dtype=np.float64)
         means = []
         for seed in range(25):
-            np.random.seed(seed)
-            r = ReservoirSampler(2000)
+            r = ReservoirSampler(2000, rng=np.random.default_rng(seed))
             for chunk in np.array_split(values, 11):
                 r.add_many(chunk)
             means.append(float(np.mean(r.values())))

@@ -74,15 +74,25 @@ class DatetimeAccumulator:
     processing for large-scale time-series datasets.
     """
 
-    def __init__(self, name: str, config: DatetimeConfig | None = None):
+    def __init__(
+        self,
+        name: str,
+        config: DatetimeConfig | None = None,
+        *,
+        seed: int | None = None,
+    ):
         """Initialize datetime accumulator.
 
         Args:
             name: Column name
             config: Configuration for accumulator behavior
+            seed: Seed for this column's sampling. None draws from OS entropy.
+                Sampling never touches the process-global RNG either way.
         """
         self.name = name
         self.config = config or DatetimeConfig()
+        self._seed = seed
+        self._rng = np.random.default_rng(seed)
 
         # Core state
         self.count = 0
@@ -102,7 +112,7 @@ class DatetimeAccumulator:
 
         # Data structures optimized for big data
         self._uniques = KMV(self.config.uniques_sketch_size)
-        self._sample = ReservoirSampler(self.config.sample_size)
+        self._sample = ReservoirSampler(self.config.sample_size, rng=self._rng)
 
         # Advanced monotonicity detection
         self._monotonicity = (
@@ -162,7 +172,7 @@ class DatetimeAccumulator:
         Args:
             arr_ns: Sequence of timestamps in nanoseconds since epoch
         """
-        if not arr_ns:
+        if len(arr_ns) == 0:
             return
 
         # Convert to numpy array for maximum performance
@@ -586,8 +596,12 @@ class DatetimeAccumulator:
         self._intervals = []
         self._last_ts = None
 
+        # A reset accumulator must replay identically, so rewind the generator
+        # rather than continuing its stream.
+        self._rng = np.random.default_rng(self._seed)
+
         # Reset data structures
         self._uniques = KMV(self.config.uniques_sketch_size)
-        self._sample = ReservoirSampler(self.config.sample_size)
+        self._sample = ReservoirSampler(self.config.sample_size, rng=self._rng)
         if self._monotonicity:
             self._monotonicity.reset()

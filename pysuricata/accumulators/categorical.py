@@ -53,15 +53,25 @@ class CategoricalAccumulator:
     processing massive datasets efficiently.
     """
 
-    def __init__(self, name: str, config: CategoricalConfig | None = None):
+    def __init__(
+        self,
+        name: str,
+        config: CategoricalConfig | None = None,
+        *,
+        seed: int | None = None,
+    ):
         """Initialize categorical accumulator.
 
         Args:
             name: Column name
             config: Configuration for accumulator behavior
+            seed: Seed for this column's length sampling. None draws from OS
+                entropy. Sampling never touches the process-global RNG.
         """
         self.name = name
         self.config = config or CategoricalConfig()
+        self._seed = seed
+        self._rng = np.random.default_rng(seed)
 
         # Core state
         self.count = 0
@@ -87,7 +97,7 @@ class CategoricalAccumulator:
         self._len_sum = 0
         self._len_n = 0
         self._len_sample = (
-            ReservoirSampler(self.config.length_sample_size)
+            ReservoirSampler(self.config.length_sample_size, rng=self._rng)
             if self.config.enable_length_stats
             else None
         )
@@ -124,7 +134,7 @@ class CategoricalAccumulator:
         Args:
             arr: Sequence of values to process
         """
-        if not arr:
+        if len(arr) == 0:
             return
 
         # Convert to pandas Series for vectorized operations
@@ -575,6 +585,10 @@ class CategoricalAccumulator:
         self._len_n = 0
         self._empty_zero = 0
 
+        # A reset accumulator must replay identically, so rewind the generator
+        # rather than continuing its stream.
+        self._rng = np.random.default_rng(self._seed)
+
         # Reset data structures
         self._uniques = KMV(self.config.uniques_sketch_size)
         if self._uniques_lower:
@@ -583,4 +597,6 @@ class CategoricalAccumulator:
             self._uniques_strip = KMV(self.config.uniques_sketch_size)
         self._topk = MisraGries(self.config.top_k_size)
         if self._len_sample:
-            self._len_sample = ReservoirSampler(self.config.length_sample_size)
+            self._len_sample = ReservoirSampler(
+                self.config.length_sample_size, rng=self._rng
+            )

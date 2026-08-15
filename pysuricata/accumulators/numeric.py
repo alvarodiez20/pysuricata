@@ -102,15 +102,25 @@ class NumericAccumulator:
     precision, reliability, and comprehensive statistical analysis capabilities.
     """
 
-    def __init__(self, name: str, config: NumericConfig | None = None):
+    def __init__(
+        self,
+        name: str,
+        config: NumericConfig | None = None,
+        *,
+        seed: int | None = None,
+    ):
         """Initialize numeric accumulator with optimized components.
 
         Args:
             name: Column name
             config: Configuration for accumulator behavior
+            seed: Seed for this column's sampling. None draws from OS entropy.
+                Sampling never touches the process-global RNG either way.
         """
         self.name = name
         self.config = config or NumericConfig()
+        self._seed = seed
+        self._rng = np.random.default_rng(seed)
 
         # Core state tracking
         self.count = 0
@@ -130,7 +140,7 @@ class NumericAccumulator:
         self._moments = StreamingMoments(
             enable_performance_tracking=self.config.enable_memory_tracking
         )
-        self._sample = ReservoirSampler(self.config.sample_size)
+        self._sample = ReservoirSampler(self.config.sample_size, rng=self._rng)
         self._uniques = KMV(self.config.uniques_sketch_size)
         self._extremes = ExtremeTracker(self.config.max_extremes)
         self._topk = MisraGries(self.config.top_k_size)
@@ -146,7 +156,9 @@ class NumericAccumulator:
         )
         self.enable_outlier_detection = self.config.enable_outlier_detection
         self._outlier_detector = (
-            OutlierDetector() if self.config.enable_outlier_detection else None
+            OutlierDetector(rng=self._rng)
+            if self.config.enable_outlier_detection
+            else None
         )
 
         # Performance monitoring for production environments
@@ -687,19 +699,30 @@ class NumericAccumulator:
         self._bytes_seen = 0
         self._corr_top = []
 
-        self._extreme_update_counter = 0
+        # A reset accumulator must replay identically, so rewind the generator
+        # rather than continuing its stream.
+        self._rng = np.random.default_rng(self._seed)
 
         # Reset all components efficiently
         self._moments.reset()
-        self._sample = ReservoirSampler(self.config.sample_size)
+        self._sample = ReservoirSampler(self.config.sample_size, rng=self._rng)
         self._uniques = KMV(self.config.uniques_sketch_size)
         self._extremes = ExtremeTracker(self.config.max_extremes)
         self._topk = MisraGries(self.config.top_k_size)
 
+        # Chunk metadata is per-run state: leaving it in place would append a
+        # second run's chunks to the first run's list.
+        if self._chunk_metadata_enabled:
+            self._chunk_boundaries = []
+            self._chunk_missing = []
+        self._chunk_count = 0
+        self._current_chunk_missing = 0
+        self._current_chunk_rows = 0
+
         if self._monotonicity:
             self._monotonicity.reset()
         if self._outlier_detector:
-            self._outlier_detector.reset()
+            self._outlier_detector.reset(rng=self._rng)
         if self._performance_metrics:
             self._performance_metrics.reset()
 

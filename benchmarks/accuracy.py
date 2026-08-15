@@ -365,8 +365,7 @@ class TestPythonReference:
         arr = np.arange(n, dtype=np.float64)
         means = []
         for seed in range(30):
-            np.random.seed(seed)
-            r = ReservoirSampler(2000)
+            r = ReservoirSampler(2000, rng=np.random.default_rng(seed))
             for chunk in np.array_split(arr, 5):
                 r.add_many(chunk)
             means.append(float(np.mean(r.values())))
@@ -487,8 +486,7 @@ class TestReservoirInvariants:
         arr = np.arange(200_000, dtype=np.float64)
         samples = []
         for n_chunks in (1, 5, 50, 500):
-            np.random.seed(7)
-            r = ReservoirSampler(2000)
+            r = ReservoirSampler(2000, rng=np.random.default_rng(7))
             for chunk in np.array_split(arr, n_chunks):
                 r.add_many(chunk)
             samples.append(sorted(r.values()))
@@ -502,8 +500,7 @@ class TestReservoirInvariants:
         arr = np.arange(n, dtype=np.float64)
         fracs = []
         for seed in range(40):
-            np.random.seed(seed)
-            r = ReservoirSampler(1000)
+            r = ReservoirSampler(1000, rng=np.random.default_rng(seed))
             for chunk in np.array_split(arr, 20):
                 r.add_many(chunk)
             fracs.append(float((np.asarray(r.values()) < n / 2).mean()))
@@ -527,8 +524,7 @@ class TestReservoirInvariants:
     def test_add_and_add_many_stay_in_sync(self):
         from pysuricata.accumulators.sketches import ReservoirSampler
 
-        np.random.seed(3)
-        r = ReservoirSampler(50)
+        r = ReservoirSampler(50, rng=np.random.default_rng(3))
         for i in range(200):
             r.add(float(i))
         r.add_many(np.arange(200, 400, dtype=np.float64))
@@ -539,7 +535,11 @@ class TestReservoirInvariants:
 
 
 class TestRngIsolation:
-    """profile() must be invisible to the caller's RNG, including on failure."""
+    """profile() must never read or write the process-global RNG.
+
+    Not by snapshotting and restoring it -- by never touching it. Every sketch
+    draws from a generator it owns, seeded per column from ``random_seed``.
+    """
 
     def test_stdlib_rng_preserved(self):
         import random
@@ -554,7 +554,7 @@ class TestRngIsolation:
         profile(pd.DataFrame({"a": np.arange(1000, dtype=float)}))
         assert random.random() == expected
 
-    def test_rng_restored_even_when_profiling_fails(self):
+    def test_global_rng_untouched_when_profiling_fails(self):
         from pysuricata import profile
 
         np.random.seed(5)
@@ -564,6 +564,51 @@ class TestRngIsolation:
         except Exception:
             pass
         assert np.random.get_state()[1][0] == before
+
+    def test_seeding_the_global_rng_does_not_change_the_report(self):
+        """A caller's seed must not leak into the profile's sampling."""
+        import pandas as pd
+
+        from pysuricata import profile
+        from pysuricata.api import ComputeOptions, ProfileConfig
+
+        df = pd.DataFrame({"a": np.random.default_rng(2).lognormal(0, 1, 50_000)})
+        cfg = ProfileConfig(compute=ComputeOptions(random_seed=42))
+
+        np.random.seed(1)
+        first = profile(df, config=cfg).stats["columns"]["a"]["median"]
+        np.random.seed(9999)
+        second = profile(df, config=cfg).stats["columns"]["a"]["median"]
+        assert first == second
+
+    def test_column_seed_does_not_depend_on_the_other_columns(self):
+        """A column samples the same rows whether or not its neighbours exist.
+
+        Seeds are derived from the column *name*, so profiling a subset must
+        reproduce the numbers from profiling the whole frame -- the property
+        that makes per-column threading reproducible.
+        """
+        import pandas as pd
+
+        from pysuricata import profile
+        from pysuricata.api import ComputeOptions, ProfileConfig
+
+        rng = np.random.default_rng(3)
+        df = pd.DataFrame(
+            {
+                "a": rng.lognormal(0, 1, 60_000),
+                "b": rng.standard_normal(60_000),
+                "c": rng.integers(0, 1000, 60_000).astype(float),
+            }
+        )
+        cfg = ProfileConfig(compute=ComputeOptions(random_seed=42))
+
+        full = profile(df, config=cfg).stats["columns"]["a"]["median"]
+        alone = profile(df[["a"]], config=cfg).stats["columns"]["a"]["median"]
+        reordered = profile(df[["c", "b", "a"]], config=cfg).stats["columns"]["a"][
+            "median"
+        ]
+        assert full == alone == reordered
 
     def test_same_seed_still_reproducible(self):
         import pandas as pd

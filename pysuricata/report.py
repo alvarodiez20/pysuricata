@@ -23,14 +23,9 @@ Example:
 
 from __future__ import annotations
 
-import contextlib
 import logging
-import random as _py_random
 import time
-from collections.abc import Iterator
 from typing import Any
-
-import numpy as np
 
 # Checkpointing imports
 # Processing imports
@@ -45,9 +40,6 @@ from .logger import SectionTimer as _SectionTimer
 from .render.format_utils import human_bytes as _human_bytes
 from .render.html import render_empty_html as _render_empty_html
 from .render.html import render_html_snapshot as _render_html_snapshot
-
-# Module-level RNG seed used by public SVG helpers
-_REPORT_RANDOM_SEED: int = 0
 
 
 class ReportOrchestrator:
@@ -81,41 +73,6 @@ class ReportOrchestrator:
         logger = self.config.logger or logging.getLogger(__name__)
         logger.setLevel(self.config.log_level)
         return logger
-
-    @staticmethod
-    @contextlib.contextmanager
-    def _isolated_global_rng() -> Iterator[None]:
-        """Leave the caller's global RNG state exactly as it was found.
-
-        Sampling is seeded from ``config.random_seed`` for reproducibility, and
-        the sketches draw from the process-global numpy and stdlib generators --
-        so seeding necessarily clobbers whatever state the caller had. A notebook
-        that seeds its own experiment and then profiles a frame would silently
-        have its RNG reset. Snapshot on the way in, restore on the way out.
-
-        Note this makes profiling *invisible* to the caller's RNG; it does not
-        make sampling thread-safe. Per-accumulator generators are still required
-        before per-column threading can be reproducible.
-        """
-        np_state = np.random.get_state()
-        py_state = _py_random.getstate()
-        try:
-            yield
-        finally:
-            np.random.set_state(np_state)
-            _py_random.setstate(py_state)
-
-    def _setup_random_seeds(self) -> None:
-        """Configure random seeds for reproducible results."""
-        if self.config.random_seed is not None:
-            try:
-                seed = int(self.config.random_seed)
-                np.random.seed(seed)
-                _py_random.seed(seed)
-                global _REPORT_RANDOM_SEED
-                _REPORT_RANDOM_SEED = seed
-            except Exception as e:
-                self.logger.warning("Failed to set random seed: %s", e)
 
     def _log_startup_info(self, source: Any) -> None:
         """Log startup information about the report generation."""
@@ -363,30 +320,6 @@ class ReportOrchestrator:
         return_summary: bool = False,
         compute_only: bool = False,
     ) -> str | tuple[str, dict]:
-        """Build a streaming EDA report, leaving the caller's RNG untouched.
-
-        See :meth:`_build_report` for the full description; this wrapper exists
-        only to guarantee the global RNG snapshot is restored even if report
-        generation raises.
-        """
-        with self._isolated_global_rng():
-            return self._build_report(
-                source,
-                output_file=output_file,
-                report_title=report_title,
-                return_summary=return_summary,
-                compute_only=compute_only,
-            )
-
-    def _build_report(
-        self,
-        source: Any,
-        *,
-        output_file: str | None = None,
-        report_title: str | None = None,
-        return_summary: bool = False,
-        compute_only: bool = False,
-    ) -> str | tuple[str, dict]:
         """Build a streaming EDA report from in-memory data.
 
         This method orchestrates the complete report generation process:
@@ -411,7 +344,9 @@ class ReportOrchestrator:
             TypeError: If source is not a supported type
         """
         # Phase 1: Setup and configuration
-        self._setup_random_seeds()
+        # No global seeding here: ``config.random_seed`` reaches the sketches as
+        # a per-column generator built in the accumulator factory, so profiling
+        # neither reads nor perturbs the caller's RNG.
         self._log_startup_info(source)
 
         # Phase 2: Process stream

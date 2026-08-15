@@ -7,6 +7,7 @@ characteristics for processing massive datasets.
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 from ..compute.core.types import ColumnKinds
@@ -22,6 +23,48 @@ from .config import (
 )
 from .datetime import DatetimeAccumulator
 from .numeric import NumericAccumulator
+
+
+def derive_column_seed(run_seed: int | None, column: str) -> int | None:
+    """Derive a column's sampler seed from the run seed and the column name.
+
+    Deriving from the *name* rather than from a counter keeps each column's
+    sample identical no matter which other columns are present, what order they
+    are built in, or whether they are processed concurrently -- so profiling a
+    subset reproduces the same numbers as profiling the whole frame.
+
+    blake2b rather than ``hash()``: the builtin is salted per process for str,
+    which would make the same seed give different output on every run.
+
+    Args:
+        run_seed: The run-level seed, or None for OS entropy.
+        column: Column name.
+
+    Returns:
+        A 64-bit seed, or None when ``run_seed`` is None.
+    """
+    if run_seed is None:
+        return None
+    payload = f"{int(run_seed)}:{column}".encode()
+    digest = hashlib.blake2b(payload, digest_size=8).digest()
+    return int.from_bytes(digest, "little")
+
+
+def seed_for_column(cfg: Any, column: str) -> int | None:
+    """Derive a column seed from any config object carrying ``random_seed``.
+
+    Convenience for the adapters, which replace accumulators for forced and
+    reclassified columns and hold an ``EngineConfig`` rather than an
+    ``AccumulatorConfig``.
+
+    Args:
+        cfg: Any object that may carry a ``random_seed`` attribute, or None.
+        column: Column name.
+
+    Returns:
+        A 64-bit seed, or None when no run seed is configured.
+    """
+    return derive_column_seed(getattr(cfg, "random_seed", None), column)
 
 
 def build_accumulators(
@@ -55,12 +98,15 @@ def build_accumulators(
     accumulator_config.validate()
 
     accs: dict[str, Any] = {}
+    run_seed = accumulator_config.random_seed
 
     try:
         # Create numeric accumulators with optimized configuration
         for name in kinds.numeric:
             accs[name] = NumericAccumulator(
-                name=name, config=accumulator_config.numeric
+                name=name,
+                config=accumulator_config.numeric,
+                seed=derive_column_seed(run_seed, name),
             )
 
         # Create boolean accumulators with efficient processing
@@ -72,13 +118,17 @@ def build_accumulators(
         # Create datetime accumulators with temporal analysis
         for name in kinds.datetime:
             accs[name] = DatetimeAccumulator(
-                name=name, config=accumulator_config.datetime
+                name=name,
+                config=accumulator_config.datetime,
+                seed=derive_column_seed(run_seed, name),
             )
 
         # Create categorical accumulators with scalable sketch algorithms
         for name in kinds.categorical:
             accs[name] = CategoricalAccumulator(
-                name=name, config=accumulator_config.categorical
+                name=name,
+                config=accumulator_config.categorical,
+                seed=derive_column_seed(run_seed, name),
             )
 
     except Exception as e:

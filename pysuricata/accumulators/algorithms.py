@@ -38,6 +38,13 @@ class PerformanceMetrics:
             return float("inf")
         return 1.0 / self.avg_update_time
 
+    def reset(self) -> None:
+        """Clear the collected timings."""
+        self.update_count = 0
+        self.total_update_time = 0.0
+        self.last_update_time = 0.0
+        self.memory_usage_bytes = 0
+
 
 class StreamingMoments:
     """Welford's algorithm for streaming statistical moments.
@@ -61,6 +68,18 @@ class StreamingMoments:
         self._pos_count = 0
         self._enable_performance_tracking = enable_performance_tracking
         self._metrics = PerformanceMetrics() if enable_performance_tracking else None
+
+    def reset(self) -> None:
+        """Return to the zero-observation state."""
+        self.count = 0
+        self._mean = 0.0
+        self._m2 = 0.0
+        self._m3 = 0.0
+        self._m4 = 0.0
+        self._log_sum_pos = 0.0
+        self._pos_count = 0
+        if self._metrics is not None:
+            self._metrics.reset()
 
     def update(self, values: np.ndarray) -> None:
         """Update moments with new values using vectorized batch processing.
@@ -429,14 +448,29 @@ class OutlierDetector:
     providing robust outlier identification for streaming data.
     """
 
-    def __init__(self, methods: list[str] = None):
+    def __init__(
+        self, methods: list[str] = None, *, rng: np.random.Generator | None = None
+    ):
         """Initialize outlier detector.
 
         Args:
             methods: List of methods to use ('iqr', 'mad')
+            rng: Generator for the internal reservoir. Defaults to an independent
+                one so the detector never draws from the global RNG.
         """
         self.methods = methods or ["iqr", "mad"]
-        self._sample = ReservoirSampler(10000)  # Sample for outlier detection
+        self._rng = rng if rng is not None else np.random.default_rng()
+        self._sample = ReservoirSampler(10000, rng=self._rng)
+
+    def reset(self, *, rng: np.random.Generator | None = None) -> None:
+        """Discard the collected sample.
+
+        Args:
+            rng: Generator for the fresh reservoir. Defaults to the existing one.
+        """
+        if rng is not None:
+            self._rng = rng
+        self._sample = ReservoirSampler(10000, rng=self._rng)
 
     def update(self, values: np.ndarray) -> None:
         """Update outlier detection with new values.
