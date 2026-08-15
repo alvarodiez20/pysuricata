@@ -231,7 +231,7 @@ from pysuricata import profile, ReportConfig
 config = ReportConfig()
 
 # Adjust chunk size for memory management
-config.compute.chunk_size = 200_000  # Default
+config.compute.chunk_size = 50_000  # Default
 
 # Control sample sizes
 config.compute.numeric_sample_size = 20_000  # For quantiles/histograms

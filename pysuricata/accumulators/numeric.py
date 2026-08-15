@@ -24,6 +24,36 @@ from .algorithms import (
 from .config import NumericConfig
 from .sketches import KMV, MisraGries, ReservoirSampler, StreamingHistogram, mad
 
+# Minimum share of a column's distinct values the top-k counters must be able to
+# cover before a "Common values" table is worth building. Below it the table
+# degenerates into a ranked list of values that occurred once -- sampling noise
+# presented as a finding -- and Misra-Gries costs a third of this accumulator to
+# produce it. Skewed columns beat this flat-distribution bound, which is the
+# safe direction: they stay enabled.
+_TOP_K_MIN_COVERAGE = 0.02
+
+
+def should_track_top_k(unique_est: float, count: int, top_k: int) -> bool:
+    """Whether a numeric column's top-k answer will carry information.
+
+    A top-k table is worth building when the tracked values could plausibly
+    cover a meaningful share of the column. When a column holds far more
+    distinct values than the sketch has counters, the table lists singletons.
+
+    Args:
+        unique_est: Current distinct-count estimate for the column.
+        count: Number of finite values seen so far.
+        top_k: Number of Misra-Gries counters.
+
+    Returns:
+        True while top-k should keep being fed.
+    """
+    if count <= 0:
+        return True
+    if unique_est <= top_k:
+        return True  # exact and complete: always worth it
+    return (top_k / max(unique_est, 1.0)) >= _TOP_K_MIN_COVERAGE
+
 
 @dataclass
 class NumericSummary:
@@ -144,6 +174,9 @@ class NumericAccumulator:
         self._uniques = KMV(self.config.uniques_sketch_size)
         self._extremes = ExtremeTracker(self.config.max_extremes)
         self._topk = MisraGries(self.config.top_k_size)
+        # Cleared once the column proves too high-cardinality for a top-k table
+        # to say anything; never re-enabled.
+        self._track_top_k = True
 
         # Streaming histogram for true distribution
         self._streaming_histogram = StreamingHistogram(bins=25)
@@ -344,7 +377,21 @@ class NumericAccumulator:
 
         # Batch update unique estimates and top values using vectorized operations
         self._uniques.add_many(finite_values)
-        self._topk.add_many(finite_values)
+
+        # Top-k is only fed while its answer would mean something. The gate
+        # latches off and discards what it had: keeping the partial counts
+        # gathered before the cutoff would make the table depend on the chunk
+        # size. Because the distinct estimate only rises, "did the gate fire"
+        # is decided by the column's final cardinality, not by how it was
+        # chunked -- so a given column yields the same table either way.
+        if self._track_top_k:
+            if should_track_top_k(
+                float(self._uniques.estimate()), self.count, self.config.top_k_size
+            ):
+                self._topk.add_many(finite_values)
+            else:
+                self._track_top_k = False
+                self._topk = MisraGries(self.config.top_k_size)
 
         # Extreme indices are global, not chunk-local. Without the offset,
         # "row 4,182 had the maximum" named a position within whichever chunk
@@ -491,21 +538,18 @@ class NumericAccumulator:
         # Compute heaping percentage
         heap_pct = self._compute_heaping_percentage(sample_values)
 
-        # Get top values from MisraGries sketch
+        # Top values come from the Misra-Gries counters, or not at all.
+        #
+        # There used to be a fallback here: when the sketch returned fewer than
+        # five entries, common values were recomputed from the reservoir sample
+        # and the counts multiplied by the sampling ratio "to represent the full
+        # dataset". On a continuous column that reports every sampled value as
+        # having occurred sample_scale times when it occurred once -- a
+        # fabricated count, presented in the report exactly like a measured one.
+        # It also overrode the *exact* counters on any column with fewer than
+        # five distinct values, replacing a correct answer with an estimate.
+        # An absent table is the honest output when nothing is common.
         top_values = self._topk.items()
-
-        # Fallback: if MisraGries returned too few values (due to uniform distribution
-        # or high cardinality), compute common values from reservoir sample
-        # This ensures we always show meaningful common values to the user
-        if len(top_values) < 5 and sample_values and len(sample_values) > 0:
-            from collections import Counter
-
-            # Count occurrences in the sample
-            value_counts = Counter(sample_values).most_common(10)
-
-            # Scale counts to represent full dataset size
-            # This gives an approximate count for the entire dataset
-            top_values = [(v, int(c * sample_scale)) for v, c in value_counts]
 
         # Build per-column chunk metadata from tracked boundaries
         # Finalize any pending chunk data first
@@ -688,6 +732,14 @@ class NumericAccumulator:
         # Update integer-like status
         self._int_like_all = self._int_like_all and other._int_like_all
 
+        # If either side gave up on top-k, the merged column has too many
+        # distinct values for the table to mean anything either. (Note the
+        # counters themselves are not merged -- a pre-existing gap, tracked
+        # separately; this only stops the result from claiming to be complete.)
+        if not other._track_top_k and self._track_top_k:
+            self._track_top_k = False
+            self._topk = MisraGries(self.config.top_k_size)
+
     def reset(self) -> None:
         """Reset accumulator to initial state efficiently."""
         self.count = 0
@@ -709,6 +761,7 @@ class NumericAccumulator:
         self._uniques = KMV(self.config.uniques_sketch_size)
         self._extremes = ExtremeTracker(self.config.max_extremes)
         self._topk = MisraGries(self.config.top_k_size)
+        self._track_top_k = True
 
         # Chunk metadata is per-run state: leaving it in place would append a
         # second run's chunks to the first run's list.

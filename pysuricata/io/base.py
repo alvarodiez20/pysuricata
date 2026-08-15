@@ -28,7 +28,7 @@ class DataFrameType(Enum):
 class ChunkingConfig:
     """Configuration for chunking operations."""
 
-    chunk_size: int = 200_000
+    chunk_size: int = 50_000
     columns: Sequence[str] | None = None
     force_in_memory: bool = False
     memory_limit_mb: int = 1024

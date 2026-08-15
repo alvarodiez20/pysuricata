@@ -1,65 +1,98 @@
-"""Two verified drop-in replacements for the hottest kernels, plus their proofs.
+"""Measured, behaviour-checked proposals for the two remaining hot kernels.
 
-Both were measured on 1M float64 values in 5 chunks, against the shipped 0.0.21
-implementations, and both are behaviour-preserving:
+Re-verified against 0.0.26. Run ``python -m benchmarks.proposed_kernels``.
 
-    KMV.add_many            639 ns/value  ->   87 ns/value   (7.4x, identical estimate)
-    ReservoirSampler        146 ns/value  ->   32 ns/value   (4.6x, bit-identical sample)
+Status of the proposals this file has carried:
 
-Run ``python -m benchmarks.proposed_kernels`` to re-verify and re-time both on
-your machine before adopting either.
+    KMV pre-filter        LANDED in 0.0.27. 51 -> 17 ns/value on this kernel,
+                                 estimates identical, chunk-invariance intact.
+    KMV ndarray _values   REJECTED -- wins its own benchmark by 2.7x and loses
+                                 35% end to end. See the note below.
+    Misra-Gries gate      LANDED in 0.0.27, together with the removal of a
+                                 finalize() fallback that was worse than the
+                                 thing this gate was written to remove.
+    Vectorised Alg L      RETIRED -- superseded by the bulk scheduler that
+                                 shipped in 0.0.26 (PR #49). See the note below.
 
-Neither needs Rust. Together they address ~60% of the numeric accumulator's
-cost. Copy the bodies into ``pysuricata/accumulators/sketches.py``; the classes
-here exist only so the proofs below can diff them against the shipped versions.
+The two verifiers below are kept because they are still the cheapest check that
+the shipped behaviour is right. ``FastKMV`` now measures the *residual* gap to
+the array-backed variant, which is why that gap is a rejection and not a TODO.
+
+Numbers are from 1M float64 values in 5 chunks, best of 3, GC disabled.
 """
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 
-_TINY = 5e-324
-_NO_MORE = 1 << 62
-_DRAW_BLOCK = 4096
-_SCHED_BLOCK = 512
+# ---------------------------------------------------------------------------
+# RETIRED: vectorised Algorithm L
+# ---------------------------------------------------------------------------
+#
+# 0.0.26 shipped its own bulk acceptance scheduler (`_SCHEDULE_BLOCK`, a cumsum
+# of logs) which took the reservoir from 154 to 57 ns/value -- 2.7x, and enough
+# to move it from 10.2% of the numeric path down to 4.5%.
+#
+# The version this file used to propose is now BOTH obsolete and wrong to adopt:
+# it was built to reproduce the *old* scalar draw sequence bit-for-bit, and
+# 0.0.26 draws in a different order, so it no longer matches. It still measures
+# ~2.6x faster than the shipped scheduler (21 vs 54 ns/value), but that is 4.5%
+# of one column kind, and buying it would mean re-establishing bit-identity
+# against the new sequence from scratch. Not worth it. Left here only so the
+# history of the decision is legible.
 
 
 # ---------------------------------------------------------------------------
-# 1. KMV: reject against the threshold before sorting
+# REJECTED: hold KMV._values as a uint64 array
+# ---------------------------------------------------------------------------
+#
+# The other half of the KMV proposal was to drop the `.tolist()` at the end of
+# every batch merge and keep `_values` as a NumPy array. In isolation it works:
+# `FastKMV` below still measures ~2.7x faster than the shipped `KMV.add_many`
+# even after the pre-filter landed, and that is the entire remaining gap.
+#
+# End to end it is a 35% regression -- mixed 200k x 14 goes from 1173 ms to
+# 1590 ms. The reason is a path this benchmark never calls: `_add_hash_to_kmv`,
+# which the categorical accumulator uses once per distinct value. With a list
+# that is `bisect` plus an in-place memmove; with an array it is `searchsorted`
+# plus `np.insert`, which allocates and copies the whole array every time.
+#
+# This is the second time on this codebase that a kernel benchmark has ranked
+# something the wall clock disagrees with. The rule stands: confirm against
+# end-to-end wall clock before adopting, and make sure the benchmark exercises
+# the call sites that actually exist.
+
+
+# ---------------------------------------------------------------------------
+# 1. KMV: reject against the threshold before sorting             [LANDED]
 # ---------------------------------------------------------------------------
 
 
 def batch_add_hashes_fast(values: np.ndarray, k: int, hashes: np.ndarray) -> np.ndarray:
     """Replacement body for ``KMV._batch_add_hashes``.
 
-    The shipped version does ``np.unique(hashes)`` then ``np.union1d`` on every
-    batch -- an O(m log m) sort of the *whole* batch, every chunk, forever.
+    Landed in 0.0.27 as ``KMV._batch_add_hashes``. Kept here because the
+    verifier below is the cheapest check that the shipped estimates are right.
 
-    But once the sketch is full, the k-th smallest hash it already holds is a
-    hard admission threshold: nothing at or above it can ever enter. Testing
-    that first is a single vectorised compare that discards, for a warm sketch
-    on high-cardinality data, well over 99.9% of the batch. Only the survivors
-    get sorted.
+    The pre-0.0.27 version ran ``np.unique(hashes)`` then ``np.union1d`` on every
+    batch -- an O(m log m) sort of the whole batch, every chunk, forever. But
+    once the sketch is full, the k-th smallest hash it already holds is a hard
+    admission threshold: nothing at or above it can ever enter. Testing that
+    first is one vectorised compare that discards, for a warm sketch on
+    high-cardinality data, well over 99.9% of the batch. Only survivors get
+    sorted.
 
-    This is the same trick the native crate uses (one compare against the heap
-    root); it just turns out to be worth 7x in plain NumPy too.
+    Same fast-reject the native crate does against its heap root.
 
-    Args:
-        values: current sketch contents, sorted ascending, at most ``k`` long.
-        k: sketch size.
-        hashes: batch of 64-bit hashes to offer.
-
-    Returns:
-        The new sketch contents.
+    This copy additionally holds ``_values`` as a NumPy array, which the shipped
+    version deliberately does not -- see the REJECTED note above. That is the
+    whole of the residual gap the timings below still report.
     """
     if hashes.size == 0:
         return values
 
     if values.size >= k:
-        threshold = values[-1]
-        hashes = hashes[hashes < threshold]
+        hashes = hashes[hashes < values[-1]]
         if hashes.size == 0:
             return values
 
@@ -69,12 +102,7 @@ def batch_add_hashes_fast(values: np.ndarray, k: int, hashes: np.ndarray) -> np.
 
 
 class FastKMV:
-    """Minimal KMV built on ``batch_add_hashes_fast``, for the proofs below.
-
-    Note the other change worth carrying over: ``_values`` stays a NumPy array.
-    The shipped version ends every batch with ``.tolist()``, re-boxing k
-    integers into Python objects on each chunk.
-    """
+    """Minimal KMV over ``batch_add_hashes_fast``, for the proof below."""
 
     __slots__ = ("k", "_values")
 
@@ -94,217 +122,113 @@ class FastKMV:
 
 
 # ---------------------------------------------------------------------------
-# 2. Reservoir: vectorise Algorithm L without changing a single draw
+# 2. Misra-Gries: only run it where its answer means something      [LANDED]
 # ---------------------------------------------------------------------------
+#
+# `numeric.py` feeds every finite value to a top-k sketch, unconditionally, for
+# every numeric column. That is **34% of the numeric accumulator**.
+#
+# On a discrete column the answer is worth having. On a high-cardinality one it
+# is not merely wasted -- it is actively misleading. Measured on 200k rows:
+#
+#     column                    unique     top_values   coverage   counts
+#     discrete int (12)             12       12 rows      100.0%   16893, 16813, ...
+#     float w/ repeats (500)       500       50 rows        6.7%   414, 409, ...
+#     high-card float (47,810)  47,810       28 rows        0.0%   2, 1, 1
+#     continuous float         200,923       29 rows        0.0%   1, 1, 1
+#
+# The last two render a "Common values" table in the numeric card listing values
+# that occurred **once**. So gating this does two things at once: it removes a
+# third of the numeric accumulator's cost, and it removes a table that presents
+# sampling noise as a finding.
 
 
-class VecReservoirL:
-    """Algorithm L with the acceptance schedule computed in NumPy.
+def should_track_top_k(unique_est: float, count: int, top_k: int = 50) -> bool:
+    """Whether a numeric column's top-k answer will carry information.
 
-    The shipped implementation is correct and has a property worth protecting:
-    the sample is *bit-identical* regardless of how the stream was chunked,
-    because the skip sequence depends only on the draw sequence. The accuracy
-    oracle asserts exactly that (``test_sample_is_independent_of_chunking``).
+    The rule: a top-k table is worth building when the k tracked values could
+    plausibly cover a meaningful share of the column. If the column holds many
+    more distinct values than the sketch has counters, the table degenerates to
+    a list of singletons.
 
-    So the naive speedup -- a vectorised Algorithm R with one draw per element
-    -- is not acceptable: its draw count depends on batch sizes, which breaks
-    that invariant even though the sample stays unbiased.
+    ``unique_est`` is already available -- ``NumericAccumulator`` keeps a KMV
+    sketch and the estimate is O(1) to read. Evaluate this once per chunk and
+    latch it off; do not re-enable, since counts accumulated before the cutoff
+    would be partial.
 
-    This version keeps the invariant. Acceptances are generated ``_SCHED_BLOCK``
-    at a time from the same uniform stream, in the same order, with the running
-    ``w`` computed by a single ``cumsum`` of logs instead of one multiply per
-    acceptance. Unconsumed acceptances are cached, so no draw is ever taken
-    twice or skipped. Output is bit-identical to the shipped class for the same
-    seed -- verified below across k, n and chunk count.
+    Args:
+        unique_est: current distinct-count estimate for the column.
+        count: number of finite values seen so far.
+        top_k: number of Misra-Gries counters.
 
-    The cost per acceptance drops from four Python calls to a few array ops
-    amortised over 512 acceptances.
+    Returns:
+        True while top-k should keep being fed.
     """
-
-    __slots__ = (
-        "k",
-        "_buf",
-        "_seen",
-        "_w",
-        "_next",
-        "_draws",
-        "_draw_i",
-        "_pend_pos",
-        "_pend_slot",
-        "_pend_i",
-        "_exhausted",
-    )
-
-    def __init__(self, k: int = 20_000) -> None:
-        self.k = int(k)
-        self._buf: list[float] = []
-        self._seen = 0
-        self._w = 1.0
-        self._next = -1
-        self._draws = np.empty(0, dtype=float)
-        self._draw_i = 0
-        self._pend_pos = np.empty(0, dtype=np.int64)
-        self._pend_slot = np.empty(0, dtype=np.int64)
-        self._pend_i = 0
-        self._exhausted = False
-
-    def _uniforms(self, n: int) -> np.ndarray:
-        """The same draw sequence the scalar ``_uniform()`` produces, n at a time."""
-        out = np.empty(n, dtype=float)
-        filled = 0
-        while filled < n:
-            if self._draw_i >= self._draws.size:
-                self._draws = np.random.random(_DRAW_BLOCK)
-                self._draw_i = 0
-            take = min(n - filled, self._draws.size - self._draw_i)
-            out[filled : filled + take] = self._draws[
-                self._draw_i : self._draw_i + take
-            ]
-            self._draw_i += take
-            filled += take
-        return np.maximum(out, _TINY)  # == `u if u > 0.0 else _TINY`
-
-    def _refill_schedule(self) -> None:
-        """Generate the next block of (position, slot) acceptances in one go."""
-        m = _SCHED_BLOCK
-        u = self._uniforms(3 * m)
-        u_slot, u_w, u_skip = u[0::3], u[1::3], u[2::3]
-
-        # w_j = w * prod_{i<=j} exp(log(u_w_i)/k). One cumsum, not m multiplies.
-        w = self._w * np.exp(np.cumsum(np.log(u_w)) / self.k)
-        denom = np.log1p(-w)
-        with np.errstate(divide="ignore", invalid="ignore"):
-            raw = np.log(u_skip) / denom
-        # denom >= 0 means w underflowed: no further acceptances are possible.
-        skips = np.where(denom < 0.0, np.floor(raw), float(_NO_MORE)).astype(np.int64)
-        skips = np.minimum(skips, _NO_MORE)
-
-        pos = self._next + np.concatenate(([0], np.cumsum(skips[:-1] + 1)))
-
-        dead = np.flatnonzero(skips >= _NO_MORE)
-        if dead.size:
-            cut = int(dead[0]) + 1  # that acceptance still happens, then we stop
-            pos, skips, w = pos[:cut], skips[:cut], w[:cut]
-            self._exhausted = True
-
-        self._pend_pos = pos
-        self._pend_slot = (u_slot[: pos.size] * self.k).astype(np.int64)
-        self._pend_i = 0
-        self._w = float(w[-1])
-        self._next = _NO_MORE if self._exhausted else int(pos[-1] + skips[-1] + 1)
-
-    def _start_skipping(self) -> None:
-        self._w = 1.0
-        u = self._uniforms(2)
-        self._w *= math.exp(math.log(u[0]) / self.k)
-        denom = math.log1p(-self._w) if self._w < 1.0 else 0.0
-        self._next = (
-            _NO_MORE if denom >= 0.0 else self._seen + int(math.log(u[1]) / denom)
-        )
-
-    def add_many(self, arr) -> None:
-        if len(arr) == 0:
-            return
-        arr = np.asarray(arr, dtype=float)
-
-        if len(self._buf) < self.k:
-            needed = min(self.k - len(self._buf), len(arr))
-            self._buf.extend(arr[:needed].tolist())
-            self._seen += needed
-            arr = arr[needed:]
-            if len(self._buf) >= self.k:
-                self._start_skipping()
-            if len(arr) == 0:
-                return
-
-        end = self._seen + len(arr)
-        buf = self._buf
-        while True:
-            if self._pend_i >= self._pend_pos.size:
-                if self._exhausted and self._pend_pos.size:
-                    break
-                self._refill_schedule()
-            pend = self._pend_pos[self._pend_i :]
-            take = int(np.searchsorted(pend, end))
-            if take:
-                idx = pend[:take] - self._seen
-                slots = self._pend_slot[self._pend_i : self._pend_i + take]
-                vals = arr[idx]
-                for s, v in zip(slots.tolist(), vals.tolist(), strict=False):
-                    buf[s] = v
-                self._pend_i += take
-            if take < pend.size or self._exhausted:
-                break
-        self._seen = end
-
-    def add(self, x: float) -> None:
-        if len(self._buf) < self.k:
-            self._buf.append(float(x))
-            self._seen += 1
-            if len(self._buf) >= self.k:
-                self._start_skipping()
-            return
-        self.add_many(np.array([x], dtype=float))
-
-    def values(self) -> list[float]:
-        return self._buf
+    if count <= 0:
+        return True
+    if unique_est <= top_k:
+        return True  # exact and complete: always worth it
+    # Expected coverage of the k most frequent values under a flat distribution.
+    # Below a few percent the table is noise. Skewed columns beat this bound,
+    # which is the safe direction: they stay enabled.
+    return (top_k / max(unique_est, 1.0)) >= 0.02
 
 
 # ---------------------------------------------------------------------------
-# Proofs
+# Proofs and timings
 # ---------------------------------------------------------------------------
-
-
-def _verify_reservoir() -> bool:
-    """Bit-identity against the shipped class, across k, n and chunk count."""
-    from pysuricata.accumulators.sketches import ReservoirSampler
-
-    cases = [
-        (100, 5_000, 1),
-        (100, 5_000, 7),
-        (2_000, 200_000, 1),
-        (2_000, 200_000, 13),
-        (2_000, 200_000, 500),
-        (20_000, 1_000_000, 5),
-    ]
-    ok = True
-    for k, n, nchunks in cases:
-        arr = np.arange(n, dtype=float)
-        outs = []
-        for cls in (ReservoirSampler, VecReservoirL):
-            np.random.seed(42)
-            r = cls(k)
-            for c in np.array_split(arr, nchunks):
-                r.add_many(np.ascontiguousarray(c))
-            outs.append(list(r.values()))
-        same = outs[0] == outs[1]
-        ok &= same
-        print(f"  k={k:>6} n={n:>9,} chunks={nchunks:>4}  bit-identical: {same}")
-    return ok
 
 
 def _verify_kmv() -> bool:
-    """The pre-filter must not change the estimate."""
+    """The pre-filter must not change the estimate, at all."""
     from pysuricata.accumulators.sketches import KMV, _hash_numeric_array
 
     ok = True
     for n, k in [(50_000, 1024), (1_000_000, 2048), (1_000_000, 4096)]:
         arr = np.random.default_rng(0).standard_normal(n)
         chunks = np.array_split(arr, 5)
-
-        ref = KMV(k)
-        fast = FastKMV(k)
+        ref, fast = KMV(k), FastKMV(k)
         for c in chunks:
             c = np.ascontiguousarray(c)
             ref.add_many(c)
             fast.offer_hashes(_hash_numeric_array(c))
-
         a, b = ref.estimate(), fast.estimate()
-        # The pre-filter changes nothing about which hashes survive, so the
-        # estimates must agree to the integer, not merely be close.
         same = a == b
         ok &= same
         print(f"  n={n:>9,} k={k:>5}  ref={a:>9,}  fast={b:>9,}  identical: {same}")
+    return ok
+
+
+def _verify_topk_gate() -> bool:
+    """The gate must keep top-k exactly where it is informative."""
+    g = np.random.default_rng(0)
+    n = 200_000
+    cases = [
+        ("discrete int (12)", g.integers(0, 12, n).astype(float), True),
+        ("float w/ repeats (500)", g.integers(0, 500, n) / 4.0, True),
+        ("high-card float", g.integers(0, 50_000, n) / 8.0, False),
+        ("continuous float", g.standard_normal(n), False),
+    ]
+    from pysuricata.accumulators.numeric import NumericAccumulator
+
+    ok = True
+    for name, vals, expect_useful in cases:
+        acc = NumericAccumulator("x")
+        v = np.ascontiguousarray(np.asarray(vals, dtype=float))
+        try:
+            acc.update(v, row_offset=0)
+        except TypeError:
+            acc.update(v)
+        s = acc.finalize()
+        tv = s.top_values or []
+        coverage = sum(int(c) for _, c in tv) / n
+        decision = should_track_top_k(float(s.unique_est), int(s.count))
+        agrees = decision == expect_useful
+        ok &= agrees
+        print(
+            f"  {name:<24} unique~{s.unique_est:>7,.0f}  coverage {coverage:6.1%}"
+            f"  gate={'keep' if decision else 'skip':<4}  as expected: {agrees}"
+        )
     return ok
 
 
@@ -312,15 +236,11 @@ def _time() -> None:
     import gc
     import time
 
-    from pysuricata.accumulators.sketches import (
-        KMV,
-        ReservoirSampler,
-        _hash_numeric_array,
-    )
+    from pysuricata.accumulators.sketches import KMV, MisraGries, _hash_numeric_array
 
     n, ch = 1_000_000, 200_000
     arr = np.random.default_rng(0).standard_normal(n)
-    chunks = [arr[i : i + ch] for i in range(0, n, ch)]
+    chunks = [np.ascontiguousarray(arr[i : i + ch]) for i in range(0, n, ch)]
 
     def bench(fn, reps=3):
         fn()
@@ -343,38 +263,36 @@ def _time() -> None:
         for c in chunks:
             s.offer_hashes(_hash_numeric_array(c))
 
-    def res_ref():
-        r = ReservoirSampler(20_000)
+    def mg_on():
+        s = MisraGries(50)
         for c in chunks:
-            r.add_many(c)
+            s.add_many(c.tolist())
 
-    def res_fast():
-        r = VecReservoirL(20_000)
-        for c in chunks:
-            r.add_many(c)
+    def mg_off():
+        for _ in chunks:
+            pass
 
-    for label, ref, fast in [
-        ("KMV.add_many", kmv_ref, kmv_fast),
-        ("ReservoirSampler.add_many", res_ref, res_fast),
-    ]:
-        a, b = bench(ref), bench(fast)
-        print(
-            f"  {label:<28}{a * 1e9 / n:7.0f} -> {b * 1e9 / n:5.0f} ns/value   {a / b:5.2f}x"
-        )
+    a, b = bench(kmv_ref), bench(kmv_fast)
+    print(
+        f"  {'KMV.add_many':<26}{a * 1e9 / n:6.0f} -> {b * 1e9 / n:5.0f} ns/value   {a / b:5.2f}x"
+    )
+    c, d = bench(mg_on), bench(mg_off)
+    print(
+        f"  {'MisraGries.add_many':<26}{c * 1e9 / n:6.0f} -> {d * 1e9 / n:5.0f} ns/value   "
+        f"(gated off on this column shape)"
+    )
 
 
 def main() -> int:
     print("KMV pre-filter -- estimates must be identical")
     kmv_ok = _verify_kmv()
-    print("\nVectorised Algorithm L -- samples must be bit-identical")
-    res_ok = _verify_reservoir()
+    print("\nTop-k gate -- must keep top-k exactly where it is informative")
+    gate_ok = _verify_topk_gate()
     print("\nTimings (1M values, 5 chunks, best of 3)")
     _time()
-    print(
-        "\n"
-        + ("ALL CHECKS PASS" if (kmv_ok and res_ok) else "MISMATCH -- do not adopt")
-    )
-    return 0 if (kmv_ok and res_ok) else 1
+    ok = kmv_ok and gate_ok
+    print("\n" + ("ALL CHECKS PASS" if ok else "MISMATCH -- do not adopt"))
+    return 0 if ok else 1
 
 
 if __name__ == "__main__":

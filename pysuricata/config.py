@@ -51,7 +51,7 @@ class EngineConfig:
 
     title: str = "PySuricata EDA Report"
     description: str | None = None
-    chunk_size: int = 200_000
+    chunk_size: int = 50_000
     numeric_sample_k: int = 20_000
     uniques_k: int = 2048
     topk_k: int = 50

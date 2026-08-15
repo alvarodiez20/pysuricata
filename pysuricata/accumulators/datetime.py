@@ -331,7 +331,11 @@ class DatetimeAccumulator:
 
             try:
                 ts_int = int(ts)
-                if ts_int < -2e18 or ts_int > 1e20:
+                # Same window as the vectorised path. This line kept the old
+                # -2e18 bound (1906-05-13) after the widening, so a pre-1906
+                # timestamp that fell through to the fallback was still counted
+                # as missing rather than as old.
+                if not (_NS_MIN <= ts_int <= _NS_MAX):
                     self.missing += 1
                     continue
 

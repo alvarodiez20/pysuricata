@@ -203,8 +203,10 @@ class ComputeOptions:
         )
 
     Attributes:
-        chunk_size: Number of rows to process in each chunk. Larger chunks
-            use more memory but may be faster. Default: 200,000
+        chunk_size: Number of rows to process in each chunk. Default: 50,000.
+            Bigger is not faster: the sketch merges are superlinear in batch
+            size, so one 200,000-row batch costs more than four 50,000-row
+            ones. Raise it only to trade memory for fewer chunk boundaries.
         columns: Optional subset of columns to analyze. If None, all columns
             are analyzed. Default: None (all columns)
         numeric_sample_size: Reservoir sample size for numeric statistics like
@@ -249,7 +251,7 @@ class ComputeOptions:
             Default: 10
     """
 
-    chunk_size: int | None = 200_000
+    chunk_size: int | None = 50_000
     columns: Sequence[str] | None = None
     numeric_sample_size: int = 20_000
     max_uniques: int = 2_048
