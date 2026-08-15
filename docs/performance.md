@@ -7,6 +7,27 @@ description: Optimization strategies for PySuricata
 
 Optimize PySuricata for your specific use case with these strategies.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 ## Quick Wins
 
 ### 1. Disable Correlations for Many Columns
@@ -14,6 +35,7 @@ Optimize PySuricata for your specific use case with these strategies.
 For datasets with > 100 numeric columns, correlation computation is O(p²) and can be slow.
 
 ```python
+from pysuricata import ReportConfig, profile
 config = ReportConfig()
 config.compute.compute_correlations = False  # Skip correlations
 
@@ -27,6 +49,7 @@ report = profile(df, config=config)
 Larger chunks mean fewer iterations and less overhead.
 
 ```python
+from pysuricata import ReportConfig, profile
 config = ReportConfig()
 config.compute.chunk_size = 500_000  # Default: 50_000
 
@@ -40,6 +63,7 @@ report = profile(df, config=config)
 Smaller samples are faster to process.
 
 ```python
+from pysuricata import ReportConfig, profile
 config = ReportConfig()
 config.compute.numeric_sample_size = 10_000  # Default: 20_000
 
@@ -53,11 +77,12 @@ report = profile(df, config=config)
 ### Memory-Constrained Environments
 
 ```python
+from pysuricata import ReportConfig, profile
 config = ReportConfig()
 config.compute.chunk_size = 50_000  # Small chunks
 config.compute.numeric_sample_size = 5_000  # Small samples
-config.compute.uniques_sketch_size = 1_024  # Small sketches
-config.compute.top_k_size = 20  # Fewer top values
+config.compute.max_uniques = 1_024  # Small sketches
+config.compute.top_k = 20  # Fewer top values
 config.compute.compute_correlations = False  # Skip correlations
 
 report = profile(df, config=config)
@@ -68,9 +93,13 @@ report = profile(df, config=config)
 ### Monitor Memory Usage
 
 ```python
-import psutil
 import os
 
+import psutil
+
+from pysuricata import ReportConfig, profile
+
+config = ReportConfig()
 process = psutil.Process(os.getpid())
 print(f"Memory before: {process.memory_info().rss / 1024**2:.1f} MB")
 
@@ -84,6 +113,7 @@ print(f"Memory after: {process.memory_info().rss / 1024**2:.1f} MB")
 ### Profile Only Key Columns
 
 ```python
+from pysuricata import ReportConfig, profile
 config = ReportConfig()
 config.compute.columns = ["user_id", "amount", "timestamp"]
 
@@ -97,6 +127,7 @@ report = profile(df, config=config)
 Polars can be faster than pandas for certain operations:
 
 ```python
+from pysuricata import profile
 import polars as pl
 
 df = pl.read_csv("large_file.csv")
@@ -106,6 +137,7 @@ report = profile(df)  # Native polars support
 ### Parallelize with Dask (Advanced)
 
 ```python
+from pysuricata import profile
 import dask.dataframe as dd
 
 # Load with Dask
@@ -151,11 +183,12 @@ Because PySuricata processes data in chunks, memory stays bounded regardless of 
 ### For Maximum Speed
 
 ```python
+from pysuricata import ReportConfig, profile
 config = ReportConfig()
 config.compute.chunk_size = 1_000_000  # Large chunks
 config.compute.numeric_sample_size = 5_000  # Small samples
-config.compute.uniques_sketch_size = 512  # Tiny sketches
-config.compute.top_k_size = 10  # Few top values
+config.compute.max_uniques = 512  # Tiny sketches
+config.compute.top_k = 10  # Few top values
 config.compute.compute_correlations = False  # Skip correlations
 config.render.include_sample = False  # No sample in report
 
@@ -165,11 +198,12 @@ report = profile(df, config=config)
 ### For Maximum Accuracy
 
 ```python
+from pysuricata import ReportConfig, profile
 config = ReportConfig()
 config.compute.chunk_size = 100_000  # Smaller for better merging
 config.compute.numeric_sample_size = 100_000  # Large samples
-config.compute.uniques_sketch_size = 8_192  # Large sketches
-config.compute.top_k_size = 200  # Many top values
+config.compute.max_uniques = 8_192  # Large sketches
+config.compute.top_k = 200  # Many top values
 config.compute.corr_threshold = 0.0  # All correlations
 
 report = profile(df, config=config)
@@ -180,6 +214,7 @@ report = profile(df, config=config)
 Use Python's profiler to find bottlenecks:
 
 ```python
+from pysuricata import profile
 import cProfile
 import pstats
 
@@ -204,7 +239,7 @@ stats.print_stats(20)  # Top 20 functions
 ### 2. Many Categorical Columns
 
 **Symptom**: Slow with > 50 categorical columns  
-**Solution**: Reduce `top_k_size`, increase `chunk_size`
+**Solution**: Reduce `top_k`, increase `chunk_size`
 
 ### 3. Very Wide Datasets (> 1000 columns)
 
@@ -223,6 +258,11 @@ stats.print_stats(20)  # Top 20 functions
 For regular reporting, optimize for speed:
 
 ```python
+from datetime import date
+from pathlib import Path
+
+from pysuricata import ReportConfig, profile
+
 # Fast config for nightly reports
 config = ReportConfig()
 config.compute.compute_correlations = False
@@ -230,6 +270,8 @@ config.compute.numeric_sample_size = 10_000
 config.render.title = f"Daily Report - {date.today()}"
 
 report = profile(df, config=config)
+
+Path("reports").mkdir(exist_ok=True)
 report.save_html(f"reports/daily_{date.today()}.html")
 ```
 
@@ -238,6 +280,7 @@ report.save_html(f"reports/daily_{date.today()}.html")
 Use `summarize()` for faster stats-only checks:
 
 ```python
+from pysuricata import profile
 from pysuricata import summarize
 
 stats = summarize(df)  # Faster than profile()

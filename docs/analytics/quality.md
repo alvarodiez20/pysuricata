@@ -7,6 +7,27 @@ description: Data quality assessment and metrics in PySuricata
 
 PySuricata computes several data quality metrics automatically.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 ## Dataset-Level Metrics
 
 ### Missing Cells Percentage
@@ -73,7 +94,3 @@ def check_quality(df):
 
 - [Missing Values](missing-values.md) - Missing data analysis
 - [Duplicates](duplicates.md) - Duplicate detection
-
----
-
-*Last updated: 2025-10-12*

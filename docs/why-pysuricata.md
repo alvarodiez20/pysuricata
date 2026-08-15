@@ -2,6 +2,27 @@
 
 PySuricata is a Python library for generating HTML data profiling reports from pandas or polars DataFrames. Its main design choice is a **streaming architecture**: data is processed in chunks, so memory usage stays bounded regardless of dataset size.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 This page explains the design decisions behind PySuricata and when it might be a good fit for your workflow.
 
 ---
@@ -155,8 +176,8 @@ config.compute.random_seed = 42           # Deterministic sampling
 # Analysis
 config.compute.compute_correlations = True
 config.compute.corr_threshold = 0.5       # Min |r| to display
-config.compute.top_k_size = 100           # Top values to track
-config.compute.uniques_sketch_size = 4096 # KMV sketch size
+config.compute.top_k = 100           # Top values to track
+config.compute.max_uniques = 4096 # KMV sketch size
 
 # Rendering
 config.render.title = "My Report"
@@ -197,8 +218,19 @@ Additionally, PySuricata computes:
 Use `summarize()` to get statistics as a dictionary, without generating HTML:
 
 ```python
+import numpy as np
+import pandas as pd
+
 from pysuricata import summarize
 
+rng = np.random.default_rng(0)
+df = pd.DataFrame(
+    {
+        "user_id": range(1_000),
+        "age": rng.integers(18, 80, 1_000),
+        "country": rng.choice(["ES", "FR", "DE"], 1_000),
+    }
+)
 stats = summarize(df)
 
 # Assert data quality thresholds
@@ -207,7 +239,7 @@ assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 
 # Access per-column statistics
 print(f"Mean age: {stats['columns']['age']['mean']:.1f}")
-print(f"Distinct countries: {stats['columns']['country']['distinct']}")
+print(f"Distinct countries: {stats['columns']['country']['unique_est']}")  # KMV estimate
 ```
 
 ### Profiling Large Datasets

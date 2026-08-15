@@ -7,6 +7,27 @@ description: Temporal analysis with mathematical formulas for datetime variables
 
 Comprehensive documentation for temporal data analysis in PySuricata, including time distributions, seasonality detection, and gap analysis.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 ## Overview
 
 PySuricata treats **datetime variables** as columns with temporal types (datetime64, timestamp). Analysis focuses on temporal patterns, distributions, and data quality.
@@ -323,6 +344,7 @@ report.save_html("report.html")
 ### Time Series Data
 
 ```python
+from pysuricata import profile
 # Stock prices
 df = pd.read_csv("stocks.csv", parse_dates=["date"])
 
@@ -333,15 +355,18 @@ report = profile(df)
 ### Access Statistics
 
 ```python
+import pandas as pd
+
 from pysuricata import summarize
 
+df = pd.DataFrame({"timestamp": pd.date_range("2024-01-01", periods=500, freq="17min")})
 stats = summarize(df)
 ts_stats = stats["columns"]["timestamp"]
 
-print(f"Min: {ts_stats['min']}")
-print(f"Max: {ts_stats['max']}")
-print(f"Span: {ts_stats['max'] - ts_stats['min']}")
-print(f"Hour distribution: {ts_stats['hour_distribution']}")
+# min_ts and max_ts are nanoseconds since the epoch, UTC.
+print(f"Min:  {pd.Timestamp(ts_stats['min_ts'])}")
+print(f"Max:  {pd.Timestamp(ts_stats['max_ts'])}")
+print(f"Span: {pd.Timedelta(ts_stats['max_ts'] - ts_stats['min_ts'])}")
 ```
 
 ## Interpreting Results

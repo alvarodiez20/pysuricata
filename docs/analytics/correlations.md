@@ -7,6 +7,27 @@ description: Streaming correlation computation with mathematical formulas and im
 
 PySuricata computes **pairwise correlations** between numeric columns using **streaming algorithms** that operate in bounded memory.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 ## Overview
 
 Correlation analysis reveals linear relationships between numeric variables, helping identify:
@@ -256,6 +277,7 @@ For large \(p\) (many columns), correlation computation can be expensive:
 Configuration:
 
 ```python
+from pysuricata import ReportConfig
 config = ReportConfig()
 config.compute.compute_correlations = False  # Disable
 ```
@@ -424,7 +446,14 @@ report = profile(df, config=config)
 ### Access Correlations Programmatically
 
 ```python
+import numpy as np
+import pandas as pd
+
 from pysuricata import summarize
+
+rng = np.random.default_rng(0)
+x = rng.standard_normal(1_000)
+df = pd.DataFrame({"x": x, "y": 2 * x + rng.standard_normal(1_000) * 0.3})
 
 stats = summarize(df)
 
@@ -438,6 +467,14 @@ for col, r in correlations:
 ### High-Dimensional Data
 
 ```python
+import numpy as np
+import pandas as pd
+
+from pysuricata import ReportConfig, profile
+
+rng = np.random.default_rng(0)
+wide_df = pd.DataFrame({f"c{i}": rng.standard_normal(1_000) for i in range(200)})
+
 # Many columns: disable correlations
 config = ReportConfig()
 config.compute.compute_correlations = False  # Too expensive
@@ -464,7 +501,3 @@ report = profile(wide_df, config=config)
 - [Numeric Analysis](../stats/numeric.md) - Univariate numeric statistics
 - [Streaming Algorithms](../algorithms/streaming.md) - Streaming computation techniques
 - [Configuration Guide](../configuration.md) - All parameters
-
----
-
-*Last updated: 2025-10-12*

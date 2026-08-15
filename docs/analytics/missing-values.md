@@ -7,6 +7,27 @@ description: Intelligent missing data detection, visualization, and analysis wit
 
 Comprehensive guide to PySuricata's intelligent missing values analysis with adaptive display and chunk-level distribution tracking.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 ## Overview
 
 Missing data is ubiquitous in real-world datasets. PySuricata provides:
@@ -261,6 +282,8 @@ Use ML model to predict missing values from other columns.
 ### Basic Usage
 
 ```python
+import pandas as pd
+
 from pysuricata import profile
 
 # Dataset with missing values
@@ -303,7 +326,3 @@ for col, col_stats in stats["columns"].items():
 - [Data Quality](quality.md) - Overall quality metrics
 - [Numeric Analysis](../stats/numeric.md) - Handling missing in numeric columns
 - [Configuration](../configuration.md) - Display settings
-
----
-
-*Last updated: 2025-10-12*

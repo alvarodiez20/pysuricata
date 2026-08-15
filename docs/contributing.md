@@ -210,6 +210,7 @@ def test_welford_mean():
 Test components working together.
 
 ```python
+from pysuricata import profile
 def test_full_profile():
     """Test end-to-end profiling"""
     df = pd.DataFrame({"x": [1, 2, 3], "y": ["a", "b", "c"]})

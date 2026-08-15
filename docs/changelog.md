@@ -7,6 +7,23 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.32] - 2026-08-15
+
+Documentation only; no library changes. **90 documented errors down to zero**,
+and CI now fails a PR that reintroduces one.
+
+### Fixed
+- **Seven pages documented two configuration options that do not exist.** `config.compute.uniques_sketch_size` and `config.compute.top_k_size` were never real names — they are `max_uniques` and `top_k` on `ComputeOptions`. A reader following the docs got a silently ignored setting rather than an error, which is worse. 27 occurrences across `configuration.md`, `api.md`, `performance.md`, `why-pysuricata.md`, `architecture.md`, `complexity-analysis.md`, `faq.md` and `quickstart.md`. The internal accumulator configs, where those names *are* real, are untouched.
+- **`summarize()` field names that do not exist in the payload.** The docs promised `skewness`, `true_count`, `true_pct`, `balance_score`, `distinct`, `top_values`, `gini`, `entropy`, `hour_distribution` and `["dataset"]["rows"]`. The real fields are `unique_est`, `top_items`, `true`/`false`, `min_ts`/`max_ts` and `rows_est`; skew and entropy are not exposed at all. Every example now prints something the payload actually contains.
+- **Examples that could not run.** 25 fences called `profile()`, `summarize()` or `ReportConfig()` with no import; others referenced frames and columns that were never defined. 97 of the 98 runnable fences now execute end to end exactly as pasted — the one exception needs `hypothesis`, a test-only dependency.
+- **Fifty-three snippets silently assumed a DataFrame named `df`.** Pages that share one now say so, with a paste-able block at the top that the checker executes as the page's stated setup.
+- **Prose describing behaviour that was removed.** `architecture-diagrams.md` still said extremes were tracked "every 5th chunk only" (removed in 0.0.26, they are exact) and that type inference used the "first chunk only" (gated on `first_chunk_is_whole` since 0.0.24). `sketches.md` taught KMV with `hashlib.md5`, where the library uses blake2b and a vectorised splitmix64, and presented Algorithm R as the reservoir sampler without noting that Algorithm L is what ships.
+- Dropped the hand-written `Last updated: 2025-10-12` footer from seven pages. A date nobody remembers to change is worse than no date.
+- `docs/roadmap.md` was on disk but missing from the nav, so it was never rendered.
+
+### Added
+- **`check_docs --strict` and the generated-asset check run in CI.** A renamed option or a moved summary key now fails the PR that did it. The checker had been papering over the largest defect class by injecting a `df` into every snippet, so every fence passed while a reader pasting the same code got `NameError`; it now runs each page's own declared setup instead. Three of its own false-positive classes are fixed too: fences nested in tabbed blocks are dedented before parsing, column names inside `summarize()["columns"][...]` are no longer checked against a synthetic frame, and filenames in badge URLs are no longer read as attribute access.
+
 ## [0.0.31] - 2026-08-15
 
 Documentation and tooling only; no library changes.

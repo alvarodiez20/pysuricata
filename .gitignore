@@ -117,3 +117,11 @@ native/target/
 
 # Build snapshot produced by uv's source-build machinery
 _snapshot.tar.gz
+
+# Reports written by documentation examples when the checker executes them.
+# check_docs runs every self-contained fence, and several call save_html().
+/*_report.html
+/report.html
+/reports/
+/stats.json
+_snap*.tar.gz

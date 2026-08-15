@@ -9,6 +9,27 @@ description: Comprehensive examples and use cases for PySuricata
   <iframe src="../assets/diagrams/figures.html?only=report-card" title="An annotated numeric column card" loading="lazy"></iframe>
 </figure>
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 Real-world examples showing how to use PySuricata in various scenarios.
 
 ## Small Dataset (Iris)
@@ -170,13 +191,16 @@ report.save_html("missing_values_report.html")
 Text-heavy dataset (e.g., customer feedback).
 
 ```python
+import numpy as np
 import pandas as pd
+
 from pysuricata import profile
 
+rng = np.random.default_rng(0)
 df = pd.DataFrame({
     "customer_id": [f"CUST_{i:05d}" for i in range(10_000)],
-    "product": np.random.choice(["Product A", "Product B", "Product C"], 10_000),
-    "rating": np.random.choice(["Poor", "Fair", "Good", "Excellent"], 10_000),
+    "product": rng.choice(["Product A", "Product B", "Product C"], 10_000),
+    "rating": rng.choice(["Poor", "Fair", "Good", "Excellent"], 10_000),
     "feedback": [f"Comment {i}" for i in range(10_000)],
 })
 
@@ -259,7 +283,7 @@ from pysuricata import summarize
 stats = summarize(df)
 
 # Check data quality
-print(f"Rows: {stats['dataset']['rows']}")
+print(f"Rows: {stats['dataset']['rows_est']}")
 print(f"Missing cells: {stats['dataset']['missing_cells_pct']:.1f}%")
 print(f"Duplicate rows: {stats['dataset']['duplicate_rows_pct_est']:.1f}%")
 
@@ -274,7 +298,10 @@ for col, col_stats in stats["columns"].items():
 Enforce quality thresholds in pipelines.
 
 ```python
+import pandas as pd
+
 from pysuricata import summarize
+
 
 def validate_data_quality(df):
     """Validate data quality, raise if fails"""
@@ -288,15 +315,25 @@ def validate_data_quality(df):
     dup_pct = stats["dataset"]["duplicate_rows_pct_est"]
     assert dup_pct < 1.0, f"Too many duplicates: {dup_pct:.1f}%"
 
-    # Check specific columns
+    # Check specific columns. unique_est is a KMV estimate, so compare with a
+    # tolerance rather than for equality -- see Sketch Algorithms for the bound.
     for col in ["customer_id", "transaction_id"]:
         col_stats = stats["columns"][col]
-        assert col_stats["distinct"] == col_stats["count"], \
-            f"{col} has duplicates"
+        assert col_stats["unique_est"] >= col_stats["count"] * 0.97, (
+            f"{col} looks like it has duplicates"
+        )
 
     print("✓ Data quality checks passed")
 
+
 # Use in pipeline
+df = pd.DataFrame(
+    {
+        "customer_id": range(1_000),
+        "transaction_id": range(1_000),
+        "amount": [float(i) for i in range(1_000)],
+    }
+)
 validate_data_quality(df)
 ```
 
@@ -351,8 +388,8 @@ from pysuricata import profile, ReportConfig
 config = ReportConfig()
 config.compute.chunk_size = 10_000  # Small chunks
 config.compute.numeric_sample_size = 5_000  # Small samples
-config.compute.uniques_sketch_size = 1_024  # Small sketches
-config.compute.top_k_size = 20  # Few top values
+config.compute.max_uniques = 1_024  # Small sketches
+config.compute.top_k = 20  # Few top values
 config.compute.compute_correlations = False  # Skip correlations
 
 report = profile(df, config=config)
@@ -394,7 +431,14 @@ plt.savefig("missing_chart.png")
 Compare multiple datasets (manual).
 
 ```python
+import numpy as np
+import pandas as pd
+
 from pysuricata import summarize
+
+rng = np.random.default_rng(0)
+df_train = pd.DataFrame({"amount": rng.lognormal(3, 1, 5_000)})
+df_test = pd.DataFrame({"amount": rng.lognormal(3.1, 1, 2_000)})
 
 # Profile multiple datasets
 stats_train = summarize(df_train)
@@ -402,7 +446,7 @@ stats_test = summarize(df_test)
 
 # Compare key metrics
 print("Train vs Test Comparison:")
-print(f"Rows: {stats_train['dataset']['rows']} vs {stats_test['dataset']['rows']}")
+print(f"Rows: {stats_train['dataset']['rows_est']} vs {stats_test['dataset']['rows_est']}")
 print(f"Missing: {stats_train['dataset']['missing_cells_pct']:.1f}% vs {stats_test['dataset']['missing_cells_pct']:.1f}%")
 
 # Column-level comparison
@@ -418,7 +462,3 @@ for col in df_train.columns:
 - Explore [Configuration](configuration.md) for all options
 - See [Performance Tips](performance.md) for optimization
 - Check [Advanced Features](advanced.md) for power user tips
-
----
-
-*Last updated: 2025-10-12*

@@ -63,6 +63,18 @@ class KMV:
         return int(hashlib.md5(str(value).encode()).hexdigest(), 16) / (2**128)
 ```
 
+!!! note "What PySuricata actually hashes with"
+
+    The sketch above uses MD5 to keep the illustration short. The library does
+    not: `_hash_value` uses **blake2b with an 8-byte digest**, which gives 64
+    bits directly with no slicing of a wider digest, and numeric arrays take a
+    vectorised **splitmix64** path (`_hash_numeric_array`) that hashes the bit
+    pattern without allocating a Python object per row. MD5 here would mean one
+    `str()` and one digest per value.
+
+    The numeric path also canonicalises `-0.0` to `0.0`, so the two do not count
+    as distinct values.
+
 ### Mergeability
 
 Union of two KMV sketches: merge heaps and keep k smallest.
@@ -189,6 +201,15 @@ where:
 Maintain uniform random sample of fixed size \(k\) from stream.
 
 ### Algorithm (Algorithm R)
+
+!!! warning "PySuricata implements Algorithm L, not Algorithm R"
+
+    Algorithm R below is the version usually taught, and it is shown here
+    because it makes the invariant easy to see. It costs one random draw per
+    element. `ReservoirSampler` uses **Algorithm L**, which draws a geometric
+    skip and jumps to the next element it will accept — about
+    \(k \ln(n/k)\) draws instead of \(n\), with the same uniformity
+    guarantee. See [Reservoir Sampling](sampling.md) for the version that ships.
 
 ```python
 import random
@@ -343,7 +364,3 @@ self._uniques = KMV(config.uniques_sketch_size)  # Distinct count
 - [Streaming Algorithms](streaming.md) - Welford/Pébay moments
 - [Numeric Analysis](../stats/numeric.md) - Using KMV and reservoir
 - [Categorical Analysis](../stats/categorical.md) - Using Misra-Gries
-
----
-
-*Last updated: 2025-10-12*

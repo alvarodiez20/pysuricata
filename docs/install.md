@@ -19,7 +19,7 @@ uv add pysuricata[polars]
 
 Verify your installation:
 
-```python
+```pycon
 >>> import pandas as pd
 >>> from pysuricata import profile
 >>> df = pd.DataFrame({"x": [1, 2, 3]})

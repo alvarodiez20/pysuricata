@@ -106,7 +106,7 @@ flowchart TD
     E -->|"Numeric"| F["to_numpy(float64)\nFast path: direct cast\nSlow path: pd.to_numeric(errors=coerce)\nO(chunk_size)"]
     F --> F1["acc.update(arr)\nmoments + reservoir + histogram\nO(chunk_size)"]
     F1 --> F2["KMV.add per value\nO(chunk_size × log k)"]
-    F2 --> F3["ExtremeTracker.update\nO(chunk_size × log k)\nEvery 5th chunk only (pandas)"]
+    F2 --> F3["ExtremeTracker.update\nO(chunk_size × log k)\nevery chunk — extremes are exact"]
     F3 --> G["Next column"]
 
     E -->|"Categorical"| H["s.tolist → Python list\nO(chunk_size)"]
@@ -187,7 +187,7 @@ flowchart TD
 |-------|------|-------|---------------|
 | Input coercion | O(1) | O(1) | — |
 | Chunking | O(n/c) | O(c × cols) | `chunk_size` (200k) |
-| Type inference | O(sample) | O(1) | first chunk only |
+| Type inference | O(sample) | O(1) | first chunk; reclassification only when that chunk is the whole frame |
 | Accumulator updates | O(n × cols) | O(cols × s) | `numeric_sample_k` (20k) |
 | KMV sketching | O(n × log k) | O(cols × k) | `uniques_k` (2048) |
 | Correlation | O(n × m²) | O(m²) | `corr_max_cols` (50) |
