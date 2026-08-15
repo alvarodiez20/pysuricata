@@ -6,32 +6,32 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="How pysuricata generates EDA reports at scale — chunked ingestion, accumulators, sketches, rendering, and configuration.">
+        <meta name="description" content="Exploratory data analysis reports for pandas DataFrames">
       
       
       
-        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/architecture/">
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/adr/memory-budget/">
       
       
-        <link rel="prev" href="../algorithms/sampling/">
+        <link rel="prev" href="../../roadmap/">
       
       
-        <link rel="next" href="../architecture-diagrams/">
+        <link rel="next" href="../../changelog/">
       
       
-      <link rel="icon" href="../assets/favicon.ico">
+      <link rel="icon" href="../../assets/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
     
     
       
-        <title>Architecture & Internals - PySuricata</title>
+        <title>ADR: memory budget - PySuricata</title>
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.2a3383ac.min.css">
       
         
-        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -50,11 +50,11 @@
       
     
     
-      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../stylesheets/extra.css">
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#architecture-internals" class="md-skip">
+        <a href="#adr-a-user-specified-memory-budget" class="md-skip">
           Skip to content
         </a>
       
@@ -96,9 +96,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href=".." title="PySuricata" class="md-header__button md-logo" aria-label="PySuricata" data-md-component="logo">
+    <a href="../.." title="PySuricata" class="md-header__button md-logo" aria-label="PySuricata" data-md-component="logo">
       
-  <img src="../assets/favicon.ico" alt="logo">
+  <img src="../../assets/favicon.ico" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Architecture & Internals
+              ADR: memory budget
             
           </span>
         </div>
@@ -222,7 +222,7 @@
   
   
     <li class="md-tabs__item">
-      <a href=".." class="md-tabs__link">
+      <a href="../.." class="md-tabs__link">
         
   
   
@@ -243,7 +243,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../why-pysuricata/" class="md-tabs__link">
+        <a href="../../why-pysuricata/" class="md-tabs__link">
           
   
   
@@ -265,7 +265,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../usage/" class="md-tabs__link">
+        <a href="../../usage/" class="md-tabs__link">
           
   
   
@@ -287,7 +287,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../api/" class="md-tabs__link">
+        <a href="../../api/" class="md-tabs__link">
           
   
   
@@ -305,13 +305,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../../architecture/" class="md-tabs__link">
           
   
   
@@ -331,7 +329,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../contributing/" class="md-tabs__link">
+      <a href="../../contributing/" class="md-tabs__link">
         
   
   
@@ -350,7 +348,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../faq/" class="md-tabs__link">
+      <a href="../../faq/" class="md-tabs__link">
         
   
   
@@ -367,11 +365,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../about-suricatas/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../../about-suricatas/" class="md-tabs__link">
           
   
   
@@ -415,9 +415,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href=".." title="PySuricata" class="md-nav__button md-logo" aria-label="PySuricata" data-md-component="logo">
+    <a href="../.." title="PySuricata" class="md-nav__button md-logo" aria-label="PySuricata" data-md-component="logo">
       
-  <img src="../assets/favicon.ico" alt="logo">
+  <img src="../../assets/favicon.ico" alt="logo">
 
     </a>
     PySuricata
@@ -444,7 +444,7 @@
   
   
     <li class="md-nav__item">
-      <a href=".." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -519,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../why-pysuricata/" class="md-nav__link">
+      <a href="../../why-pysuricata/" class="md-nav__link">
         
   
   
@@ -542,7 +542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../install/" class="md-nav__link">
+      <a href="../../install/" class="md-nav__link">
         
   
   
@@ -565,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../quickstart/" class="md-nav__link">
+      <a href="../../quickstart/" class="md-nav__link">
         
   
   
@@ -588,7 +588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples/" class="md-nav__link">
+      <a href="../../examples/" class="md-nav__link">
         
   
   
@@ -671,7 +671,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../usage/" class="md-nav__link">
+      <a href="../../usage/" class="md-nav__link">
         
   
   
@@ -694,7 +694,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../configuration/" class="md-nav__link">
+      <a href="../../configuration/" class="md-nav__link">
         
   
   
@@ -717,7 +717,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../advanced/" class="md-nav__link">
+      <a href="../../advanced/" class="md-nav__link">
         
   
   
@@ -740,7 +740,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../performance/" class="md-nav__link">
+      <a href="../../performance/" class="md-nav__link">
         
   
   
@@ -825,7 +825,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../api/" class="md-nav__link">
+      <a href="../../api/" class="md-nav__link">
         
   
   
@@ -848,7 +848,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../complexity-analysis/" class="md-nav__link">
+      <a href="../../complexity-analysis/" class="md-nav__link">
         
   
   
@@ -926,7 +926,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stats/overview/" class="md-nav__link">
+      <a href="../../stats/overview/" class="md-nav__link">
         
   
   
@@ -949,7 +949,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stats/numeric/" class="md-nav__link">
+      <a href="../../stats/numeric/" class="md-nav__link">
         
   
   
@@ -972,7 +972,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stats/categorical/" class="md-nav__link">
+      <a href="../../stats/categorical/" class="md-nav__link">
         
   
   
@@ -995,7 +995,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stats/datetime/" class="md-nav__link">
+      <a href="../../stats/datetime/" class="md-nav__link">
         
   
   
@@ -1018,7 +1018,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../stats/boolean/" class="md-nav__link">
+      <a href="../../stats/boolean/" class="md-nav__link">
         
   
   
@@ -1102,7 +1102,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../analytics/correlations/" class="md-nav__link">
+      <a href="../../analytics/correlations/" class="md-nav__link">
         
   
   
@@ -1125,7 +1125,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../analytics/missing-values/" class="md-nav__link">
+      <a href="../../analytics/missing-values/" class="md-nav__link">
         
   
   
@@ -1148,7 +1148,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../analytics/duplicates/" class="md-nav__link">
+      <a href="../../analytics/duplicates/" class="md-nav__link">
         
   
   
@@ -1171,7 +1171,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../analytics/quality/" class="md-nav__link">
+      <a href="../../analytics/quality/" class="md-nav__link">
         
   
   
@@ -1253,7 +1253,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../algorithms/streaming/" class="md-nav__link">
+      <a href="../../algorithms/streaming/" class="md-nav__link">
         
   
   
@@ -1276,7 +1276,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../algorithms/sketches/" class="md-nav__link">
+      <a href="../../algorithms/sketches/" class="md-nav__link">
         
   
   
@@ -1299,7 +1299,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../algorithms/sampling/" class="md-nav__link">
+      <a href="../../algorithms/sampling/" class="md-nav__link">
         
   
   
@@ -1334,10 +1334,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1351,22 +1349,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -1379,7 +1374,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -1390,32 +1385,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Overview
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../architecture/" class="md-nav__link">
         
   
   
@@ -1426,113 +1399,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#high-level-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      High-Level Pipeline
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#accumulator-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      Accumulator Architecture
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-flow" class="md-nav__link">
-    <span class="md-ellipsis">
-      Data Flow
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#streaming-algorithms" class="md-nav__link">
-    <span class="md-ellipsis">
-      Streaming Algorithms
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rendering-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      Rendering Pipeline
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rendering Pipeline">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#shared-utilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      Shared Utilities
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configuration
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security-correctness" class="md-nav__link">
-    <span class="md-ellipsis">
-      Security &amp; Correctness
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#extending" class="md-nav__link">
-    <span class="md-ellipsis">
-      Extending
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1545,7 +1411,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../architecture-diagrams/" class="md-nav__link">
+      <a href="../../architecture-diagrams/" class="md-nav__link">
         
   
   
@@ -1568,7 +1434,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sequence-diagrams-complexity/" class="md-nav__link">
+      <a href="../../sequence-diagrams-complexity/" class="md-nav__link">
         
   
   
@@ -1598,7 +1464,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../contributing/" class="md-nav__link">
+      <a href="../../contributing/" class="md-nav__link">
         
   
   
@@ -1620,7 +1486,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../faq/" class="md-nav__link">
+      <a href="../../faq/" class="md-nav__link">
         
   
   
@@ -1639,8 +1505,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -1656,19 +1524,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -1681,7 +1552,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             About
@@ -1695,7 +1566,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../about-suricatas/" class="md-nav__link">
+      <a href="../../about-suricatas/" class="md-nav__link">
         
   
   
@@ -1718,7 +1589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../roadmap/" class="md-nav__link">
+      <a href="../../roadmap/" class="md-nav__link">
         
   
   
@@ -1738,10 +1609,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../adr/memory-budget/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    ADR: memory budget
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1752,6 +1645,155 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-question" class="md-nav__link">
+    <span class="md-ellipsis">
+      The question
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-i-measured-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      What I measured first
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What I measured first">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#the-floor-is-75-mb-before-you-execute-a-line" class="md-nav__link">
+    <span class="md-ellipsis">
+      The floor is 75 MB before you execute a line
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#memory-is-genuinely-flat-in-rows" class="md-nav__link">
+    <span class="md-ellipsis">
+      Memory is genuinely flat in rows
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#and-linear-in-everything-you-control" class="md-nav__link">
+    <span class="md-ellipsis">
+      And linear in everything you control
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#it-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      It works
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-decision" class="md-nav__link">
+    <span class="md-ellipsis">
+      The decision
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The decision">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-it-is-a-good-idea" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why it is a good idea
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#why-it-must-not-be-a-cap" class="md-nav__link">
+    <span class="md-ellipsis">
+      Why it must not be a cap
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-real-danger-and-the-mitigation" class="md-nav__link">
+    <span class="md-ellipsis">
+      The real danger, and the mitigation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-to-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      What to build
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#open-questions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Open questions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rejected-alternatives" class="md-nav__link">
+    <span class="md-ellipsis">
+      Rejected alternatives
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1764,7 +1806,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../changelog/" class="md-nav__link">
+      <a href="../../changelog/" class="md-nav__link">
         
   
   
@@ -1806,240 +1848,252 @@
   
 
 
-<h1 id="architecture-internals">Architecture &amp; Internals</h1>
-<p>How <code>pysuricata</code> profiles data efficiently and renders a self-contained HTML report.</p>
-<h2 id="high-level-pipeline">High-Level Pipeline</h2>
-<figure class="ps-figure" markdown="0">
-  <iframe src="../assets/diagrams/figures.html?only=chunk-lifecycle" title="The chunk lifecycle: which state is bounded and which is released" loading="lazy"></iframe>
-</figure>
-
-<pre class="mermaid"><code>flowchart LR
-    A["Data Source"] --&gt; B["Chunk Iterator"]
-    B --&gt; C["Typed Accumulators"]
-    C --&gt; D["Summary Metrics"]
-    D --&gt; E["HTML Renderer"]
-
-    style A fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
-    style B fill:#C8E6C9,stroke:#2E7D32,color:#1B5E20
-    style C fill:#A5D6A7,stroke:#2E7D32,color:#1B5E20
-    style D fill:#81C784,stroke:#2E7D32,color:#1B5E20
-    style E fill:#66BB6A,stroke:#2E7D32,color:#fff</code></pre>
-<p><strong>Data Sources</strong> → pandas DataFrames, polars DataFrames, or any iterable of DataFrames (for streaming).</p>
-<p><strong>Chunk Iterator</strong> → If a single DataFrame is passed, it is treated as one chunk. Generators are consumed chunk-by-chunk to bound memory.</p>
-<p><strong>Typed Accumulators</strong> → Each column is assigned a specialized accumulator based on its inferred type. All accumulators are streaming: they accept one chunk at a time and maintain bounded state.</p>
-<p><strong>Summary Metrics</strong> → After all chunks are consumed, accumulators are finalized and dataset-wide metrics (missingness, duplicates, etc.) are computed.</p>
-<p><strong>HTML Renderer</strong> → A single-file Jinja2 template with inline CSS/JS produces a portable, self-contained HTML report.</p>
+<h1 id="adr-a-user-specified-memory-budget">ADR: a user-specified memory budget</h1>
+<p><strong>Status:</strong> proposed
+<strong>Verdict:</strong> do it — as a <em>planner</em> that derives settings, not as a <em>cap</em> that enforces them.</p>
 <hr />
-<h2 id="accumulator-architecture">Accumulator Architecture</h2>
-<pre class="mermaid"><code>classDiagram
-    class BaseAccumulator {
-        +name: str
-        +count: int
-        +missing: int
-        +update(chunk)
-        +finalize() Summary
-    }
-
-    class NumericAccumulator {
-        +StreamingMoments
-        +ReservoirSampler
-        +KMV sketch
-        +MisraGries top-k
-        +ExtremeTracker
-    }
-
-    class CategoricalAccumulator {
-        +KMV sketch × 3
-        +MisraGries top-k
-        +String length stats
-    }
-
-    class DatetimeAccumulator {
-        +min/max timestamps
-        +hour/weekday/month counts
-        +monotonicity tracker
-    }
-
-    class BooleanAccumulator {
-        +true_count
-        +false_count
-    }
-
-    BaseAccumulator &lt;|-- NumericAccumulator
-    BaseAccumulator &lt;|-- CategoricalAccumulator
-    BaseAccumulator &lt;|-- DatetimeAccumulator
-    BaseAccumulator &lt;|-- BooleanAccumulator</code></pre>
-<p>Each accumulator follows the same interface:</p>
+<h2 id="the-question">The question</h2>
+<p>Should a user be able to say <code>profile(source, memory_budget="512MB")</code>?</p>
+<h2 id="what-i-measured-first">What I measured first</h2>
+<p>All figures from the working tree at 0.0.27, streaming sources (a generator of
+chunks), peak RSS via <code>getrusage</code>, each run in a fresh subprocess.</p>
+<h3 id="the-floor-is-75-mb-before-you-execute-a-line">The floor is 75 MB before you execute a line</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">peak RSS</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>after <code>import numpy, pandas</code></td>
+<td style="text-align: right;">68 MB</td>
+</tr>
+<tr>
+<td>after <code>import pysuricata</code></td>
+<td style="text-align: right;">73 MB (+4)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="memory-is-genuinely-flat-in-rows">Memory is genuinely flat in rows</h3>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">rows (8 cols, chunk 50k)</th>
+<th style="text-align: right;">RSS above floor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">200,000</td>
+<td style="text-align: right;">32 MB</td>
+</tr>
+<tr>
+<td style="text-align: right;">1,000,000</td>
+<td style="text-align: right;">35 MB</td>
+</tr>
+<tr>
+<td style="text-align: right;">5,000,000</td>
+<td style="text-align: right;">35 MB</td>
+</tr>
+</tbody>
+</table>
+<p>A 25× increase in rows costs 3 MB. <strong>The core claim holds under measurement</strong>,
+which is worth knowing independently of this decision.</p>
+<h3 id="and-linear-in-everything-you-control">And linear in everything you control</h3>
+<table>
+<thead>
+<tr>
+<th>varying</th>
+<th>measurements</th>
+<th>slope</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>columns (1M rows)</td>
+<td>4 → 21 MB, 16 → 58, 64 → 214</td>
+<td>~3.2 MB/column</td>
+</tr>
+<tr>
+<td>chunk_size (8 cols)</td>
+<td>10k → 18 MB, 50k → 35, 250k → 110</td>
+<td>~48 B per row per column</td>
+</tr>
+<tr>
+<td>sample k (16 cols)</td>
+<td>2k → 48 MB, 20k → 58, 100k → 106</td>
+<td>~37 B per slot per column</td>
+</tr>
+</tbody>
+</table>
+<p>Which fits:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>peak_MB ≈ 75 + n_cols × (0.5 + k × 37B + chunk_size × 48B)
+</span></code></pre></div>
+<p>Every term on the right is a knob the library owns. <strong>So the budget is
+invertible</strong> — you can solve for <code>chunk_size</code> and <code>k</code> given a target.</p>
+<h3 id="it-works">It works</h3>
+<p>I implemented the inversion and measured the result:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">budget</th>
+<th style="text-align: right;">cols</th>
+<th>chosen</th>
+<th style="text-align: right;">predicted</th>
+<th style="text-align: right;"><strong>actual</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">150 MB</td>
+<td style="text-align: right;">8</td>
+<td>chunk 110,937 · k 20,000</td>
+<td style="text-align: right;">128</td>
+<td style="text-align: right;"><strong>125</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">250 MB</td>
+<td style="text-align: right;">8</td>
+<td>chunk 200,000 · k 20,000</td>
+<td style="text-align: right;">162</td>
+<td style="text-align: right;"><strong>153</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">250 MB</td>
+<td style="text-align: right;">40</td>
+<td>chunk 48,437 · k 20,000</td>
+<td style="text-align: right;">218</td>
+<td style="text-align: right;"><strong>207</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">500 MB</td>
+<td style="text-align: right;">40</td>
+<td>chunk 126,562 · k 20,000</td>
+<td style="text-align: right;">368</td>
+<td style="text-align: right;"><strong>302</strong></td>
+</tr>
+<tr>
+<td style="text-align: right;">1000 MB</td>
+<td style="text-align: right;">100</td>
+<td>chunk 109,375 · k 20,000</td>
+<td style="text-align: right;">724</td>
+<td style="text-align: right;"><strong>560</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Every case landed under budget, and the model over-predicts — which is the right
+direction for a budget to be wrong in.</p>
+<hr />
+<h2 id="the-decision">The decision</h2>
+<p><strong>Ship it as <code>memory_budget</code>, framed as a target that selects settings, and
+report what it chose.</strong> Do not frame it as a guarantee and do not hard-cap.</p>
+<h3 id="why-it-is-a-good-idea">Why it is a good idea</h3>
 <ol>
-<li><strong><code>update(chunk)</code></strong> — process a batch of values, update internal state</li>
-<li><strong><code>finalize()</code></strong> — compute final statistics from accumulated state</li>
+<li><strong>It is the missing preset, in the unit users think in.</strong> The UX review found
+   21 configuration options and no presets. Nobody knows what
+   <code>numeric_sample_size=20000</code> costs. Everybody knows their CI runner has 512 MB.
+   One argument sets four knobs correctly.</li>
+<li><strong>It makes the positioning testable.</strong> "Bounded memory" is currently a claim
+   about architecture. <code>memory_budget="512MB"</code> turns it into "I asked for 512 and
+   it used 480" — a number you can publish, and a test you can run in CI.</li>
+<li><strong>The model is real, not hand-waving.</strong> It was fitted from measurements and
+   verified against six shapes. This is not a knob that pretends.</li>
+<li><strong>It pairs with <code>pysuricata check</code>.</strong> In CI you know your runner size exactly,
+   which is the case where a budget is most obviously correct.</li>
 </ol>
-<hr />
-<h2 id="data-flow">Data Flow</h2>
-<pre class="mermaid"><code>sequenceDiagram
-    participant User
-    participant profile as profile()
-    participant Infer as Type Inference
-    participant Acc as Accumulators
-    participant Corr as Correlations
-    participant Render as HTML Renderer
-
-    User-&gt;&gt;profile: DataFrame / generator
-    profile-&gt;&gt;Infer: First chunk
-    Infer--&gt;&gt;profile: Column types
-    profile-&gt;&gt;Acc: Create typed accumulators
-
-    loop Each chunk
-        profile-&gt;&gt;Acc: update(chunk)
-        profile-&gt;&gt;Corr: update pairs (optional)
-    end
-
-    profile-&gt;&gt;Acc: finalize()
-    Acc--&gt;&gt;profile: Per-column summaries
-    profile-&gt;&gt;Corr: finalize()
-    Corr--&gt;&gt;profile: Correlation matrix
-
-    profile-&gt;&gt;Render: Summaries + config
-    Render--&gt;&gt;User: Report (HTML)</code></pre>
-<hr />
-<h2 id="streaming-algorithms">Streaming Algorithms</h2>
-<p>Each accumulator uses algorithms chosen for <strong>O(1) per-value update</strong> and <strong>bounded memory</strong>:</p>
-<pre class="mermaid"><code>flowchart TB
-    subgraph Numeric["Numeric Accumulator"]
-        N1["Welford/Pébay&lt;br/&gt;mean, var, skew, kurt&lt;br/&gt;O(1) space"]
-        N2["Reservoir Sampling&lt;br/&gt;quantiles, histograms&lt;br/&gt;O(s) space"]
-        N3["KMV Sketch&lt;br/&gt;distinct count&lt;br/&gt;O(k) space"]
-        N4["Misra-Gries&lt;br/&gt;top-k values&lt;br/&gt;O(k) space"]
-        N5["Extreme Tracker&lt;br/&gt;min/max with indices&lt;br/&gt;O(k) space"]
-    end
-
-    subgraph Categorical["Categorical Accumulator"]
-        C1["KMV × 3&lt;br/&gt;distinct: original, lower, trimmed"]
-        C2["Misra-Gries&lt;br/&gt;top-k values"]
-        C3["String Length&lt;br/&gt;avg, p90"]
-    end
-
-    subgraph DateTime["DateTime Accumulator"]
-        D1["Min/Max&lt;br/&gt;timestamps"]
-        D2["Counters&lt;br/&gt;hour/weekday/month"]
-        D3["Monotonicity&lt;br/&gt;pair comparison"]
-    end
-
-    subgraph Boolean["Boolean Accumulator"]
-        B1["Counters&lt;br/&gt;true/false/missing"]
-    end
-
-    style Numeric fill:#E8F5E9,stroke:#2E7D32
-    style Categorical fill:#FFF3E0,stroke:#E65100
-    style DateTime fill:#E3F2FD,stroke:#1565C0
-    style Boolean fill:#F3E5F5,stroke:#6A1B9A</code></pre>
-<hr />
-<h2 id="rendering-pipeline">Rendering Pipeline</h2>
-<pre class="mermaid"><code>flowchart TB
-    A["Finalized Summaries"] --&gt; B["Dataset-Level Metrics"]
-    B --&gt; C["Jinja2 Template"]
-    C --&gt; D["Inline CSS + JS"]
-    C --&gt; E["Summary Cards"]
-    C --&gt; F["Variable Cards"]
-    C --&gt; G["Sample Table"]
-    D --&gt; H["Single HTML File"]
-    E --&gt; H
-    F --&gt; H
-    G --&gt; H
-
-    style H fill:#66BB6A,stroke:#2E7D32,color:#fff</code></pre>
-<p>The template produces a <strong>single portable HTML file</strong> — no external dependencies, no server required.</p>
-<p><strong>Summary cards</strong> show: rows, columns, processed bytes, missing %, duplicates %.</p>
-<p><strong>Variable cards</strong> are rendered per-type with SVG charts, statistics, and quality flags.</p>
-<h3 id="shared-utilities">Shared Utilities</h3>
+<h3 id="why-it-must-not-be-a-cap">Why it must not be a cap</h3>
+<ol>
+<li><strong>You cannot enforce it.</strong> 75 MB is gone before your first line runs. You do
+   not control pandas' allocations, the allocator's fragmentation, or when the GC
+   returns pages. You can <em>plan</em>; you cannot <em>police</em>.</li>
+<li><strong>Promising and missing is worse than not promising.</strong> A hard cap that raises
+   <code>MemoryError</code> reproduces exactly the incumbent failure mode you are positioned
+   against.</li>
+<li><strong>For an in-memory DataFrame it is nearly meaningless.</strong> A 1M × 8 frame costs
+   123 MB resident <em>before</em> <code>profile()</code> is called, and profiling added nothing
+   above that high-water mark. The user already paid. The budget only bites on
+   streaming sources — which is, conveniently, exactly where the streaming claim
+   matters.</li>
+</ol>
+<h3 id="the-real-danger-and-the-mitigation">The real danger, and the mitigation</h3>
+<p><strong>Silent accuracy loss.</strong> A tight budget forces <code>k</code> down, and every quantile, the
+median, IQR, MAD and the histogram come from that sample. Relative error is
+<code>1/√k</code>:</p>
 <table>
 <thead>
 <tr>
-<th>Module</th>
-<th>Functions</th>
-<th>Purpose</th>
+<th style="text-align: right;">k</th>
+<th style="text-align: right;">quantile error</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>render/svg_utils.py</code></td>
-<td><code>safe_col_id</code>, <code>nice_ticks</code>, <code>fmt_tick</code>, <code>svg_empty</code></td>
-<td>SVG chart helpers</td>
+<td style="text-align: right;">20,000</td>
+<td style="text-align: right;">±0.7%</td>
 </tr>
 <tr>
-<td><code>render/format_utils.py</code></td>
-<td><code>human_bytes</code>, <code>fmt_num</code>, <code>fmt_compact</code></td>
-<td>Number formatting</td>
+<td style="text-align: right;">5,000</td>
+<td style="text-align: right;">±1.4%</td>
+</tr>
+<tr>
+<td style="text-align: right;">1,000</td>
+<td style="text-align: right;">±3.2%</td>
 </tr>
 </tbody>
 </table>
+<p>A user who asks for 128 MB and silently receives ±3.2% quantiles has been
+mistreated. <strong>The plan must be reported, always</strong> — one line naming the chosen
+settings and the resulting error — and there must be a floor below which the call
+errors rather than degrades.</p>
 <hr />
-<h2 id="configuration">Configuration</h2>
-<p><code>ReportConfig</code> controls all behavior:</p>
-<table>
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Default</th>
-<th>Effect</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>chunk_size</code></td>
-<td>50,000</td>
-<td>Rows per chunk</td>
-</tr>
-<tr>
-<td><code>numeric_sample_size</code></td>
-<td>20,000</td>
-<td>Reservoir size for quantiles</td>
-</tr>
-<tr>
-<td><code>max_uniques</code></td>
-<td>2,048</td>
-<td>KMV sketch size</td>
-</tr>
-<tr>
-<td><code>top_k</code></td>
-<td>50</td>
-<td>Misra-Gries capacity</td>
-</tr>
-<tr>
-<td><code>compute_correlations</code></td>
-<td><code>True</code></td>
-<td>Enable/disable correlation chips</td>
-</tr>
-<tr>
-<td><code>corr_threshold</code></td>
-<td>0.5</td>
-<td>Minimum |r| to display</td>
-</tr>
-<tr>
-<td><code>random_seed</code></td>
-<td><code>None</code></td>
-<td>Deterministic sampling</td>
-</tr>
-<tr>
-<td><code>include_sample</code></td>
-<td><code>True</code></td>
-<td>Include data sample in report</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="security-correctness">Security &amp; Correctness</h2>
+<h2 id="what-to-build">What to build</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># the common case</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">profile</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">memory_budget</span><span class="o">=</span><span class="s2">&quot;512MB&quot;</span><span class="p">)</span>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># inspectable, for anyone who wants to see the plan before running</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">ProfileConfig</span><span class="o">.</span><span class="n">for_memory</span><span class="p">(</span><span class="s2">&quot;512MB&quot;</span><span class="p">,</span> <span class="n">n_columns</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="c1"># -&gt; ComputeOptions(chunk_size=48_437, numeric_sample_size=20_000, ...)</span>
+</span></code></pre></div>
+<p>Behaviour:</p>
+<ol>
+<li><strong>Error immediately below the floor</strong>, with real numbers rather than a generic
+   message:<blockquote>
+<p><code>budget 60 MB is below the floor: the interpreter, numpy and pandas cost ~75 MB before profiling starts, plus ~4 MB of fixed state for 8 columns. Minimum workable budget is ~99 MB.</code></p>
+</blockquote>
+</li>
+<li><strong>Report the plan</strong>, at INFO — settings chosen and the accuracy consequence.</li>
+<li><strong>Never exceed the caps.</strong> Extra budget beyond <code>k=20,000</code> and
+   <code>chunk_size=200,000</code> buys nothing; leave it unspent rather than inflating.</li>
+<li><strong>Split the budget 60/40</strong> between chunk (throughput) and sample (accuracy).
+   That ratio is a guess and should be revisited once there is a benchmark for it.</li>
+<li><strong>Test it.</strong> Assert measured peak RSS ≤ budget across a matrix of column counts
+   and budgets. That test is also the proof of the headline claim, so it earns its
+   keep twice.</li>
+<li><strong>Document the model in the docs</strong>, including the floor and the fact that a
+   budget is a target. A user who understands the formula will trust the number.</li>
+</ol>
+<h2 id="open-questions">Open questions</h2>
 <ul>
-<li><strong>HTML escaping</strong> — column names and labels are escaped before rendering</li>
-<li><strong>Missing/Inf handling</strong> — NaN and ±Inf excluded from moments, reported separately</li>
-<li><strong>Approximation badges</strong> — estimates marked with <code>(≈)</code> or <code>approx</code> badge</li>
-<li><strong>Reproducibility</strong> — set <code>random_seed</code> for deterministic results</li>
+<li>The 60/40 split is unmeasured. Is throughput or accuracy the better marginal
+  buy? Worth one benchmark.</li>
+<li>Should <code>memory_budget</code> also cap the <em>report</em> size? A 100-column profile produces
+  a large HTML file; that is a different resource and probably a different
+  argument.</li>
+<li>Non-numeric columns are not in the model yet. Categorical accumulators hold a
+  Misra-Gries table and string samples; datetime holds its own reservoir. The
+  model should be refitted per column kind before this ships.</li>
 </ul>
-<h2 id="extending">Extending</h2>
+<h2 id="rejected-alternatives">Rejected alternatives</h2>
 <ul>
-<li><strong>Backends</strong> — polars/Arrow/DuckDB can be connected via the chunk iterator interface</li>
-<li><strong>Quantile sketches</strong> — t-digest or KLL can replace the default reservoir</li>
-<li><strong>New sections</strong> — drift comparisons, JSON export, CLI wrapper</li>
+<li><strong>Hard cap with <code>MemoryError</code>.</strong> Reproduces the failure mode you are positioned
+  against, and cannot be honoured anyway.</li>
+<li><strong>Polling RSS mid-run and shrinking sketches adaptively.</strong> Makes results depend
+  on machine load, which breaks the chunked-equals-unchunked invariant the
+  accuracy oracle enforces. Not worth it.</li>
+<li><strong>Doing nothing.</strong> The knobs exist; users just have no way to reason about them
+  in a unit that means anything.</li>
 </ul>
 
 
@@ -2047,9 +2101,6 @@
 
 
 
-
-  
-  
 
 
 
@@ -2116,14 +2167,14 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.tracking", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "toc.integrate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.tracking", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "toc.integrate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
-        <script src="../javascripts/figures.js"></script>
+        <script src="../../javascripts/figures.js"></script>
       
-        <script src="../javascripts/mathjax.js"></script>
+        <script src="../../javascripts/mathjax.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       

@@ -6,17 +6,13 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="How pysuricata generates EDA reports at scale — chunked ingestion, accumulators, sketches, rendering, and configuration.">
+        <meta name="description" content="Exploratory data analysis reports for pandas DataFrames">
       
       
       
-        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/architecture/">
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/UX_ISSUES/">
       
       
-        <link rel="prev" href="../algorithms/sampling/">
-      
-      
-        <link rel="next" href="../architecture-diagrams/">
       
       
       <link rel="icon" href="../assets/favicon.ico">
@@ -24,7 +20,7 @@
     
     
       
-        <title>Architecture & Internals - PySuricata</title>
+        <title>UX review — issue backlog - PySuricata</title>
       
     
     
@@ -80,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#architecture-internals" class="md-skip">
+        <a href="#ux-review-issue-backlog" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Architecture & Internals
+              UX review — issue backlog
             
           </span>
         </div>
@@ -305,13 +301,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
           
   
   
@@ -1334,10 +1328,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1351,22 +1343,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -1379,7 +1368,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -1390,32 +1379,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Overview
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1426,113 +1393,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#high-level-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      High-Level Pipeline
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#accumulator-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      Accumulator Architecture
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-flow" class="md-nav__link">
-    <span class="md-ellipsis">
-      Data Flow
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#streaming-algorithms" class="md-nav__link">
-    <span class="md-ellipsis">
-      Streaming Algorithms
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rendering-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      Rendering Pipeline
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rendering Pipeline">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#shared-utilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      Shared Utilities
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configuration
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security-correctness" class="md-nav__link">
-    <span class="md-ellipsis">
-      Security &amp; Correctness
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#extending" class="md-nav__link">
-    <span class="md-ellipsis">
-      Extending
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1806,240 +1666,413 @@
   
 
 
-<h1 id="architecture-internals">Architecture &amp; Internals</h1>
-<p>How <code>pysuricata</code> profiles data efficiently and renders a self-contained HTML report.</p>
-<h2 id="high-level-pipeline">High-Level Pipeline</h2>
-<figure class="ps-figure" markdown="0">
-  <iframe src="../assets/diagrams/figures.html?only=chunk-lifecycle" title="The chunk lifecycle: which state is bounded and which is released" loading="lazy"></iframe>
-</figure>
-
-<pre class="mermaid"><code>flowchart LR
-    A["Data Source"] --&gt; B["Chunk Iterator"]
-    B --&gt; C["Typed Accumulators"]
-    C --&gt; D["Summary Metrics"]
-    D --&gt; E["HTML Renderer"]
-
-    style A fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
-    style B fill:#C8E6C9,stroke:#2E7D32,color:#1B5E20
-    style C fill:#A5D6A7,stroke:#2E7D32,color:#1B5E20
-    style D fill:#81C784,stroke:#2E7D32,color:#1B5E20
-    style E fill:#66BB6A,stroke:#2E7D32,color:#fff</code></pre>
-<p><strong>Data Sources</strong> → pandas DataFrames, polars DataFrames, or any iterable of DataFrames (for streaming).</p>
-<p><strong>Chunk Iterator</strong> → If a single DataFrame is passed, it is treated as one chunk. Generators are consumed chunk-by-chunk to bound memory.</p>
-<p><strong>Typed Accumulators</strong> → Each column is assigned a specialized accumulator based on its inferred type. All accumulators are streaming: they accept one chunk at a time and maintain bounded state.</p>
-<p><strong>Summary Metrics</strong> → After all chunks are consumed, accumulators are finalized and dataset-wide metrics (missingness, duplicates, etc.) are computed.</p>
-<p><strong>HTML Renderer</strong> → A single-file Jinja2 template with inline CSS/JS produces a portable, self-contained HTML report.</p>
+<h1 id="ux-review-issue-backlog">UX review — issue backlog</h1>
+<p>12 issues, grouped by the user each one unblocks.</p>
 <hr />
-<h2 id="accumulator-architecture">Accumulator Architecture</h2>
-<pre class="mermaid"><code>classDiagram
-    class BaseAccumulator {
-        +name: str
-        +count: int
-        +missing: int
-        +update(chunk)
-        +finalize() Summary
-    }
-
-    class NumericAccumulator {
-        +StreamingMoments
-        +ReservoirSampler
-        +KMV sketch
-        +MisraGries top-k
-        +ExtremeTracker
-    }
-
-    class CategoricalAccumulator {
-        +KMV sketch × 3
-        +MisraGries top-k
-        +String length stats
-    }
-
-    class DatetimeAccumulator {
-        +min/max timestamps
-        +hour/weekday/month counts
-        +monotonicity tracker
-    }
-
-    class BooleanAccumulator {
-        +true_count
-        +false_count
-    }
-
-    BaseAccumulator &lt;|-- NumericAccumulator
-    BaseAccumulator &lt;|-- CategoricalAccumulator
-    BaseAccumulator &lt;|-- DatetimeAccumulator
-    BaseAccumulator &lt;|-- BooleanAccumulator</code></pre>
-<p>Each accumulator follows the same interface:</p>
+<h2 id="1-numeric-columns-with-few-distinct-values-are-classified-categorical">1. Numeric columns with few distinct values are classified categorical</h2>
+<p><code>correctness</code> <code>ux</code> <code>user:evaluator</code></p>
+<h2 id="what-happens">What happens</h2>
+<p>Profiling a normal customer table with defaults, <code>age</code> comes back <strong>categorical</strong>:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">g</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;age&quot;</span><span class="p">:</span> <span class="n">g</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">85</span><span class="p">,</span> <span class="mi">20_000</span><span class="p">)})</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)[</span><span class="s2">&quot;columns&quot;</span><span class="p">][</span><span class="s2">&quot;age&quot;</span><span class="p">][</span><span class="s2">&quot;type&quot;</span><span class="p">]</span>   <span class="c1"># &#39;categorical&#39;</span>
+</span></code></pre></div>
+<p>The card then shows entropy and rare levels instead of median, quartiles and a
+histogram.</p>
+<h2 id="why">Why</h2>
+<p><code>should_reclassify_numeric_as_categorical</code> fires on
+<code>unique_count &lt; 10 or unique_ratio &lt; 0.05</code>. 67 distinct values in 20,000 rows is a
+0.34% ratio, so the ratio arm triggers.</p>
+<h2 id="why-this-is-the-wrong-shape-of-rule">Why this is the wrong shape of rule</h2>
+<p><strong>It gets more wrong as the table gets bigger.</strong> Any bounded integer — age, year,
+rating, day-of-month, HTTP status, US state code — crosses into "categorical"
+purely by adding rows, with no change to the data's nature. For a library whose
+pitch is bounded-memory profiling of large data, a heuristic that degrades with
+scale is backwards.</p>
+<p>The 0.0.26 fix (#50) guards the <em>streamed</em> path via <code>first_chunk_is_whole</code>.
+In-memory frames — the common case — still hit this.</p>
+<h2 id="proposed-fix">Proposed fix</h2>
+<p>Replace the ratio arm with a cardinality <strong>ceiling</strong>, and require integer-like
+values:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">return</span> <span class="n">int_like</span> <span class="ow">and</span> <span class="n">unique_est</span> <span class="o">&lt;=</span> <span class="mi">50</span>
+</span></code></pre></div>
+<p>A ceiling is stable under row count, which is the property the ratio lacks.</p>
+<h2 id="acceptance">Acceptance</h2>
+<ul>
+<li>[ ] <code>age</code> (67 distinct, 20k rows) profiles as numeric</li>
+<li>[ ] A genuine 8-level category still profiles as categorical</li>
+<li>[ ] A test that profiles the same column at 1k / 100k / 10M rows and asserts the
+      classification does not change</li>
+</ul>
+<hr />
+<h2 id="2-identifier-columns-get-meaningless-statistics">2. Identifier columns get meaningless statistics</h2>
+<p><code>ux</code> <code>report</code> <code>user:evaluator</code></p>
+<h2 id="what-happens_1">What happens</h2>
+<p>A monotonic, fully unique integer key is profiled as an ordinary numeric column:</p>
+<ul>
+<li>mean <code>1e+04</code>, median <code>1e+04</code>, a flat uniform histogram</li>
+<li>skewness and standard deviation, neither of which means anything</li>
+<li><code>Zeros: 1 (0.0%)</code>, which is actively misleading</li>
+</ul>
+<h2 id="why-it-is-worth-fixing">Why it is worth fixing</h2>
+<p>Every competing profiler computes the mean of an ID column. Being the one that
+says <em>"this is a key"</em> instead is a small, memorable difference — and it costs
+less than the card it replaces.</p>
+<h2 id="the-signals-already-exist">The signals already exist</h2>
+<p>The numeric accumulator already tracks everything needed:</p>
+<ul>
+<li><code>mono_inc</code> is true</li>
+<li>the KMV estimate equals the row count</li>
+<li><code>int_like</code> is true</li>
+</ul>
+<h2 id="proposed-fix_1">Proposed fix</h2>
+<p>When those hold, emit an <strong>Identifier</strong> badge and a card with the questions a key
+actually raises: distinct count, gaps in the sequence, duplicates, nulls, min and
+max. Skip moments, histogram and outliers entirely.</p>
+<h2 id="acceptance_1">Acceptance</h2>
+<ul>
+<li>[ ] <code>pd.DataFrame({"id": np.arange(n)})</code> renders an Identifier card</li>
+<li>[ ] A numeric column that happens to be sorted but has duplicates does <strong>not</strong></li>
+<li>[ ] The badge appears in <code>summarize()</code> output too, not only the HTML</li>
+</ul>
+<hr />
+<h2 id="3-report-has-no-triage-60-columns-render-at-equal-weight-in-source-order">3. Report has no triage: 60 columns render at equal weight in source order</h2>
+<p><code>ux</code> <code>report</code> <code>user:analyst</code></p>
+<h2 id="the-problem">The problem</h2>
+<p>Every column gets an identically sized card, in source order. A 60-column frame is
+60 screens with no entry point. The question a reader arrives with — <em>which columns
+are broken?</em> — is never answered.</p>
+<h2 id="the-signal-already-exists">The signal already exists</h2>
+<p>The quality chips (<em>Missing · Skewed Right · Heavy-tailed · Many outliers ·
+Positive-only</em>) are already computed per column. They are the best thing in the
+report and they are currently decoration rather than navigation.</p>
+<h2 id="proposed-fix_2">Proposed fix</h2>
 <ol>
-<li><strong><code>update(chunk)</code></strong> — process a batch of values, update internal state</li>
-<li><strong><code>finalize()</code></strong> — compute final statistics from accumulated state</li>
+<li>A <strong>"needs attention"</strong> block under the summary: <em>"3 of 60 columns have
+   issues"</em>, listing them with their chips, each linking to its card.</li>
+<li>Optional severity ordering, behind a toggle so source order stays available.</li>
+<li>A chip filter in the Variables section: click <em>Missing</em> to show only those.</li>
 </ol>
+<p>No new statistics required — only a use for the ones already there.</p>
+<h2 id="acceptance_2">Acceptance</h2>
+<ul>
+<li>[ ] Summary names the columns with issues and links to them</li>
+<li>[ ] Clicking a chip filters the variable list</li>
+<li>[ ] Source order remains reachable in one click</li>
+</ul>
 <hr />
-<h2 id="data-flow">Data Flow</h2>
-<pre class="mermaid"><code>sequenceDiagram
-    participant User
-    participant profile as profile()
-    participant Infer as Type Inference
-    participant Acc as Accumulators
-    participant Corr as Correlations
-    participant Render as HTML Renderer
-
-    User-&gt;&gt;profile: DataFrame / generator
-    profile-&gt;&gt;Infer: First chunk
-    Infer--&gt;&gt;profile: Column types
-    profile-&gt;&gt;Acc: Create typed accumulators
-
-    loop Each chunk
-        profile-&gt;&gt;Acc: update(chunk)
-        profile-&gt;&gt;Corr: update pairs (optional)
-    end
-
-    profile-&gt;&gt;Acc: finalize()
-    Acc--&gt;&gt;profile: Per-column summaries
-    profile-&gt;&gt;Corr: finalize()
-    Corr--&gt;&gt;profile: Correlation matrix
-
-    profile-&gt;&gt;Render: Summaries + config
-    Render--&gt;&gt;User: Report (HTML)</code></pre>
+<h2 id="4-histogram-ignores-the-log-scale-flag-the-card-itself-computed">4. Histogram ignores the log-scale flag the card itself computed</h2>
+<p><code>ux</code> <code>report</code> <code>good first issue</code> <code>user:analyst</code></p>
+<h2 id="what-happens_2">What happens</h2>
+<p>A lognormal <code>revenue</code> column is correctly labelled <em>Positive-only · Skewed Right ·
+Heavy-tailed · </em><em>Log-scale?</em>** — and then the histogram is drawn on a linear axis,
+where the whole distribution renders as one bar at the left edge.</p>
+<p>The Log toggle is directly beneath the chart, defaulted to Linear.</p>
+<h2 id="why-it-matters">Why it matters</h2>
+<p>The report computed the right answer and then displayed the wrong picture. That is
+worse than not detecting it, because it teaches the reader that the chips are
+cosmetic.</p>
+<h2 id="proposed-fix_3">Proposed fix</h2>
+<p>When the log-scale heuristic fires, initialise the scale toggle to <strong>Log</strong>. Keep
+the toggle so the reader can override, and consider marking the chip as active
+rather than interrogative once it has driven the default.</p>
+<h2 id="acceptance_3">Acceptance</h2>
+<ul>
+<li>[ ] A lognormal column opens on a log axis</li>
+<li>[ ] A normal column still opens on linear</li>
+<li>[ ] The toggle still switches both ways</li>
+</ul>
 <hr />
-<h2 id="streaming-algorithms">Streaming Algorithms</h2>
-<p>Each accumulator uses algorithms chosen for <strong>O(1) per-value update</strong> and <strong>bounded memory</strong>:</p>
-<pre class="mermaid"><code>flowchart TB
-    subgraph Numeric["Numeric Accumulator"]
-        N1["Welford/Pébay&lt;br/&gt;mean, var, skew, kurt&lt;br/&gt;O(1) space"]
-        N2["Reservoir Sampling&lt;br/&gt;quantiles, histograms&lt;br/&gt;O(s) space"]
-        N3["KMV Sketch&lt;br/&gt;distinct count&lt;br/&gt;O(k) space"]
-        N4["Misra-Gries&lt;br/&gt;top-k values&lt;br/&gt;O(k) space"]
-        N5["Extreme Tracker&lt;br/&gt;min/max with indices&lt;br/&gt;O(k) space"]
-    end
-
-    subgraph Categorical["Categorical Accumulator"]
-        C1["KMV × 3&lt;br/&gt;distinct: original, lower, trimmed"]
-        C2["Misra-Gries&lt;br/&gt;top-k values"]
-        C3["String Length&lt;br/&gt;avg, p90"]
-    end
-
-    subgraph DateTime["DateTime Accumulator"]
-        D1["Min/Max&lt;br/&gt;timestamps"]
-        D2["Counters&lt;br/&gt;hour/weekday/month"]
-        D3["Monotonicity&lt;br/&gt;pair comparison"]
-    end
-
-    subgraph Boolean["Boolean Accumulator"]
-        B1["Counters&lt;br/&gt;true/false/missing"]
-    end
-
-    style Numeric fill:#E8F5E9,stroke:#2E7D32
-    style Categorical fill:#FFF3E0,stroke:#E65100
-    style DateTime fill:#E3F2FD,stroke:#1565C0
-    style Boolean fill:#F3E5F5,stroke:#6A1B9A</code></pre>
+<h2 id="5-add-pysuricata-check-a-ci-gate-with-an-exit-code">5. Add <code>pysuricata check</code> — a CI gate with an exit code</h2>
+<p><code>api</code> <code>dx</code> <code>user:engineer</code></p>
+<h2 id="why_1">Why</h2>
+<p>Bounded-memory profiling that fits in CI is the project's positioning, and the CLI
+has no verb for it. <code>profile</code> and <code>summarize</code> both exit 0 regardless of what they
+found.</p>
+<p>Every existing gate tool (Great Expectations, Soda, pointblank) requires you to
+author expectations first. A profiler can gate on <em>shape drift</em> with no
+configuration at all, which is a genuinely unoccupied position.</p>
+<h2 id="proposed-shape">Proposed shape</h2>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pysuricata<span class="w"> </span>check<span class="w"> </span>data.parquet<span class="w"> </span>--against<span class="w"> </span>baseline.json<span class="w"> </span>--exit-code
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pysuricata<span class="w"> </span>check<span class="w"> </span>data.parquet<span class="w"> </span>--baseline<span class="w"> </span>baseline.json<span class="w"> </span>--max-missing-pct<span class="w"> </span><span class="m">5</span>
+</span></code></pre></div>
+<ul>
+<li>writes a baseline from <code>summarize()</code> output</li>
+<li>compares a new run against it: row count, column set, dtypes, null rates,
+  cardinality, and distribution drift on numeric columns</li>
+<li>exits non-zero when a threshold is crossed, printing what moved</li>
+<li>a <code>--thresholds thresholds.toml</code> file for anything beyond the defaults</li>
+</ul>
+<h2 id="why-it-is-cheap">Why it is cheap</h2>
+<p><code>summarize()</code> already produces both sides of the comparison. The work is the
+comparison, the thresholds file and the CLI surface — not new statistics.</p>
+<h2 id="acceptance_4">Acceptance</h2>
+<ul>
+<li>[ ] <code>check</code> exits 0 on an unchanged dataset, non-zero on a changed one</li>
+<li>[ ] Output names what changed and by how much</li>
+<li>[ ] A GitHub Actions snippet in the docs</li>
+</ul>
 <hr />
-<h2 id="rendering-pipeline">Rendering Pipeline</h2>
-<pre class="mermaid"><code>flowchart TB
-    A["Finalized Summaries"] --&gt; B["Dataset-Level Metrics"]
-    B --&gt; C["Jinja2 Template"]
-    C --&gt; D["Inline CSS + JS"]
-    C --&gt; E["Summary Cards"]
-    C --&gt; F["Variable Cards"]
-    C --&gt; G["Sample Table"]
-    D --&gt; H["Single HTML File"]
-    E --&gt; H
-    F --&gt; H
-    G --&gt; H
-
-    style H fill:#66BB6A,stroke:#2E7D32,color:#fff</code></pre>
-<p>The template produces a <strong>single portable HTML file</strong> — no external dependencies, no server required.</p>
-<p><strong>Summary cards</strong> show: rows, columns, processed bytes, missing %, duplicates %.</p>
-<p><strong>Variable cards</strong> are rendered per-type with SVG charts, statistics, and quality flags.</p>
-<h3 id="shared-utilities">Shared Utilities</h3>
+<h2 id="6-version-the-summarize-payload-and-reconcile-it-with-the-html">6. Version the <code>summarize()</code> payload and reconcile it with the HTML</h2>
+<p><code>api</code> <code>user:integrator</code></p>
+<h2 id="why-now">Why now</h2>
+<p><code>summarize()</code> is the strongest quiet-adoption play available — the thing other
+tools build on. It currently has no <code>schema_version</code>, and it has <strong>already drifted
+once</strong>: <code>dataset.rows</code> became <code>dataset.rows_est</code>, which silently broke every doc
+example and would break every downstream consumer.</p>
+<p>Version it before anyone depends on it, not after.</p>
+<h2 id="two-parts">Two parts</h2>
+<p><strong>1. Add a version field</strong></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="p">{</span><span class="s2">&quot;schema_version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;dataset&quot;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">},</span> <span class="s2">&quot;columns&quot;</span><span class="p">:</span> <span class="p">{</span><span class="o">...</span><span class="p">}}</span>
+</span></code></pre></div>
+<p>Document the compatibility promise: additive changes bump nothing, renames or
+removals bump the major.</p>
+<p><strong>2. Reconcile with the HTML</strong></p>
+<p><code>summarize()</code> returns <code>top_values: None</code> for numeric columns while the HTML
+renders a populated "Common values" table from the same accumulator. The two
+surfaces disagree about what a column has. Pick one answer.</p>
+<h2 id="acceptance_5">Acceptance</h2>
+<ul>
+<li>[ ] <code>schema_version</code> present and asserted in a test</li>
+<li>[ ] Every statistic rendered in the HTML is reachable from <code>summarize()</code></li>
+<li>[ ] A documented page listing the payload's keys and their meaning</li>
+</ul>
+<hr />
+<h2 id="7-no-progress-feedback-on-long-runs">7. No progress feedback on long runs</h2>
+<p><code>ux</code> <code>dx</code> <code>user:bigdata</code></p>
+<h2 id="what-happens_3">What happens</h2>
+<p>A 6-column, 300,000-row profile (1.8M cells) produced <strong>46 bytes</strong> of output, all
+of it an unrelated notice. There is no chunk counter, no percentage, no ETA and no
+completion line.</p>
+<p>For the use case the library is positioned on — profiling data that does not fit
+in memory, which takes minutes — a user cannot tell a working process from a hung
+one.</p>
+<h2 id="what-exists">What exists</h2>
+<p><code>log_every_n_chunks</code> routes to a logger that is off by default, so it is invisible
+unless the caller configures logging first.</p>
+<h2 id="proposed-fix_4">Proposed fix</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">profile</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">progress</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>     <span class="c1"># or progress=&quot;auto&quot;</span>
+</span></code></pre></div>
+<ul>
+<li>writes to <strong>stderr</strong>, never stdout, so piped output stays clean</li>
+<li><code>"auto"</code> enables it only when stderr is a TTY</li>
+<li>shows chunks done, rows done, elapsed, and a rate; ETA only when the total is
+  knowable</li>
+<li>a final one-line summary regardless: <em>"profiled 1.8M cells in 2.1 s"</em></li>
+<li>accepts a callback for programmatic consumers</li>
+</ul>
+<h2 id="acceptance_6">Acceptance</h2>
+<ul>
+<li>[ ] Nothing on stdout in any mode</li>
+<li>[ ] <code>progress="auto"</code> silent when piped, visible on a terminal</li>
+<li>[ ] Works for generator sources where the total is unknown</li>
+</ul>
+<hr />
+<h2 id="8-let-users-specify-a-memory-budget">8. Let users specify a memory budget</h2>
+<p><code>api</code> <code>ux</code> <code>user:bigdata</code></p>
+<h2 id="proposal">Proposal</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">profile</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">memory_budget</span><span class="o">=</span><span class="s2">&quot;512MB&quot;</span><span class="p">)</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">ProfileConfig</span><span class="o">.</span><span class="n">for_memory</span><span class="p">(</span><span class="s2">&quot;512MB&quot;</span><span class="p">,</span> <span class="n">n_columns</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>   <span class="c1"># inspectable</span>
+</span></code></pre></div>
+<p>A <strong>planner that derives settings</strong>, not a cap that enforces them. Full reasoning
+in <code>docs/adr/memory-budget.md</code>.</p>
+<h2 id="why-it-works">Why it works</h2>
+<p>The memory model was fitted from measurements at 0.0.27 and is clean:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>peak_MB ≈ 75 + n_cols × (0.5 + k × 37B + chunk_size × 48B)
+</span></code></pre></div>
+<p>Every term is a knob the library owns, so the budget is invertible. Verified:</p>
 <table>
 <thead>
 <tr>
-<th>Module</th>
-<th>Functions</th>
-<th>Purpose</th>
+<th style="text-align: right;">budget</th>
+<th style="text-align: right;">cols</th>
+<th>chosen</th>
+<th style="text-align: right;">actual peak</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>render/svg_utils.py</code></td>
-<td><code>safe_col_id</code>, <code>nice_ticks</code>, <code>fmt_tick</code>, <code>svg_empty</code></td>
-<td>SVG chart helpers</td>
+<td style="text-align: right;">250 MB</td>
+<td style="text-align: right;">8</td>
+<td>chunk 200,000 · k 20,000</td>
+<td style="text-align: right;">153 MB</td>
 </tr>
 <tr>
-<td><code>render/format_utils.py</code></td>
-<td><code>human_bytes</code>, <code>fmt_num</code>, <code>fmt_compact</code></td>
-<td>Number formatting</td>
+<td style="text-align: right;">250 MB</td>
+<td style="text-align: right;">40</td>
+<td>chunk 48,437 · k 20,000</td>
+<td style="text-align: right;">207 MB</td>
+</tr>
+<tr>
+<td style="text-align: right;">1000 MB</td>
+<td style="text-align: right;">100</td>
+<td>chunk 109,375 · k 20,000</td>
+<td style="text-align: right;">560 MB</td>
 </tr>
 </tbody>
 </table>
+<p>Streaming memory is also genuinely flat in rows: 200k → 5M rows moved peak RSS
+from 32 to 35 MB above the floor.</p>
+<h2 id="why-it-must-not-be-a-hard-cap">Why it must not be a hard cap</h2>
+<ul>
+<li>~75 MB is gone before the first line runs (interpreter + numpy + pandas). A
+  budget below ~100 MB is unsatisfiable and must error immediately.</li>
+<li>The library does not control pandas' allocations, fragmentation, or GC timing.</li>
+<li>For an <strong>in-memory</strong> DataFrame the user already paid: a 1M × 8 frame costs
+  123 MB resident before <code>profile()</code> is called. The budget only bites on streaming
+  sources.</li>
+</ul>
+<p>A cap that raises <code>MemoryError</code> would reproduce the incumbent failure mode this
+project is positioned against.</p>
+<h2 id="must-report-the-trade">Must report the trade</h2>
+<p>A tight budget shrinks <code>k</code>, and every quantile, the median, IQR, MAD and histogram
+come from that sample. Error is <code>1/sqrt(k)</code>: ±0.7% at k=20,000, ±3.2% at k=1,000.
+The chosen plan and its accuracy consequence must be logged, never silent.</p>
+<h2 id="before-shipping">Before shipping</h2>
+<p>The model is fitted on <strong>numeric columns only</strong>. Categorical holds a Misra-Gries
+table and string samples; datetime holds its own reservoir. Refit per column kind
+or the budget will be optimistic on a text-heavy frame.</p>
+<h2 id="acceptance_7">Acceptance</h2>
+<ul>
+<li>[ ] <code>memory_budget</code> accepts "512MB" / "2GB" / an int in bytes</li>
+<li>[ ] Errors below the floor with the real numbers in the message</li>
+<li>[ ] Logs the chosen settings and the resulting quantile error</li>
+<li>[ ] A test asserting measured peak RSS ≤ budget across a matrix of column counts</li>
+<li>[ ] Model refitted for categorical and datetime columns</li>
+</ul>
 <hr />
-<h2 id="configuration">Configuration</h2>
-<p><code>ReportConfig</code> controls all behavior:</p>
+<h2 id="9-ship-pytyped-so-the-annotations-are-visible-to-type-checkers">9. Ship <code>py.typed</code> so the annotations are visible to type checkers</h2>
+<p><code>api</code> <code>dx</code> <code>good first issue</code></p>
+<h2 id="what-happens_4">What happens</h2>
+<p>Every public signature is fully annotated — and there is no <code>py.typed</code> marker, so
+under <a href="https://peps.python.org/pep-0561/">PEP 561</a> mypy and pyright treat the whole
+package as untyped and infer <code>Any</code> for everything it returns.</p>
+<p>All of the annotation work is invisible to exactly the audience the project
+targets.</p>
+<h2 id="fix">Fix</h2>
+<ol>
+<li>Add an empty <code>pysuricata/py.typed</code></li>
+<li>Include it in <code>[tool.setuptools.package-data]</code></li>
+<li>Export <code>DataLike</code> at the top level so callers can annotate their own wrappers</li>
+<li>Add a CI step that runs mypy against a small consumer snippet, so this cannot
+   silently regress</li>
+</ol>
+<h2 id="acceptance_8">Acceptance</h2>
+<ul>
+<li>[ ] <code>reveal_type(profile(df))</code> gives <code>Report</code>, not <code>Any</code></li>
+<li>[ ] <code>py.typed</code> present in the built wheel</li>
+</ul>
+<hr />
+<h2 id="10-tighten-the-public-namespace-__all__-one-line-repr-consistent-errors">10. Tighten the public namespace: <code>__all__</code>, one-line repr, consistent errors</h2>
+<p><code>api</code> <code>dx</code> <code>good first issue</code></p>
+<p>Four small things in the same area.</p>
+<h2 id="1-__all__">1. <code>__all__</code></h2>
+<p><code>pysuricata.&lt;TAB&gt;</code> offers 15 names, <strong>8 of them internal modules</strong>
+(<code>accumulators</code>, <code>api</code>, <code>compute</code>, <code>config</code>, <code>logger</code>, <code>render</code>, <code>report</code>,
+<code>utils</code>). One line makes the public contract explicit.</p>
+<h2 id="2-report__repr__-dumps-the-whole-document">2. <code>Report.__repr__</code> dumps the whole document</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">rep</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">Report</span><span class="p">(</span><span class="n">html</span><span class="o">=</span><span class="s1">&#39;&lt;!DOCTYPE html&gt;</span><span class="se">\n</span><span class="s1">&lt;html lang=&quot;en&quot;&gt;...</span>
+</span></code></pre></div>
+<p>1.1 MB into a REPL, a log line or a debugger. <code>_repr_html_</code> saves the notebook
+case only. Proposed:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="o">&lt;</span><span class="n">Report</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span><span class="mi">000</span> <span class="n">rows</span> <span class="n">x</span> <span class="mi">8</span> <span class="n">cols</span><span class="p">,</span> <span class="mf">1.1</span> <span class="n">MB</span><span class="o">&gt;</span>
+</span></code></pre></div>
+<h2 id="3-inconsistent-exceptions-for-the-same-mistake">3. Inconsistent exceptions for the same mistake</h2>
 <table>
 <thead>
 <tr>
-<th>Parameter</th>
-<th>Default</th>
-<th>Effect</th>
+<th>input</th>
+<th>today</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>chunk_size</code></td>
-<td>50,000</td>
-<td>Rows per chunk</td>
+<td><code>profile({"a": [1,2]})</code></td>
+<td><code>TypeError: Unsupported data type…</code></td>
 </tr>
 <tr>
-<td><code>numeric_sample_size</code></td>
-<td>20,000</td>
-<td>Reservoir size for quantiles</td>
+<td><code>profile([1, 2, 3])</code></td>
+<td><code>RuntimeError: Adapter selection failed: Unsupported input type: &lt;class 'int'&gt;</code></td>
 </tr>
 <tr>
-<td><code>max_uniques</code></td>
-<td>2,048</td>
-<td>KMV sketch size</td>
-</tr>
-<tr>
-<td><code>top_k</code></td>
-<td>50</td>
-<td>Misra-Gries capacity</td>
-</tr>
-<tr>
-<td><code>compute_correlations</code></td>
-<td><code>True</code></td>
-<td>Enable/disable correlation chips</td>
-</tr>
-<tr>
-<td><code>corr_threshold</code></td>
-<td>0.5</td>
-<td>Minimum |r| to display</td>
-</tr>
-<tr>
-<td><code>random_seed</code></td>
-<td><code>None</code></td>
-<td>Deterministic sampling</td>
-</tr>
-<tr>
-<td><code>include_sample</code></td>
-<td><code>True</code></td>
-<td>Include data sample in report</td>
+<td><code>profile(df, config="oops")</code></td>
+<td><code>AttributeError: 'str' object has no attribute 'compute'</code></td>
 </tr>
 </tbody>
 </table>
+<p>Same class of user error, three exception types, one leaking internal vocabulary.
+All should be <code>TypeError</code> with one message that names what is accepted.</p>
+<h2 id="4-reportconfig-is-profileconfig">4. <code>ReportConfig</code> is <code>ProfileConfig</code></h2>
+<p>One class, two exported names, used interchangeably in the docs, so a reader
+cannot tell whether there is a distinction they are missing. Keep
+<code>ProfileConfig</code>, emit a <code>DeprecationWarning</code> from the alias for one release.</p>
+<p>Same on <code>Report</code>: <code>save</code>/<code>save_html</code> and <code>show</code>/<code>display_in_notebook</code> are four
+methods for two behaviours.</p>
+<h2 id="acceptance_9">Acceptance</h2>
+<ul>
+<li>[ ] <code>dir(pysuricata)</code> shows only the public surface</li>
+<li>[ ] <code>repr(report)</code> fits on one line</li>
+<li>[ ] The three inputs above all raise <code>TypeError</code> with an actionable message</li>
+</ul>
 <hr />
-<h2 id="security-correctness">Security &amp; Correctness</h2>
+<h2 id="11-configuration-takes-two-constructors-to-change-one-number">11. Configuration takes two constructors to change one number</h2>
+<p><code>api</code> <code>ux</code> <code>dx</code></p>
+<h2 id="what-it-takes-today">What it takes today</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">ComputeOptions</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">ProfileConfig</span><span class="p">(</span><span class="n">compute</span><span class="o">=</span><span class="n">ComputeOptions</span><span class="p">(</span><span class="n">chunk_size</span><span class="o">=</span><span class="mi">50_000</span><span class="p">)))</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">ProfileConfig</span><span class="p">(</span><span class="n">chunk_size</span><span class="o">=</span><span class="mi">50_000</span><span class="p">)</span>   <span class="c1"># TypeError: unexpected keyword argument</span>
+</span></code></pre></div>
+<p>Three imports and two nested constructors to set one integer. The nesting models
+the module layout, not the user's intent — nobody thinks <em>"I would like to
+configure the compute subsystem"</em>, they think <em>"smaller chunks"</em>.</p>
+<h2 id="also">Also</h2>
 <ul>
-<li><strong>HTML escaping</strong> — column names and labels are escaped before rendering</li>
-<li><strong>Missing/Inf handling</strong> — NaN and ±Inf excluded from moments, reported separately</li>
-<li><strong>Approximation badges</strong> — estimates marked with <code>(≈)</code> or <code>approx</code> badge</li>
-<li><strong>Reproducibility</strong> — set <code>random_seed</code> for deterministic results</li>
+<li><strong>21 options in one flat namespace</strong>, five of them checkpointing. An advanced
+  recovery feature owns a quarter of what every user reads first.</li>
+<li><strong>No presets.</strong> A user who wants "just make it faster" must work out which of 21
+  knobs to turn. ydata-profiling's single most-used API feature is <code>minimal=True</code>
+  — one word for an intent.</li>
 </ul>
-<h2 id="extending">Extending</h2>
+<h2 id="proposed">Proposed</h2>
+<p>Purely additive; nothing existing breaks.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">chunk_size</span><span class="o">=</span><span class="mi">50_000</span><span class="p">,</span> <span class="n">sample</span><span class="o">=</span><span class="mi">20_000</span><span class="p">,</span> <span class="n">correlations</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">7</span><span class="p">)</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">preset</span><span class="o">=</span><span class="s2">&quot;fast&quot;</span><span class="p">)</span>                     <span class="c1"># or ProfileConfig.fast()</span>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">ProfileConfig</span><span class="p">(</span><span class="o">...</span><span class="p">))</span>         <span class="c1"># unchanged escape hatch</span>
+</span></code></pre></div>
+<p>Group the option object by concern (<code>sampling=</code>, <code>correlations=</code>, <code>checkpoint=</code>)
+so the namespace is sorted by how many users need each thing.</p>
+<h2 id="acceptance_10">Acceptance</h2>
 <ul>
-<li><strong>Backends</strong> — polars/Arrow/DuckDB can be connected via the chunk iterator interface</li>
-<li><strong>Quantile sketches</strong> — t-digest or KLL can replace the default reservoir</li>
-<li><strong>New sections</strong> — drift comparisons, JSON export, CLI wrapper</li>
+<li>[ ] The six most-used options are keywords on <code>profile()</code> and <code>summarize()</code></li>
+<li>[ ] At least <code>fast</code> and <code>thorough</code> presets, documented with what they change</li>
+<li>[ ] <code>config=</code> still accepted and still wins over keywords</li>
+</ul>
+<hr />
+<h2 id="12-profile-rejects-a-file-path-that-the-cli-accepts">12. <code>profile()</code> rejects a file path that the CLI accepts</h2>
+<p><code>api</code> <code>ux</code> <code>good first issue</code></p>
+<h2 id="what-happens_5">What happens</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">profile</span><span class="p">(</span><span class="s2">&quot;data.csv&quot;</span><span class="p">)</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="c1"># TypeError: Unsupported data type for this API...</span>
+</span></code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>pysuricata<span class="w"> </span>profile<span class="w"> </span>data.csv<span class="w"> </span>--output<span class="w"> </span>report.html<span class="w">   </span><span class="c1"># works</span>
+</span></code></pre></div>
+<p>The most natural first thing a Python user tries is the one thing the Python API
+refuses while the CLI happily accepts it.</p>
+<h2 id="fix_1">Fix</h2>
+<p>Accept <code>str</code> and <code>os.PathLike</code> in <code>profile()</code> and <code>summarize()</code>, dispatching on
+suffix to the reader the CLI already uses (<code>.csv</code>, <code>.parquet</code>, <code>.json</code>). Read in
+chunks so the streaming guarantee holds for files too — which makes this a
+<em>feature</em>, not just a convenience: <code>profile("huge.parquet", memory_budget="512MB")</code>
+is the headline use case, expressed in one line.</p>
+<p>Keep the error for genuinely unsupported types, and name the accepted ones.</p>
+<h2 id="acceptance_11">Acceptance</h2>
+<ul>
+<li>[ ] <code>profile("data.csv")</code> and <code>profile(Path("data.parquet"))</code> work</li>
+<li>[ ] A file larger than memory profiles without loading it whole</li>
+<li>[ ] A missing file raises <code>FileNotFoundError</code>, not <code>TypeError</code></li>
 </ul>
 
 
@@ -2047,9 +2080,6 @@
 
 
 
-
-  
-  
 
 
 

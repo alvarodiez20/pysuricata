@@ -5,7 +5,15 @@
          <lastmod>2026-08-15</lastmod>
     </url>
     <url>
+         <loc>https://alvarodiez20.github.io/pysuricata/DIAGRAM_PROMPTS/</loc>
+         <lastmod>2026-08-15</lastmod>
+    </url>
+    <url>
          <loc>https://alvarodiez20.github.io/pysuricata/DOCS_PLAN/</loc>
+         <lastmod>2026-08-15</lastmod>
+    </url>
+    <url>
+         <loc>https://alvarodiez20.github.io/pysuricata/UX_ISSUES/</loc>
          <lastmod>2026-08-15</lastmod>
     </url>
     <url>
@@ -78,6 +86,10 @@
     </url>
     <url>
          <loc>https://alvarodiez20.github.io/pysuricata/why-pysuricata/</loc>
+         <lastmod>2026-08-15</lastmod>
+    </url>
+    <url>
+         <loc>https://alvarodiez20.github.io/pysuricata/adr/memory-budget/</loc>
          <lastmod>2026-08-15</lastmod>
     </url>
     <url>
