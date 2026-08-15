@@ -7,6 +7,21 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.44] - 2026-08-16
+
+#98, #100, #101 and #102. None of these is a wrong number; all of them cost
+trust in the numbers.
+
+### Fixed
+- **A healthy column was flagged as a data-quality problem** (#98). `age` — 68 distinct integers between 18 and 85 — was unflagged at 1,000 rows and **Quasi-constant** at 20,000, because the flag compared `unique_est / count` against 2%. That is the same unique-*ratio* reasoning the type classifier dropped in #84, left behind in the flag layer; and since #86 put the quality chips in a triage block at the top of the report, the false alarm had become the first thing a reader sees.
+
+  Quasi-constant is now a claim about **concentration** — the most common value covers 95% or more of the rows — which is what the words mean and does not move with the row count. Misra-Gries counts are lower bounds, so a share computed from them can understate dominance but never invent it, which is the right direction for a warning. **Discrete** now uses the classifier's own cardinality ceiling, imported rather than repeated, so the flag and the classification cannot disagree.
+- **Bad input escaped the exception hierarchy** (#100). `profile([1, 2, 3])` raised `RuntimeError: Adapter selection failed: Unsupported input type: <class 'int'>` — outside `PySuricataError`, in vocabulary about our module layout, naming the type of the *first element* rather than of the argument. It now raises `UnsupportedDataError: Cannot profile list of int`, and a generator yielding the wrong thing — which cannot be inspected without consuming it — arrives as the same kind of error from the engine. `config="oops"` raised `AttributeError: 'str' object has no attribute 'compute'`; it now raises `ConfigurationError` naming the keyword form.
+- **Validation disagreed with itself** (#101). `ComputeOptions(chunk_size=0)` was rejected while building one and setting `chunk_size = 0` afterwards was accepted — and since the options are mutable, the permissive path is the one people take. `ComputeOptions.validate()` is now one rule called from both places, checked again when the options reach the engine.
+- **A successful call announced that it had failed** (#102). `profile(pd.DataFrame())` logged `Stream processing failed: Empty source` and then returned a usable report. An empty input is a valid, boring case: it is now silent at default verbosity. In CI — where `pysuricata check` puts this library on purpose — a line containing "failed" on a green run is exactly what gets grepped for.
+
+`MAX_CATEGORICAL_LEVELS` is now a public name in `compute.processing.inference`, since the render layer imports it.
+
 ## [0.0.43] - 2026-08-15
 
 ### Removed

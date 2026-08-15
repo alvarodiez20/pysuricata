@@ -322,7 +322,30 @@ class ComputeOptions:
     corr_max_per_col: int = 10
 
     def __post_init__(self) -> None:
-        """Validate configuration parameters."""
+        """Validate at construction. See :meth:`validate`."""
+        self.validate()
+
+    def validate(self) -> None:
+        """Check every invariant, from wherever the options are about to be used.
+
+        This is called at construction *and* again when the options are handed
+        to the engine, because the dataclass is mutable and the second path is
+        the one people take:
+
+        ```python
+        ComputeOptions(chunk_size=0)     # ValueError: chunk_size must be positive
+        c = ComputeOptions()
+        c.chunk_size = 0                 # accepted, and profiled happily
+        ```
+
+        The constructor guarded a door nobody walks through. Two rules for one
+        field is also the class of inconsistency that produces a bug report you
+        cannot reproduce, so there is now one rule, called from both places.
+
+        Raises:
+            ValueError: If a value is outside its documented range.
+            ConfigurationError: If `progress` is not one of its four shapes.
+        """
         if self.numeric_sample_size <= 0:
             raise ValueError("numeric_sample_size must be positive")
         if self.max_uniques <= 0:
@@ -535,6 +558,19 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
     if isinstance(data, cabc.Iterable) and not isinstance(
         data, (bytes, bytearray, cabc.Mapping)
     ):
+        # A sequence can be looked at without consuming it, so a list of the
+        # wrong thing is caught here rather than deep in adapter selection --
+        # which reported `Unsupported input type: <class 'int'>` for a `list`
+        # argument, describing the first element, as a RuntimeError outside the
+        # exception hierarchy.
+        if isinstance(data, cabc.Sequence) and data:
+            first = data[0]
+            if not _is_frame(first):
+                raise UnsupportedDataError(
+                    f"Cannot profile {type(data).__name__} of "
+                    f"{type(first).__name__}. An iterable input must yield "
+                    "pandas or polars DataFrame chunks."
+                )
         return data
 
     raise UnsupportedDataError(
@@ -543,6 +579,21 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
         "relation, a path to a .csv/.parquet/.json file, or an iterable of "
         "DataFrame chunks."
     )
+
+
+def _is_frame(obj: Any) -> bool:
+    """Whether this is a frame the engine can consume, without importing either
+    library that is not already loaded."""
+    module = type(obj).__module__ or ""
+    if module.startswith("pandas"):
+        import pandas as pd
+
+        return isinstance(obj, pd.DataFrame)
+    if module.startswith("polars"):
+        import polars as pl
+
+        return isinstance(obj, (pl.DataFrame, pl.LazyFrame))
+    return False
 
 
 def _read_path(path: str | os.PathLike) -> pd.DataFrame:
@@ -613,6 +664,9 @@ def _to_engine_config(cfg: ProfileConfig) -> _EngineConfig:
     render = cfg.render
 
     try:
+        # The options are mutable, so re-check them here rather than trusting
+        # what they were at construction.
+        compute.validate()
         engine_config = _EngineConfig.from_options(compute)
     except (TypeError, ValueError) as e:
         raise ConfigurationError(f"invalid compute options: {e}") from e
@@ -680,6 +734,16 @@ def _resolve_config(
             the documented keywords.
     """
     if config is not None:
+        if not isinstance(config, ProfileConfig):
+            # Without this, `profile(df, config="oops")` reached the conversion
+            # and surfaced as `AttributeError: 'str' object has no attribute
+            # 'compute'` -- an internal detail, outside the exception hierarchy,
+            # naming a field the caller has never heard of.
+            raise ConfigurationError(
+                f"config= must be a ProfileConfig, not {type(config).__name__}. "
+                "For individual settings use keyword options, e.g. "
+                "profile(df, chunk_size=50_000)."
+            )
         if preset or options:
             raise ConfigurationError(
                 "Pass either config= or preset=/keyword options, not both. "

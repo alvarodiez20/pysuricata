@@ -583,7 +583,10 @@ class UnifiedTypeInferrer:
 # pitch is large data, a heuristic that degrades with scale is backwards.
 #
 # A ceiling is stable under row count, which is the property the ratio lacked.
-_MAX_CATEGORICAL_LEVELS = 50
+MAX_CATEGORICAL_LEVELS = 50
+# Kept as the private name too: it was written that way and is referenced in
+# the tests and in the roadmap.
+_MAX_CATEGORICAL_LEVELS = MAX_CATEGORICAL_LEVELS
 
 
 def should_reclassify_numeric_as_categorical(
