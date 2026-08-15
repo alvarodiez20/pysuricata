@@ -262,6 +262,11 @@ def _config_fields() -> dict[str, set[str]]:
 def check_config(
     page: Path, text: str, out: list[Finding], fields: dict[str, set[str]]
 ) -> None:
+    if page.name in _NOT_RUNNABLE:
+        # The changelog names options as they were at the time, including the
+        # ones a release removed or renamed. Flagging those reports the record
+        # of a fix as the bug it fixed.
+        return
     for m in CFG_ATTR.finditer(text):
         group, attr = m.group(1), m.group(2)
         known = fields.get(group)
