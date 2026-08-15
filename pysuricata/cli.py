@@ -250,6 +250,8 @@ def load_data(file_path: str):
     """
     import pandas as pd
 
+    from pysuricata.sources import first_batch_or_stream, stream_parquet
+
     path = Path(file_path)
 
     if not path.exists():
@@ -260,7 +262,9 @@ def load_data(file_path: str):
     if suffix == ".csv":
         return pd.read_csv(file_path)
     elif suffix == ".parquet":
-        return pd.read_parquet(file_path)
+        # Read a batch at a time rather than whole, so `pysuricata check` on a
+        # large Parquet file in CI stays inside the runner's memory.
+        return first_batch_or_stream(stream_parquet(path))
     elif suffix == ".json":
         return pd.read_json(file_path)
     else:
