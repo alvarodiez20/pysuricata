@@ -328,42 +328,35 @@ class ExtremeTracker:
                 self._add_to_max_heap(finite_indices[idx], float(finite_values[idx]))
 
     def _add_to_min_heap(self, index: Any, value: float) -> None:
-        """Add value to min heap (tracking minimums)."""
+        """Offer a value to the k-smallest set.
+
+        Keeping the k *smallest* values means evicting the largest, so the
+        right structure is a max-heap -- stored negated, since heapq only does
+        min-heaps -- whose root is the value to evict. ``heappushpop`` then does
+        the whole operation in O(log k).
+
+        The heaps used to be the other way round, which forced an O(k) ``max()``
+        scan, a linear search for the matching item, and a full ``heapify`` on
+        every insert: O(k log k) per value on a structure whose entire purpose
+        is O(log k) inserts.
+        """
         if len(self._min_heap) < self.max_extremes:
-            # Heap not full, just add
-            heapq.heappush(self._min_heap, (value, index))
+            heapq.heappush(self._min_heap, (-value, index))
         else:
-            # Heap is full, check if this is smaller than the largest value in the heap
-            # For a min heap, we want to keep the smallest values
-            # The root is the smallest, but we want to replace the largest
-            # So we need to find the largest value in the heap
-            largest_value = max(item[0] for item in self._min_heap)
-            if value < largest_value:
-                # Replace the item with the largest value
-                for i, item in enumerate(self._min_heap):
-                    if item[0] == largest_value:
-                        self._min_heap[i] = (value, index)
-                        heapq.heapify(self._min_heap)  # Restore heap property
-                        break
+            # If value is not smaller than the current largest, heappushpop
+            # pops straight back what it pushed, so no guard is needed.
+            heapq.heappushpop(self._min_heap, (-value, index))
 
     def _add_to_max_heap(self, index: Any, value: float) -> None:
-        """Add value to max heap (tracking maximums)."""
+        """Offer a value to the k-largest set.
+
+        Mirror of :meth:`_add_to_min_heap`: keeping the k largest means evicting
+        the smallest, so a plain min-heap on the value has the right root.
+        """
         if len(self._max_heap) < self.max_extremes:
-            # Heap not full, just add (negate value for min-heap simulation of max-heap)
-            heapq.heappush(self._max_heap, (-value, index))
+            heapq.heappush(self._max_heap, (value, index))
         else:
-            # Heap is full, check if this is larger than the smallest value in the heap
-            # Find the smallest original value in the heap (which should be replaced)
-            smallest_original = min(
-                -negated_value for negated_value, _ in self._max_heap
-            )
-            if value > smallest_original:
-                # Replace the item with the smallest original value
-                for i, (negated_value, _idx) in enumerate(self._max_heap):
-                    if -negated_value == smallest_original:
-                        self._max_heap[i] = (-value, index)
-                        heapq.heapify(self._max_heap)  # Restore heap property
-                        break
+            heapq.heappushpop(self._max_heap, (value, index))
 
     def get_extremes(self) -> tuple[list[tuple[Any, float]], list[tuple[Any, float]]]:
         """Get current extreme values.
@@ -371,12 +364,11 @@ class ExtremeTracker:
         Returns:
             Tuple of (min_pairs, max_pairs) where each pair is (index, value)
         """
-        # Extract min pairs (convert back from heap format)
-        min_pairs = [(index, value) for value, index in self._min_heap]
+        # _min_heap stores values negated (max-heap), _max_heap stores them raw.
+        min_pairs = [(index, -negated) for negated, index in self._min_heap]
         min_pairs.sort(key=lambda x: x[1])  # Sort by value
 
-        # Extract max pairs (convert back from heap format)
-        max_pairs = [(index, -negated_value) for negated_value, index in self._max_heap]
+        max_pairs = [(index, value) for value, index in self._max_heap]
         max_pairs.sort(key=lambda x: -x[1])  # Sort by value descending
 
         return min_pairs, max_pairs
@@ -387,13 +379,12 @@ class ExtremeTracker:
         Args:
             other: Another ExtremeTracker to merge
         """
-        # Merge min heaps
-        for value, index in other._min_heap:
-            self._add_to_min_heap(index, value)
+        # Undo each heap's storage convention before re-offering.
+        for negated, index in other._min_heap:
+            self._add_to_min_heap(index, -negated)
 
-        # Merge max heaps
-        for negated_value, index in other._max_heap:
-            self._add_to_max_heap(index, -negated_value)
+        for value, index in other._max_heap:
+            self._add_to_max_heap(index, value)
 
 
 class MonotonicityDetector:
@@ -412,19 +403,38 @@ class MonotonicityDetector:
     def update(self, values: np.ndarray) -> None:
         """Update monotonicity detection with new values.
 
+        The question "does any adjacent pair go the wrong way" is a sign test on
+        ``np.diff``, not a Python loop -- 66x on this kernel. The only pair the
+        diff cannot see is the one straddling the chunk boundary, so that one is
+        compared against the carried last value first.
+
         Args:
             values: Array of values to check for monotonicity
         """
         finite_values = values[np.isfinite(values)]
+        if finite_values.size == 0:
+            return
 
-        for value in finite_values:
-            if self._last_value is not None:
-                if value < self._last_value:
-                    self._mono_inc = False
-                if value > self._last_value:
-                    self._mono_dec = False
+        if not (self._mono_inc or self._mono_dec):
+            # Both already ruled out; only the carry-over value still matters.
+            self._last_value = float(finite_values[-1])
+            return
 
-            self._last_value = value
+        if self._last_value is not None:
+            first = float(finite_values[0])
+            if first < self._last_value:
+                self._mono_inc = False
+            if first > self._last_value:
+                self._mono_dec = False
+
+        if finite_values.size > 1:
+            deltas = np.diff(finite_values)
+            if self._mono_inc and bool(np.any(deltas < 0)):
+                self._mono_inc = False
+            if self._mono_dec and bool(np.any(deltas > 0)):
+                self._mono_dec = False
+
+        self._last_value = float(finite_values[-1])
 
     def get_monotonicity(self) -> tuple[bool, bool]:
         """Get monotonicity status.

@@ -7,6 +7,22 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.30] - 2026-08-15
+
+Closes Phase 1. Mixed 200,000 x 14 is **597 ms**, down from 1,517 ms at 0.0.26
+on the same machine — **2.54x**. `NumericAccumulator.update` is **83 ns/value**,
+down from 1,278.
+
+### Fixed
+- **The reported minimum and maximum were sampled, not measured.** They came from the reservoir, which holds 20,000 values, while the exact extremes sat in the tracker right beside them — so a numeric card could print a "Maximum" that disagreed with the first row of its own extreme-values table, and whether it did came down to whether the true extreme happened to be sampled. Both now come from the tracker. (0.0.26 made the extremes exact and their indices global; it did not connect them to these two fields.)
+
+### Changed
+- **Monotonicity detection is a sign test on `np.diff`** rather than a Python loop over every value: 45.2 -> 0.6 ns/value in situ, 64x on the isolated kernel. The pair straddling a chunk boundary is compared against the carried last value, so chunked and unchunked results still agree.
+- **The extreme-value heaps are the right way round.** Keeping the k smallest values means evicting the largest, which is a max-heap's job; the code used a min-heap and made up the difference with an O(k) `max()` scan, a linear search for the matching entry and a full `heapify` on every insert — O(k log k) per value on a structure whose purpose is O(log k) inserts. Now `heappushpop`. Measured flat at the default k=5, where the scan was over five items; the point is that it no longer degrades as `max_extremes` rises.
+
+### Removed
+- **The second reservoir in `OutlierDetector`.** Every numeric column built one and fed it 10,000 sampled values on every chunk — and nothing ever read it: `detect_outliers()` has no caller, and the outlier counts in the report are computed in `finalize()` from the accumulator's own sample. The class stays (it is exported, and its detection methods work); it is simply no longer wired into the accumulator. Worth 2.5% of the numeric path and 10,000 floats per numeric column.
+
 ## [0.0.29] - 2026-08-15
 
 **The datetime accumulator is 9.3x faster** (308 ms -> 33 ms per 200,000-row
