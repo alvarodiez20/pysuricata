@@ -7,6 +7,18 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.31] - 2026-08-15
+
+Documentation and tooling only; no library changes.
+
+### Added
+- **Six interactive figures**, embedded on the pages they explain: reservoir sampling (Algorithm R against Algorithm L), Misra-Gries eviction, the memory curve, the chunk lifecycle, the Welford-to-Pébay merge, and an annotated report card. Each runs the real algorithm in the browser with a fixed seed, so they are simulations rather than illustrations. They ship as plain HTML, SVG and vanilla JavaScript — no React, no CDN, no third-party requests, and they work offline.
+
+### Fixed
+- **`docs/algorithms/sampling.md` documented an algorithm the library does not run.** The page described Algorithm R — one random draw per element, testing every arrival — while `ReservoirSampler` has used Algorithm L with a bulk acceptance schedule since 0.0.23. The class name was the only accurate thing on the page; the constructor signature, the field names and the method were all wrong for anyone reading it to understand the code. Rewritten against the implementation, keeping Algorithm R as a labelled contrast.
+- **The pre-commit test hook rebuilt the project on every commit.** `uv run` re-resolved and reinstalled the package against a tree pre-commit had partially stashed, which hung commits and made a test-only hook report "files were modified by this hook". It also ran a three-file subset chosen for having no optional dependencies — 25 tests that could not catch an accumulator regression. It now runs the statistical core and the invariants most likely to break, and the whole hook suite takes 2.8 seconds.
+- **Generated documentation assets were rewritten by `end-of-file-fixer`** because the generator omitted a trailing newline, after which the generator's own `--check` mode reported drift against itself.
+
 ## [0.0.30] - 2026-08-15
 
 Closes Phase 1. Mixed 200,000 x 14 is **597 ms**, down from 1,517 ms at 0.0.26

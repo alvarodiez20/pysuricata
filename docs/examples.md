@@ -5,6 +5,10 @@ description: Comprehensive examples and use cases for PySuricata
 
 # Examples Gallery
 
+<figure class="ps-figure" markdown="0">
+  <iframe src="../assets/diagrams/figures.html?only=report-card" title="An annotated numeric column card" loading="lazy"></iframe>
+</figure>
+
 Real-world examples showing how to use PySuricata in various scenarios.
 
 ## Small Dataset (Iris)

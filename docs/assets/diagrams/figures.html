@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PySuricata — interactive figures</title>
+<style>
+  html, body { margin: 0; }
+  @keyframes psFlash { from { opacity: 1 } to { opacity: 0 } }
+  a { color: #2a78d6; text-decoration: none; }
+  a:hover { color: #eb6834; text-decoration: underline; }
+  /* Embedded in a docs page, one figure at a time, with no page chrome.
+     The sections carry inline display:flex, so these need !important. */
+  body.embed [data-figure] { display: none !important; }
+  body.embed [data-figure].shown { display: flex !important; }
+  body.embed header { display: none !important; }
+  body.embed #dc-root > div > div { gap: 0 !important; }
+  /* The docs page provides the surrounding space; drop the standalone
+     page's full-viewport shell so the iframe sizes to the figure. */
+  body.embed #dc-root > div { min-height: 0 !important; padding: 0 !important; }
+  body.embed #dc-root > div > div { max-width: none !important; }
+  /* The docs page supplies the heading; the trailing note is an authoring
+     reminder about where the figure belongs, not something a reader wants. */
+  body.embed [data-figure] > div:first-child { display: none !important; }
+  body.embed [data-figure] > p:last-child { display: none !important; }
+</style>
+</head>
+<body>
+<div id="dc-root">
+<div ref="{{ rootRef }}" style="--fg:#0b0b0b;--muted:#52514e;--hair:#b6b5ae;--accent:#2a78d6;--accent2:#eb6834;--bg:#ffffff;--panel:rgba(0,0,0,0.018);--chipbr:rgba(0,0,0,0.10);--chipbg:rgba(0,0,0,0.05);background:var(--bg);color:var(--fg);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;min-height:100vh;padding:44px 32px 120px;box-sizing:border-box">
+<div style="max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:60px">
+
+  <header style="display:flex;flex-direction:column;gap:14px">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:24px">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <span style="font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em;color:var(--accent2)">PYSURICATA · DOCS FIGURES</span>
+        <h1 style="font:600 26px/1.25 system-ui;margin:0;letter-spacing:-0.01em">Six figures for the algorithms and architecture pages</h1>
+      </div>
+      <button onClick="{{ toggleTheme }}" style="padding:6px 12px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer;white-space:nowrap">{{ themeLabel }}</button>
+    </div>
+    <p style="font:15px/1.6 system-ui;color:var(--muted);margin:0;max-width:70ch">Every figure runs the real algorithm in the browser with a fixed seed, so what you see is a simulation rather than an illustration. The colour, type and threshold vocabulary follows the house constraints and the existing <span style="font:12px ui-monospace,SFMono-Regular,Menlo,monospace">kmv-unit-interval.svg</span>. Theme colours come from CSS custom properties, so the mkdocs-material light and dark palettes drive them directly.</p>
+  </header>
+
+  <section data-figure="memory-curve" style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <span style="font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em;color:var(--accent2)">FIG 3 · GROUP A</span>
+      <h2 style="font:600 18px/1.3 system-ui;margin:0">The memory curve</h2>
+    </div>
+    <p style="font:14px/1.6 system-ui;color:var(--muted);margin:0;max-width:66ch">Peak memory against dataset size. One streaming pass with fixed-size sketches keeps PySuricata flat; a load-everything profiler rises linearly until the machine runs out. Drag across the chart to read both lines, and change the machine's RAM to move the failure point.</p>
+    <div style="border:1px solid var(--chipbr);border-radius:12px;background:var(--panel);padding:16px;display:flex;flex-direction:column;gap:12px">
+      <svg ref="{{ memRef }}" viewBox="0 0 820 360" style="width:100%;height:auto;display:block;touch-action:none;cursor:crosshair"></svg>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <span style="font:11px system-ui;color:var(--muted)">Machine RAM</span>
+        <button onClick="{{ ram8 }}" ref="{{ ram8Ref }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer">8 GB</button>
+        <button onClick="{{ ram16 }}" ref="{{ ram16Ref }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer">16 GB</button>
+        <button onClick="{{ ram32 }}" ref="{{ ram32Ref }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer">32 GB</button>
+        <button onClick="{{ ram64 }}" ref="{{ ram64Ref }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer">64 GB</button>
+      </div>
+    </div>
+    <p style="font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);margin:0">docs/index.md · docs/why-pysuricata.md — numbers are marked placeholders; generate from benchmarks/end_to_end.py before shipping.</p>
+  </section>
+
+  <section data-figure="reservoir" style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <span style="font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em;color:var(--accent2)">FIG 1 · GROUP A</span>
+      <h2 style="font:600 18px/1.3 system-ui;margin:0">Reservoir sampling — Algorithm R vs Algorithm L</h2>
+    </div>
+    <p style="font:14px/1.6 system-ui;color:var(--muted);margin:0;max-width:66ch">Both tracks see the same stream and both hold a uniform sample of size k: every element that has arrived is in the reservoir with probability k/n. Algorithm R tests each arrival. Algorithm L draws a geometric skip and jumps straight to the next element it will accept, never touching the ones in between. Watch the two counters diverge.</p>
+    <div style="border:1px solid var(--chipbr);border-radius:12px;background:var(--panel);padding:16px;display:flex;flex-direction:column;gap:12px">
+      <svg ref="{{ resRef }}" viewBox="0 0 820 340" style="width:100%;height:auto;display:block"></svg>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <button onClick="{{ resToggle }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer;min-width:70px">{{ resPlayLabel }}</button>
+        <button onClick="{{ resStep }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer">Step</button>
+        <button onClick="{{ resReset }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer">Reset</button>
+        <span style="width:1px;height:18px;background:var(--chipbr)"></span>
+        <label style="font:11px system-ui;color:var(--muted);display:flex;align-items:center;gap:6px">speed<input type="range" min="1" max="40" step="1" onInput="{{ resSpeed }}" ref="{{ resSpeedRef }}" style="width:110px;accent-color:var(--accent)" /></label>
+        <label style="font:11px system-ui;color:var(--muted);display:flex;align-items:center;gap:6px">k = <span ref="{{ resKLabel }}" style="font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg)">8</span><input type="range" min="4" max="12" step="1" onInput="{{ resKChange }}" ref="{{ resKRef }}" style="width:90px;accent-color:var(--accent)" /></label>
+      </div>
+    </div>
+    <p style="font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);margin:0">docs/algorithms/sampling.md — replaces 68 lines that document Algorithm R while the library runs Algorithm L.</p>
+  </section>
+
+  <section data-figure="misra-gries" style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <span style="font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em;color:var(--accent2)">FIG 2 · GROUP A</span>
+      <h2 style="font:600 18px/1.3 system-ui;margin:0">Misra-Gries eviction</h2>
+    </div>
+    <p style="font:14px/1.6 system-ui;color:var(--muted);margin:0;max-width:66ch">The sketch keeps at most k counters. A known key increments. A new key takes a free slot. A new key with every slot full is the interesting case: every counter decrements at once, anything reaching zero is dropped, and the new key takes the freed slot. That is how a bounded structure survives an unbounded number of distinct values. Feed it a key yourself to force the case you want.</p>
+    <div style="border:1px solid var(--chipbr);border-radius:12px;background:var(--panel);padding:16px;display:flex;flex-direction:column;gap:12px">
+      <svg ref="{{ mgRef }}" viewBox="0 0 820 320" style="width:100%;height:auto;display:block"></svg>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <button onClick="{{ mgToggle }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer;min-width:70px">{{ mgPlayLabel }}</button>
+        <button onClick="{{ mgReset }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer">Reset</button>
+        <span style="width:1px;height:18px;background:var(--chipbr)"></span>
+        <span style="font:11px system-ui;color:var(--muted)">feed a key</span>
+        <div ref="{{ mgKeysRef }}" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+      </div>
+    </div>
+    <p style="font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);margin:0">docs/algorithms/sketches.md — pair with the KMV figure already generated by build_docs_assets.py.</p>
+  </section>
+
+  <section data-figure="chunk-lifecycle" style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <span style="font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em;color:var(--accent2)">FIG 4 · GROUP B</span>
+      <h2 style="font:600 18px/1.3 system-ui;margin:0">The chunk lifecycle</h2>
+    </div>
+    <p style="font:14px/1.6 system-ui;color:var(--muted);margin:0;max-width:66ch">What a call graph would not show: which state is bounded. The chunk is transient and released each iteration; the accumulator state inside the dashed boundary is fixed-size sketches that do not grow with rows. Run chunks through and watch the two memory bars.</p>
+    <div style="border:1px solid var(--chipbr);border-radius:12px;background:var(--panel);padding:16px;display:flex;flex-direction:column;gap:12px">
+      <svg ref="{{ chunkRef }}" viewBox="0 0 820 450" style="width:100%;height:auto;display:block"></svg>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <button onClick="{{ chunkRun }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer">Run one chunk</button>
+        <button onClick="{{ chunkRunAll }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer">Stream 12 chunks</button>
+        <button onClick="{{ chunkReset }}" style="padding:5px 11px;border-radius:9999px;border:1px solid var(--chipbr);background:transparent;color:var(--fg);font:500 12px system-ui;cursor:pointer">Reset</button>
+      </div>
+    </div>
+    <details style="border:1px solid var(--chipbr);border-radius:10px;padding:10px 12px">
+      <summary style="font:500 12px system-ui;cursor:pointer;color:var(--muted)">Mermaid source for the static version</summary>
+      <pre ref="{{ mermaidRef }}" style="font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg);overflow:auto;margin:10px 0 0;white-space:pre"></pre>
+    </details>
+    <p style="font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);margin:0">merged architecture page — replaces architecture.md, architecture-diagrams.md and sequence-diagrams-complexity.md.</p>
+  </section>
+
+  <section data-figure="pebay-merge" style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <span style="font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em;color:var(--accent2)">FIG 5 · GROUP B</span>
+      <h2 style="font:600 18px/1.3 system-ui;margin:0">Welford → Pébay merge</h2>
+    </div>
+    <p style="font:14px/1.6 system-ui;color:var(--muted);margin:0;max-width:66ch">Two partitions each carry a count, a mean and a second central moment. Pébay's formulas combine them into the moments of the union exactly, which is why profiling in one chunk and in fifty gives identical answers. Drag either mean: the simple sum M2a + M2b does not move, and the correction term is the whole difference.</p>
+    <div style="border:1px solid var(--chipbr);border-radius:12px;background:var(--panel);padding:16px;display:flex;flex-direction:column;gap:12px">
+      <svg ref="{{ pebRef }}" viewBox="0 0 820 400" style="width:100%;height:auto;display:block;touch-action:none"></svg>
+      <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center">
+        <label style="font:11px system-ui;color:var(--muted);display:flex;align-items:center;gap:6px">n<sub>a</sub> = <span ref="{{ pebNaLabel }}" style="font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg)">400</span><input type="range" min="50" max="2000" step="50" onInput="{{ pebNa }}" ref="{{ pebNaRef }}" style="width:120px;accent-color:var(--accent)" /></label>
+        <label style="font:11px system-ui;color:var(--muted);display:flex;align-items:center;gap:6px">n<sub>b</sub> = <span ref="{{ pebNbLabel }}" style="font:12px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--fg)">900</span><input type="range" min="50" max="2000" step="50" onInput="{{ pebNb }}" ref="{{ pebNbRef }}" style="width:120px;accent-color:var(--accent)" /></label>
+        <span style="font:11px system-ui;color:var(--muted)">drag either mean on the line</span>
+      </div>
+    </div>
+    <p style="font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);margin:0">docs/algorithms/streaming.md — M3 and M4 follow the same shape with larger correction terms.</p>
+  </section>
+
+  <section data-figure="report-card" style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;align-items:baseline;gap:12px;flex-wrap:wrap">
+      <span style="font:600 10px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.09em;color:var(--accent2)">FIG 6 · GROUP A</span>
+      <h2 style="font:600 18px/1.3 system-ui;margin:0">Annotated report card</h2>
+    </div>
+    <p style="font:14px/1.6 system-ui;color:var(--muted);margin:0;max-width:66ch">A numeric column card with its parts named. Hover or tap a numbered region, or an entry in the legend, to isolate it. The card below is drawn from the report's own stylesheet values, so it stands in for the screenshot until the Playwright capture is scripted.</p>
+    <div ref="{{ cardWrapRef }}" style="border:1px solid var(--chipbr);border-radius:12px;background:var(--panel);padding:20px;display:flex;flex-direction:column;gap:16px">
+      <div ref="{{ cardRef }}" style="position:relative;border:1px solid var(--chipbr);border-radius:10px;background:var(--bg);overflow:visible"></div>
+      <div ref="{{ legendRef }}" style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px"></div>
+    </div>
+    <p style="font:11px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--muted);margin:0">docs/stats/*.md — regenerate the card with Playwright against a fresh report; the region ids stay in the same script.</p>
+  </section>
+
+</div>
+</div>
+</div>
+<script src="./dc-lite.js"></script>
+<script src="./figures-logic.js"></script>
+<script>
+(function () {
+  var params = new URLSearchParams(location.search);
+  var only = params.get("only");
+  var root = document.getElementById("dc-root");
+
+  if (only) {
+    document.body.classList.add("embed");
+    var wanted = root.querySelector('[data-figure="' + only + '"]');
+    if (wanted) wanted.classList.add("shown");
+  }
+
+  // Match the documentation's colour scheme. mkdocs-material stores the reader's
+  // choice under the __palette key on the same origin, so the figure can follow
+  // it without the parent page having to post a message in.
+  var theme = params.get("theme");
+  if (!theme) {
+    try {
+      var palette = JSON.parse(localStorage.getItem("__palette") || "{}");
+      if (palette && palette.color && palette.color.scheme === "slate") theme = "dark";
+    } catch (e) { /* no stored preference */ }
+  }
+  if (!theme && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+    theme = "dark";
+  }
+
+  // Exposed so the figures can be driven from a console when checking them;
+  // nothing on the page reads it.
+  window.pysuricataFigures = window.mountDC(root, Component, {
+    startTheme: theme === "dark" ? "dark" : "light",
+  });
+
+  // Report our height so the embedding page can size its iframe to the content
+  // instead of guessing and leaving a scrollbar.
+  function postHeight() {
+    if (window.parent === window) return;
+    var h = document.documentElement.scrollHeight;
+    window.parent.postMessage({ pysuricataFigureHeight: h, figure: only }, "*");
+  }
+  window.addEventListener("load", postHeight);
+  new ResizeObserver(postHeight).observe(document.documentElement);
+})();
+</script>
+</body>
+</html>
