@@ -87,21 +87,32 @@ def _build_simple_table_html(
     return f'<table class="sample-table">{thead}{tbody}</table>'
 
 
-def _sample_pandas(df: pd.DataFrame, sample_rows: int) -> tuple[pd.DataFrame, int]:
+def _sample_pandas(
+    df: pd.DataFrame, sample_rows: int, *, seed: int | None = None
+) -> tuple[pd.DataFrame, int]:
     """Sample rows from a pandas DataFrame and add a positional column.
 
     Args:
         df: Pandas DataFrame to sample from (typically the first chunk).
         sample_rows: Maximum number of rows to sample (capped by DataFrame length).
+        seed: Seed for the row draw. None gives an independent generator; either
+            way the process-global RNG is left alone.
 
     Returns:
         Tuple[pd.DataFrame, int]: The sampled DataFrame with a first positional
         column, and the number of sampled rows ``n``.
     """
+    import numpy as np  # type: ignore
     import pandas as pd  # type: ignore
 
     n = max(0, min(int(sample_rows), len(df.index)))
-    sample_df = df.sample(n=n) if n > 0 else df.head(0)
+    # Explicit random_state: bare df.sample() draws from the global numpy RNG,
+    # which would make the preview both irreproducible and visible to callers.
+    sample_df = (
+        df.sample(n=n, random_state=np.random.default_rng(seed))
+        if n > 0
+        else df.head(0)
+    )
     # Derive original positional row numbers within this chunk
     row_pos = pd.Index(df.index).get_indexer(sample_df.index)
     sample_df = sample_df.copy()
@@ -110,7 +121,7 @@ def _sample_pandas(df: pd.DataFrame, sample_rows: int) -> tuple[pd.DataFrame, in
 
 
 def _sample_polars(
-    df: pl.DataFrame, sample_rows: int
+    df: pl.DataFrame, sample_rows: int, *, seed: int | None = None
 ) -> tuple[tuple[list[str], list[Sequence[Any]], list[int]], int]:
     """Sample rows from a polars DataFrame and build HTML-friendly payload.
 
@@ -121,6 +132,7 @@ def _sample_polars(
     Args:
         df: Polars DataFrame to sample from (typically the first chunk).
         sample_rows: Maximum number of rows to sample (capped by height).
+        seed: Seed for the row draw. None lets polars pick one.
 
     Returns:
         tuple[((columns, rows, numeric_idx), n_rows)]:
@@ -137,7 +149,7 @@ def _sample_polars(
         return (cols, [], []), 0
     try:
         with_idx = df.with_row_index(name="")
-        sampled = with_idx.sample(n=n, with_replacement=False, shuffle=True)
+        sampled = with_idx.sample(n=n, with_replacement=False, shuffle=True, seed=seed)
     except Exception:
         # If sample not available (older polars), fall back to head
         sampled = df.with_row_index(name="").head(n)
@@ -161,18 +173,21 @@ def _sample_polars(
     return (cols, rows, numeric_idx), n
 
 
-def render_sample_section_pandas(df: pd.DataFrame, sample_rows: int = 10) -> str:
+def render_sample_section_pandas(
+    df: pd.DataFrame, sample_rows: int = 10, *, seed: int | None = None
+) -> str:
     """Render the sample content for a pandas chunk.
 
     Args:
         df: Pandas DataFrame (first chunk).
         sample_rows: Desired number of rows in the sample table.
+        seed: Seed for the row draw, so the preview is reproducible.
 
     Returns:
         str: HTML string for the sample table with metadata.
     """
     try:
-        pdf, n = _sample_pandas(df, sample_rows)
+        pdf, n = _sample_pandas(df, sample_rows, seed=seed)
         # Build simple HTML to ensure stable structure across pandas versions
         columns = list(pdf.columns)
         rows = pdf.to_numpy().tolist()
@@ -190,7 +205,9 @@ def render_sample_section_pandas(df: pd.DataFrame, sample_rows: int = 10) -> str
     return _wrap_sample_content(sample_html_table, n)
 
 
-def render_sample_section_polars(df: pl.DataFrame, sample_rows: int = 10) -> str:
+def render_sample_section_polars(
+    df: pl.DataFrame, sample_rows: int = 10, *, seed: int | None = None
+) -> str:
     """Render the sample content for a polars chunk.
 
     This function relies solely on polars to compute the sample and build the
@@ -199,19 +216,22 @@ def render_sample_section_polars(df: pl.DataFrame, sample_rows: int = 10) -> str
     Args:
         df: Polars DataFrame (first chunk).
         sample_rows: Desired number of rows in the sample table.
+        seed: Seed for the row draw, so the preview is reproducible.
 
     Returns:
         str: HTML string for the sample table with metadata.
     """
     try:
-        (cols, rows, numeric_idx), n = _sample_polars(df, sample_rows)
+        (cols, rows, numeric_idx), n = _sample_polars(df, sample_rows, seed=seed)
         sample_html_table = _build_simple_table_html(cols, rows, numeric_idx)
     except Exception:
         sample_html_table, n = "<em>Unable to render sample preview.</em>", 0
     return _wrap_sample_content(sample_html_table, n)
 
 
-def render_sample_section(df_like: Any, sample_rows: int = 10) -> str:
+def render_sample_section(
+    df_like: Any, sample_rows: int = 10, *, seed: int | None = None
+) -> str:
     """Render sample content for pandas or polars chunks.
 
     Dispatches based on runtime type and gracefully degrades if optional
@@ -220,6 +240,7 @@ def render_sample_section(df_like: Any, sample_rows: int = 10) -> str:
     Args:
         df_like: Pandas or polars DataFrame to sample from.
         sample_rows: Desired number of rows in the sample table.
+        seed: Seed for the row draw, so the preview is reproducible.
 
     Returns:
         str: HTML string for the sample table with metadata.
@@ -228,14 +249,14 @@ def render_sample_section(df_like: Any, sample_rows: int = 10) -> str:
         import pandas as pd  # type: ignore
 
         if isinstance(df_like, pd.DataFrame):
-            return render_sample_section_pandas(df_like, sample_rows)
+            return render_sample_section_pandas(df_like, sample_rows, seed=seed)
     except Exception:
         pass
     try:
         import polars as pl  # type: ignore
 
         if isinstance(df_like, pl.DataFrame):
-            return render_sample_section_polars(df_like, sample_rows)
+            return render_sample_section_polars(df_like, sample_rows, seed=seed)
     except Exception:
         pass
     # Fallback

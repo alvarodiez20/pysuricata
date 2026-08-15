@@ -301,6 +301,7 @@ class ReservoirSampler:
 
     __slots__ = (
         "k",
+        "_rng",
         "_buf",
         "_seen",
         "_logw",
@@ -310,8 +311,15 @@ class ReservoirSampler:
         "_sched_pos",
     )
 
-    def __init__(self, k: int = 20_000) -> None:
+    def __init__(
+        self, k: int = 20_000, *, rng: np.random.Generator | None = None
+    ) -> None:
         self.k = int(k)
+        # The generator belongs to the instance. Drawing from the process-global
+        # numpy state would make one column's sample depend on what every other
+        # column happened to draw first, which is neither reproducible under
+        # threading nor invisible to the caller's own RNG.
+        self._rng = rng if rng is not None else np.random.default_rng()
         self._buf: list[float] = []
         self._seen: int = 0
         # Algorithm L state carried between schedule blocks. _logw is log(W);
@@ -324,8 +332,8 @@ class ReservoirSampler:
 
     def _extend_schedule(self, base: int) -> None:
         """Compute the next block of acceptance indices and target slots."""
-        u = np.random.random(_SCHEDULE_BLOCK)
-        v = np.random.random(_SCHEDULE_BLOCK)
+        u = self._rng.random(_SCHEDULE_BLOCK)
+        v = self._rng.random(_SCHEDULE_BLOCK)
         np.maximum(u, _TINY, out=u)
         np.maximum(v, _TINY, out=v)
 
@@ -342,7 +350,7 @@ class ReservoirSampler:
         idx = np.minimum(idx, float(_NO_MORE_ACCEPTANCES))
 
         self._sched_idx = idx.astype(np.int64)
-        self._sched_slot = (np.random.random(_SCHEDULE_BLOCK) * self.k).astype(np.int64)
+        self._sched_slot = (self._rng.random(_SCHEDULE_BLOCK) * self.k).astype(np.int64)
         self._sched_pos = 0
         self._logw = float(logw[-1])
         self._next = int(self._sched_idx[0])

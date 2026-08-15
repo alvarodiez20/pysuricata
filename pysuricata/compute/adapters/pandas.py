@@ -79,7 +79,12 @@ class PandasAdapter(BaseAdapter):
             DatetimeAccumulator,
             NumericAccumulator,
         )
-        from ...accumulators.factory import build_accumulators
+        from ...accumulators.factory import (
+            build_accumulators,
+        )
+        from ...accumulators.factory import (
+            seed_for_column as _seed_for,
+        )
 
         # Build accumulators using the factory
         accs = build_accumulators(kinds, config)
@@ -127,17 +132,23 @@ class PandasAdapter(BaseAdapter):
                         kinds.categorical.append(col_name)
                         from ...accumulators import CategoricalAccumulator
 
-                        accs[col_name] = CategoricalAccumulator(col_name)
+                        accs[col_name] = CategoricalAccumulator(
+                            col_name, seed=_seed_for(config, col_name)
+                        )
                     elif forced_type == "numeric":
                         kinds.numeric.append(col_name)
                         from ...accumulators import NumericAccumulator
 
-                        accs[col_name] = NumericAccumulator(col_name)
+                        accs[col_name] = NumericAccumulator(
+                            col_name, seed=_seed_for(config, col_name)
+                        )
                     elif forced_type == "datetime":
                         kinds.datetime.append(col_name)
                         from ...accumulators import DatetimeAccumulator
 
-                        accs[col_name] = DatetimeAccumulator(col_name)
+                        accs[col_name] = DatetimeAccumulator(
+                            col_name, seed=_seed_for(config, col_name)
+                        )
 
                     accs[col_name].set_dtype(str(data[col_name].dtype))
 
@@ -191,7 +202,9 @@ class PandasAdapter(BaseAdapter):
                             # Replace accumulator
                             from ...accumulators import CategoricalAccumulator
 
-                            accs[col_name] = CategoricalAccumulator(col_name)
+                            accs[col_name] = CategoricalAccumulator(
+                                col_name, seed=_seed_for(config, col_name)
+                            )
                             accs[col_name].set_dtype(str(data[col_name].dtype))
                     except Exception as e:
                         if self.logger:
@@ -300,11 +313,14 @@ class PandasAdapter(BaseAdapter):
 
         try:
             # Import the render function
+            from ...accumulators.factory import seed_for_column
             from ...render.sections import render_sample_section
 
             # Extract sample_rows from config, default to 10
             sample_rows = getattr(cfg, "sample_rows", 10)
-            return render_sample_section(first, sample_rows)
+            return render_sample_section(
+                first, sample_rows, seed=seed_for_column(cfg, "__sample_section__")
+            )
         except Exception:
             return ""
 

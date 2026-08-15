@@ -82,14 +82,13 @@ def test_numeric_card_missing_chunk_visualization():
     s.chunk_metadata = []
     assert renderer._build_dataprep_spectrum_visualization(s) == ""
 
-    # Test simulate chunk distribution
+    # Test insights generation
     s.count = 2000
     s.missing = 100
-    chunks = renderer._simulate_chunk_distribution(s)
-    assert len(chunks) >= 2
-    assert sum(c["missing"] for c in chunks) == 100
-
-    # Test insights generation
+    chunks = [
+        {"index": 1, "size": 1000, "missing": 20, "missing_pct": 2.0, "present": 980},
+        {"index": 2, "size": 1100, "missing": 80, "missing_pct": 7.3, "present": 1020},
+    ]
     insights = renderer._generate_missing_insights(chunks, 5.0)
     assert "overall_missing_pct" in insights
     assert "max_missing_pct" in insights
