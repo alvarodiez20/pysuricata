@@ -401,7 +401,7 @@ class NumericAccumulator:
 
         # Update optional advanced analytics components
         if self._monotonicity:
-            self._monotonicity.update(finite_values)
+            self._monotonicity.update(finite_values, all_finite=True)
 
     def update_extremes(
         self, pairs_min: list[tuple[Any, float]], pairs_max: list[tuple[Any, float]]

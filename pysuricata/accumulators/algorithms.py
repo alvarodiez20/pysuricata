@@ -400,7 +400,7 @@ class MonotonicityDetector:
         self._mono_inc = True
         self._mono_dec = True
 
-    def update(self, values: np.ndarray) -> None:
+    def update(self, values: np.ndarray, *, all_finite: bool = False) -> None:
         """Update monotonicity detection with new values.
 
         The question "does any adjacent pair go the wrong way" is a sign test on
@@ -409,9 +409,13 @@ class MonotonicityDetector:
         compared against the carried last value first.
 
         Args:
-            values: Array of values to check for monotonicity
+            values: Array of values to check for monotonicity.
+            all_finite: Set by callers that have already dropped non-finite
+                values. Re-filtering costs an ``isfinite`` pass and a full copy
+                of every numeric column, per chunk, for nothing -- which is most
+                of what this detector costs in situ.
         """
-        finite_values = values[np.isfinite(values)]
+        finite_values = values if all_finite else values[np.isfinite(values)]
         if finite_values.size == 0:
             return
 

@@ -1932,3 +1932,86 @@
   border-color: rgba(147, 197, 253, 0.7);
   background: rgba(147, 197, 253, 0.2);
 }
+
+/* ---------------------------------------------------------------------------
+   "Needs attention" triage block
+   The quality chips were already computed per column and rendered as
+   decoration. This is the same information used as an entry point: a
+   sixty-column report opens on the three columns worth looking at.
+   --------------------------------------------------------------------------- */
+.needs-attention {
+  margin: 0 0 1.25rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+  border-radius: 10px;
+  background: var(--panel-bg, rgba(0, 0, 0, 0.02));
+}
+
+.attention-title {
+  margin: 0 0 0.6rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.attention-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.attention-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.attention-col {
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.attention-col:hover {
+  text-decoration: underline;
+}
+
+.attention-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.needs-attention .flag {
+  cursor: pointer;
+  user-select: none;
+}
+
+.needs-attention .flag.selected {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+.attention-hint {
+  margin: 0.6rem 0 0;
+}
+
+.flag-filter-banner {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.flag-filter-banner .clear-flag {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.5rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border, rgba(0, 0, 0, 0.15));
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.75rem;
+}

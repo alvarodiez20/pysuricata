@@ -69,8 +69,16 @@ class TestInMemoryInferenceUnchanged:
         )
         assert summarize(df)["columns"]["rating"]["type"] == "categorical"
 
-    def test_high_cardinality_stays_numeric(self):
+    def test_high_cardinality_is_not_reclassified_as_categorical(self):
+        # np.arange is monotonic, unique and integral, so it is reported as an
+        # identifier rather than a plain numeric column. Either way it is not a
+        # category, which is what this test is about.
         df = pd.DataFrame({"x": np.arange(5_000.0)})
+        assert summarize(df)["columns"]["x"]["type"] == "identifier"
+
+    def test_a_high_cardinality_measurement_stays_numeric(self):
+        values = np.random.default_rng(0).standard_normal(5_000)
+        df = pd.DataFrame({"x": values})
         assert summarize(df)["columns"]["x"]["type"] == "numeric"
 
     def test_a_single_chunk_list_source_is_still_treated_as_a_stream(self):

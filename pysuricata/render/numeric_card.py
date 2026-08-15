@@ -15,6 +15,7 @@ from .card_types import NumericStats, QualityFlags, QuantileData
 from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
 from .format_utils import ordinal_number
 from .histogram_svg import SVGHistogramRenderer
+from .identifier import identifier_facts, looks_like_identifier
 
 
 class NumericCardRenderer(CardRenderer):
@@ -227,6 +228,22 @@ class NumericCardRenderer(CardRenderer):
         )
 
     def _build_left_table(self, stats: NumericStats, percentages: dict) -> str:
+        if looks_like_identifier(stats):
+            # "Zeros: 1 (0.0%)" on a key is the line UX-2 names as actively
+            # misleading: it is true, and it means nothing. Outliers, infinities
+            # and negatives are the same. The identifier facts go on the right.
+            return self.table_builder.build_key_value_table(
+                [
+                    ("Count", f"{stats.count:,}", "num"),
+                    (
+                        "Missing",
+                        f"{stats.missing:,} ({percentages['miss_pct']:.1f}%)",
+                        "num",
+                    ),
+                    ("Type", "identifier (key-like)", ""),
+                ]
+            )
+
         """Build left statistics table."""
         miss_cls = (
             "crit"
@@ -281,6 +298,14 @@ class NumericCardRenderer(CardRenderer):
     def _build_right_table(self, stats: NumericStats) -> str:
         """Build right statistics table."""
         mem_display = self.format_bytes(int(getattr(stats, "mem_bytes", 0)))
+
+        if looks_like_identifier(stats):
+            # A key's mean, median and quartiles are arithmetic on labels. Show
+            # what a key actually raises instead: how many, how many distinct,
+            # whether the sequence has gaps.
+            data = [(label, value, "num") for label, value in identifier_facts(stats)]
+            data.append(("Processed bytes (≈)", mem_display, "num"))
+            return self.table_builder.build_key_value_table(data)
 
         data = [
             ("Min", self.format_number(stats.min), "num"),
@@ -1651,6 +1676,10 @@ class NumericCardRenderer(CardRenderer):
         controls_html: str,
     ) -> str:
         """Assemble the complete card HTML."""
+        # A key is not a measurement: saying so in the badge is the whole point
+        # of detecting it. Every competing profiler prints the mean of an ID
+        # column; being the one that names it instead costs nothing.
+        badge = "Identifier" if looks_like_identifier(stats) else "Numeric"
         docs_url = "https://alvarodiez20.github.io/pysuricata/stats/numeric/"
         info_button = f'''<a href="{docs_url}" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Numeric analysis" aria-label="View Numeric analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -1663,7 +1692,7 @@ class NumericCardRenderer(CardRenderer):
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname" title="{safe_name}">{safe_name}</span>
-                    <span class="badge">Numeric</span>
+                    <span class="badge">{badge}</span>
                     <span class="dtype chip">{stats.dtype_str}</span>
                     {approx_badge}
                     {quality_flags_html}

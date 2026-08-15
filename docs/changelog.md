@@ -7,6 +7,23 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.35] - 2026-08-15
+
+UX-2 and UX-3 (#73, #74). Neither computes anything new: the signals were
+already tracked and the chips were already rendered. Both findings were that
+the report had the answer and did not use it.
+
+### Added
+- **Identifier columns are recognised and presented as keys.** A monotonic, fully distinct, integral column with no nulls now gets an **Identifier** badge and a card answering what a key raises — rows, distinct, duplicates, gaps in the sequence, order — instead of a mean, a standard deviation, a flat uniform histogram and `Zeros: 1 (0.0%)`, which is true and meaningless. `summarize()` reports `"type": "identifier"` and carries `mono_inc`, `mono_dec` and `int_like`, so the payload is not poorer than the HTML.
+- **A "needs attention" block opens the Variables section**, naming the columns with real defects and linking to each card. Clicking one of its chips filters the list to those columns; clicking it again, or the All tab, restores source order in one click.
+
+### Changed
+- **Monotonicity detection is on by default.** It was off "for performance" when the detector looped over every value at 89 ns/value. As a sign test on `np.diff` it is 0.6 ns/value, and it is what lets the report recognise a key. The detector no longer re-filters an array the caller has already filtered — that redundant `isfinite` pass and copy, per numeric column per chunk, was the entire cost of turning it on (636 ms → 570 ms on mixed 200,000 × 14, against 573 ms with it off).
+
+### Fixed
+- **Search and the type filters did nothing on any report with ten columns or fewer.** The pagination module returned early when a single page was enough and hid the whole controls row, so the search box and the Numeric/Categorical/Datetime/Boolean tabs were rendered but never wired. Only the page buttons are hidden now.
+- **The distinct-count estimate on an identifier card is clamped to the row count.** KMV carries about 2.2% error at k=2048, so a real key could report more distinct values than rows — arithmetically impossible, and it reads as a bug.
+
 ## [0.0.34] - 2026-08-15
 
 Benchmark tooling only; no library changes.

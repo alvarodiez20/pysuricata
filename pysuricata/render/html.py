@@ -26,6 +26,10 @@ from .format_utils import human_time as _human_time
 from .markdown_utils import render_markdown_to_html
 from .missing_columns import create_missing_columns_renderer
 from .svg_utils import safe_col_id as _safe_col_id
+from .triage import actionable_chips as _actionable_chips
+from .triage import build_attention_block as _build_attention_block
+from .triage import extract_chips as _extract_chips
+from .triage import flag_slug as _flag_slug
 
 # Template placeholders are bare identifiers in braces ({report_title}). Anything
 # else that looks brace-wrapped -- CSS custom properties, JS object literals --
@@ -140,6 +144,7 @@ def render_html_snapshot(
         if c in kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean
     ] or (kinds.numeric + kinds.categorical + kinds.datetime + kinds.boolean)
     all_cards_list: list[str] = []
+    column_chips: list[tuple[str, str, list[tuple[str, str]]]] = []
     for name in col_order:
         acc = accs[name]
         card_html = ""
@@ -160,10 +165,19 @@ def render_html_snapshot(
 
         # Add data attributes for filtering and search
         if card_html:
-            # Insert data attributes into the var-card element
+            # The chips this card already emitted, carried on the article so the
+            # triage block and the chip filter can both use them without
+            # recomputing anything.
+            chips = _extract_chips(card_html)
+            flags = " ".join(
+                sorted({_flag_slug(label) for _, label in _actionable_chips(chips)})
+            )
+            card_id = _safe_col_id(name)
+            column_chips.append((name, card_id, chips))
             card_html = card_html.replace(
-                f'<article class="var-card" id="{_safe_col_id(name)}">',
-                f'<article class="var-card" id="{_safe_col_id(name)}" data-type="{data_type}" data-name="{_html.escape(name)}">',
+                f'<article class="var-card" id="{card_id}">',
+                f'<article class="var-card" id="{card_id}" data-type="{data_type}"'
+                f' data-name="{_html.escape(name)}" data-flags="{flags}">',
             )
             all_cards_list.append(card_html)
     # Build variables section with pagination and search
@@ -173,7 +187,9 @@ def render_html_snapshot(
         + len(kinds.datetime)
         + len(kinds.boolean)
     )
+    attention_html = _build_attention_block(column_chips)
     variables_section_html = f"""
+          {attention_html}
           <p class=\"muted small\">Analyzing {total_variables} variables ({len(kinds.numeric)} numeric, {len(kinds.categorical)} categorical, {len(kinds.datetime)} datetime, {len(kinds.boolean)} boolean).</p>
 
           <div class=\"vars-controls\">
