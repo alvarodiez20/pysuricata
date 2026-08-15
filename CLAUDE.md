@@ -62,40 +62,55 @@ Accumulators never see the frame, only arrays.
 
 ## Current priorities
 
-See `docs/roadmap.md` (v2, re-audited at 0.0.21) for the measured numbers behind
-this. Shortest version:
+See `docs/roadmap.md` (v3, re-audited at 0.0.26) for the measured numbers.
 
-Phase 0 is **done**: all six statistical bugs are fixed, the accuracy oracle is
-at 578 lines with zero xfails, and it runs in CI. Do not regress it — a change
-that makes `benchmarks/accuracy.py` fail is wrong even if it is faster.
+Phase 0 is **complete**: all eleven audit items are closed, the accuracy oracle
+is green at 51 tests, and five targeted test files (63 tests) cover the items
+that used to have none. Do not regress any of it — a change that makes
+`benchmarks/accuracy.py` fail is wrong even if it is faster.
 
-1. **Finish Phase 1 (pure Python, no Rust), in measured value order:**
-   - Gate Misra-Gries off high-cardinality numeric columns. It is **35%** of the
-     numeric accumulator and `numeric_card.py:462` discards its output on the
-     float columns where it never applies.
-   - Apply the KMV threshold pre-filter in `_batch_add_hashes` — **8.8×**,
-     three lines, estimates provably identical. Code and proof in
-     `benchmarks/proposed_kernels.py`.
-   - Vectorise `DatetimeAccumulator.update`. Four per-row Python loops,
-     4.7 us/value, the most expensive column kind in the library.
-   - Drop `format="mixed"` (`inference.py:384`, `consume.py:162`) for
-     try-explicit-formats-first on a 200-row sample.
-   - Vectorised Algorithm L (also in `proposed_kernels.py`) — **4.9×**, and
-     bit-identical, which the naive Algorithm R rewrite is not.
-   - `np.diff` for `MonotonicityDetector.update` — 61×.
-2. **Then publish the benchmarks.** 9.1× vs ydata-profiling and 13× less
-   marginal memory, both currently unmentioned in the README.
-3. **Then the native core — KMV first, moments last.** The measured
-   decomposition says moments are **1.3%** of the numeric path and KMV is
-   **50%**; the original ordering had this backwards.
+**Phase 1 has three changes left, worth 1.88x together. All pure Python.**
 
-Measurement discipline, learned the hard way on this codebase: `cProfile` charges
-per Python call and badly over-weights kernels that make many small ones. It
-ranked the reservoir at ~30% of self time when swapping in a 5×-faster one moved
-wall clock by 4%. Confirm any hot-spot ranking against wall clock with the
-profiler off before acting on it.
+1. **Cap the auto-chosen chunk size near 50,000 rows** (`compute/processing/chunking.py`).
+   Removing the `0.7*optimal + 0.3*requested` blend made `chunk_size` a real
+   option and exposed that the heuristic's own value is too large: a 200k-row
+   frame is now processed as one chunk. `chunk_size=50_000` is **1.34x** on
+   mixed 200k x 14. Add a test asserting the chosen size stays in a sane band.
+2. **Gate Misra-Gries on the KMV estimate** (`accumulators/numeric.py:335`).
+   **34%** of the numeric accumulator. On high-cardinality columns it renders a
+   "Common values" table of values that occurred *once* — so this removes
+   misleading output as well as cost. `should_track_top_k` in
+   `benchmarks/proposed_kernels.py` is written and verified against four column
+   shapes.
+3. **KMV threshold pre-filter** in `_batch_add_hashes` — **8.7x**, three lines,
+   estimates provably identical. KMV is **52%** of the numeric accumulator, the
+   largest single kernel. Code and proof in `benchmarks/proposed_kernels.py`.
 
-Five items from the v1 audit are still open — first-chunk type decisions, the
-2,000-row `RowKMV` fallback cap, chunk-local extreme indices, the dead
-`corr_max_cols` option, and the pre-1906 datetime window. All six items that had
-a failing test got fixed; all five without one did not. Write the test first.
+Then: **vectorise `DatetimeAccumulator.update`** — four per-row Python loops
+(`datetime.py:212, 234, 277, 280`), ~960 ms/column at 200k rows, the most
+expensive column kind and the only accumulator never touched. And fix the stale
+`-2e18` bound at `datetime.py:324`, which `_update_fallback` still carries after
+the window was widened everywhere else.
+
+**Then publish**, then the native core — **KMV first, moments last**. Moments are
+1.4% of the numeric path; KMV is 52%. The crate under `native/` is vendored but
+nothing imports it and there is no `[fast]` extra yet.
+
+Measurement discipline, both learned on this codebase:
+
+- `cProfile` charges per Python call and over-weights kernels that make many
+  small ones. It ranked the reservoir at ~30% of self time when swapping in a
+  5x-faster one moved wall clock by 4%. Confirm rankings against wall clock with
+  the profiler off.
+- When checking whether a value reaches the report, search for the **formatted**
+  string. An earlier audit wrongly concluded top-k output was discarded because
+  it searched for `4248` in a report that renders `4,248`.
+- A kernel benchmark only measures the call sites it calls. Holding `KMV._values`
+  as an array won its own benchmark by 2.7x and lost 35% end to end, because the
+  benchmark never touched the scalar insert path categorical columns hammer.
+- **A ratio is only quotable when both sides were measured in the same
+  round-robin, on the same machine, within the same run.** Two published claims
+  came from cross-session pairing: "0.0.21 is 1.24x faster" is really 0.88x, a
+  regression, and a 3.56x headline is really 2.48x. `benchmarks/end_to_end.py`
+  and `benchmarks/versions.py` interleave every tool and version across rounds
+  and label anything under three rounds *Not quotable*.

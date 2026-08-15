@@ -7,6 +7,22 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.34] - 2026-08-15
+
+Benchmark tooling only; no library changes.
+
+### Added
+- **`benchmarks/versions.py`** — version-over-version timing in one interleaved round-robin. Each version is installed into its own throwaway virtualenv and timed in its own subprocess, so import cost, allocator state and garbage from one version cannot leak into the next.
+
+### Changed
+- **`benchmarks/end_to_end.py` schedules a round-robin by default** (`--rounds 5`). Every tool is measured in every round and each one's best is reported, so a slow patch of machine time penalises everything in that round and cancels in the ratio. Running one tool to completion and then the next compares them across two different stretches of machine time, which on a shared runner is not the same machine.
+- **Both harnesses refuse to imply a quotable ratio below three rounds**, in the terminal and in the generated markdown. The generated tables also carry the round count and the per-tool spread, and state that ratios are only comparable within the table they appear in.
+
+Two published claims came from cross-session pairing, which is what this exists
+to prevent: *"0.0.21 is 1.24x faster than 0.0.16"* is really **0.88x** — a
+regression reported as an improvement — and a *3.56x* headline is really
+**2.48x**, from pairing a slow baseline run with a fast recent one.
+
 ## [0.0.33] - 2026-08-15
 
 The first four of the twelve user-experience findings (#72, #79, #81, #83).

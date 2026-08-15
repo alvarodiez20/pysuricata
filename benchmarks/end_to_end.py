@@ -20,6 +20,12 @@ reader:
   not obviously better than a 2 MB one that takes 400 ms.
 * Anything that could not be installed is reported as ``skipped``, never
   silently omitted.
+* Every tool is measured in **every round**, and each tool's best is reported.
+  Running one tool to completion and then the next compares them across two
+  different stretches of machine time; on a shared runner the available CPU
+  moves between them. Interleaving makes a slow patch penalise every tool in
+  that round, so it cancels in the ratio. Fewer than three rounds and the
+  output says so.
 
 Publish the generated markdown table *with* the environment block. A benchmark
 without the machine spec is a screenshot.
@@ -36,6 +42,11 @@ import sys
 import tempfile
 import textwrap
 import time
+
+# Below this, a ratio between two tools is not quotable: it has not been
+# measured enough times, interleaved, to separate the difference between the
+# tools from the difference between two stretches of machine time.
+MIN_QUOTABLE_ROUNDS = 3
 
 TOOLS = {
     "pysuricata": {
@@ -206,16 +217,25 @@ def to_markdown(payload: dict) -> str:
             else " (pure Python)"
         ),
         f"- ydata-profiling {env['ydata_profiling'] or 'not installed'}",
+        f"- {payload.get('rounds', 1)} interleaved round(s), best per tool",
         "",
     ]
+    if not payload.get("quotable", False):
+        lines += [
+            "> **Not quotable.** Fewer than "
+            f"{MIN_QUOTABLE_ROUNDS} rounds were run, so a ratio between two "
+            "tools here cannot be separated from machine noise. Re-run with "
+            "`--rounds 5` before publishing any of these numbers.",
+            "",
+        ]
     for suite, rows in payload["suites"].items():
         shape = rows.pop("_shape", {})
         lines += [
             f"## {suite} — {shape.get('rows', '?'):,} rows x {shape.get('cols', '?')} cols "
             f"({shape.get('bytes', 0) / 1e6:.0f} MB in memory)",
             "",
-            "| tool | wall (s) | peak RSS (MB) | output (MB) | status |",
-            "|---|---:|---:|---:|---|",
+            "| tool | wall (s) | spread | peak RSS (MB) | output (MB) | status |",
+            "|---|---:|---:|---:|---:|---|",
         ]
         ok = {k: v for k, v in rows.items() if v.get("status") == "ok"}
         fastest = min((v["seconds"] for v in ok.values()), default=None)
@@ -226,15 +246,89 @@ def to_markdown(payload: dict) -> str:
                     if fastest and abs(r["seconds"] - fastest) < 1e-9
                     else ""
                 )
+                spread = f"{r['spread_pct']:.0f}%" if "spread_pct" in r else "—"
                 lines.append(
-                    f"| {tool} | {r['seconds']:.2f} | {r['peak_rss_mb']:.0f} | "
+                    f"| {tool} | {r['seconds']:.2f} | {spread} | "
+                    f"{r['peak_rss_mb']:.0f} | "
                     f"{r['output_bytes'] / 1e6:.2f} | ok{mark} |"
                 )
             else:
                 detail = r.get("error") or r.get("reason") or r.get("stderr", "")
-                lines.append(f"| {tool} | — | — | — | {r['status']}: {detail[:120]} |")
+                lines.append(
+                    f"| {tool} | — | — | — | — | {r['status']}: {detail[:120]} |"
+                )
         lines.append("")
     return "\n".join(lines)
+
+
+def round_robin(
+    tools: list[str], suite: str, scale: float, repo: str, timeout: int, rounds: int
+) -> dict[str, dict]:
+    """Measure every tool in every round, then keep each tool's best.
+
+    The schedule is the point. Measuring tool A to completion and then tool B
+    compares them across two different stretches of machine time -- and on a
+    shared runner the available CPU moves between them. Interleaving means a
+    slow patch penalises every tool in that round, so it cancels in the ratio.
+
+    This is not hypothetical. Two published claims came from cross-session
+    pairing: "0.0.21 is 1.24x faster than 0.0.16", which is a 0.88x *regression*
+    when both are measured in one round-robin, and a 3.56x headline that is
+    really 2.48x.
+
+    Args:
+        tools: Tool names to measure, all of them in every round.
+        suite: Dataset suite name.
+        scale: Dataset scale factor.
+        repo: Repository root, put on the subprocess's sys.path.
+        timeout: Per-run timeout in seconds.
+        rounds: Number of interleaved rounds; each tool's best is reported.
+
+    Returns:
+        Mapping of tool name to its best result, with every round's timing
+        retained under ``all_seconds`` so the spread stays visible.
+    """
+    best: dict[str, dict] = {}
+    for round_index in range(1, rounds + 1):
+        if rounds > 1:
+            print(f"  -- round {round_index}/{rounds}")
+        for tool in tools:
+            if tool not in TOOLS:
+                print(f"  {tool:<24} unknown tool, skipping")
+                continue
+            started = time.perf_counter()
+            result = run_one(tool, suite, scale, repo, timeout)
+            previous = best.get(tool)
+
+            if result["status"] == "ok":
+                timings = (previous or {}).get("all_seconds", [])
+                result["all_seconds"] = [*timings, result["seconds"]]
+                if previous is None or previous.get("status") != "ok":
+                    best[tool] = result
+                elif result["seconds"] < previous["seconds"]:
+                    best[tool] = result
+                else:
+                    previous["all_seconds"] = result["all_seconds"]
+                print(
+                    f"  {tool:<24} {result['seconds']:>8.2f}s  "
+                    f"{result['peak_rss_mb']:>7.0f} MB RSS  "
+                    f"{result['output_bytes'] / 1e6:>6.2f} MB out"
+                )
+            else:
+                if previous is None:
+                    best[tool] = result
+                print(
+                    f"  {tool:<24} {result['status'].upper():>8}  "
+                    f"{(result.get('error') or result.get('reason') or '')[:70]}"
+                    f"  ({time.perf_counter() - started:.1f}s)"
+                )
+
+    for result in best.values():
+        timings = result.get("all_seconds")
+        if timings and len(timings) > 1:
+            result["rounds"] = len(timings)
+            result["spread_pct"] = (max(timings) - min(timings)) / min(timings) * 100
+    return best
 
 
 def main(argv=None) -> int:
@@ -243,43 +337,47 @@ def main(argv=None) -> int:
     ap.add_argument("--suites", default="mixed,numeric_wide,categorical_heavy")
     ap.add_argument("--scale", type=float, default=0.2)
     ap.add_argument("--timeout", type=int, default=900)
+    ap.add_argument(
+        "--rounds",
+        type=int,
+        default=5,
+        help="Interleaved rounds; every tool is measured in each one and its "
+        "best is reported. Fewer than 3 marks the results unquotable.",
+    )
     ap.add_argument("--json", default=None)
     ap.add_argument("--markdown", default=None)
     args = ap.parse_args(argv)
+
+    if args.rounds < 1:
+        ap.error("--rounds must be at least 1")
 
     repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, repo)
     from benchmarks import datasets
 
-    payload = {"environment": environment(), "suites": {}}
+    payload = {
+        "environment": environment(),
+        "rounds": args.rounds,
+        "quotable": args.rounds >= MIN_QUOTABLE_ROUNDS,
+        "suites": {},
+    }
     print(json.dumps(payload["environment"], indent=2), "\n")
+    if not payload["quotable"]:
+        print(
+            f"WARNING: --rounds {args.rounds} is below the {MIN_QUOTABLE_ROUNDS} "
+            "needed for a quotable ratio. Results are indicative only.\n"
+        )
 
+    tools = [t.strip() for t in args.tools.split(",")]
     for suite in args.suites.split(","):
         suite = suite.strip()
-        print(f"=== {suite} (scale={args.scale}) ===")
+        print(f"=== {suite} (scale={args.scale}, rounds={args.rounds}) ===")
         df = datasets.build(suite, scale=args.scale)
         payload["suites"][suite] = {"_shape": datasets.describe(df)}
         del df
-        for tool in args.tools.split(","):
-            tool = tool.strip()
-            if tool not in TOOLS:
-                print(f"  {tool:<24} unknown tool, skipping")
-                continue
-            t0 = time.perf_counter()
-            res = run_one(tool, suite, args.scale, repo, args.timeout)
-            payload["suites"][suite][tool] = res
-            if res["status"] == "ok":
-                print(
-                    f"  {tool:<24} {res['seconds']:>8.2f}s  "
-                    f"{res['peak_rss_mb']:>7.0f} MB RSS  "
-                    f"{res['output_bytes'] / 1e6:>6.2f} MB out"
-                )
-            else:
-                print(
-                    f"  {tool:<24} {res['status'].upper():>8}  "
-                    f"{(res.get('error') or res.get('reason') or '')[:70]}"
-                    f"  ({time.perf_counter() - t0:.1f}s)"
-                )
+        payload["suites"][suite].update(
+            round_robin(tools, suite, args.scale, repo, args.timeout, args.rounds)
+        )
         print()
 
     if args.json:
