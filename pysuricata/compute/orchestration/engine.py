@@ -49,6 +49,22 @@ def _is_exhaustible_iterator(source: Any) -> bool:
         return False
 
 
+def _missing_so_far(accs: dict[str, Any]) -> int:
+    """Total missing cells counted by the accumulators up to now.
+
+    Every accumulator already counts the nulls it skipped while folding a chunk
+    in, so the dataset total is a sum over columns rather than a second pass
+    over every cell.
+
+    Args:
+        accs: The per-column accumulators.
+
+    Returns:
+        The running total across all profiled columns.
+    """
+    return sum(int(getattr(acc, "missing", 0)) for acc in accs.values())
+
+
 def _select_columns(chunk: Any, columns: tuple[str, ...] | None) -> Any:
     """Restrict a chunk to the configured column subset.
 
@@ -409,9 +425,15 @@ class StreamingEngine:
             # Initialize metrics
             n_rows = len(first_chunk) if hasattr(first_chunk, "__len__") else 0
             n_cols = len(first_chunk.columns) if hasattr(first_chunk, "columns") else 0
-            total_missing_cells = adapter.missing_cells(first_chunk)
             first_columns = list(getattr(first_chunk, "columns", []))
             sample_section_html = adapter.sample_section_html(first_chunk, config)
+
+            # Missing cells come from the accumulators, which counted them while
+            # folding the chunk in. `adapter.missing_cells()` is a full
+            # `isnull().sum().sum()` over the frame -- a second pass over every
+            # cell, for a number already computed. The first chunk used to pay
+            # for it twice over.
+            total_missing_cells = _missing_so_far(accs)
 
             # Initialize chunk metadata collection
             chunk_metadata = []
@@ -419,9 +441,8 @@ class StreamingEngine:
 
             # Process first chunk
             chunk_size = len(first_chunk) if hasattr(first_chunk, "__len__") else 0
-            chunk_missing = adapter.missing_cells(first_chunk)
             chunk_metadata.append(
-                (current_row, current_row + chunk_size - 1, chunk_missing)
+                (current_row, current_row + chunk_size - 1, total_missing_cells)
             )
             current_row += chunk_size
 
@@ -461,14 +482,17 @@ class StreamingEngine:
                 adapter.update_row_kmv(chunk, row_kmv)
 
                 chunk_size = len(chunk) if hasattr(chunk, "__len__") else 0
-                chunk_missing = adapter.missing_cells(chunk)
+                # The accumulators carry a running total, so this chunk's share
+                # is the difference. No second pass over the data.
+                missing_so_far = _missing_so_far(accs)
+                chunk_missing = missing_so_far - total_missing_cells
                 chunk_metadata.append(
                     (current_row, current_row + chunk_size - 1, chunk_missing)
                 )
                 current_row += chunk_size
 
                 n_rows += chunk_size
-                total_missing_cells += chunk_missing
+                total_missing_cells = missing_so_far
 
                 # Increment chunk counter
                 chunk_idx += 1

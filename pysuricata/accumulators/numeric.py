@@ -506,19 +506,29 @@ class NumericAccumulator:
         # and the branch below never runs.
         mad_val = 0.0
         if self.enable_outlier_detection and sample_values:
+            # `outlier_methods` used to be read by nobody: the detector that
+            # consulted it was never called, and this block always computed
+            # both. A configuration option that silently does nothing is worse
+            # than one that does not exist, so it is honoured here.
+            methods = set(self.config.outlier_methods)
             sample_arr = np.array(sample_values)
-            q1, q3 = np.percentile(sample_arr, [25, 75])
-            iqr = q3 - q1
-            lower_bound = q1 - 1.5 * iqr
-            upper_bound = q3 + 1.5 * iqr
-            outliers_iqr = np.sum(
-                (sample_arr < lower_bound) | (sample_arr > upper_bound)
-            )
 
-            mad_val = mad(sample_arr)
-            if mad_val > 0:
-                mod_z_score = 0.6745 * (sample_arr - np.median(sample_arr)) / mad_val
-                outliers_mod_zscore = np.sum(np.abs(mod_z_score) > 3.5)
+            if "iqr" in methods:
+                q1, q3 = np.percentile(sample_arr, [25, 75])
+                iqr = q3 - q1
+                lower_bound = q1 - 1.5 * iqr
+                upper_bound = q3 + 1.5 * iqr
+                outliers_iqr = np.sum(
+                    (sample_arr < lower_bound) | (sample_arr > upper_bound)
+                )
+
+            if "mad" in methods:
+                mad_val = mad(sample_arr)
+                if mad_val > 0:
+                    mod_z_score = (
+                        0.6745 * (sample_arr - np.median(sample_arr)) / mad_val
+                    )
+                    outliers_mod_zscore = np.sum(np.abs(mod_z_score) > 3.5)
 
         # Compute advanced analytics metrics
         unique_est = self._uniques.estimate()
@@ -723,16 +733,16 @@ class NumericAccumulator:
         # Merge algorithm components efficiently
         self._moments.merge(other._moments)
 
-        # Merge samples (approximate for large datasets)
-        other_sample = other._sample.values()
-        for value in other_sample:
-            self._sample.add(value)
-
-        # Merge unique estimates
-        for value in other_sample:
-            self._uniques.add(value)
-
-        # Merge extremes tracking
+        # Every one of these composes on its own terms; the merge delegates
+        # rather than replaying values. What it used to do instead was push the
+        # other side's *reservoir buffer* through `add()` -- which treats a
+        # 20,000-value sample as a 20,000-value stream, so a large shard merged
+        # into a small one lost its weight entirely -- and derive the distinct
+        # estimate from that same sample, which cannot represent a distinct
+        # count larger than the sample.
+        self._sample.merge(other._sample)
+        self._uniques.merge(other._uniques)
+        self._streaming_histogram.merge(other._streaming_histogram)
         self._extremes.merge(other._extremes)
 
         # Merge memory tracking
@@ -742,12 +752,18 @@ class NumericAccumulator:
         self._int_like_all = self._int_like_all and other._int_like_all
 
         # If either side gave up on top-k, the merged column has too many
-        # distinct values for the table to mean anything either. (Note the
-        # counters themselves are not merged -- a pre-existing gap, tracked
-        # separately; this only stops the result from claiming to be complete.)
+        # distinct values for the table to mean anything either.
         if not other._track_top_k and self._track_top_k:
             self._track_top_k = False
             self._topk = MisraGries(self.config.top_k_size)
+        elif self._track_top_k:
+            self._topk.merge(other._topk)
+
+        # Monotonicity is deliberately not merged. It is a statement about the
+        # order values arrived in, and merging two shards says nothing about
+        # how they would interleave -- two ascending halves are ascending only
+        # if one begins where the other ends, which the accumulators cannot
+        # know. A merged column reports whatever this side observed.
 
     def reset(self) -> None:
         """Reset accumulator to initial state efficiently."""

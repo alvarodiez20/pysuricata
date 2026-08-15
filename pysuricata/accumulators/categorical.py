@@ -553,10 +553,18 @@ class CategoricalAccumulator:
         }
 
     def merge(self, other: CategoricalAccumulator) -> None:
-        """Merge another CategoricalAccumulator efficiently.
+        """Merge another CategoricalAccumulator.
+
+        Every sketch here composes; the previous implementation assumed none of
+        them did. It replayed the other side's top-k counters one `add()` call
+        per counted occurrence -- so merging a column with a value seen ten
+        million times ran ten million Python calls -- and it seeded the distinct
+        estimate from at most a hundred top-k *keys*, on the stated belief that
+        "KMV sketches cannot be easily merged". They merge exactly, by keeping
+        the k smallest hashes of the union.
 
         Args:
-            other: Another CategoricalAccumulator to merge
+            other: Another CategoricalAccumulator. Left unchanged.
         """
         self.count += other.count
         self.missing += other.missing
@@ -565,16 +573,17 @@ class CategoricalAccumulator:
         self._len_n += other._len_n
         self._empty_zero += other._empty_zero
 
-        # Merge data structures (approximate for efficiency)
-        for item, count in other._topk.items():
-            for _ in range(count):
-                self._topk.add(item)
-
-        # Note: KMV sketches cannot be easily merged, so we approximate
-        # by adding a sample of values from the other accumulator
-        other_sample = [item for item, _ in other._topk.items()[:100]]
-        for item in other_sample:
-            self._uniques.add(item)
+        self._topk.merge(other._topk)
+        self._uniques.merge(other._uniques)
+        # The case- and whitespace-folded sketches drive the "looks like a
+        # variant of another value" flags. They were not merged at all, so a
+        # merged column silently lost the evidence for them.
+        if self._uniques_lower is not None and other._uniques_lower is not None:
+            self._uniques_lower.merge(other._uniques_lower)
+        if self._uniques_strip is not None and other._uniques_strip is not None:
+            self._uniques_strip.merge(other._uniques_strip)
+        if self._len_sample is not None and other._len_sample is not None:
+            self._len_sample.merge(other._len_sample)
 
     def reset(self) -> None:
         """Reset accumulator to initial state efficiently."""

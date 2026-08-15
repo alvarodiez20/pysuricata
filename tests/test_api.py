@@ -6,6 +6,7 @@ import pytest
 
 from pysuricata.api import (
     ComputeOptions,
+    ConfigurationError,
     ProfileConfig,
     RenderOptions,
     Report,
@@ -96,51 +97,32 @@ def test__to_engine_config_prefers_from_options(monkeypatch):
         assert hasattr(eng, name)
 
 
-def test__to_engine_config_fallback_without_from_options(monkeypatch):
-    # Simulate older engine without from_options
-    class DummyEngineCfg:
-        def __init__(
-            self,
-            *,
-            chunk_size,
-            numeric_sample_k,
-            uniques_k,
-            topk_k,
-            random_seed,
-            title=None,
-            description=None,
-            **kwargs,  # Accept any additional parameters
-        ):
-            self.chunk_size = chunk_size
-            self.numeric_sample_k = numeric_sample_k
-            self.uniques_k = uniques_k
-            self.topk_k = topk_k
-            self.random_seed = random_seed
-            self.title = title
-            self.description = description
+def test__to_engine_config_reports_a_config_the_engine_cannot_accept(monkeypatch):
+    """#89. This used to assert the opposite.
+
+    `_to_engine_config` wrapped `from_options` in a bare `except Exception` with
+    a hand-written fallback, and this test pinned that fallback by monkeypatching
+    in an engine config "without from_options" -- a version skew that cannot
+    happen, since both classes ship in this package and move together.
+
+    What the fallback actually did was turn any validation failure into a
+    *different configuration*: it never set `columns`, the correlation options,
+    `progress`, `engine` or the boolean-detection options, so a caller asking
+    for one column got the whole frame and a run that looked successful. The
+    contract now is that the failure reaches the caller.
+    """
+
+    class UnusableEngineCfg:
+        @staticmethod
+        def from_options(_opts):
+            raise ValueError("uniques_k must be a non-negative integer")
 
     import pysuricata.api as api
 
-    monkeypatch.setattr(api, "_EngineConfig", DummyEngineCfg, raising=True)
+    monkeypatch.setattr(api, "_EngineConfig", UnusableEngineCfg, raising=True)
 
-    cfg = ProfileConfig(
-        compute=ComputeOptions(
-            chunk_size=99,
-            numeric_sample_size=11,
-            max_uniques=22,
-            top_k=33,
-            random_seed=123,
-        )
-    )
-    eng = _to_engine_config(cfg)  # type: ignore
-    assert isinstance(eng, DummyEngineCfg)
-    assert eng.chunk_size == 99
-    assert eng.numeric_sample_k == 11
-    assert eng.uniques_k == 22
-    assert eng.topk_k == 33
-    assert eng.random_seed == 123
-    assert eng.title == "PySuricata EDA Report"  # Default title
-    assert eng.description is None  # No description provided
+    with pytest.raises(ConfigurationError, match="uniques_k"):
+        _to_engine_config(ProfileConfig())  # type: ignore
 
 
 def test_profile_and_summarize_with_pandas():
