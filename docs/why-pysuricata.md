@@ -8,6 +8,11 @@ This page explains the design decisions behind PySuricata and when it might be a
 
 ## Streaming Architecture
 
+<figure class="ps-figure" markdown="0">
+  <iframe src="../assets/diagrams/figures.html?only=memory-curve" title="Peak memory against dataset size" loading="lazy"></iframe>
+  <figcaption>Illustrative curve, not a measurement. The published figures are pending a re-run of <code>benchmarks/end_to_end.py</code> on the reference environment (<a href="https://github.com/alvarodiez20/pysuricata/issues/68">#68</a>).</figcaption>
+</figure>
+
 Most profiling tools load the entire dataset into memory to compute statistics. PySuricata takes a different approach — it processes data **one chunk at a time**, updating lightweight accumulators as it goes.
 
 ```python

@@ -9,6 +9,10 @@ How `pysuricata` profiles data efficiently and renders a self-contained HTML rep
 
 ## High-Level Pipeline
 
+<figure class="ps-figure" markdown="0">
+  <iframe src="../assets/diagrams/figures.html?only=chunk-lifecycle" title="The chunk lifecycle: which state is bounded and which is released" loading="lazy"></iframe>
+</figure>
+
 ```mermaid
 flowchart LR
     A["Data Source"] --> B["Chunk Iterator"]

@@ -30,12 +30,30 @@ repos:
       - id: ruff-format
         exclude: '\.ipynb$'
 
-  # ── Tests (fast subset — no polars/benchmark deps) ──────────
+  # ── Tests ────────────────────────────────────────────────────
+  # --no-sync is load-bearing. Without it `uv run` re-resolves and reinstalls
+  # the project on every commit, against a tree pre-commit has partially
+  # stashed -- which is slow, races the stash, and rewrites build metadata, so
+  # pre-commit reports "files were modified by this hook" and aborts a commit
+  # that had nothing wrong with it.
+  #
+  # The subset is the statistical core plus the invariants most likely to break
+  # (chunk-invariance, RNG isolation, sketch gating). ~10s. The full suite and
+  # the accuracy oracle run in CI; this is the tier that should catch a mistake
+  # before it becomes a push.
   - repo: local
     hooks:
       - id: pytest-fast
-        name: pytest (fast)
-        entry: uv run pytest tests/test_css_integrity.py tests/test_utils.py tests/test_svg_utils.py -q --no-header
+        name: pytest (accumulators + invariants)
+        entry: >-
+          uv run --no-sync pytest -q --no-header -p no:cacheprovider
+          tests/test_accumulators_core.py
+          tests/test_sketch_gating.py
+          tests/test_extremes_and_monotonicity.py
+          tests/test_datetime_vectorised.py
+          tests/test_per_accumulator_rng.py
+          tests/test_row_count_integrity.py
+          tests/test_utils.py
         language: system
         pass_filenames: false
         always_run: true

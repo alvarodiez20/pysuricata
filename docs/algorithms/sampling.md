@@ -5,64 +5,121 @@ description: Uniform random sampling from data streams
 
 # Reservoir Sampling
 
-Maintain uniform random sample of fixed size \(k\) from stream of unknown length.
+Maintain a uniform random sample of fixed size \(k\) from a stream of unknown
+length. PySuricata uses the sample for quantiles, the median, the IQR, the MAD
+and the histogram — everything that needs order statistics but cannot afford to
+hold the column in memory.
 
-## Algorithm R (Vitter)
+The guarantee is the same for both algorithms below: **every element that has
+arrived is in the reservoir with probability \(k/n\)**, independently of where it
+sat in the stream and of how the stream happened to be split into chunks. That
+last part is what makes chunked results equal unchunked ones.
+
+<figure class="ps-figure" markdown="0">
+  <iframe src="../../assets/diagrams/figures.html?only=reservoir" title="Reservoir sampling: Algorithm R versus Algorithm L" loading="lazy"></iframe>
+</figure>
+
+## Algorithm R, and why it is not what ships
+
+Algorithm R (Vitter, 1985) is the version usually taught: hold the first \(k\)
+elements, then for each subsequent arrival draw a random index and overwrite a
+slot if it falls inside the reservoir.
 
 ```python
-class ReservoirSampler:
-    def __init__(self, k):
-        self.k = k
-        self.reservoir = []
-        self.n = 0
-
-    def add(self, item):
-        self.n += 1
-        if len(self.reservoir) < self.k:
-            self.reservoir.append(item)
+# Reference only -- this is NOT what PySuricata runs. See Algorithm L below.
+def algorithm_r(stream, k):
+    reservoir = []
+    for n, item in enumerate(stream, start=1):
+        if len(reservoir) < k:
+            reservoir.append(item)
         else:
-            j = random.randint(0, self.n - 1)
-            if j < self.k:
-                self.reservoir[j] = item
+            j = random.randint(0, n - 1)
+            if j < k:
+                reservoir[j] = item
+    return reservoir
 ```
 
-## Guarantee
+It is correct, and it costs one random draw per element — 10 million draws for
+10 million rows, every one of them in Python. That is the problem.
 
-Every element has **exactly** probability \(k/n\) of being in sample.
+## Algorithm L, which is what ships
 
-## Proof Sketch
-
-Element \(i\) enters reservoir with probability \(\min(1, k/i)\).
-
-It survives subsequent updates:
-
-\[
-P(\text{survive}) = \prod_{j=i+1}^{n} \left(1 - \frac{1}{j}\right) = \frac{i}{n}
-\]
-
-Total probability:
+Algorithm L (Li, 1994) keeps the same guarantee and pays for it far less often.
+Instead of testing every arrival, it draws a *geometric skip* and jumps straight
+to the next element it will accept, never touching the ones in between. The
+number of draws falls from \(n\) to about
 
 \[
-P(\text{in sample}) = \frac{k}{i} \cdot \frac{i}{n} = \frac{k}{n}
+k \ln\!\left(\frac{n}{k}\right)
 \]
+
+— roughly 145,000 draws for 10 million rows into \(k = 20{,}000\), instead of
+10 million.
+
+`ReservoirSampler` in `pysuricata/accumulators/sketches.py` goes one step
+further. The acceptance schedule depends only on the generator and on \(k\) —
+never on the data — so there is no reason to derive it one acceptance at a time.
+Writing the recurrence out makes every term an array operation:
+
+\[
+\log W_i = \frac{1}{k}\sum_{j \le i} \log u_j
+\qquad
+\text{skip}_i = \left\lfloor \frac{\log v_i}{\log(1 - W_i)} \right\rfloor
+\qquad
+\text{index}_i = \text{base} + \sum_{j \le i}\text{skip}_j + i
+\]
+
+so the schedule is generated in blocks with `np.cumsum` rather than in a Python
+loop. `log1p(-W)` rather than `log(1 - W)`: \(W\) is close to 1 early on, where
+the subtraction would lose most of its significant digits.
+
+Because the schedule comes from the draw sequence alone, it is identical however
+the stream is later split — which is the property the accuracy oracle asserts.
+
+## Reproducibility
+
+Each sampler owns its generator:
+
+```python
+import numpy as np
+
+from pysuricata.accumulators.sketches import ReservoirSampler
+
+sampler = ReservoirSampler(k=20_000, rng=np.random.default_rng(42))
+```
+
+Nothing reads or writes the process-global RNG. Within a profiling run each
+column's seed is derived from the run seed and the **column name**, so a
+column's sample does not depend on which other columns are present or on the
+order they were built in — profiling a subset reproduces the numbers from
+profiling the whole frame.
+
+```python
+from pysuricata import profile
+from pysuricata.api import ComputeOptions, ProfileConfig
+
+config = ProfileConfig(compute=ComputeOptions(random_seed=42))
+report = profile(df, config=config)
+```
+
+Sample size is `ComputeOptions.numeric_sample_size` (default 20,000).
 
 ## Complexity
 
-- **Space**: O(k)
-- **Time per element**: O(1) amortized
-- **Uniform guarantee**: Exact
+| | Algorithm R | Algorithm L |
+|---|---|---|
+| Space | O(k) | O(k) |
+| Random draws | \(n\) | \(\approx k \ln(n/k)\) |
+| Time per element | O(1) | O(1) amortised, most elements untouched |
+| Uniform guarantee | exact | exact |
 
-## Use Cases
+## Use cases
 
-- Quantile estimation (sort sample)
+- Quantile estimation (sort the sample)
 - Histogram construction
-- Representative sampling
+- Representative row sampling
 
-## See Also
+## See also
 
-- [Sketch Algorithms](sketches.md) - Other streaming algorithms
-- [Numeric Analysis](../stats/numeric.md) - Using reservoir for quantiles
-
----
-
-*Last updated: 2025-10-12*
+- [Sketch Algorithms](sketches.md) — the bounded-memory counterparts
+- [Numeric Analysis](../stats/numeric.md) — using the reservoir for quantiles

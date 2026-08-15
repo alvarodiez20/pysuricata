@@ -116,6 +116,10 @@ def welford_finalize(n, mean, M2):
 
 ## Pébay's Parallel Merge
 
+<figure class="ps-figure" markdown="0">
+  <iframe src="../../assets/diagrams/figures.html?only=pebay-merge" title="Welford to Pébay: merging two partitions exactly" loading="lazy"></iframe>
+</figure>
+
 ### The Problem
 
 How to **combine** partial results from multiple chunks/threads?

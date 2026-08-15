@@ -79,6 +79,10 @@ def merge(kmv1, kmv2):
 
 ## Misra-Gries Algorithm
 
+<figure class="ps-figure" markdown="0">
+  <iframe src="../../assets/diagrams/figures.html?only=misra-gries" title="Misra-Gries eviction: what happens when every counter is full" loading="lazy"></iframe>
+</figure>
+
 ### Purpose
 Find top-k most frequent items (heavy hitters).
 
