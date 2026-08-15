@@ -72,19 +72,7 @@ class PandasAdapter(BaseAdapter):
         # Build accumulators
         accs = {}
 
-        # Import accumulator classes
-        from ...accumulators import (
-            BooleanAccumulator,
-            CategoricalAccumulator,
-            DatetimeAccumulator,
-            NumericAccumulator,
-        )
-        from ...accumulators.factory import (
-            build_accumulators,
-        )
-        from ...accumulators.factory import (
-            seed_for_column as _seed_for,
-        )
+        from ...accumulators.factory import build_accumulator, build_accumulators
 
         # Build accumulators using the factory
         accs = build_accumulators(kinds, config)
@@ -122,35 +110,15 @@ class PandasAdapter(BaseAdapter):
                     elif col_name in kinds.datetime:
                         kinds.datetime.remove(col_name)
 
-                    # Add to forced category
-                    if forced_type == "boolean":
-                        kinds.boolean.append(col_name)
-                        from ...accumulators import BooleanAccumulator
-
-                        accs[col_name] = BooleanAccumulator(col_name)
-                    elif forced_type == "categorical":
-                        kinds.categorical.append(col_name)
-                        from ...accumulators import CategoricalAccumulator
-
-                        accs[col_name] = CategoricalAccumulator(
-                            col_name, seed=_seed_for(config, col_name)
+                    # Add to forced category. The replacement is built through
+                    # the factory so it inherits the run's sketch sizes and
+                    # seed, rather than falling back to library defaults.
+                    if forced_type in ("boolean", "categorical", "numeric", "datetime"):
+                        getattr(kinds, forced_type).append(col_name)
+                        accs[col_name] = build_accumulator(
+                            forced_type, col_name, config
                         )
-                    elif forced_type == "numeric":
-                        kinds.numeric.append(col_name)
-                        from ...accumulators import NumericAccumulator
-
-                        accs[col_name] = NumericAccumulator(
-                            col_name, seed=_seed_for(config, col_name)
-                        )
-                    elif forced_type == "datetime":
-                        kinds.datetime.append(col_name)
-                        from ...accumulators import DatetimeAccumulator
-
-                        accs[col_name] = DatetimeAccumulator(
-                            col_name, seed=_seed_for(config, col_name)
-                        )
-
-                    accs[col_name].set_dtype(str(data[col_name].dtype))
+                        accs[col_name].set_dtype(str(data[col_name].dtype))
 
         for col_name in data.columns:
             if col_name in kinds.numeric:
@@ -167,10 +135,7 @@ class PandasAdapter(BaseAdapter):
                     kinds.numeric.remove(col_name)
                     kinds.boolean.append(col_name)
 
-                    # Replace accumulator
-                    from ...accumulators import BooleanAccumulator
-
-                    accs[col_name] = BooleanAccumulator(col_name)
+                    accs[col_name] = build_accumulator("boolean", col_name, config)
                     accs[col_name].set_dtype(str(data[col_name].dtype))
                 elif first_chunk_is_whole:
                     # Reclassification reads the distinct-value ratio of this
@@ -204,11 +169,8 @@ class PandasAdapter(BaseAdapter):
                             kinds.numeric.remove(col_name)
                             kinds.categorical.append(col_name)
 
-                            # Replace accumulator
-                            from ...accumulators import CategoricalAccumulator
-
-                            accs[col_name] = CategoricalAccumulator(
-                                col_name, seed=_seed_for(config, col_name)
+                            accs[col_name] = build_accumulator(
+                                "categorical", col_name, config
                             )
                             accs[col_name].set_dtype(str(data[col_name].dtype))
                     except Exception as e:

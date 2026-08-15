@@ -7,6 +7,27 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.39] - 2026-08-15
+
+Six issues (#36, #60, #61, #67, #89, and a bug found while fixing #61) with one
+thing in common: a code path nothing ran. `merge()` exists for distributed use
+and the pipeline never calls it; the adapters replace an accumulator only for
+forced or reclassified columns; the config fallback fires only when validation
+fails.
+
+### Fixed
+- **`merge()` lost most of what it was merging** (#67). It replayed one side's *reservoir buffer* through `add()`, treating 20,000 retained values as a 20,000-value stream. Merging a 90,000-row shard into a 60,000-row one reported a **median of 0.17 where the true value was 4.03**, and a distinct count of 83,514 against a true 154,923. The top-k counters were not merged at all, so a merged column reported only the left-hand side's common values.
+
+  Every sketch involved composes, and now does so directly: KMV merges **exactly** (the k smallest hashes of the union are always a subset of the two sides' k-smallest sets), Misra-Gries merges by summing counters and subtracting the (k+1)-th largest, which preserves the frequency-error bound, and the reservoir merges by weight so each side appears in proportion to what it *saw* rather than what it retained. Monotonicity is deliberately not merged — it is a claim about arrival order, and two shards say nothing about how they would interleave.
+- **The categorical merge was worse**, on the stated belief that "KMV sketches cannot be easily merged". It replayed one `add()` call per counted occurrence — merging a value seen ten million times ran ten million Python calls — and seeded the distinct estimate from at most 100 top-k keys. The case- and whitespace-folded sketches behind the variant flags were not merged at all.
+- **`topk_k` never reached numeric columns** (found while fixing #61). `AccumulatorConfig.from_legacy_config` set `top_k_size` on the categorical config and omitted it from the numeric one, so the "Common values" table on a numeric card always kept 50 counters regardless of what the caller asked for.
+- **Forced and reclassified columns fell back to library defaults** (#61). The twelve sites that replace an accumulator constructed it with no config, so `numeric_sample_k`, `uniques_k` and `topk_k` were silently discarded for exactly those columns — a user asking for `uniques_k=8192` got 2,048, with nothing in the report saying this column was measured to a different accuracy than its neighbours. They now go through one `build_accumulator()` in the factory.
+- **A config value that failed validation was discarded rather than reported** (#89). `_to_engine_config` wrapped `from_options` in a bare `except Exception` with a fallback that mapped a subset of the fields by hand, so a bad value produced not an error but a **different configuration** — one that never set `columns`, the correlation options, `progress`, `engine` or any boolean-detection option. A caller asking for one column got the whole frame and a successful-looking run. The fallback is gone; the failure now reaches the caller as `ConfigurationError`.
+- **`outlier_methods` did nothing** (#60). It was read by a detector that was never called, while `finalize()` always computed both IQR and MAD. It is now honoured.
+
+### Changed
+- **Missing cells come from the accumulators** (#36) rather than from an `isnull().sum().sum()` over every chunk — a second pass over every cell for a number the accumulators had just counted. The first chunk paid for it twice. Totals are unchanged, and asserted equal to a full pass at three chunk sizes.
+
 ## [0.0.38] - 2026-08-15
 
 UX-5 (#76). The roadmap's differentiator: every existing gate — Great

@@ -67,6 +67,54 @@ def seed_for_column(cfg: Any, column: str) -> int | None:
     return derive_column_seed(getattr(cfg, "random_seed", None), column)
 
 
+def build_accumulator(kind: str, name: str, cfg: Any = None) -> Any:
+    """Build one accumulator, configured exactly as `build_accumulators` would.
+
+    The adapters replace an accumulator whenever a column is forced to a type or
+    reclassified — a numeric column that turns out to hold 0/1, or few enough
+    distinct integers to be labels. Those twelve call sites used to construct
+    the replacement with no config at all, so `numeric_sample_k`, `uniques_k`
+    and `topk_k` were silently discarded for exactly those columns: a user
+    asking for `uniques_k=8192` got 2,048 on them, with nothing in the report
+    saying this column was measured to a different accuracy than its
+    neighbours.
+
+    Going through one function rather than twelve literals is what keeps that
+    from happening again the next time a constructor gains an argument.
+
+    Args:
+        kind: One of `numeric`, `categorical`, `boolean`, `datetime`.
+        name: Column name. The sampler seed is derived from it.
+        cfg: An `EngineConfig`, or None for defaults.
+
+    Returns:
+        The accumulator.
+
+    Raises:
+        ValueError: If `kind` is not a known column kind.
+    """
+    acc_cfg = (
+        AccumulatorConfig.from_legacy_config(cfg)
+        if cfg is not None
+        else AccumulatorConfig()
+    )
+    seed = derive_column_seed(acc_cfg.random_seed, name)
+
+    if kind == "numeric":
+        return NumericAccumulator(name=name, config=acc_cfg.numeric, seed=seed)
+    if kind == "categorical":
+        return CategoricalAccumulator(name=name, config=acc_cfg.categorical, seed=seed)
+    if kind == "boolean":
+        # No sampler, so no seed.
+        return BooleanAccumulator(name=name, config=acc_cfg.boolean)
+    if kind == "datetime":
+        return DatetimeAccumulator(name=name, config=acc_cfg.datetime, seed=seed)
+    raise ValueError(
+        f"unknown column kind {kind!r}; expected numeric, categorical, "
+        "boolean or datetime"
+    )
+
+
 def build_accumulators(
     kinds: ColumnKinds,
     cfg: EngineConfig,

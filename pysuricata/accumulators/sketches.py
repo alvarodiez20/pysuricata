@@ -284,6 +284,45 @@ class KMV:
             return n
         return max(n, int(round((self.k - 1) / t)))
 
+    def merge(self, other: KMV) -> None:
+        """Fold another sketch in, exactly.
+
+        KMV composes: the k smallest hashes of the union are always a subset of
+        the two sides' k-smallest sets, because each side retains *everything*
+        below its own threshold. So the merged estimate equals the estimate of
+        a single sketch fed both streams — no approximation is introduced by
+        the merge itself, only the sketch's own error.
+
+        That is the reason to do this rather than replay one side's reservoir
+        sample into the other, which is what `NumericAccumulator.merge` used to
+        do: a sample of 20,000 rows cannot represent the distinct count of ten
+        million, so the merged estimate was biased low by whatever the sampling
+        ratio happened to be.
+
+        Args:
+            other: The sketch to fold in. Left unchanged.
+        """
+        if other is self or (not other._values and not other._exact_counter):
+            return
+
+        # Both sides still counting exactly, and the union still fits: stay
+        # exact. Being exact is not a performance detail here -- it is the
+        # difference between reporting 7 distinct values and reporting ~7.
+        if self._use_exact and other._use_exact:
+            combined = dict(self._exact_counter)
+            for h, count in other._exact_counter.items():
+                combined[h] = combined.get(h, 0) + count
+            if len(combined) <= self._max_exact_tracking:
+                self._exact_counter = combined
+                return
+
+        if self._use_exact:
+            self._spill_exact_to_kmv()
+        # Exactly one of the two is populated on the other side: spilling clears
+        # the counter, so this is the whole of what it holds either way.
+        incoming = list(other._exact_counter) + list(other._values)
+        self._batch_add_hashes(np.asarray(incoming, dtype=np.uint64))
+
     def get_memory_usage(self) -> int:
         """Get approximate memory usage in bytes for monitoring."""
         memory = 0
@@ -439,6 +478,61 @@ class ReservoirSampler:
     def values(self) -> list[float]:
         return self._buf
 
+    def merge(self, other: ReservoirSampler) -> None:
+        """Combine two reservoirs into one uniform sample of the union.
+
+        The weights matter and are the whole point. `NumericAccumulator.merge`
+        used to replay the other side's *buffer* through `add()`, which treats
+        20,000 retained values as if they were the entire stream: merging a
+        10-million-row shard into a 10-thousand-row one produced a sample in
+        which the small shard was over-represented five-hundredfold, and every
+        quantile drawn from it was wrong.
+
+        Two cases:
+
+        * A side that has seen fewer than k values **is** its whole stream, so
+          replaying it is exact. That covers the small-shard case entirely.
+        * When both are full, each slot takes the other side's value with
+          probability `n_other / (n_self + n_other)`. Each buffer is already a
+          uniform sample of its own stream, so the result is a uniform sample of
+          the union.
+
+        Args:
+            other: The reservoir to fold in. Left unchanged.
+        """
+        if other is self or other._seen == 0:
+            return
+
+        # The other side is complete: replay it, weights and all.
+        if len(other._buf) < other.k:
+            for value in other._buf:
+                self.add(value)
+            return
+
+        # This side is complete: adopt the other's sample and its stream
+        # position, then replay ours into it. Same argument, mirrored.
+        if len(self._buf) < self.k:
+            mine = list(self._buf)
+            self._buf = list(other._buf)
+            self._seen = other._seen
+            self._logw = other._logw
+            self._next = other._next
+            self._sched_idx = other._sched_idx.copy()
+            self._sched_slot = other._sched_slot.copy()
+            self._sched_pos = other._sched_pos
+            for value in mine:
+                self.add(value)
+            return
+
+        total = self._seen + other._seen
+        take_other = self._rng.random(len(self._buf)) >= (self._seen / total)
+        for slot in np.flatnonzero(take_other):
+            self._buf[int(slot)] = other._buf[int(slot)]
+        self._seen = total
+        # The stream position jumped, so the acceptance schedule -- which is
+        # indexed against _seen -- has to be rebuilt from the new position.
+        self._start_skipping()
+
 
 class MisraGries:
     """Heavy hitters (top-K) with deterministic memory.
@@ -504,6 +598,38 @@ class MisraGries:
                         for k, v in self.counters.items()
                         if v - min_count > 0
                     }
+
+    def merge(self, other: MisraGries) -> None:
+        """Fold another summary in, keeping the frequency-error guarantee.
+
+        Misra-Gries does not merge exactly — nothing with k counters can. The
+        standard result (Agarwal et al., 2012) is that summing the counters and
+        subtracting the (k+1)-th largest resulting count preserves the bound,
+        at a slightly worse constant: each reported count still undercounts by
+        at most `n/(k+1)` of the *combined* stream, never overcounts.
+
+        Subtracting is what pays for the merge. Dropping the tail instead would
+        leave the survivors' counts too high, which is the one direction the
+        guarantee does not allow.
+
+        Args:
+            other: The summary to fold in. Left unchanged.
+        """
+        if other is self or not other.counters:
+            return
+
+        combined = dict(self.counters)
+        for key, count in other.counters.items():
+            combined[key] = combined.get(key, 0) + count
+
+        if len(combined) > self.k:
+            delta = sorted(combined.values(), reverse=True)[self.k]
+            combined = {
+                key: count - delta
+                for key, count in combined.items()
+                if count - delta > 0
+            }
+        self.counters = combined
 
     def items(self) -> list[tuple[Any, int]]:
         # items are approximate; a second pass could refine if needed
@@ -821,6 +947,47 @@ class StreamingHistogram:
                 new_bin_idx = np.digitize(old_center, self.bin_edges) - 1
                 if 0 <= new_bin_idx < len(self.counts):
                     self.counts[new_bin_idx] += count
+
+    def merge(self, other: StreamingHistogram) -> None:
+        """Fold another histogram in, mapping its bins by their centres.
+
+        This is the same bin-centre approximation `_expand_range` already
+        applies whenever the observed range grows: a bin's count is reassigned
+        as though every value in it sat at the midpoint. The error on any one
+        value is at most half a bin width; the total count stays exact.
+
+        Args:
+            other: The histogram to fold in. Left unchanged.
+        """
+        if other is self or not other._initialized or other.total_count == 0:
+            return
+
+        if not self._initialized:
+            self.bins = other.bins
+            self.bin_edges = list(other.bin_edges)
+            self.counts = list(other.counts)
+            self.total_count = other.total_count
+            self.min_val = other.min_val
+            self.max_val = other.max_val
+            self._initialized = True
+            return
+
+        if other.min_val < self.min_val or other.max_val > self.max_val:
+            self._expand_range(
+                min(other.min_val, self.min_val), max(other.max_val, self.max_val)
+            )
+
+        if not self.bin_edges or not self.counts:
+            return
+
+        for i, count in enumerate(other.counts):
+            if count <= 0 or i >= len(other.bin_edges) - 1:
+                continue
+            centre = (other.bin_edges[i] + other.bin_edges[i + 1]) / 2.0
+            idx = int(np.digitize(centre, self.bin_edges)) - 1
+            idx = min(max(idx, 0), len(self.counts) - 1)
+            self.counts[idx] += count
+        self.total_count += other.total_count
 
     def get_histogram_data(self) -> tuple[list[float], list[int], int]:
         """Get histogram data for rendering.

@@ -192,6 +192,10 @@ class AccumulatorConfig:
             numeric=NumericConfig(
                 sample_size=getattr(cfg, "numeric_sample_k", 20_000),
                 uniques_sketch_size=getattr(cfg, "uniques_k", 2_048),
+                # Was omitted, so `topk_k` reached categorical columns and not
+                # numeric ones: the "Common values" table on a numeric card
+                # always held 50 counters no matter what the caller asked for.
+                top_k_size=getattr(cfg, "topk_k", 50),
             ),
             categorical=CategoricalConfig(
                 top_k_size=getattr(cfg, "topk_k", 50),

@@ -566,60 +566,34 @@ def _read_path(path: str | os.PathLike) -> pd.DataFrame:
 def _to_engine_config(cfg: ProfileConfig) -> _EngineConfig:
     """Convert public configuration to internal engine configuration.
 
-    This function translates the user-friendly public configuration into the
-    internal engine configuration format.
+    Args:
+        cfg: The public configuration.
+
+    Returns:
+        The engine configuration.
+
+    Raises:
+        ConfigurationError: If a setting is not one the engine can accept. The
+            failure has to reach the caller: this used to be a bare
+            ``except Exception`` around ``from_options`` with a fallback that
+            mapped a *subset* of the fields by hand, so a value that failed
+            validation produced not an error but a **different configuration**
+            -- silently dropping ``columns``, the correlation options,
+            ``progress``, ``engine`` and every boolean-detection option along
+            with the offending one. A caller who asked for one column got the
+            whole frame and a successful-looking run.
     """
     compute = cfg.compute
     render = cfg.render
 
-    # Use the from_options method if available
     try:
         engine_config = _EngineConfig.from_options(compute)
-        # Add render options
-        engine_config.title = render.title or "PySuricata EDA Report"
-        engine_config.description = render.description
-        return engine_config
-    except Exception:
-        # Fallback: direct mapping with checkpointing support
-        # Only include checkpointing parameters if they exist in the config
-        # Handle chunk_size=None to disable chunking (pass 0 to engine)
-        engine_chunk_size = 0 if compute.chunk_size is None else compute.chunk_size
+    except (TypeError, ValueError) as e:
+        raise ConfigurationError(f"invalid compute options: {e}") from e
 
-        config_kwargs = {
-            "chunk_size": engine_chunk_size,
-            "numeric_sample_k": compute.numeric_sample_k,
-            "uniques_k": compute.uniques_k,
-            "topk_k": compute.topk_k,
-            "random_seed": compute.random_seed,
-            "title": render.title or "PySuricata EDA Report",
-            "description": render.description,
-        }
-
-        # Add checkpointing parameters only if they exist in both compute and _EngineConfig
-        checkpoint_params = [
-            "log_every_n_chunks",
-            "checkpoint_every_n_chunks",
-            "checkpoint_dir",
-            "checkpoint_prefix",
-            "checkpoint_write_html",
-            "checkpoint_max_to_keep",
-        ]
-
-        # Get the constructor signature to check which parameters are supported
-        import inspect
-
-        try:
-            sig = inspect.signature(_EngineConfig.__init__)
-            supported_params = set(sig.parameters.keys()) - {"self"}
-
-            for param in checkpoint_params:
-                if hasattr(compute, param) and param in supported_params:
-                    config_kwargs[param] = getattr(compute, param)
-        except Exception:
-            # If we can't inspect the signature, just use the basic parameters
-            pass
-
-        return _EngineConfig(**config_kwargs)
+    engine_config.title = render.title or "PySuricata EDA Report"
+    engine_config.description = render.description
+    return engine_config
 
 
 # The six options people actually reach for, mapped to where they live. The
