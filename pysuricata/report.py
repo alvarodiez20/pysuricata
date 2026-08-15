@@ -371,7 +371,7 @@ class ReportOrchestrator:
                     "top_values": (
                         [(float(v), int(c)) for v, c in s.top_values]
                         if s.top_values
-                        else ([] if acc._track_top_k else None)
+                        else ([] if acc.tracks_top_values else None)
                     ),
                     # Everything below is shown on the numeric card and used to
                     # be reachable only by reading the HTML.

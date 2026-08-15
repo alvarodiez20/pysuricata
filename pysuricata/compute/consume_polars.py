@@ -179,7 +179,9 @@ def consume_chunk_polars(
                 )
             continue
         s = df[name]
-        if isinstance(acc, NumericAccumulator):
+        # Dispatch on `kind`, not on type: see the note in consume.py.
+        kind = acc.kind
+        if kind == "numeric":
             arr = _to_numeric_array_polars(s)
             acc.update(arr)
             # Track memory usage using cached per-column estimate
@@ -202,14 +204,14 @@ def consume_chunk_polars(
                         acc.update_extremes(pairs_min, pairs_max)
             except Exception:
                 pass
-        elif isinstance(acc, BooleanAccumulator):
+        elif kind == "boolean":
             acc.update(_to_bool_array_polars(s))
             # Track memory usage using cached per-column estimate
             try:
                 acc.add_mem(column_mem_cache.get(name, 0))
             except Exception:
                 pass
-        elif isinstance(acc, DatetimeAccumulator):
+        elif kind == "datetime":
             acc.update(_to_datetime_ns_array_polars(s))
             # Track memory usage using cached per-column estimate
             try:

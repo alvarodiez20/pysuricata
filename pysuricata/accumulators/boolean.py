@@ -14,6 +14,7 @@ from typing import Any
 import numpy as np
 
 from .config import BooleanConfig
+from .protocols import AccumulatorKind, PicklableAccumulator
 
 
 @dataclass
@@ -36,7 +37,7 @@ class BooleanSummary:
     entropy: float = 0.0
 
 
-class BooleanAccumulator:
+class BooleanAccumulator(PicklableAccumulator):
     """Production-grade boolean accumulator optimized for big data.
 
     This accumulator uses vectorized numpy operations for maximum performance
@@ -60,6 +61,16 @@ class BooleanAccumulator:
         self.false_n = 0
         self._dtype_str = "boolean"
         self._mem_bytes = 0
+
+    @property
+    def kind(self) -> AccumulatorKind:
+        """Which column kind this accumulator handles.
+
+        Read instead of `isinstance`: a native accumulator will not be an
+        instance of this class, and the isinstance chain's order was
+        load-bearing without saying so anywhere.
+        """
+        return "boolean"
 
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string.

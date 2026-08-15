@@ -237,19 +237,23 @@ def consume_chunk_pandas(
         # Use cached memory estimate
         estimated_memory = int(_memory_cache[cache_key] * len(s))
 
-        if isinstance(acc, NumericAccumulator):
+        # Dispatch on the accumulator's own `kind` rather than on its type. A
+        # PyO3 accumulator satisfies no `isinstance` check here, and the order
+        # of the old chain was load-bearing without saying so.
+        kind = acc.kind
+        if kind == "numeric":
             arr = _to_numeric_array_pandas(s)
             # row_offset makes the accumulator's extreme-value indices global.
             acc.update(arr, row_offset=row_offset)
             acc.add_mem(estimated_memory)
-        elif isinstance(acc, BooleanAccumulator):
+        elif kind == "boolean":
             arr = _to_bool_array_pandas(s)
             acc.update(arr)
             acc.add_mem(estimated_memory)
-        elif isinstance(acc, DatetimeAccumulator):
+        elif kind == "datetime":
             arr = _to_datetime_ns_array_pandas(s)
             acc.update(arr)
             acc.add_mem(estimated_memory)
-        elif isinstance(acc, CategoricalAccumulator):
+        elif kind == "categorical":
             acc.update(_to_categorical_iter_pandas(s))
             acc.add_mem(estimated_memory)

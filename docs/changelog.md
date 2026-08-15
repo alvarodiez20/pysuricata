@@ -7,6 +7,23 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.45] - 2026-08-16
+
+#64 and #105. No behaviour change: the accumulator boundary becomes something a
+second implementation could satisfy, and the options grow a shape.
+
+### Added
+- **`pysuricata.accumulators.protocols`** now describes the surface the engine may use: a `StreamingAccumulator` protocol, an `AccumulatorKind` tag, and an explicit pickle protocol. This is the prerequisite work for the native core (#44), and it is not tidiness — a PyO3 accumulator cannot satisfy `isinstance(acc, NumericAccumulator)`, cannot expose a `_uniques` attribute holding a Python `KMV`, and cannot be pickled by copying `__dict__`. Each of those was how something outside the accumulator package reached inside it.
+  - **Dispatch reads `acc.kind`** instead of testing types. The old `isinstance` chain's *order* was load-bearing without saying so anywhere.
+  - **`tracks_top_values`** replaces the report layer reading `acc._track_top_k`, and the render layer reads `unique_est` — a property on every kind — instead of `acc._uniques.estimate()`.
+  - **`__reduce__`, `__getstate__` and `__setstate__`** on all four accumulators, round-tripped in tests. Checkpointing pickles the accumulator dict, so a native type without an explicit reduce breaks checkpointing at the *end* of a long run.
+
+  The tests are written against a fake accumulator that implements the protocol and **inherits nothing**, which is as close as a Python test gets to proving the boundary would hold for a type from another language.
+- **`ComputeOptions.checkpoint`** groups the five checkpointing settings under shorter names — `options.checkpoint.every_n_chunks` — as a lens on the same fields rather than a copy, so nothing that sets them directly breaks and the two cannot disagree.
+
+### Changed
+- **An unknown keyword now points at the one that works.** Someone who read `ComputeOptions` and typed the field name they found there was told it was unknown, which is true and useless: `numeric_sample_size=5000` now answers *"the keyword for it is `sample=`"*, and a field with no keyword form says to set it through `config=`.
+
 ## [0.0.44] - 2026-08-16
 
 #98, #100, #101 and #102. None of these is a wrong number; all of them cost

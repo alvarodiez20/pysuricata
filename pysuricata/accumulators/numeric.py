@@ -21,6 +21,7 @@ from .algorithms import (
     StreamingMoments,
 )
 from .config import NumericConfig
+from .protocols import AccumulatorKind, PicklableAccumulator
 from .sketches import KMV, MisraGries, ReservoirSampler, StreamingHistogram, mad
 
 # Minimum share of a column's distinct values the top-k counters must be able to
@@ -123,7 +124,7 @@ class NumericSummary:
     corr_threshold: float = 0.5  # Threshold used for correlation filtering
 
 
-class NumericAccumulator:
+class NumericAccumulator(PicklableAccumulator):
     """Production-grade numeric accumulator optimized for big data analytics.
 
     This accumulator leverages advanced algorithmic composition and vectorized operations
@@ -214,6 +215,27 @@ class NumericAccumulator:
 
         self._current_chunk_missing = 0  # Missing in current chunk
         self._current_chunk_rows = 0  # Total rows in current chunk
+
+    @property
+    def kind(self) -> AccumulatorKind:
+        """Which column kind this accumulator handles.
+
+        Read instead of `isinstance`: a native accumulator will not be an
+        instance of this class, and the isinstance chain's order was
+        load-bearing without saying so anywhere.
+        """
+        return "numeric"
+
+    @property
+    def tracks_top_values(self) -> bool:
+        """Whether the top-k sketch is still being fed for this column.
+
+        The payload distinguishes "tracked, nothing frequent enough" from "not
+        tracked at all" (#59), and that distinction lives here rather than in a
+        `_track_top_k` attribute the report layer reads directly -- a native
+        accumulator has no such attribute to read.
+        """
+        return bool(self._track_top_k)
 
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string efficiently.

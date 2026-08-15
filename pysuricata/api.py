@@ -211,6 +211,55 @@ class Report:
         return self.display_in_notebook(width, height)
 
 
+class CheckpointView:
+    """The checkpointing settings of a `ComputeOptions`, under shorter names.
+
+    Reads and writes go straight through to the underlying fields, so this is a
+    lens on the same state rather than a copy of it -- a copy would be a second
+    place for the settings to live, and they would disagree the first time
+    someone set one directly.
+    """
+
+    __slots__ = ("_options",)
+
+    _FIELDS = {
+        "every_n_chunks": "checkpoint_every_n_chunks",
+        "dir": "checkpoint_dir",
+        "prefix": "checkpoint_prefix",
+        "write_html": "checkpoint_write_html",
+        "max_to_keep": "checkpoint_max_to_keep",
+    }
+
+    def __init__(self, options: ComputeOptions) -> None:
+        object.__setattr__(self, "_options", options)
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            return getattr(self._options, self._FIELDS[name])
+        except KeyError:
+            raise AttributeError(
+                f"no checkpoint setting {name!r}; "
+                f"try one of: {', '.join(sorted(self._FIELDS))}"
+            ) from None
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        try:
+            field_name = self._FIELDS[name]
+        except KeyError:
+            raise AttributeError(
+                f"no checkpoint setting {name!r}; "
+                f"try one of: {', '.join(sorted(self._FIELDS))}"
+            ) from None
+        setattr(self._options, field_name, value)
+
+    def __repr__(self) -> str:
+        settings = ", ".join(
+            f"{short}={getattr(self._options, full)!r}"
+            for short, full in self._FIELDS.items()
+        )
+        return f"CheckpointSettings({settings})"
+
+
 @dataclass
 class ComputeOptions:
     """Configuration for data processing and analysis.
@@ -302,6 +351,10 @@ class ComputeOptions:
 
     # Logging and checkpointing
     log_every_n_chunks: int = 1
+    # Five of the twenty-two fields serve one concern most users never touch.
+    # They stay here as fields for compatibility -- removing them would break
+    # existing code for no gain -- and are also reachable as a named group via
+    # the `checkpoint` view below, which is what makes the shape legible.
     checkpoint_every_n_chunks: int = 0  # 0 disables checkpointing
     checkpoint_dir: str | None = None
     checkpoint_prefix: str = "pysuricata_ckpt"
@@ -392,6 +445,23 @@ class ComputeOptions:
             raise ValueError("corr_max_cols must be positive")
         if self.corr_max_per_col <= 0:
             raise ValueError("corr_max_per_col must be positive")
+
+    @property
+    def checkpoint(self) -> CheckpointView:
+        """The five checkpointing settings as one named group.
+
+        A view rather than a nested dataclass: the fields stay where they are,
+        so nothing existing breaks, while `options.checkpoint.every_n_chunks`
+        gives the concern a name and keeps it out of the way of the settings
+        people actually reach for.
+
+        ```python
+        options = ComputeOptions()
+        options.checkpoint.every_n_chunks = 10
+        options.checkpoint.dir = "./checkpoints"
+        ```
+        """
+        return CheckpointView(self)
 
     # --- Engine-aligned accessors (for backward compatibility) ---
     @property
@@ -689,6 +759,19 @@ _KEYWORD_OPTIONS = {
     "progress": ("compute", "progress"),
 }
 
+# Field names on the options dataclasses, mapped to the keyword that sets them.
+# Somebody who read `ComputeOptions` and typed the field name they found there
+# was told it was an unknown option, which is true and useless -- the answer is
+# the short name, and the error should say it rather than making them guess
+# which of seven keywords corresponds to the field they are looking at.
+_OPTION_ALIASES = {
+    "numeric_sample_size": "sample",
+    "compute_correlations": "correlations",
+    "random_seed": "seed",
+    "max_uniques": None,
+    "top_k": None,
+}
+
 # One word for an intent. ydata-profiling's single most-used API feature is
 # minimal=True, for exactly this reason.
 _PRESETS = {
@@ -710,6 +793,30 @@ _PRESETS = {
         }
     },
 }
+
+
+def _unknown_option_message(unknown: list[str]) -> str:
+    """Explain a rejected keyword, pointing at the one that works.
+
+    Args:
+        unknown: The keywords that were not recognised.
+
+    Returns:
+        The error message.
+    """
+    lines = [f"Unknown option(s): {', '.join(unknown)}."]
+    for name in unknown:
+        if name in _OPTION_ALIASES:
+            keyword = _OPTION_ALIASES[name]
+            lines.append(
+                f"{name} is a ComputeOptions field; the keyword for it is {keyword}=."
+                if keyword
+                else f"{name} is a ComputeOptions field with no keyword form; "
+                "set it through config=ProfileConfig(compute=ComputeOptions(...))."
+            )
+    lines.append(f"Available: {', '.join(sorted(_KEYWORD_OPTIONS))}.")
+    lines.append("Anything else goes through config=ProfileConfig(...).")
+    return " ".join(lines)
 
 
 def _resolve_config(
@@ -758,11 +865,7 @@ def _resolve_config(
 
     unknown = set(options) - set(_KEYWORD_OPTIONS)
     if unknown:
-        raise ConfigurationError(
-            f"Unknown option(s): {', '.join(sorted(unknown))}. "
-            f"Available: {', '.join(sorted(_KEYWORD_OPTIONS))}. "
-            "Anything else goes through config=ProfileConfig(...)."
-        )
+        raise ConfigurationError(_unknown_option_message(sorted(unknown)))
 
     compute: dict[str, Any] = {}
     render: dict[str, Any] = {}

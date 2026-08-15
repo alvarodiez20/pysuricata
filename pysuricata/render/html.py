@@ -85,17 +85,14 @@ def render_html_snapshot(
     constant_cols = 0
     high_card_cols = 0
     for name, (kind, acc) in kinds_map.items():
-        if kind in ("numeric", "categorical"):
-            u = (
-                acc._uniques.estimate()
-                if hasattr(acc, "_uniques")
-                else getattr(acc, "unique_est", 0)
-            )
-        elif kind == "datetime":
-            u = acc.unique_est
-        else:
-            present = (acc.true_n > 0) + (acc.false_n > 0)
-            u = int(present)
+        # `unique_est` is a property on every accumulator kind, so this needs no
+        # branch and no reach into `_uniques` -- which a native accumulator
+        # could not expose with those names and semantics anyway (#64).
+        u = int(getattr(acc, "unique_est", 0))
+        if kind == "boolean":
+            # A boolean column reports 2 by definition; what the constant-column
+            # count wants to know is how many values actually turned up.
+            u = int((acc.true_n > 0) + (acc.false_n > 0))
         _ = getattr(acc, "count", 0) + getattr(acc, "missing", 0)
         if u <= 1:
             constant_cols += 1
