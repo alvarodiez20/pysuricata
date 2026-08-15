@@ -74,7 +74,10 @@ class NumericCardRenderer(CardRenderer):
             missing_table,
         )
 
-        controls_html = self._build_controls_section(col_id)
+        controls_html = self._build_controls_section(
+            col_id,
+            log_default=bool(getattr(quality_flags, "log_scale_suggested", False)),
+        )
 
         return self._assemble_card(
             col_id,
@@ -1634,12 +1637,25 @@ class NumericCardRenderer(CardRenderer):
         </section>
         """
 
-    def _build_controls_section(self, col_id: str) -> str:
-        """Build controls section."""
+    def _build_controls_section(self, col_id: str, log_default: bool = False) -> str:
+        """Build controls section.
+
+        Args:
+            col_id: Sanitised column id, used for the details toggle target.
+            log_default: Whether the log-scale heuristic fired for this column.
+                When it did, the chart opens on a log axis. The card was
+                computing the right answer and then drawing the wrong picture:
+                a lognormal column labelled *Log-scale?* rendered on a linear
+                axis is one bar at the left edge, which teaches the reader that
+                the chips are cosmetic.
+        """
         bin_buttons = " ".join(
             f'<button type="button" class="btn-soft{" active" if b == 25 else ""}" data-bin="{b}">{b}</button>'
             for b in self.hist_config.bin_options
         )
+        scale = "log" if log_default else "lin"
+        lin_active = "" if log_default else " active"
+        log_active = " active" if log_default else ""
 
         return f"""
         <div class="card-controls" role="group" aria-label="Numeric controls">
@@ -1647,12 +1663,12 @@ class NumericCardRenderer(CardRenderer):
                 <button type="button" class="details-toggle btn-soft" aria-controls="{col_id}-details" aria-expanded="false">Details</button>
             </div>
             <div class="controls-slot">
-                <div class="hist-controls" data-scale="lin" data-bin="25">
+                <div class="hist-controls" data-scale="{scale}" data-bin="25">
                     <div class="center-controls">
                         <span>Scale:</span>
                         <div class="scale-group">
-                            <button type="button" class="btn-soft active" data-scale="lin">Linear</button>
-                            <button type="button" class="btn-soft" data-scale="log">Log</button>
+                            <button type="button" class="btn-soft{lin_active}" data-scale="lin">Linear</button>
+                            <button type="button" class="btn-soft{log_active}" data-scale="log">Log</button>
                         </div>
                         <span>Bins:</span>
                         <div class="bin-group">{bin_buttons}</div>
