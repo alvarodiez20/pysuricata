@@ -148,8 +148,8 @@ def stream_duckdb(relation: Any, *, batch_size: int | None = None):
     ```
 
     Args:
-        relation: A DuckDB relation or result, i.e. anything with
-            `fetch_record_batch`.
+        relation: A DuckDB relation or result — anything with
+            `to_arrow_reader`, or `fetch_record_batch` on older DuckDB.
         batch_size: Rows per batch.
 
     Yields:
@@ -158,15 +158,27 @@ def stream_duckdb(relation: Any, *, batch_size: int | None = None):
     Raises:
         TypeError: If the object cannot produce Arrow batches.
     """
-    fetch = getattr(relation, "fetch_record_batch", None)
-    if not callable(fetch):
+    fetch = _duckdb_reader(relation)
+    if fetch is None:
         raise TypeError(
             f"{type(relation).__name__} is not a DuckDB relation. Pass the "
             "result of con.sql(...) or con.execute(...)."
         )
-    reader = fetch(batch_size or DEFAULT_BATCH_ROWS)
-    for batch in reader:
+    for batch in fetch(batch_size or DEFAULT_BATCH_ROWS):
         yield batch.to_pandas()
+
+
+def _duckdb_reader(relation: Any):
+    """The relation's batch-reader method, whichever name this DuckDB uses.
+
+    `fetch_record_batch` is deprecated in favour of `to_arrow_reader`; both are
+    accepted so the reader works either side of that rename.
+    """
+    for name in ("to_arrow_reader", "fetch_record_batch"):
+        method = getattr(relation, name, None)
+        if callable(method):
+            return method
+    return None
 
 
 def is_arrow_source(obj: Any) -> bool:
@@ -205,11 +217,11 @@ def is_arrow_source(obj: Any) -> bool:
 def is_duckdb_relation(obj: Any) -> bool:
     """Whether `stream_duckdb` can read this object.
 
-    Duck-typed on `fetch_record_batch`, which is specific enough to be safe and
-    survives DuckDB moving its classes between modules -- they live in `_duckdb`
-    rather than `duckdb`, which a module-name check gets wrong.
+    Duck-typed on the batch-reader method, which is specific enough to be safe
+    and survives DuckDB moving its classes between modules -- they live in
+    `_duckdb` rather than `duckdb`, which a module-name check gets wrong.
     """
-    return callable(getattr(obj, "fetch_record_batch", None))
+    return _duckdb_reader(obj) is not None
 
 
 def first_batch_or_stream(batches: Iterator[Any]) -> Any:

@@ -16,6 +16,10 @@ Two properties are tested hardest:
 
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -26,6 +30,7 @@ from pysuricata.sources import (
     is_arrow_source,
     is_duckdb_relation,
     stream_arrow,
+    stream_duckdb,
     stream_parquet,
 )
 
@@ -245,6 +250,108 @@ class TestDuckDB:
 
     def test_a_dataframe_is_not(self):
         assert not is_duckdb_relation(pd.DataFrame({"a": [1]}))
+
+
+class TestTheReadersDirectly:
+    """The branches integration tests never reach: bad input, and a missing
+    optional dependency. Codecov flagged these on #96, and they are exactly the
+    paths a user hits first when something is wrong."""
+
+    def test_stream_parquet_on_a_missing_file(self, tmp_path):
+        with pytest.raises(FileNotFoundError, match="not found"):
+            next(stream_parquet(tmp_path / "absent.parquet"))
+
+    def test_stream_duckdb_on_something_that_is_not_a_relation(self):
+        with pytest.raises(TypeError, match="not a DuckDB relation"):
+            next(stream_duckdb(pd.DataFrame({"a": [1]})))
+
+    def test_stream_duckdb_yields_frames(self, parquet_path):
+        duckdb = pytest.importorskip("duckdb")
+        con = duckdb.connect()
+        relation = con.sql(f"SELECT * FROM '{parquet_path}'")
+        batches = list(stream_duckdb(relation, batch_size=5_000))
+        assert sum(len(b) for b in batches) == 20_000
+        assert all(isinstance(b, pd.DataFrame) for b in batches)
+
+    def test_a_missing_optional_dependency_says_what_to_install(self):
+        from pysuricata.sources import _require
+
+        with pytest.raises(ImportError, match="pip install nosuchpkg"):
+            _require("nosuchpkg.reader", "reading nothing")
+
+    def test_the_capsule_branch_is_reachable_on_its_own(self, frame):
+        """An object that is not a pyarrow type but exports the Arrow C stream
+        interface — which is how polars, DuckDB and the rest hand data over."""
+
+        class Exporter:
+            def __init__(self, table):
+                self._table = table
+
+            def __arrow_c_stream__(self, requested_schema=None):
+                return self._table.__arrow_c_stream__(requested_schema)
+
+        batches = list(stream_arrow(Exporter(pa.Table.from_pandas(frame))))
+        assert sum(len(b) for b in batches) == len(frame)
+
+
+class TestTheCliStreamsParquetToo:
+    """`pysuricata check data.parquet` in CI is the case #92 turns on, so the
+    CLI must take the streaming path rather than `pd.read_parquet`."""
+
+    @staticmethod
+    def _run(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            [sys.executable, "-m", "pysuricata.cli", *args],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_summarize_reads_a_parquet_file(self, parquet_path):
+        done = self._run("summarize", str(parquet_path), "--quiet")
+        assert done.returncode == 0, done.stderr
+        assert json.loads(done.stdout)["dataset"]["rows_est"] == 20_000
+
+    def test_check_writes_a_baseline_from_a_parquet_file(self, parquet_path, tmp_path):
+        baseline = tmp_path / "b.json"
+        done = self._run(
+            "check", str(parquet_path), "--write-baseline", str(baseline), "--quiet"
+        )
+        assert done.returncode == 0, done.stderr
+        assert baseline.exists()
+
+    def test_the_cli_loader_returns_a_stream_for_a_large_file(self, tmp_path):
+        from pysuricata.cli import load_data
+        from pysuricata.sources import DEFAULT_BATCH_ROWS
+
+        path = tmp_path / "big.parquet"
+        pq.write_table(pa.Table.from_pandas(_frame(DEFAULT_BATCH_ROWS + 1_000)), path)
+        assert not isinstance(load_data(str(path)), pd.DataFrame)
+
+    def test_an_unsupported_suffix_is_still_refused(self, tmp_path):
+        from pysuricata.cli import load_data
+
+        path = tmp_path / "data.xlsx"
+        path.write_text("not really a spreadsheet")
+        with pytest.raises(ValueError, match="Unsupported file format"):
+            load_data(str(path))
+
+
+class TestCoercionTakesTheRightBranch:
+    def test_a_duckdb_relation_becomes_a_generator(self, parquet_path):
+        duckdb = pytest.importorskip("duckdb")
+        from pysuricata.api import _coerce_input
+
+        con = duckdb.connect()
+        coerced = _coerce_input(con.sql(f"SELECT * FROM '{parquet_path}'"))
+        assert not isinstance(coerced, pd.DataFrame)
+        assert sum(len(chunk) for chunk in coerced) == 20_000
+
+    def test_an_arrow_table_becomes_a_frame_when_it_fits(self, frame):
+        from pysuricata.api import _coerce_input
+
+        assert isinstance(
+            _coerce_input(pa.Table.from_pandas(frame.head(100))), pd.DataFrame
+        )
 
 
 class TestTheErrorMessageNamesTheNewSources:
