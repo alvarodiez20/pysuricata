@@ -6,17 +6,17 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="How pysuricata generates EDA reports at scale — chunked ingestion, accumulators, sketches, rendering, and configuration.">
+        <meta name="description" content="Exploratory data analysis reports for pandas DataFrames">
       
       
       
-        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/architecture/">
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/data-sources/">
       
       
-        <link rel="prev" href="../algorithms/sampling/">
+        <link rel="prev" href="../advanced/">
       
       
-        <link rel="next" href="../architecture-diagrams/">
+        <link rel="next" href="../data-checks/">
       
       
       <link rel="icon" href="../assets/favicon.ico">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Architecture & Internals - PySuricata</title>
+        <title>Arrow, Parquet and DuckDB - PySuricata</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#architecture-internals" class="md-skip">
+        <a href="#reading-arrow-parquet-and-duckdb" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Architecture & Internals
+              Arrow, Parquet and DuckDB
             
           </span>
         </div>
@@ -261,10 +261,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../usage/" class="md-tabs__link">
           
   
@@ -305,13 +307,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
           
   
   
@@ -615,8 +615,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -636,19 +638,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -661,7 +666,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             User Guide
@@ -741,10 +746,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../data-sources/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Arrow, Parquet and DuckDB
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -755,6 +782,62 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-a-query-not-a-table" class="md-nav__link">
+    <span class="md-ellipsis">
+      Streaming a query, not a table
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-costs" class="md-nav__link">
+    <span class="md-ellipsis">
+      What it costs
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#type-inference-on-a-stream" class="md-nav__link">
+    <span class="md-ellipsis">
+      Type inference on a stream
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-readers-on-their-own" class="md-nav__link">
+    <span class="md-ellipsis">
+      The readers on their own
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1409,10 +1492,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1426,22 +1507,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -1454,7 +1532,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -1465,32 +1543,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Overview
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1501,113 +1557,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#high-level-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      High-Level Pipeline
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#accumulator-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      Accumulator Architecture
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-flow" class="md-nav__link">
-    <span class="md-ellipsis">
-      Data Flow
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#streaming-algorithms" class="md-nav__link">
-    <span class="md-ellipsis">
-      Streaming Algorithms
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rendering-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      Rendering Pipeline
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rendering Pipeline">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#shared-utilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      Shared Utilities
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configuration
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security-correctness" class="md-nav__link">
-    <span class="md-ellipsis">
-      Security &amp; Correctness
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#extending" class="md-nav__link">
-    <span class="md-ellipsis">
-      Extending
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1881,250 +1830,117 @@
   
 
 
-<h1 id="architecture-internals">Architecture &amp; Internals</h1>
-<p>How <code>pysuricata</code> profiles data efficiently and renders a self-contained HTML report.</p>
-<h2 id="high-level-pipeline">High-Level Pipeline</h2>
-<figure class="ps-figure" markdown="0">
-  <iframe src="../assets/diagrams/figures.html?only=chunk-lifecycle" title="The chunk lifecycle: which state is bounded and which is released" loading="lazy"></iframe>
-</figure>
-
-<pre class="mermaid"><code>flowchart LR
-    A["Data Source"] --&gt; B["Chunk Iterator"]
-    B --&gt; C["Typed Accumulators"]
-    C --&gt; D["Summary Metrics"]
-    D --&gt; E["HTML Renderer"]
-
-    style A fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
-    style B fill:#C8E6C9,stroke:#2E7D32,color:#1B5E20
-    style C fill:#A5D6A7,stroke:#2E7D32,color:#1B5E20
-    style D fill:#81C784,stroke:#2E7D32,color:#1B5E20
-    style E fill:#66BB6A,stroke:#2E7D32,color:#fff</code></pre>
-<p><strong>Data Sources</strong> → pandas DataFrames, polars DataFrames, or any iterable of DataFrames (for streaming).</p>
-<p><strong>Chunk Iterator</strong> → If a single DataFrame is passed, it is treated as one chunk. Generators are consumed chunk-by-chunk to bound memory.</p>
-<p><strong>Typed Accumulators</strong> → Each column is assigned a specialized accumulator based on its inferred type. All accumulators are streaming: they accept one chunk at a time and maintain bounded state.</p>
-<p><strong>Summary Metrics</strong> → After all chunks are consumed, accumulators are finalized and dataset-wide metrics (missingness, duplicates, etc.) are computed.</p>
-<p><strong>HTML Renderer</strong> → A single-file Jinja2 template with inline CSS/JS produces a portable, self-contained HTML report.</p>
-<hr />
-<h2 id="accumulator-architecture">Accumulator Architecture</h2>
-<pre class="mermaid"><code>classDiagram
-    class BaseAccumulator {
-        +name: str
-        +count: int
-        +missing: int
-        +update(chunk)
-        +finalize() Summary
-    }
-
-    class NumericAccumulator {
-        +StreamingMoments
-        +ReservoirSampler
-        +KMV sketch
-        +MisraGries top-k
-        +ExtremeTracker
-    }
-
-    class CategoricalAccumulator {
-        +KMV sketch × 3
-        +MisraGries top-k
-        +String length stats
-    }
-
-    class DatetimeAccumulator {
-        +min/max timestamps
-        +hour/weekday/month counts
-        +monotonicity tracker
-    }
-
-    class BooleanAccumulator {
-        +true_count
-        +false_count
-    }
-
-    BaseAccumulator &lt;|-- NumericAccumulator
-    BaseAccumulator &lt;|-- CategoricalAccumulator
-    BaseAccumulator &lt;|-- DatetimeAccumulator
-    BaseAccumulator &lt;|-- BooleanAccumulator</code></pre>
-<p>Each accumulator follows the same interface:</p>
-<ol>
-<li><strong><code>update(chunk)</code></strong> — process a batch of values, update internal state</li>
-<li><strong><code>finalize()</code></strong> — compute final statistics from accumulated state</li>
-</ol>
-<hr />
-<h2 id="data-flow">Data Flow</h2>
-<pre class="mermaid"><code>sequenceDiagram
-    participant User
-    participant profile as profile()
-    participant Infer as Type Inference
-    participant Acc as Accumulators
-    participant Corr as Correlations
-    participant Render as HTML Renderer
-
-    User-&gt;&gt;profile: DataFrame / generator
-    profile-&gt;&gt;Infer: First chunk
-    Infer--&gt;&gt;profile: Column types
-    profile-&gt;&gt;Acc: Create typed accumulators
-
-    loop Each chunk
-        profile-&gt;&gt;Acc: update(chunk)
-        profile-&gt;&gt;Corr: update pairs (optional)
-    end
-
-    profile-&gt;&gt;Acc: finalize()
-    Acc--&gt;&gt;profile: Per-column summaries
-    profile-&gt;&gt;Corr: finalize()
-    Corr--&gt;&gt;profile: Correlation matrix
-
-    profile-&gt;&gt;Render: Summaries + config
-    Render--&gt;&gt;User: Report (HTML)</code></pre>
-<hr />
-<h2 id="streaming-algorithms">Streaming Algorithms</h2>
-<p>Each accumulator uses algorithms chosen for <strong>O(1) per-value update</strong> and <strong>bounded memory</strong>:</p>
-<pre class="mermaid"><code>flowchart TB
-    subgraph Numeric["Numeric Accumulator"]
-        N1["Welford/Pébay&lt;br/&gt;mean, var, skew, kurt&lt;br/&gt;O(1) space"]
-        N2["Reservoir Sampling&lt;br/&gt;quantiles, histograms&lt;br/&gt;O(s) space"]
-        N3["KMV Sketch&lt;br/&gt;distinct count&lt;br/&gt;O(k) space"]
-        N4["Misra-Gries&lt;br/&gt;top-k values&lt;br/&gt;O(k) space"]
-        N5["Extreme Tracker&lt;br/&gt;min/max with indices&lt;br/&gt;O(k) space"]
-    end
-
-    subgraph Categorical["Categorical Accumulator"]
-        C1["KMV × 3&lt;br/&gt;distinct: original, lower, trimmed"]
-        C2["Misra-Gries&lt;br/&gt;top-k values"]
-        C3["String Length&lt;br/&gt;avg, p90"]
-    end
-
-    subgraph DateTime["DateTime Accumulator"]
-        D1["Min/Max&lt;br/&gt;timestamps"]
-        D2["Counters&lt;br/&gt;hour/weekday/month"]
-        D3["Monotonicity&lt;br/&gt;pair comparison"]
-    end
-
-    subgraph Boolean["Boolean Accumulator"]
-        B1["Counters&lt;br/&gt;true/false/missing"]
-    end
-
-    style Numeric fill:#E8F5E9,stroke:#2E7D32
-    style Categorical fill:#FFF3E0,stroke:#E65100
-    style DateTime fill:#E3F2FD,stroke:#1565C0
-    style Boolean fill:#F3E5F5,stroke:#6A1B9A</code></pre>
-<hr />
-<h2 id="rendering-pipeline">Rendering Pipeline</h2>
-<pre class="mermaid"><code>flowchart TB
-    A["Finalized Summaries"] --&gt; B["Dataset-Level Metrics"]
-    B --&gt; C["Jinja2 Template"]
-    C --&gt; D["Inline CSS + JS"]
-    C --&gt; E["Summary Cards"]
-    C --&gt; F["Variable Cards"]
-    C --&gt; G["Sample Table"]
-    D --&gt; H["Single HTML File"]
-    E --&gt; H
-    F --&gt; H
-    G --&gt; H
-
-    style H fill:#66BB6A,stroke:#2E7D32,color:#fff</code></pre>
-<p>The template produces a <strong>single portable HTML file</strong> — no external dependencies, no server required.</p>
-<p><strong>Summary cards</strong> show: rows, columns, processed bytes, missing %, duplicates %.</p>
-<p><strong>Variable cards</strong> are rendered per-type with SVG charts, statistics, and quality flags.</p>
-<h3 id="shared-utilities">Shared Utilities</h3>
+<h1 id="reading-arrow-parquet-and-duckdb">Reading Arrow, Parquet and DuckDB</h1>
+<div class="admonition info">
+<p class="admonition-title">Examples on this page assume a frame <code>df</code> and a Parquet file written from it</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="mi">2_000</span><span class="p">)})</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">df</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="s2">&quot;events.parquet&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+</div>
+<p><code>profile()</code> and <code>summarize()</code> take a pandas or polars frame, an iterable of
+chunks, a file path — and, without materialising them first, Arrow tables and
+readers, Parquet files, and DuckDB relations.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">summarize</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">df</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="s2">&quot;events.parquet&quot;</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">profile</span><span class="p">(</span><span class="s2">&quot;events.parquet&quot;</span><span class="p">)</span>          <span class="c1"># read a batch at a time</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">duckdb</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">df</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="s2">&quot;events.parquet&quot;</span><span class="p">)</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="n">con</span> <span class="o">=</span> <span class="n">duckdb</span><span class="o">.</span><span class="n">connect</span><span class="p">()</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">relation</span> <span class="o">=</span> <span class="n">con</span><span class="o">.</span><span class="n">sql</span><span class="p">(</span><span class="s2">&quot;SELECT * FROM &#39;events.parquet&#39; WHERE amount &gt; 0&quot;</span><span class="p">)</span>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">summarize</span><span class="p">(</span><span class="n">relation</span><span class="p">)</span>                <span class="c1"># the result set is never landed in memory</span>
+</span></code></pre></div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pyarrow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">summarize</span><span class="p">(</span><span class="n">pa</span><span class="o">.</span><span class="n">Table</span><span class="o">.</span><span class="n">from_pandas</span><span class="p">(</span><span class="n">df</span><span class="p">))</span>
+</span></code></pre></div>
+<p>DuckDB and pyarrow are <strong>not dependencies</strong>. The DuckDB path is duck-typed on
+<code>fetch_record_batch</code>, so nothing imports it; Parquet and Arrow reading needs
+<code>pyarrow</code>, and says so if it is missing.</p>
+<h2 id="streaming-a-query-not-a-table">Streaming a query, not a table</h2>
+<p>The DuckDB path is the one worth knowing about. A relation is a query that has
+not run yet, so a join across several Parquet files, filtered, can be profiled
+without any of it existing as a frame:</p>
+<div class="language-sql highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">SELECT</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="o">*</span><span class="p">,</span><span class="w"> </span><span class="k">c</span><span class="p">.</span><span class="n">segment</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="k">FROM</span><span class="w"> </span><span class="s1">&#39;orders/*.parquet&#39;</span><span class="w"> </span><span class="n">o</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="k">JOIN</span><span class="w"> </span><span class="s1">&#39;customers.parquet&#39;</span><span class="w"> </span><span class="k">c</span><span class="w"> </span><span class="k">USING</span><span class="w"> </span><span class="p">(</span><span class="n">customer_id</span><span class="p">)</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="k">WHERE</span><span class="w"> </span><span class="n">o</span><span class="p">.</span><span class="n">created_at</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="s1">&#39;2026-01-01&#39;</span>
+</span></code></pre></div>
+<p>Hand that to <code>con.sql(...)</code> and pass the relation straight to <code>summarize()</code>.</p>
+<h2 id="what-it-costs">What it costs</h2>
+<p>Peak RSS on a 4,000,000 × 6 frame written as a 180 MB Parquet file, measured
+with <code>getrusage</code> in fresh subprocesses, above a 118 MB bare-import floor:</p>
 <table>
 <thead>
 <tr>
-<th>Module</th>
-<th>Functions</th>
-<th>Purpose</th>
+<th></th>
+<th style="text-align: right;">above floor</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>render/svg_utils.py</code></td>
-<td><code>safe_col_id</code>, <code>nice_ticks</code>, <code>fmt_tick</code>, <code>svg_empty</code></td>
-<td>SVG chart helpers</td>
+<td><code>profile(pd.read_parquet(path))</code></td>
+<td style="text-align: right;">581 MB</td>
 </tr>
 <tr>
-<td><code>render/format_utils.py</code></td>
-<td><code>human_bytes</code>, <code>fmt_num</code>, <code>fmt_compact</code></td>
-<td>Number formatting</td>
+<td><code>profile(path)</code></td>
+<td style="text-align: right;">307 MB</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="configuration">Configuration</h2>
-<p><code>ReportConfig</code> controls all behavior:</p>
-<table>
-<thead>
-<tr>
-<th>Parameter</th>
-<th>Default</th>
-<th>Effect</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>chunk_size</code></td>
-<td>50,000</td>
-<td>Rows per chunk</td>
-</tr>
-<tr>
-<td><code>numeric_sample_size</code></td>
-<td>20,000</td>
-<td>Reservoir size for quantiles</td>
-</tr>
-<tr>
-<td><code>max_uniques</code></td>
-<td>2,048</td>
-<td>KMV sketch size</td>
-</tr>
-<tr>
-<td><code>top_k</code></td>
-<td>50</td>
-<td>Misra-Gries capacity</td>
-</tr>
-<tr>
-<td><code>compute_correlations</code></td>
-<td><code>True</code></td>
-<td>Enable/disable correlation chips</td>
-</tr>
-<tr>
-<td><code>corr_threshold</code></td>
-<td>0.5</td>
-<td>Minimum |r| to display</td>
-</tr>
-<tr>
-<td><code>random_seed</code></td>
-<td><code>None</code></td>
-<td>Deterministic sampling</td>
-</tr>
-<tr>
-<td><code>include_sample</code></td>
-<td><code>True</code></td>
-<td>Include data sample in report</td>
-</tr>
-</tbody>
-</table>
-<hr />
-<h2 id="security-correctness">Security &amp; Correctness</h2>
+<p>Lower, and it does not rise with the size of the file the way loading does.</p>
+<p>Two honest qualifications:</p>
 <ul>
-<li><strong>HTML escaping</strong> — column names and labels are escaped before rendering</li>
-<li><strong>Missing/Inf handling</strong> — NaN and ±Inf excluded from moments, reported separately</li>
-<li><strong>Approximation badges</strong> — estimates marked with <code>(≈)</code> or <code>approx</code> badge</li>
-<li><strong>Reproducibility</strong> — set <code>random_seed</code> for deterministic results</li>
+<li><strong>This is not a zero-copy Arrow path.</strong> The accumulators take numpy arrays,
+  so each batch is converted on its way through. What changes is that one batch
+  exists at a time rather than the whole file.</li>
+<li><strong>Memory is flat in rows for numeric columns and not yet for text.</strong> Four
+  float64 columns cost the same 19 MB above floor at 500,000 rows and at
+  8,400,000. A string column does not — that is measured, filed, and open
+  (<a href="https://github.com/alvarodiez20/pysuricata/issues/95">#95</a>).</li>
 </ul>
-<h2 id="extending">Extending</h2>
-<ul>
-<li><strong>Backends</strong> — polars/Arrow/DuckDB can be connected via the chunk iterator interface</li>
-<li><strong>Quantile sketches</strong> — t-digest or KLL can replace the default reservoir</li>
-<li><strong>New sections</strong> — drift comparisons, JSON export, CLI wrapper</li>
-</ul>
+<h2 id="type-inference-on-a-stream">Type inference on a stream</h2>
+<p>One behaviour follows from streaming, and it is worth knowing before it
+surprises you.</p>
+<p>A numeric column holding few enough distinct whole numbers is reclassified as
+categorical — <code>grade</code> holding 0–11 is labels, not measurements. That decision
+reads distinct values, which is sound evidence only when the whole column is in
+hand. A stream cannot offer it: a leading run of one value looks
+low-cardinality while the column is not, and the decision is never revisited.</p>
+<p>So a <strong>Parquet file that arrives in a single batch is handed over as a frame</strong>,
+and classifies exactly as <code>pd.read_parquet</code> would. Larger files are treated as
+what they are, and their numeric columns stay numeric. The line is
+<code>pysuricata.sources.DEFAULT_BATCH_ROWS</code>, 65,536 rows.</p>
+<p>If you want whole-frame inference on a file that fits in memory, ask for it:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">profile</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;events.parquet&quot;</span><span class="p">))</span>
+</span></code></pre></div>
+<h2 id="the-readers-on-their-own">The readers on their own</h2>
+<p><code>pysuricata.sources</code> exposes them, for when you want the batches rather than a
+profile:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata.sources</span><span class="w"> </span><span class="kn">import</span> <span class="n">stream_arrow</span><span class="p">,</span> <span class="n">stream_duckdb</span><span class="p">,</span> <span class="n">stream_parquet</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">df</span><span class="o">.</span><span class="n">to_parquet</span><span class="p">(</span><span class="s2">&quot;events.parquet&quot;</span><span class="p">)</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">stream_parquet</span><span class="p">(</span><span class="s2">&quot;events.parquet&quot;</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">50_000</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;amount&quot;</span><span class="p">]):</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">))</span>
+</span></code></pre></div>
+<p><code>columns=</code> is worth using on a wide file: columns you do not read are never
+decoded, which is where most of the saving is.</p>
 
 
 
 
 
 
-
-  
-  
 
 
 
