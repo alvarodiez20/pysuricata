@@ -7,6 +7,21 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.29] - 2026-08-15
+
+**The datetime accumulator is 9.3x faster** (308 ms -> 33 ms per 200,000-row
+column), which takes mixed 200,000 x 14 from 1,175 ms to **656 ms**. Cumulative
+since 0.0.26 on the same machine: **2.31x**.
+
+### Changed
+- **`DatetimeAccumulator.update` is vectorised.** It was the most expensive column kind by a factor of two and the only accumulator never touched. Four per-row Python loops are gone: the validity mask, the `int()` conversion, the sketch/reservoir feed, and — the expensive one — a `datetime.fromtimestamp` object constructed per row to read four calendar fields off it. Calendar fields now come from integer division and `np.bincount`. The consume layer also stops building a `list[int | None]` per column: it hands over the int64 array it already had, since NaT's sentinel is outside the validity window anyway and needed no translation.
+
+### Fixed
+- **Hour and weekday tallies were computed in the machine's local timezone.** `datetime.fromtimestamp()` without a `tz` argument uses the local zone, while the timestamps themselves are stored as UTC — so profiling the same file in London and in Tokyo produced different "peak hour" and weekend-ratio figures, with nothing to indicate the report depended on where it ran. Tallies are now UTC, matching the data as stored.
+- **A single out-of-range timestamp discarded a whole chunk's temporal patterns.** `fromtimestamp` raises `OSError` for some values on some platforms, and the handler caught it around the entire loop and moved on — so one bad row could empty the hour, weekday, month and year histograms for every row beside it.
+- **Timestamps at the bottom of the validity window were decomposed wrongly.** Casting `datetime64[ns]` to a coarser unit overflows there: numpy reports 1677-09-21 as day *+106750*, sign flipped, which yields hour 46. The decomposition now divides in integers, which is exact and floors correctly for pre-1970 instants.
+- **Values rejected by the validity mask were not counted as missing** on the element-wise path when a later conversion failed.
+
 ## [0.0.28] - 2026-08-15
 
 **1.29x faster on mixed 200,000 x 14** (1,517 ms -> 1,175 ms), and two numeric

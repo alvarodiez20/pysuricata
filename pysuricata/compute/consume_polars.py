@@ -73,7 +73,8 @@ def _to_bool_array_polars(s: pl.Series) -> list[bool | None]:  # type: ignore[na
         return out
 
 
-def _to_datetime_ns_array_polars(s: pl.Series) -> list[int | None]:  # type: ignore[name-defined]
+def _to_datetime_ns_array_polars(s: pl.Series) -> np.ndarray:  # type: ignore[name-defined]
+    """Convert a polars column to int64 nanoseconds, nulls as the sentinel."""
     if pl is None:
         raise RuntimeError("polars not available")
     with warnings.catch_warnings():
@@ -91,11 +92,20 @@ def _to_datetime_ns_array_polars(s: pl.Series) -> list[int | None]:  # type: ign
                 except Exception:
                     # Fallback to direct datetime conversion
                     s2 = s.cast(pl.Datetime("ns"), strict=False)
-            # Cast to Int64 to extract raw ns (None for nulls)
+            # Cast to Int64 to extract raw ns. Nulls become the int64-min
+            # sentinel, which the accumulator's validity window already counts
+            # as missing -- so there is no reason to box every row into a
+            # Python int just to turn that sentinel into None.
             s3 = s2.cast(pl.Int64, strict=False)
-            return [None if v is None else int(v) for v in s3.to_list()]
+            # fill_null before to_numpy: leaving nulls in makes polars widen to
+            # float64, and a float64 cannot hold a nanosecond timestamp exactly.
+            return (
+                s3.fill_null(np.iinfo(np.int64).min)
+                .to_numpy()
+                .astype(np.int64, copy=False)
+            )
         except Exception:
-            return [None] * len(s)
+            return np.full(len(s), np.iinfo(np.int64).min, dtype=np.int64)
 
 
 def _to_categorical_iter_polars(s: pl.Series) -> Iterable[Any]:  # type: ignore[name-defined]

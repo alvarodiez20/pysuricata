@@ -155,19 +155,21 @@ def _to_bool_array_pandas(s: pd.Series) -> list[bool | None]:
         return [_coerce(v) for v in s.tolist()]
 
 
-def _to_datetime_ns_array_pandas(s: pd.Series) -> list[int | None]:
+def _to_datetime_ns_array_pandas(s: pd.Series) -> np.ndarray:
+    """Convert a column to int64 nanoseconds, NaT included as its sentinel.
+
+    Returns the int64 array rather than a list of ``int | None``. Building that
+    list meant a ``.tolist()`` plus a Python-level comparison per row purely to
+    turn one out-of-range sentinel into ``None`` -- and the accumulator's
+    validity window rejects the sentinel anyway, so the boxing bought nothing.
+    """
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         try:
             ds = pd.to_datetime(s, errors="coerce", utc=True, format="mixed")
         except TypeError:
             ds = pd.to_datetime(s, errors="coerce", utc=True)
-    vals = ds.astype("int64", copy=False).tolist()
-    NAT_INT = -9223372036854775808
-    out: list[int | None] = []
-    for v in vals:
-        out.append(None if v == NAT_INT else int(v))
-    return out
+    return ds.astype("int64", copy=False).to_numpy()
 
 
 def _to_categorical_iter_pandas(s: pd.Series) -> Iterable[Any]:
