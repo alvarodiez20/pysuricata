@@ -42,6 +42,16 @@ from .render.html import render_empty_html as _render_empty_html
 from .render.html import render_html_snapshot as _render_html_snapshot
 from .render.identifier import looks_like_identifier as _looks_like_identifier
 
+# Version of the mapping returned by summarize() and carried on Report.stats.
+#
+# The payload has already drifted once without one: dataset["rows"] became
+# dataset["rows_est"], which silently broke every documented example and would
+# have broken every downstream consumer. Version it before anyone depends on it.
+#
+# The promise: adding a key does not change this number, because a consumer
+# reading known keys is unaffected. Renaming or removing one bumps the major.
+SUMMARY_SCHEMA_VERSION = 1
+
 
 class ReportOrchestrator:
     """Orchestrates the end-to-end EDA report generation process.
@@ -267,6 +277,17 @@ class ReportOrchestrator:
                     "mono_inc": bool(s.mono_inc),
                     "mono_dec": bool(s.mono_dec),
                     "int_like": bool(s.int_like),
+                    # The HTML renders a "Common values" table from these; the
+                    # payload used to omit them, so a tool built on summarize()
+                    # saw strictly less than a reader of the report. None means
+                    # "not tracked" -- the top-k sketch is gated off on columns
+                    # too high-cardinality for the answer to mean anything --
+                    # which is a different statement from an empty list.
+                    "top_values": (
+                        [(float(v), int(c)) for v, c in s.top_values]
+                        if s.top_values
+                        else ([] if acc._track_top_k else None)
+                    ),
                 }
             elif kind == "categorical":
                 s = acc.finalize()
@@ -300,7 +321,11 @@ class ReportOrchestrator:
                     "mem_bytes": s.mem_bytes,
                 }
 
-        return {"dataset": dataset_summary, "columns": columns_summary}
+        return {
+            "schema_version": SUMMARY_SCHEMA_VERSION,
+            "dataset": dataset_summary,
+            "columns": columns_summary,
+        }
 
     def _write_output_file(self, html: str, output_file: str) -> None:
         """Write the HTML report to a file."""

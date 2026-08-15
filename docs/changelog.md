@@ -7,6 +7,21 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.36] - 2026-08-15
+
+UX-4, UX-6 and UX-11 (#75, #77, #82). Three findings with one shape: the
+library already had the answer and either made the caller work to reach it or
+did not expose it at all.
+
+### Added
+- **Keyword options on `profile()` and `summarize()`.** Setting one integer took three imports and two nested constructors, because the nesting modelled the module layout rather than intent — nobody thinks *"I would like to configure the compute subsystem"*, they think *"smaller chunks"*. The six most-reached-for settings are now keywords: `chunk_size`, `columns`, `sample`, `correlations`, `seed`, `title`.
+- **`preset="fast"` and `preset="thorough"`** — one word for an intent, rather than working out which of twenty-one knobs to turn. `config=` remains the full escape hatch, and combining it with a preset or a keyword is refused rather than silently ignored.
+- **`schema_version` on the `summarize()` payload.** It had already drifted once — `dataset["rows"]` became `dataset["rows_est"]`, which silently broke every documented example and would have broken every downstream consumer. The promise: adding a key changes nothing, renaming or removing one bumps the major.
+- **Numeric `top_values` reach the payload.** The HTML rendered a "Common values" table from the Misra-Gries counters while `summarize()` omitted them, so a tool built on the payload saw strictly less than a reader of the report. `None` means *not tracked* — the sketch is gated off on columns too high-cardinality for the answer to mean anything — which is a different statement from an empty list.
+
+### Fixed
+- **The histogram ignored the log-scale flag the card itself computed.** A lognormal column was correctly labelled *Positive-only · Skewed Right · Heavy-tailed · Log-scale?* and then drawn on a linear axis, where the whole distribution renders as one bar at the left edge. When the heuristic fires the chart now opens on a log axis; the toggle still switches both ways. Computing the right answer and displaying the wrong picture is worse than not detecting it, because it teaches the reader that the chips are cosmetic.
+
 ## [0.0.35] - 2026-08-15
 
 UX-2 and UX-3 (#73, #74). Neither computes anything new: the signals were

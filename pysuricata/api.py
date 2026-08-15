@@ -604,9 +604,104 @@ def _to_engine_config(cfg: ProfileConfig) -> _EngineConfig:
         return _EngineConfig(**config_kwargs)
 
 
+# The six options people actually reach for, mapped to where they live. The
+# nesting models the module layout, not intent: nobody thinks "I would like to
+# configure the compute subsystem", they think "smaller chunks".
+_KEYWORD_OPTIONS = {
+    "chunk_size": ("compute", "chunk_size"),
+    "columns": ("compute", "columns"),
+    "sample": ("compute", "numeric_sample_size"),
+    "correlations": ("compute", "compute_correlations"),
+    "seed": ("compute", "random_seed"),
+    "title": ("render", "title"),
+}
+
+# One word for an intent. ydata-profiling's single most-used API feature is
+# minimal=True, for exactly this reason.
+_PRESETS = {
+    "fast": {
+        "compute": {
+            "numeric_sample_size": 5_000,
+            "max_uniques": 1_024,
+            "top_k": 20,
+            "compute_correlations": False,
+        }
+    },
+    "thorough": {
+        "compute": {
+            "numeric_sample_size": 50_000,
+            "max_uniques": 8_192,
+            "top_k": 100,
+            "compute_correlations": True,
+            "corr_threshold": 0.0,
+        }
+    },
+}
+
+
+def _resolve_config(
+    config: ProfileConfig | None, preset: str | None, options: dict[str, Any]
+) -> ProfileConfig:
+    """Build the effective configuration from a preset and keyword options.
+
+    Precedence, lowest to highest: defaults, preset, keyword options. An
+    explicit ``config=`` bypasses all of it -- it is the escape hatch, and a
+    caller who built one means it.
+
+    Args:
+        config: An explicit configuration, or None.
+        preset: ``"fast"``, ``"thorough"`` or None.
+        options: Keyword options from :func:`profile` or :func:`summarize`.
+
+    Returns:
+        The configuration to run with.
+
+    Raises:
+        ConfigurationError: If the preset is unknown or an option is not one of
+            the documented keywords.
+    """
+    if config is not None:
+        if preset or options:
+            raise ConfigurationError(
+                "Pass either config= or preset=/keyword options, not both. "
+                "config= is the full escape hatch and takes everything."
+            )
+        return config
+
+    if preset is not None and preset not in _PRESETS:
+        raise ConfigurationError(
+            f"Unknown preset {preset!r}. Available: {', '.join(sorted(_PRESETS))}."
+        )
+
+    unknown = set(options) - set(_KEYWORD_OPTIONS)
+    if unknown:
+        raise ConfigurationError(
+            f"Unknown option(s): {', '.join(sorted(unknown))}. "
+            f"Available: {', '.join(sorted(_KEYWORD_OPTIONS))}. "
+            "Anything else goes through config=ProfileConfig(...)."
+        )
+
+    compute: dict[str, Any] = {}
+    render: dict[str, Any] = {}
+    if preset:
+        compute.update(_PRESETS[preset].get("compute", {}))
+        render.update(_PRESETS[preset].get("render", {}))
+    for name, value in options.items():
+        group, field = _KEYWORD_OPTIONS[name]
+        (compute if group == "compute" else render)[field] = value
+
+    return ProfileConfig(
+        compute=ComputeOptions(**compute),
+        render=RenderOptions(**render),
+    )
+
+
 def profile(
     data: DataLike,
     config: ProfileConfig | None = None,
+    *,
+    preset: str | None = None,
+    **options: Any,
 ) -> Report:
     """Compute statistics and render a self‑contained HTML report.
 
@@ -622,6 +717,13 @@ def profile(
             - Iterable yielding ``pandas.DataFrame`` or ``polars.DataFrame`` chunks
         config: Optional configuration overriding compute/render defaults.
             Set chunk_size=None to disable chunking for both pandas and polars.
+            This is the full escape hatch and cannot be combined with ``preset``
+            or the keyword options below.
+        preset: ``"fast"`` or ``"thorough"``. One word for an intent, rather
+            than working out which of twenty-one knobs to turn.
+        **options: The six most-reached-for settings, without the nesting:
+            ``chunk_size``, ``columns``, ``sample``, ``correlations``, ``seed``,
+            ``title``.
 
     Returns:
         A :class:`Report` object containing the HTML and the computed stats
@@ -630,11 +732,18 @@ def profile(
     Raises:
         TypeError: If ``data`` is not of a supported type.
         ValueError: If ``data`` is None.
+        ConfigurationError: If an option or preset is not recognised, or
+            ``config`` is combined with either.
+
+    Examples:
+        >>> profile(df)                                        # doctest: +SKIP
+        >>> profile(df, chunk_size=50_000, correlations=False)  # doctest: +SKIP
+        >>> profile(df, preset="fast")                          # doctest: +SKIP
     """
     if data is None:
         raise ValueError("Input data cannot be None")
 
-    cfg = config or ProfileConfig()
+    cfg = _resolve_config(config, preset, options)
     inp = _coerce_input(data)  # No more polars-specific wrapping!
     cfg = _to_engine_config(cfg)
 
@@ -651,6 +760,9 @@ def profile(
 def summarize(
     data: DataLike,
     config: ProfileConfig | None = None,
+    *,
+    preset: str | None = None,
+    **options: Any,
 ) -> Mapping[str, Any]:
     """Compute statistics only and return a JSON‑safe mapping.
 
@@ -661,7 +773,9 @@ def summarize(
     Args:
         data: Dataset to analyze. Same accepted types as :func:`profile`.
         config: Optional configuration overriding compute/render defaults.
-            Set chunk_size=None to disable chunking for both pandas and polars.
+            Cannot be combined with ``preset`` or the keyword options.
+        preset: ``"fast"`` or ``"thorough"``.
+        **options: Same keyword options as :func:`profile`.
 
     Returns:
         A nested mapping with dataset‑level and per‑column statistics. The
@@ -670,11 +784,12 @@ def summarize(
     Raises:
         TypeError: If ``data`` is not of a supported type.
         ValueError: If ``data`` is None.
+        ConfigurationError: If an option or preset is not recognised.
     """
     if data is None:
         raise ValueError("Input data cannot be None")
 
-    cfg = config or ProfileConfig()
+    cfg = _resolve_config(config, preset, options)
     inp = _coerce_input(data)  # No more polars-specific wrapping!
     cfg = _to_engine_config(cfg)
     # compute-only to skip HTML render
