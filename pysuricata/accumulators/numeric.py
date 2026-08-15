@@ -552,8 +552,17 @@ class NumericAccumulator(PicklableAccumulator):
                     )
                     outliers_mod_zscore = np.sum(np.abs(mod_z_score) > 3.5)
 
-        # Compute advanced analytics metrics
-        unique_est = self._uniques.estimate()
+        # Compute advanced analytics metrics.
+        #
+        # Clamped to the row count. KMV's relative error is ~1/sqrt(k-2), about
+        # 2.2% at the default k, so the estimate can land *above* the number of
+        # values it was computed from -- 20,197 distinct in 20,000 rows. More
+        # distinct values than rows is arithmetically impossible, and a reader
+        # who notices it does not conclude "sketch tolerance", they conclude the
+        # numbers cannot be trusted, and that judgement lands on every other
+        # statistic on the page. The sketch is not wrong; presenting it without
+        # its bound is.
+        unique_est = min(self._uniques.estimate(), self.count)
         unique_ratio = unique_est / max(1, self.count)
 
         # Compute robust statistics
@@ -562,7 +571,13 @@ class NumericAccumulator(PicklableAccumulator):
         )
 
         # Determine if approximation was used for transparency
-        approx = len(sample_values) < self.count
+        # Approximate if *either* the quantiles came from a sample or the
+        # distinct count came from the sketch rather than its exact counter.
+        # It used to mean sampling alone, so a column small enough to hold every
+        # value in the reservoir reported approx=False while still publishing a
+        # sketched `unique_est` -- asserting an exactness that value did not
+        # have.
+        approx = len(sample_values) < self.count or not self._uniques.is_exact
 
         # Calculate sample scale for histogram rendering
         # This is crucial for chunk mode to scale histogram counts to full dataset size

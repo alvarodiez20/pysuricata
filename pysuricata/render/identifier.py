@@ -17,7 +17,13 @@ from typing import Any
 # The distinct-count estimate is a KMV sketch, so it does not land exactly on
 # the row count for a real key -- at k=2048 the standard error is about 2.2%.
 # Requiring equality would mean no column above the sketch size ever qualified.
-_UNIQUENESS_TOLERANCE = 0.98
+#
+# 0.98 was inside that error, which made the test a coin flip on exactly the
+# columns it exists for: `np.arange(20_000)`, a perfect key, estimates 19,478 --
+# 0.974 of the row count -- and was profiled as a measurement with a mean. A
+# threshold has to sit further from 1.0 than the estimator's own error, not
+# inside it. Two standard errors, rounded.
+_UNIQUENESS_TOLERANCE = 0.95
 
 # Below this, "every value is distinct" is not evidence of anything: a 3-row
 # frame of 1, 2, 3 is monotonic, integral and fully distinct, and is not a key.
