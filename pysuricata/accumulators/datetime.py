@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass
-from datetime import datetime
 from typing import Any
 
 import numpy as np
@@ -26,6 +25,55 @@ from .sketches import KMV, ReservoirSampler
 # by pandas as the NaT sentinel.
 _NS_MIN = int(np.iinfo(np.int64).min) + 1
 _NS_MAX = int(np.iinfo(np.int64).max)
+
+# 1970-01-01 was a Thursday, which datetime.weekday() numbers 3. Shifting the
+# day index by 3 before the modulo puts Monday at 0 for negative days too,
+# since numpy's % on integers floors rather than truncating.
+_EPOCH_DOW_OFFSET = 3
+
+_NS_PER_DAY = 86_400_000_000_000
+_NS_PER_HOUR = 3_600_000_000_000
+
+
+def _as_ns_int64(arr: Any) -> np.ndarray | None:
+    """Return ``arr`` as a contiguous int64 nanosecond array, or None.
+
+    None means "this input has no usable dtype" -- an object array, a list
+    holding ``None``, mixed types -- and the caller should take the
+    element-wise route instead. Everything else is handled without touching a
+    Python object per row.
+
+    Args:
+        arr: Candidate sequence of nanosecond timestamps.
+
+    Returns:
+        int64 array, or None if the input needs element-wise handling.
+    """
+    if isinstance(arr, np.ndarray):
+        candidate = arr
+    else:
+        try:
+            candidate = np.asarray(arr)
+        except Exception:
+            return None
+
+    kind = candidate.dtype.kind
+    if kind == "i":
+        return np.ascontiguousarray(candidate, dtype=np.int64)
+    if kind == "u":
+        # Unsigned values above int64 max cannot be a valid ns timestamp.
+        if candidate.size and int(candidate.max()) > _NS_MAX:
+            return None
+        return candidate.astype(np.int64)
+    if kind == "M":
+        # NaT is int64 min, which the validity window already rejects.
+        return candidate.astype("datetime64[ns]").view(np.int64)
+    if kind == "f":
+        # NaN would cast to an arbitrary integer, so map it to the NaT
+        # sentinel first -- the window rejects that as missing.
+        filled = np.where(np.isnan(candidate), float(np.iinfo(np.int64).min), candidate)
+        return filled.astype(np.int64)
+    return None
 
 
 @dataclass
@@ -167,24 +215,59 @@ class DatetimeAccumulator:
         return self._max_ts
 
     def update(self, arr_ns: Sequence[int | None]) -> None:
-        """Update accumulator with timestamp values in nanoseconds using vectorized processing.
+        """Update accumulator with timestamp values in nanoseconds.
 
         Args:
-            arr_ns: Sequence of timestamps in nanoseconds since epoch
+            arr_ns: Sequence of timestamps in nanoseconds since epoch. An int64
+                or datetime64 array takes the vectorised path; anything else
+                (a list containing ``None``, mixed types) falls back to the
+                element-wise route.
         """
         if len(arr_ns) == 0:
             return
 
-        # Convert to numpy array for maximum performance
+        ns = _as_ns_int64(arr_ns)
+        if ns is not None:
+            self._process_ns(ns)
+            return
+
+        # Mixed or object input: no dtype to work with, so go element-wise.
         try:
             timestamps = np.asarray(arr_ns, dtype=object)
         except Exception:
-            # Fallback to list processing for edge cases
             self._update_fallback(arr_ns)
             return
 
-        # High-performance vectorized processing
         self._process_timestamps_vectorized(timestamps)
+
+    def _process_ns(self, ns: np.ndarray) -> None:
+        """Fold in a batch of int64 nanosecond timestamps, wholly vectorised.
+
+        Args:
+            ns: int64 array of nanoseconds since the epoch. Out-of-window
+                values, including pandas' NaT sentinel, count as missing.
+        """
+        valid = (ns >= _NS_MIN) & (ns <= _NS_MAX)
+        n_valid = int(np.count_nonzero(valid))
+        self.missing += ns.size - n_valid
+        if n_valid == 0:
+            return
+
+        vals = ns if n_valid == ns.size else ns[valid]
+        self.count += n_valid
+
+        self._update_bounds(vals)
+        self._update_temporal_patterns(vals)
+
+        # add_many, not a loop of add(): both entry points hash a 64-bit
+        # integer to the same value, so the distinct estimate is unchanged.
+        self._uniques.add_many(vals)
+        self._sample.add_many(vals.astype(np.float64))
+
+        if self._monotonicity:
+            self._monotonicity.update(vals.astype(np.float64))
+
+        self._update_intervals(vals)
 
     def _process_timestamps_vectorized(self, timestamps: np.ndarray) -> None:
         """Process timestamps using optimized vectorized operations.
@@ -195,6 +278,7 @@ class DatetimeAccumulator:
         # Create mask for valid timestamps with optimized validation
         valid_mask = self._create_valid_mask(timestamps)
         valid_timestamps = timestamps[valid_mask]
+        rejected = len(timestamps) - len(valid_timestamps)
 
         if len(valid_timestamps) == 0:
             self.missing += len(timestamps)
@@ -205,30 +289,14 @@ class DatetimeAccumulator:
             ts_array = np.array([int(ts) for ts in valid_timestamps], dtype=np.int64)
         except (ValueError, TypeError):
             # Fallback for problematic timestamps
+            self.missing += rejected
             self._update_fallback(valid_timestamps)
             return
 
-        # Update counts efficiently
-        self.count += len(ts_array)
-        self.missing += len(timestamps) - len(ts_array)
-
-        # Update bounds with vectorized operations
-        self._update_bounds(ts_array)
-
-        # Update temporal patterns with optimized batch processing
-        self._update_temporal_patterns(ts_array)
-
-        # Update data structures with batch operations
-        for ts in ts_array:
-            self._uniques.add(ts)
-            self._sample.add(float(ts))
-
-        # Update monotonicity detection with vectorized input
-        if self._monotonicity:
-            self._monotonicity.update(ts_array.astype(float))
-
-        # Update interval tracking for temporal analysis
-        self._update_intervals(ts_array)
+        # Once the batch is int64 the two paths are the same problem, so it
+        # folds in through the vectorised route rather than a second copy of it.
+        self.missing += rejected
+        self._process_ns(ts_array)
 
     def _create_valid_mask(self, timestamps: np.ndarray) -> np.ndarray:
         """Create mask for valid timestamps with optimized validation.
@@ -277,25 +345,42 @@ class DatetimeAccumulator:
         """
         if not self.config.enable_temporal_patterns:
             return
+        if ts_array.size == 0:
+            return
 
-        # Convert nanoseconds to seconds for datetime operations
-        ts_seconds = ts_array / 1_000_000_000
+        # Calendar fields come from datetime64 casts rather than one Python
+        # datetime object per row. Two things change as a result, both for the
+        # better: the tallies are in UTC, matching the timestamps as stored,
+        # where datetime.fromtimestamp() silently used the *machine's* local
+        # zone -- so the same data profiled in London and Tokyo produced
+        # different hour histograms; and a single out-of-range value no longer
+        # makes fromtimestamp raise OSError and drop the whole chunk's patterns.
+        ns = np.ascontiguousarray(ts_array, dtype=np.int64)
 
-        # Vectorized datetime operations with error handling
-        try:
-            # Convert to datetime objects efficiently
-            datetimes = [datetime.fromtimestamp(ts) for ts in ts_seconds]
+        # Divide in integers rather than casting datetime64[ns] to a coarser
+        # unit. The cast overflows at the bottom of the window: int64.min + 1 ns
+        # is 1677-09-21, and numpy reports it as day *+106750* -- sign flipped --
+        # which produced hour 46 and crashed np.bincount. Floor division is
+        # exact here and shrinks the magnitude instead of growing it, and it
+        # floors toward negative infinity, which is what pre-1970 instants need.
+        days = np.floor_divide(ns, _NS_PER_DAY)
+        hours = np.floor_divide(ns, _NS_PER_HOUR) - days * 24
+        dow = (days + _EPOCH_DOW_OFFSET) % 7
+        # Safe to go through datetime64 from here: `days` is a small integer,
+        # so the month cast has nothing left to overflow.
+        months = days.astype("datetime64[D]").astype("datetime64[M]").astype(np.int64)
 
-            # Batch update pattern counts for better performance
-            for dt in datetimes:
-                self.by_hour[dt.hour] += 1
-                self.by_dow[dt.weekday()] += 1
-                self.by_month[dt.month - 1] += 1  # Convert to 0-based index
-                self.by_year[dt.year] = self.by_year.get(dt.year, 0) + 1
+        self.by_hour = (
+            np.asarray(self.by_hour) + np.bincount(hours, minlength=24)
+        ).tolist()
+        self.by_dow = (np.asarray(self.by_dow) + np.bincount(dow, minlength=7)).tolist()
+        self.by_month = (
+            np.asarray(self.by_month) + np.bincount(months % 12, minlength=12)
+        ).tolist()
 
-        except (ValueError, OSError):
-            # Handle invalid timestamps gracefully
-            pass
+        years, counts = np.unique(months // 12 + 1970, return_counts=True)
+        for year, count in zip(years.tolist(), counts.tolist(), strict=True):
+            self.by_year[year] = self.by_year.get(year, 0) + count
 
     def _update_intervals(self, ts_array: np.ndarray) -> None:
         """Update interval tracking for temporal analysis with memory management.
