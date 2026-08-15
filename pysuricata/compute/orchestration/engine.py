@@ -11,6 +11,7 @@ import logging
 import time
 from typing import Any
 
+from ... import progress as _progress
 from ..adapters import PandasAdapter, PolarsAdapter
 from ..core.protocols import DataAdapter
 from ..core.types import ProcessingResult
@@ -434,6 +435,19 @@ class StreamingEngine:
             # Track chunk index for logging and checkpointing
             chunk_idx = 1  # First chunk already processed
 
+            # A hung process and a working one look identical without this. The
+            # row total is only knowable for an in-memory frame; a generator
+            # source gets a counter and a rate, and no invented ETA.
+            reporter = _progress.resolve(getattr(config, "progress", False))
+            total_rows = None
+            try:
+                if _dataset_is_fully_known(sniff_target):
+                    total_rows = len(sniff_target)
+            except Exception:
+                total_rows = None
+            reporter.start(total_rows)
+            reporter.advance(chunk_idx, n_rows)
+
             # Process remaining chunks
             for chunk in chunks:
                 chunk = _select_columns(chunk, column_subset)
@@ -458,6 +472,7 @@ class StreamingEngine:
 
                 # Increment chunk counter
                 chunk_idx += 1
+                reporter.advance(chunk_idx, n_rows)
 
                 # Log progress every N chunks
                 if (
@@ -528,6 +543,7 @@ class StreamingEngine:
                     approx_mem_bytes += acc._mem_bytes
 
             duration = time.time() - start_time
+            reporter.finish(chunk_idx, n_rows, n_rows * max(1, n_cols))
 
             return ProcessingResult.success_result(
                 data=(
