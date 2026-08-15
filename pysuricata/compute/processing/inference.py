@@ -573,33 +573,43 @@ class UnifiedTypeInferrer:
         }
 
 
+# A numeric column is a disguised category when it holds few enough distinct
+# values to enumerate, not when it holds few *relative to the row count*. The
+# rule used to include a `unique_ratio < 0.05` arm, which made the answer depend
+# on how many rows you had: `age` with 67 distinct values is numeric in a
+# 1,000-row frame and categorical in a 20,000-row one, though nothing about the
+# column changed. Every bounded integer -- age, year, rating, day-of-month, HTTP
+# status, state code -- crossed the line purely by growing. For a profiler whose
+# pitch is large data, a heuristic that degrades with scale is backwards.
+#
+# A ceiling is stable under row count, which is the property the ratio lacked.
+_MAX_CATEGORICAL_LEVELS = 50
+
+
 def should_reclassify_numeric_as_categorical(
-    unique_count: int, total_count: int
+    unique_count: int, total_count: int, *, int_like: bool = True
 ) -> bool:
     """Determine if a numeric column should be reclassified as categorical.
 
-    This function implements a hybrid approach to reclassify numeric columns
-    that have very few unique values as categorical columns. This is useful
-    for columns that are technically numeric but represent discrete categories
-    (like ratings, grades, or status codes).
+    Reclassifies numeric columns that are really discrete categories -- ratings,
+    grades, status codes -- so they get a category card rather than a mean and a
+    histogram.
 
     Args:
-        unique_count: Number of unique values in the column
-        total_count: Total number of values in the column
+        unique_count: Number of unique values in the column.
+        total_count: Total number of values in the column.
+        int_like: Whether every value is integral. Continuous measurements that
+            happen to repeat are still measurements; only whole numbers stand in
+            for labels.
 
     Returns:
-        True if column should be reclassified as categorical, False otherwise
+        True if column should be reclassified as categorical, False otherwise.
     """
     if total_count == 0:
         return False
-
-    # Calculate unique ratio
-    unique_ratio = unique_count / total_count
-
-    # Reclassify as categorical if:
-    # 1. Less than 10 unique values, OR
-    # 2. Less than 5% unique ratio (for very large datasets)
-    return unique_count < 10 or unique_ratio < 0.05
+    if not int_like:
+        return False
+    return unique_count <= _MAX_CATEGORICAL_LEVELS
 
 
 def should_reclassify_numeric_as_boolean(

@@ -142,6 +142,9 @@ class TestUnifiedTypeInferrer:
 
 class TestReclassificationRules:
     def test_should_reclassify_numeric_as_categorical(self):
+        # A cardinality ceiling, not a ratio: the answer must not depend on how
+        # many rows there are. See tests/test_public_surface.py for the
+        # end-to-end version of this property.
         assert (
             should_reclassify_numeric_as_categorical(unique_count=5, total_count=100)
             is True
@@ -149,11 +152,19 @@ class TestReclassificationRules:
         assert (
             should_reclassify_numeric_as_categorical(unique_count=50, total_count=10000)
             is True
-        )  # 0.5% ratio
+        )
         assert (
             should_reclassify_numeric_as_categorical(unique_count=50, total_count=100)
+            is True
+        )
+        assert (
+            should_reclassify_numeric_as_categorical(unique_count=67, total_count=100)
             is False
-        )  # 50% ratio
+        )
+        assert (
+            should_reclassify_numeric_as_categorical(unique_count=67, total_count=20000)
+            is False
+        )
         assert (
             should_reclassify_numeric_as_categorical(unique_count=0, total_count=0)
             is False

@@ -183,10 +183,15 @@ class PandasAdapter(BaseAdapter):
                     # nine. Streamed numeric columns therefore stay numeric,
                     # which still reports top values via Misra-Gries.
                     try:
-                        unique_count = data[col_name].nunique()
-                        total_count = len(data[col_name])
+                        column = data[col_name]
+                        unique_count = column.nunique()
+                        total_count = len(column)
+                        # Only whole numbers stand in for labels; a continuous
+                        # measurement that repeats is still a measurement.
+                        numeric = pd.to_numeric(column, errors="coerce").dropna()
+                        int_like = bool(numeric.empty or (numeric % 1 == 0).all())
                         if should_reclassify_numeric_as_categorical(
-                            unique_count, total_count
+                            unique_count, total_count, int_like=int_like
                         ):
                             if self.logger:
                                 self.logger.info(

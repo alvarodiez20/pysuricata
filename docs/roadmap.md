@@ -1,213 +1,266 @@
-# PySuricata roadmap v4 — re-audit at 0.0.30
+# PySuricata roadmap v5 — re-audit at 0.0.31
 
-Supersedes v3 (0.0.26). Phase 1 is complete: all seven items landed, plus eight
-bugs that only surfaced while landing them.
-
-## Two environments, and why it matters
-
-v3's numbers came from a 2-core x86-64 Linux container. Everything below marked
-**(dev)** was re-measured on the development machine instead — Python 3.13.6,
-arm64 Darwin, 63.8 GB/s sequential read — because that is where the work was
-done. The two are not interchangeable, and the difference is not a detail:
-
-| | reference container | dev machine |
-|---|---:|---:|
-| mixed 200k × 14 at 0.0.26 | 4,768 ms | 1,517 ms |
-
-A change worth 1.33× on the container measured 1.13× here. **Nothing in this
-document may be published until it is re-run on the reference environment**
-(issue #68); the incumbent comparison in particular has *not* been re-measured
-since 0.0.26 and its 13.3× is now stale in the understated direction.
-
----
-
-## Where things stand
+Supersedes v4 (0.0.30). Phase 1 is finished: all seven performance items are closed
+and verified in the source at `4831a36`. **Not one of the twelve user-experience
+findings has been addressed** — every one was re-tested against a live 0.0.31 import
+while writing this — so for the first time the ranked list of next work contains no
+compute item at the top.
 
 | | |
 |---|---|
-| Original audit items | **11 of 11 closed** |
-| Phase 1 performance | **7 of 7 closed** |
-| mixed 200k × 14, 0.0.26 → 0.0.30 **(dev)** | **2.54×** (1,517 ms → 597 ms) |
-| `NumericAccumulator.update` **(dev)** | 1,278 → **83 ns/value**, 15.4× |
-| Datetime column, 200k rows **(dev)** | ~308 ms → **33 ms**, 9.3× |
-| vs ydata-profiling | **stale** — 13.3× measured at 0.0.26, not re-run |
-| Peak RSS | **stale** — 175 MB vs 457 MB at 0.0.26, not re-run |
+| 0.0.16 → 0.0.31 | **2.48×** (mixed 200k × 14, round-robin, best of 5) |
+| `NumericAccumulator.update` | **152 ns/value**, from 828 at 0.0.16 |
+| Phase 1 items | **7 / 7** closed |
+| UX findings open | **12 / 12** |
 
-### What actually happened
+## What landed since v4
 
-v3 projected 1.88× from three changes. The three changes landed and the
-measured result was **2.54×** — but almost none of the difference came from
-where v3 said it would.
-
-The chunk-size cap was projected at 1.33× and delivered 1.13×, because fixing
-KMV flattened the curve that made big chunks expensive. The KMV pre-filter was
-projected at 8.7× on its kernel and delivered 3× on the same kernel, because
-half the proposal turned out to be a regression. Meanwhile the datetime
-accumulator — listed under "loose ends" — turned out to be worth more than all
-three Phase 1 items combined.
-
-The pattern worth keeping: **every one of these changes was found by measuring,
-and every projection made without measuring was wrong.**
+| Commit | Verified in the source |
+|---|---|
+| **#62** gate top-k, pre-filter KMV, fix the chunk-size default | `should_track_top_k()` at `accumulators/numeric.py:35`, switching `_track_top_k` off mid-stream once the KMV estimate says the table would be singletons; the merge path clears it too, so a chunked run cannot resurrect it. KMV admission threshold at `accumulators/sketches.py:203`, with the correct strict `<` and the monotonicity argument written into the docstring. |
+| **#63** vectorise the datetime accumulator | Loop count in `accumulators/datetime.py` down from 41 to 36; the hot paths take arrays. This was the most expensive column kind. |
+| **#69** finish Phase 1 and re-measure | Closes the last of the seven. See the correction below — the numbers recorded there were assembled across sessions. |
+| **#70** six interactive figures, and the pre-commit hooks | `docs/javascripts/figures.js`, 66 lines, syncing with mkdocs-material's colour scheme rather than hard-coding a palette. First of the documentation plan to land. |
 
 ---
 
-## Scorecard
+## Re-measured today — and the previous headline was wrong
 
-### Phase 1 performance — 7 of 7 closed
+v4 reported 2.27× and the note after #69 reported 3.56×. **Both were assembled from
+measurements taken at different times**, on a container whose available CPU varies
+between sessions. The table below comes from a single round-robin: five rounds, all
+five versions measured in every round, best-of-five per version, each in its own
+subprocess.
 
-| Item | Result |
-|---|---|
-| **Date sniff** | Explicit formats first, `format="mixed"` demoted to a last-resort probe. Categorical columns 45% faster end to end. |
-| **Reservoir per-acceptance loop** | Bulk scheduler (`_SCHEDULE_BLOCK`, cumsum of logs). 154 → 57 ns/value. |
-| **Misra-Gries gate** | Gated on the KMV estimate, latching off and discarding. Removed a third of the numeric accumulator *and* a misleading table. |
-| **KMV pre-filter** | Threshold reject before the sort. 51 → 17 ns/value on the kernel; estimates provably identical. |
-| **Chunk-size default** | 200,000 → 50,000. 1.13× **(dev)** once KMV was fixed. |
-| **Datetime accumulator** | Fully vectorised. 308 → 33 ms/column, **9.3×** — the single biggest win of the phase. |
-| **`np.diff` monotonicity / outlier sample** | 45.2 → 0.6 ns/value in situ. The second reservoir was deleted rather than shared: nothing ever read it. |
-
-### Bugs found while landing Phase 1
-
-None of these were on the roadmap. All were found by writing the test *before*
-believing the change was safe.
-
-| Bug | Severity |
-|---|---|
-| `finalize()` fabricated "common values" — a continuous column reported values that occurred once as occurring *sample_scale* times, and the fallback overrode the exact counters on columns with <5 distinct values | **High**: invented data rendered as measured data |
-| Reported min/max came from the 20,000-value reservoir while the exact extremes sat in the tracker beside them | **High**: two figures on one card that could disagree |
-| Hour/weekday tallies used the machine's local timezone against UTC-stored timestamps | **High**: same file, different report in London and Tokyo |
-| `update()` raised `ValueError` on numpy arrays and pandas Series in three accumulators (`if not arr`) | Medium: the categorical path converts to a Series on the next line |
-| `NumericAccumulator.reset()` raised `AttributeError` on the **default** config | Medium |
-| One out-of-range timestamp discarded a whole chunk's temporal patterns | Medium |
-| `datetime64[ns] → [D]` overflows at the window floor: 1677-09-21 reported as day *+106750* | Medium, latent |
-| The sample-preview table drew from the global RNG and ignored `random_seed` | Low |
-
----
-
-## Where the time is now (dev)
-
-1M values in 5 chunks, wall clock, GC disabled, profiler off.
-`NumericAccumulator.update` totals **83 ns/value**, was 1,278 at 0.0.26.
-
-| Component | ns/value | share | 0.0.26 |
+| version | ms | × vs 0.0.16 | accumulator ns/value |
 |---|---:|---:|---:|
-| StreamingHistogram | 18.4 | 22.2% | 29 |
-| KMV distinct count | 18.2 | 21.9% | 668 |
-| ReservoirSampler | 17.7 | 21.3% | 57 |
-| ExtremeTracker | 16.2 | 19.5% | 9 |
-| StreamingMoments | 7.6 | 9.1% | 18 |
-| MonotonicityDetector | 0.6 | 0.7% | 89 |
-| Misra-Gries top-k | *gated off* | — | 434 |
+| 0.0.16 | 3,822.6 | 1.00× | 828.3 |
+| 0.0.21 | 4,352.3 | **0.88×** | 951.2 |
+| 0.0.26 | 3,874.6 | 0.99× | — |
+| 0.0.27 | 2,361.1 | 1.62× | 203.8 |
+| **0.0.31** | **1,542.5** | **2.48×** | **152.1** |
 
-Two things changed shape entirely. **KMV is no longer the story** — it went from
-52.3% to 21.9% and is now merely one of four components of similar size. And
-**there is no longer a dominant kernel at all**: the top four are within 2
-ns/value of each other. That is what the end of easy wins looks like. Further
-Python-level work here is sharpening a knife that is already sharp; the next
-real step change is the native core, and it now has a much less impressive
-baseline to beat.
+### Two claims to retract before anything is published
 
-`ExtremeTracker` rising from 9 to 16.2 ns/value is not a regression in the
-tracker — it is the same absolute cost against a total that shrank 15×.
+1. **0.0.21 was not 1.24× faster than 0.0.16.** On this workload, measured properly,
+   it is **0.88×** — a regression — and the accumulator got slower too, 828 → 951 ns.
+   The real inflection point is 0.0.27. If you publish a version-over-version curve
+   that dip is in it, and it is better to explain it yourself than to have a reader
+   find it.
+2. **The headline is 2.48×, not 3.56×.** The larger number came from pairing a slow
+   0.0.16 run with a fast 0.0.31 run taken at a different time. It was flattering and
+   it was wrong.
+
+### The rule this establishes
+
+A ratio is only quotable when both sides were measured in the same round-robin, on
+the same machine, within the same run. This is the third time in this audit that a
+measurement artefact nearly became a published claim — the first was cProfile ranking
+the reservoir at 30% of self time when replacing it moved wall clock by 4%, the
+second was the dev-machine-versus-container gap in v4. **Bake the round-robin into
+`benchmarks/` so the discipline is not a habit you have to remember.**
+
+The incumbent comparison — 13.3× against ydata-profiling — has **not** been
+re-measured since 0.0.26 and is stale in the understated direction, since two of the
+three Phase 1 wins landed after it.
 
 ---
 
-## Loose ends
+## The twelve UX findings — 0 of 12
 
-| Item | Detail |
+Re-tested against a live 0.0.31 import, not read from the previous review.
+
+| Check | Result at 0.0.31 |
 |---|---|
-| **`merge()` drops the top-k counters** (#67) | It merges moments, extremes and byte counts, rebuilds uniques and the reservoir from the other side's sample, and never touches `_topk`. Latent — nothing calls `merge()` today — but it goes live the moment column-level threading does. The same method reconstructs `_uniques` from a sample rather than merging the sketches, which underestimates for the same reason. |
-| **Forced and reclassified columns lose their config** (#61) | The adapters replace accumulators with `NumericAccumulator(col_name)` and no config, so `uniques_k` and `topk_k` silently revert to defaults on exactly those columns. Same class as the dead-options bug. |
-| **`summarize()` omits numeric top values** (#59) | The HTML shows a table the programmatic API cannot see. Now interacts with the top-k gate: the payload needs to distinguish *not tracked* from *tracked and empty*. |
-| **KMV `_values` as an array — rejected** | 2.7× on its own kernel, 35% slower end to end. `_add_hash_to_kmv` runs per distinct value on categorical columns, where `np.insert` allocates and copies what `list.insert` memmoves. Recorded in `proposed_kernels.py` so it is not re-proposed. |
+| `summarize(df)["columns"]["age"]["type"]` | `categorical` (67 distinct integers in 20,000 rows) |
+| `cid`, a monotonic unique key | numeric, with a mean |
+| `pysuricata/py.typed` exists | `False` |
+| `hasattr(pysuricata, "__all__")` | `False` |
+| `ReportConfig is ProfileConfig` | `True` |
+| `"schema_version" in summarize(df)` | `False` |
+| `summarize(df)["columns"]["revenue"]["top_values"]` | key absent, while the HTML renders from the same accumulator |
+| `profile("data.csv")` | `TypeError` (the CLI accepts the same path) |
+| `ProfileConfig(chunk_size=50_000)` | `TypeError` |
+| `profile(df, preset="fast")` | `TypeError` |
+| `profile(df, progress=True)` | `TypeError` |
+| `len(repr(report))` | 1,108,306 |
+| stdout bytes during `summarize()` | **0** — already fixed |
+
+### Five users, and where each one stops
+
+**1 · The evaluator** — ten minutes, comparing tools. `age` comes back categorical and
+`customer_id` gets a mean of 1e+04 with a flat histogram. Two of eight columns wrong,
+with defaults, in the first thirty seconds. They do not file a bug; they close the
+tab. *Unblocked by UX-1, UX-2.*
+
+**2 · The analyst** — has a 60-column frame open. Gets 60 identically sized cards in
+source order, no triage anywhere, although the quality chips already compute exactly
+the signal needed. Then the `revenue` card detects *Log-scale?* and draws a linear
+axis anyway. *Unblocked by UX-3, UX-4.*
+
+**3 · The data engineer** — wants it in the pipeline. `profile` and `summarize` both
+exit 0 regardless of what they found. Every existing gate tool makes you author
+expectations first; a profiler can gate on shape drift with no configuration at all,
+and nobody occupies that position. *Unblocked by UX-5.*
+
+**4 · The integrator** — building something on top. No `schema_version`, and the
+payload has already drifted once. No `py.typed`, so every annotation infers as `Any`.
+`dir()` is half internal modules. Three exception types for the same user error.
+*Unblocked by UX-6, 9, 10, 11, 12.*
+
+**5 · The big-data user** — the one the pitch is aimed at. A 1.8-million-cell profile
+produced 46 bytes of output, none of it progress: a hung process and a working one
+look identical. And no way to say how much memory it may use. *Unblocked by UX-7,
+UX-8.*
+
+**The pattern:** every one of the twelve is presentation, contract or ergonomics. The
+accumulators compute the right answers — the oracle proves it at 51 tests — and then
+the surface hides them, mislabels them, or refuses the input. That is the cheap half
+of the work, and it is the half that decides adoption.
+
+Full text with reproduction, cause, fix and acceptance criteria: `docs/UX_ISSUES.md`.
+File them with `python scripts/create_ux_issues.py --create` (after `brew install gh && gh auth
+login`); `--dry-run` prints the exact commands without running any of them.
 
 ---
 
-## Revised roadmap
+## A user-specified memory budget
 
-### Phase 0 — Trust ✅ complete
+Yes, and it is a good idea — **as a planner that derives settings, not a cap that
+enforces them**. Full reasoning and measurements in `docs/adr/memory-budget.md`.
 
-### Phase 1 — Performance ✅ complete
+The model was fitted from measured peak RSS, not asserted:
 
-2.54× **(dev)**, oracle green, and a test pinning the chunk-size band. The exit
-criterion was "mixed 200k × 14 under 2.6 s by default" on the container; the
-dev machine is at 597 ms and the container has not been re-run.
+```
+peak_MB ≈ 75 + n_cols × (0.5 + k×37B + chunk_size×48B)
+```
 
-### Phase 2 — Publish (next, blocked on measurement)
+Memory really is flat in rows — 200k → 5M rows moved peak RSS from 32 to 35 MB above
+the import floor — and linear in everything the library controls, so the budget is
+**invertible**. The inversion was implemented and verified across five shapes; every
+case landed under budget and the model over-predicts, which is the correct direction
+for a budget to be wrong in.
 
-**#68 first, then #38.** Every headline figure is now stale, all of them
-understated. Re-run `end_to_end.py --markdown` and `kernels.py` on the reference
-container, record the environment block alongside, and extend the version curve
-through 0.0.30. Only then does anything go in the README.
+It must not be a hard cap: ~75 MB is gone before the first line runs, the library
+does not control pandas' allocations or GC timing, and a cap that raises `MemoryError`
+would reproduce the incumbent failure mode this project is positioned against.
 
-Two anecdotes are worth writing up, both now with better endings than v3 had:
+The real danger is silent accuracy loss — a tight budget shrinks `k`, and quantile
+error is `1/√k` (±0.7% at 20,000, ±3.2% at 1,000). Always report the chosen plan and
+its accuracy consequence, and error below the floor rather than degrading.
 
-- *"Honouring a config option made my library slower."* The blend hid a bad
-  default for months; fixing the option exposed it.
-- *"My profiler showed you the most common values. They all occurred once."*
-  And the follow-up nobody expects: the fallback underneath was **multiplying
-  those counts by the sampling ratio**, so singletons were reported as having
-  occurred ten times. A measurement bug, a UX bug, and a fabrication, in one
-  function.
-
-**Exit:** benchmarks page with the environment block, one post live, a comment
-on ydata-profiling [#1129](https://github.com/Data-Centric-AI-Community/fg-data-profiling/issues/1129).
-
-### Phase 3 — Native core (3–5 weekends)
-
-Datetime is done, so this phase is just the crate now. **KMV first, moments
-last** still holds by share — but the argument for the whole phase is weaker
-than it was, because the Python path is 15× faster than when the crate was
-proposed and no single kernel dominates any more. Do the prerequisites (#64)
-first; they are worth having regardless, and they are what makes the crate
-swappable rather than bolted on.
-
-**Exit:** `pip install pysuricata[fast]` working across the platform matrix with
-the oracle passing on both backends.
-
-### Phase 4 — Report v2 (3–4 weekends)
-
-Unchanged. Still 1.18 MB with ~592 KB of base64 PNGs and no JSON payload. Render
-is now a *larger* share of wall clock than it was, simply because compute
-shrank 2.5× underneath it — worth re-measuring before assuming it is still ~3%.
-
-**Exit:** Titanic report under 250 KB.
-
-### Phase 5 — Differentiate (ongoing)
-
-`pysuricata check` as a CI gate (#42); `compare(df_a, df_b)` for drift (#65);
-direct Arrow/Parquet/DuckDB input (#66). **Column-level threading is unblocked**
-— every sketch now owns its generator, seeded per column from the run seed, so
-concurrent accumulators are reproducible. Fix #67 before threading, since a
-broken `merge()` is exactly what threading will start exercising.
+Before it ships: the model is fitted on **numeric columns only**. Refit for
+categorical and datetime or the budget will be optimistic on a text-heavy frame —
+which is the frame most likely to be large.
 
 ---
 
-## Unchanged from earlier versions
+## Documentation
 
-**Positioning.** *The data profiler that fits in CI.* Single-pass streaming
-algorithms, bounded memory regardless of dataset size, pandas and polars native,
-four dependencies, one self-contained HTML file — or JSON and an exit code. Lead
-with memory, not speed: it follows from the architecture rather than from tuning,
-and the incumbent's most-reported failure is a MemoryError they document as
-unfixed. Note the memory claim also needs re-measuring (#68) — nothing in Phase 1
-was expected to change it, but "was not expected to" is not a measurement.
+`benchmarks/check_docs.py` found 87 errors across 21 of 31 pages, and you fixed them
+while this document was being written: `e95b483`, *"docs: fix the 90 errors from the
+documentation audit"*, on `docs/fix-audit-errors` — 31 files, +762/−115, including
+`mkdocs.yml` and `pyproject.toml`, and three more errors than the audit had found.
 
-**Market.** ydata-profiling (13.7k stars, ~1.76M downloads/mo) renamed to
-fg-data-profiling and transferred orgs; Great Expectations' OSS stewardship moved
-to Fivetran; Soda Core relicensed to the Elastic License. Open gaps:
-bounded-memory profiling (asked for since 2016), polars-native end-to-end (ydata
-#1129 open since Oct 2022), profiler-as-CI-gate, PII detection in OSS, dataset
-comparison.
+**The next move is the one that keeps it fixed.** Eighty-seven errors accumulated
+because nothing was checking. Put `check_docs --strict` in CI in the same pull request
+that lands these fixes, or the count starts climbing again from zero the next time a
+key is renamed. The checker is the deliverable, not the fixes. Worth confirming in the
+diff: that `algorithms/sampling.md` now documents Algorithm L rather than Algorithm R,
+and that `architecture-diagrams.md` no longer claims extremes run every 5th chunk.
 
-**Measurement discipline.** Three lessons now, all learned here.
+UX-6 is what stops the `rows` → `rows_est` class of error recurring — the docs were the
+symptom, an unversioned payload is the cause.
 
-1. `cProfile` charges per Python call and over-weights kernels that make many
-   small ones. Confirm rankings against wall clock with the profiler off.
-2. When checking whether a value reaches the report, search for the **formatted**
-   string. An audit wrongly concluded top-k output was discarded because it
-   searched for `4248` in a report that renders `4,248`.
-3. **A kernel benchmark only measures the call sites it calls.** The KMV
-   array-backed `_values` won its benchmark by 2.7× and lost 35% end to end,
-   because the benchmark never touched the scalar insert path that categorical
-   columns hammer. Confirm every kernel win against end-to-end wall clock before
-   adopting it.
+Six figures shipped in #70. The remaining assets are ranked in `docs/DOCS_PLAN.md`
+with ready-to-paste prompts in `docs/DIAGRAM_PROMPTS.md`: reservoir R-vs-L,
+Misra-Gries eviction, the memory curve, annotated cards, the chunk lifecycle, the
+Pébay merge.
+
+Keep the rule that separates the two kinds. Anything depicting *what the code does*
+belongs in `scripts/build_docs_assets.py`, generated from a real run with a fixed seed
+and checked by `--check` in CI, the way `kmv-unit-interval.svg` already is. Anything
+depicting a *concept* can be hand-authored. A picture a script regenerates cannot
+quietly start lying.
+
+CI cost remains none: the repository is public, every workflow runs on
+`ubuntu-latest`, and GitHub Actions is free with no minute cap for public
+repositories on standard runners.
+
+---
+
+## What to do next
+
+**0 · Trust and Phase 1 — complete.** Eleven audit items closed, seven performance
+items closed, oracle green at 51 tests, 2.48× end to end.
+
+**1 · The one-day batch — five issues, two users unblocked (1 weekend).**
+UX-9 `py.typed`; UX-10 `__all__`, a one-line `__repr__`, one exception type, deprecate
+the `ReportConfig` alias; UX-12 accept `str`/`PathLike`; UX-4 let the log-scale chip
+drive the chart default; UX-1 replace the unique-*ratio* arm with a cardinality
+*ceiling*.
+*Exit:* `age` profiles as numeric at 1k/100k/10M rows with a test that pins it;
+`reveal_type(profile(df))` is `Report`; `profile("data.csv")` works; a lognormal
+column opens on a log axis.
+
+**2 · Ship the docs branch with the checker, then publish (1 weekend).**
+The 90 fixes are committed at `e95b483`; open the PR and add `check_docs --strict` to
+CI in the same one.
+*Exit:* zero `check_docs` errors with CI enforcing it, benchmarks page with an
+environment block, post #1 live, a comment on ydata #1129.
+
+**3 · Make the report answer the reader's question (1–2 weekends).**
+UX-2 the Identifier badge — `mono_inc`, a KMV estimate equal to the row count and
+`int_like` are all already tracked, so this is a card swap. UX-3 a "needs attention"
+block driven by the chips you already compute, plus chip filtering.
+*Exit:* a 60-column report opens with "3 of 60 columns have issues", each linked.
+
+**4 · Freeze the contract (1 weekend).**
+UX-6 `schema_version` and a documented compatibility promise, then reconcile
+`summarize()` with the HTML. UX-11 keyword passthrough and `fast`/`thorough` presets,
+purely additive.
+
+**5 · Make the streaming claim visible and controllable (1–2 weekends).**
+UX-7 `progress="auto"` on stderr. UX-8 `memory_budget=` as a planner, with the model
+refitted for categorical and datetime first and a CI test asserting measured peak RSS
+stays under the target.
+*Exit:* a documented "asked for 512 MB, used 480" produced by a test rather than a
+blog post.
+
+**6 · `pysuricata check` — the differentiator (2–3 weekends).**
+UX-5. A baseline written from `summarize()`, a comparison, thresholds, a non-zero
+exit. Gating on shape drift with zero configuration is a position no competitor
+occupies, and it is the natural home for `memory_budget`.
+
+**7 · The native core (3–5 weekends).**
+Unchanged in ordering and now unchanged in urgency: **KMV first, moments last**,
+because moments were 1.3–5% of the numeric path while KMV was half of it. The crate
+is vendored with 20 passing tests and nothing imports it; there is still no `[fast]`
+extra. The 32 KiB tiling result — 19.1 → 11.2 ns/row after the first naive version
+came in *slower* than NumPy — is the best technical post in the project.
+
+---
+
+## This weekend
+
+1. **File the twelve issues.** `gh auth login`, then
+   `python scripts/create_ux_issues.py --create`.
+2. **Add `pysuricata/py.typed`** plus the `package-data` line and a mypy step in CI.
+3. **Replace the unique-ratio arm with a cardinality ceiling**, and add the test that
+   profiles the same column at 1k/100k/10M rows and asserts the classification does
+   not move. That test is the real fix; the rule change is one line.
+4. **`__all__`, a one-line `__repr__`, one exception type.** Two hours.
+5. **Open the PR for `docs/fix-audit-errors`, and add `check_docs --strict` to CI in
+   the same PR.** The 90 fixes are committed at `e95b483`; the check is what stops them
+   coming back.
+6. **Then re-run the incumbent benchmark round-robin and publish.**
+
+---
+
+*Measurements: 0.0.31 at `4831a36`, plus 0.0.27, 0.0.26, 0.0.21 and 0.0.16 each on
+`sys.path` in its own interpreter; five round-robin rounds, best of five per version;
+`mixed` suite at 200,000 × 14, seed 0; 2-core x86-64 Linux container. Accumulator
+timings over 1,000,000 float64 values in 20 chunks of 50,000. Memory figures from
+`getrusage` peak RSS in fresh subprocesses at 0.0.27. UX assertions from a live 0.0.31
+import. Absolute times are not comparable across sessions; ratios within a single
+round-robin are.*

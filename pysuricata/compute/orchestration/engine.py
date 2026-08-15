@@ -74,24 +74,27 @@ def _select_columns(chunk: Any, columns: tuple[str, ...] | None) -> Any:
         return chunk
 
 
-def _first_chunk_is_whole_dataset(source: Any, first_chunk: Any) -> bool:
-    """Return True only when the first chunk provably contains every row.
+def _dataset_is_fully_known(source: Any) -> bool:
+    """Return True when every row is available before processing starts.
 
     Type inference reclassifies a numeric column as categorical from the
-    distinct-value ratio of the first chunk. That is sound evidence when the
-    chunk is the whole column and unsound otherwise: a sorted column, or one
-    with a leading run of a single value, gives a prefix that looks
-    low-cardinality while the column is not -- and the decision is never
-    revisited.
+    distinct values it can see. That is sound evidence when the whole column is
+    in hand and unsound otherwise: a sorted stream, or one with a leading run of
+    a single value, gives a prefix that looks low-cardinality while the column
+    is not -- and the decision is never revisited.
 
-    An exhaustible iterator is treated as streaming even if it happens to yield
-    only one chunk, because finding that out would mean consuming it.
+    The question is about the *source*, not about the chunk. An in-memory frame
+    is fully known however the engine chooses to split it; asking whether the
+    first chunk happened to hold every row instead made classification depend on
+    `chunk_size`, so the same column came back numeric at 50,000 rows and
+    categorical at 200,000. An exhaustible iterator is streaming even if it
+    happens to yield a single chunk, because finding that out would consume it.
     """
     try:
         if pd is not None and isinstance(source, pd.DataFrame):
-            return len(first_chunk) == len(source)
-        if pl is not None and isinstance(source, pl.DataFrame):
-            return first_chunk.height == source.height
+            return True
+        if pl is not None and isinstance(source, (pl.DataFrame, pl.LazyFrame)):
+            return True
     except Exception:
         return False
     return False
@@ -337,6 +340,7 @@ class StreamingEngine:
             # Peek once, sniff from the peeked chunk, and splice it back onto the
             # front of the stream.
             sniff_target = source
+            fully_known = _dataset_is_fully_known(source)
             if _is_exhaustible_iterator(source):
                 stream = iter(source)
                 try:
@@ -383,7 +387,10 @@ class StreamingEngine:
             # weight type inference may put on it. If more chunks follow, the
             # chunk's distinct-value ratio says nothing reliable about the
             # column, so reclassification heuristics must not fire.
-            first_chunk_is_whole = _first_chunk_is_whole_dataset(source, first_chunk)
+            # Asked of the original source: a peeked chunk is a DataFrame even
+            # when it came off a generator, so sniffing it would call every
+            # stream fully known.
+            first_chunk_is_whole = fully_known
 
             kinds, accs = adapter.infer_and_build(
                 first_chunk, config, first_chunk_is_whole=first_chunk_is_whole

@@ -64,8 +64,13 @@ class TestInputValidation:
         with pytest.raises(ValueError, match="cannot be None"):
             summarize(None)
 
-    def test_string_input_raises_type_error(self):
-        with pytest.raises(TypeError):
+    def test_a_string_is_read_as_a_path(self):
+        # A string is a supported input now -- a path to a file -- so the error
+        # for an unusable one says the file is missing rather than that the
+        # type is wrong.
+        from pysuricata import PySuricataError
+
+        with pytest.raises(PySuricataError, match="File not found"):
             _coerce_input("not a dataframe")
 
     def test_bytes_input_raises_type_error(self):

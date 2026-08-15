@@ -42,12 +42,33 @@ _patch_polars_date_range()
 # High-level API wrappers
 from .api import (
     ComputeOptions,
+    ConfigurationError,
     ProfileConfig,
+    PySuricataError,
     RenderOptions,
     Report,
+    UnsupportedDataError,
     profile,
     summarize,
 )
 
-# Alias for discoverability
+# Alias for discoverability. ProfileConfig is the name to prefer; this one is
+# kept because it appears throughout the documentation and in released code.
 ReportConfig = ProfileConfig
+
+# Without this, `dir(pysuricata)` is mostly internal submodules and `from
+# pysuricata import *` drags them in. Everything listed is public and covered by
+# the compatibility promise; anything absent is an implementation detail.
+__all__ = [
+    "ComputeOptions",
+    "ConfigurationError",
+    "ProfileConfig",
+    "PySuricataError",
+    "RenderOptions",
+    "Report",
+    "ReportConfig",
+    "UnsupportedDataError",
+    "__version__",
+    "profile",
+    "summarize",
+]
