@@ -230,10 +230,12 @@ def check_symbols(page: Path, text: str, out: list[Finding]) -> None:
             continue
         if name not in exported and name not in {
             "accumulators",
+            "check",
             "compute",
-            "render",
-            "io",
             "config",
+            "io",
+            "progress",
+            "render",
         }:
             out.append(
                 Finding(

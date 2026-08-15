@@ -3,16 +3,32 @@
 Usage:
     pysuricata profile <file> --output <report.html>
     pysuricata summarize <file>
+    pysuricata check <file> --baseline <baseline.json>
     pysuricata --version
+
+`check` is the only command with a meaningful exit code: 0 when the gate
+passes, 1 when a threshold was crossed, 2 when the run could not happen at all.
+Keeping "the data drifted" and "the file was missing" distinguishable is what
+lets a pipeline treat one as a data problem and the other as an outage.
 """
 
 import argparse
 import json
 import sys
 import time
+from dataclasses import replace
 from pathlib import Path
 
 from pysuricata import ComputeOptions, ProfileConfig, __version__, profile, summarize
+from pysuricata.check import (
+    Thresholds,
+    compare,
+    make_baseline,
+    read_baseline,
+    read_thresholds,
+    render_findings,
+    write_baseline,
+)
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -27,6 +43,8 @@ Examples:
   pysuricata profile data.parquet -o report.html --seed 42
   pysuricata summarize data.csv
   pysuricata summarize data.csv --output stats.json
+  pysuricata check data.parquet --write-baseline baseline.json
+  pysuricata check data.parquet --baseline baseline.json
 
 For more information, visit: https://github.com/alvarodiez20/pysuricata
         """,
@@ -107,6 +125,93 @@ For more information, visit: https://github.com/alvarodiez20/pysuricata
         help="Rows per chunk for streaming (default: 100000)",
     )
     summarize_parser.add_argument(
+        "--quiet", "-q", action="store_true", help="Suppress progress output"
+    )
+
+    # Check command
+    check_parser = subparsers.add_parser(
+        "check",
+        help="Gate a dataset on shape drift, with an exit code",
+        description=(
+            "Compare a dataset against a stored baseline and exit non-zero when "
+            "a threshold is crossed. Exit codes: 0 pass, 1 threshold crossed, "
+            "2 the check could not run."
+        ),
+    )
+    check_parser.add_argument(
+        "file", type=str, help="Path to the data file (CSV, Parquet or JSON)"
+    )
+    check_parser.add_argument(
+        "--baseline",
+        "-b",
+        type=str,
+        default=None,
+        help="Baseline JSON to compare against",
+    )
+    check_parser.add_argument(
+        "--write-baseline",
+        type=str,
+        default=None,
+        help="Write a baseline from this dataset and exit",
+    )
+    check_parser.add_argument(
+        "--thresholds",
+        type=str,
+        default=None,
+        help="Thresholds file (.json or .toml) overriding the defaults",
+    )
+    check_parser.add_argument(
+        "--max-missing-pct",
+        type=float,
+        default=None,
+        help="Fail if any column is missing more than this percentage",
+    )
+    check_parser.add_argument(
+        "--min-rows",
+        type=int,
+        default=None,
+        help="Fail if the dataset has fewer rows than this",
+    )
+    check_parser.add_argument(
+        "--max-rows-drift-pct",
+        type=float,
+        default=None,
+        help="Fail if the row count moved more than this percentage from the baseline",
+    )
+    check_parser.add_argument(
+        "--fail-on-new-column",
+        action="store_true",
+        help="Treat an added column as a breach (off by default)",
+    )
+    check_parser.add_argument(
+        "--fail-on-range-expansion",
+        action="store_true",
+        help="Treat a new minimum or maximum outside the baseline range as a breach",
+    )
+    check_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Emit the result as JSON on stdout instead of text",
+    )
+    check_parser.add_argument(
+        "--warn-only",
+        action="store_true",
+        help="Report findings but always exit 0",
+    )
+    check_parser.add_argument(
+        "--seed",
+        "-s",
+        type=int,
+        default=0,
+        help="Random seed (default: 0, so a re-run of the same data is a no-op)",
+    )
+    check_parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=100_000,
+        help="Rows per chunk for streaming (default: 100000)",
+    )
+    check_parser.add_argument(
         "--quiet", "-q", action="store_true", help="Suppress progress output"
     )
 
@@ -271,6 +376,105 @@ def cmd_summarize(args: argparse.Namespace) -> int:
     return 0
 
 
+def _resolve_thresholds(args: argparse.Namespace) -> Thresholds:
+    """Combine the thresholds file with the command-line overrides.
+
+    Precedence is defaults, then the file, then flags — the same order the
+    Python API uses for presets and keywords.
+
+    Args:
+        args: Parsed arguments.
+
+    Returns:
+        The thresholds to gate on.
+
+    Raises:
+        ValueError: If the thresholds file is unreadable or names an unknown
+            threshold.
+    """
+    base = read_thresholds(args.thresholds) if args.thresholds else Thresholds()
+
+    overrides = {
+        "max_missing_pct": args.max_missing_pct,
+        "min_rows": args.min_rows,
+        "max_rows_drift_pct": args.max_rows_drift_pct,
+    }
+    given = {k: v for k, v in overrides.items() if v is not None}
+    if args.fail_on_new_column:
+        given["fail_on_new_column"] = True
+    if args.fail_on_range_expansion:
+        given["fail_on_range_expansion"] = True
+    if not given:
+        return base
+    return replace(base, **given)
+
+
+def cmd_check(args: argparse.Namespace) -> int:
+    """Execute the check command.
+
+    Returns:
+        0 when the gate passes, 1 when a threshold was crossed, 2 when the
+        check could not run.
+    """
+    if args.baseline is None and args.write_baseline is None:
+        print(
+            "Error: check needs --baseline to compare against, or "
+            "--write-baseline to create one.",
+            file=sys.stderr,
+        )
+        return 2
+
+    try:
+        thresholds = _resolve_thresholds(args)
+    except (OSError, ValueError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+
+    try:
+        data = load_data(args.file)
+    except (FileNotFoundError, ValueError) as e:
+        print(f"Error: {e}", file=sys.stderr)
+        return 2
+
+    try:
+        stats = summarize(
+            data,
+            chunk_size=args.chunk_size,
+            seed=args.seed,
+            progress=None if args.quiet else "auto",
+        )
+    except Exception as e:
+        print(f"Error during summarization: {e}", file=sys.stderr)
+        return 2
+
+    if args.write_baseline is not None:
+        try:
+            write_baseline(make_baseline(stats, source=args.file), args.write_baseline)
+        except OSError as e:
+            print(f"Error writing baseline: {e}", file=sys.stderr)
+            return 2
+        if not args.quiet:
+            print(f"Baseline written to: {args.write_baseline}", file=sys.stderr)
+        return 0
+
+    try:
+        baseline = read_baseline(args.baseline)
+    except (OSError, ValueError, json.JSONDecodeError) as e:
+        print(f"Error reading baseline: {e}", file=sys.stderr)
+        return 2
+
+    result = compare(stats, baseline, thresholds)
+
+    if args.json:
+        print(json.dumps(result.to_dict(), indent=2, default=str))
+    else:
+        print(render_findings(result))
+
+    if result.passed or args.warn_only:
+        return 0
+    return 1
+
+
 def main() -> int:
     """Main entry point for the CLI."""
     parser = create_parser()
@@ -284,6 +488,8 @@ def main() -> int:
         return cmd_profile(args)
     elif args.command == "summarize":
         return cmd_summarize(args)
+    elif args.command == "check":
+        return cmd_check(args)
     else:
         parser.print_help()
         return 1

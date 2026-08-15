@@ -50,6 +50,7 @@ nav:
       - Basic Usage: usage.md
       - Configuration: configuration.md
       - Advanced Features: advanced.md
+      - Gating CI on drift: data-checks.md
       - Performance Tips: performance.md
   - Technical Reference:
       - API Reference: api.md
