@@ -136,6 +136,10 @@ pysuricata check data.parquet --baseline baseline.json --thresholds thresholds.t
 A `[tool.pysuricata.check]` table in `pyproject.toml` is read the same way, so
 the thresholds can live with the rest of the project's configuration.
 
+TOML needs Python 3.11 or newer, which is where `tomllib` entered the standard
+library; on 3.10 either install `tomli` or use a JSON file, which works
+everywhere and needs nothing.
+
 Set any threshold to `null` (JSON) or omit it and set it to nothing to disable
 that check. Precedence is defaults, then the file, then command-line flags.
 

@@ -329,28 +329,56 @@ class TestBaselineFile:
         json.loads(path.read_text())
 
 
+def _toml_is_readable() -> bool:
+    """3.10 has no `tomllib`; `tomli` supplies it if the user installed one."""
+    for module in ("tomllib", "tomli"):
+        try:
+            __import__(module)
+        except ModuleNotFoundError:
+            continue
+        return True
+    return False
+
+
+needs_toml = pytest.mark.skipif(
+    not _toml_is_readable(), reason="no TOML parser on this interpreter"
+)
+
+
 class TestThresholdsFile:
     def test_a_json_file(self, tmp_path):
         path = tmp_path / "t.json"
         path.write_text('{"max_mean_shift_sigma": 3.0}')
         assert read_thresholds(path).max_mean_shift_sigma == 3.0
 
+    @needs_toml
     def test_a_toml_file(self, tmp_path):
         path = tmp_path / "t.toml"
         path.write_text("max_mean_shift_sigma = 3.0\n")
         assert read_thresholds(path).max_mean_shift_sigma == 3.0
 
+    @needs_toml
     def test_a_thresholds_table_is_unwrapped(self, tmp_path):
         path = tmp_path / "t.toml"
         path.write_text("[thresholds]\nmin_rows = 10\n")
         assert read_thresholds(path).min_rows == 10
 
+    @needs_toml
     def test_a_pyproject_table_is_unwrapped(self, tmp_path):
         path = tmp_path / "pyproject.toml"
         path.write_text(
             '[project]\nname = "x"\n\n[tool.pysuricata.check]\nmin_rows = 5\n'
         )
         assert read_thresholds(path).min_rows == 5
+
+    @pytest.mark.skipif(_toml_is_readable(), reason="this interpreter can read TOML")
+    def test_toml_without_a_parser_says_what_to_do(self, tmp_path):
+        """On 3.10 the message has to name the way out, or the feature just
+        looks broken."""
+        path = tmp_path / "t.toml"
+        path.write_text("min_rows = 10\n")
+        with pytest.raises(ValueError, match="json"):
+            read_thresholds(path)
 
     def test_unset_keys_keep_their_defaults(self, tmp_path):
         path = tmp_path / "t.json"
