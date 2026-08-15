@@ -124,4 +124,6 @@ _snapshot.tar.gz
 /report.html
 /reports/
 /stats.json
+/baseline.json
+/check.json
 _snap*.tar.gz

@@ -7,6 +7,28 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.38] - 2026-08-15
+
+UX-5 (#76). The roadmap's differentiator: every existing gate — Great
+Expectations, Soda, pointblank — asks you to author expectations first. A
+profiler already knows the shape of yesterday's data, so it can gate with no
+configuration at all.
+
+### Added
+- **`pysuricata check <data> --baseline baseline.json`** — compares a dataset against a stored baseline and **exits non-zero** when a threshold is crossed. `profile` and `summarize` both exit 0 no matter what they found, which is what made them unusable in a pipeline. Exit codes are 0 pass, 1 threshold crossed, 2 the check could not run, so a build can tell drift from an outage. `--write-baseline` creates the baseline, `--json` emits a machine-readable result on stdout while progress stays on stderr, and `--warn-only` reports without failing.
+- **Thresholds in a file or on the command line.** `--thresholds` reads JSON or TOML, including a `[tool.pysuricata.check]` table in `pyproject.toml`; `--max-missing-pct` and `--min-rows` are absolute gates that need no baseline at all. A misspelled threshold is an error rather than a silent no-op — a typo that quietly loosens a gate is the worst failure mode a gate has.
+- **`pysuricata.check`**, the comparison as an importable module: `compare()`, `Thresholds`, `Finding`, `CheckResult`, `make_baseline()`, `read_baseline()`, `write_baseline()`.
+- **[Gating CI on drift](data-checks.md)**, with a GitHub Actions job.
+
+### Notes on the defaults
+Three choices are what keep the gate from crying wolf, and all three are documented where they are made:
+
+- **Growth is not drift.** Row-count drift is off by default. For the same reason the cardinality check requires both the distinct *count* and the distinct *rate* to move: doubling the rows doubles a continuous column's distinct count while leaving its rate alone, and leaves a three-level enum's count alone while halving its rate — so gating on either one alone fails every build that appends data. The cost, stated rather than left to be discovered: while the row count is also moving a lot, a small change in levels sits inside the band growth could explain and is not reported.
+- **Distribution drift is measured in standard deviations, not percent.** A relative change in the mean is meaningless when the mean is near zero and incomparable across columns with different units.
+- **Approximate quantities get loose thresholds.** `unique_est` is a KMV estimate with relative error near `1/√k` — about 2.2% at the default `uniques_k`. The default threshold sits an order of magnitude above that, any threshold set inside the noise floor is called out in the output, and findings resting on an estimate are labelled approximate.
+
+`check` defaults to `--seed 0` rather than to no seed, so re-running it on unchanged data is a no-op rather than a coin flip. A baseline records the version and the payload's `schema_version`; reading one that does not match is an error telling you to regenerate it, not a comparison that silently succeeds against fields that moved.
+
 ## [0.0.37] - 2026-08-15
 
 UX-7 (#78).
