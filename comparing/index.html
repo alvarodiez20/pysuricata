@@ -6,32 +6,32 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Uniform random sampling from data streams">
+        <meta name="description" content="Exploratory data analysis reports for pandas DataFrames">
       
       
       
-        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/algorithms/sampling/">
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/comparing/">
       
       
-        <link rel="prev" href="../sketches/">
+        <link rel="prev" href="../data-checks/">
       
       
-        <link rel="next" href="../../architecture/">
+        <link rel="next" href="../performance/">
       
       
-      <link rel="icon" href="../../assets/favicon.ico">
+      <link rel="icon" href="../assets/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
     
     
       
-        <title>Reservoir Sampling - PySuricata</title>
+        <title>Comparing two datasets - PySuricata</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.2a3383ac.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -50,11 +50,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#reservoir-sampling" class="md-skip">
+        <a href="#comparing-two-datasets" class="md-skip">
           Skip to content
         </a>
       
@@ -96,9 +96,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="PySuricata" class="md-header__button md-logo" aria-label="PySuricata" data-md-component="logo">
+    <a href=".." title="PySuricata" class="md-header__button md-logo" aria-label="PySuricata" data-md-component="logo">
       
-  <img src="../../assets/favicon.ico" alt="logo">
+  <img src="../assets/favicon.ico" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Reservoir Sampling
+              Comparing two datasets
             
           </span>
         </div>
@@ -222,7 +222,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -243,7 +243,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../why-pysuricata/" class="md-tabs__link">
+        <a href="../why-pysuricata/" class="md-tabs__link">
           
   
   
@@ -261,11 +261,13 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
-        <a href="../../usage/" class="md-tabs__link">
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../usage/" class="md-tabs__link">
           
   
   
@@ -283,13 +285,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../api/" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
           
   
   
@@ -311,7 +311,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../architecture/" class="md-tabs__link">
+        <a href="../architecture/" class="md-tabs__link">
           
   
   
@@ -331,7 +331,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../contributing/" class="md-tabs__link">
+      <a href="../contributing/" class="md-tabs__link">
         
   
   
@@ -350,7 +350,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../faq/" class="md-tabs__link">
+      <a href="../faq/" class="md-tabs__link">
         
   
   
@@ -371,7 +371,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../about-suricatas/" class="md-tabs__link">
+        <a href="../about-suricatas/" class="md-tabs__link">
           
   
   
@@ -415,9 +415,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="PySuricata" class="md-nav__button md-logo" aria-label="PySuricata" data-md-component="logo">
+    <a href=".." title="PySuricata" class="md-nav__button md-logo" aria-label="PySuricata" data-md-component="logo">
       
-  <img src="../../assets/favicon.ico" alt="logo">
+  <img src="../assets/favicon.ico" alt="logo">
 
     </a>
     PySuricata
@@ -444,7 +444,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -519,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../why-pysuricata/" class="md-nav__link">
+      <a href="../why-pysuricata/" class="md-nav__link">
         
   
   
@@ -542,7 +542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -565,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../quickstart/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
@@ -588,7 +588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/" class="md-nav__link">
+      <a href="../examples/" class="md-nav__link">
         
   
   
@@ -615,239 +615,14 @@
       
   
   
+    
+  
   
   
     
     
       
         
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
-        
-          
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
-            
-  
-  
-  <span class="md-ellipsis">
-    User Guide
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_3">
-            <span class="md-nav__icon md-icon"></span>
-            User Guide
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../usage/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Basic Usage
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../configuration/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Configuration
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../advanced/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Advanced Features
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../data-sources/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Arrow, Parquet and DuckDB
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../data-checks/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Gating CI on drift
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../comparing/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Comparing two datasets
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../performance/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Performance Tips
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-          </ul>
-        </nav>
-      
-    </li>
-  
-
-    
-      
-      
-  
-  
-    
-  
-  
-  
-    
-    
       
         
       
@@ -877,10 +652,331 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Basic Usage
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Advanced Features
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Arrow, Parquet and DuckDB
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Gating CI on drift
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Comparing two datasets
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Comparing two datasets
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#against-pysuricata-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      Against pysuricata check
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-reports" class="md-nav__link">
+    <span class="md-ellipsis">
+      What it reports
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#honesty-about-the-estimates" class="md-nav__link">
+    <span class="md-ellipsis">
+      Honesty about the estimates
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproducibility
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#as-json" class="md-nav__link">
+    <span class="md-ellipsis">
+      As JSON
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-not-here" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is not here
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Tips
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -893,7 +989,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Technical Reference
@@ -907,7 +1003,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -930,7 +1026,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../summary-schema/" class="md-nav__link">
+      <a href="../summary-schema/" class="md-nav__link">
         
   
   
@@ -953,7 +1049,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../complexity-analysis/" class="md-nav__link">
+      <a href="../complexity-analysis/" class="md-nav__link">
         
   
   
@@ -994,20 +1090,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
             
   
   
@@ -1034,7 +1127,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../stats/overview/" class="md-nav__link">
+      <a href="../stats/overview/" class="md-nav__link">
         
   
   
@@ -1057,7 +1150,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../stats/numeric/" class="md-nav__link">
+      <a href="../stats/numeric/" class="md-nav__link">
         
   
   
@@ -1080,7 +1173,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../stats/categorical/" class="md-nav__link">
+      <a href="../stats/categorical/" class="md-nav__link">
         
   
   
@@ -1103,7 +1196,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../stats/datetime/" class="md-nav__link">
+      <a href="../stats/datetime/" class="md-nav__link">
         
   
   
@@ -1126,7 +1219,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../stats/boolean/" class="md-nav__link">
+      <a href="../stats/boolean/" class="md-nav__link">
         
   
   
@@ -1173,20 +1266,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
             
   
   
@@ -1213,7 +1303,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../analytics/correlations/" class="md-nav__link">
+      <a href="../analytics/correlations/" class="md-nav__link">
         
   
   
@@ -1236,7 +1326,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../analytics/missing-values/" class="md-nav__link">
+      <a href="../analytics/missing-values/" class="md-nav__link">
         
   
   
@@ -1259,7 +1349,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../analytics/duplicates/" class="md-nav__link">
+      <a href="../analytics/duplicates/" class="md-nav__link">
         
   
   
@@ -1282,7 +1372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../analytics/quality/" class="md-nav__link">
+      <a href="../analytics/quality/" class="md-nav__link">
         
   
   
@@ -1310,10 +1400,8 @@
                 
   
   
-    
   
   
-  
     
     
       
@@ -1328,21 +1416,18 @@
     
       
       
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
             
   
   
@@ -1355,7 +1440,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             Algorithms
@@ -1369,7 +1454,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../streaming/" class="md-nav__link">
+      <a href="../algorithms/streaming/" class="md-nav__link">
         
   
   
@@ -1392,7 +1477,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../sketches/" class="md-nav__link">
+      <a href="../algorithms/sketches/" class="md-nav__link">
         
   
   
@@ -1412,32 +1497,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Reservoir Sampling
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../algorithms/sampling/" class="md-nav__link">
         
   
   
@@ -1448,80 +1511,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#algorithm-r-and-why-it-is-not-what-ships" class="md-nav__link">
-    <span class="md-ellipsis">
-      Algorithm R, and why it is not what ships
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#algorithm-l-which-is-what-ships" class="md-nav__link">
-    <span class="md-ellipsis">
-      Algorithm L, which is what ships
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#reproducibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      Reproducibility
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#complexity" class="md-nav__link">
-    <span class="md-ellipsis">
-      Complexity
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#use-cases" class="md-nav__link">
-    <span class="md-ellipsis">
-      Use cases
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      See also
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1600,7 +1589,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1623,7 +1612,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture-diagrams/" class="md-nav__link">
+      <a href="../architecture-diagrams/" class="md-nav__link">
         
   
   
@@ -1646,7 +1635,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../sequence-diagrams-complexity/" class="md-nav__link">
+      <a href="../sequence-diagrams-complexity/" class="md-nav__link">
         
   
   
@@ -1676,7 +1665,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/" class="md-nav__link">
+      <a href="../contributing/" class="md-nav__link">
         
   
   
@@ -1698,7 +1687,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../faq/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         
   
   
@@ -1773,7 +1762,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../about-suricatas/" class="md-nav__link">
+      <a href="../about-suricatas/" class="md-nav__link">
         
   
   
@@ -1796,7 +1785,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../roadmap/" class="md-nav__link">
+      <a href="../roadmap/" class="md-nav__link">
         
   
   
@@ -1819,7 +1808,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/memory-budget/" class="md-nav__link">
+      <a href="../adr/memory-budget/" class="md-nav__link">
         
   
   
@@ -1842,7 +1831,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../changelog/" class="md-nav__link">
+      <a href="../changelog/" class="md-nav__link">
         
   
   
@@ -1884,154 +1873,183 @@
   
 
 
-<h1 id="reservoir-sampling">Reservoir Sampling</h1>
-<p>Maintain a uniform random sample of fixed size <span class="arithmatex">\(k\)</span> from a stream of unknown
-length. PySuricata uses the sample for quantiles, the median, the IQR, the MAD
-and the histogram — everything that needs order statistics but cannot afford to
-hold the column in memory.</p>
+<h1 id="comparing-two-datasets">Comparing two datasets</h1>
 <div class="admonition info">
-<p class="admonition-title">Examples on this page assume a DataFrame named <code>df</code></p>
-<p>Every snippet below that does not build its own frame expects one already in
-scope. Paste this first to follow along:</p>
+<p class="admonition-title">Examples on this page assume two frames: <code>df</code>, last month's data, and <code>new_df</code>, this month's</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="p">{</span>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5_000</span><span class="p">),</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">lognormal</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">5_000</span><span class="p">),</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="s2">&quot;country&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="s2">&quot;ES&quot;</span><span class="p">,</span> <span class="s2">&quot;FR&quot;</span><span class="p">,</span> <span class="s2">&quot;DE&quot;</span><span class="p">],</span> <span class="mi">5_000</span><span class="p">),</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>        <span class="s2">&quot;signed_up&quot;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="mi">5_000</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;17min&quot;</span><span class="p">),</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="s2">&quot;active&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">5_000</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.3</span><span class="p">,</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="p">}</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">n</span> <span class="o">=</span> <span class="mi">20_000</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">lognormal</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="s2">&quot;north&quot;</span><span class="p">,</span> <span class="s2">&quot;south&quot;</span><span class="p">,</span> <span class="s2">&quot;east&quot;</span><span class="p">],</span> <span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">),</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">})</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">new_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">lognormal</span><span class="p">(</span><span class="mf">3.4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span>
+</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="s2">&quot;region&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="s2">&quot;north&quot;</span><span class="p">,</span> <span class="s2">&quot;south&quot;</span><span class="p">,</span> <span class="s2">&quot;west&quot;</span><span class="p">],</span> <span class="n">n</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">object</span><span class="p">),</span>
+</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">})</span>
 </span></code></pre></div>
 </div>
-<p>The guarantee is the same for both algorithms below: <strong>every element that has
-arrived is in the reservoir with probability <span class="arithmatex">\(k/n\)</span></strong>, independently of where it
-sat in the stream and of how the stream happened to be split into chunks. That
-last part is what makes chunked results equal unchunked ones.</p>
-<figure class="ps-figure" markdown="0">
-  <iframe src="../../assets/diagrams/figures.html?only=reservoir" title="Reservoir sampling: Algorithm R versus Algorithm L" loading="lazy"></iframe>
-</figure>
-
-<h2 id="algorithm-r-and-why-it-is-not-what-ships">Algorithm R, and why it is not what ships</h2>
-<p>Algorithm R (Vitter, 1985) is the version usually taught: hold the first <span class="arithmatex">\(k\)</span>
-elements, then for each subsequent arrival draw a random index and overwrite a
-slot if it falls inside the reservoir.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># Reference only -- this is NOT what PySuricata runs. See Algorithm L below.</span>
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">algorithm_r</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">reservoir</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reservoir</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>            <span class="n">reservoir</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>            <span class="n">j</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-1-9"><a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>            <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
-</span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>                <span class="n">reservoir</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
-</span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="k">return</span> <span class="n">reservoir</span>
+<p><code>compare(a, b)</code> reports what moved between two datasets. Every delta, whether or
+not it crosses any threshold — it is a description, not a verdict.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">diff</span> <span class="o">=</span> <span class="n">compare</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">new_df</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">diff</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">added</span>                          <span class="c1"># {&quot;extra&quot;: &quot;numeric&quot;}</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">diff</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;amount&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">median_shift_sigma</span>  <span class="c1"># 0.24</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">diff</span><span class="o">.</span><span class="n">columns</span><span class="p">[</span><span class="s2">&quot;region&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">categories_added</span>    <span class="c1"># (&quot;west&quot;,)</span>
 </span></code></pre></div>
-<p>It is correct, and it costs one random draw per element — 10 million draws for
-10 million rows, every one of them in Python. That is the problem.</p>
-<h2 id="algorithm-l-which-is-what-ships">Algorithm L, which is what ships</h2>
-<p>Algorithm L (Li, 1994) keeps the same guarantee and pays for it far less often.
-Instead of testing every arrival, it draws a <em>geometric skip</em> and jumps straight
-to the next element it will accept, never touching the ones in between. The
-number of draws falls from <span class="arithmatex">\(n\)</span> to about</p>
-<div class="arithmatex">\[
-k \ln\!\left(\frac{n}{k}\right)
-\]</div>
-<p>— roughly 145,000 draws for 10 million rows into <span class="arithmatex">\(k = 20{,}000\)</span>, instead of
-10 million.</p>
-<p><code>ReservoirSampler</code> in <code>pysuricata/accumulators/sketches.py</code> goes one step
-further. The acceptance schedule depends only on the generator and on <span class="arithmatex">\(k\)</span> —
-never on the data — so there is no reason to derive it one acceptance at a time.
-Writing the recurrence out makes every term an array operation:</p>
-<div class="arithmatex">\[
-\log W_i = \frac{1}{k}\sum_{j \le i} \log u_j
-\qquad
-\text{skip}_i = \left\lfloor \frac{\log v_i}{\log(1 - W_i)} \right\rfloor
-\qquad
-\text{index}_i = \text{base} + \sum_{j \le i}\text{skip}_j + i
-\]</div>
-<p>so the schedule is generated in blocks with <code>np.cumsum</code> rather than in a Python
-loop. <code>log1p(-W)</code> rather than <code>log(1 - W)</code>: <span class="arithmatex">\(W\)</span> is close to 1 early on, where
-the subtraction would lose most of its significant digits.</p>
-<p>Because the schedule comes from the draw sequence alone, it is identical however
-the stream is later split — which is the property the accuracy oracle asserts.</p>
-<h2 id="reproducibility">Reproducibility</h2>
-<p>Each sampler owns its generator:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata.accumulators.sketches</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReservoirSampler</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">sampler</span> <span class="o">=</span> <span class="n">ReservoirSampler</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">20_000</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">42</span><span class="p">))</span>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>rows: 20,000 → 20,000 (+0.0%)
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>  amount: median +0.24σ
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>  amount: spread ×1.70
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>  region: new categories: west (approx)
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>  region: gone: east (approx)
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>  seen_at: newest value moved +31.0 days
 </span></code></pre></div>
-<p>Nothing reads or writes the process-global RNG. Within a profiling run each
-column's seed is derived from the run seed and the <strong>column name</strong>, so a
-column's sample does not depend on which other columns are present or on the
-order they were built in — profiling a subset reproduces the numbers from
-profiling the whole frame.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComputeOptions</span><span class="p">,</span> <span class="n">ProfileConfig</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">(</span><span class="n">compute</span><span class="o">=</span><span class="n">ComputeOptions</span><span class="p">(</span><span class="n">random_seed</span><span class="o">=</span><span class="mi">42</span><span class="p">))</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
-</span></code></pre></div>
-<p>Sample size is <code>ComputeOptions.numeric_sample_size</code> (default 20,000).</p>
-<h2 id="complexity">Complexity</h2>
+<p>Both sides accept anything <code>profile()</code> does — frames, paths, Arrow tables,
+DuckDB relations — or a <code>summarize()</code> payload you already have, which is not
+re-profiled.</p>
+<h2 id="against-pysuricata-check">Against <code>pysuricata check</code></h2>
+<p>They are the same arithmetic with different jobs.</p>
 <table>
 <thead>
 <tr>
 <th></th>
-<th>Algorithm R</th>
-<th>Algorithm L</th>
+<th><code>check</code></th>
+<th><code>compare</code></th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Space</td>
-<td>O(k)</td>
-<td>O(k)</td>
+<td>Answers</td>
+<td>should this build fail?</td>
+<td>what moved?</td>
 </tr>
 <tr>
-<td>Random draws</td>
-<td><span class="arithmatex">\(n\)</span></td>
-<td><span class="arithmatex">\(\approx k \ln(n/k)\)</span></td>
+<td>Output</td>
+<td>findings above a threshold</td>
+<td>every delta</td>
 </tr>
 <tr>
-<td>Time per element</td>
-<td>O(1)</td>
-<td>O(1) amortised, most elements untouched</td>
+<td>Verdict</td>
+<td><code>passed</code>, and an exit code</td>
+<td>none</td>
 </tr>
 <tr>
-<td>Uniform guarantee</td>
-<td>exact</td>
-<td>exact</td>
+<td>Category churn</td>
+<td>no</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Quantiles</td>
+<td>median</td>
+<td>every quartile</td>
 </tr>
 </tbody>
 </table>
-<h2 id="use-cases">Use cases</h2>
-<ul>
-<li>Quantile estimation (sort the sample)</li>
-<li>Histogram construction</li>
-<li>Representative row sampling</li>
-</ul>
-<h2 id="see-also">See also</h2>
-<ul>
-<li><a href="../sketches/">Sketch Algorithms</a> — the bounded-memory counterparts</li>
-<li><a href="../../stats/numeric/">Numeric Analysis</a> — using the reservoir for quantiles</li>
-</ul>
+<p><code>check</code> is thresholds applied to the deltas <code>compare</code> computes, and they read
+the payload through the same functions. That is deliberate: a gate and a diff
+that disagreed about what counts as a change would be worse than either alone,
+and there is a test asserting the two report the same numbers.</p>
+<p><strong>Category churn is in the diff and not in the gate.</strong> Which values fall in and
+out of a top-k table moves for reasons that are not drift — Misra-Gries keeps
+bounded counters, and the tail of a long list reshuffles on counting noise. That
+makes it a poor thing to fail a build on, and the most legible thing you can
+show a reader about a categorical column that changed.</p>
+<h2 id="what-it-reports">What it reports</h2>
+<p><strong>Schema</strong> — <code>added</code>, <code>removed</code>, <code>retyped</code>, <code>unchanged</code>. A retyped column gets
+no statistical delta: comparing a mean against a category count is noise on top
+of a fact the reader already has.</p>
+<p><strong>Dataset</strong> — rows before and after with the relative change, missing-cell
+percentage, approximate memory.</p>
+<p><strong>Per column</strong>, for columns present in both with the same type:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>missing_pct_change</code></td>
+<td>in <strong>percentage points</strong></td>
+</tr>
+<tr>
+<td><code>unique_change_pct</code></td>
+<td><strong>approximate</strong>: relative change in the distinct estimate</td>
+</tr>
+<tr>
+<td><code>distinct_rate_change_pct</code></td>
+<td>the same, per row</td>
+</tr>
+<tr>
+<td><code>mean_shift_sigma</code>, <code>median_shift_sigma</code>, <code>q1_shift_sigma</code>, <code>q3_shift_sigma</code></td>
+<td>in baseline standard deviations, <strong>signed</strong></td>
+</tr>
+<tr>
+<td><code>std_ratio</code></td>
+<td>spread after over spread before</td>
+</tr>
+<tr>
+<td><code>range_before</code>, <code>range_after</code></td>
+<td><code>(min, max)</code></td>
+</tr>
+<tr>
+<td><code>true_rate_change_pp</code></td>
+<td>boolean columns, in percentage points</td>
+</tr>
+<tr>
+<td><code>categories_added</code>, <code>categories_removed</code>, <code>top_category_*</code></td>
+<td><strong>approximate</strong></td>
+</tr>
+<tr>
+<td><code>span_days_*</code>, <code>newest_*</code></td>
+<td>datetime columns; timestamps are epoch nanoseconds</td>
+</tr>
+</tbody>
+</table>
+<p>Two numbers rather than one for cardinality, because neither answers the
+question alone: doubling the rows doubles a continuous column's distinct
+<strong>count</strong> while leaving its <strong>rate</strong> alone, and does the opposite to a
+three-level enum. Reported separately, a reader can tell growth from a change in
+shape — which is the same problem <code>check</code> solves with a rule, stated here as
+data.</p>
+<h2 id="honesty-about-the-estimates">Honesty about the estimates</h2>
+<p><code>unique_change_pct</code> and the category lists rest on sketches. <code>ColumnDelta.approximate</code>
+says so per column, and the text rendering marks those lines <code>(approx)</code>.</p>
+<p>The rendering also <strong>suppresses a distinct-count change smaller than the sketch's
+own error</strong> — about 2.2% at the default <code>uniques_k</code> — because printing a 1% move
+as a finding is the same mistake as printing an estimate as an exact integer.
+The structured delta still carries the raw number; only the prose is quiet.</p>
+<h2 id="reproducibility">Reproducibility</h2>
+<p><code>compare</code> profiles both sides with <code>seed=0</code> by default rather than leaving it to
+chance, so comparing a dataset against itself is a no-op rather than a set of
+sampling wobbles. Any other keyword is passed to both sides, since comparing two
+profiles taken with different settings would report the settings as drift.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">compare</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">new_df</span><span class="p">,</span> <span class="n">sample</span><span class="o">=</span><span class="mi">5_000</span><span class="p">,</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;amount&quot;</span><span class="p">])</span>
+</span></code></pre></div>
+<h2 id="as-json">As JSON</h2>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">compare</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">new_df</span><span class="p">)</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())[:</span><span class="mi">60</span><span class="p">])</span>
+</span></code></pre></div>
+<p>Three sections — <code>dataset</code>, <code>schema</code>, <code>columns</code> — mirroring the object.</p>
+<h2 id="what-is-not-here">What is not here</h2>
+<p>There is no HTML view yet. The JSON contract and the text rendering are what
+this ships with; the report side of it belongs with the wider work on the
+report's presentation rather than bolted on beside it.</p>
 
 
 
 
 
 
-
-  
-  
 
 
 
@@ -2098,14 +2116,14 @@ profiling the whole frame.</p>
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.tracking", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "toc.integrate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.tracking", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "toc.integrate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
-        <script src="../../javascripts/figures.js"></script>
+        <script src="../javascripts/figures.js"></script>
       
-        <script src="../../javascripts/mathjax.js"></script>
+        <script src="../javascripts/mathjax.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       
