@@ -17,7 +17,6 @@ import numpy as np
 from .algorithms import (
     ExtremeTracker,
     MonotonicityDetector,
-    OutlierDetector,
     PerformanceMetrics,
     StreamingMoments,
 )
@@ -187,12 +186,12 @@ class NumericAccumulator:
             if self.config.enable_monotonicity_detection
             else None
         )
+        # No OutlierDetector here. It kept a second 10,000-slot reservoir over
+        # the same values as self._sample, fed on every chunk -- and nothing
+        # ever read it: detect_outliers() was never called, and the outlier
+        # counts in the report are computed in finalize() from self._sample.
+        # The flag below still gates that computation.
         self.enable_outlier_detection = self.config.enable_outlier_detection
-        self._outlier_detector = (
-            OutlierDetector(rng=self._rng)
-            if self.config.enable_outlier_detection
-            else None
-        )
 
         # Performance monitoring for production environments
         self._performance_metrics = (
@@ -404,9 +403,6 @@ class NumericAccumulator:
         if self._monotonicity:
             self._monotonicity.update(finite_values)
 
-        if self._outlier_detector:
-            self._outlier_detector.update(finite_values)
-
     def update_extremes(
         self, pairs_min: list[tuple[Any, float]], pairs_max: list[tuple[Any, float]]
     ) -> None:
@@ -488,6 +484,16 @@ class NumericAccumulator:
 
         # Get extremes with global indices
         min_pairs, max_pairs = self._extremes.get_extremes()
+
+        # Take the reported minimum and maximum from the tracker, which sees
+        # every value, rather than from the reservoir, which sees a sample of
+        # them. The card printed a sampled "Maximum" directly above a table of
+        # exact extreme values, so the two could disagree -- and whether they
+        # did came down to whether the true extreme happened to be sampled.
+        if min_pairs:
+            quantiles["min"] = min_pairs[0][1]
+        if max_pairs:
+            quantiles["max"] = max_pairs[0][1]
 
         # Get advanced monotonicity analysis if enabled
         mono_inc, mono_dec = False, False
@@ -774,8 +780,6 @@ class NumericAccumulator:
 
         if self._monotonicity:
             self._monotonicity.reset()
-        if self._outlier_detector:
-            self._outlier_detector.reset(rng=self._rng)
         if self._performance_metrics:
             self._performance_metrics.reset()
 
