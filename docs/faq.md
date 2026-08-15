@@ -7,6 +7,27 @@ description: Common questions and answers about PySuricata
 
 ## General
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 ### What is PySuricata?
 
 PySuricata is a Python library for exploratory data analysis that generates self-contained HTML reports. It uses streaming algorithms to process data in chunks, keeping memory bounded regardless of dataset size.
@@ -82,6 +103,7 @@ report = profile(df, config=config)
 Set a random seed:
 
 ```python
+from pysuricata import ReportConfig, profile
 config = ReportConfig()
 config.compute.random_seed = 42
 
@@ -93,8 +115,11 @@ report = profile(df, config=config)
 Yes, use `summarize()`:
 
 ```python
+import pandas as pd
+
 from pysuricata import summarize
 
+df = pd.DataFrame({"my_column": [1.0, 2.0, 3.0, None]})
 stats = summarize(df)
 print(stats["dataset"])
 print(stats["columns"]["my_column"])
@@ -106,9 +131,9 @@ print(stats["columns"]["my_column"])
 
 Memory usage depends on configuration, not dataset size. The main factors are:
 
-- **chunk_size** — rows held in memory per iteration (default: 200,000)
+- **chunk_size** — rows held in memory per iteration (default: 50,000)
 - **numeric_sample_size** — reservoir sample size per numeric column (default: 20,000)
-- **uniques_sketch_size** — KMV sketch size per column (default: 2,048)
+- **max_uniques** — KMV sketch size per column (default: 2,048)
 
 Processing a 10 GB dataset uses roughly the same memory as processing a 100 MB one.
 
@@ -117,6 +142,7 @@ Processing a 10 GB dataset uses roughly the same memory as processing a 100 MB o
 Three quick changes:
 
 ```python
+from pysuricata import ReportConfig
 config = ReportConfig()
 config.compute.compute_correlations = False    # Skip O(p²) correlation step
 config.compute.numeric_sample_size = 10_000    # Smaller reservoir sample
@@ -130,6 +156,7 @@ See [Performance Tips](performance.md) for more strategies.
 Yes, by passing a generator:
 
 ```python
+from pysuricata import profile
 def read_large_dataset():
     for file in large_files:
         yield pd.read_parquet(file)
@@ -191,11 +218,12 @@ Missing values are excluded from statistical calculations (mean, variance, etc.)
 
 ### Why is my HTML report large?
 
-Report size grows with the number of columns. Each column adds a variable card with statistics and an SVG chart. To reduce size, profile fewer columns or reduce `top_k_size`.
+Report size grows with the number of columns. Each column adds a variable card with statistics and an SVG chart. To reduce size, profile fewer columns or reduce `top_k`.
 
 ### Can I display reports in Jupyter?
 
 ```python
+from pysuricata import profile
 report = profile(df)
 report  # Auto-displays inline
 

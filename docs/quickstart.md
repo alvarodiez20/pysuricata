@@ -2,6 +2,27 @@
 
 Get started with PySuricata in less than 5 minutes!
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 ## Installation
 
 Install pysuricata from PyPI:
@@ -80,6 +101,7 @@ See `pysuricata --help` for all options.
 ### Step 2: Generate Report
 
 ```python
+from pysuricata import profile
 # Create the profile report
 report = profile(df)
 
@@ -137,14 +159,21 @@ For each variable, you'll see:
 ### Save as JSON (for programmatic access)
 
 ```python
-# Generate statistics only
+import pandas as pd
+
 from pysuricata import summarize
 
+df = pd.DataFrame({"sepal_length": [5.1, 4.9, 6.2], "species": ["a", "a", "b"]})
+
+# Generate statistics only -- no HTML is rendered
 stats = summarize(df)
 print(stats["dataset"])  # Dataset-level metrics
 print(stats["columns"]["sepal_length"])  # Per-column stats
+```
 
-# Or save from report
+Or, from a report you already built:
+
+```python
 report.save_json("iris_stats.json")
 ```
 
@@ -267,6 +296,7 @@ report = profile(df, config=config)
 ### For Memory-Constrained Environments
 
 ```python
+from pysuricata import ReportConfig, profile
 config = ReportConfig()
 config.compute.chunk_size = 50_000  # Smaller chunks
 config.compute.numeric_sample_size = 5_000  # Smaller samples
@@ -278,6 +308,7 @@ report = profile(df, config=config)
 ### For Speed
 
 ```python
+from pysuricata import ReportConfig, profile
 config = ReportConfig()
 config.compute.compute_correlations = False  # Skip correlations
 config.compute.top_k = 20  # Fewer top values
@@ -310,7 +341,7 @@ Now that you've created your first report, explore:
 ### Report takes too long
 - Increase `chunk_size` (if memory allows)
 - Disable correlations
-- Reduce `top_k_size`
+- Reduce `top_k`
 
 ### Want more decimal places
 ```python

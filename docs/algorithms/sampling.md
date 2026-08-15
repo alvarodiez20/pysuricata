@@ -10,6 +10,27 @@ length. PySuricata uses the sample for quantiles, the median, the IQR, the MAD
 and the histogram — everything that needs order statistics but cannot afford to
 hold the column in memory.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 The guarantee is the same for both algorithms below: **every element that has
 arrived is in the reservoir with probability \(k/n\)**, independently of where it
 sat in the stream and of how the stream happened to be split into chunks. That

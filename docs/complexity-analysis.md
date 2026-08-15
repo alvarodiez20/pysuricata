@@ -12,8 +12,8 @@ PySuricata processes data in a **single pass** using streaming algorithms. All s
 |-----------|---------------|-------|--------------------|
 | Streaming moments | O(1) | O(1) | — |
 | Reservoir sampling | O(1) | O(s) | `numeric_sample_size` (default: 20,000) |
-| KMV distinct count | O(log k) | O(k) | `uniques_sketch_size` (default: 2,048) |
-| Misra-Gries top-k | O(1) amortized | O(k) | `top_k_size` (default: 50) |
+| KMV distinct count | O(log k) | O(k) | `max_uniques` (default: 2,048) |
+| Misra-Gries top-k | O(1) amortized | O(k) | `top_k` (default: 50) |
 | Extreme tracking | O(log k) | O(k) | `max_extremes` (default: 5) |
 | Correlations | O(p) per value | O(p²) | Number of numeric columns |
 
@@ -60,7 +60,7 @@ Every subset of size s from the stream has equal probability of being the sample
 - **Update:** O(log k) — hash value, maintain min-heap of k smallest hashes
 - **Merge:** O(k log k) — union two heaps, keep k smallest
 - **Estimate:** d̂ = (k − 1) / x_k where x_k is the k-th smallest hash
-- **Space:** O(k) where k = `uniques_sketch_size`
+- **Space:** O(k) where k = `max_uniques`
 - **Error:** ~1/√k relative error — with k=2048, approximately 2.2%
 
 The implementation transitions from exact counting (for low-cardinality columns) to approximate estimation when the number of distinct values exceeds a threshold.
@@ -74,7 +74,7 @@ The implementation transitions from exact counting (for low-cardinality columns)
 - **Update:** O(1) amortized — increment counter or decrement all
 - **Merge:** O(k) — sum counters from two states
 - **Finalize:** O(k log k) — sort by frequency
-- **Space:** O(k) where k = `top_k_size`
+- **Space:** O(k) where k = `top_k`
 - **Guarantee:** Any value with true frequency > n/k is included in the output
 
 Frequency estimates are within ±n/k of the true count.
@@ -150,8 +150,8 @@ Two counters (true, false) plus missing count.
 |-----------|-----------------|-------------------|
 | `chunk_size` ↑ | More rows in memory per iteration | No effect on final accuracy |
 | `numeric_sample_size` ↑ | Larger reservoir per numeric column | Better quantile estimates |
-| `uniques_sketch_size` ↑ | Larger KMV sketch per column | Better distinct count accuracy |
-| `top_k_size` ↑ | More frequent values tracked | More comprehensive top-k |
+| `max_uniques` ↑ | Larger KMV sketch per column | Better distinct count accuracy |
+| `top_k` ↑ | More frequent values tracked | More comprehensive top-k |
 | `compute_correlations` off | Saves O(p²) | No correlations reported |
 
 ---

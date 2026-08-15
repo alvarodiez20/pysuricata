@@ -7,6 +7,27 @@ description: Complete mathematical formulas, algorithms, and implementation deta
 
 This page provides comprehensive technical documentation for how pysuricata profiles and summarizes numerical (continuous and discrete) columns at scale using proven streaming algorithms with mathematical guarantees.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 !!! tip "Audience"
     Designed for users who want to **understand and trust** the numbers in the HTML report, as well as contributors who need to **modify** or **extend** the accumulator implementations.
 
@@ -494,8 +515,8 @@ config = ReportConfig()
 config.compute.numeric_sample_size = 20_000  # Default
 
 # Sketch sizes
-config.compute.uniques_sketch_size = 2_048  # KMV (default)
-config.compute.top_k_size = 50  # Top values (if tracking)
+config.compute.max_uniques = 2_048  # KMV (default)
+config.compute.top_k = 50  # Top values (if tracking)
 
 # Quantiles to compute
 # (Not yet configurable, default: [0.01, 0.05, 0.25, 0.5, 0.75, 0.95, 0.99])
@@ -599,14 +620,19 @@ report = profile(read_chunks(), config=config)
 ### Access Statistics Programmatically
 
 ```python
+import numpy as np
+import pandas as pd
+
 from pysuricata import summarize
 
+df = pd.DataFrame({"amount": np.random.default_rng(0).lognormal(3, 1, 2_000)})
 stats = summarize(df)
 amount_stats = stats["columns"]["amount"]
 
-print(f"Mean: {amount_stats['mean']}")
-print(f"Std: {amount_stats['std']}")
-print(f"Skewness: {amount_stats['skewness']}")
+print(f"Mean:   {amount_stats['mean']:.2f}")
+print(f"Std:    {amount_stats['std']:.2f}")
+print(f"Median: {amount_stats['median']:.2f}")
+print(f"IQR:    {amount_stats['q3'] - amount_stats['q1']:.2f}")
 ```
 
 ## References

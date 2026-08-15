@@ -7,6 +7,27 @@ description: Advanced usage patterns and power user tips for PySuricata
 
 Advanced techniques for power users.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 ## Custom Markdown Descriptions
 
 Add rich descriptions to reports:
@@ -37,6 +58,7 @@ report = profile(df, config=config)
 Combine data from multiple sources:
 
 ```python
+from pysuricata import profile
 def multi_source_generator():
     # Source 1: CSV files
     for i in range(10):
@@ -73,6 +95,7 @@ report = profile(dask_generator())
 ## Custom Sampling Strategy
 
 ```python
+from pysuricata import profile
 # Sample every Nth row for very large datasets
 def sampled_generator(n=10):
     for chunk in pd.read_csv("huge.csv", chunksize=100_000):
@@ -84,7 +107,13 @@ report = profile(sampled_generator())
 ## Merging Accumulator States (Distributed)
 
 ```python
+import numpy as np
+
 from pysuricata.accumulators import NumericAccumulator
+
+rng = np.random.default_rng(0)
+data_partition_1 = rng.lognormal(3, 1, 50_000)
+data_partition_2 = rng.lognormal(3, 1, 50_000)
 
 # Worker 1
 acc1 = NumericAccumulator("amount")
@@ -104,6 +133,7 @@ final_stats = acc1.finalize()
 Profile only rows meeting criteria:
 
 ```python
+from pysuricata import profile
 def filtered_generator():
     for chunk in pd.read_csv("data.csv", chunksize=100_000):
         # Only active users
@@ -117,7 +147,12 @@ report = profile(filtered_generator())
 For multi-hour pipelines analyzing massive datasets (i.e. over 100M rows), you can enable disk checkpoints. This saves the profiling state every `N` chunks, allowing you to resume or investigate partial state if the job is interrupted.
 
 ```python
-from pysuricata import profile, ReportConfig
+import numpy as np
+import pandas as pd
+
+from pysuricata import ReportConfig, profile
+
+rng = np.random.default_rng(0)
 
 config = ReportConfig()
 # Checkpoint roughly every 10 million rows assuming chunk_size is 500,000
@@ -126,6 +161,14 @@ config.compute.checkpoint_every_n_chunks = 20
 config.compute.checkpoint_dir = "/tmp/pysuricata/nightly"
 # Optionally dump a preview HTML page alongside the serialized pickle state
 config.compute.checkpoint_write_html = True
+
+
+
+def multi_source_generator():
+    """Yield one chunk per source file, never holding more than one."""
+    for i in range(4):
+        yield pd.DataFrame({"amount": rng.lognormal(3, 1, 500_000)})
+
 
 report = profile(multi_source_generator(), config=config)
 ```

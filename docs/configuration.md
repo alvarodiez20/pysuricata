@@ -7,6 +7,27 @@ description: Complete reference for all configuration options in PySuricata
 
 Complete guide to configuring PySuricata for your specific needs.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 ## Overview
 
 PySuricata is highly configurable via the `ReportConfig` class hierarchy:
@@ -84,7 +105,7 @@ Reservoir sample size for quantiles and histograms.
 config.compute.numeric_sample_size = 50_000
 ```
 
-**`uniques_sketch_size: int = 2_048`**
+**`max_uniques: int = 2_048`**
 
 KMV sketch size for distinct count estimation.
 
@@ -94,12 +115,12 @@ KMV sketch size for distinct count estimation.
 - **k=4096**: ~1.6% error
 
 ```python
-config.compute.uniques_sketch_size = 4_096  # More accurate
+config.compute.max_uniques = 4_096  # More accurate
 ```
 
 ### Categorical Configuration
 
-**`top_k_size: int = 50`**
+**`top_k: int = 50`**
 
 Number of top values to track (Misra-Gries algorithm).
 
@@ -108,7 +129,7 @@ Number of top values to track (Misra-Gries algorithm).
 - **Guarantee**: All items with frequency > n/k found
 
 ```python
-config.compute.top_k_size = 100  # Track top 100
+config.compute.top_k = 100  # Track top 100
 ```
 
 ### Correlation Configuration
@@ -133,6 +154,7 @@ report = profile(df, config=config)
 Minimum |r| to report.
 
 ```python
+from pysuricata import ComputeOptions, ReportConfig
 config = ReportConfig(compute=ComputeOptions(
     corr_threshold=0.7  # Only strong correlations
 ))
@@ -143,6 +165,7 @@ config = ReportConfig(compute=ComputeOptions(
 Maximum columns for correlation computation. Skip if exceeded.
 
 ```python
+from pysuricata import ComputeOptions, ReportConfig
 config = ReportConfig(compute=ComputeOptions(
     corr_max_cols=100  # Higher limit
 ))
@@ -153,6 +176,7 @@ config = ReportConfig(compute=ComputeOptions(
 Maximum correlations to show per column.
 
 ```python
+from pysuricata import ComputeOptions, ReportConfig
 config = ReportConfig(compute=ComputeOptions(
     corr_max_per_col=5  # Show top 5
 ))
@@ -175,6 +199,9 @@ config.compute.checkpoint_every_n_chunks = 10  # Checkpoint every 10 chunks
 Directory to save checkpoint files. Defaults to current working directory or the directory of the final HTML report.
 
 ```python
+from pysuricata import ReportConfig
+
+config = ReportConfig()
 config.compute.checkpoint_dir = "/tmp/pysuricata_checkpoints"
 ```
 
@@ -249,37 +276,44 @@ config.render.sample_rows = 20  # Show 20 rows
 ### Memory-Constrained Environment
 
 ```python
+from pysuricata import ReportConfig
 config = ReportConfig()
 config.compute.chunk_size = 50_000  # Small chunks
 config.compute.numeric_sample_size = 5_000  # Small samples
-config.compute.uniques_sketch_size = 1_024  # Smaller sketches
-config.compute.top_k_size = 20  # Fewer top values
+config.compute.max_uniques = 1_024  # Smaller sketches
+config.compute.top_k = 20  # Fewer top values
 config.compute.compute_correlations = False  # Skip correlations
 ```
 
 ### Maximum Accuracy
 
 ```python
+from pysuricata import ReportConfig
 config = ReportConfig()
 config.compute.numeric_sample_size = 100_000  # Large samples
-config.compute.uniques_sketch_size = 8_192  # Large sketches
-config.compute.top_k_size = 200  # Many top values
+config.compute.max_uniques = 8_192  # Large sketches
+config.compute.top_k = 200  # Many top values
 config.compute.corr_threshold = 0.0  # All correlations
 ```
 
 ### Speed Optimized
 
 ```python
+from pysuricata import ReportConfig
 config = ReportConfig()
 config.compute.chunk_size = 500_000  # Large chunks
 config.compute.numeric_sample_size = 10_000  # Small samples
 config.compute.compute_correlations = False  # Skip correlations
-config.compute.top_k_size = 20  # Few top values
+config.compute.top_k = 20  # Few top values
 ```
 
 ### Reproducible Reports
 
 ```python
+from datetime import datetime
+
+from pysuricata import ReportConfig
+
 config = ReportConfig()
 config.compute.random_seed = 42  # Deterministic
 config.render.title = f"Report generated {datetime.now()}"
@@ -288,6 +322,7 @@ config.render.title = f"Report generated {datetime.now()}"
 ### Production Data Quality Checks
 
 ```python
+from pysuricata import ReportConfig
 # Only check specific columns
 config = ReportConfig()
 config.compute.columns = ["customer_id", "transaction_amount", "timestamp"]
@@ -309,12 +344,13 @@ Older versions used `EngineConfig`. It's still supported but deprecated.
 ```python
 # Old way (deprecated)
 from pysuricata.config import EngineConfig
-cfg = EngineConfig(chunk_size=200_000, sample_k=20_000)
+cfg = EngineConfig(chunk_size=50_000, numeric_sample_k=20_000)
 
 # New way (recommended)
 from pysuricata import ReportConfig
+
 config = ReportConfig()
-config.compute.chunk_size = 200_000
+config.compute.chunk_size = 50_000
 config.compute.numeric_sample_size = 20_000
 ```
 
@@ -327,6 +363,7 @@ Not currently supported. All configuration via code.
 Invalid configurations raise `ValueError`:
 
 ```python
+from pysuricata import ReportConfig
 config = ReportConfig()
 config.compute.chunk_size = -1  # Invalid
 # Raises: ValueError: chunk_size must be positive
@@ -338,8 +375,8 @@ config.compute.chunk_size = -1  # Invalid
 |-----------|-----------|--------|
 | `chunk_size` | ↑ | Faster, more memory |
 | `numeric_sample_size` | ↑ | More accurate quantiles, more memory |
-| `uniques_sketch_size` | ↑ | More accurate distinct, more memory |
-| `top_k_size` | ↑ | More top values, more memory |
+| `max_uniques` | ↑ | More accurate distinct, more memory |
+| `top_k` | ↑ | More top values, more memory |
 | `compute_correlations` | False | Much faster, less memory |
 
 ## See Also

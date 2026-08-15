@@ -198,10 +198,10 @@ The template produces a **single portable HTML file** — no external dependenci
 
 | Parameter | Default | Effect |
 |-----------|---------|--------|
-| `chunk_size` | 200,000 | Rows per chunk |
+| `chunk_size` | 50,000 | Rows per chunk |
 | `numeric_sample_size` | 20,000 | Reservoir size for quantiles |
-| `uniques_sketch_size` | 2,048 | KMV sketch size |
-| `top_k_size` | 50 | Misra-Gries capacity |
+| `max_uniques` | 2,048 | KMV sketch size |
+| `top_k` | 50 | Misra-Gries capacity |
 | `compute_correlations` | `True` | Enable/disable correlation chips |
 | `corr_threshold` | 0.5 | Minimum \|r\| to display |
 | `random_seed` | `None` | Deterministic sampling |

@@ -442,7 +442,3 @@ def test_pebay_merge():
 - [Numeric Analysis](../stats/numeric.md) - Application of these algorithms
 - [Sketch Algorithms](sketches.md) - Other streaming algorithms
 - [Performance Tips](../performance.md) - Optimization strategies
-
----
-
-*Last updated: 2025-10-12*

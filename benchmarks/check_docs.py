@@ -37,13 +37,19 @@ import json
 import re
 import subprocess
 import sys
+import textwrap
 from collections import defaultdict
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 DOCS = REPO / "docs"
 
-FENCE = re.compile(r"```(\w*)\n(.*?)```", re.S)
+# Indentation before the opening fence is captured so the body can be
+# dedented by the same amount: fences nested in a pymdownx.tabbed block or a
+# list item are indented, and feeding that to ast.parse reports every one of
+# them as "unexpected indent" -- a property of the surrounding markdown, not
+# of the code.
+FENCE = re.compile(r"^([ \t]*)```(\w*)\n(.*?)^[ \t]*```", re.S | re.M)
 LINK = re.compile(r"(?<!!)\[([^\]]*)\]\(([^)]+)\)")
 IMAGE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 SUMMARY_PATH = re.compile(
@@ -69,8 +75,13 @@ class Finding:
     detail: str
 
 
+# DOCS_PLAN.md is an audit of the documentation, so it quotes the broken names
+# on purpose; checking it would report its own findings back as errors.
+_NOT_DOCUMENTATION = {"DOCS_PLAN.md"}
+
+
 def _pages() -> list[Path]:
-    return sorted(DOCS.rglob("*.md"))
+    return sorted(p for p in DOCS.rglob("*.md") if p.name not in _NOT_DOCUMENTATION)
 
 
 def _line_of(text: str, needle: str) -> int:
@@ -81,10 +92,28 @@ def _line_of(text: str, needle: str) -> int:
 # ---------------------------------------------------------------------------
 
 
+# Pages that share one DataFrame across their examples declare it once, in an
+# admonition at the top. This pulls that block out so each fence can be run the
+# way a reader following the page would actually run it.
+SETUP_BLOCK = re.compile(
+    r"""!!! info "Examples on this page assume.*?```python\n(.*?)```""", re.S
+)
+
+
+# The changelog is a record of past releases. Its snippets illustrate options as
+# they were at the time, and some will legitimately no longer run; executing them
+# would report history as a defect.
+_NOT_RUNNABLE = {"changelog.md"}
+
+
 def check_examples(page: Path, text: str, out: list[Finding], run: bool) -> None:
     """Execute python fences that look self-contained."""
+    if page.name in _NOT_RUNNABLE:
+        run = False
+    setup_match = SETUP_BLOCK.search(text)
+    setup = textwrap.dedent(setup_match.group(1)) if setup_match else ""
     for m in FENCE.finditer(text):
-        lang, code = m.group(1), m.group(2)
+        lang, code = m.group(2), textwrap.dedent(m.group(3))
         if lang not in ("python", "py"):
             continue
         line = text[: m.start()].count("\n") + 1
@@ -111,20 +140,36 @@ def check_examples(page: Path, text: str, out: list[Finding], run: bool) -> None
         needs = "pysuricata" in code or "profile(" in code or "summarize(" in code
         if not needs or "..." in code:
             continue
+        if setup and code.strip() == setup.strip():
+            continue
         # Skip blocks that obviously need a file or network we do not have.
-        if re.search(r"read_(csv|parquet|json)\(|open\(|requests\.|http", code):
+        if re.search(
+            r"(read|scan)_(csv|parquet|json|ndjson)\(|open\(|requests\.|http", code
+        ):
             out.append(
                 Finding(page.name, line, "INFO", "skipped", "needs an external input")
             )
             continue
 
-        preamble = (
-            "import warnings, numpy as np, pandas as pd\n"
-            "warnings.simplefilter('ignore')\n"
-            "df = pd.DataFrame({'a': np.arange(500, dtype=float),"
-            " 'b': np.random.default_rng(0).standard_normal(500),"
-            " 'c': ['x','y','z','w','v']*100})\n"
-        )
+        # Use the page's own stated setup block rather than injecting a df.
+        # A synthetic frame made every fence pass while a reader pasting the
+        # same code got NameError: df -- the checker was hiding the defect it
+        # existed to find. A page that leans on a shared `df` must say so, and
+        # what it says is what gets executed here.
+        preamble = "import warnings\nwarnings.simplefilter('ignore')\n"
+        if re.search(r"\bdf\b", code) and not re.search(r"^\s*df\s*=", code, re.M):
+            if not setup:
+                out.append(
+                    Finding(
+                        page.name,
+                        line,
+                        "ERROR",
+                        "example",
+                        "uses `df` but the page has no setup block defining it",
+                    )
+                )
+                continue
+            preamble += setup
         proc = subprocess.run(
             [sys.executable, "-c", preamble + code],
             capture_output=True,
@@ -161,8 +206,27 @@ def check_symbols(page: Path, text: str, out: list[Finding]) -> None:
                         f"`{name}` is not exported by pysuricata",
                     )
                 )
+    # "pysuricata.svg", "pysuricata.git", "pysuricata.md" are filenames inside
+    # badge URLs and page links, not attribute access. Only look at dotted names
+    # that are plausibly Python, and never inside a URL.
+    _NOT_ATTRIBUTES = {
+        "svg",
+        "png",
+        "ico",
+        "git",
+        "md",
+        "html",
+        "css",
+        "js",
+        "org",
+        "com",
+        "io",
+    }
     for m in re.finditer(r"\bpysuricata\.(\w+)", text):
         name = m.group(1)
+        prefix = text[max(0, m.start() - 120) : m.start()]
+        if name in _NOT_ATTRIBUTES or "http" in prefix.rsplit("(", 1)[-1]:
+            continue
         if name not in exported and name not in {
             "accumulators",
             "compute",
@@ -198,6 +262,11 @@ def _config_fields() -> dict[str, set[str]]:
 def check_config(
     page: Path, text: str, out: list[Finding], fields: dict[str, set[str]]
 ) -> None:
+    if page.name in _NOT_RUNNABLE:
+        # The changelog names options as they were at the time, including the
+        # ones a release removed or renamed. Flagging those reports the record
+        # of a fix as the bug it fixed.
+        return
     for m in CFG_ATTR.finditer(text):
         group, attr = m.group(1), m.group(2)
         known = fields.get(group)
@@ -243,6 +312,11 @@ def check_summary_keys(page: Path, text: str, out: list[Finding], real: dict) ->
                     f'summarize()["{top}"] does not exist (have: {sorted(real)[:5]})',
                 )
             )
+            continue
+        if top == "columns":
+            # The second key here is a column name from the example's own
+            # DataFrame, not part of the API. Flagging it made every doc that
+            # profiles a frame with domain column names look broken.
             continue
         node = real[top]
         if isinstance(node, dict) and node and second not in node:

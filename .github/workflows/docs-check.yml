@@ -35,6 +35,17 @@ jobs:
       - name: Build docs (strict mode)
         run: uv run mkdocs build --strict
 
+      # Executes every self-contained python fence and resolves every config
+      # option and summary key against the live API. Renaming an option or
+      # moving a summary key now fails the PR that did it, instead of leaving
+      # the docs to drift -- which is how they accumulated 90 errors.
+      - name: Check documentation against the API
+        run: uv run python -m benchmarks.check_docs --strict
+
+      # The generated figures must match the code that generates them.
+      - name: Check generated doc assets are current
+        run: uv run python scripts/build_docs_assets.py --check
+
       - name: Upload example report
         if: always()
         uses: actions/upload-artifact@v4

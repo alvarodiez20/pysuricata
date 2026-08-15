@@ -7,6 +7,27 @@ description: Complete mathematical formulas and algorithms for categorical data 
 
 This page provides comprehensive documentation for how PySuricata analyzes categorical (string, object) variables using scalable streaming algorithms with mathematical guarantees.
 
+!!! info "Examples on this page assume a DataFrame named `df`"
+
+    Every snippet below that does not build its own frame expects one already in
+    scope. Paste this first to follow along:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame(
+        {
+            "id": range(5_000),
+            "amount": rng.lognormal(3, 1, 5_000),
+            "country": rng.choice(["ES", "FR", "DE"], 5_000),
+            "signed_up": pd.date_range("2024-01-01", periods=5_000, freq="17min"),
+            "active": rng.random(5_000) > 0.3,
+        }
+    )
+    ```
+
 ## Overview
 
 PySuricata treats a **categorical variable** as any column with string-like values, objects, or low-cardinality integers. Analysis focuses on frequency distributions, diversity metrics, and string characteristics.
@@ -347,10 +368,10 @@ from pysuricata import profile, ReportConfig
 config = ReportConfig()
 
 # Top-k size (Misra-Gries)
-config.compute.top_k_size = 50  # Default
+config.compute.top_k = 50  # Default
 
 # Distinct count sketch size (KMV)
-config.compute.uniques_sketch_size = 2_048  # Default
+config.compute.max_uniques = 2_048  # Default
 
 # String length sample size
 # (Not separately configurable, uses numeric_sample_size)
@@ -438,14 +459,18 @@ report.save_html("report.html")
 ### High-Cardinality Column
 
 ```python
+import pandas as pd
+
+from pysuricata import ReportConfig, profile
+
 # Column with 10,000 unique values
 df = pd.DataFrame({
     "user_id": [f"user_{i}" for i in range(100_000)]
 })
 
 config = ReportConfig()
-config.compute.top_k_size = 100  # Show top 100
-config.compute.uniques_sketch_size = 4_096  # More accurate distinct
+config.compute.top_k = 100  # Show top 100
+config.compute.max_uniques = 4_096  # More accurate distinct
 
 report = profile(df, config=config)
 ```
@@ -453,15 +478,17 @@ report = profile(df, config=config)
 ### Access Statistics
 
 ```python
+import pandas as pd
+
 from pysuricata import summarize
 
+df = pd.DataFrame({"country": ["ES", "FR", "ES", "DE", "ES", "FR"]})
 stats = summarize(df)
 country_stats = stats["columns"]["country"]
 
-print(f"Distinct: {country_stats['distinct']}")
-print(f"Top value: {country_stats['top_values'][0]}")
-print(f"Entropy: {country_stats['entropy']:.2f} bits")
-print(f"Gini: {country_stats['gini']:.3f}")
+print(f"Distinct (estimate): {country_stats['unique_est']}")
+print(f"Top value:           {country_stats['top_items'][0]}")
+print(f"Approximate:         {country_stats['approx']}")
 ```
 
 ## Interpreting Results
