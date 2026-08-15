@@ -41,6 +41,14 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
+
+# The gate is thresholds applied to the deltas `comparison` computes. Sharing
+# the readers is what keeps `check` and `compare` from disagreeing about what
+# a change is.
+from .comparison import DEFAULT_UNIQUES_K, KMV_RELATIVE_ERROR_PCT
+from .comparison import missing_pct as _missing_pct
+from .comparison import number as _number
+from .comparison import true_rate as _true_rate
 from .report import SUMMARY_SCHEMA_VERSION
 
 __all__ = [
@@ -62,9 +70,10 @@ __all__ = [
 BASELINE_VERSION = 1
 
 # KMV relative error is ~1/sqrt(k). Surfaced so a threshold below the noise
-# floor can be called out instead of silently producing a flaky gate.
-_DEFAULT_UNIQUES_K = 2048
-_KMV_RELATIVE_ERROR_PCT = 100.0 / math.sqrt(_DEFAULT_UNIQUES_K)
+# floor can be called out instead of silently producing a flaky gate. Defined
+# with the deltas, so the gate and the diff agree on where noise ends.
+_DEFAULT_UNIQUES_K = DEFAULT_UNIQUES_K
+_KMV_RELATIVE_ERROR_PCT = KMV_RELATIVE_ERROR_PCT
 
 # `min_ts` and `max_ts` are epoch **nanoseconds** in the payload, which is the
 # kind of thing a consumer guesses wrong exactly once.
@@ -869,41 +878,6 @@ def _boolean_drift(
             current=after,
         )
     ]
-
-
-def _missing_pct(stats: Mapping[str, Any]) -> float | None:
-    """Missing as a percentage of the rows the column was seen in."""
-    missing = _number(stats.get("missing"))
-    count = _number(stats.get("count"))
-    if missing is None or count is None:
-        return None
-    total = count + missing
-    if total <= 0:
-        return 0.0
-    return missing / total * 100.0
-
-
-def _true_rate(stats: Mapping[str, Any]) -> float | None:
-    """Share of True among the non-missing values, as a percentage."""
-    true_n = _number(stats.get("true"))
-    false_n = _number(stats.get("false"))
-    if true_n is None or false_n is None:
-        return None
-    total = true_n + false_n
-    if total <= 0:
-        return None
-    return true_n / total * 100.0
-
-
-def _number(value: Any) -> float | None:
-    """Coerce to float, treating None and NaN alike as "no value"."""
-    if value is None or isinstance(value, bool):
-        return None
-    try:
-        out = float(value)
-    except (TypeError, ValueError):
-        return None
-    return None if math.isnan(out) else out
 
 
 def _jsonable(value: Any) -> Any:

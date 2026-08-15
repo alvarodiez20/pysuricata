@@ -52,6 +52,7 @@ nav:
       - Advanced Features: advanced.md
       - Arrow, Parquet and DuckDB: data-sources.md
       - Gating CI on drift: data-checks.md
+      - Comparing two datasets: comparing.md
       - Performance Tips: performance.md
   - Technical Reference:
       - API Reference: api.md
