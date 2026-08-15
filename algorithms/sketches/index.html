@@ -2001,6 +2001,8 @@
       
         
       
+        
+      
     
     
     
@@ -2050,6 +2052,29 @@
   
   <span class="md-ellipsis">
     About Suricatas
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
     
   </span>
   
@@ -2157,6 +2182,17 @@
 </span><span id="__span-0-23"><a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_hash</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
 </span><span id="__span-0-24"><a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a>        <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">value</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">(),</span> <span class="mi">16</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="mi">128</span><span class="p">)</span>
 </span></code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">What PySuricata actually hashes with</p>
+<p>The sketch above uses MD5 to keep the illustration short. The library does
+not: <code>_hash_value</code> uses <strong>blake2b with an 8-byte digest</strong>, which gives 64
+bits directly with no slicing of a wider digest, and numeric arrays take a
+vectorised <strong>splitmix64</strong> path (<code>_hash_numeric_array</code>) that hashes the bit
+pattern without allocating a Python object per row. MD5 here would mean one
+<code>str()</code> and one digest per value.</p>
+<p>The numeric path also canonicalises <code>-0.0</code> to <code>0.0</code>, so the two do not count
+as distinct values.</p>
+</div>
 <h3 id="mergeability">Mergeability</h3>
 <p>Union of two KMV sketches: merge heaps and keep k smallest.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">merge</span><span class="p">(</span><span class="n">kmv1</span><span class="p">,</span> <span class="n">kmv2</span><span class="p">):</span>
@@ -2259,6 +2295,15 @@
 <h3 id="purpose_3">Purpose</h3>
 <p>Maintain uniform random sample of fixed size <span class="arithmatex">\(k\)</span> from stream.</p>
 <h3 id="algorithm-algorithm-r">Algorithm (Algorithm R)</h3>
+<div class="admonition warning">
+<p class="admonition-title">PySuricata implements Algorithm L, not Algorithm R</p>
+<p>Algorithm R below is the version usually taught, and it is shown here
+because it makes the invariant easy to see. It costs one random draw per
+element. <code>ReservoirSampler</code> uses <strong>Algorithm L</strong>, which draws a geometric
+skip and jumps to the next element it will accept — about
+<span class="arithmatex">\(k \ln(n/k)\)</span> draws instead of <span class="arithmatex">\(n\)</span>, with the same uniformity
+guarantee. See <a href="../sampling/">Reservoir Sampling</a> for the version that ships.</p>
+</div>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
 </span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
 </span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReservoirSampler</span><span class="p">:</span>
@@ -2434,8 +2479,6 @@ k &amp;= \frac{m}{n} \ln 2
 <li><a href="../../stats/numeric/">Numeric Analysis</a> - Using KMV and reservoir</li>
 <li><a href="../../stats/categorical/">Categorical Analysis</a> - Using Misra-Gries</li>
 </ul>
-<hr />
-<p><em>Last updated: 2025-10-12</em></p>
 
 
 

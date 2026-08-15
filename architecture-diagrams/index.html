@@ -1666,6 +1666,8 @@
       
         
       
+        
+      
     
     
     
@@ -1715,6 +1717,29 @@
   
   <span class="md-ellipsis">
     About Suricatas
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
     
   </span>
   
@@ -1896,7 +1921,7 @@
     E --&gt;|"Numeric"| F["to_numpy(float64)\nFast path: direct cast\nSlow path: pd.to_numeric(errors=coerce)\nO(chunk_size)"]
     F --&gt; F1["acc.update(arr)\nmoments + reservoir + histogram\nO(chunk_size)"]
     F1 --&gt; F2["KMV.add per value\nO(chunk_size × log k)"]
-    F2 --&gt; F3["ExtremeTracker.update\nO(chunk_size × log k)\nEvery 5th chunk only (pandas)"]
+    F2 --&gt; F3["ExtremeTracker.update\nO(chunk_size × log k)\nevery chunk — extremes are exact"]
     F3 --&gt; G["Next column"]
 
     E --&gt;|"Categorical"| H["s.tolist → Python list\nO(chunk_size)"]
@@ -2043,7 +2068,7 @@
 <td>Type inference</td>
 <td>O(sample)</td>
 <td>O(1)</td>
-<td>first chunk only</td>
+<td>first chunk; reclassification only when that chunk is the whole frame</td>
 </tr>
 <tr>
 <td>Accumulator updates</td>

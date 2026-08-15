@@ -13,6 +13,10 @@
         <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/roadmap/">
       
       
+        <link rel="prev" href="../about-suricatas/">
+      
+      
+        <link rel="next" href="../changelog/">
       
       
       <link rel="icon" href="../assets/favicon.ico">
@@ -20,7 +24,7 @@
     
     
       
-        <title>PySuricata roadmap v4 — re-audit at 0.0.30 - PySuricata</title>
+        <title>Roadmap - PySuricata</title>
       
     
     
@@ -111,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              PySuricata roadmap v4 — re-audit at 0.0.30
+              Roadmap
             
           </span>
         </div>
@@ -361,10 +365,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../about-suricatas/" class="md-tabs__link">
           
   
@@ -1499,8 +1505,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -1508,23 +1516,28 @@
       
         
       
+        
+      
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -1537,7 +1550,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             About
@@ -1562,6 +1575,233 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#two-environments-and-why-it-matters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Two environments, and why it matters
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-things-stand" class="md-nav__link">
+    <span class="md-ellipsis">
+      Where things stand
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Where things stand">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-actually-happened" class="md-nav__link">
+    <span class="md-ellipsis">
+      What actually happened
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scorecard" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scorecard
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scorecard">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-performance-7-of-7-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 1 performance — 7 of 7 closed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bugs-found-while-landing-phase-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bugs found while landing Phase 1
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-the-time-is-now-dev" class="md-nav__link">
+    <span class="md-ellipsis">
+      Where the time is now (dev)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loose-ends" class="md-nav__link">
+    <span class="md-ellipsis">
+      Loose ends
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#revised-roadmap" class="md-nav__link">
+    <span class="md-ellipsis">
+      Revised roadmap
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Revised roadmap">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-0-trust-complete" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 0 — Trust ✅ complete
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-performance-complete" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 1 — Performance ✅ complete
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-publish-next-blocked-on-measurement" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 2 — Publish (next, blocked on measurement)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-native-core-35-weekends" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 3 — Native core (3–5 weekends)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-4-report-v2-34-weekends" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 4 — Report v2 (3–4 weekends)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-5-differentiate-ongoing" class="md-nav__link">
+    <span class="md-ellipsis">
+      Phase 5 — Differentiate (ongoing)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#unchanged-from-earlier-versions" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unchanged from earlier versions
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 

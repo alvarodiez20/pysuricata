@@ -1741,6 +1741,8 @@
       
         
       
+        
+      
     
     
     
@@ -1790,6 +1792,29 @@
   
   <span class="md-ellipsis">
     About Suricatas
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
     
   </span>
   
@@ -1880,13 +1905,13 @@
 <td>KMV distinct count</td>
 <td>O(log k)</td>
 <td>O(k)</td>
-<td><code>uniques_sketch_size</code> (default: 2,048)</td>
+<td><code>max_uniques</code> (default: 2,048)</td>
 </tr>
 <tr>
 <td>Misra-Gries top-k</td>
 <td>O(1) amortized</td>
 <td>O(k)</td>
-<td><code>top_k_size</code> (default: 50)</td>
+<td><code>top_k</code> (default: 50)</td>
 </tr>
 <tr>
 <td>Extreme tracking</td>
@@ -1933,7 +1958,7 @@
 <li><strong>Update:</strong> O(log k) — hash value, maintain min-heap of k smallest hashes</li>
 <li><strong>Merge:</strong> O(k log k) — union two heaps, keep k smallest</li>
 <li><strong>Estimate:</strong> d̂ = (k − 1) / x_k where x_k is the k-th smallest hash</li>
-<li><strong>Space:</strong> O(k) where k = <code>uniques_sketch_size</code></li>
+<li><strong>Space:</strong> O(k) where k = <code>max_uniques</code></li>
 <li><strong>Error:</strong> ~1/√k relative error — with k=2048, approximately 2.2%</li>
 </ul>
 <p>The implementation transitions from exact counting (for low-cardinality columns) to approximate estimation when the number of distinct values exceeds a threshold.</p>
@@ -1944,7 +1969,7 @@
 <li><strong>Update:</strong> O(1) amortized — increment counter or decrement all</li>
 <li><strong>Merge:</strong> O(k) — sum counters from two states</li>
 <li><strong>Finalize:</strong> O(k log k) — sort by frequency</li>
-<li><strong>Space:</strong> O(k) where k = <code>top_k_size</code></li>
+<li><strong>Space:</strong> O(k) where k = <code>top_k</code></li>
 <li><strong>Guarantee:</strong> Any value with true frequency &gt; n/k is included in the output</li>
 </ul>
 <p>Frequency estimates are within ±n/k of the true count.</p>
@@ -2070,12 +2095,12 @@
 <td>Better quantile estimates</td>
 </tr>
 <tr>
-<td><code>uniques_sketch_size</code> ↑</td>
+<td><code>max_uniques</code> ↑</td>
 <td>Larger KMV sketch per column</td>
 <td>Better distinct count accuracy</td>
 </tr>
 <tr>
-<td><code>top_k_size</code> ↑</td>
+<td><code>top_k</code> ↑</td>
 <td>More frequent values tracked</td>
 <td>More comprehensive top-k</td>
 </tr>
