@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#pysuricata-roadmap-v5-re-audit-at-0031" class="md-skip">
+        <a href="#pysuricata-roadmap-v6-re-audit-at-0038" class="md-skip">
           Skip to content
         </a>
       
@@ -628,6 +628,8 @@
       
         
       
+        
+      
     
     
     
@@ -723,6 +725,29 @@
   
   <span class="md-ellipsis">
     Advanced Features
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Gating CI on drift
     
   </span>
   
@@ -1639,84 +1664,18 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#what-landed-since-v4" class="md-nav__link">
+  <a href="#what-landed-since-v5" class="md-nav__link">
     <span class="md-ellipsis">
-      What landed since v4
+      What landed since v5
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#re-measured-today-and-the-previous-headline-was-wrong" class="md-nav__link">
+  <a href="#the-measurement-rules-unchanged" class="md-nav__link">
     <span class="md-ellipsis">
-      Re-measured today — and the previous headline was wrong
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Re-measured today — and the previous headline was wrong">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#two-claims-to-retract-before-anything-is-published" class="md-nav__link">
-    <span class="md-ellipsis">
-      Two claims to retract before anything is published
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#the-rule-this-establishes" class="md-nav__link">
-    <span class="md-ellipsis">
-      The rule this establishes
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#the-twelve-ux-findings-0-of-12" class="md-nav__link">
-    <span class="md-ellipsis">
-      The twelve UX findings — 0 of 12
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="The twelve UX findings — 0 of 12">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#five-users-and-where-each-one-stops" class="md-nav__link">
-    <span class="md-ellipsis">
-      Five users, and where each one stops
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#a-user-specified-memory-budget" class="md-nav__link">
-    <span class="md-ellipsis">
-      A user-specified memory budget
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#documentation" class="md-nav__link">
-    <span class="md-ellipsis">
-      Documentation
+      The measurement rules, unchanged
     </span>
   </a>
   
@@ -1726,15 +1685,6 @@
   <a href="#what-to-do-next" class="md-nav__link">
     <span class="md-ellipsis">
       What to do next
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#this-weekend" class="md-nav__link">
-    <span class="md-ellipsis">
-      This weekend
     </span>
   </a>
   
@@ -1821,12 +1771,11 @@
   
 
 
-<h1 id="pysuricata-roadmap-v5-re-audit-at-0031">PySuricata roadmap v5 — re-audit at 0.0.31</h1>
-<p>Supersedes v4 (0.0.30). Phase 1 is finished: all seven performance items are closed
-and verified in the source at <code>4831a36</code>. <strong>Not one of the twelve user-experience
-findings has been addressed</strong> — every one was re-tested against a live 0.0.31 import
-while writing this — so for the first time the ranked list of next work contains no
-compute item at the top.</p>
+<h1 id="pysuricata-roadmap-v6-re-audit-at-0038">PySuricata roadmap v6 — re-audit at 0.0.38</h1>
+<p>Supersedes v5 (0.0.31). Two phases closed since: <strong>all twelve user-experience
+findings are addressed</strong>, and <code>pysuricata check</code> — the item v5 called the
+differentiator — has shipped. The ranked list below therefore contains, for the
+first time, no item that is purely about the library's surface.</p>
 <table>
 <thead>
 <tr>
@@ -1848,313 +1797,141 @@ compute item at the top.</p>
 <td><strong>7 / 7</strong> closed</td>
 </tr>
 <tr>
-<td>UX findings open</td>
-<td><strong>12 / 12</strong></td>
+<td>UX findings</td>
+<td><strong>12 / 12</strong> closed</td>
+</tr>
+<tr>
+<td>Tests</td>
+<td><strong>1,089</strong>, from 770 at 0.0.26</td>
 </tr>
 </tbody>
 </table>
-<h2 id="what-landed-since-v4">What landed since v4</h2>
+<p>The headline ratio is unchanged because it has <strong>not been re-measured since
+0.0.31</strong>. Nothing since then touched a hot path — the work was contracts,
+presentation and a new command — so the number is stale rather than wrong. It
+should still be re-run before anything is published, in one round-robin, per the
+rule below.</p>
+<h2 id="what-landed-since-v5">What landed since v5</h2>
 <table>
 <thead>
 <tr>
-<th>Commit</th>
+<th></th>
 <th>Verified in the source</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><strong>#62</strong> gate top-k, pre-filter KMV, fix the chunk-size default</td>
-<td><code>should_track_top_k()</code> at <code>accumulators/numeric.py:35</code>, switching <code>_track_top_k</code> off mid-stream once the KMV estimate says the table would be singletons; the merge path clears it too, so a chunked run cannot resurrect it. KMV admission threshold at <code>accumulators/sketches.py:203</code>, with the correct strict <code>&lt;</code> and the monotonicity argument written into the docstring.</td>
+<td><strong>#84</strong> UX-1, UX-2, UX-9, UX-10, UX-12</td>
+<td>The unique-<em>ratio</em> arm is gone, replaced by a cardinality ceiling at <code>_MAX_CATEGORICAL_LEVELS = 50</code> in <code>compute/processing/inference.py</code>. <code>py.typed</code>, <code>__all__</code>, a one-line <code>__repr__</code>, one exception hierarchy, <code>profile("data.csv")</code>.</td>
 </tr>
 <tr>
-<td><strong>#63</strong> vectorise the datetime accumulator</td>
-<td>Loop count in <code>accumulators/datetime.py</code> down from 41 to 36; the hot paths take arrays. This was the most expensive column kind.</td>
+<td><strong>#86</strong> UX-2, UX-3</td>
+<td><code>render/identifier.py</code> — a column that is monotonic, integer-like and has a KMV estimate equal to the row count renders as <strong>Identifier</strong> rather than as a number with a mean. <code>render/triage.py</code> — a "needs attention" block built from the quality chips that were already computed, with chip filtering.</td>
 </tr>
 <tr>
-<td><strong>#69</strong> finish Phase 1 and re-measure</td>
-<td>Closes the last of the seven. See the correction below — the numbers recorded there were assembled across sessions.</td>
+<td><strong>#87</strong> UX-4, UX-6, UX-11</td>
+<td>The log-scale chip now drives the chart default. <code>schema_version</code> on the payload. Keyword options and <code>fast</code>/<code>thorough</code> presets. Numeric <code>top_values</code> reach <code>summarize()</code>, with <code>None</code> meaning <em>not tracked</em> — distinct from an empty list.</td>
 </tr>
 <tr>
-<td><strong>#70</strong> six interactive figures, and the pre-commit hooks</td>
-<td><code>docs/javascripts/figures.js</code>, 66 lines, syncing with mkdocs-material's colour scheme rather than hard-coding a palette. First of the documentation plan to land.</td>
+<td><strong>#88</strong> UX-7</td>
+<td><code>pysuricata/progress.py</code>. <code>True</code>, <code>"auto"</code>, or a callable; everything on stderr, nothing on stdout, asserted in all four modes; an ETA only when the row total is knowable.</td>
+</tr>
+<tr>
+<td><strong>#90</strong> UX-5</td>
+<td><code>pysuricata check</code> with an exit code. See below.</td>
 </tr>
 </tbody>
 </table>
+<p><code>check</code> is worth describing in more detail, because the interesting part is not
+the command.</p>
+<p>The first version gated on the distinct count and failed its own test:
+appending rows doubles a continuous column's distinct count. Gating on the
+distinct <em>rate</em> instead fails the mirror case — a three-level enum keeps its
+count and halves its rate. Neither is stable alone; requiring <strong>both</strong> to move
+is, because growth moves exactly one of them. The cost of that rule is in the
+docstring and pinned by a test rather than left to be discovered: while the row
+count is also moving a lot, a small change in levels is not reported.</p>
+<p>The same discipline runs through the rest of the defaults — distribution drift
+measured in σ rather than percent, a cardinality threshold an order of magnitude
+above the KMV error, a warning printed when a threshold is set inside the noise
+floor. A gate that fires on sketch noise gets switched off within a week, which
+would be a worse outcome than not shipping one.</p>
 <hr />
-<h2 id="re-measured-today-and-the-previous-headline-was-wrong">Re-measured today — and the previous headline was wrong</h2>
-<p>v4 reported 2.27× and the note after #69 reported 3.56×. <strong>Both were assembled from
-measurements taken at different times</strong>, on a container whose available CPU varies
-between sessions. The table below comes from a single round-robin: five rounds, all
-five versions measured in every round, best-of-five per version, each in its own
-subprocess.</p>
-<table>
-<thead>
-<tr>
-<th>version</th>
-<th style="text-align: right;">ms</th>
-<th style="text-align: right;">× vs 0.0.16</th>
-<th style="text-align: right;">accumulator ns/value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>0.0.16</td>
-<td style="text-align: right;">3,822.6</td>
-<td style="text-align: right;">1.00×</td>
-<td style="text-align: right;">828.3</td>
-</tr>
-<tr>
-<td>0.0.21</td>
-<td style="text-align: right;">4,352.3</td>
-<td style="text-align: right;"><strong>0.88×</strong></td>
-<td style="text-align: right;">951.2</td>
-</tr>
-<tr>
-<td>0.0.26</td>
-<td style="text-align: right;">3,874.6</td>
-<td style="text-align: right;">0.99×</td>
-<td style="text-align: right;">—</td>
-</tr>
-<tr>
-<td>0.0.27</td>
-<td style="text-align: right;">2,361.1</td>
-<td style="text-align: right;">1.62×</td>
-<td style="text-align: right;">203.8</td>
-</tr>
-<tr>
-<td><strong>0.0.31</strong></td>
-<td style="text-align: right;"><strong>1,542.5</strong></td>
-<td style="text-align: right;"><strong>2.48×</strong></td>
-<td style="text-align: right;"><strong>152.1</strong></td>
-</tr>
-</tbody>
-</table>
-<h3 id="two-claims-to-retract-before-anything-is-published">Two claims to retract before anything is published</h3>
+<h2 id="the-measurement-rules-unchanged">The measurement rules, unchanged</h2>
+<p>Three of these were each nearly a published claim. They are restated because
+every one of them cost a real retraction.</p>
 <ol>
-<li><strong>0.0.21 was not 1.24× faster than 0.0.16.</strong> On this workload, measured properly,
-   it is <strong>0.88×</strong> — a regression — and the accumulator got slower too, 828 → 951 ns.
-   The real inflection point is 0.0.27. If you publish a version-over-version curve
-   that dip is in it, and it is better to explain it yourself than to have a reader
-   find it.</li>
-<li><strong>The headline is 2.48×, not 3.56×.</strong> The larger number came from pairing a slow
-   0.0.16 run with a fast 0.0.31 run taken at a different time. It was flattering and
-   it was wrong.</li>
+<li><strong>A ratio is only quotable when both sides were measured in the same
+   round-robin</strong>, on the same machine, within the same run. <code>benchmarks/end_to_end.py</code>
+   and <code>benchmarks/versions.py</code> now interleave every tool and version across
+   rounds and label anything under three rounds <em>Not quotable</em>, so this is
+   enforced rather than remembered.</li>
+<li><strong><code>cProfile</code> over-weights kernels that make many small calls.</strong> It ranked the
+   reservoir at ~30% of self time when replacing it with a 5× faster one moved
+   wall clock by 4%.</li>
+<li><strong>A kernel benchmark only measures the call sites it calls.</strong> Holding
+   <code>KMV._values</code> as an array won its own benchmark by 2.7× and lost 35% end to
+   end, because the benchmark never touched the scalar insert path that
+   categorical columns hammer.</li>
 </ol>
-<h3 id="the-rule-this-establishes">The rule this establishes</h3>
-<p>A ratio is only quotable when both sides were measured in the same round-robin, on
-the same machine, within the same run. This is the third time in this audit that a
-measurement artefact nearly became a published claim — the first was cProfile ranking
-the reservoir at 30% of self time when replacing it moved wall clock by 4%, the
-second was the dev-machine-versus-container gap in v4. <strong>Bake the round-robin into
-<code>benchmarks/</code> so the discipline is not a habit you have to remember.</strong></p>
-<p>The incumbent comparison — 13.3× against ydata-profiling — has <strong>not</strong> been
-re-measured since 0.0.26 and is stale in the understated direction, since two of the
-three Phase 1 wins landed after it.</p>
-<hr />
-<h2 id="the-twelve-ux-findings-0-of-12">The twelve UX findings — 0 of 12</h2>
-<p>Re-tested against a live 0.0.31 import, not read from the previous review.</p>
-<table>
-<thead>
-<tr>
-<th>Check</th>
-<th>Result at 0.0.31</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>summarize(df)["columns"]["age"]["type"]</code></td>
-<td><code>categorical</code> (67 distinct integers in 20,000 rows)</td>
-</tr>
-<tr>
-<td><code>cid</code>, a monotonic unique key</td>
-<td>numeric, with a mean</td>
-</tr>
-<tr>
-<td><code>pysuricata/py.typed</code> exists</td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>hasattr(pysuricata, "__all__")</code></td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>ReportConfig is ProfileConfig</code></td>
-<td><code>True</code></td>
-</tr>
-<tr>
-<td><code>"schema_version" in summarize(df)</code></td>
-<td><code>False</code></td>
-</tr>
-<tr>
-<td><code>summarize(df)["columns"]["revenue"]["top_values"]</code></td>
-<td>key absent, while the HTML renders from the same accumulator</td>
-</tr>
-<tr>
-<td><code>profile("data.csv")</code></td>
-<td><code>TypeError</code> (the CLI accepts the same path)</td>
-</tr>
-<tr>
-<td><code>ProfileConfig(chunk_size=50_000)</code></td>
-<td><code>TypeError</code></td>
-</tr>
-<tr>
-<td><code>profile(df, preset="fast")</code></td>
-<td><code>TypeError</code></td>
-</tr>
-<tr>
-<td><code>profile(df, progress=True)</code></td>
-<td><code>TypeError</code></td>
-</tr>
-<tr>
-<td><code>len(repr(report))</code></td>
-<td>1,108,306</td>
-</tr>
-<tr>
-<td>stdout bytes during <code>summarize()</code></td>
-<td><strong>0</strong> — already fixed</td>
-</tr>
-</tbody>
-</table>
-<h3 id="five-users-and-where-each-one-stops">Five users, and where each one stops</h3>
-<p><strong>1 · The evaluator</strong> — ten minutes, comparing tools. <code>age</code> comes back categorical and
-<code>customer_id</code> gets a mean of 1e+04 with a flat histogram. Two of eight columns wrong,
-with defaults, in the first thirty seconds. They do not file a bug; they close the
-tab. <em>Unblocked by UX-1, UX-2.</em></p>
-<p><strong>2 · The analyst</strong> — has a 60-column frame open. Gets 60 identically sized cards in
-source order, no triage anywhere, although the quality chips already compute exactly
-the signal needed. Then the <code>revenue</code> card detects <em>Log-scale?</em> and draws a linear
-axis anyway. <em>Unblocked by UX-3, UX-4.</em></p>
-<p><strong>3 · The data engineer</strong> — wants it in the pipeline. <code>profile</code> and <code>summarize</code> both
-exit 0 regardless of what they found. Every existing gate tool makes you author
-expectations first; a profiler can gate on shape drift with no configuration at all,
-and nobody occupies that position. <em>Unblocked by UX-5.</em></p>
-<p><strong>4 · The integrator</strong> — building something on top. No <code>schema_version</code>, and the
-payload has already drifted once. No <code>py.typed</code>, so every annotation infers as <code>Any</code>.
-<code>dir()</code> is half internal modules. Three exception types for the same user error.
-<em>Unblocked by UX-6, 9, 10, 11, 12.</em></p>
-<p><strong>5 · The big-data user</strong> — the one the pitch is aimed at. A 1.8-million-cell profile
-produced 46 bytes of output, none of it progress: a hung process and a working one
-look identical. And no way to say how much memory it may use. <em>Unblocked by UX-7,
-UX-8.</em></p>
-<p><strong>The pattern:</strong> every one of the twelve is presentation, contract or ergonomics. The
-accumulators compute the right answers — the oracle proves it at 51 tests — and then
-the surface hides them, mislabels them, or refuses the input. That is the cheap half
-of the work, and it is the half that decides adoption.</p>
-<p>Full text with reproduction, cause, fix and acceptance criteria: <code>docs/UX_ISSUES.md</code>.
-File them with <code>python scripts/create_ux_issues.py --create</code> (after <code>brew install gh &amp;&amp; gh auth
-login</code>); <code>--dry-run</code> prints the exact commands without running any of them.</p>
-<hr />
-<h2 id="a-user-specified-memory-budget">A user-specified memory budget</h2>
-<p>Yes, and it is a good idea — <strong>as a planner that derives settings, not a cap that
-enforces them</strong>. Full reasoning and measurements in <code>docs/adr/memory-budget.md</code>.</p>
-<p>The model was fitted from measured peak RSS, not asserted:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>peak_MB ≈ 75 + n_cols × (0.5 + k×37B + chunk_size×48B)
-</span></code></pre></div>
-<p>Memory really is flat in rows — 200k → 5M rows moved peak RSS from 32 to 35 MB above
-the import floor — and linear in everything the library controls, so the budget is
-<strong>invertible</strong>. The inversion was implemented and verified across five shapes; every
-case landed under budget and the model over-predicts, which is the correct direction
-for a budget to be wrong in.</p>
-<p>It must not be a hard cap: ~75 MB is gone before the first line runs, the library
-does not control pandas' allocations or GC timing, and a cap that raises <code>MemoryError</code>
-would reproduce the incumbent failure mode this project is positioned against.</p>
-<p>The real danger is silent accuracy loss — a tight budget shrinks <code>k</code>, and quantile
-error is <code>1/√k</code> (±0.7% at 20,000, ±3.2% at 1,000). Always report the chosen plan and
-its accuracy consequence, and error below the floor rather than degrading.</p>
-<p>Before it ships: the model is fitted on <strong>numeric columns only</strong>. Refit for
-categorical and datetime or the budget will be optimistic on a text-heavy frame —
-which is the frame most likely to be large.</p>
-<hr />
-<h2 id="documentation">Documentation</h2>
-<p><code>benchmarks/check_docs.py</code> found 87 errors across 21 of 31 pages, and you fixed them
-while this document was being written: <code>e95b483</code>, <em>"docs: fix the 90 errors from the
-documentation audit"</em>, on <code>docs/fix-audit-errors</code> — 31 files, +762/−115, including
-<code>mkdocs.yml</code> and <code>pyproject.toml</code>, and three more errors than the audit had found.</p>
-<p><strong>The next move is the one that keeps it fixed.</strong> Eighty-seven errors accumulated
-because nothing was checking. Put <code>check_docs --strict</code> in CI in the same pull request
-that lands these fixes, or the count starts climbing again from zero the next time a
-key is renamed. The checker is the deliverable, not the fixes. Worth confirming in the
-diff: that <code>algorithms/sampling.md</code> now documents Algorithm L rather than Algorithm R,
-and that <code>architecture-diagrams.md</code> no longer claims extremes run every 5th chunk.</p>
-<p>UX-6 is what stops the <code>rows</code> → <code>rows_est</code> class of error recurring — the docs were the
-symptom, an unversioned payload is the cause.</p>
-<p>Six figures shipped in #70. The remaining assets are ranked in <code>docs/DOCS_PLAN.md</code>
-with ready-to-paste prompts in <code>docs/DIAGRAM_PROMPTS.md</code>: reservoir R-vs-L,
-Misra-Gries eviction, the memory curve, annotated cards, the chunk lifecycle, the
-Pébay merge.</p>
-<p>Keep the rule that separates the two kinds. Anything depicting <em>what the code does</em>
-belongs in <code>scripts/build_docs_assets.py</code>, generated from a real run with a fixed seed
-and checked by <code>--check</code> in CI, the way <code>kmv-unit-interval.svg</code> already is. Anything
-depicting a <em>concept</em> can be hand-authored. A picture a script regenerates cannot
-quietly start lying.</p>
-<p>CI cost remains none: the repository is public, every workflow runs on
-<code>ubuntu-latest</code>, and GitHub Actions is free with no minute cap for public
-repositories on standard runners.</p>
+<p>The incumbent comparison — 13.3× against ydata-profiling — has not been
+re-measured since 0.0.26 and is stale in the understated direction.</p>
 <hr />
 <h2 id="what-to-do-next">What to do next</h2>
-<p><strong>0 · Trust and Phase 1 — complete.</strong> Eleven audit items closed, seven performance
-items closed, oracle green at 51 tests, 2.48× end to end.</p>
-<p><strong>1 · The one-day batch — five issues, two users unblocked (1 weekend).</strong>
-UX-9 <code>py.typed</code>; UX-10 <code>__all__</code>, a one-line <code>__repr__</code>, one exception type, deprecate
-the <code>ReportConfig</code> alias; UX-12 accept <code>str</code>/<code>PathLike</code>; UX-4 let the log-scale chip
-drive the chart default; UX-1 replace the unique-<em>ratio</em> arm with a cardinality
-<em>ceiling</em>.
-<em>Exit:</em> <code>age</code> profiles as numeric at 1k/100k/10M rows with a test that pins it;
-<code>reveal_type(profile(df))</code> is <code>Report</code>; <code>profile("data.csv")</code> works; a lognormal
-column opens on a log axis.</p>
-<p><strong>2 · Ship the docs branch with the checker, then publish (1 weekend).</strong>
-The 90 fixes are committed at <code>e95b483</code>; open the PR and add <code>check_docs --strict</code> to
-CI in the same one.
-<em>Exit:</em> zero <code>check_docs</code> errors with CI enforcing it, benchmarks page with an
-environment block, post #1 live, a comment on ydata #1129.</p>
-<p><strong>3 · Make the report answer the reader's question (1–2 weekends).</strong>
-UX-2 the Identifier badge — <code>mono_inc</code>, a KMV estimate equal to the row count and
-<code>int_like</code> are all already tracked, so this is a card swap. UX-3 a "needs attention"
-block driven by the chips you already compute, plus chip filtering.
-<em>Exit:</em> a 60-column report opens with "3 of 60 columns have issues", each linked.</p>
-<p><strong>4 · Freeze the contract (1 weekend).</strong>
-UX-6 <code>schema_version</code> and a documented compatibility promise, then reconcile
-<code>summarize()</code> with the HTML. UX-11 keyword passthrough and <code>fast</code>/<code>thorough</code> presets,
-purely additive.</p>
-<p><strong>5 · Make the streaming claim visible and controllable (1–2 weekends).</strong>
-UX-7 <code>progress="auto"</code> on stderr. UX-8 <code>memory_budget=</code> as a planner, with the model
-refitted for categorical and datetime first and a CI test asserting measured peak RSS
-stays under the target.
-<em>Exit:</em> a documented "asked for 512 MB, used 480" produced by a test rather than a
-blog post.</p>
-<p><strong>6 · <code>pysuricata check</code> — the differentiator (2–3 weekends).</strong>
-UX-5. A baseline written from <code>summarize()</code>, a comparison, thresholds, a non-zero
-exit. Gating on shape drift with zero configuration is a position no competitor
-occupies, and it is the natural home for <code>memory_budget</code>.</p>
-<p><strong>7 · The native core (3–5 weekends).</strong>
-Unchanged in ordering and now unchanged in urgency: <strong>KMV first, moments last</strong>,
-because moments were 1.3–5% of the numeric path while KMV was half of it. The crate
-is vendored with 20 passing tests and nothing imports it; there is still no <code>[fast]</code>
-extra. The 32 KiB tiling result — 19.1 → 11.2 ns/row after the first naive version
-came in <em>slower</em> than NumPy — is the best technical post in the project.</p>
+<p><strong>1 · Publish (1 weekend).</strong> This is now the highest-value item and it has no
+dependencies left. The library is at 2.48×, the docs are checked in CI, the UX
+findings are closed and there is a differentiating command. Re-run the incumbent
+round-robin first so the number quoted is one measurement rather than two — see</p>
+<h1 id="38">38.</h1>
+<p><strong>2 · Prove the memory claim, then ship the budget (#92, then #79).</strong> "Bounded
+memory, so it fits in CI" is the reason to prefer this over a profiler that
+loads the frame, and it has never been measured on a constrained runner. #92
+runs <code>check</code> against a file larger than RAM in a 512 MB container; #68 is the
+same container for the benchmark suite, and they should be done in one sitting.</p>
+<p>Only then #79. The model in <code>docs/adr/memory-budget.md</code> is fitted on <strong>numeric
+columns only</strong>, and a text-heavy frame is the shape most likely to be large —
+so the budget would be optimistic exactly where it matters. It must be a
+planner that derives settings, never a cap that raises <code>MemoryError</code>, and it
+must report the accuracy consequence of what it chose: quantile error is
+<code>1/√k</code>, ±0.7% at k=20,000 and ±3.2% at k=1,000.</p>
+<p><strong>3 · Finish the contract (#43).</strong> <code>schema_version</code> exists and <code>check</code> now
+depends on it, which raises the cost of drift. Still missing: a documented
+schema page, a stability policy where a consumer will read it, and the general
+form of the test that #87 wrote for one field — <em>every</em> statistic in the HTML is
+present in the JSON. That test is what stops the next <code>rows</code> → <code>rows_est</code>.</p>
+<p><strong>4 · The native core (3–5 weekends).</strong> Unchanged in ordering: <strong>KMV first,
+moments last</strong>, because moments were 1.3–5% of the numeric path while KMV was
+half of it. The crate is vendored with 20 passing tests, nothing imports it, and
+there is still no <code>[fast]</code> extra. #64 prepares the accumulator boundary. The
+32 KiB tiling result — 19.1 → 11.2 ns/row, after the first naive version came in
+<em>slower</em> than NumPy — is the best technical post in the project.</p>
+<p><strong>5 · Then the reporting features that now have foundations.</strong> <code>compare()</code> (#65)
+should be built on <code>check.compare</code> rather than beside it, so the diff and the
+gate cannot disagree about what counts as a change. Freshness gating (#91)
+catches the most common scheduled-pipeline failure, which is not drifted data
+but yesterday's data served again.</p>
+<h3 id="open-correctness-items-none-blocking">Open correctness items, none blocking</h3>
+<h1 id="67-numericaccumulatormerge-drops-the-top-k-counters-61-forced-and">67 (<code>NumericAccumulator.merge()</code> drops the top-k counters), #61 (forced and</h1>
+<p>reclassified columns revert to default sketch sizes), #60 (the outlier detector
+keeps a second reservoir), #36 (a duplicated missing-cells pass), #41 (report
+uncertainty rather than presenting estimates as facts), #89 (a config value that
+fails validation is discarded rather than reported).</p>
+<h1 id="89-deserves-a-note-_to_engine_config-catches-exception-and-falls-back-to-a">89 deserves a note: <code>_to_engine_config</code> catches <code>Exception</code> and falls back to a</h1>
+<p>partial mapping, so a value that fails validation does not produce an error — it
+produces a <strong>different configuration</strong>, silently, and the fallback never sets
+<code>columns</code>, the correlation options, <code>progress</code>, or the boolean-detection
+options. It was found because a misplaced validation rule made <code>progress=</code>
+vanish for callables while working for <code>True</code>.</p>
+<p>The report's own presentation — theming and chart colours (#40), and cutting the
+example report below 250 KB (#39) — is tracked but out of scope for this list.</p>
 <hr />
-<h2 id="this-weekend">This weekend</h2>
-<ol>
-<li><strong>File the twelve issues.</strong> <code>gh auth login</code>, then
-   <code>python scripts/create_ux_issues.py --create</code>.</li>
-<li><strong>Add <code>pysuricata/py.typed</code></strong> plus the <code>package-data</code> line and a mypy step in CI.</li>
-<li><strong>Replace the unique-ratio arm with a cardinality ceiling</strong>, and add the test that
-   profiles the same column at 1k/100k/10M rows and asserts the classification does
-   not move. That test is the real fix; the rule change is one line.</li>
-<li><strong><code>__all__</code>, a one-line <code>__repr__</code>, one exception type.</strong> Two hours.</li>
-<li><strong>Open the PR for <code>docs/fix-audit-errors</code>, and add <code>check_docs --strict</code> to CI in
-   the same PR.</strong> The 90 fixes are committed at <code>e95b483</code>; the check is what stops them
-   coming back.</li>
-<li><strong>Then re-run the incumbent benchmark round-robin and publish.</strong></li>
-</ol>
-<hr />
-<p><em>Measurements: 0.0.31 at <code>4831a36</code>, plus 0.0.27, 0.0.26, 0.0.21 and 0.0.16 each on
-<code>sys.path</code> in its own interpreter; five round-robin rounds, best of five per version;
-<code>mixed</code> suite at 200,000 × 14, seed 0; 2-core x86-64 Linux container. Accumulator
-timings over 1,000,000 float64 values in 20 chunks of 50,000. Memory figures from
-<code>getrusage</code> peak RSS in fresh subprocesses at 0.0.27. UX assertions from a live 0.0.31
-import. Absolute times are not comparable across sessions; ratios within a single
-round-robin are.</em></p>
+<p><em>Measurements: 0.0.31 at <code>4831a36</code>, plus 0.0.27, 0.0.26, 0.0.21 and 0.0.16 each
+on <code>sys.path</code> in its own interpreter; five round-robin rounds, best of five per
+version; <code>mixed</code> suite at 200,000 × 14, seed 0; 2-core x86-64 Linux container.
+Accumulator timings over 1,000,000 float64 values in 20 chunks of 50,000. Memory
+figures from <code>getrusage</code> peak RSS in fresh subprocesses at 0.0.27. Absolute
+times are not comparable across sessions; ratios within a single round-robin
+are.</em></p>
 
 
 

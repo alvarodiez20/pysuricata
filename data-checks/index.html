@@ -6,17 +6,17 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="How pysuricata generates EDA reports at scale — chunked ingestion, accumulators, sketches, rendering, and configuration.">
+        <meta name="description" content="Exploratory data analysis reports for pandas DataFrames">
       
       
       
-        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/architecture/">
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/data-checks/">
       
       
-        <link rel="prev" href="../algorithms/sampling/">
+        <link rel="prev" href="../advanced/">
       
       
-        <link rel="next" href="../architecture-diagrams/">
+        <link rel="next" href="../performance/">
       
       
       <link rel="icon" href="../assets/favicon.ico">
@@ -24,7 +24,7 @@
     
     
       
-        <title>Architecture & Internals - PySuricata</title>
+        <title>Gating CI on drift - PySuricata</title>
       
     
     
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#architecture-internals" class="md-skip">
+        <a href="#gating-ci-on-drift" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Architecture & Internals
+              Gating CI on drift
             
           </span>
         </div>
@@ -261,10 +261,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../usage/" class="md-tabs__link">
           
   
@@ -305,13 +307,11 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
-        <a href="./" class="md-tabs__link">
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
           
   
   
@@ -615,8 +615,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -634,19 +636,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -659,7 +664,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             User Guide
@@ -739,10 +744,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../data-checks/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Gating CI on drift
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -753,6 +780,89 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#two-commands" class="md-nav__link">
+    <span class="md-ellipsis">
+      Two commands
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#exit-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit codes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-it-compares" class="md-nav__link">
+    <span class="md-ellipsis">
+      What it compares
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#thresholds" class="md-nav__link">
+    <span class="md-ellipsis">
+      Thresholds
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#in-github-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      In GitHub Actions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#from-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      From Python
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproducibility" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproducibility
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1359,10 +1469,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -1376,22 +1484,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
         
           
-          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
             
   
   
@@ -1404,7 +1509,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_5">
             <span class="md-nav__icon md-icon"></span>
             Architecture
@@ -1415,32 +1520,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Overview
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1451,113 +1534,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#high-level-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      High-Level Pipeline
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#accumulator-architecture" class="md-nav__link">
-    <span class="md-ellipsis">
-      Accumulator Architecture
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#data-flow" class="md-nav__link">
-    <span class="md-ellipsis">
-      Data Flow
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#streaming-algorithms" class="md-nav__link">
-    <span class="md-ellipsis">
-      Streaming Algorithms
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#rendering-pipeline" class="md-nav__link">
-    <span class="md-ellipsis">
-      Rendering Pipeline
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Rendering Pipeline">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#shared-utilities" class="md-nav__link">
-    <span class="md-ellipsis">
-      Shared Utilities
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configuration
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#security-correctness" class="md-nav__link">
-    <span class="md-ellipsis">
-      Security &amp; Correctness
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#extending" class="md-nav__link">
-    <span class="md-ellipsis">
-      Extending
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1831,250 +1807,242 @@
   
 
 
-<h1 id="architecture-internals">Architecture &amp; Internals</h1>
-<p>How <code>pysuricata</code> profiles data efficiently and renders a self-contained HTML report.</p>
-<h2 id="high-level-pipeline">High-Level Pipeline</h2>
-<figure class="ps-figure" markdown="0">
-  <iframe src="../assets/diagrams/figures.html?only=chunk-lifecycle" title="The chunk lifecycle: which state is bounded and which is released" loading="lazy"></iframe>
-</figure>
-
-<pre class="mermaid"><code>flowchart LR
-    A["Data Source"] --&gt; B["Chunk Iterator"]
-    B --&gt; C["Typed Accumulators"]
-    C --&gt; D["Summary Metrics"]
-    D --&gt; E["HTML Renderer"]
-
-    style A fill:#E8F5E9,stroke:#2E7D32,color:#1B5E20
-    style B fill:#C8E6C9,stroke:#2E7D32,color:#1B5E20
-    style C fill:#A5D6A7,stroke:#2E7D32,color:#1B5E20
-    style D fill:#81C784,stroke:#2E7D32,color:#1B5E20
-    style E fill:#66BB6A,stroke:#2E7D32,color:#fff</code></pre>
-<p><strong>Data Sources</strong> → pandas DataFrames, polars DataFrames, or any iterable of DataFrames (for streaming).</p>
-<p><strong>Chunk Iterator</strong> → If a single DataFrame is passed, it is treated as one chunk. Generators are consumed chunk-by-chunk to bound memory.</p>
-<p><strong>Typed Accumulators</strong> → Each column is assigned a specialized accumulator based on its inferred type. All accumulators are streaming: they accept one chunk at a time and maintain bounded state.</p>
-<p><strong>Summary Metrics</strong> → After all chunks are consumed, accumulators are finalized and dataset-wide metrics (missingness, duplicates, etc.) are computed.</p>
-<p><strong>HTML Renderer</strong> → A single-file Jinja2 template with inline CSS/JS produces a portable, self-contained HTML report.</p>
-<hr />
-<h2 id="accumulator-architecture">Accumulator Architecture</h2>
-<pre class="mermaid"><code>classDiagram
-    class BaseAccumulator {
-        +name: str
-        +count: int
-        +missing: int
-        +update(chunk)
-        +finalize() Summary
-    }
-
-    class NumericAccumulator {
-        +StreamingMoments
-        +ReservoirSampler
-        +KMV sketch
-        +MisraGries top-k
-        +ExtremeTracker
-    }
-
-    class CategoricalAccumulator {
-        +KMV sketch × 3
-        +MisraGries top-k
-        +String length stats
-    }
-
-    class DatetimeAccumulator {
-        +min/max timestamps
-        +hour/weekday/month counts
-        +monotonicity tracker
-    }
-
-    class BooleanAccumulator {
-        +true_count
-        +false_count
-    }
-
-    BaseAccumulator &lt;|-- NumericAccumulator
-    BaseAccumulator &lt;|-- CategoricalAccumulator
-    BaseAccumulator &lt;|-- DatetimeAccumulator
-    BaseAccumulator &lt;|-- BooleanAccumulator</code></pre>
-<p>Each accumulator follows the same interface:</p>
-<ol>
-<li><strong><code>update(chunk)</code></strong> — process a batch of values, update internal state</li>
-<li><strong><code>finalize()</code></strong> — compute final statistics from accumulated state</li>
-</ol>
-<hr />
-<h2 id="data-flow">Data Flow</h2>
-<pre class="mermaid"><code>sequenceDiagram
-    participant User
-    participant profile as profile()
-    participant Infer as Type Inference
-    participant Acc as Accumulators
-    participant Corr as Correlations
-    participant Render as HTML Renderer
-
-    User-&gt;&gt;profile: DataFrame / generator
-    profile-&gt;&gt;Infer: First chunk
-    Infer--&gt;&gt;profile: Column types
-    profile-&gt;&gt;Acc: Create typed accumulators
-
-    loop Each chunk
-        profile-&gt;&gt;Acc: update(chunk)
-        profile-&gt;&gt;Corr: update pairs (optional)
-    end
-
-    profile-&gt;&gt;Acc: finalize()
-    Acc--&gt;&gt;profile: Per-column summaries
-    profile-&gt;&gt;Corr: finalize()
-    Corr--&gt;&gt;profile: Correlation matrix
-
-    profile-&gt;&gt;Render: Summaries + config
-    Render--&gt;&gt;User: Report (HTML)</code></pre>
-<hr />
-<h2 id="streaming-algorithms">Streaming Algorithms</h2>
-<p>Each accumulator uses algorithms chosen for <strong>O(1) per-value update</strong> and <strong>bounded memory</strong>:</p>
-<pre class="mermaid"><code>flowchart TB
-    subgraph Numeric["Numeric Accumulator"]
-        N1["Welford/Pébay&lt;br/&gt;mean, var, skew, kurt&lt;br/&gt;O(1) space"]
-        N2["Reservoir Sampling&lt;br/&gt;quantiles, histograms&lt;br/&gt;O(s) space"]
-        N3["KMV Sketch&lt;br/&gt;distinct count&lt;br/&gt;O(k) space"]
-        N4["Misra-Gries&lt;br/&gt;top-k values&lt;br/&gt;O(k) space"]
-        N5["Extreme Tracker&lt;br/&gt;min/max with indices&lt;br/&gt;O(k) space"]
-    end
-
-    subgraph Categorical["Categorical Accumulator"]
-        C1["KMV × 3&lt;br/&gt;distinct: original, lower, trimmed"]
-        C2["Misra-Gries&lt;br/&gt;top-k values"]
-        C3["String Length&lt;br/&gt;avg, p90"]
-    end
-
-    subgraph DateTime["DateTime Accumulator"]
-        D1["Min/Max&lt;br/&gt;timestamps"]
-        D2["Counters&lt;br/&gt;hour/weekday/month"]
-        D3["Monotonicity&lt;br/&gt;pair comparison"]
-    end
-
-    subgraph Boolean["Boolean Accumulator"]
-        B1["Counters&lt;br/&gt;true/false/missing"]
-    end
-
-    style Numeric fill:#E8F5E9,stroke:#2E7D32
-    style Categorical fill:#FFF3E0,stroke:#E65100
-    style DateTime fill:#E3F2FD,stroke:#1565C0
-    style Boolean fill:#F3E5F5,stroke:#6A1B9A</code></pre>
-<hr />
-<h2 id="rendering-pipeline">Rendering Pipeline</h2>
-<pre class="mermaid"><code>flowchart TB
-    A["Finalized Summaries"] --&gt; B["Dataset-Level Metrics"]
-    B --&gt; C["Jinja2 Template"]
-    C --&gt; D["Inline CSS + JS"]
-    C --&gt; E["Summary Cards"]
-    C --&gt; F["Variable Cards"]
-    C --&gt; G["Sample Table"]
-    D --&gt; H["Single HTML File"]
-    E --&gt; H
-    F --&gt; H
-    G --&gt; H
-
-    style H fill:#66BB6A,stroke:#2E7D32,color:#fff</code></pre>
-<p>The template produces a <strong>single portable HTML file</strong> — no external dependencies, no server required.</p>
-<p><strong>Summary cards</strong> show: rows, columns, processed bytes, missing %, duplicates %.</p>
-<p><strong>Variable cards</strong> are rendered per-type with SVG charts, statistics, and quality flags.</p>
-<h3 id="shared-utilities">Shared Utilities</h3>
+<h1 id="gating-ci-on-drift">Gating CI on drift</h1>
+<div class="admonition info">
+<p class="admonition-title">Examples on this page assume two frames: <code>df</code>, the reference, and <code>new_df</code>, today's data</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="mi">2_000</span><span class="p">)})</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">new_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">standard_normal</span><span class="p">(</span><span class="mi">2_000</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.4</span><span class="p">})</span>
+</span></code></pre></div>
+</div>
+<p><code>pysuricata check</code> compares a dataset against a stored baseline and exits
+non-zero when something moved. It is the one command with a meaningful exit
+code — <code>profile</code> and <code>summarize</code> exit 0 no matter what they found.</p>
+<p>Unlike an expectations framework, there is nothing to author first. The
+baseline is a <code>summarize()</code> payload, so the shape of yesterday's data <em>is</em> the
+expectation.</p>
+<h2 id="two-commands">Two commands</h2>
+<p>Write a baseline from data you trust:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pysuricata<span class="w"> </span>check<span class="w"> </span>data.parquet<span class="w"> </span>--write-baseline<span class="w"> </span>baseline.json
+</span></code></pre></div>
+<p>Check the next batch against it:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pysuricata<span class="w"> </span>check<span class="w"> </span>data.parquet<span class="w"> </span>--baseline<span class="w"> </span>baseline.json
+</span></code></pre></div>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>check failed — 3 findings
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>  order_id: column is missing from the data
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>  amount: mean moved 2.02σ, -0.00453225 to 2.0105 (limit 0.5σ, baseline σ=0.995494)
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>  active: true rate moved 41.04 points, 50.64% to 9.60% (limit 10)
+</span></code></pre></div>
+<p>Commit <code>baseline.json</code> next to the data pipeline that produced it.</p>
+<h2 id="exit-codes">Exit codes</h2>
 <table>
 <thead>
 <tr>
-<th>Module</th>
-<th>Functions</th>
-<th>Purpose</th>
+<th>Code</th>
+<th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>render/svg_utils.py</code></td>
-<td><code>safe_col_id</code>, <code>nice_ticks</code>, <code>fmt_tick</code>, <code>svg_empty</code></td>
-<td>SVG chart helpers</td>
+<td>0</td>
+<td>Nothing crossed a threshold</td>
 </tr>
 <tr>
-<td><code>render/format_utils.py</code></td>
-<td><code>human_bytes</code>, <code>fmt_num</code>, <code>fmt_compact</code></td>
-<td>Number formatting</td>
+<td>1</td>
+<td>A threshold was crossed</td>
+</tr>
+<tr>
+<td>2</td>
+<td>The check could not run — file missing, baseline unreadable, bad thresholds</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="configuration">Configuration</h2>
-<p><code>ReportConfig</code> controls all behavior:</p>
+<p>The 1/2 split is deliberate: a pipeline should be able to treat drifted data
+and a missing file as different incidents.</p>
+<p><code>--warn-only</code> reports findings and still exits 0, which is how you introduce
+the gate to a repository that has never had one.</p>
+<h2 id="what-it-compares">What it compares</h2>
 <table>
 <thead>
 <tr>
-<th>Parameter</th>
+<th>Kind</th>
+<th>Signal</th>
 <th>Default</th>
-<th>Effect</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>chunk_size</code></td>
-<td>50,000</td>
-<td>Rows per chunk</td>
+<td><code>schema</code></td>
+<td>Column removed, or its type changed</td>
+<td>on</td>
 </tr>
 <tr>
-<td><code>numeric_sample_size</code></td>
-<td>20,000</td>
-<td>Reservoir size for quantiles</td>
+<td><code>schema</code></td>
+<td>Column added</td>
+<td>off (<code>--fail-on-new-column</code>)</td>
 </tr>
 <tr>
-<td><code>max_uniques</code></td>
-<td>2,048</td>
-<td>KMV sketch size</td>
+<td><code>rows</code></td>
+<td>Row count moved</td>
+<td>off (<code>--max-rows-drift-pct</code>)</td>
 </tr>
 <tr>
-<td><code>top_k</code></td>
-<td>50</td>
-<td>Misra-Gries capacity</td>
+<td><code>missing</code></td>
+<td>A column's missing rate moved, in percentage points</td>
+<td>5</td>
 </tr>
 <tr>
-<td><code>compute_correlations</code></td>
-<td><code>True</code></td>
-<td>Enable/disable correlation chips</td>
+<td><code>cardinality</code></td>
+<td>Approximate distinct count moved</td>
+<td>25%</td>
 </tr>
 <tr>
-<td><code>corr_threshold</code></td>
-<td>0.5</td>
-<td>Minimum |r| to display</td>
+<td><code>distribution</code></td>
+<td>Mean or median moved, in baseline standard deviations</td>
+<td>0.5σ</td>
 </tr>
 <tr>
-<td><code>random_seed</code></td>
-<td><code>None</code></td>
-<td>Deterministic sampling</td>
+<td><code>distribution</code></td>
+<td>Standard deviation grew or shrank by a factor</td>
+<td>2×</td>
 </tr>
 <tr>
-<td><code>include_sample</code></td>
-<td><code>True</code></td>
-<td>Include data sample in report</td>
+<td><code>boolean</code></td>
+<td>Share of <code>True</code> moved, in percentage points</td>
+<td>10</td>
+</tr>
+<tr>
+<td><code>range</code></td>
+<td>New minimum or maximum outside the baseline range</td>
+<td>off</td>
 </tr>
 </tbody>
 </table>
-<hr />
-<h2 id="security-correctness">Security &amp; Correctness</h2>
-<ul>
-<li><strong>HTML escaping</strong> — column names and labels are escaped before rendering</li>
-<li><strong>Missing/Inf handling</strong> — NaN and ±Inf excluded from moments, reported separately</li>
-<li><strong>Approximation badges</strong> — estimates marked with <code>(≈)</code> or <code>approx</code> badge</li>
-<li><strong>Reproducibility</strong> — set <code>random_seed</code> for deterministic results</li>
-</ul>
-<h2 id="extending">Extending</h2>
-<ul>
-<li><strong>Backends</strong> — polars/Arrow/DuckDB can be connected via the chunk iterator interface</li>
-<li><strong>Quantile sketches</strong> — t-digest or KLL can replace the default reservoir</li>
-<li><strong>New sections</strong> — drift comparisons, JSON export, CLI wrapper</li>
-</ul>
+<p>Three choices in that table are worth explaining, because they are what stops
+the gate from crying wolf.</p>
+<p><strong>Growth is not drift.</strong> Appending rows is the normal life of a dataset, so row
+count drift is off by default. For the same reason the cardinality check
+requires both the distinct <em>count</em> and the distinct <em>rate</em> to move: doubling
+the rows doubles a continuous column's distinct count while leaving its rate
+alone, and leaves a three-level enum's count alone while halving its rate.
+Gating on either one alone fails every build that appends data.</p>
+<p>The cost of that rule: when the row count also moved a lot, a small change in
+levels sits inside the band growth could explain and is not reported. When the
+row count holds — the same query run a day later, the common CI shape — it is
+exactly as sensitive as gating on the raw count.</p>
+<p><strong>Distribution drift is measured in standard deviations, not percent.</strong> A
+percentage change in the mean is meaningless when the mean is near zero and
+incomparable across columns with different units. <code>|Δmean| / σ</code> is neither.</p>
+<p><strong>Approximate quantities get loose thresholds.</strong> <code>unique_est</code> is a KMV sketch
+estimate with relative error around <code>1/√k</code> — about 2.2% at the default
+<code>uniques_k=2048</code>. A cardinality threshold anywhere near that fires on
+estimation noise rather than on drift, so the default sits an order of
+magnitude above it, and any threshold you set inside the noise floor is called
+out in the output:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>note: max_unique_drift_pct=1 is close to the KMV sketch error (~2.2% at k=2048);
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>this gate may fail on estimation noise. Raise it, or profile with a larger uniques_k.
+</span></code></pre></div>
+<p>Findings that rest on an estimate are labelled <code>(approximate)</code> in the output
+and carry <code>"approximate": true</code> in the JSON.</p>
+<h2 id="thresholds">Thresholds</h2>
+<p>Common ones have flags:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>pysuricata<span class="w"> </span>check<span class="w"> </span>data.parquet<span class="w"> </span>--baseline<span class="w"> </span>baseline.json<span class="w"> </span><span class="se">\</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="w">    </span>--max-missing-pct<span class="w"> </span><span class="m">5</span><span class="w"> </span>--min-rows<span class="w"> </span><span class="m">10000</span><span class="w"> </span>--max-rows-drift-pct<span class="w"> </span><span class="m">20</span>
+</span></code></pre></div>
+<p><code>--max-missing-pct</code> and <code>--min-rows</code> are absolute — they need no baseline, so
+they work on the very first run.</p>
+<p>Everything else lives in a file, in JSON or TOML:</p>
+<div class="language-toml highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># thresholds.toml</span>
+</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">[thresholds]</span>
+</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">max_missing_drift_pp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0</span>
+</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">max_mean_shift_sigma</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.25</span>
+</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">max_unique_drift_pct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">30.0</span>
+</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="n">max_std_ratio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.5</span>
+</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">fail_on_new_column</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">true</span>
+</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">max_rows_drift_pct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">50.0</span>
+</span></code></pre></div>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>pysuricata<span class="w"> </span>check<span class="w"> </span>data.parquet<span class="w"> </span>--baseline<span class="w"> </span>baseline.json<span class="w"> </span>--thresholds<span class="w"> </span>thresholds.toml
+</span></code></pre></div>
+<p>A <code>[tool.pysuricata.check]</code> table in <code>pyproject.toml</code> is read the same way, so
+the thresholds can live with the rest of the project's configuration.</p>
+<p>TOML needs Python 3.11 or newer, which is where <code>tomllib</code> entered the standard
+library; on 3.10 either install <code>tomli</code> or use a JSON file, which works
+everywhere and needs nothing.</p>
+<p>Set any threshold to <code>null</code> (JSON) or omit it and set it to nothing to disable
+that check. Precedence is defaults, then the file, then command-line flags.</p>
+<p>A misspelled threshold is an error rather than a silent no-op — a typo that
+quietly loosens a gate is the worst failure mode a gate has:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>Error: unknown threshold(s): max_mean_shift. Known thresholds: fail_on_new_column,
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>fail_on_range_expansion, max_mean_shift_sigma, ...
+</span></code></pre></div>
+<h2 id="in-github-actions">In GitHub Actions</h2>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data-check</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nt">on</span><span class="p">:</span>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">  </span><span class="nt">schedule</span><span class="p">:</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">cron</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;0</span><span class="nv"> </span><span class="s">6</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*</span><span class="nv"> </span><span class="s">*&quot;</span>
+</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span><span class="nt">workflow_dispatch</span><span class="p">:</span>
+</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>
+</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="nt">jobs</span><span class="p">:</span>
+</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">  </span><span class="nt">drift</span><span class="p">:</span>
+</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+</span><span id="__span-9-13"><a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/setup-python@v5</span>
+</span><span id="__span-9-14"><a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="w">        </span><span class="nt">with</span><span class="p">:</span>
+</span><span id="__span-9-15"><a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="w">          </span><span class="nt">python-version</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;3.12&quot;</span>
+</span><span id="__span-9-16"><a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pip install pysuricata</span>
+</span><span id="__span-9-17"><a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Fetch today&#39;s extract</span>
+</span><span id="__span-9-18"><a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">./scripts/fetch_extract.sh</span><span class="w">   </span><span class="c1"># writes data/extract.parquet</span>
+</span><span id="__span-9-19"><a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Check for drift</span>
+</span><span id="__span-9-20"><a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a><span class="w">        </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-9-21"><a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a><span class="w">          </span><span class="no">pysuricata check data/extract.parquet \</span>
+</span><span id="__span-9-22"><a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a><span class="w">            </span><span class="no">--baseline baselines/extract.json \</span>
+</span><span id="__span-9-23"><a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a><span class="w">            </span><span class="no">--thresholds thresholds.toml \</span>
+</span><span id="__span-9-24"><a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a><span class="w">            </span><span class="no">--json | tee check.json</span>
+</span><span id="__span-9-25"><a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Keep the result</span>
+</span><span id="__span-9-26"><a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a><span class="w">        </span><span class="nt">if</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">always()</span>
+</span><span id="__span-9-27"><a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a><span class="w">        </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/upload-artifact@v4</span>
+</span><span id="__span-9-28"><a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a><span class="w">        </span><span class="nt">with</span><span class="p">:</span>
+</span><span id="__span-9-29"><a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a><span class="w">          </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">drift-report</span>
+</span><span id="__span-9-30"><a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a><span class="w">          </span><span class="nt">path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">check.json</span>
+</span></code></pre></div>
+<p>The job fails when the check exits 1. <code>--json</code> writes a machine-readable result
+to stdout while progress goes to stderr, so the pipe stays parseable.</p>
+<p>To refresh a baseline after an intentional change, run <code>--write-baseline</code> and
+commit the result in the same pull request as the change that caused it. That
+makes the drift visible in review rather than in a red build.</p>
+<h2 id="from-python">From Python</h2>
+<p>The comparison is importable, and takes <code>summarize()</code> payloads:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata.check</span><span class="w"> </span><span class="kn">import</span> <span class="n">Thresholds</span><span class="p">,</span> <span class="n">compare</span><span class="p">,</span> <span class="n">make_baseline</span><span class="p">,</span> <span class="n">write_baseline</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="n">baseline</span> <span class="o">=</span> <span class="n">make_baseline</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;2026-08 reference&quot;</span><span class="p">)</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">write_baseline</span><span class="p">(</span><span class="n">baseline</span><span class="p">,</span> <span class="s2">&quot;baseline.json&quot;</span><span class="p">)</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="n">result</span> <span class="o">=</span> <span class="n">compare</span><span class="p">(</span><span class="n">summarize</span><span class="p">(</span><span class="n">new_df</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="mi">0</span><span class="p">),</span> <span class="n">baseline</span><span class="p">,</span> <span class="n">Thresholds</span><span class="p">(</span><span class="n">max_mean_shift_sigma</span><span class="o">=</span><span class="mf">0.25</span><span class="p">))</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="o">.</span><span class="n">passed</span><span class="p">:</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="k">for</span> <span class="n">finding</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">findings</span><span class="p">:</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">finding</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">finding</span><span class="o">.</span><span class="n">column</span><span class="p">,</span> <span class="n">finding</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+</span></code></pre></div>
+<p><code>CheckResult.to_dict()</code> gives the same structure the CLI prints under <code>--json</code>.</p>
+<h2 id="reproducibility">Reproducibility</h2>
+<p><code>check</code> defaults to <code>--seed 0</code> rather than to no seed, so re-running it on
+unchanged data is a no-op rather than a coin flip. Use the same seed when
+writing the baseline and when checking against it.</p>
+<p>The baseline records the <code>pysuricata</code> version and the payload's
+<code>schema_version</code>. Reading a baseline whose schema does not match the running
+version is an error that tells you to regenerate it, rather than a comparison
+that silently succeeds against fields that moved.</p>
 
 
 
 
 
 
-
-  
-  
 
 
 
