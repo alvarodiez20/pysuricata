@@ -7,6 +7,39 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.46] - 2026-08-16
+
+#65. Dataset comparison as a first-class output.
+
+### Added
+- **`compare(a, b)`**, and [a page about it](comparing.md). It reports what moved between two datasets — every delta, whether or not it crosses any threshold. Both sides accept anything `profile()` does, or a `summarize()` payload you already have, which is not re-profiled.
+
+  ```python
+  from pysuricata import compare
+
+  diff = compare(january, february)
+  diff.schema.added                          # {"extra": "numeric"}
+  diff.columns["amount"].median_shift_sigma  # 0.24
+  diff.columns["region"].categories_added    # ("west",)
+  ```
+
+  `Comparison.to_dict()` is the JSON contract; a text rendering is available for a terminal.
+
+### How it relates to `check`
+It is **built on** the gate rather than beside it: `check` is thresholds applied to the deltas `compare` computes, and both read the payload through the same functions. A gate and a diff that disagreed about what counts as a change would be worse than either alone, so there are tests asserting the two report the same numbers and share the same sketch-noise floor.
+
+Two things are in the diff and deliberately not in the gate. **Category churn** — which values entered and left the top-k — because top-k membership is not a census and its tail reshuffles on counting noise, making it a poor thing to fail a build on and the most legible thing to show a reader. And **every quartile**, not just the median: a gate wants one number, a diff wants the shape.
+
+Cardinality is reported as two numbers, the distinct **count** change and the distinct **rate** change, because neither answers alone — doubling the rows doubles a continuous column's count while leaving its rate alone, and does the opposite to a three-level enum. `check` resolves that with a rule; `compare` hands the reader both and lets them see it.
+
+### Honesty
+Sketch-derived deltas are marked `approximate`, and the text rendering **suppresses a distinct-count change smaller than the sketch's own error** (~2.2% at the default `uniques_k`) — printing a 1% move as a finding is the same mistake as printing an estimate as an exact integer. The structured delta still carries the number.
+
+`compare` profiles both sides with `seed=0` by default, so comparing a dataset against itself is a no-op rather than a set of sampling wobbles.
+
+### Not included
+No HTML view. The JSON contract and the text rendering are what this ships with; the report side belongs with the wider work on the report's presentation rather than bolted on beside it.
+
 ## [0.0.45] - 2026-08-16
 
 #64 and #105. No behaviour change: the accumulator boundary becomes something a

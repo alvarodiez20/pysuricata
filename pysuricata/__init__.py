@@ -51,6 +51,7 @@ from .api import (
     profile,
     summarize,
 )
+from .comparison import Comparison, compare
 
 # Alias for discoverability. ProfileConfig is the name to prefer; this one is
 # kept because it appears throughout the documentation and in released code.
@@ -60,6 +61,7 @@ ReportConfig = ProfileConfig
 # pysuricata import *` drags them in. Everything listed is public and covered by
 # the compatibility promise; anything absent is an implementation detail.
 __all__ = [
+    "Comparison",
     "ComputeOptions",
     "ConfigurationError",
     "ProfileConfig",
@@ -69,6 +71,7 @@ __all__ = [
     "ReportConfig",
     "UnsupportedDataError",
     "__version__",
+    "compare",
     "profile",
     "summarize",
 ]
