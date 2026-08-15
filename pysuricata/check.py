@@ -34,6 +34,7 @@ import datetime as _dt
 import json
 import math
 import os
+import time
 from collections.abc import Mapping
 from dataclasses import asdict, dataclass, fields
 from pathlib import Path
@@ -50,6 +51,7 @@ __all__ = [
     "Thresholds",
     "compare",
     "make_baseline",
+    "parse_duration",
     "read_baseline",
     "read_thresholds",
     "write_baseline",
@@ -63,6 +65,46 @@ BASELINE_VERSION = 1
 # floor can be called out instead of silently producing a flaky gate.
 _DEFAULT_UNIQUES_K = 2048
 _KMV_RELATIVE_ERROR_PCT = 100.0 / math.sqrt(_DEFAULT_UNIQUES_K)
+
+# `min_ts` and `max_ts` are epoch **nanoseconds** in the payload, which is the
+# kind of thing a consumer guesses wrong exactly once.
+_NS_PER_SECOND = 1_000_000_000
+
+# Thresholds that accept "26h" as well as a number of seconds.
+_DURATION_FIELDS = frozenset({"max_age"})
+
+_DURATION_UNITS = {"s": 1, "m": 60, "h": 3_600, "d": 86_400, "w": 604_800}
+
+
+def parse_duration(text: str | float | int) -> float:
+    """Parse `"26h"`, `"3d"`, `"90m"` or a bare number of seconds.
+
+    Args:
+        text: A duration string, or a number already in seconds.
+
+    Returns:
+        Seconds.
+
+    Raises:
+        ValueError: If the string is not a number followed by s, m, h, d or w.
+    """
+    if isinstance(text, (int, float)) and not isinstance(text, bool):
+        return float(text)
+    raw = str(text).strip().lower()
+    if not raw:
+        raise ValueError("duration must not be empty")
+    unit = _DURATION_UNITS.get(raw[-1])
+    number, factor = (raw[:-1], unit) if unit is not None else (raw, 1)
+    try:
+        value = float(number)
+    except ValueError:
+        raise ValueError(
+            f"cannot read {text!r} as a duration. Use a number of seconds, or a "
+            "number followed by s, m, h, d or w -- for example '26h'."
+        ) from None
+    if value < 0:
+        raise ValueError(f"duration must not be negative, got {text!r}")
+    return value * factor
 
 
 @dataclass(frozen=True)
@@ -88,11 +130,22 @@ class Thresholds:
             means "the column may not double or halve its standard deviation".
         max_true_rate_drift_pp: Boolean columns: change in the share of True,
             in percentage points.
+        max_age: Absolute gate, in seconds, or a duration string like `"26h"`.
+            Fails when the newest timestamp in a datetime column is older than
+            this. Needs no baseline.
         fail_on_new_column: Whether an added column is a breach. Off by
             default — new columns are usually a feature landing.
         fail_on_range_expansion: Whether a new min below, or max above, the
             baseline is a breach. Off by default, since honest new data
             routinely widens a range.
+        require_max_ts_advances: Whether a datetime column whose newest
+            timestamp did not move past the baseline's is a breach. This is the
+            one that catches a re-run of yesterday's extract, where every
+            distribution matches because the data is literally the same.
+
+    Both time-shaped thresholds are off by default: a datetime column can be a
+    birth date rather than an event time, and failing a build because nobody
+    was born since the baseline would be absurd.
     """
 
     max_missing_pct: float | None = None
@@ -104,8 +157,21 @@ class Thresholds:
     max_median_shift_sigma: float | None = 0.5
     max_std_ratio: float | None = 2.0
     max_true_rate_drift_pp: float | None = 10.0
+    max_age: float | None = None
     fail_on_new_column: bool = False
     fail_on_range_expansion: bool = False
+    require_max_ts_advances: bool = False
+
+    def __post_init__(self) -> None:
+        """Accept a duration string wherever seconds are expected.
+
+        `Thresholds(max_age="26h")` is the natural thing to write, so it has to
+        work in Python and not only in a thresholds file.
+        """
+        for name in _DURATION_FIELDS:
+            value = getattr(self, name)
+            if value is not None:
+                object.__setattr__(self, name, parse_duration(value))
 
     @classmethod
     def from_mapping(cls, data: Mapping[str, Any]) -> Thresholds:
@@ -139,6 +205,8 @@ class Thresholds:
                 if not isinstance(value, bool):
                     raise ValueError(f"{name} must be true or false, got {value!r}")
                 kwargs[name] = value
+            elif name in _DURATION_FIELDS and isinstance(value, str):
+                kwargs[name] = parse_duration(value)
             elif value is None:
                 kwargs[name] = None
             elif isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -325,6 +393,8 @@ def compare(
     current: Mapping[str, Any],
     baseline: Baseline | Mapping[str, Any] | None = None,
     thresholds: Thresholds | None = None,
+    *,
+    now: float | None = None,
 ) -> CheckResult:
     """Compare a summary against a baseline and any absolute thresholds.
 
@@ -333,6 +403,8 @@ def compare(
         baseline: A `Baseline`, a bare summary payload, or None to run only the
             absolute thresholds.
         thresholds: What counts as a breach. Defaults to `Thresholds()`.
+        now: Unix time to measure freshness against, for tests. Defaults to the
+            wall clock.
 
     Returns:
         The findings. An empty `findings` means the gate passes.
@@ -342,6 +414,7 @@ def compare(
     notes: list[str] = list(limits.warnings())
 
     findings.extend(_absolute_findings(current, limits))
+    findings.extend(_freshness_findings(current, limits, now))
 
     if baseline is None:
         return CheckResult(tuple(findings), (), tuple(notes))
@@ -502,7 +575,100 @@ def _column_findings(
         out.extend(_numeric_drift(name, old, new, limits))
     elif kind == "boolean":
         out.extend(_boolean_drift(name, old, new, limits))
+    elif kind == "datetime":
+        out.extend(_staleness(name, old, new, limits))
     return out
+
+
+def _staleness(
+    name: str, old: Mapping[str, Any], new: Mapping[str, Any], limits: Thresholds
+) -> list[Finding]:
+    """Did the newest timestamp move past the baseline's?
+
+    The most common failure of a scheduled pipeline is not that the numbers
+    drifted — it is that the job produced **yesterday's data again**. Every
+    distribution matches, every column is present, and every other check here
+    passes, because the data is literally the same.
+    """
+    if not limits.require_max_ts_advances:
+        return []
+    before, after = _number(old.get("max_ts")), _number(new.get("max_ts"))
+    if before is None or after is None:
+        return []
+    if after > before:
+        return []
+    if after < before:
+        message = f"newest timestamp moved backwards, {_when(before)} to {_when(after)}"
+    else:
+        message = f"newest timestamp did not advance past {_when(before)}"
+    return [
+        Finding(
+            kind="freshness",
+            column=name,
+            message=message,
+            baseline=before,
+            current=after,
+        )
+    ]
+
+
+def _freshness_findings(
+    current: Mapping[str, Any], limits: Thresholds, now: float | None = None
+) -> list[Finding]:
+    """Absolute freshness: how old is the newest timestamp, right now."""
+    if limits.max_age is None:
+        return []
+    now_seconds = time.time() if now is None else now
+    out: list[Finding] = []
+    for name, stats in (current.get("columns") or {}).items():
+        if stats.get("type") != "datetime":
+            continue
+        newest = _number(stats.get("max_ts"))
+        if newest is None:
+            continue
+        age = now_seconds - newest / _NS_PER_SECOND
+        if age > limits.max_age:
+            out.append(
+                Finding(
+                    kind="freshness",
+                    column=name,
+                    message=(
+                        f"newest value is {_duration(age)} old ({_when(newest)}), "
+                        f"past the limit of {_duration(limits.max_age)}"
+                    ),
+                    baseline=limits.max_age,
+                    current=age,
+                )
+            )
+    return out
+
+
+def _when(nanoseconds: float) -> str:
+    """Format an epoch-nanosecond timestamp in UTC.
+
+    UTC, not local: the payload stores timestamps as epoch values, and a gate
+    that reads them through the runner's timezone would fail differently
+    depending on where CI happens to run. The datetime accumulator was bitten
+    by exactly that once.
+    """
+    try:
+        moment = _dt.datetime.fromtimestamp(
+            nanoseconds / _NS_PER_SECOND, _dt.timezone.utc
+        )
+    except (OverflowError, OSError, ValueError):
+        return "an unrepresentable time"
+    return moment.strftime("%Y-%m-%d %H:%M UTC")
+
+
+def _duration(seconds: float) -> str:
+    """Format a span of seconds the way a person would say it."""
+    if seconds < 90:
+        return f"{seconds:.0f}s"
+    if seconds < 5_400:
+        return f"{seconds / 60:.0f}m"
+    if seconds < 172_800:
+        return f"{seconds / 3_600:.1f}h"
+    return f"{seconds / 86_400:.1f}d"
 
 
 def _missing_drift(

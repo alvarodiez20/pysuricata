@@ -7,6 +7,22 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.40] - 2026-08-15
+
+#43 and #91. The payload becomes a contract that is checked rather than
+described, and the gate learns the failure every other check passes.
+
+### Added
+- **[A documented `summarize()` schema](summary-schema.md)** — every key, its type, which ones are estimates and with what error, and the stability policy. Adding a key does not change `schema_version`; renaming, removing, or changing the meaning or units of one does.
+- **The payload now carries what the HTML shows.** It was a strictly poorer view and nothing said so — a gap only findable by reading the renderer, which is how it happened twice already (#24 correlations, #59 numeric top values). Numeric columns gained `skew`, `kurtosis`, `variance`, `cv`, `se`, `gmean`, `iqr`, `mad`, `ci_lo`/`ci_hi`, `jb_chi2`, `inf`, `outliers_mod_zscore`, `heap_pct`, `bimodal`, the granularity pair, the extreme values with their row indices, and the histogram. Datetime columns gained fifteen fields, having previously published six. Categorical gained the entropy and diversity measures, the length statistics, and the case/whitespace variant estimates behind the quality flags. Boolean gained its ratios and entropy. Every kind gained `dtype`.
+- **A test that keeps it that way.** It walks the accumulators' own summary dataclasses and fails if a computed statistic is neither published nor listed in `SUMMARY_FIELDS_WITHHELD` **with a reason**. Adding a statistic now forces a decision about the contract.
+- **Freshness gating** (#91) — `--require-fresh` fails when a datetime column's newest timestamp did not advance past the baseline's, and `--max-age 26h` fails when it is older than a duration, needing no baseline at all. This catches the most common failure of a scheduled pipeline: the job produced *yesterday's data again*, where every distribution matches and every other check passes because the data is literally the same. Both are off by default — a datetime column can be a birth date rather than an event time. Comparison is in UTC, so the gate does not depend on where CI runs.
+
+### Changed
+- **The payload is JSON-serialisable without a custom encoder.** Numpy scalars were leaking into `mean`, `missing` and `outliers_iqr_est`; a payload every consumer has to re-encode is not a contract.
+
+`schema_version` stays **1**: this release only adds keys, which is exactly what the policy says is safe.
+
 ## [0.0.39] - 2026-08-15
 
 Six issues (#36, #60, #61, #67, #89, and a bug found while fixing #61) with one

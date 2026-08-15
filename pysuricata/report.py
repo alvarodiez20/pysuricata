@@ -52,6 +52,60 @@ from .render.identifier import looks_like_identifier as _looks_like_identifier
 # reading known keys is unaffected. Renaming or removing one bumps the major.
 SUMMARY_SCHEMA_VERSION = 1
 
+# The payload key each summary-dataclass field is published under, where the two
+# names differ. Every other field is published under its own name.
+#
+# This lives in the source rather than only in the docs because a test walks it:
+# `tests/test_summary_contract.py` asserts that every field of every summary
+# dataclass is either published or listed below as deliberately withheld. Adding
+# a statistic to an accumulator therefore forces a decision about the contract
+# instead of quietly widening the gap between the HTML and the JSON -- which is
+# how #24 (correlations) and #59 (numeric top values) both happened.
+SUMMARY_FIELD_ALIASES = {
+    "dtype_str": "dtype",
+    "outliers_iqr": "outliers_iqr_est",
+    "true_n": "true",
+    "false_n": "false",
+}
+
+# Fields that are deliberately not published, with the reason. These are not
+# statistics: they are the raw material a statistic was computed from, or a
+# rendering detail.
+SUMMARY_FIELDS_WITHHELD = {
+    "name": "the column name is the key in the columns mapping",
+    "sample_vals": "the reservoir itself, up to 20,000 values, not a statistic",
+    "sample_ts": "the datetime reservoir, same reasoning",
+    "sample_scale": "a scale factor the renderer applies to sampled counts",
+    "chunk_metadata": "per-chunk bookkeeping used to draw the chunk strip",
+    "corr_threshold": "an echo of the caller's own configuration",
+    "hist_counts": "legacy field, superseded by true_histogram_counts",
+}
+
+
+def _f(value: Any) -> float | None:
+    """Coerce a statistic to a plain float, keeping None as None.
+
+    The accumulators return numpy scalars in places, which are not JSON
+    serialisable and compare unequal to their Python counterparts under `is`.
+    A payload that has to be re-encoded by every consumer is not a contract.
+    """
+    if value is None:
+        return None
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _i(value: Any) -> int | None:
+    """Coerce a statistic to a plain int, keeping None as None."""
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
 
 class ReportOrchestrator:
     """Orchestrates the end-to-end EDA report generation process.
@@ -253,21 +307,21 @@ class ReportOrchestrator:
                 is_identifier = _looks_like_identifier(s)
                 columns_summary[name] = {
                     "type": "identifier" if is_identifier else "numeric",
-                    "count": s.count,
-                    "missing": s.missing,
-                    "unique_est": s.unique_est,
-                    "mean": s.mean,
-                    "std": s.std,
-                    "min": s.min,
-                    "q1": s.q1,
-                    "median": s.median,
-                    "q3": s.q3,
-                    "max": s.max,
-                    "zeros": s.zeros,
-                    "negatives": s.negatives,
-                    "outliers_iqr_est": s.outliers_iqr,
+                    "count": _i(s.count),
+                    "missing": _i(s.missing),
+                    "unique_est": _i(s.unique_est),
+                    "mean": _f(s.mean),
+                    "std": _f(s.std),
+                    "min": _f(s.min),
+                    "q1": _f(s.q1),
+                    "median": _f(s.median),
+                    "q3": _f(s.q3),
+                    "max": _f(s.max),
+                    "zeros": _i(s.zeros),
+                    "negatives": _i(s.negatives),
+                    "outliers_iqr_est": _i(s.outliers_iqr),
                     "approx": bool(s.approx),
-                    "mem_bytes": s.mem_bytes,
+                    "mem_bytes": _i(s.mem_bytes),
                     # Correlations are computed and applied before this point, but
                     # used to reach the HTML report only -- summarize() dropped
                     # them, so the JSON contract was strictly weaker than the HTML.
@@ -288,37 +342,109 @@ class ReportOrchestrator:
                         if s.top_values
                         else ([] if acc._track_top_k else None)
                     ),
+                    # Everything below is shown on the numeric card and used to
+                    # be reachable only by reading the HTML.
+                    "dtype": str(s.dtype_str),
+                    "inf": int(s.inf),
+                    "variance": _f(s.variance),
+                    "skew": _f(s.skew),
+                    "kurtosis": _f(s.kurtosis),
+                    "cv": _f(s.cv),
+                    "se": _f(s.se),
+                    "gmean": _f(s.gmean),
+                    "iqr": _f(s.iqr),
+                    "mad": _f(s.mad),
+                    "ci_lo": _f(s.ci_lo),
+                    "ci_hi": _f(s.ci_hi),
+                    "jb_chi2": _f(s.jb_chi2),
+                    "outliers_mod_zscore": int(s.outliers_mod_zscore),
+                    "heap_pct": _f(s.heap_pct),
+                    "bimodal": bool(s.bimodal),
+                    "gran_decimals": _i(s.gran_decimals),
+                    "gran_step": _f(s.gran_step),
+                    "unique_ratio_approx": _f(s.unique_ratio_approx),
+                    # The card lists these as "Extreme values", with the row
+                    # each one sits at.
+                    "min_items": [
+                        (int(idx), float(val)) for idx, val in (s.min_items or [])
+                    ],
+                    "max_items": [
+                        (int(idx), float(val)) for idx, val in (s.max_items or [])
+                    ],
+                    "true_histogram_edges": [
+                        float(e) for e in (s.true_histogram_edges or [])
+                    ],
+                    "true_histogram_counts": [
+                        int(c) for c in (s.true_histogram_counts or [])
+                    ],
                 }
             elif kind == "categorical":
                 s = acc.finalize()
                 columns_summary[name] = {
                     "type": "categorical",
-                    "count": s.count,
-                    "missing": s.missing,
-                    "unique_est": s.unique_est,
-                    "top_items": s.top_items,
+                    "count": _i(s.count),
+                    "missing": _i(s.missing),
+                    "unique_est": _i(s.unique_est),
+                    "top_items": [(str(v), _i(c)) for v, c in (s.top_items or [])],
                     "approx": bool(s.approx),
-                    "mem_bytes": s.mem_bytes,
+                    "mem_bytes": _i(s.mem_bytes),
+                    "dtype": str(s.dtype_str),
+                    "entropy": _f(s.entropy),
+                    "avg_len": _f(s.avg_len),
+                    "len_p90": _i(s.len_p90),
+                    "empty_zero": int(s.empty_zero),
+                    # The two variant estimates drive the "looks like a case or
+                    # whitespace variant of another value" quality flags.
+                    "case_variants_est": _i(s.case_variants_est),
+                    "trim_variants_est": _i(s.trim_variants_est),
+                    "most_common_ratio": _f(s.most_common_ratio),
+                    "diversity_ratio": _f(s.diversity_ratio),
+                    "gini_impurity": _f(s.gini_impurity),
                 }
             elif kind == "datetime":
                 s = acc.finalize()
                 columns_summary[name] = {
                     "type": "datetime",
-                    "count": s.count,
-                    "missing": s.missing,
-                    "min_ts": s.min_ts,
-                    "max_ts": s.max_ts,
-                    "mem_bytes": s.mem_bytes,
+                    "count": _i(s.count),
+                    "missing": _i(s.missing),
+                    "min_ts": _f(s.min_ts),
+                    "max_ts": _f(s.max_ts),
+                    "mem_bytes": _i(s.mem_bytes),
+                    "dtype": str(s.dtype_str),
+                    "unique_est": _i(s.unique_est),
+                    "mono_inc": bool(s.mono_inc),
+                    "mono_dec": bool(s.mono_dec),
+                    "time_span_days": _f(s.time_span_days),
+                    "avg_interval_seconds": _f(s.avg_interval_seconds),
+                    "interval_std_seconds": _f(s.interval_std_seconds),
+                    "weekend_ratio": _f(s.weekend_ratio),
+                    "business_hours_ratio": _f(s.business_hours_ratio),
+                    "seasonal_pattern": (
+                        str(s.seasonal_pattern) if s.seasonal_pattern else None
+                    ),
+                    "source_timezone": (
+                        str(s.source_timezone) if s.source_timezone else None
+                    ),
+                    # The tallies behind the hour/day/month/year charts. Small
+                    # and fixed in size -- 24, 7, 12, and one entry per year.
+                    "by_hour": [int(v) for v in (s.by_hour or [])],
+                    "by_dow": [int(v) for v in (s.by_dow or [])],
+                    "by_month": [int(v) for v in (s.by_month or [])],
+                    "by_year": {int(y): int(c) for y, c in (s.by_year or {}).items()},
                 }
             else:  # boolean
                 s = acc.finalize()
                 columns_summary[name] = {
                     "type": "boolean",
-                    "count": s.count,
-                    "missing": s.missing,
-                    "true": s.true_n,
-                    "false": s.false_n,
-                    "mem_bytes": s.mem_bytes,
+                    "count": _i(s.count),
+                    "missing": _i(s.missing),
+                    "true": _i(s.true_n),
+                    "false": _i(s.false_n),
+                    "mem_bytes": _i(s.mem_bytes),
+                    "dtype": str(s.dtype_str),
+                    "true_ratio": _f(s.true_ratio),
+                    "false_ratio": _f(s.false_ratio),
+                    "entropy": _f(s.entropy),
                 }
 
         return {

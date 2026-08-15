@@ -1,0 +1,197 @@
+# The `summarize()` schema
+
+`summarize()` returns a plain dictionary, and `Report.stats` carries the same
+one. This page is the contract: what the keys are, which of them are estimates,
+and what a version bump means.
+
+!!! info "Examples on this page assume a frame `df`"
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    df = pd.DataFrame({"amount": rng.lognormal(3, 1.2, 2_000)})
+    ```
+
+```python
+from pysuricata import summarize
+
+stats = summarize(df)
+stats["schema_version"]                     # 1
+stats["dataset"]["rows_est"]
+stats["columns"]["amount"]["median"]
+```
+
+## Stability policy
+
+`schema_version` is an integer at the top level.
+
+- **Adding a key does not change it.** A consumer reading keys it knows is
+  unaffected by new ones, so new statistics arrive without warning and without
+  ceremony.
+- **Renaming or removing a key bumps it.** So does changing what an existing key
+  means, or its units.
+
+This is not decoration. The payload drifted once before it was versioned:
+`dataset["rows"]` became `dataset["rows_est"]`, which silently broke every
+documented example and would have broken every downstream consumer.
+
+`pysuricata check` reads `schema_version` off a stored baseline and **refuses**
+to compare against one written by a different version, rather than quietly
+matching whatever keys still line up.
+
+Every column carries `type`, `count`, `missing` and `mem_bytes`, whatever its
+kind. Those four are safe to read without checking `type` first.
+
+## Top level
+
+| Key | Type | Meaning |
+|---|---|---|
+| `schema_version` | int | The version of this schema |
+| `dataset` | dict | Whole-frame statistics |
+| `columns` | dict | Column name → statistics |
+
+## `dataset`
+
+| Key | Type | Meaning |
+|---|---|---|
+| `rows_est` | int | Rows seen. Exact for a frame; a count of what was streamed otherwise |
+| `cols` | int | Columns profiled |
+| `missing_cells` | int | Missing cells across profiled columns |
+| `missing_cells_pct` | float | As a percentage of `rows_est × cols` |
+| `duplicate_rows_est` | int | **Approximate.** From a row-level KMV sketch |
+| `duplicate_rows_pct_est` | float | **Approximate.** As above |
+| `memory_bytes` | int | Approximate in-memory size of the source |
+| `top_missing` | list | Up to five `{column, pct, count}`, worst first |
+
+## `columns[name]["type"]`
+
+One of `numeric`, `categorical`, `datetime`, `boolean`, `identifier`.
+
+`identifier` is a numeric column that is monotonic, integer-like and has a
+distinct count equal to the row count — a key, not a measurement. It carries the
+numeric keys, since it is a numeric column; the type is a statement about what
+the numbers mean.
+
+## Numeric columns
+
+Shape and position:
+
+| Key | Type | Notes |
+|---|---|---|
+| `count`, `missing`, `zeros`, `negatives`, `inf` | int | Exact |
+| `mean`, `std`, `variance`, `se` | float | Exact (Welford/Pébay) |
+| `skew`, `kurtosis`, `cv`, `gmean` | float | Exact |
+| `min`, `max` | float | Exact — from the extreme tracker, which sees every value |
+| `q1`, `median`, `q3`, `iqr`, `mad` | float | **From the reservoir sample** |
+| `ci_lo`, `ci_hi` | float | 95% confidence interval for the mean |
+| `jb_chi2` | float | Jarque–Bera statistic |
+| `min_items`, `max_items` | list | `(row_index, value)`, most extreme first |
+| `true_histogram_edges`, `true_histogram_counts` | list | The distribution, exact counts |
+
+Quality and structure:
+
+| Key | Type | Notes |
+|---|---|---|
+| `unique_est` | int | **Approximate.** KMV sketch |
+| `unique_ratio_approx` | float | **Approximate.** `unique_est / count` |
+| `top_values` | list \| None | `(value, count)`. **`None` means not tracked** |
+| `outliers_iqr_est`, `outliers_mod_zscore` | int | **From the sample**, scaled |
+| `mono_inc`, `mono_dec` | bool | Monotonic over the stream as it arrived |
+| `int_like` | bool | Every value is a whole number |
+| `heap_pct` | float | Share sitting on round numbers — heaping |
+| `bimodal` | bool | Two modes detected in the histogram |
+| `gran_decimals`, `gran_step` | int, float | Inferred granularity |
+| `corr_top` | list | `(other_column, r)` above the threshold |
+| `approx` | bool | Whether sampling was involved at all |
+| `dtype` | str | The source dtype |
+
+`top_values` distinguishes two situations that a plain empty list would not:
+`None` means the top-k sketch was **switched off** for this column because its
+cardinality made a "common values" table meaningless, while `[]` means it was
+tracked and nothing was frequent enough.
+
+## Categorical columns
+
+| Key | Type | Notes |
+|---|---|---|
+| `count`, `missing`, `empty_zero` | int | Exact |
+| `unique_est` | int | **Approximate.** KMV sketch |
+| `top_items` | list | `(value, count)`. **Approximate** — Misra-Gries counts are lower bounds |
+| `entropy`, `gini_impurity`, `diversity_ratio`, `most_common_ratio` | float | Derived |
+| `avg_len`, `len_p90` | float, int | Value length in characters |
+| `case_variants_est`, `trim_variants_est` | int | **Approximate.** Distinct counts after folding case / trimming whitespace |
+| `approx`, `dtype` | bool, str | |
+
+The two variant estimates are what the report's "looks like a case variant"
+flags are drawn from: compare them against `unique_est` — a lower folded count
+means some values differ only by case or by surrounding whitespace.
+
+## Datetime columns
+
+| Key | Type | Notes |
+|---|---|---|
+| `count`, `missing` | int | Exact |
+| `min_ts`, `max_ts` | float | **Epoch nanoseconds**, UTC |
+| `unique_est` | int | **Approximate** |
+| `time_span_days` | float | `max_ts − min_ts`, in days |
+| `avg_interval_seconds`, `interval_std_seconds` | float | Between consecutive values |
+| `weekend_ratio`, `business_hours_ratio` | float | Share of values in each |
+| `mono_inc`, `mono_dec` | bool | Monotonic over the stream as it arrived |
+| `seasonal_pattern` | str \| None | A description, when one is detected |
+| `source_timezone` | str \| None | The dtype's timezone, when it carries one |
+| `by_hour`, `by_dow`, `by_month` | list | Tallies of length 24, 7 and 12 |
+| `by_year` | dict | Year → count |
+| `dtype` | str | |
+
+**`min_ts` and `max_ts` are nanoseconds**, not seconds — that is the units
+question most likely to be guessed wrong. Divide by `1_000_000_000` before
+handing them to `datetime.fromtimestamp`.
+
+## Boolean columns
+
+| Key | Type | Notes |
+|---|---|---|
+| `count`, `missing`, `true`, `false` | int | Exact |
+| `true_ratio`, `false_ratio` | float | Of the non-missing values |
+| `entropy` | float | |
+| `dtype` | str | |
+
+`count` counts non-missing values, so the number of rows the column covers is
+`true + false + missing`.
+
+## What is estimated, and by how much
+
+Anything marked **approximate** above rests on a bounded-memory sketch. The two
+that matter:
+
+- **`unique_est` and the variant counts** come from a KMV sketch with relative
+  error near `1/√k`, about **2.2%** at the default `uniques_k=2048`. Raise
+  `uniques_k` to tighten it.
+- **Quantiles** (`q1`, `median`, `q3`, and the IQR and MAD derived from them)
+  come from a reservoir sample of `numeric_sample_size` values, default 20,000,
+  with error near `1/√k` — about **0.7%**, and **3.2%** if you drop the sample
+  to 1,000.
+
+`approx` on a numeric column tells you whether sampling was involved for that
+column at all: below the sample size, the reservoir holds every value and the
+quantiles are exact.
+
+`top_items` and `top_values` come from Misra-Gries counters. Their counts are
+**lower bounds** — a reported count never overstates, and the counters neither
+partition the column nor sum to the row count.
+
+## What is not in the payload
+
+Deliberately withheld, and listed in `pysuricata.report.SUMMARY_FIELDS_WITHHELD`
+with the reason for each: the reservoir sample itself (up to 20,000 floats per
+column), the per-chunk bookkeeping the report's chunk strip is drawn from, and
+the scale factor the renderer applies to sampled counts. None of these is a
+statistic.
+
+A test walks that list against the accumulators' own summary dataclasses and
+fails if a computed statistic is neither published nor listed. That is what
+stops the JSON drifting behind the HTML again — it has happened twice, with
+correlations and with numeric top values, and both times it was only findable by
+reading the renderer.
