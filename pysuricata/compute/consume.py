@@ -180,6 +180,8 @@ def consume_chunk_pandas(
     kinds: ColumnKinds,
     config: Any | None = None,
     logger: logging.Logger | None = None,
+    *,
+    row_offset: int = 0,
 ) -> None:
     # 1) Create accumulators for columns not seen in the first chunk
     for name in df.columns:
@@ -235,28 +237,9 @@ def consume_chunk_pandas(
 
         if isinstance(acc, NumericAccumulator):
             arr = _to_numeric_array_pandas(s)
-            acc.update(arr)
+            # row_offset makes the accumulator's extreme-value indices global.
+            acc.update(arr, row_offset=row_offset)
             acc.add_mem(estimated_memory)
-            # Track extremes with indices - only every 5 chunks for performance
-            acc._extreme_update_counter += 1
-            if acc._extreme_update_counter % 5 == 0:
-                try:
-                    finite = np.isfinite(arr)
-                    if finite.any():
-                        vals = arr[finite]
-                        idx = s.index.to_numpy()[finite]
-                        if vals.size > 0:
-                            k = min(5, vals.size)
-                            part_min = np.argpartition(vals, k - 1)[:k]
-                            pairs_min = [(idx[i], float(vals[i])) for i in part_min]
-                            part_max = np.argpartition(-vals, k - 1)[:k]
-                            pairs_max = [(idx[i], float(vals[i])) for i in part_max]
-                            acc.update_extremes(pairs_min, pairs_max)
-                except Exception:
-                    if logger:
-                        logger.debug(
-                            "extreme update failed for column '%s'", name, exc_info=True
-                        )
         elif isinstance(acc, BooleanAccumulator):
             arr = _to_bool_array_pandas(s)
             acc.update(arr)

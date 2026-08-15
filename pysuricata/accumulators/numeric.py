@@ -171,9 +171,6 @@ class NumericAccumulator:
         self._current_chunk_missing = 0  # Missing in current chunk
         self._current_chunk_rows = 0  # Total rows in current chunk
 
-        # Chunk counter for throttling extreme tracking (incremented by consume layer)
-        self._extreme_update_counter: int = 0
-
     def set_dtype(self, dtype_str: str) -> None:
         """Set the data type string efficiently.
 
@@ -206,11 +203,13 @@ class NumericAccumulator:
         """Get unique count estimate for compatibility."""
         return self._uniques.estimate()
 
-    def update(self, arr: Sequence[Any]) -> None:
+    def update(self, arr: Sequence[Any], *, row_offset: int = 0) -> None:
         """Update accumulator with new values using optimized vectorized processing.
 
         Args:
             arr: Sequence of values to process
+            row_offset: Global index of this chunk's first row, so extreme-value
+                indices refer to the dataset rather than to the chunk.
         """
         # Handle empty arrays efficiently
         if len(arr) == 0:
@@ -238,7 +237,7 @@ class NumericAccumulator:
             values = self._convert_to_numeric(arr)
 
         # Process values with optimized algorithms
-        self._process_values(values)
+        self._process_values(values, row_offset)
 
         # Track missing values in current chunk
         missing_in_update = self.missing - missing_before
@@ -300,7 +299,7 @@ class NumericAccumulator:
             elif isinstance(value, float) and math.isinf(value):
                 self.inf += 1
 
-    def _process_values(self, values: np.ndarray) -> None:
+    def _process_values(self, values: np.ndarray, row_offset: int = 0) -> None:
         """Process numeric values through all algorithm components with vectorized operations.
 
         Args:
@@ -335,8 +334,11 @@ class NumericAccumulator:
         self._uniques.add_many(finite_values)
         self._topk.add_many(finite_values)
 
-        # Update extremes with efficient index tracking
-        indices = np.arange(len(values))[finite_mask]
+        # Extreme indices are global, not chunk-local. Without the offset,
+        # "row 4,182 had the maximum" named a position within whichever chunk
+        # the value happened to arrive in, so it was wrong for every chunk after
+        # the first.
+        indices = np.arange(len(values))[finite_mask] + row_offset
         self._extremes.update(finite_values, indices)
 
         # Update optional advanced analytics components

@@ -18,6 +18,15 @@ from .algorithms import MonotonicityDetector
 from .config import DatetimeConfig
 from .sketches import KMV, ReservoirSampler
 
+# Validity window for nanosecond timestamps. The old bound of -2e18 ns is
+# 1906-05-13: every birthdate and historical record before it was silently
+# reclassified as missing, so a column of 19th-century dates looked almost
+# entirely null rather than old. The real limit is what datetime64[ns] can
+# represent in an int64 -- 1677-09-21 to 2262-04-11 -- with int64 min reserved
+# by pandas as the NaT sentinel.
+_NS_MIN = int(np.iinfo(np.int64).min) + 1
+_NS_MAX = int(np.iinfo(np.int64).max)
+
 
 @dataclass
 class DatetimeSummary:
@@ -227,8 +236,7 @@ class DatetimeAccumulator:
                 valid_mask[i] = False
             elif isinstance(ts, float) and np.isnan(ts):
                 valid_mask[i] = False
-            elif isinstance(ts, (int, float)) and (ts < -2e18 or ts > 1e20):
-                # Reasonable timestamp bounds (roughly 1900-2100)
+            elif isinstance(ts, (int, float)) and not (_NS_MIN <= ts <= _NS_MAX):
                 valid_mask[i] = False
 
         return valid_mask
