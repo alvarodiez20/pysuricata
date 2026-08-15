@@ -1901,12 +1901,14 @@
 <h2 id="computeoptions">ComputeOptions</h2>
 <p>Control data processing and analysis.</p>
 <h3 id="basic-parameters">Basic Parameters</h3>
-<p><strong><code>chunk_size: int = 200_000</code></strong></p>
+<p><strong><code>chunk_size: int = 50_000</code></strong></p>
 <p>Rows per chunk when processing data.</p>
 <ul>
-<li><strong>Larger</strong>: Faster processing, more memory</li>
-<li><strong>Smaller</strong>: Less memory, more overhead</li>
-<li><strong>Recommended</strong>: 100K-500K for most datasets</li>
+<li><strong>Larger</strong>: more memory, and usually <em>slower</em> — the sketch merges are
+  superlinear in batch size, so one 200K-row batch costs more than four 50K ones</li>
+<li><strong>Smaller</strong>: less memory, more per-chunk overhead</li>
+<li><strong>Recommended</strong>: leave it alone. 50K is near the measured optimum across
+  frame shapes; the useful range is roughly 25K–100K</li>
 </ul>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">250_000</span>
 </span></code></pre></div>
