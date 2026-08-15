@@ -1365,27 +1365,27 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#algorithm-r-vitter" class="md-nav__link">
+  <a href="#algorithm-r-and-why-it-is-not-what-ships" class="md-nav__link">
     <span class="md-ellipsis">
-      Algorithm R (Vitter)
+      Algorithm R, and why it is not what ships
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#guarantee" class="md-nav__link">
+  <a href="#algorithm-l-which-is-what-ships" class="md-nav__link">
     <span class="md-ellipsis">
-      Guarantee
+      Algorithm L, which is what ships
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#proof-sketch" class="md-nav__link">
+  <a href="#reproducibility" class="md-nav__link">
     <span class="md-ellipsis">
-      Proof Sketch
+      Reproducibility
     </span>
   </a>
   
@@ -1403,7 +1403,7 @@
         <li class="md-nav__item">
   <a href="#use-cases" class="md-nav__link">
     <span class="md-ellipsis">
-      Use Cases
+      Use cases
     </span>
   </a>
   
@@ -1412,7 +1412,7 @@
         <li class="md-nav__item">
   <a href="#see-also" class="md-nav__link">
     <span class="md-ellipsis">
-      See Also
+      See also
     </span>
   </a>
   
@@ -1735,54 +1735,125 @@
 
 
 <h1 id="reservoir-sampling">Reservoir Sampling</h1>
-<p>Maintain uniform random sample of fixed size <span class="arithmatex">\(k\)</span> from stream of unknown length.</p>
-<h2 id="algorithm-r-vitter">Algorithm R (Vitter)</h2>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ReservoirSampler</span><span class="p">:</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">k</span> <span class="o">=</span> <span class="n">k</span>
-</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">reservoir</span> <span class="o">=</span> <span class="p">[]</span>
-</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>
-</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">):</span>
-</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
-</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">reservoir</span><span class="p">)</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">:</span>
-</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>            <span class="bp">self</span><span class="o">.</span><span class="n">reservoir</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
-</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        <span class="k">else</span><span class="p">:</span>
-</span><span id="__span-0-12"><a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>            <span class="n">j</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-</span><span id="__span-0-13"><a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>            <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">k</span><span class="p">:</span>
-</span><span id="__span-0-14"><a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>                <span class="bp">self</span><span class="o">.</span><span class="n">reservoir</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+<p>Maintain a uniform random sample of fixed size <span class="arithmatex">\(k\)</span> from a stream of unknown
+length. PySuricata uses the sample for quantiles, the median, the IQR, the MAD
+and the histogram — everything that needs order statistics but cannot afford to
+hold the column in memory.</p>
+<p>The guarantee is the same for both algorithms below: <strong>every element that has
+arrived is in the reservoir with probability <span class="arithmatex">\(k/n\)</span></strong>, independently of where it
+sat in the stream and of how the stream happened to be split into chunks. That
+last part is what makes chunked results equal unchunked ones.</p>
+<figure class="ps-figure" markdown="0">
+  <iframe src="../../assets/diagrams/figures.html?only=reservoir" title="Reservoir sampling: Algorithm R versus Algorithm L" loading="lazy"></iframe>
+</figure>
+
+<h2 id="algorithm-r-and-why-it-is-not-what-ships">Algorithm R, and why it is not what ships</h2>
+<p>Algorithm R (Vitter, 1985) is the version usually taught: hold the first <span class="arithmatex">\(k\)</span>
+elements, then for each subsequent arrival draw a random index and overwrite a
+slot if it falls inside the reservoir.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># Reference only -- this is NOT what PySuricata runs. See Algorithm L below.</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">algorithm_r</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">k</span><span class="p">):</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    <span class="n">reservoir</span> <span class="o">=</span> <span class="p">[]</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="k">for</span> <span class="n">n</span><span class="p">,</span> <span class="n">item</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">stream</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">reservoir</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
+</span><span id="__span-0-6"><a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>            <span class="n">reservoir</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+</span><span id="__span-0-7"><a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="k">else</span><span class="p">:</span>
+</span><span id="__span-0-8"><a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>            <span class="n">j</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+</span><span id="__span-0-9"><a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>            <span class="k">if</span> <span class="n">j</span> <span class="o">&lt;</span> <span class="n">k</span><span class="p">:</span>
+</span><span id="__span-0-10"><a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>                <span class="n">reservoir</span><span class="p">[</span><span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span>
+</span><span id="__span-0-11"><a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="k">return</span> <span class="n">reservoir</span>
 </span></code></pre></div>
-<h2 id="guarantee">Guarantee</h2>
-<p>Every element has <strong>exactly</strong> probability <span class="arithmatex">\(k/n\)</span> of being in sample.</p>
-<h2 id="proof-sketch">Proof Sketch</h2>
-<p>Element <span class="arithmatex">\(i\)</span> enters reservoir with probability <span class="arithmatex">\(\min(1, k/i)\)</span>.</p>
-<p>It survives subsequent updates:</p>
+<p>It is correct, and it costs one random draw per element — 10 million draws for
+10 million rows, every one of them in Python. That is the problem.</p>
+<h2 id="algorithm-l-which-is-what-ships">Algorithm L, which is what ships</h2>
+<p>Algorithm L (Li, 1994) keeps the same guarantee and pays for it far less often.
+Instead of testing every arrival, it draws a <em>geometric skip</em> and jumps straight
+to the next element it will accept, never touching the ones in between. The
+number of draws falls from <span class="arithmatex">\(n\)</span> to about</p>
 <div class="arithmatex">\[
-P(\text{survive}) = \prod_{j=i+1}^{n} \left(1 - \frac{1}{j}\right) = \frac{i}{n}
+k \ln\!\left(\frac{n}{k}\right)
 \]</div>
-<p>Total probability:</p>
+<p>— roughly 145,000 draws for 10 million rows into <span class="arithmatex">\(k = 20{,}000\)</span>, instead of
+10 million.</p>
+<p><code>ReservoirSampler</code> in <code>pysuricata/accumulators/sketches.py</code> goes one step
+further. The acceptance schedule depends only on the generator and on <span class="arithmatex">\(k\)</span> —
+never on the data — so there is no reason to derive it one acceptance at a time.
+Writing the recurrence out makes every term an array operation:</p>
 <div class="arithmatex">\[
-P(\text{in sample}) = \frac{k}{i} \cdot \frac{i}{n} = \frac{k}{n}
+\log W_i = \frac{1}{k}\sum_{j \le i} \log u_j
+\qquad
+\text{skip}_i = \left\lfloor \frac{\log v_i}{\log(1 - W_i)} \right\rfloor
+\qquad
+\text{index}_i = \text{base} + \sum_{j \le i}\text{skip}_j + i
 \]</div>
+<p>so the schedule is generated in blocks with <code>np.cumsum</code> rather than in a Python
+loop. <code>log1p(-W)</code> rather than <code>log(1 - W)</code>: <span class="arithmatex">\(W\)</span> is close to 1 early on, where
+the subtraction would lose most of its significant digits.</p>
+<p>Because the schedule comes from the draw sequence alone, it is identical however
+the stream is later split — which is the property the accuracy oracle asserts.</p>
+<h2 id="reproducibility">Reproducibility</h2>
+<p>Each sampler owns its generator:</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata.accumulators.sketches</span><span class="w"> </span><span class="kn">import</span> <span class="n">ReservoirSampler</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">sampler</span> <span class="o">=</span> <span class="n">ReservoirSampler</span><span class="p">(</span><span class="n">k</span><span class="o">=</span><span class="mi">20_000</span><span class="p">,</span> <span class="n">rng</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">42</span><span class="p">))</span>
+</span></code></pre></div>
+<p>Nothing reads or writes the process-global RNG. Within a profiling run each
+column's seed is derived from the run seed and the <strong>column name</strong>, so a
+column's sample does not depend on which other columns are present or on the
+order they were built in — profiling a subset reproduces the numbers from
+profiling the whole frame.</p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata.api</span><span class="w"> </span><span class="kn">import</span> <span class="n">ComputeOptions</span><span class="p">,</span> <span class="n">ProfileConfig</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">(</span><span class="n">compute</span><span class="o">=</span><span class="n">ComputeOptions</span><span class="p">(</span><span class="n">random_seed</span><span class="o">=</span><span class="mi">42</span><span class="p">))</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Sample size is <code>ComputeOptions.numeric_sample_size</code> (default 20,000).</p>
 <h2 id="complexity">Complexity</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Algorithm R</th>
+<th>Algorithm L</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Space</td>
+<td>O(k)</td>
+<td>O(k)</td>
+</tr>
+<tr>
+<td>Random draws</td>
+<td><span class="arithmatex">\(n\)</span></td>
+<td><span class="arithmatex">\(\approx k \ln(n/k)\)</span></td>
+</tr>
+<tr>
+<td>Time per element</td>
+<td>O(1)</td>
+<td>O(1) amortised, most elements untouched</td>
+</tr>
+<tr>
+<td>Uniform guarantee</td>
+<td>exact</td>
+<td>exact</td>
+</tr>
+</tbody>
+</table>
+<h2 id="use-cases">Use cases</h2>
 <ul>
-<li><strong>Space</strong>: O(k)</li>
-<li><strong>Time per element</strong>: O(1) amortized</li>
-<li><strong>Uniform guarantee</strong>: Exact</li>
-</ul>
-<h2 id="use-cases">Use Cases</h2>
-<ul>
-<li>Quantile estimation (sort sample)</li>
+<li>Quantile estimation (sort the sample)</li>
 <li>Histogram construction</li>
-<li>Representative sampling</li>
+<li>Representative row sampling</li>
 </ul>
-<h2 id="see-also">See Also</h2>
+<h2 id="see-also">See also</h2>
 <ul>
-<li><a href="../sketches/">Sketch Algorithms</a> - Other streaming algorithms</li>
-<li><a href="../../stats/numeric/">Numeric Analysis</a> - Using reservoir for quantiles</li>
+<li><a href="../sketches/">Sketch Algorithms</a> — the bounded-memory counterparts</li>
+<li><a href="../../stats/numeric/">Numeric Analysis</a> — using the reservoir for quantiles</li>
 </ul>
-<hr />
-<p><em>Last updated: 2025-10-12</em></p>
 
 
 
@@ -1862,6 +1933,8 @@ P(\text{in sample}) = \frac{k}{i} \cdot \frac{i}{n} = \frac{k}{n}
     
     
       <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="../../javascripts/figures.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

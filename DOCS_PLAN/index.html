@@ -10,13 +10,9 @@
       
       
       
-        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/complexity-analysis/">
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/DOCS_PLAN/">
       
       
-        <link rel="prev" href="../api/">
-      
-      
-        <link rel="next" href="../stats/overview/">
       
       
       <link rel="icon" href="../assets/favicon.ico">
@@ -24,7 +20,7 @@
     
     
       
-        <title>Complexity Analysis - PySuricata</title>
+        <title>Documentation audit and visual plan - PySuricata</title>
       
     
     
@@ -80,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#complexity-analysis" class="md-skip">
+        <a href="#documentation-audit-and-visual-plan" class="md-skip">
           Skip to content
         </a>
       
@@ -115,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Complexity Analysis
+              Documentation audit and visual plan
             
           </span>
         </div>
@@ -283,12 +279,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../api/" class="md-tabs__link">
           
   
@@ -767,10 +761,8 @@
       
   
   
-    
   
   
-  
     
     
       
@@ -788,22 +780,19 @@
     
     
       
-        
-        
-      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
         
           
-          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
             
   
   
@@ -816,7 +805,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_4">
             <span class="md-nav__icon md-icon"></span>
             Technical Reference
@@ -850,32 +839,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    Complexity Analysis
-    
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../complexity-analysis/" class="md-nav__link">
         
   
   
@@ -886,197 +853,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#overview" class="md-nav__link">
-    <span class="md-ellipsis">
-      Overview
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Overview">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#summary" class="md-nav__link">
-    <span class="md-ellipsis">
-      Summary
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#algorithms" class="md-nav__link">
-    <span class="md-ellipsis">
-      Algorithms
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Algorithms">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#streaming-moments-welfordpebay" class="md-nav__link">
-    <span class="md-ellipsis">
-      Streaming Moments (Welford/Pébay)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#reservoir-sampling" class="md-nav__link">
-    <span class="md-ellipsis">
-      Reservoir Sampling
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#kmv-k-minimum-values-sketch" class="md-nav__link">
-    <span class="md-ellipsis">
-      KMV (K-Minimum Values) Sketch
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#misra-gries-top-k-frequent-values" class="md-nav__link">
-    <span class="md-ellipsis">
-      Misra-Gries (Top-K Frequent Values)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#extreme-tracking" class="md-nav__link">
-    <span class="md-ellipsis">
-      Extreme Tracking
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#correlations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Correlations
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#accumulator-breakdown" class="md-nav__link">
-    <span class="md-ellipsis">
-      Accumulator Breakdown
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Accumulator Breakdown">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#numericaccumulator" class="md-nav__link">
-    <span class="md-ellipsis">
-      NumericAccumulator
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#categoricalaccumulator" class="md-nav__link">
-    <span class="md-ellipsis">
-      CategoricalAccumulator
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#datetimeaccumulator" class="md-nav__link">
-    <span class="md-ellipsis">
-      DatetimeAccumulator
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#booleanaccumulator" class="md-nav__link">
-    <span class="md-ellipsis">
-      BooleanAccumulator
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#configuration-impact" class="md-nav__link">
-    <span class="md-ellipsis">
-      Configuration Impact
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#performance-optimizations-v0014" class="md-nav__link">
-    <span class="md-ellipsis">
-      Performance Optimizations (v0.0.14)
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#references" class="md-nav__link">
-    <span class="md-ellipsis">
-      References
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -1107,20 +883,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_3" >
         
           
-          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
             
   
   
@@ -1286,20 +1059,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
             
   
   
@@ -1440,20 +1210,17 @@
       
       
         
-          
-          
-        
       
     
     
-    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
             
   
   
@@ -1849,284 +1616,400 @@
   
 
 
-<h1 id="complexity-analysis">Complexity Analysis</h1>
-<h2 id="overview">Overview</h2>
-<p>PySuricata processes data in a <strong>single pass</strong> using streaming algorithms. All statistics are computed incrementally from small, fixed-size state — memory usage depends on configuration parameters, not dataset size.</p>
-<p><strong>Key property:</strong> For a dataset with <em>n</em> rows and <em>p</em> columns, PySuricata uses O(p · k) memory where <em>k</em> is the sketch/sample size (constant), making total memory independent of <em>n</em>.</p>
-<h3 id="summary">Summary</h3>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>Time per value</th>
-<th>Space</th>
-<th>Dominant parameter</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Streaming moments</td>
-<td>O(1)</td>
-<td>O(1)</td>
-<td>—</td>
-</tr>
-<tr>
-<td>Reservoir sampling</td>
-<td>O(1)</td>
-<td>O(s)</td>
-<td><code>numeric_sample_size</code> (default: 20,000)</td>
-</tr>
-<tr>
-<td>KMV distinct count</td>
-<td>O(log k)</td>
-<td>O(k)</td>
-<td><code>uniques_sketch_size</code> (default: 2,048)</td>
-</tr>
-<tr>
-<td>Misra-Gries top-k</td>
-<td>O(1) amortized</td>
-<td>O(k)</td>
-<td><code>top_k_size</code> (default: 50)</td>
-</tr>
-<tr>
-<td>Extreme tracking</td>
-<td>O(log k)</td>
-<td>O(k)</td>
-<td><code>max_extremes</code> (default: 5)</td>
-</tr>
-<tr>
-<td>Correlations</td>
-<td>O(p) per value</td>
-<td>O(p²)</td>
-<td>Number of numeric columns</td>
-</tr>
-</tbody>
-</table>
-<p><strong>Total per numeric column:</strong> O(s + k) ≈ 22 KB with defaults</p>
-<p><strong>Total per categorical column:</strong> O(k) ≈ 18 KB with defaults</p>
-<p><strong>DateTime and Boolean columns:</strong> O(1)</p>
+<h1 id="documentation-audit-and-visual-plan">Documentation audit and visual plan</h1>
+<p>Generated from a mechanical pass over all 31 pages at 0.0.26 (<code>52e13cd</code>), plus a
+read of the pages a checker cannot judge. Re-run the audit with:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.check_docs<span class="w"> </span>--quiet-info<span class="w">      </span><span class="c1"># report</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.check_docs<span class="w"> </span>--strict<span class="w">          </span><span class="c1"># exit 1 on any ERROR (for CI)</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.check_docs<span class="w"> </span>--json<span class="w"> </span>out.json<span class="w">   </span><span class="c1"># every finding with a line number</span>
+</span></code></pre></div>
 <hr />
-<h2 id="algorithms">Algorithms</h2>
-<h3 id="streaming-moments-welfordpebay">Streaming Moments (Welford/Pébay)</h3>
-<p><strong>Purpose:</strong> Exact mean, variance, skewness, kurtosis in a single pass.</p>
-<ul>
-<li><strong>Update:</strong> O(1) per value — maintains running sums of powers of deviations</li>
-<li><strong>Merge:</strong> O(1) — Pébay's formulas combine two partial states exactly</li>
-<li><strong>Finalize:</strong> O(1)</li>
-<li><strong>Space:</strong> O(1) — six floating-point accumulators (n, μ, M₂, M₃, M₄)</li>
-</ul>
-<p>This is numerically stable — it avoids the catastrophic cancellation of naïve Σx² − nμ² formulas.</p>
-<p><strong>Reference:</strong> Welford (1962), Pébay (2008)</p>
-<h3 id="reservoir-sampling">Reservoir Sampling</h3>
-<p><strong>Purpose:</strong> Maintain a uniform random sample for quantile estimation and histograms.</p>
-<ul>
-<li><strong>Update:</strong> O(1) per value — include with probability s/i, replacing a random element</li>
-<li><strong>Merge:</strong> O(s) — weighted combination of two reservoirs</li>
-<li><strong>Finalize:</strong> O(s log s) — sort for quantile computation</li>
-<li><strong>Space:</strong> O(s) where s = <code>numeric_sample_size</code></li>
-</ul>
-<p>Every subset of size s from the stream has equal probability of being the sample.</p>
-<p><strong>Reference:</strong> Vitter (1985)</p>
-<h3 id="kmv-k-minimum-values-sketch">KMV (K-Minimum Values) Sketch</h3>
-<p><strong>Purpose:</strong> Approximate distinct count estimation.</p>
-<ul>
-<li><strong>Update:</strong> O(log k) — hash value, maintain min-heap of k smallest hashes</li>
-<li><strong>Merge:</strong> O(k log k) — union two heaps, keep k smallest</li>
-<li><strong>Estimate:</strong> d̂ = (k − 1) / x_k where x_k is the k-th smallest hash</li>
-<li><strong>Space:</strong> O(k) where k = <code>uniques_sketch_size</code></li>
-<li><strong>Error:</strong> ~1/√k relative error — with k=2048, approximately 2.2%</li>
-</ul>
-<p>The implementation transitions from exact counting (for low-cardinality columns) to approximate estimation when the number of distinct values exceeds a threshold.</p>
-<p><strong>Reference:</strong> Bar-Yossef et al. (2002)</p>
-<h3 id="misra-gries-top-k-frequent-values">Misra-Gries (Top-K Frequent Values)</h3>
-<p><strong>Purpose:</strong> Find the most frequent values in a stream.</p>
-<ul>
-<li><strong>Update:</strong> O(1) amortized — increment counter or decrement all</li>
-<li><strong>Merge:</strong> O(k) — sum counters from two states</li>
-<li><strong>Finalize:</strong> O(k log k) — sort by frequency</li>
-<li><strong>Space:</strong> O(k) where k = <code>top_k_size</code></li>
-<li><strong>Guarantee:</strong> Any value with true frequency &gt; n/k is included in the output</li>
-</ul>
-<p>Frequency estimates are within ±n/k of the true count.</p>
-<p><strong>Reference:</strong> Misra &amp; Gries (1982)</p>
-<h3 id="extreme-tracking">Extreme Tracking</h3>
-<p><strong>Purpose:</strong> Track the minimum and maximum values with their row indices.</p>
-<ul>
-<li><strong>Update:</strong> O(log k) per value — bounded heap operations</li>
-<li><strong>Merge:</strong> O(k log k) — merge and truncate heaps</li>
-<li><strong>Space:</strong> O(k) where k = <code>max_extremes</code> (default: 5)</li>
-</ul>
-<p>Uses a min-heap for minimums and a negated max-heap for maximums.</p>
-<h3 id="correlations">Correlations</h3>
-<p><strong>Purpose:</strong> Streaming Pearson correlation between all pairs of numeric columns.</p>
-<ul>
-<li><strong>Update:</strong> O(p) per value — update co-moment for each column pair</li>
-<li><strong>Finalize:</strong> O(p²) — compute correlations from co-moments</li>
-<li><strong>Space:</strong> O(p²) — stores pairwise co-moments</li>
-</ul>
-<p>This is the most expensive component. For datasets with many numeric columns, disable with <code>compute_correlations = False</code> or increase <code>corr_threshold</code>.</p>
+<h2 id="where-things-stand">Where things stand</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Pages</td>
+<td>31, ~8,500 lines</td>
+</tr>
+<tr>
+<td>Mechanical errors</td>
+<td><strong>87</strong> across 21 pages</td>
+</tr>
+<tr>
+<td>Broken examples</td>
+<td>33 fences raise when pasted</td>
+</tr>
+<tr>
+<td>Conceptual pages with a diagram</td>
+<td><strong>0 of 17</strong></td>
+</tr>
+<tr>
+<td>Pages stamped "Last updated: 2025-10-12"</td>
+<td>8</td>
+</tr>
+</tbody>
+</table>
+<p><code>performance.md</code> has 16 errors — the most of any page, and it is the page that
+carries the positioning claim you are about to link from a blog post. Every
+configuration example on it is broken and every timing predates three rounds of
+optimisation. Fix it before publishing anything.</p>
 <hr />
-<h2 id="accumulator-breakdown">Accumulator Breakdown</h2>
-<h3 id="numericaccumulator">NumericAccumulator</h3>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>Space</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>StreamingMoments</td>
-<td>O(1)</td>
-</tr>
-<tr>
-<td>ReservoirSampler</td>
-<td>O(s)</td>
-</tr>
-<tr>
-<td>KMV sketch</td>
-<td>O(k)</td>
-</tr>
-<tr>
-<td>ExtremeTracker</td>
-<td>O(k)</td>
-</tr>
-<tr>
-<td>MisraGries</td>
-<td>O(k)</td>
-</tr>
-<tr>
-<td>Histogram bins</td>
-<td>O(b)</td>
-</tr>
-<tr>
-<td><strong>Total</strong></td>
-<td><strong>O(s + k + b)</strong></td>
-</tr>
-</tbody>
-</table>
-<p>With defaults: s=20,000, k=2,048, b=25</p>
-<h3 id="categoricalaccumulator">CategoricalAccumulator</h3>
-<table>
-<thead>
-<tr>
-<th>Component</th>
-<th>Space</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>KMV sketch (original)</td>
-<td>O(k)</td>
-</tr>
-<tr>
-<td>KMV sketch (lowercase)</td>
-<td>O(k)</td>
-</tr>
-<tr>
-<td>KMV sketch (trimmed)</td>
-<td>O(k)</td>
-</tr>
-<tr>
-<td>MisraGries</td>
-<td>O(k)</td>
-</tr>
-<tr>
-<td>String length tracking</td>
-<td>O(1)</td>
-</tr>
-<tr>
-<td><strong>Total</strong></td>
-<td><strong>O(k)</strong></td>
-</tr>
-</tbody>
-</table>
-<h3 id="datetimeaccumulator">DatetimeAccumulator</h3>
-<p>Fixed-size counters: hour (24), weekday (7), month (12), plus min/max tracking.</p>
-<p><strong>Total:</strong> O(1)</p>
-<h3 id="booleanaccumulator">BooleanAccumulator</h3>
-<p>Two counters (true, false) plus missing count.</p>
-<p><strong>Total:</strong> O(1)</p>
+<h2 id="five-failure-classes">Five failure classes</h2>
+<h3 id="1-config-options-that-do-not-exist-17-occurrences-real-api-drift">1. Config options that do not exist — 17 occurrences, real API drift</h3>
+<p>Seven pages document <code>config.compute.uniques_sketch_size</code> and
+<code>config.compute.top_k_size</code>. <strong>Neither exists.</strong> The real names are <code>uniques_k</code>
+and <code>topk_k</code> on the config object (<code>max_uniques</code> / <code>top_k</code> on <code>ComputeOptions</code>).
+A reader following the docs gets a silently ignored setting rather than an error,
+which is worse.</p>
+<p>Affected: <code>configuration.md</code>, <code>api.md</code>, <code>performance.md</code>, <code>stats/numeric.md</code>,
+<code>stats/categorical.md</code>, <code>why-pysuricata.md</code>.</p>
+<h3 id="2-renamed-summary-keys-10-occurrences-real-api-drift">2. Renamed summary keys — 10 occurrences, real API drift</h3>
+<p><code>summarize()["dataset"]["rows"]</code> is now <code>rows_est</code>. Nine pages show the old key
+and the example raises <code>KeyError</code>. The accuracy oracle caught this rename; the
+tests were updated and the docs were not.</p>
+<h3 id="3-fences-missing-their-imports-25-occurrences">3. Fences missing their imports — 25 occurrences</h3>
+<p>Blocks calling <code>profile()</code>, <code>summarize()</code> or <code>ReportConfig(...)</code> with no import
+line. <strong>The names are correct</strong> — <code>ReportConfig</code> is a live alias for
+<code>ProfileConfig</code> — but a reader who copies the block gets a <code>NameError</code>. Every
+fence should stand alone or be explicitly marked as a fragment.</p>
+<h3 id="4-output-tagged-as-python-9-occurrences">4. Output tagged as <code>python</code> — 9 occurrences</h3>
+<p>Console output and shell transcripts inside <code>```python</code> fences.
+<code>quickstart.md</code>, <code>usage.md</code> and <code>why-pysuricata.md</code> have three each. Re-tag as
+<code>text</code> or <code>console</code>.</p>
+<h3 id="5-prose-describing-behaviour-you-removed">5. Prose describing behaviour you removed</h3>
+<p>Needs reading, not a checker. Confirmed:</p>
+<ul>
+<li><code>architecture-diagrams.md:109</code> — "ExtremeTracker … Every 5th chunk only". That
+  throttle was removed in 0.0.26; extremes are exact now.</li>
+<li><code>architecture-diagrams.md:190</code> — "Type inference … first chunk only". Now gated
+  on <code>first_chunk_is_whole</code>.</li>
+<li><code>algorithms/sampling.md</code> — documents <strong>Algorithm R</strong> in full, with a proof. The
+  library implements <strong>Algorithm L</strong> with a bulk scheduler. 68 lines teaching the
+  wrong algorithm.</li>
+<li><code>algorithms/sketches.md:63</code> — teaches KMV using <code>hashlib.md5</code>. The library uses
+  blake2b for bytes and a vectorised splitmix64 for numeric arrays.</li>
+</ul>
+<h3 id="also-nothing-documents-the-last-three-months">Also: nothing documents the last three months</h3>
+<p>No page mentions the accuracy oracle, the chunked-equals-unchunked invariant, the
+vendored native crate, or the CI gate. <code>changelog.md</code> is excellent and current and
+is the only place any of it exists. "We assert chunked == unchunked in CI" is a
+selling point, and it is invisible.</p>
 <hr />
-<h2 id="configuration-impact">Configuration Impact</h2>
+<h2 id="per-page-triage">Per-page triage</h2>
 <table>
 <thead>
 <tr>
-<th>Parameter</th>
-<th>Effect on memory</th>
-<th>Effect on accuracy</th>
+<th>Page</th>
+<th style="text-align: right;">errors</th>
+<th>Dominant problem</th>
+<th>Action</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td><code>chunk_size</code> ↑</td>
-<td>More rows in memory per iteration</td>
-<td>No effect on final accuracy</td>
+<td><code>performance.md</code></td>
+<td style="text-align: right;">16</td>
+<td>10 broken examples, 6 bad config names, 5 stale timings</td>
+<td>rewrite</td>
 </tr>
 <tr>
-<td><code>numeric_sample_size</code> ↑</td>
-<td>Larger reservoir per numeric column</td>
-<td>Better quantile estimates</td>
+<td><code>configuration.md</code></td>
+<td style="text-align: right;">10</td>
+<td>7 config names that do not exist</td>
+<td>rewrite</td>
 </tr>
 <tr>
-<td><code>uniques_sketch_size</code> ↑</td>
-<td>Larger KMV sketch per column</td>
-<td>Better distinct count accuracy</td>
+<td><code>quickstart.md</code></td>
+<td style="text-align: right;">8</td>
+<td>4 broken examples, 3 mis-tagged fences</td>
+<td>rewrite</td>
 </tr>
 <tr>
-<td><code>top_k_size</code> ↑</td>
-<td>More frequent values tracked</td>
-<td>More comprehensive top-k</td>
+<td><code>why-pysuricata.md</code></td>
+<td style="text-align: right;">8</td>
+<td>mis-tagged fences, bad config, stale keys</td>
+<td>rewrite</td>
 </tr>
 <tr>
-<td><code>compute_correlations</code> off</td>
-<td>Saves O(p²)</td>
-<td>No correlations reported</td>
+<td><code>stats/categorical.md</code></td>
+<td style="text-align: right;">7</td>
+<td>4 bad config names</td>
+<td>patch</td>
+</tr>
+<tr>
+<td><code>api.md</code></td>
+<td style="text-align: right;">6</td>
+<td>examples + config + <code>rows</code> key</td>
+<td>patch</td>
+</tr>
+<tr>
+<td><code>examples.md</code></td>
+<td style="text-align: right;">6</td>
+<td>examples needing files; <code>rows</code> key</td>
+<td>patch</td>
+</tr>
+<tr>
+<td><code>usage.md</code></td>
+<td style="text-align: right;">6</td>
+<td>mis-tagged fences, missing imports</td>
+<td>patch</td>
+</tr>
+<tr>
+<td><code>faq.md</code>, <code>stats/numeric.md</code></td>
+<td style="text-align: right;">4</td>
+<td>examples, config names</td>
+<td>patch</td>
+</tr>
+<tr>
+<td><code>analytics/correlations.md</code>, <code>stats/boolean.md</code></td>
+<td style="text-align: right;">3</td>
+<td>examples, <code>rows</code> key</td>
+<td>patch</td>
+</tr>
+<tr>
+<td><code>advanced.md</code>, <code>stats/datetime.md</code></td>
+<td style="text-align: right;">2</td>
+<td>examples</td>
+<td>patch</td>
+</tr>
+<tr>
+<td><code>changelog.md</code>, <code>install.md</code></td>
+<td style="text-align: right;">1</td>
+<td>one mis-tagged fence each</td>
+<td>trivial</td>
+</tr>
+<tr>
+<td><code>architecture-diagrams.md</code></td>
+<td style="text-align: right;">0</td>
+<td>mechanically clean, <strong>semantically stale</strong></td>
+<td>merge &amp; redraw</td>
+</tr>
+<tr>
+<td><code>algorithms/*.md</code></td>
+<td style="text-align: right;">0</td>
+<td>clean; wrong algorithm, no visuals</td>
+<td>rewrite + illustrate</td>
 </tr>
 </tbody>
 </table>
+<p>A page can be mechanically clean and still be the most wrong page in the set:
+<code>algorithms/sampling.md</code> has zero errors and documents an algorithm you do not
+use. The checker buys you the boring half so your attention goes to this half.</p>
+<p>Also: <code>docs/roadmap.md</code> is on disk but not in the mkdocs nav, so it is never
+rendered. Add it or move it out of <code>docs/</code>.</p>
 <hr />
-<h2 id="performance-optimizations-v0014">Performance Optimizations (v0.0.14)</h2>
-<p>Several hot paths were vectorized to reduce per-value Python overhead:</p>
+<h2 id="the-plan">The plan</h2>
+<h3 id="phase-0-make-drift-impossible-to-reintroduce-1-hour">Phase 0 — Make drift impossible to reintroduce (1 hour)</h3>
+<p>Land <code>benchmarks/check_docs.py</code> in CI with <code>--strict</code>. From then on a renamed
+config option or a moved summary key fails a PR instead of rotting for ten
+months. Fix the nav orphan.</p>
+<p><strong>Exit:</strong> CI red on the current tree, which is the point.</p>
+<h3 id="phase-1-mechanical-sweep-23-hours">Phase 1 — Mechanical sweep (2–3 hours)</h3>
+<p>Three global replacements are most of the count:</p>
+<ul>
+<li><code>uniques_sketch_size</code> → <code>uniques_k</code></li>
+<li><code>top_k_size</code> → <code>topk_k</code></li>
+<li><code>["dataset"]["rows"]</code> → <code>["dataset"]["rows_est"]</code></li>
+</ul>
+<p>Then re-tag the nine output-as-python fences and add imports to the 25 orphan
+fences. Re-run until only INFO remains.</p>
+<p><strong>Exit:</strong> <code>check_docs --strict</code> green.</p>
+<h3 id="phase-2-the-four-pages-that-carry-the-story-1-weekend">Phase 2 — The four pages that carry the story (1 weekend)</h3>
+<p><code>index.md</code>, <code>why-pysuricata.md</code>, <code>quickstart.md</code>, <code>performance.md</code>. Rewrite with
+current numbers (13.3× vs ydata-profiling, 12× less marginal memory), the
+bounded-memory claim stated plainly, and the chunked-equals-unchunked invariant
+named. Delete every hardcoded timing you cannot regenerate.</p>
+<p><strong>Exit:</strong> a stranger reads <code>index.md</code> and can say what the library is for.</p>
+<h3 id="phase-3-rewrite-the-algorithms-trilogy-with-visuals-1-weekend">Phase 3 — Rewrite the algorithms trilogy, with visuals (1 weekend)</h3>
+<p><code>sampling.md</code> to Algorithm L (and say why: bit-identical across chunk sizes).
+<code>sketches.md</code> to the real hashing plus the threshold idea. <code>streaming.md</code> to
+Pébay's merge and the reason it exists. This is where the animations go. It is
+also the most defensible content you have — nobody else's docs explain this.</p>
+<h3 id="phase-4-collapse-three-architecture-pages-into-one-half-weekend">Phase 4 — Collapse three architecture pages into one (half weekend)</h3>
+<p><code>architecture.md</code>, <code>architecture-diagrams.md</code> and
+<code>sequence-diagrams-complexity.md</code> overlap heavily and two carry removed claims.
+One page, one chunk-lifecycle diagram, one complexity table.</p>
+<p><strong>Exit:</strong> no diagram asserts anything the code does not do.</p>
+<h3 id="phase-5-reference-pages-ongoing">Phase 5 — Reference pages (ongoing)</h3>
+<p><code>stats/*</code> and <code>analytics/*</code> — 2,900 lines, mechanically patched in phase 1,
+illustrated with annotated card screenshots as you go. Drop the "Last updated"
+footers on eight pages: generate them from git or remove them, because a wrong
+date is worse than no date.</p>
+<hr />
+<h2 id="what-would-benefit-most-from-diagrams-and-animations">What would benefit most from diagrams and animations</h2>
+<p>The distribution today is exactly inverted. Pages that describe <em>processes</em> have
+no visuals; the only pages with diagrams describe module layout, which a
+directory listing already conveys.</p>
 <table>
 <thead>
 <tr>
-<th>Optimization</th>
-<th>Change</th>
+<th>Section</th>
+<th style="text-align: right;">Pages</th>
+<th style="text-align: right;">Lines</th>
+<th style="text-align: right;">Diagrams</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>KMV/MisraGries updates</td>
-<td>Per-value <code>add()</code> → batch <code>add_many()</code> with pre-counted values</td>
+<td><code>algorithms/</code></td>
+<td style="text-align: right;">3</td>
+<td style="text-align: right;">857</td>
+<td style="text-align: right;"><strong>0</strong></td>
 </tr>
 <tr>
-<td>Missing/Inf counting</td>
-<td>Python loop → vectorized <code>np.isnan()</code> / <code>np.isinf()</code></td>
+<td><code>stats/</code></td>
+<td style="text-align: right;">5</td>
+<td style="text-align: right;">2,184</td>
+<td style="text-align: right;"><strong>0</strong></td>
 </tr>
 <tr>
-<td>Row hashing (duplicates)</td>
-<td>Per-row tuple + <code>hash()</code> → vectorized polynomial hash via numpy</td>
+<td><code>analytics/</code></td>
+<td style="text-align: right;">4</td>
+<td style="text-align: right;">910</td>
+<td style="text-align: right;"><strong>0</strong></td>
 </tr>
 <tr>
-<td>Boolean coercion</td>
-<td>Per-value <code>str().lower()</code> → pandas vectorized <code>str.strip().str.lower()</code></td>
+<td><code>sequence-diagrams-complexity.md</code></td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">297</td>
+<td style="text-align: right;">6</td>
 </tr>
 <tr>
-<td>Correlation finite masks</td>
-<td>Recomputed per pair → pre-computed once per column, reused</td>
+<td><code>architecture.md</code></td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">219</td>
+<td style="text-align: right;">5</td>
+</tr>
+<tr>
+<td><code>architecture-diagrams.md</code></td>
+<td style="text-align: right;">1</td>
+<td style="text-align: right;">197</td>
+<td style="text-align: right;">4 (2 stale)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="references">References</h2>
-<ol>
-<li>Welford, B.P. (1962), "Note on a Method for Calculating Corrected Sums of Squares and Products", <em>Technometrics</em>, 4(3): 419–420</li>
-<li>Pébay, P. (2008), "Formulas for Robust, One-Pass Parallel Computation of Covariances and Arbitrary-Order Statistical Moments", Sandia Report SAND2008-6212</li>
-<li>Bar-Yossef, Z. et al. (2002), "Counting Distinct Elements in a Data Stream", <em>RANDOM</em></li>
-<li>Misra, J. &amp; Gries, D. (1982), "Finding repeated elements", <em>Science of Computer Programming</em>, 2(2): 143–152</li>
-<li>Vitter, J.S. (1985), "Random Sampling with a Reservoir", <em>ACM TOMS</em>, 11(1): 37–57</li>
-</ol>
+<p><strong>The test for "does this need an animation?" is: does the idea have a time
+axis?</strong> A streaming algorithm is a state machine walking a sequence — a moving
+picture by nature, and prose is the wrong medium. A formula is not.</p>
+<h3 id="ranked">Ranked</h3>
+<p><strong>1. Reservoir sampling — <code>algorithms/sampling.md</code> — animate.</strong>
+The best candidate in the set, and you are rewriting the page anyway. Two panels,
+same stream. Left, Algorithm R: every element tested, the reservoir flickering
+constantly early then almost never. Right, Algorithm L: a pointer leaping over
+the elements it will never select, landing only on acceptances. The viewer <em>sees</em>
+the work disappear — which is the whole point of Algorithm L and something the
+current proof sketch cannot convey. Plus a static chart: retention probability vs
+stream position, a flat line at k/n. That is what the proof is trying to say.</p>
+<p><strong>2. KMV on the unit interval — <code>algorithms/sketches.md</code> — animate.</strong>
+Possibly the most elegant animation in streaming statistics, currently two pages
+of prose. Hashes land on <code>[0,1)</code>; the k smallest stay lit; the k-th smallest <em>t</em>
+creeps toward zero; the estimate <code>(k-1)/t</code> converges. Duplicates land on existing
+marks and change nothing — the intuition for why a distinct-count sketch works.
+Draw the admission threshold as a gate and everything beyond it as excluded: that
+<em>is</em> the pre-filter optimisation on the roadmap, so the diagram documents the code
+and motivates it at once. <strong>A working version of this ships in
+<code>scripts/build_docs_assets.py</code> — 18 KB, generated from a real <code>KMV</code> run.</strong>
+Second animation on the same page: Misra-Gries eviction — counters fill, a new key
+arrives, everything decrements, the zeros drop out. Hard to follow in text,
+trivial as a picture.</p>
+<p><strong>3. The memory curve — <code>index.md</code> and <code>why-pysuricata.md</code> — static chart.</strong>
+Not a diagram, an <em>asset</em>. Two lines, rows on x, peak RSS on y: yours flat, the
+incumbent's linear until it stops at a MemoryError. The single picture that makes
+"bounded memory" concrete, the one that travels on social media, and your front
+page currently has no chart at all. Generate it from <code>benchmarks/end_to_end.py</code> so
+it is a measurement rather than an illustration.</p>
+<p><strong>4. Annotated report cards — <code>stats/*.md</code> — screenshots.</strong>
+2,184 lines explaining what the numbers on a card mean, with no picture of the
+card. A reader of these pages has the report open in another tab. One annotated
+screenshot per column type replaces several screens of prose. Cheapest high-value
+item here — you already generate the report; script the capture with Playwright.</p>
+<p><strong>5. The chunk lifecycle — merged architecture page — mermaid.</strong>
+One sequence diagram: source → adapter → chunk → consume → per-column accumulators
+→ merge → finalize → render, with the bounded-memory boundary drawn explicitly
+(what is O(1), what is O(n)). Replaces three overlapping pages, two of which
+currently lie.</p>
+<p><strong>6. Welford → Pébay merge — <code>algorithms/streaming.md</code> — static.</strong>
+Two partitions with their own means and moments combining into one, with the
+<code>δ²·n_a·n_b/n</code> correction drawn as the thing accounting for the gap between the
+means. Static is right; there is no time axis, just a decomposition. This is also
+the diagram that explains <em>why</em> chunked equals unchunked.</p>
+<p><strong>7. Missingness matrix — <code>analytics/missing-values.md</code> — screenshot.</strong>
+309 lines describing a visualisation without showing it.</p>
+<h3 id="what-not-to-animate">What not to animate</h3>
+<p>Formulas, config tables, the FAQ, the API reference. Motion on a static idea is
+decoration, costs bytes, and fights the reader. <code>stats/overview.md</code> already uses
+MathJax for ten formulas and is better for it.</p>
+<hr />
+<h2 id="how-to-build-them-without-creating-new-drift">How to build them without creating new drift</h2>
+<p><strong>The trap:</strong> you have just spent three rounds fixing documentation that went
+stale because nothing checked it. Twenty hand-drawn diagrams would recreate that
+problem in a medium nobody can diff. <strong>Generate the visuals, do not draw them.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Need</th>
+<th>Use</th>
+<th>Not</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Flow, sequence, state</td>
+<td><strong>Mermaid</strong> — already enabled, stays text in git, diffable in review</td>
+<td>an exported image</td>
+</tr>
+<tr>
+<td>Algorithm animation</td>
+<td><strong>Inline SVG with CSS/SMIL</strong> — a few KB, scales, inherits theme through CSS variables so dark mode works free, honours <code>prefers-reduced-motion</code></td>
+<td><strong>GIF</strong> — megabytes, fixed palette, wrong on dark backgrounds, invisible to screen readers, unreviewable in a PR</td>
+</tr>
+<tr>
+<td>Charts from measurements</td>
+<td><strong>SVG emitted by a script</strong> reading <code>benchmarks/*.json</code></td>
+<td>a screenshot of a notebook</td>
+</tr>
+<tr>
+<td>Report cards</td>
+<td><strong>Playwright screenshots</strong> of a freshly generated report, cropped and annotated by the same script</td>
+<td>a manual screen grab</td>
+</tr>
+</tbody>
+</table>
+<h3 id="the-shape-of-it">The shape of it</h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>scripts/build_docs_assets.py          # one entry point, regenerates everything
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>docs/assets/generated/
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    kmv-unit-interval.svg             # SHIPPED — animated, from the real KMV
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    reservoir-r-vs-l.svg              # next
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    misra-gries-eviction.svg
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    memory-curve.svg                  # from end_to_end.py results
+</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    card-numeric.png                  # Playwright, annotated
+</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    MANIFEST.json                     # digest per asset
+</span></code></pre></div>
+<p><code>python scripts/build_docs_assets.py --check</code> fails if any committed asset no
+longer matches what the code generates — the same trick as a snapshot test. A
+change to <code>ReservoirSampler</code> that invalidates the animation shows up as a red
+build, not as a diagram that quietly starts lying.</p>
+<h3 id="two-details-worth-getting-right">Two details worth getting right</h3>
+<ul>
+<li><strong>Animate from the real thing.</strong> The KMV asset replays an actual <code>KMV</code> run with
+  a fixed seed, using the library's own hash. The picture is evidence, and it
+  changes when the algorithm changes.</li>
+<li><strong>Give every animation a still first frame and a caption that stands alone.</strong>
+  Print, screen readers, <code>prefers-reduced-motion</code> and the skimming reader all need
+  the static version to carry the point.</li>
+</ul>
+<h3 id="order">Order</h3>
+<p>Checker into CI → mechanical sweep → the four story pages with the memory curve →
+the algorithms trilogy with the two animations → everything else. The first two
+are hours, not weekends, and they stop the bleeding. The memory curve and the KMV
+animation are the two assets that will do work for you outside the docs — in the
+README, in post #3, and in the Show HN thumbnail.</p>
 
 
 

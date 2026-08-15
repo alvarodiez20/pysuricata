@@ -1759,6 +1759,10 @@
 <h1 id="architecture-internals">Architecture &amp; Internals</h1>
 <p>How <code>pysuricata</code> profiles data efficiently and renders a self-contained HTML report.</p>
 <h2 id="high-level-pipeline">High-Level Pipeline</h2>
+<figure class="ps-figure" markdown="0">
+  <iframe src="../assets/diagrams/figures.html?only=chunk-lifecycle" title="The chunk lifecycle: which state is bounded and which is released" loading="lazy"></iframe>
+</figure>
+
 <pre class="mermaid"><code>flowchart LR
     A["Data Source"] --&gt; B["Chunk Iterator"]
     B --&gt; C["Typed Accumulators"]
@@ -2066,6 +2070,8 @@
     
     
       <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="../javascripts/figures.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       

@@ -2091,6 +2091,10 @@ M_2^{(n+1)} = M_2^{(n)} + \delta \cdot (x_{n+1} - \mu^{(n+1)})
 <li><strong>Online</strong>: Can process streaming data</li>
 </ol>
 <h2 id="pebays-parallel-merge">Pébay's Parallel Merge</h2>
+<figure class="ps-figure" markdown="0">
+  <iframe src="../../assets/diagrams/figures.html?only=pebay-merge" title="Welford to Pébay: merging two partitions exactly" loading="lazy"></iframe>
+</figure>
+
 <h3 id="the-problem_1">The Problem</h3>
 <p>How to <strong>combine</strong> partial results from multiple chunks/threads?</p>
 <p>Given:
@@ -2446,6 +2450,8 @@ M_2 &amp;= M_{2a} + n_a(\mu_a - \mu)^2 + M_{2b} + n_b(\mu_b - \mu)^2 \\
     
     
       <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="../../javascripts/figures.js"></script>
       
         <script src="../../javascripts/mathjax.js"></script>
       

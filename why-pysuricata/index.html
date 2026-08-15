@@ -1803,6 +1803,11 @@
 <p>This page explains the design decisions behind PySuricata and when it might be a good fit for your workflow.</p>
 <hr />
 <h2 id="streaming-architecture">Streaming Architecture</h2>
+<figure class="ps-figure" markdown="0">
+  <iframe src="../assets/diagrams/figures.html?only=memory-curve" title="Peak memory against dataset size" loading="lazy"></iframe>
+  <figcaption>Illustrative curve, not a measurement. The published figures are pending a re-run of <code>benchmarks/end_to_end.py</code> on the reference environment (<a href="https://github.com/alvarodiez20/pysuricata/issues/68">#68</a>).</figcaption>
+</figure>
+
 <p>Most profiling tools load the entire dataset into memory to compute statistics. PySuricata takes a different approach — it processes data <strong>one chunk at a time</strong>, updating lightweight accumulators as it goes.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span><span class="p">,</span> <span class="n">ReportConfig</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
@@ -2120,6 +2125,8 @@
     
     
       <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="../javascripts/figures.js"></script>
       
         <script src="../javascripts/mathjax.js"></script>
       
