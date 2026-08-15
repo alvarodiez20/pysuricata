@@ -1633,6 +1633,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0026-2026-08-14" class="md-nav__link">
+    <span class="md-ellipsis">
+      [0.0.26] - 2026-08-14
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.26] - 2026-08-14">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0025-2026-08-14" class="md-nav__link">
     <span class="md-ellipsis">
       [0.0.25] - 2026-08-14
@@ -1643,7 +1667,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
+  <a href="#fixed_1" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -1676,7 +1700,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_1" class="md-nav__link">
+  <a href="#fixed_2" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -1742,7 +1766,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_2" class="md-nav__link">
+  <a href="#fixed_3" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -1784,7 +1808,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_3" class="md-nav__link">
+  <a href="#fixed_4" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -1793,7 +1817,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_4" class="md-nav__link">
+  <a href="#fixed_5" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -1883,7 +1907,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fixed_5" class="md-nav__link">
+  <a href="#fixed_6" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -1952,7 +1976,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_6" class="md-nav__link">
+  <a href="#fixed_7" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2036,7 +2060,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_7" class="md-nav__link">
+  <a href="#fixed_8" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2087,7 +2111,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_8" class="md-nav__link">
+  <a href="#fixed_9" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2129,7 +2153,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_9" class="md-nav__link">
+  <a href="#fixed_10" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2221,8 +2245,15 @@
 
 <h1 id="changelog">Changelog</h1>
 <p>All notable changes to PySuricata are documented here.</p>
-<h2 id="0025-2026-08-14">[0.0.25] - 2026-08-14</h2>
+<h2 id="0026-2026-08-14">[0.0.26] - 2026-08-14</h2>
 <h3 id="fixed">Fixed</h3>
+<ul>
+<li><strong>Timestamps before 1906-05-13 were counted as missing.</strong> The validity window's lower bound was <code>-2e18</code> ns, commented as "roughly 1900-2100". Birthdates and historical records fell outside it and were reclassified as nulls, so a column of 19th-century dates looked almost entirely missing rather than old — with the count, the missing percentage and the reported date range all wrong together, and nothing to indicate why. The window is now the range <code>datetime64[ns]</code> can actually represent: 1677-09-21 to 2262-04-11.</li>
+<li><strong>Extreme-value row indices were chunk-local.</strong> <code>NumericAccumulator.update</code> numbered rows with <code>np.arange(len(chunk))</code>, so "row 4,182 had the maximum" named a position inside whichever chunk the value arrived in — wrong for every chunk after the first. The engine already tracked a global row offset for chunk metadata; it now passes it down.</li>
+<li><strong>The reported minimum and maximum could miss the true ones.</strong> A second extreme-tracking pass in the consume layer ran only on every fifth chunk. It was also redundant, feeding the same tracker a duplicate chunk-local copy of each extreme — which is why one extreme value could appear twice under two different indices. That pass is removed; extremes come from the accumulator's own pass, on every chunk.</li>
+</ul>
+<h2 id="0025-2026-08-14">[0.0.25] - 2026-08-14</h2>
+<h3 id="fixed_1">Fixed</h3>
 <ul>
 <li><strong><code>ComputeOptions.columns</code> now restricts what is profiled.</strong> It was documented and validated, but never reached the engine — asking for three columns of a hundred profiled all hundred. Applied per chunk, so it works for streaming sources too. Names that are not present are ignored rather than raising, since a stream may legitimately vary.</li>
 <li><strong><code>corr_max_cols</code> now caps correlation analysis.</strong> It was declared, documented, validated and copied into the config, then never read: a 1,000-column frame built 499,500 pairs despite a documented cap of 50. The cap is applied before pair construction, which is the quadratic part.</li>
@@ -2233,7 +2264,7 @@
 <ul>
 <li><strong>Numeric columns are no longer reclassified as categorical from the first chunk of a stream.</strong> The heuristic reads the distinct-value ratio of the first chunk, which is evidence about the column only when the chunk <em>is</em> the column. On a stream it is not: a sorted column, or one with a leading run of a single value, presents a prefix that looks low-cardinality while the column is not — and nothing revisited the decision. A 285,000-row column with 244,255 distinct values was profiled as categorical because its first 45,000 rows held nine. Reclassification now runs only when the first chunk provably contains every row. The trade-off, stated plainly: a genuinely low-cardinality <em>streamed</em> column now renders a numeric card rather than a categorical one. Little is lost, since the numeric accumulator already tracks top values via Misra-Gries. In-memory frames are unaffected.</li>
 </ul>
-<h3 id="fixed_1">Fixed</h3>
+<h3 id="fixed_2">Fixed</h3>
 <ul>
 <li><strong>The row count silently truncated to 2,000 per chunk when row hashing failed</strong> — the fallback path stringified a 2,000-row sample to feed the duplicate sketch, and then counted <em>the sample</em> rather than the chunk. A 50,000-row chunk contributed 2,000 rows. That figure is what the report prints as "Rows" and what <code>missing_cells_pct</code> divides by, so a single unhashable column (one holding lists, say) corrupted the headline row count and every missing-value percentage in the report. The sample now bounds only what the sketch sees; every row is counted. Affected the pandas path and all three polars fallbacks.</li>
 <li><strong>The duplicate estimate is now marked as degraded</strong> when the sketch has seen less than the full data, via <code>RowKMV.duplicates_degraded</code>, and clamped so it can never exceed the row count.</li>
@@ -2258,7 +2289,7 @@ date parsing each under 5% of self time; they are now 0.7% and 0.3%.</p>
 <ul>
 <li><strong>Date sniffing no longer parses columns row by row</strong> — deciding whether an object column holds dates ran up to 10,000 rows through <code>pd.to_datetime(format="mixed")</code>, which disables pandas' vectorised parser and falls back to <code>dateutil</code> one row at a time: 166,302 <code>get_token</code> calls in a single 50,000-row profile, 20.7% of total runtime. It now probes 200 rows against a list of explicit formats, each of which takes the fast path, and only reaches for <code>mixed</code> when every fixed format has failed. Classification is unchanged, including for formats outside the fixed list.</li>
 </ul>
-<h3 id="fixed_2">Fixed</h3>
+<h3 id="fixed_3">Fixed</h3>
 <ul>
 <li><strong>Empty and all-null object columns no longer compute 0/0</strong> while sniffing, which produced a <code>RuntimeWarning</code> and a <code>nan</code> success rate.</li>
 </ul>
@@ -2275,13 +2306,13 @@ suite (200,000 x 14: 3.190s -&gt; 1.739s).</p>
 <li><strong>The distinct-count sketch no longer uses SHA-1</strong> — a cryptographic hash resisting preimage attacks was doing a job that needs uniformity and avalanche and nothing else, at roughly a third of total runtime. Numeric columns are now hashed by bit pattern with a vectorised splitmix64 finaliser, costing no Python object per row; byte input uses blake2b with an 8-byte digest, so there is no wider digest to slice. An avalanche test asserts a single input bit flip changes about half the output bits.</li>
 <li><strong>Reservoir sampling draws its uniforms in blocks</strong> — Algorithm L needs two draws per acceptance, and a scalar <code>np.random</code> call is dominated by interpreter overhead. Slot selection reuses the same buffer instead of a separate <code>randint</code> call.</li>
 </ul>
-<h3 id="fixed_3">Fixed</h3>
+<h3 id="fixed_4">Fixed</h3>
 <ul>
 <li><strong>Repeated values inflated the distinct count</strong> — the sketch kept its k retained hashes in a list that was never de-duplicated, so a value seen twice could occupy two slots. Since the estimator reads the retained count as a distinct count below k, 5,000 distinct values repeated 20x estimated as ~101,800. It now estimates 4,928 — 1.4% error, well inside the sketch's bound.</li>
 <li><strong>Leaving exact-counting mode double-counted the spill</strong> — every value counted so far was moved into the sketch and then offered to it a second time, so a 1,000-distinct-value column reported 1,100.</li>
 <li><strong><code>KMV.add()</code> disagreed with the batch path</strong> — it keyed the exact counter by the value's bytes while batches keyed by hash, so the same value could count twice depending on which path it arrived through; and on the branch that crossed the exact-tracking limit it inserted the current hash, then fell through and inserted it again.</li>
 </ul>
-<h3 id="fixed_4">Fixed</h3>
+<h3 id="fixed_5">Fixed</h3>
 <ul>
 <li><strong>Granularity detection crashed on very small numbers under numpy &gt;= 2.5</strong> — the step-size histogram guarded only that the spread was strictly positive. For values around 1e-15 the gaps between them differ by ~1e-31, which is narrower than one float64 ULP at that magnitude, so every computed bin edge rounds to the same value. numpy 2.5 rejects that outright (<code>Too many bins for data range</code>) where 2.1 silently returned degenerate bins, so profiling any column at that scale raised. Differences that are equal to within floating-point resolution now skip the histogram entirely — the granularity simply is that difference.</li>
 <li><strong>numpy floor for Python 3.14</strong> — numpy 2.1.3 publishes no cp314 wheels, so the resolver picked it on 3.14 and built it from source against a Python it never supported. The resulting binary computed <code>uint64</code> arithmetic wrongly for large arrays, collapsing every hash in the distinct-count sketch to the same value and reporting 300,000 distinct values as 1. Floored to <code>numpy&gt;=2.3.3</code> on 3.14, the first release with cp314 wheels.</li>
@@ -2310,7 +2341,7 @@ suite (200,000 x 14: 3.190s -&gt; 1.739s).</p>
 <p>Correctness release. <code>benchmarks/accuracy.py</code> — a new statistical oracle that
 checks chunked results against unchunked ones and against NumPy — shipped six
 <code>xfail</code>-marked tests, each naming a live bug. All six are fixed.</p>
-<h3 id="fixed_5">Fixed</h3>
+<h3 id="fixed_6">Fixed</h3>
 <ul>
 <li><strong>Generator sources silently dropped the first chunk</strong> <em>(critical)</em> — adapter sniffing consumed the first chunk of a generator, so the documented "stream chunks larger than RAM" API omitted chunk 0 from every statistic, and a single-chunk generator reported <code>Empty source</code>. Chunk counts, <code>min</code>/<code>max</code>, means and every sketch were wrong for streaming input.</li>
 <li><strong>Reservoir sampling was biased toward late elements</strong> <em>(critical)</em> — <code>add_many</code> used one uniform draw over the post-batch count instead of a denominator that grows within the batch, and the bias grew with chunk size. Replaced with Algorithm L (Li, 1994). Every quantile, the median, IQR, MAD, outlier count and the histogram derive from this reservoir; for a fixed seed the sample is now identical regardless of chunking, and Algorithm L also reduces random draws from one per row to roughly <code>k·ln(n/k)</code>.</li>
@@ -2370,7 +2401,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Polars string→boolean inference</strong> — Under the <code>AGGRESSIVE</code> strategy, string columns are now matched against an explicit token set (<code>true</code>/<code>false</code>/<code>1</code>/<code>0</code>/<code>yes</code>/<code>no</code>) rather than <code>cast(pl.Boolean, strict=False)</code>, aligning polars behavior with pandas</li>
 <li><strong>Quality flags</strong> — <code>case_variants</code> and <code>trim_variants</code> are now raised only when lowercasing or stripping actually reduces the unique count, so a disabled estimator no longer reports phantom variants</li>
 </ul>
-<h3 id="fixed_6">Fixed</h3>
+<h3 id="fixed_7">Fixed</h3>
 <ul>
 <li><strong>Duplicate column names no longer crash profiling</strong> — pandas frames with repeated column names are renamed with numeric suffixes (with a <code>UserWarning</code>). Suffix generation now skips names already present in the frame, so <code>["a", "a", "a_1"]</code> renames to <code>["a", "a_2", "a_1"]</code> instead of producing another duplicate and failing with <code>'DataFrame' object has no attribute 'dtype'</code></li>
 <li><strong>Boolean columns misclassified as numeric</strong> — pandas <code>is_numeric_dtype()</code> returns <code>True</code> for <code>bool</code> dtype, so the bool check now runs first in <code>_infer_pandas_series_type</code></li>
@@ -2401,7 +2432,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Changelog CI check</strong> — PRs now require a changelog entry</li>
 <li><strong>Mermaid architecture diagrams</strong> — Replaced ASCII art with 5 interactive diagrams</li>
 </ul>
-<h3 id="fixed_7">Fixed</h3>
+<h3 id="fixed_8">Fixed</h3>
 <ul>
 <li><strong>MathJax formula rendering</strong> — Fixed <code>ignoreHtmlClass</code> regex that prevented all formula rendering</li>
 <li><strong>Code/equation styling</strong> — Changed code and math colors from green to standard gray</li>
@@ -2427,7 +2458,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Polars LazyFrame support</strong> — LazyFrames are now automatically collected before profiling</li>
 <li><strong>ReportConfig alias</strong> — Added <code>ReportConfig</code> as an alias for <code>ProfileConfig</code> for better API discoverability</li>
 </ul>
-<h3 id="fixed_8">Fixed</h3>
+<h3 id="fixed_9">Fixed</h3>
 <ul>
 <li><strong>Self-contained HTML reports</strong> — HTML reports no longer depend on external CDN (Chart.js is now inlined)</li>
 </ul>
@@ -2442,7 +2473,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Comprehensive stress tests</strong> — New <code>test_complexity_analysis.py</code> with time/space profiling</li>
 <li><strong>Python 3.14 support</strong> — Officially supported in package metadata</li>
 </ul>
-<h3 id="fixed_9">Fixed</h3>
+<h3 id="fixed_10">Fixed</h3>
 <ul>
 <li><strong>Memory leak fixes</strong> — Resolved memory leaks in KMV sketch, ExtremeTracker, and chunk metadata</li>
 </ul>
