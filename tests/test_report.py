@@ -227,8 +227,16 @@ def test_build_report_with_iterable():
 
 @pytest.mark.skipif(not _has_pandas(), reason="pandas not installed")
 def test_build_report_invalid_type():
-    """Test build_report with invalid input type."""
-    with pytest.raises(RuntimeError, match="Unsupported input type"):
+    """#100. This asserted `RuntimeError` and the internal message.
+
+    Both were the bug: `RuntimeError` escapes the `PySuricataError` hierarchy
+    the public API promises, so `except PySuricataError` missed the most common
+    way to get an input wrong, and "Unsupported input type" is vocabulary about
+    our module layout rather than about the caller's data.
+    """
+    from pysuricata import UnsupportedDataError
+
+    with pytest.raises(UnsupportedDataError, match="Cannot profile"):
         build_report(123, config=EngineConfig())
 
 

@@ -90,9 +90,10 @@ class QualityThresholds:
     # Heaping threshold
     heaping_threshold: float = 30.0
 
-    # Unique ratio thresholds
-    unique_ratio_threshold: float = 0.05
-    quasi_constant_threshold: float = 0.02
+    # Share of rows the most common value must cover for a column to read as
+    # quasi-constant. A share, not a cardinality ratio: the ratio made the flag
+    # depend on how many rows you happened to have (see QualityAssessor).
+    dominant_value_share: float = 0.95
 
     # Categorical thresholds
     high_cardinality_threshold: float = 0.5

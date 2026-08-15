@@ -82,6 +82,37 @@ SUMMARY_FIELDS_WITHHELD = {
 }
 
 
+def _as_public_error(message: str) -> Exception:
+    """Turn an engine failure into an exception the caller can catch.
+
+    Engine failures used to surface as `RuntimeError`, which escapes the
+    `PySuricataError` hierarchy the public API promises -- so
+    `except PySuricataError` did not catch the most common way to get an input
+    wrong. The internal vocabulary goes too: "Adapter selection failed" is a
+    sentence about our module layout, not about the caller's data.
+
+    Args:
+        message: The engine's error string.
+
+    Returns:
+        The exception to raise. Left as `PySuricataError` for anything not
+        recognised, rather than guessed at.
+    """
+    from .api import PySuricataError, UnsupportedDataError
+
+    if "Unsupported input type" in message or "Adapter selection failed" in message:
+        _, _, detail = message.rpartition(":")
+        # The engine reports `<class 'int'>`; say `int`.
+        named = detail.strip().removeprefix("<class '").removesuffix("'>")
+        return UnsupportedDataError(
+            f"Cannot profile a source yielding {named}. Provide a pandas "
+            "DataFrame, a polars DataFrame/LazyFrame, an Arrow table or reader, "
+            "a DuckDB relation, a path to a .csv/.parquet/.json file, or an "
+            "iterable of DataFrame chunks."
+        )
+    return PySuricataError(message)
+
+
 def _f(value: Any) -> float | None:
     """Coerce a statistic to a plain float, keeping None as None.
 
@@ -514,13 +545,20 @@ class ReportOrchestrator:
         )
 
         if not stream_result.success:
-            self.logger.error("Stream processing failed: %s", stream_result.error)
             if "Empty source" in stream_result.error:
+                # An empty input is a valid, boring case: the call succeeds and
+                # returns a usable report. Announcing "Stream processing failed"
+                # on it told the caller their successful call had failed -- and
+                # in CI, where `pysuricata check` now puts this library on
+                # purpose, a line containing "failed" on a green run is exactly
+                # what gets grepped for.
+                self.logger.debug("Empty source; rendering an empty report")
                 html = _render_empty_html(self.config.title)
                 if return_summary:
                     return html, {}
                 return html
-            raise RuntimeError(stream_result.error)
+            self.logger.error("Stream processing failed: %s", stream_result.error)
+            raise _as_public_error(stream_result.error)
 
         # Extract results from stream processing
         (

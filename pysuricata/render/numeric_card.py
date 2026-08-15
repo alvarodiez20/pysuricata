@@ -178,9 +178,12 @@ class NumericCardRenderer(CardRenderer):
             )
 
         if flags.discrete:
-            unique_ratio = getattr(stats, "unique_ratio_approx", 0)
+            # The count, not a ratio: the flag is now an absolute cardinality
+            # test, and quoting a ratio would explain it with the number that
+            # used to make it wrong.
             flag_items.append(
-                f'<li class="flag warn" data-threshold="Low unique count" data-value="{unique_ratio:.1%}">Discrete</li>'
+                f'<li class="flag warn" data-threshold="≤ 50 whole-number levels" '
+                f'data-value="~{stats.unique_est:,}">Discrete</li>'
             )
 
         if flags.heaping:
@@ -201,9 +204,15 @@ class NumericCardRenderer(CardRenderer):
             )
 
         if flags.quasi_constant:
-            unique_ratio = getattr(stats, "unique_ratio_approx", 0)
+            top_values = getattr(stats, "top_values", None)
+            share = (
+                top_values[0][1] / max(1, stats.count)
+                if top_values
+                else float(stats.unique_est <= 2)
+            )
             flag_items.append(
-                f'<li class="flag warn" data-threshold="Very low cardinality" data-value="{unique_ratio:.1%}">Quasi‑constant</li>'
+                f'<li class="flag warn" data-threshold="One value covers ≥ 95%" '
+                f'data-value="{share:.1%}">Quasi‑constant</li>'
             )
 
         if flags.many_outliers:

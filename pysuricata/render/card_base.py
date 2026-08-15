@@ -3,6 +3,7 @@
 import html as _html
 import math
 
+from ..compute.processing.inference import MAX_CATEGORICAL_LEVELS
 from .card_config import (
     DEFAULT_CSS_CLASSES,
     DEFAULT_QUALITY_THRESHOLDS,
@@ -221,13 +222,14 @@ class QualityAssessor:
         if isinstance(stats.jb_chi2, float) and math.isfinite(stats.jb_chi2):
             flags.approximately_normal = stats.jb_chi2 <= self.thresholds.jb_threshold
 
-        # Discrete detection
-        if stats.int_like:
-            unique_ratio = getattr(stats, "unique_ratio_approx", None)
-            if unique_ratio is not None and not math.isnan(unique_ratio):
-                flags.discrete = unique_ratio <= self.thresholds.unique_ratio_threshold
-            elif stats.unique_est <= max(1, min(50, int(0.05 * max(1, stats.count)))):
-                flags.discrete = True
+        # Discrete: few enough distinct whole numbers that the values read as
+        # labels rather than as measurements. The ceiling is the type
+        # classifier's own, imported rather than repeated, so the flag and the
+        # classification cannot disagree -- and, being an absolute count, it
+        # does not change with the row count the way the old unique *ratio*
+        # did.
+        if stats.int_like and 0 < int(stats.unique_est) <= MAX_CATEGORICAL_LEVELS:
+            flags.discrete = True
 
         # Heaping
         if isinstance(stats.heap_pct, float) and math.isfinite(stats.heap_pct):
@@ -240,15 +242,32 @@ class QualityAssessor:
         if flags.positive_only and flags.skewed_right:
             flags.log_scale_suggested = True
 
-        # Constant/quasi-constant
+        # Constant / quasi-constant.
+        #
+        # This used to fire when `unique_est / count` fell below 2%, which makes
+        # the flag a function of the row count rather than of the column: `age`,
+        # 68 distinct integers between 18 and 85, is unflagged at 1,000 rows and
+        # "Quasi-constant" at 20,000. That is the same unique-ratio reasoning the
+        # type classifier dropped in #84, left behind in the flag layer -- and
+        # since #86 put these chips in a triage block at the top of the report,
+        # the false alarm became the first thing a reader sees.
+        #
+        # Quasi-constant is a claim about *concentration*, not cardinality:
+        # almost every row holds the same value. Misra-Gries counts are lower
+        # bounds, so a share computed from them can understate dominance but
+        # never invent it, which is the right direction for a warning.
         uniq_est = max(0, int(stats.unique_est))
         total_nonnull = max(1, int(stats.count))
-        unique_ratio = (uniq_est / total_nonnull) if total_nonnull else 0.0
 
         if uniq_est == 1:
             flags.constant = True
-        elif unique_ratio <= self.thresholds.quasi_constant_threshold or uniq_est <= 2:
+        elif uniq_est <= 2:
             flags.quasi_constant = True
+        else:
+            top_values = getattr(stats, "top_values", None)
+            if top_values:
+                share = top_values[0][1] / total_nonnull
+                flags.quasi_constant = share >= self.thresholds.dominant_value_share
 
         # Outliers
         if out_pct > self.thresholds.outlier_crit_pct:
