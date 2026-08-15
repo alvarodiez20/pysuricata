@@ -40,13 +40,15 @@ Control data processing and analysis.
 
 ### Basic Parameters
 
-**`chunk_size: int = 200_000`**
+**`chunk_size: int = 50_000`**
 
 Rows per chunk when processing data.
 
-- **Larger**: Faster processing, more memory
-- **Smaller**: Less memory, more overhead
-- **Recommended**: 100K-500K for most datasets
+- **Larger**: more memory, and usually *slower* — the sketch merges are
+  superlinear in batch size, so one 200K-row batch costs more than four 50K ones
+- **Smaller**: less memory, more per-chunk overhead
+- **Recommended**: leave it alone. 50K is near the measured optimum across
+  frame shapes; the useful range is roughly 25K–100K
 
 ```python
 config.compute.chunk_size = 250_000

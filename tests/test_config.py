@@ -16,7 +16,7 @@ class TestEngineConfig:
 
         # Test default values
         assert config.title == "PySuricata EDA Report"
-        assert config.chunk_size == 200_000
+        assert config.chunk_size == 50_000
         assert config.numeric_sample_k == 20_000
         assert config.uniques_k == 2048
         assert config.topk_k == 50

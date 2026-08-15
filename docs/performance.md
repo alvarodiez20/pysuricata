@@ -28,7 +28,7 @@ Larger chunks mean fewer iterations and less overhead.
 
 ```python
 config = ReportConfig()
-config.compute.chunk_size = 500_000  # Default: 200_000
+config.compute.chunk_size = 500_000  # Default: 50_000
 
 report = profile(df, config=config)
 ```

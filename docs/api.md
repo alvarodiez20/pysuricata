@@ -57,7 +57,7 @@ All options live in `ReportConfig`:
 cfg = ReportConfig()
 
 # Chunking
-cfg.compute.chunk_size = 250_000        # rows per chunk (default: 200_000)
+cfg.compute.chunk_size = 250_000        # rows per chunk (default: 50_000)
 
 # Sampling
 cfg.compute.numeric_sample_size = 50_000  # reservoir size (default: 20_000)

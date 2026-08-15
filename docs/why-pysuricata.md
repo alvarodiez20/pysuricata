@@ -15,7 +15,7 @@ from pysuricata import profile, ReportConfig
 
 # PySuricata processes data in chunks internally
 config = ReportConfig()
-config.compute.chunk_size = 200_000  # 200k rows per chunk (default)
+config.compute.chunk_size = 50_000  # 50k rows per chunk (default)
 
 report = profile(df, config=config)
 ```

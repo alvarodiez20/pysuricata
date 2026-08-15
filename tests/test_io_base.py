@@ -29,7 +29,7 @@ class TestChunkingConfig:
     def test_default_config(self):
         """Test default configuration values."""
         config = ChunkingConfig()
-        assert config.chunk_size == 200_000
+        assert config.chunk_size == 50_000
         assert config.columns is None
         assert config.force_in_memory is False
         assert config.memory_limit_mb == 1024
