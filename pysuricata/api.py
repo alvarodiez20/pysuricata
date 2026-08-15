@@ -515,11 +515,16 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
     # Arrow and DuckDB stream natively, so they are never materialised. Checked
     # by module name rather than by importing pyarrow, which would make every
     # call pay for a dependency the caller may not have.
-    if _sources.is_arrow_source(data):
-        return _sources.first_batch_or_stream(_sources.stream_arrow(data))
-
+    #
+    # DuckDB first: a relation also exports the Arrow capsule, so the Arrow
+    # branch would swallow it and we would lose control of the batch size. That
+    # is how this ordering was found -- the DuckDB branch was unreachable, and a
+    # coverage report said so before any test did.
     if _sources.is_duckdb_relation(data):
         return _sources.stream_duckdb(data)
+
+    if _sources.is_arrow_source(data):
+        return _sources.first_batch_or_stream(_sources.stream_arrow(data))
 
     # A path is the input people reach for first, and the CLI already accepts
     # one -- `pysuricata profile data.csv` worked while `profile("data.csv")`

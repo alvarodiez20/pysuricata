@@ -42,7 +42,8 @@ summarize(pa.Table.from_pandas(df))
 ```
 
 DuckDB and pyarrow are **not dependencies**. The DuckDB path is duck-typed on
-`fetch_record_batch`, so nothing imports it; Parquet and Arrow reading needs
+the relation's batch-reader method — `to_arrow_reader`, or `fetch_record_batch`
+on older DuckDB — so nothing imports it; Parquet and Arrow reading needs
 `pyarrow`, and says so if it is missing.
 
 ## Streaming a query, not a table
