@@ -76,9 +76,9 @@ class Finding:
 
 
 # Planning documents, not documentation. They quote broken names on purpose
-# (DOCS_PLAN) and propose APIs that do not exist yet (UX_ISSUES, DIAGRAM_PROMPTS),
-# so checking them against the current API reports the plan as the defect.
-_NOT_DOCUMENTATION = {"DOCS_PLAN.md", "UX_ISSUES.md", "DIAGRAM_PROMPTS.md"}
+# (DOCS_PLAN) and propose APIs that do not exist yet (DIAGRAM_PROMPTS), so
+# checking them against the current API reports the plan as the defect.
+_NOT_DOCUMENTATION = {"DOCS_PLAN.md", "DIAGRAM_PROMPTS.md"}
 
 
 def _pages() -> list[Path]:

@@ -7,6 +7,15 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.43] - 2026-08-15
+
+### Removed
+- **`scripts/create_ux_issues.py` and `docs/UX_ISSUES.md`.** The twenty-two UX findings they carried are now GitHub issues, which is where a backlog belongs — an issue can be closed, commented on, and linked from a commit; a Python file holding issue bodies can only go stale. Everything in them was re-checked against 0.0.42 before filing: two were folded into existing issues (#39, #41) rather than duplicated, and one had to be corrected, because it claimed the sample-size knob was unreachable when it is reachable under a different name.
+
+No library change. `benchmarks/check_docs.py` drops `UX_ISSUES.md` from its
+list of planning documents to skip, and repository lint is clean again — the
+generator was the one file failing `ruff check`.
+
 ## [0.0.42] - 2026-08-15
 
 #95 and #33. The bounded-memory claim now holds for text columns, and row
