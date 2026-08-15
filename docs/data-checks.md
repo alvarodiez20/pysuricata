@@ -69,6 +69,7 @@ the gate to a repository that has never had one.
 | `distribution` | Standard deviation grew or shrank by a factor | 2× |
 | `boolean` | Share of `True` moved, in percentage points | 10 |
 | `range` | New minimum or maximum outside the baseline range | off |
+| `freshness` | Newest timestamp is too old, or did not advance | off |
 
 Three choices in that table are worth explaining, because they are what stops
 the gate from crying wolf.
@@ -88,6 +89,38 @@ exactly as sensitive as gating on the raw count.
 **Distribution drift is measured in standard deviations, not percent.** A
 percentage change in the mean is meaningless when the mean is near zero and
 incomparable across columns with different units. `|Δmean| / σ` is neither.
+
+## Stale data is not drifted data
+
+The most common failure of a scheduled pipeline is not that the numbers moved.
+It is that the job produced **yesterday's data again** — in which case every
+distribution matches, every column is present, and every check above passes,
+because the data is literally the same.
+
+```bash
+pysuricata check data.parquet --baseline baseline.json --require-fresh
+pysuricata check data.parquet --max-age 26h
+```
+
+`--require-fresh` fails when a datetime column's newest timestamp did not move
+past the baseline's. `--max-age` is absolute — it compares the newest timestamp
+against the clock, so it needs no baseline and works on the very first run.
+Durations are `90m`, `26h`, `3d`, `2w`, or a plain number of seconds.
+
+```text
+check failed — 1 finding
+  event_time: newest timestamp did not advance past 2026-08-14 06:00 UTC
+```
+
+Both are **off by default**, and applied to every datetime column when on. A
+datetime column can be a birth date rather than an event time, and failing a
+build because nobody was born since the baseline would be absurd. A timestamp
+that moved *backwards* is reported too — that usually means a partition was
+rebuilt from the wrong source.
+
+Comparison is in UTC. The payload stores timestamps as epoch values, so a gate
+reading them through the runner's local timezone would fail differently
+depending on where CI happened to run.
 
 **Approximate quantities get loose thresholds.** `unique_est` is a KMV sketch
 estimate with relative error around `1/√k` — about 2.2% at the default

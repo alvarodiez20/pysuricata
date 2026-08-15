@@ -29,6 +29,7 @@ from pysuricata.check import (
     Thresholds,
     compare,
     make_baseline,
+    parse_duration,
     read_baseline,
     read_thresholds,
     render_findings,
@@ -221,6 +222,122 @@ class TestTheGateFails:
             Thresholds(fail_on_range_expansion=True),
         )
         assert any(f.kind == "range" for f in result.findings)
+
+
+class TestFreshness:
+    """#91. The failure every other check here passes: yesterday's data again.
+
+    When a scheduled job re-runs a stale extract, every distribution matches and
+    every column is present, because the data is literally the same.
+    """
+
+    @staticmethod
+    def _dated(start: str, periods: int = 500) -> pd.DataFrame:
+        return pd.DataFrame(
+            {
+                "event_time": pd.date_range(start, periods=periods, freq="h"),
+                "value": np.arange(float(periods)),
+            }
+        )
+
+    @pytest.fixture
+    def yesterday(self):
+        return make_baseline(summarize(self._dated("2026-08-01"), seed=0))
+
+    def test_a_rerun_of_the_same_extract_is_caught(self, yesterday):
+        again = summarize(self._dated("2026-08-01"), seed=0)
+        result = compare(again, yesterday, Thresholds(require_max_ts_advances=True))
+        assert [f.kind for f in result.findings] == ["freshness"]
+
+    def test_the_same_extract_passes_every_other_check(self, yesterday):
+        """Which is exactly why this gate has to exist."""
+        again = summarize(self._dated("2026-08-01"), seed=0)
+        assert compare(again, yesterday).passed
+
+    def test_fresh_data_passes(self, yesterday):
+        newer = summarize(self._dated("2026-08-22"), seed=0)
+        assert compare(
+            newer, yesterday, Thresholds(require_max_ts_advances=True)
+        ).passed
+
+    def test_a_backwards_jump_is_reported_as_such(self, yesterday):
+        older = summarize(self._dated("2026-07-01"), seed=0)
+        result = compare(older, yesterday, Thresholds(require_max_ts_advances=True))
+        assert "backwards" in result.findings[0].message
+
+    def test_advancement_is_off_by_default(self, yesterday):
+        """A datetime column can be a birth date, not an event time."""
+        again = summarize(self._dated("2026-08-01"), seed=0)
+        assert compare(again, yesterday).passed
+
+    def test_the_message_names_the_time_it_stopped_at(self, yesterday):
+        again = summarize(self._dated("2026-08-01"), seed=0)
+        result = compare(again, yesterday, Thresholds(require_max_ts_advances=True))
+        assert "UTC" in result.findings[0].message
+
+    def test_max_age_needs_no_baseline(self):
+        stats = summarize(self._dated("2020-01-01"), seed=0)
+        result = compare(stats, None, Thresholds(max_age="26h"))
+        assert [f.column for f in result.findings] == ["event_time"]
+
+    def test_max_age_passes_on_recent_data(self):
+        stats = summarize(self._dated("2020-01-01"), seed=0)
+        # 2020-01-21 19:00 UTC is the newest value; pretend it is an hour later.
+        just_after = 1_579_640_400 + 3_600
+        assert compare(stats, None, Thresholds(max_age="26h"), now=just_after).passed
+
+    def test_max_age_is_measured_in_utc(self):
+        """Reading epoch values through the runner's local timezone would make
+        the gate fail differently depending on where CI runs."""
+        stats = summarize(self._dated("2020-01-01"), seed=0)
+        newest = stats["columns"]["event_time"]["max_ts"] / 1e9
+        # Exactly at the limit passes; a second past it does not.
+        assert compare(
+            stats, None, Thresholds(max_age=3_600), now=newest + 3_600
+        ).passed
+        assert not compare(
+            stats, None, Thresholds(max_age=3_600), now=newest + 3_601
+        ).passed
+
+    def test_a_non_datetime_column_is_never_stale(self):
+        frame = pd.DataFrame({"n": np.arange(500.0)})
+        assert compare(summarize(frame, seed=0), None, Thresholds(max_age="1s")).passed
+
+
+class TestDurations:
+    @pytest.mark.parametrize(
+        "text,seconds",
+        [
+            ("90s", 90),
+            ("90m", 5_400),
+            ("26h", 93_600),
+            ("3d", 259_200),
+            ("2w", 1_209_600),
+            ("450", 450),
+            (" 12H ", 43_200),
+        ],
+    )
+    def test_the_units_people_write(self, text, seconds):
+        assert parse_duration(text) == seconds
+
+    def test_a_number_passes_through_as_seconds(self):
+        assert parse_duration(3_600) == 3_600.0
+
+    def test_nonsense_names_the_units_that_work(self):
+        with pytest.raises(ValueError, match="s, m, h, d or w"):
+            parse_duration("soon")
+
+    def test_a_negative_duration_is_refused(self):
+        with pytest.raises(ValueError, match="negative"):
+            parse_duration("-3h")
+
+    def test_a_duration_string_works_in_the_constructor(self):
+        assert Thresholds(max_age="26h").max_age == 93_600
+
+    def test_a_duration_string_works_in_a_file(self, tmp_path):
+        path = tmp_path / "t.json"
+        path.write_text('{"max_age": "2d"}')
+        assert read_thresholds(path).max_age == 172_800
 
 
 class TestAbsoluteThresholds:

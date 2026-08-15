@@ -54,6 +54,7 @@ nav:
       - Performance Tips: performance.md
   - Technical Reference:
       - API Reference: api.md
+      - "summarize() schema": summary-schema.md
       - Complexity Analysis: complexity-analysis.md
       - Statistical Methods:
           - Overview: stats/overview.md

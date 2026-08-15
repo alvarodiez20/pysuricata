@@ -24,6 +24,7 @@ from pysuricata.check import (
     Thresholds,
     compare,
     make_baseline,
+    parse_duration,
     read_baseline,
     read_thresholds,
     render_findings,
@@ -182,6 +183,23 @@ For more information, visit: https://github.com/alvarodiez20/pysuricata
         "--fail-on-new-column",
         action="store_true",
         help="Treat an added column as a breach (off by default)",
+    )
+    check_parser.add_argument(
+        "--max-age",
+        type=str,
+        default=None,
+        help=(
+            "Fail if the newest timestamp in a datetime column is older than "
+            "this, e.g. 26h, 3d, 90m. Needs no baseline"
+        ),
+    )
+    check_parser.add_argument(
+        "--require-fresh",
+        action="store_true",
+        help=(
+            "Fail if a datetime column's newest timestamp did not advance past "
+            "the baseline's — catches a re-run of yesterday's extract"
+        ),
     )
     check_parser.add_argument(
         "--fail-on-range-expansion",
@@ -400,10 +418,14 @@ def _resolve_thresholds(args: argparse.Namespace) -> Thresholds:
         "max_rows_drift_pct": args.max_rows_drift_pct,
     }
     given = {k: v for k, v in overrides.items() if v is not None}
+    if args.max_age is not None:
+        given["max_age"] = parse_duration(args.max_age)
     if args.fail_on_new_column:
         given["fail_on_new_column"] = True
     if args.fail_on_range_expansion:
         given["fail_on_range_expansion"] = True
+    if args.require_fresh:
+        given["require_max_ts_advances"] = True
     if not given:
         return base
     return replace(base, **given)
