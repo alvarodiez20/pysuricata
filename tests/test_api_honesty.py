@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import logging
 import re
 
 import numpy as np
@@ -240,13 +241,24 @@ class TestASuccessfulCallSaysNothingAboutFailing:
         assert report.html
         assert report.stats == {}
 
-    def test_a_real_failure_still_says_so(self):
-        """The word is reserved for calls that raise."""
+    def test_the_empty_case_logs_no_error(self, caplog):
+        """Asserted at the log record rather than at stderr: whether a record
+        reaches stderr depends on the handlers configured around it, which is
+        the caller's business and differs between a bare interpreter and a test
+        runner. What is ours is the level we log it at."""
+        with caplog.at_level(logging.DEBUG, logger="pysuricata.report"):
+            profile(pd.DataFrame())
+        assert [r for r in caplog.records if r.levelno >= logging.ERROR] == []
+
+    def test_a_real_failure_still_logs_an_error(self, caplog):
+        """The word is reserved for calls that raise, so it has to survive on
+        the calls that do."""
 
         def chunks():
             yield 1
 
-        err = io.StringIO()
-        with contextlib.redirect_stderr(err), pytest.raises(UnsupportedDataError):
-            profile(chunks())
-        assert "failed" in err.getvalue().lower()
+        with caplog.at_level(logging.DEBUG, logger="pysuricata.report"):
+            with pytest.raises(UnsupportedDataError):
+                profile(chunks())
+        errors = [r.getMessage() for r in caplog.records if r.levelno >= logging.ERROR]
+        assert any("failed" in message.lower() for message in errors)
