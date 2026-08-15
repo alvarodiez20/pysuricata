@@ -6,32 +6,32 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="High-level overview of all statistical analysis methods in PySuricata">
+        <meta name="description" content="Exploratory data analysis reports for pandas DataFrames">
       
       
       
-        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/stats/overview/">
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/summary-schema/">
       
       
-        <link rel="prev" href="../../complexity-analysis/">
+        <link rel="prev" href="../api/">
       
       
-        <link rel="next" href="../numeric/">
+        <link rel="next" href="../complexity-analysis/">
       
       
-      <link rel="icon" href="../../assets/favicon.ico">
+      <link rel="icon" href="../assets/favicon.ico">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
     
     
       
-        <title>Statistical Methods Overview - PySuricata</title>
+        <title>summarize() schema - PySuricata</title>
       
     
     
-      <link rel="stylesheet" href="../../assets/stylesheets/main.2a3383ac.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
       
         
-        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
       
       
 
@@ -50,11 +50,11 @@
       
     
     
-      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
     
-      <link rel="stylesheet" href="../../stylesheets/extra.css">
+      <link rel="stylesheet" href="../stylesheets/extra.css">
     
-    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#statistical-methods-overview" class="md-skip">
+        <a href="#the-summarize-schema" class="md-skip">
           Skip to content
         </a>
       
@@ -96,9 +96,9 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="../.." title="PySuricata" class="md-header__button md-logo" aria-label="PySuricata" data-md-component="logo">
+    <a href=".." title="PySuricata" class="md-header__button md-logo" aria-label="PySuricata" data-md-component="logo">
       
-  <img src="../../assets/favicon.ico" alt="logo">
+  <img src="../assets/favicon.ico" alt="logo">
 
     </a>
     <label class="md-header__button md-icon" for="__drawer">
@@ -115,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Statistical Methods Overview
+              summarize() schema
             
           </span>
         </div>
@@ -222,7 +222,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../.." class="md-tabs__link">
+      <a href=".." class="md-tabs__link">
         
   
   
@@ -243,7 +243,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../why-pysuricata/" class="md-tabs__link">
+        <a href="../why-pysuricata/" class="md-tabs__link">
           
   
   
@@ -265,7 +265,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../usage/" class="md-tabs__link">
+        <a href="../usage/" class="md-tabs__link">
           
   
   
@@ -289,7 +289,7 @@
     
     
       <li class="md-tabs__item md-tabs__item--active">
-        <a href="../../api/" class="md-tabs__link">
+        <a href="../api/" class="md-tabs__link">
           
   
   
@@ -311,7 +311,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../architecture/" class="md-tabs__link">
+        <a href="../architecture/" class="md-tabs__link">
           
   
   
@@ -331,7 +331,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../contributing/" class="md-tabs__link">
+      <a href="../contributing/" class="md-tabs__link">
         
   
   
@@ -350,7 +350,7 @@
   
   
     <li class="md-tabs__item">
-      <a href="../../faq/" class="md-tabs__link">
+      <a href="../faq/" class="md-tabs__link">
         
   
   
@@ -371,7 +371,7 @@
     
     
       <li class="md-tabs__item">
-        <a href="../../about-suricatas/" class="md-tabs__link">
+        <a href="../about-suricatas/" class="md-tabs__link">
           
   
   
@@ -415,9 +415,9 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="../.." title="PySuricata" class="md-nav__button md-logo" aria-label="PySuricata" data-md-component="logo">
+    <a href=".." title="PySuricata" class="md-nav__button md-logo" aria-label="PySuricata" data-md-component="logo">
       
-  <img src="../../assets/favicon.ico" alt="logo">
+  <img src="../assets/favicon.ico" alt="logo">
 
     </a>
     PySuricata
@@ -444,7 +444,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../.." class="md-nav__link">
+      <a href=".." class="md-nav__link">
         
   
   
@@ -519,7 +519,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../why-pysuricata/" class="md-nav__link">
+      <a href="../why-pysuricata/" class="md-nav__link">
         
   
   
@@ -542,7 +542,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../install/" class="md-nav__link">
+      <a href="../install/" class="md-nav__link">
         
   
   
@@ -565,7 +565,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../quickstart/" class="md-nav__link">
+      <a href="../quickstart/" class="md-nav__link">
         
   
   
@@ -588,7 +588,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../examples/" class="md-nav__link">
+      <a href="../examples/" class="md-nav__link">
         
   
   
@@ -673,7 +673,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../usage/" class="md-nav__link">
+      <a href="../usage/" class="md-nav__link">
         
   
   
@@ -696,7 +696,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../configuration/" class="md-nav__link">
+      <a href="../configuration/" class="md-nav__link">
         
   
   
@@ -719,7 +719,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../advanced/" class="md-nav__link">
+      <a href="../advanced/" class="md-nav__link">
         
   
   
@@ -742,7 +742,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../data-checks/" class="md-nav__link">
+      <a href="../data-checks/" class="md-nav__link">
         
   
   
@@ -765,7 +765,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../performance/" class="md-nav__link">
+      <a href="../performance/" class="md-nav__link">
         
   
   
@@ -857,7 +857,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../api/" class="md-nav__link">
+      <a href="../api/" class="md-nav__link">
         
   
   
@@ -872,112 +872,6 @@
   
 
               
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../summary-schema/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    summarize() schema
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../complexity-analysis/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Complexity Analysis
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-    
-  
-  
-  
-    
-    
-      
-        
-      
-        
-      
-        
-      
-        
-      
-        
-      
-    
-    
-    
-      
-      
-        
-          
-          
-        
-      
-    
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
-      
-        
-        
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" checked>
-        
-          
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
-            
-  
-  
-  <span class="md-ellipsis">
-    Statistical Methods
-    
-  </span>
-  
-
-            <span class="md-nav__icon md-icon"></span>
-          </label>
-        
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_4">
-            <span class="md-nav__icon md-icon"></span>
-            Statistical Methods
-          </label>
-          <ul class="md-nav__list" data-md-scrollfix>
             
               
                 
@@ -1000,7 +894,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    summarize() schema
     
   </span>
   
@@ -1013,7 +907,7 @@
   
   
   <span class="md-ellipsis">
-    Overview
+    summarize() schema
     
   </span>
   
@@ -1036,111 +930,90 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#analysis-by-variable-type" class="md-nav__link">
+  <a href="#stability-policy" class="md-nav__link">
     <span class="md-ellipsis">
-      Analysis by Variable Type
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Analysis by Variable Type">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#numeric-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      Numeric Variables
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#categorical-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      Categorical Variables
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#datetime-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      DateTime Variables
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#boolean-variables" class="md-nav__link">
-    <span class="md-ellipsis">
-      Boolean Variables
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#advanced-analytics" class="md-nav__link">
-    <span class="md-ellipsis">
-      Advanced Analytics
-    </span>
-  </a>
-  
-    <nav class="md-nav" aria-label="Advanced Analytics">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#correlations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Correlations
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#missing-values" class="md-nav__link">
-    <span class="md-ellipsis">
-      Missing Values
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#algorithms" class="md-nav__link">
-    <span class="md-ellipsis">
-      Algorithms
+      Stability policy
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#guarantees" class="md-nav__link">
+  <a href="#top-level" class="md-nav__link">
     <span class="md-ellipsis">
-      Guarantees
+      Top level
     </span>
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
+  <a href="#dataset" class="md-nav__link">
     <span class="md-ellipsis">
-      See Also
+      dataset
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#columnsnametype" class="md-nav__link">
+    <span class="md-ellipsis">
+      columns[name]["type"]
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#numeric-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Numeric columns
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#categorical-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Categorical columns
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#datetime-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Datetime columns
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#boolean-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Boolean columns
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-estimated-and-by-how-much" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is estimated, and by how much
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-not-in-the-payload" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is not in the payload
     </span>
   </a>
   
@@ -1162,7 +1035,111 @@
   
   
     <li class="md-nav__item">
-      <a href="../numeric/" class="md-nav__link">
+      <a href="../complexity-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Complexity Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    Statistical Methods
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Statistical Methods
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/numeric/" class="md-nav__link">
         
   
   
@@ -1185,7 +1162,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../categorical/" class="md-nav__link">
+      <a href="../stats/categorical/" class="md-nav__link">
         
   
   
@@ -1208,7 +1185,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../datetime/" class="md-nav__link">
+      <a href="../stats/datetime/" class="md-nav__link">
         
   
   
@@ -1231,7 +1208,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../boolean/" class="md-nav__link">
+      <a href="../stats/boolean/" class="md-nav__link">
         
   
   
@@ -1318,7 +1295,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../analytics/correlations/" class="md-nav__link">
+      <a href="../analytics/correlations/" class="md-nav__link">
         
   
   
@@ -1341,7 +1318,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../analytics/missing-values/" class="md-nav__link">
+      <a href="../analytics/missing-values/" class="md-nav__link">
         
   
   
@@ -1364,7 +1341,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../analytics/duplicates/" class="md-nav__link">
+      <a href="../analytics/duplicates/" class="md-nav__link">
         
   
   
@@ -1387,7 +1364,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../analytics/quality/" class="md-nav__link">
+      <a href="../analytics/quality/" class="md-nav__link">
         
   
   
@@ -1472,7 +1449,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../algorithms/streaming/" class="md-nav__link">
+      <a href="../algorithms/streaming/" class="md-nav__link">
         
   
   
@@ -1495,7 +1472,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../algorithms/sketches/" class="md-nav__link">
+      <a href="../algorithms/sketches/" class="md-nav__link">
         
   
   
@@ -1518,7 +1495,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../algorithms/sampling/" class="md-nav__link">
+      <a href="../algorithms/sampling/" class="md-nav__link">
         
   
   
@@ -1607,7 +1584,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture/" class="md-nav__link">
+      <a href="../architecture/" class="md-nav__link">
         
   
   
@@ -1630,7 +1607,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../architecture-diagrams/" class="md-nav__link">
+      <a href="../architecture-diagrams/" class="md-nav__link">
         
   
   
@@ -1653,7 +1630,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../sequence-diagrams-complexity/" class="md-nav__link">
+      <a href="../sequence-diagrams-complexity/" class="md-nav__link">
         
   
   
@@ -1683,7 +1660,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../contributing/" class="md-nav__link">
+      <a href="../contributing/" class="md-nav__link">
         
   
   
@@ -1705,7 +1682,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../faq/" class="md-nav__link">
+      <a href="../faq/" class="md-nav__link">
         
   
   
@@ -1780,7 +1757,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../about-suricatas/" class="md-nav__link">
+      <a href="../about-suricatas/" class="md-nav__link">
         
   
   
@@ -1803,7 +1780,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../roadmap/" class="md-nav__link">
+      <a href="../roadmap/" class="md-nav__link">
         
   
   
@@ -1826,7 +1803,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../adr/memory-budget/" class="md-nav__link">
+      <a href="../adr/memory-budget/" class="md-nav__link">
         
   
   
@@ -1849,7 +1826,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../changelog/" class="md-nav__link">
+      <a href="../changelog/" class="md-nav__link">
         
   
   
@@ -1891,130 +1868,456 @@
   
 
 
-<h1 id="statistical-methods-overview">Statistical Methods Overview</h1>
-<p>PySuricata analyzes <strong>four variable types</strong> with specialized algorithms for each.</p>
-<h2 id="analysis-by-variable-type">Analysis by Variable Type</h2>
-<h3 id="numeric-variables">Numeric Variables</h3>
-<p><strong>Exact statistics</strong> using Welford/Pébay streaming algorithms:</p>
+<h1 id="the-summarize-schema">The <code>summarize()</code> schema</h1>
+<p><code>summarize()</code> returns a plain dictionary, and <code>Report.stats</code> carries the same
+one. This page is the contract: what the keys are, which of them are estimates,
+and what a version bump means.</p>
+<div class="admonition info">
+<p class="admonition-title">Examples on this page assume a frame <code>df</code></p>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;amount&quot;</span><span class="p">:</span> <span class="n">rng</span><span class="o">.</span><span class="n">lognormal</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mf">1.2</span><span class="p">,</span> <span class="mi">2_000</span><span class="p">)})</span>
+</span></code></pre></div>
+</div>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;schema_version&quot;</span><span class="p">]</span>                     <span class="c1"># 1</span>
+</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">][</span><span class="s2">&quot;rows_est&quot;</span><span class="p">]</span>
+</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">][</span><span class="s2">&quot;amount&quot;</span><span class="p">][</span><span class="s2">&quot;median&quot;</span><span class="p">]</span>
+</span></code></pre></div>
+<h2 id="stability-policy">Stability policy</h2>
+<p><code>schema_version</code> is an integer at the top level.</p>
 <ul>
-<li>Mean, variance, standard deviation</li>
-<li>Skewness, kurtosis</li>
-<li>Min, max, range</li>
+<li><strong>Adding a key does not change it.</strong> A consumer reading keys it knows is
+  unaffected by new ones, so new statistics arrive without warning and without
+  ceremony.</li>
+<li><strong>Renaming or removing a key bumps it.</strong> So does changing what an existing key
+  means, or its units.</li>
 </ul>
-<p><strong>Approximate statistics</strong> using probabilistic data structures:</p>
-<ul>
-<li>Quantiles (reservoir sampling)</li>
-<li>Distinct count (KMV sketch)</li>
-<li>Histograms (adaptive binning)</li>
-</ul>
-<p><strong>Key formulas:</strong></p>
-<div class="arithmatex">\[
-\bar{x} = \frac{1}{n}\sum x_i, \quad s^2 = \frac{1}{n-1}\sum (x_i - \bar{x})^2
-\]</div>
-<p><strong>→ <a href="../numeric/">Full Documentation</a></strong></p>
-<h3 id="categorical-variables">Categorical Variables</h3>
-<p><strong>Analysis includes:</strong></p>
-<ul>
-<li>Top-k values (Misra-Gries algorithm)</li>
-<li>Distinct count (KMV sketch)</li>
-<li>Entropy and Gini impurity</li>
-<li>String statistics</li>
-</ul>
-<p><strong>Key formulas:</strong></p>
-<div class="arithmatex">\[
-H(X) = -\sum p(x) \log_2 p(x), \quad \text{Gini}(X) = 1 - \sum p(x)^2
-\]</div>
-<p><strong>→ <a href="../categorical/">Full Documentation</a></strong></p>
-<h3 id="datetime-variables">DateTime Variables</h3>
-<p><strong>Temporal analysis:</strong></p>
-<ul>
-<li>Hour, day-of-week, month distributions</li>
-<li>Monotonicity detection</li>
-<li>Time span and sampling rate</li>
-</ul>
-<p><strong>Key formulas:</strong></p>
-<div class="arithmatex">\[
-M = \frac{n_{\uparrow}}{n - 1}, \quad r = \frac{n}{\Delta t}
-\]</div>
-<p><strong>→ <a href="../datetime/">Full Documentation</a></strong></p>
-<h3 id="boolean-variables">Boolean Variables</h3>
-<p><strong>Binary analysis:</strong></p>
-<ul>
-<li>True/False proportions</li>
-<li>Entropy and balance metrics</li>
-<li>Imbalance detection</li>
-</ul>
-<p><strong>Key formulas:</strong></p>
-<div class="arithmatex">\[
-H = -p \log_2(p) - (1-p) \log_2(1-p)
-\]</div>
-<p><strong>→ <a href="../boolean/">Full Documentation</a></strong></p>
-<h2 id="advanced-analytics">Advanced Analytics</h2>
-<h3 id="correlations">Correlations</h3>
-<p>Streaming Pearson correlation between numeric columns, using pairwise co-moment tracking. Correlations above a configurable threshold are reported.</p>
-<div class="arithmatex">\[
-r_{xy} = \frac{\text{Cov}(X, Y)}{s_X \cdot s_Y}
-\]</div>
-<h3 id="missing-values">Missing Values</h3>
-<p>Per-column and dataset-wide missing value analysis:</p>
-<ul>
-<li>Missing count and percentage per column</li>
-<li>Top missing columns visualization</li>
-<li>Missing pattern detection</li>
-</ul>
-<h2 id="algorithms">Algorithms</h2>
-<p>All statistics use <strong>single-pass streaming algorithms</strong> with bounded memory:</p>
+<p>This is not decoration. The payload drifted once before it was versioned:
+<code>dataset["rows"]</code> became <code>dataset["rows_est"]</code>, which silently broke every
+documented example and would have broken every downstream consumer.</p>
+<p><code>pysuricata check</code> reads <code>schema_version</code> off a stored baseline and <strong>refuses</strong>
+to compare against one written by a different version, rather than quietly
+matching whatever keys still line up.</p>
+<p>Every column carries <code>type</code>, <code>count</code>, <code>missing</code> and <code>mem_bytes</code>, whatever its
+kind. Those four are safe to read without checking <code>type</code> first.</p>
+<h2 id="top-level">Top level</h2>
 <table>
 <thead>
 <tr>
-<th>Algorithm</th>
-<th>Used for</th>
-<th>Space</th>
+<th>Key</th>
+<th>Type</th>
+<th>Meaning</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Welford/Pébay</td>
-<td>Mean, variance, skewness, kurtosis</td>
-<td>O(1)</td>
+<td><code>schema_version</code></td>
+<td>int</td>
+<td>The version of this schema</td>
 </tr>
 <tr>
-<td>Reservoir sampling</td>
-<td>Quantiles, histograms</td>
-<td>O(s)</td>
+<td><code>dataset</code></td>
+<td>dict</td>
+<td>Whole-frame statistics</td>
 </tr>
 <tr>
-<td>KMV sketch</td>
-<td>Distinct count</td>
-<td>O(k)</td>
-</tr>
-<tr>
-<td>Misra-Gries</td>
-<td>Top-k frequent values</td>
-<td>O(k)</td>
+<td><code>columns</code></td>
+<td>dict</td>
+<td>Column name → statistics</td>
 </tr>
 </tbody>
 </table>
-<h2 id="guarantees">Guarantees</h2>
+<h2 id="dataset"><code>dataset</code></h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rows_est</code></td>
+<td>int</td>
+<td>Rows seen. Exact for a frame; a count of what was streamed otherwise</td>
+</tr>
+<tr>
+<td><code>cols</code></td>
+<td>int</td>
+<td>Columns profiled</td>
+</tr>
+<tr>
+<td><code>missing_cells</code></td>
+<td>int</td>
+<td>Missing cells across profiled columns</td>
+</tr>
+<tr>
+<td><code>missing_cells_pct</code></td>
+<td>float</td>
+<td>As a percentage of <code>rows_est × cols</code></td>
+</tr>
+<tr>
+<td><code>duplicate_rows_est</code></td>
+<td>int</td>
+<td><strong>Approximate.</strong> From a row-level KMV sketch</td>
+</tr>
+<tr>
+<td><code>duplicate_rows_pct_est</code></td>
+<td>float</td>
+<td><strong>Approximate.</strong> As above</td>
+</tr>
+<tr>
+<td><code>memory_bytes</code></td>
+<td>int</td>
+<td>Approximate in-memory size of the source</td>
+</tr>
+<tr>
+<td><code>top_missing</code></td>
+<td>list</td>
+<td>Up to five <code>{column, pct, count}</code>, worst first</td>
+</tr>
+</tbody>
+</table>
+<h2 id="columnsnametype"><code>columns[name]["type"]</code></h2>
+<p>One of <code>numeric</code>, <code>categorical</code>, <code>datetime</code>, <code>boolean</code>, <code>identifier</code>.</p>
+<p><code>identifier</code> is a numeric column that is monotonic, integer-like and has a
+distinct count equal to the row count — a key, not a measurement. It carries the
+numeric keys, since it is a numeric column; the type is a statement about what
+the numbers mean.</p>
+<h2 id="numeric-columns">Numeric columns</h2>
+<p>Shape and position:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>count</code>, <code>missing</code>, <code>zeros</code>, <code>negatives</code>, <code>inf</code></td>
+<td>int</td>
+<td>Exact</td>
+</tr>
+<tr>
+<td><code>mean</code>, <code>std</code>, <code>variance</code>, <code>se</code></td>
+<td>float</td>
+<td>Exact (Welford/Pébay)</td>
+</tr>
+<tr>
+<td><code>skew</code>, <code>kurtosis</code>, <code>cv</code>, <code>gmean</code></td>
+<td>float</td>
+<td>Exact</td>
+</tr>
+<tr>
+<td><code>min</code>, <code>max</code></td>
+<td>float</td>
+<td>Exact — from the extreme tracker, which sees every value</td>
+</tr>
+<tr>
+<td><code>q1</code>, <code>median</code>, <code>q3</code>, <code>iqr</code>, <code>mad</code></td>
+<td>float</td>
+<td><strong>From the reservoir sample</strong></td>
+</tr>
+<tr>
+<td><code>ci_lo</code>, <code>ci_hi</code></td>
+<td>float</td>
+<td>95% confidence interval for the mean</td>
+</tr>
+<tr>
+<td><code>jb_chi2</code></td>
+<td>float</td>
+<td>Jarque–Bera statistic</td>
+</tr>
+<tr>
+<td><code>min_items</code>, <code>max_items</code></td>
+<td>list</td>
+<td><code>(row_index, value)</code>, most extreme first</td>
+</tr>
+<tr>
+<td><code>true_histogram_edges</code>, <code>true_histogram_counts</code></td>
+<td>list</td>
+<td>The distribution, exact counts</td>
+</tr>
+</tbody>
+</table>
+<p>Quality and structure:</p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unique_est</code></td>
+<td>int</td>
+<td><strong>Approximate.</strong> KMV sketch</td>
+</tr>
+<tr>
+<td><code>unique_ratio_approx</code></td>
+<td>float</td>
+<td><strong>Approximate.</strong> <code>unique_est / count</code></td>
+</tr>
+<tr>
+<td><code>top_values</code></td>
+<td>list | None</td>
+<td><code>(value, count)</code>. <strong><code>None</code> means not tracked</strong></td>
+</tr>
+<tr>
+<td><code>outliers_iqr_est</code>, <code>outliers_mod_zscore</code></td>
+<td>int</td>
+<td><strong>From the sample</strong>, scaled</td>
+</tr>
+<tr>
+<td><code>mono_inc</code>, <code>mono_dec</code></td>
+<td>bool</td>
+<td>Monotonic over the stream as it arrived</td>
+</tr>
+<tr>
+<td><code>int_like</code></td>
+<td>bool</td>
+<td>Every value is a whole number</td>
+</tr>
+<tr>
+<td><code>heap_pct</code></td>
+<td>float</td>
+<td>Share sitting on round numbers — heaping</td>
+</tr>
+<tr>
+<td><code>bimodal</code></td>
+<td>bool</td>
+<td>Two modes detected in the histogram</td>
+</tr>
+<tr>
+<td><code>gran_decimals</code>, <code>gran_step</code></td>
+<td>int, float</td>
+<td>Inferred granularity</td>
+</tr>
+<tr>
+<td><code>corr_top</code></td>
+<td>list</td>
+<td><code>(other_column, r)</code> above the threshold</td>
+</tr>
+<tr>
+<td><code>approx</code></td>
+<td>bool</td>
+<td>Whether sampling was involved at all</td>
+</tr>
+<tr>
+<td><code>dtype</code></td>
+<td>str</td>
+<td>The source dtype</td>
+</tr>
+</tbody>
+</table>
+<p><code>top_values</code> distinguishes two situations that a plain empty list would not:
+<code>None</code> means the top-k sketch was <strong>switched off</strong> for this column because its
+cardinality made a "common values" table meaningless, while <code>[]</code> means it was
+tracked and nothing was frequent enough.</p>
+<h2 id="categorical-columns">Categorical columns</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>count</code>, <code>missing</code>, <code>empty_zero</code></td>
+<td>int</td>
+<td>Exact</td>
+</tr>
+<tr>
+<td><code>unique_est</code></td>
+<td>int</td>
+<td><strong>Approximate.</strong> KMV sketch</td>
+</tr>
+<tr>
+<td><code>top_items</code></td>
+<td>list</td>
+<td><code>(value, count)</code>. <strong>Approximate</strong> — Misra-Gries counts are lower bounds</td>
+</tr>
+<tr>
+<td><code>entropy</code>, <code>gini_impurity</code>, <code>diversity_ratio</code>, <code>most_common_ratio</code></td>
+<td>float</td>
+<td>Derived</td>
+</tr>
+<tr>
+<td><code>avg_len</code>, <code>len_p90</code></td>
+<td>float, int</td>
+<td>Value length in characters</td>
+</tr>
+<tr>
+<td><code>case_variants_est</code>, <code>trim_variants_est</code></td>
+<td>int</td>
+<td><strong>Approximate.</strong> Distinct counts after folding case / trimming whitespace</td>
+</tr>
+<tr>
+<td><code>approx</code>, <code>dtype</code></td>
+<td>bool, str</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>The two variant estimates are what the report's "looks like a case variant"
+flags are drawn from: compare them against <code>unique_est</code> — a lower folded count
+means some values differ only by case or by surrounding whitespace.</p>
+<h2 id="datetime-columns">Datetime columns</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>count</code>, <code>missing</code></td>
+<td>int</td>
+<td>Exact</td>
+</tr>
+<tr>
+<td><code>min_ts</code>, <code>max_ts</code></td>
+<td>float</td>
+<td><strong>Epoch nanoseconds</strong>, UTC</td>
+</tr>
+<tr>
+<td><code>unique_est</code></td>
+<td>int</td>
+<td><strong>Approximate</strong></td>
+</tr>
+<tr>
+<td><code>time_span_days</code></td>
+<td>float</td>
+<td><code>max_ts − min_ts</code>, in days</td>
+</tr>
+<tr>
+<td><code>avg_interval_seconds</code>, <code>interval_std_seconds</code></td>
+<td>float</td>
+<td>Between consecutive values</td>
+</tr>
+<tr>
+<td><code>weekend_ratio</code>, <code>business_hours_ratio</code></td>
+<td>float</td>
+<td>Share of values in each</td>
+</tr>
+<tr>
+<td><code>mono_inc</code>, <code>mono_dec</code></td>
+<td>bool</td>
+<td>Monotonic over the stream as it arrived</td>
+</tr>
+<tr>
+<td><code>seasonal_pattern</code></td>
+<td>str | None</td>
+<td>A description, when one is detected</td>
+</tr>
+<tr>
+<td><code>source_timezone</code></td>
+<td>str | None</td>
+<td>The dtype's timezone, when it carries one</td>
+</tr>
+<tr>
+<td><code>by_hour</code>, <code>by_dow</code>, <code>by_month</code></td>
+<td>list</td>
+<td>Tallies of length 24, 7 and 12</td>
+</tr>
+<tr>
+<td><code>by_year</code></td>
+<td>dict</td>
+<td>Year → count</td>
+</tr>
+<tr>
+<td><code>dtype</code></td>
+<td>str</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>min_ts</code> and <code>max_ts</code> are nanoseconds</strong>, not seconds — that is the units
+question most likely to be guessed wrong. Divide by <code>1_000_000_000</code> before
+handing them to <code>datetime.fromtimestamp</code>.</p>
+<h2 id="boolean-columns">Boolean columns</h2>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>count</code>, <code>missing</code>, <code>true</code>, <code>false</code></td>
+<td>int</td>
+<td>Exact</td>
+</tr>
+<tr>
+<td><code>true_ratio</code>, <code>false_ratio</code></td>
+<td>float</td>
+<td>Of the non-missing values</td>
+</tr>
+<tr>
+<td><code>entropy</code></td>
+<td>float</td>
+<td></td>
+</tr>
+<tr>
+<td><code>dtype</code></td>
+<td>str</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><code>count</code> counts non-missing values, so the number of rows the column covers is
+<code>true + false + missing</code>.</p>
+<h2 id="what-is-estimated-and-by-how-much">What is estimated, and by how much</h2>
+<p>Anything marked <strong>approximate</strong> above rests on a bounded-memory sketch. The two
+that matter:</p>
 <ul>
-<li><strong>Exact:</strong> moments (mean, variance, skewness, kurtosis), min/max, counts</li>
-<li><strong>Approximate:</strong> quantiles (within ±1 percentile), distinct count (~2.2% error with default k=2048)</li>
-<li><strong>Deterministic:</strong> set <code>random_seed</code> for reproducible reservoir sampling</li>
+<li><strong><code>unique_est</code> and the variant counts</strong> come from a KMV sketch with relative
+  error near <code>1/√k</code>, about <strong>2.2%</strong> at the default <code>uniques_k=2048</code>. Raise
+  <code>uniques_k</code> to tighten it.</li>
+<li><strong>Quantiles</strong> (<code>q1</code>, <code>median</code>, <code>q3</code>, and the IQR and MAD derived from them)
+  come from a reservoir sample of <code>numeric_sample_size</code> values, default 20,000,
+  with error near <code>1/√k</code> — about <strong>0.7%</strong>, and <strong>3.2%</strong> if you drop the sample
+  to 1,000.</li>
 </ul>
-<h2 id="see-also">See Also</h2>
-<ul>
-<li><a href="../../algorithms/streaming/">Streaming Algorithms</a> — Algorithm details</li>
-<li><a href="../../algorithms/sketches/">Sketch Algorithms</a> — Probabilistic structures</li>
-</ul>
+<p><code>approx</code> on a numeric column tells you whether sampling was involved for that
+column at all: below the sample size, the reservoir holds every value and the
+quantiles are exact.</p>
+<p><code>top_items</code> and <code>top_values</code> come from Misra-Gries counters. Their counts are
+<strong>lower bounds</strong> — a reported count never overstates, and the counters neither
+partition the column nor sum to the row count.</p>
+<h2 id="what-is-not-in-the-payload">What is not in the payload</h2>
+<p>Deliberately withheld, and listed in <code>pysuricata.report.SUMMARY_FIELDS_WITHHELD</code>
+with the reason for each: the reservoir sample itself (up to 20,000 floats per
+column), the per-chunk bookkeeping the report's chunk strip is drawn from, and
+the scale factor the renderer applies to sampled counts. None of these is a
+statistic.</p>
+<p>A test walks that list against the accumulators' own summary dataclasses and
+fails if a computed statistic is neither published nor listed. That is what
+stops the JSON drifting behind the HTML again — it has happened twice, with
+correlations and with numeric top values, and both times it was only findable by
+reading the renderer.</p>
 
 
 
 
 
 
-
-  
-  
 
 
 
@@ -2081,14 +2384,14 @@ r_{xy} = \frac{\text{Cov}(X, Y)}{s_X \cdot s_Y}
     
     
       
-      <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.sections", "navigation.tracking", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "toc.integrate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.tracking", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "toc.integrate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="../../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
       
-        <script src="../../javascripts/figures.js"></script>
+        <script src="../javascripts/figures.js"></script>
       
-        <script src="../../javascripts/mathjax.js"></script>
+        <script src="../javascripts/mathjax.js"></script>
       
         <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
       
