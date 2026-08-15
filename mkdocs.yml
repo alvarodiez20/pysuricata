@@ -50,6 +50,7 @@ nav:
       - Basic Usage: usage.md
       - Configuration: configuration.md
       - Advanced Features: advanced.md
+      - Arrow, Parquet and DuckDB: data-sources.md
       - Gating CI on drift: data-checks.md
       - Performance Tips: performance.md
   - Technical Reference:

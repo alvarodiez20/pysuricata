@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Union
 
 from . import report
+from . import sources as _sources
 from .config import EngineConfig as _EngineConfig
 
 
@@ -511,6 +512,15 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
     except ImportError:
         pass
 
+    # Arrow and DuckDB stream natively, so they are never materialised. Checked
+    # by module name rather than by importing pyarrow, which would make every
+    # call pay for a dependency the caller may not have.
+    if _sources.is_arrow_source(data):
+        return _sources.first_batch_or_stream(_sources.stream_arrow(data))
+
+    if _sources.is_duckdb_relation(data):
+        return _sources.stream_duckdb(data)
+
     # A path is the input people reach for first, and the CLI already accepts
     # one -- `pysuricata profile data.csv` worked while `profile("data.csv")`
     # raised TypeError. Same loader, same formats.
@@ -524,8 +534,9 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
 
     raise UnsupportedDataError(
         f"Cannot profile {type(data).__name__}. Provide a pandas DataFrame, a "
-        "polars DataFrame/LazyFrame, a path to a .csv/.parquet/.json file, or "
-        "an iterable of DataFrame chunks."
+        "polars DataFrame/LazyFrame, an Arrow table or reader, a DuckDB "
+        "relation, a path to a .csv/.parquet/.json file, or an iterable of "
+        "DataFrame chunks."
     )
 
 
@@ -548,12 +559,22 @@ def _read_path(path: str | os.PathLike) -> pd.DataFrame:
     if not resolved.exists():
         raise PySuricataError(f"File not found: {resolved}")
 
+    suffix = resolved.suffix.lower()
+
+    # Parquet is read a batch at a time rather than loaded whole. It is the one
+    # supported format that carries its own row groups, and it is the format
+    # people point at large data with -- materialising it would contradict the
+    # bounded-memory claim on exactly the input where the claim matters. A file
+    # that fits in one batch comes back as a frame, so small files behave
+    # exactly as they did.
+    if suffix == ".parquet":
+        return _sources.first_batch_or_stream(_sources.stream_parquet(resolved))
+
     readers = {
         ".csv": pd.read_csv,
-        ".parquet": pd.read_parquet,
         ".json": pd.read_json,
     }
-    reader = readers.get(resolved.suffix.lower())
+    reader = readers.get(suffix)
     if reader is None:
         raise UnsupportedDataError(
             f"Cannot read '{resolved.name}': unsupported format "

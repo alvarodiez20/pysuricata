@@ -1,0 +1,267 @@
+"""Stream Arrow, Parquet and DuckDB without materialising them first.
+
+Every source used to arrive as a pandas or polars frame, which for a Parquet
+file or a DuckDB query meant reading the whole thing into memory before
+profiling it. That contradicts the one claim the library is positioned on --
+bounded memory regardless of dataset size -- for exactly the inputs where the
+claim matters most.
+
+The engine already consumes an iterable of chunks, so this is a reader per
+source rather than a change to the core. All three arrive as Arrow record
+batches, so there is really one reader and two entry points.
+
+**What this is not.** The accumulators take numpy arrays, so each batch is
+converted on its way through; this is not a zero-copy Arrow path. What changes
+is that one batch is materialised at a time instead of the entire file.
+
+**One behavioural consequence, stated up front.** Type inference reclassifies a
+numeric column as categorical from the distinct values it can see, which is
+sound evidence only when the whole column is in hand. A stream cannot offer
+that: a leading run of one value looks low-cardinality while the column is not.
+So a file that arrives in a single batch is handed to the engine as a frame --
+identical results to `pd.read_parquet` -- and a file that does not is treated as
+what it is, a stream.
+"""
+
+from __future__ import annotations
+
+import os
+from collections.abc import Iterator
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    import pandas as pd
+
+__all__ = [
+    "is_arrow_source",
+    "is_duckdb_relation",
+    "stream_arrow",
+    "stream_duckdb",
+    "stream_parquet",
+]
+
+# Rows per batch when the caller does not say. Large enough that per-batch
+# overhead is noise, small enough that a batch of a wide frame stays modest:
+# 64k rows x 20 float64 columns is about 10 MB.
+DEFAULT_BATCH_ROWS = 65_536
+
+
+def stream_parquet(
+    path: str | os.PathLike,
+    *,
+    batch_size: int | None = None,
+    columns: list[str] | None = None,
+) -> Iterator[pd.DataFrame]:
+    """Yield a Parquet file one batch at a time.
+
+    Args:
+        path: Path to a `.parquet` file.
+        batch_size: Rows per batch. Defaults to `DEFAULT_BATCH_ROWS`.
+        columns: Optional subset to read. Columns not read are never decoded,
+            which is where most of the saving is on a wide file.
+
+    Yields:
+        One pandas DataFrame per batch.
+
+    Raises:
+        ImportError: If pyarrow is not installed.
+        FileNotFoundError: If the file does not exist.
+    """
+    pq = _require("pyarrow.parquet", "reading Parquet")
+    resolved = Path(path)
+    if not resolved.exists():
+        raise FileNotFoundError(f"File not found: {resolved}")
+
+    handle = pq.ParquetFile(resolved)
+    batches = handle.iter_batches(
+        batch_size=batch_size or DEFAULT_BATCH_ROWS, columns=columns
+    )
+    for batch in batches:
+        yield batch.to_pandas()
+
+
+def stream_arrow(
+    source: Any, *, batch_size: int | None = None
+) -> Iterator[pd.DataFrame]:
+    """Yield an Arrow source one batch at a time.
+
+    Args:
+        source: A `RecordBatchReader`, `Table`, `RecordBatch`, or a
+            `pyarrow.dataset.Dataset`.
+        batch_size: Rows per batch, where the source lets us choose. A
+            `RecordBatchReader` already carries its own batching and is passed
+            through as it is.
+
+    Yields:
+        One pandas DataFrame per batch.
+
+    Raises:
+        ImportError: If pyarrow is not installed.
+        TypeError: If the object is not an Arrow source.
+    """
+    pa = _require("pyarrow", "reading Arrow data")
+    rows = batch_size or DEFAULT_BATCH_ROWS
+
+    if isinstance(source, pa.RecordBatchReader):
+        # Its batching is a property of whatever produced it; re-chunking here
+        # would mean buffering, which is the thing being avoided.
+        for batch in source:
+            yield batch.to_pandas()
+        return
+
+    if isinstance(source, pa.Table):
+        for batch in source.to_batches(max_chunksize=rows):
+            yield batch.to_pandas()
+        return
+
+    if isinstance(source, pa.RecordBatch):
+        yield source.to_pandas()
+        return
+
+    to_batches = getattr(source, "to_batches", None)
+    if callable(to_batches):  # pyarrow.dataset.Dataset and friends
+        for batch in to_batches(batch_size=rows):
+            yield batch.to_pandas()
+        return
+
+    if hasattr(source, "__arrow_c_stream__"):
+        # The PyCapsule interface: whatever produced this, pyarrow can read it.
+        for batch in pa.RecordBatchReader.from_stream(source):
+            yield batch.to_pandas()
+        return
+
+    raise TypeError(
+        f"{type(source).__name__} is not an Arrow source. Pass a Table, a "
+        "RecordBatch, a RecordBatchReader or a Dataset."
+    )
+
+
+def stream_duckdb(relation: Any, *, batch_size: int | None = None):
+    """Yield a DuckDB relation or query result one batch at a time.
+
+    A relation is a query that has not run yet, so this profiles a result set
+    without ever landing it in memory:
+
+    ```python
+    con.sql("SELECT * FROM 'events/*.parquet' WHERE ts > '2026-01-01'")
+    ```
+
+    Args:
+        relation: A DuckDB relation or result, i.e. anything with
+            `fetch_record_batch`.
+        batch_size: Rows per batch.
+
+    Yields:
+        One pandas DataFrame per batch.
+
+    Raises:
+        TypeError: If the object cannot produce Arrow batches.
+    """
+    fetch = getattr(relation, "fetch_record_batch", None)
+    if not callable(fetch):
+        raise TypeError(
+            f"{type(relation).__name__} is not a DuckDB relation. Pass the "
+            "result of con.sql(...) or con.execute(...)."
+        )
+    reader = fetch(batch_size or DEFAULT_BATCH_ROWS)
+    for batch in reader:
+        yield batch.to_pandas()
+
+
+def is_arrow_source(obj: Any) -> bool:
+    """Whether `stream_arrow` can read this object.
+
+    Two ways to qualify. A pyarrow object is recognised by module name, without
+    importing pyarrow — an import inside a type check would make every
+    `profile()` call pay for a dependency the caller may not have. Anything
+    else qualifies by exporting `__arrow_c_stream__`, the Arrow PyCapsule
+    interface, which is how the rest of the ecosystem hands data over without
+    anyone agreeing on a type.
+
+    pandas and polars are excluded explicitly rather than by being checked
+    first somewhere else: both export the capsule (pandas since 2.2), both have
+    their own adapter, and a predicate that is only correct because of the order
+    its caller happens to use it in is a trap for the next caller.
+    """
+    module = type(obj).__module__ or ""
+    if module.startswith(("pandas", "polars")):
+        return False
+    if hasattr(obj, "__arrow_c_stream__"):
+        return True
+    if not module.startswith("pyarrow"):
+        return False
+    return type(obj).__name__ in {
+        "Table",
+        "RecordBatch",
+        "RecordBatchReader",
+        "Dataset",
+        "FileSystemDataset",
+        "InMemoryDataset",
+        "UnionDataset",
+    }
+
+
+def is_duckdb_relation(obj: Any) -> bool:
+    """Whether `stream_duckdb` can read this object.
+
+    Duck-typed on `fetch_record_batch`, which is specific enough to be safe and
+    survives DuckDB moving its classes between modules -- they live in `_duckdb`
+    rather than `duckdb`, which a module-name check gets wrong.
+    """
+    return callable(getattr(obj, "fetch_record_batch", None))
+
+
+def first_batch_or_stream(batches: Iterator[Any]) -> Any:
+    """Collapse a single-batch stream back into one frame.
+
+    Type inference treats a stream conservatively, because a prefix is not
+    evidence about a column: a leading run of one value looks low-cardinality
+    while the column is not, and the decision is never revisited. When the
+    source turns out to fit in one batch there is no prefix to be wrong about,
+    so handing the engine a frame rather than a generator keeps the result
+    identical to reading the file with pandas.
+
+    Args:
+        batches: The batch iterator.
+
+    Returns:
+        A single DataFrame when the source held exactly one batch, otherwise an
+        iterator yielding every batch including the one already read.
+    """
+    iterator = iter(batches)
+    try:
+        first = next(iterator)
+    except StopIteration:
+        return _empty_frame()
+
+    try:
+        second = next(iterator)
+    except StopIteration:
+        return first
+
+    def _rest() -> Iterator[Any]:
+        yield first
+        yield second
+        yield from iterator
+
+    return _rest()
+
+
+def _empty_frame():
+    import pandas as pd
+
+    return pd.DataFrame()
+
+
+def _require(module: str, purpose: str):
+    """Import an optional dependency, or say plainly what to install."""
+    import importlib
+
+    try:
+        return importlib.import_module(module)
+    except ImportError as e:
+        package = module.split(".")[0]
+        raise ImportError(
+            f"{purpose} needs {package}. Install it with `pip install {package}`."
+        ) from e

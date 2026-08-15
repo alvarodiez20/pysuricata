@@ -126,4 +126,5 @@ _snapshot.tar.gz
 /stats.json
 /baseline.json
 /check.json
+/events.parquet
 _snap*.tar.gz

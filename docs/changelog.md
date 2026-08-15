@@ -7,6 +7,27 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.41] - 2026-08-15
+
+#66. Every source used to arrive as a pandas or polars frame, so profiling a
+Parquet file meant reading the whole thing into memory first — which
+contradicts the one claim the library is positioned on, for exactly the inputs
+where the claim matters most.
+
+### Added
+- **[Arrow, Parquet and DuckDB read without being materialised](data-sources.md).** `profile()` and `summarize()` now accept a `pyarrow` Table, RecordBatch, RecordBatchReader or Dataset, a DuckDB relation, and anything exporting the Arrow PyCapsule interface. A DuckDB relation is a query that has not run yet, so a filtered join across several Parquet files can be profiled without any of it ever existing as a frame.
+- **`pysuricata.sources`** with `stream_parquet()`, `stream_arrow()` and `stream_duckdb()`, for when you want the batches rather than a profile. `stream_parquet(..., columns=[...])` never decodes the columns it does not read.
+
+### Changed
+- **A Parquet path is read a batch at a time** rather than loaded whole, by both `profile()` and the CLI. Measured on a 4,000,000 × 6 frame in a 180 MB file, peak RSS above the import floor drops from **581 MB to 307 MB**, and stops rising with file size the way loading does.
+
+  A file that fits in one batch (under 65,536 rows) is still handed to the engine as a frame, so small files keep whole-frame type inference and classify exactly as before. Above that, a numeric column with few distinct values stays numeric rather than being reclassified as categorical — a stream cannot see distinct counts, and a leading run of one value would mislabel the column permanently. `profile(pd.read_parquet(path))` remains available when you want the old behaviour on a file that fits.
+
+Neither `pyarrow` nor `duckdb` is a runtime dependency. DuckDB is duck-typed on `fetch_record_batch`, so nothing imports it; the Parquet and Arrow readers need `pyarrow` and say so plainly if it is missing.
+
+### Measured, and open
+Memory is **exactly flat in rows for numeric columns** — 19 MB above the import floor at 500,000 rows and at 8,400,000 — and **not flat for string columns**, which reach 339 MB at 8.4M rows on a column with four distinct values. That is not a leak (`sys.getallocatedblocks()` is flat and the sketch state is constant); it is allocator churn from materialising fresh Python strings per batch. Filed with the measurements as [#95](https://github.com/alvarodiez20/pysuricata/issues/95), and it blocks the memory budget in #79.
+
 ## [0.0.40] - 2026-08-15
 
 #43 and #91. The payload becomes a contract that is checked rather than
