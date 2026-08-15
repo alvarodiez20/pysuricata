@@ -265,7 +265,7 @@ class DatetimeAccumulator:
         self._sample.add_many(vals.astype(np.float64))
 
         if self._monotonicity:
-            self._monotonicity.update(vals.astype(np.float64))
+            self._monotonicity.update(vals.astype(np.float64), all_finite=True)
 
         self._update_intervals(vals)
 

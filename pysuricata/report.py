@@ -40,6 +40,7 @@ from .logger import SectionTimer as _SectionTimer
 from .render.format_utils import human_bytes as _human_bytes
 from .render.html import render_empty_html as _render_empty_html
 from .render.html import render_html_snapshot as _render_html_snapshot
+from .render.identifier import looks_like_identifier as _looks_like_identifier
 
 
 class ReportOrchestrator:
@@ -236,8 +237,12 @@ class ReportOrchestrator:
             kind, acc = kinds_map[name]
             if kind == "numeric":
                 s = acc.finalize()
+                # The HTML names a key column; the payload has to as well, or a
+                # tool built on summarize() sees a strictly poorer view than a
+                # reader of the report does.
+                is_identifier = _looks_like_identifier(s)
                 columns_summary[name] = {
-                    "type": "numeric",
+                    "type": "identifier" if is_identifier else "numeric",
                     "count": s.count,
                     "missing": s.missing,
                     "unique_est": s.unique_est,
@@ -259,6 +264,9 @@ class ReportOrchestrator:
                     "corr_top": [
                         (str(other), float(r)) for other, r in (s.corr_top or [])
                     ],
+                    "mono_inc": bool(s.mono_inc),
+                    "mono_dec": bool(s.mono_dec),
+                    "int_like": bool(s.int_like),
                 }
             elif kind == "categorical":
                 s = acc.finalize()
