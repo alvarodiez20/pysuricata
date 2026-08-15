@@ -1,80 +1,157 @@
+/* =============================================================
+   pysuricata report — design tokens
+   Drop-in replacement for the token layer of _00-tokens.css.
+
+   Two scales that never mix:
+     --data-*  blue. Every chart, bar, histogram, segment.
+     --q-*     warm. Data quality only: pass, warning, fail.
+
+   Reason: the old palette assigned a hue per column type
+   (numeric/categorical/datetime/boolean) and the per-column cards
+   inherited it. Inside a card the type badge already names the type,
+   so the hue carried nothing — and it collided. Olive meant both
+   "categorical" and "passes"; rust meant both "boolean" and "fails".
+   A rust bar and a rust warning chip sat in the same card meaning
+   unrelated things. Data is now blue; type is a word.
+
+   Every light-mode pair below was measured. Ratios are noted inline.
+   Dark values are a proposal and need a contrast pass before shipping.
+
+   ONE DEPARTURE from the handoff, made because the contrast test caught it
+   on the first run: --rule-strong was specified as "container edge, axis
+   line", and those two want different things. A container edge is decorative
+   structure with no contrast minimum -- a hairline at 3:1 is a heavy black
+   line, which is the boxed look this palette exists to remove. A chart axis
+   is part of a graphic required to understand the content, so WCAG 1.4.11
+   applies to it and 3:1 does not. They are now two tokens: --rule-strong
+   stays a hairline at 1.6:1, and --axis clears 3:1 in both themes. The test
+   asserts the axis, not the hairline.
+   ============================================================= */
+
 #pysuricata-report {
-  --divider-dark: rgba(255, 255, 255, 0.12);
-  --divider-light: rgba(0, 0, 0, 0.08);
-  --chip-bg-dark: rgba(255, 255, 255, 0.08);
-  --chip-bg-light: rgba(0, 0, 0, 0.06);
-  --chip-br-dark: rgba(255, 255, 255, 0.12);
-  --chip-br-light: rgba(0, 0, 0, 0.08);
-  --scroll-track: rgba(0, 0, 0, 0.06);
-  --scroll-thumb: rgba(0, 0, 0, 0.28);
-  --divider: var(--divider-light);
-  --chip-bg: var(--chip-bg-light);
-  --chip-br: var(--chip-br-light);
-  --appbar-bg-light: rgba(249, 249, 249, 0.86);
-  --appbar-bg-dark: rgba(51, 51, 51, 0.90);
-  --appbar-bg: var(--appbar-bg-light);
-  --anchor-offset: 88px;
-  /* offset for in-page anchors under sticky header */
-  --triple-left: 240px;
-  --triple-right: 240px;
+  /* ---- surfaces & text ---------------------------------- */
+  --paper:        #FBF9F5;
+  --ink:          #22201C;  /* on paper 15.1:1 */
+  --ink-2:        #4A453D;  /* body prose, on paper 9.0:1 */
+  --muted:        #57524A;  /* captions, secondary figures, on paper 7.4:1 */
+  --rule:         #E2DCD1;  /* hairline between rows. on paper 1.3:1 */
+  --rule-strong:  #CFC7B8;  /* container edge. on paper 1.6:1 */
+  --axis:         #8F8474;  /* chart axis and ticks. on paper 3.5:1 */
+  --track:        #EDE6DA;  /* empty portion of a bar */
 
-  /* Accent color for interactive elements */
-  --accent-color: #3b82f6;
-  /* blue-500 */
+  /* ---- data: one hue, four steps ------------------------ */
+  --data-1:       #2C4A62;  /* largest share / emphasis. paper on it 8.8:1 */
+  --data-2:       #3E6280;  /* DEFAULT for every chart. paper on it 6.1:1 */
+  --data-3:       #7FA0B5;  /* second series. ink on it 5.7:1 */
+  --data-4:       #A8BECD;  /* third series. ink on it 8.5:1 */
 
-  /* Boolean Chart Theme Variables */
-  --chart-bg-light: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-  --chart-bg-dark: linear-gradient(135deg, #1f2937 0%, #111827 100%);
-  --chart-border-light: #e2e8f0;
-  --chart-border-dark: #374151;
-  --chart-shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --chart-shadow-dark: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
-  --chart-shadow-hover-light: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --chart-shadow-hover-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  /* Text colour to use ON each data step. */
+  --on-data-1:    var(--paper);
+  --on-data-2:    var(--paper);
+  --on-data-3:    var(--ink);
+  --on-data-4:    var(--ink);
 
-  --svg-bg-light: white;
-  --svg-bg-dark: #1f2937;
-  --svg-shadow-light: inset 0 2px 4px rgba(0, 0, 0, 0.06);
-  --svg-shadow-dark: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  /* ---- data quality: never used for data ---------------- */
+  --q-good:       #4A5D1E;  /* passes a check. on paper 5.1:1 */
+  --q-warn-text:  #8F6417;  /* warning AS TEXT. on paper 5.0:1 */
+  --q-warn-fill:  #A2731A;  /* warning AS FILL/BORDER. on paper 4.0:1 — clears the 3:1 non-text minimum, FAILS as text */
+  --q-bad:        #963F1C;  /* fails a check. on paper 6.6:1 */
 
-  --segment-stroke-light: rgba(255, 255, 255, 0.2);
-  --segment-stroke-dark: rgba(255, 255, 255, 0.1);
-  --segment-stroke-hover-light: rgba(255, 255, 255, 0.4);
-  --segment-stroke-hover-dark: rgba(255, 255, 255, 0.2);
+  /* ---- type ---------------------------------------------- */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
 
-  --segment-shadow-hover-light: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.15));
-  --segment-shadow-hover-dark: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
-  --segment-shadow-true-light: drop-shadow(0 4px 8px rgba(16, 185, 129, 0.3));
-  --segment-shadow-true-dark: drop-shadow(0 4px 8px rgba(16, 185, 129, 0.4));
-  --segment-shadow-false-light: drop-shadow(0 4px 8px rgba(239, 68, 68, 0.3));
-  --segment-shadow-false-dark: drop-shadow(0 4px 8px rgba(239, 68, 68, 0.4));
-  --segment-shadow-missing-light: drop-shadow(0 4px 8px rgba(107, 114, 128, 0.3));
-  --segment-shadow-missing-dark: drop-shadow(0 4px 8px rgba(107, 114, 128, 0.4));
-
-  --label-shadow-light: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --label-shadow-dark: 0 1px 2px rgba(0, 0, 0, 0.8);
-  --label-shadow-hover-light: 0 2px 4px rgba(0, 0, 0, 0.7);
-  --label-shadow-hover-dark: 0 2px 4px rgba(0, 0, 0, 0.9);
-
-  --legend-bg-light: rgba(255, 255, 255, 0.8);
-  --legend-bg-dark: rgba(31, 41, 55, 0.8);
-  --legend-bg-hover-light: rgba(255, 255, 255, 1);
-  --legend-bg-hover-dark: rgba(31, 41, 55, 1);
-  --legend-border-light: rgba(0, 0, 0, 0.1);
-  --legend-border-dark: rgba(255, 255, 255, 0.1);
-  --legend-shadow-hover-light: 0 2px 4px rgba(0, 0, 0, 0.1);
-  --legend-shadow-hover-dark: 0 2px 4px rgba(0, 0, 0, 0.3);
-  --legend-color-shadow-light: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --legend-color-shadow-dark: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --legend-text-light: #374151;
-  --legend-text-dark: #d1d5db;
+  /* ---- layout -------------------------------------------- */
+  --appbar-h:      52px;
+  --appbar-h-sm:   48px;
+  --tap-min:       44px;   /* every interactive target, both axes */
+  --anchor-offset: 60px;   /* in-page anchors under the sticky bar */
 }
 
+/* -------------------------------------------------------------
+   DARK MODE — PROPOSED, NOT YET VERIFIED.
+   Note the data scale reverses: bars now sit on a dark ground, so
+   the default chart fill becomes a light step.
+   ------------------------------------------------------------- */
 #pysuricata-report:not(.light) {
-  --scroll-track: rgba(255, 255, 255, 0.08);
-  --scroll-thumb: rgba(255, 255, 255, 0.32);
-  --divider: var(--divider-dark);
-  --chip-bg: var(--chip-bg-dark);
-  --chip-br: var(--chip-br-dark);
-  --appbar-bg: var(--appbar-bg-dark);
+  --paper:        #1C1A17;
+  --ink:          #F2EFE9;
+  --ink-2:        #D6D1C7;
+  --muted:        #A8A196;
+  --rule:         #332F29;
+  --rule-strong:  #46413A;
+  --axis:         #7A7165;  /* on the dark paper 3.6:1 */
+  --track:        #2A2721;
+
+  --data-1:       #A8BECD;
+  --data-2:       #7FA0B5;  /* default chart fill in dark mode */
+  --data-3:       #4A6E8A;
+  --data-4:       #2C4A62;
+
+  --on-data-1:    var(--paper);
+  --on-data-2:    var(--paper);
+  --on-data-3:    var(--ink);
+  --on-data-4:    var(--ink);
+
+  --q-good:       #A9C46C;
+  --q-warn-text:  #E0B057;
+  --q-warn-fill:  #C08A1E;
+  --q-bad:        #E08A63;
+}
+
+/* -------------------------------------------------------------
+   COMPATIBILITY SHIM
+   Maps the legacy variable names onto the new scale so existing
+   rules in _02-header.css … _13-utilities.css keep working while
+   the phases land. DELETE THIS BLOCK once every phase is done —
+   it is scaffolding, not part of the system.
+   ------------------------------------------------------------- */
+#pysuricata-report {
+  --divider:       var(--rule);
+  --divider-light: var(--rule);
+  --divider-dark:  var(--rule);
+  --chip-bg:       transparent;
+  --chip-bg-light: transparent;
+  --chip-bg-dark:  transparent;
+  --chip-br:       var(--rule-strong);
+  --chip-br-light: var(--rule-strong);
+  --chip-br-dark:  var(--rule-strong);
+  --appbar-bg:     var(--paper);
+  --border-color:  var(--rule-strong);
+  --accent-color:  var(--q-good);
+  --bar:           var(--data-2);
+  --axis-text:     var(--muted);
+  --scroll-track:  var(--track);
+  --scroll-thumb:  var(--rule-strong);
+}
+
+/* -------------------------------------------------------------
+   MISSING-VALUE SEVERITY — the one place data uses the warm scale,
+   because the encoding IS severity: Cabin at 77% should look worse
+   than Embarked at 0.2%.
+     >= 50%  --q-bad
+     >=  5%  --q-warn-fill
+     >   0%  --q-good
+     ==  0%  --muted
+   ------------------------------------------------------------- */
+
+/* -------------------------------------------------------------
+   CORRELATION STRENGTH — three steps of the data scale.
+   Sign is NOT a colour: it is encoded by which side of centre the
+   diverging bar sits on, and printed in the value.
+     |r| >= 0.9   --data-1
+     |r| >= 0.7   --data-2
+     |r| >= 0.5   --data-3
+     below        --data-4
+   ------------------------------------------------------------- */
+
+/* -------------------------------------------------------------
+   MICRO-LABEL — every section header and stat caption.
+   ------------------------------------------------------------- */
+#pysuricata-report .micro-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
 }

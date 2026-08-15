@@ -33,12 +33,19 @@ class DonutChartRenderer:
         if total == 0:
             return self._render_empty_donut()
 
-        # Define segments with colors matching existing CSS
+        # Steps of the data scale, not a hue per type. A type is a word --
+        # the legend says which is which -- and giving each one a hue made
+        # olive mean both "categorical" and "passes". Ordered by the scale so
+        # the largest share reads darkest once #112 sorts the segments.
         segments = [
-            {"label": "Numeric", "count": numeric, "color": "#4ea3f1"},
-            {"label": "Categorical", "count": categorical, "color": "#8ac926"},
-            {"label": "Datetime", "count": datetime, "color": "#ffca3a"},
-            {"label": "Boolean", "count": boolean, "color": "#ff595e"},
+            {"label": "Numeric", "count": numeric, "color": "var(--data-1, #2C4A62)"},
+            {
+                "label": "Categorical",
+                "count": categorical,
+                "color": "var(--data-2, #3E6280)",
+            },
+            {"label": "Datetime", "count": datetime, "color": "var(--data-3, #7FA0B5)"},
+            {"label": "Boolean", "count": boolean, "color": "var(--data-4, #A8BECD)"},
         ]
 
         return self._build_svg_donut(segments, total)

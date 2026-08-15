@@ -14,8 +14,8 @@ class TemporalChartRenderer:
         self,
         width: int = 400,
         height: int = 160,
-        bar_color: str = "#3b82f6",
-        bar_hover_color: str = "#60a5fa",
+        bar_color: str = "var(--data-2, #3E6280)",
+        bar_hover_color: str = "var(--data-1, #2C4A62)",
     ):
         """Initialize the temporal chart renderer.
 

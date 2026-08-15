@@ -135,26 +135,17 @@ class BooleanCardRenderer(CardRenderer):
         w_true = int(inner_w * (true_n / total))
         w_miss = max(0, inner_w - w_false - w_true)
 
-        # Enhanced SVG with better styling
+        # Flat fills from the data scale, and no gradient defs.
+        #
+        # `true` was green and `false` was red, which reads as good-versus-bad
+        # -- the report passing judgement on someone's data. `Survived` is the
+        # column that makes it obvious. Two values of one column get two steps
+        # of one hue; the labels say which is which. See #110.
+        #
+        # The drop-shadow filter goes with them: decoration on a bar whose
+        # length is the whole message. The card's layout is redesigned in #117.
         parts = [
             f'<svg class="bool-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">',
-            "<defs>",
-            '    <linearGradient id="trueGradient" x1="0%" y1="0%" x2="0%" y2="100%">',
-            '        <stop offset="0%" style="stop-color:#10b981;stop-opacity:1" />',
-            '        <stop offset="100%" style="stop-color:#059669;stop-opacity:1" />',
-            "    </linearGradient>",
-            '    <linearGradient id="falseGradient" x1="0%" y1="0%" x2="0%" y2="100%">',
-            '        <stop offset="0%" style="stop-color:#ef4444;stop-opacity:1" />',
-            '        <stop offset="100%" style="stop-color:#dc2626;stop-opacity:1" />',
-            "    </linearGradient>",
-            '    <linearGradient id="missingGradient" x1="0%" y1="0%" x2="0%" y2="100%">',
-            '        <stop offset="0%" style="stop-color:#6b7280;stop-opacity:1" />',
-            '        <stop offset="100%" style="stop-color:#4b5563;stop-opacity:1" />',
-            "    </linearGradient>",
-            '    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">',
-            '        <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.1"/>',
-            "    </filter>",
-            "</defs>",
         ]
 
         x = margin
@@ -164,7 +155,7 @@ class BooleanCardRenderer(CardRenderer):
             false_pct = (false_n / total) * 100.0
             parts.append(
                 f'<rect class="seg false enhanced" x="{x}" y="{margin}" width="{w_false}" height="{seg_h}" '
-                f'fill="url(#falseGradient)" filter="url(#shadow)" rx="4" ry="4" '
+                f'fill="var(--data-4, #A8BECD)" '
                 f'data-count="{false_n:,}" data-percentage="{false_pct:.1f}%" '
                 f'data-type="false">'
                 f"<title>False: {false_n:,} ({false_pct:.1f}%)</title>"
@@ -188,7 +179,7 @@ class BooleanCardRenderer(CardRenderer):
             true_pct = (true_n / total) * 100.0
             parts.append(
                 f'<rect class="seg true enhanced" x="{x}" y="{margin}" width="{w_true}" height="{seg_h}" '
-                f'fill="url(#trueGradient)" filter="url(#shadow)" rx="4" ry="4" '
+                f'fill="var(--data-2, #3E6280)" '
                 f'data-count="{true_n:,}" data-percentage="{true_pct:.1f}%" '
                 f'data-type="true">'
                 f"<title>True: {true_n:,} ({true_pct:.1f}%)</title>"
@@ -212,7 +203,7 @@ class BooleanCardRenderer(CardRenderer):
             miss_pct = (miss / total) * 100.0
             parts.append(
                 f'<rect class="seg missing enhanced" x="{x}" y="{margin}" width="{w_miss}" height="{seg_h}" '
-                f'fill="url(#missingGradient)" filter="url(#shadow)" rx="4" ry="4" '
+                f'fill="var(--track, #EDE6DA)" '
                 f'data-count="{miss:,}" data-percentage="{miss_pct:.1f}%" '
                 f'data-type="missing">'
                 f"<title>Missing: {miss:,} ({miss_pct:.1f}%)</title>"

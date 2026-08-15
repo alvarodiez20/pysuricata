@@ -617,7 +617,7 @@
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .stat-item.severity-medium {
-  border-color: #3b82f6;
+  border-color: var(--data-1);
   background: rgba(59, 130, 246, 0.05);
 }
 
@@ -936,7 +936,7 @@
 }
 
 #pysuricata-report .missing-per-chunk-simple .summary-item.severity-medium {
-  color: #3b82f6;
+  color: var(--data-1);
 }
 
 #pysuricata-report .missing-per-chunk-simple .summary-item.severity-low {
@@ -2250,7 +2250,7 @@
 #pysuricata-report .no-chunk-data-state .icon {
   font-size: 3rem;
   margin-bottom: 1rem;
-  color: #3b82f6;
+  color: var(--data-1);
 }
 
 #pysuricata-report .no-chunk-data-state p {

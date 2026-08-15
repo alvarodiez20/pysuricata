@@ -242,17 +242,17 @@
 }
 
 #pysuricata-report .missing-fill.low {
-  background: linear-gradient(to right, #4ea3f1, #5db3ff);
+  background: var(--data-1);
   box-shadow: 0 1px 3px rgba(78, 163, 241, 0.4);
 }
 
 #pysuricata-report .missing-fill.medium {
-  background: linear-gradient(to right, #f1c54e, #f5d165);
+  background: var(--q-warn-fill);
   box-shadow: 0 1px 3px rgba(241, 197, 78, 0.4);
 }
 
 #pysuricata-report .missing-fill.high {
-  background: linear-gradient(to right, #f15e4e, #f57365);
+  background: var(--q-bad);
   box-shadow: 0 1px 3px rgba(241, 94, 78, 0.4);
 }
 
@@ -342,22 +342,22 @@
 }
 
 #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(1)::before {
-  background: #4ea3f1;
+  background: var(--data-1);
 }
 
 /* Numeric */
 #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(2)::before {
-  background: #8ac926;
+  background: var(--q-good);
 }
 
 /* Categorical */
 #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(3)::before {
-  background: #ffca3a;
+  background: var(--q-warn-fill);
 }
 
 /* Datetime */
 #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(4)::before {
-  background: #ff595e;
+  background: var(--q-bad);
 }
 
 /* Boolean */

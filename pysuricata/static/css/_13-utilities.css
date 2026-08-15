@@ -203,7 +203,7 @@
 #pysuricata-report .details-toggle:focus-visible,
 #pysuricata-report .details-section .tabs [role="tab"]:focus-visible,
 #pysuricata-report .btn-soft:focus-visible {
-  outline: 2px solid #4ea3f1;
+  outline: 2px solid var(--data-1);
   outline-offset: 2px;
   border-radius: 4px;
 }

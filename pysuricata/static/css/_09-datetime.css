@@ -355,9 +355,9 @@
 
 /* Bar styling with smooth transitions */
 #pysuricata-report .temporal-chart .bar {
-  fill: #3b82f6;
+  fill: var(--data-1);
   fill-opacity: 0.8;
-  stroke: #3b82f6;
+  stroke: var(--data-1);
   stroke-width: 1;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -365,7 +365,7 @@
 }
 
 #pysuricata-report .temporal-chart .bar:hover {
-  fill: #60a5fa;
+  fill: var(--data-1);
   fill-opacity: 1;
   stroke: #2563eb;
   stroke-width: 1.5;

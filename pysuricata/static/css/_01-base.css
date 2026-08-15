@@ -1,27 +1,31 @@
 body.suricata-standalone {
   margin: 0;
-  background-color: #f9f9f9;
-  /* default to light */
+  background-color: var(--paper, #FBF9F5);
   transition: background-color 0.3s ease;
 }
 
+/* The standalone body sits outside #pysuricata-report, so it cannot read the
+   report's tokens. These two literals are the only place in the stylesheet
+   that has to repeat a palette value; they mirror --paper in each theme. */
 body.suricata-standalone:not(.light) {
-  background-color: #333;
-  /* match dark theme */
+  background-color: #1C1A17;
 }
 
 
 #pysuricata-report {
-  font-family: Arial, sans-serif;
+  /* Prose, headings and UI labels. Every figure, column name, dtype, axis
+     label and code token uses --font-mono instead: columns of digits then
+     align without font-variant-numeric hacks. */
+  font-family: var(--font-sans);
   margin: 20px;
-  background-color: #333;
-  color: #f9f9f9;
+  background-color: var(--paper);
+  color: var(--ink);
   transition: background-color 0.3s, color 0.3s;
 }
 
 #pysuricata-report.light {
-  background-color: #f9f9f9;
-  color: #333;
+  background-color: var(--paper);
+  color: var(--ink);
 }
 
 #pysuricata-report h1 {
@@ -29,18 +33,17 @@ body.suricata-standalone:not(.light) {
   margin: 0;
 }
 
-/* Global links (content areas). Header nav overrides these to inherit. */
+/* Global links (content areas). Header nav overrides these to inherit.
+   One colour for both themes: --data-1 is the data hue's darkest step in
+   light mode and its lightest in dark, so it reads as a link against either
+   ground without a second declaration. */
 #pysuricata-report a {
-  color: #1e90ff;
+  color: var(--data-1);
   text-decoration: none;
 }
 
 #pysuricata-report a:hover {
   text-decoration: underline;
-}
-
-#pysuricata-report:not(.light) a {
-  color: #4ea3f1;
 }
 
 /* Tables */

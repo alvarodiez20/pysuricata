@@ -29,14 +29,18 @@ class HistogramConfig:
     margin_top: int = 20
     margin_bottom: int = 40
 
-    # Bar styling - Professional Blue
-    bar_color: str = "#3b82f6"
-    bar_opacity: float = 0.95
-    bar_stroke: str = "#1d4ed8"
+    # Bar styling. The colour is a token, not a literal: the SVG is inline in
+    # the report, so the custom property cascades into it and dark mode works
+    # without a second copy of the chart. The hex after the comma is the CSS
+    # fallback, used only if a renderer will not substitute var() inside a
+    # presentation attribute.
+    bar_color: str = "var(--data-2, #3E6280)"
+    bar_opacity: float = 1.0
+    bar_stroke: str = "none"
     bar_stroke_width: float = 0
 
     # Axis styling
-    axis_color: str = "#666"
+    axis_color: str = "var(--axis, #8F8474)"
     axis_stroke_width: float = 1.0
     tick_length: int = 5
 

@@ -129,18 +129,18 @@
 /* Active state - shows current section */
 #pysuricata-report .quick a.active {
   background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  color: var(--data-1);
   text-decoration: none;
 }
 
 #pysuricata-report:not(.light) .quick a.active {
   background: rgba(59, 130, 246, 0.12);
-  color: #60a5fa;
+  color: var(--data-1);
 }
 
 /* Focus state - accessibility */
 #pysuricata-report .quick a:focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid var(--data-1);
   outline-offset: 2px;
 }
 
@@ -190,7 +190,7 @@
 }
 
 #pysuricata-report .icon-btn:focus-visible {
-  outline: 2px solid #4ea3f1;
+  outline: 2px solid var(--data-1);
   outline-offset: 2px;
 }
 
