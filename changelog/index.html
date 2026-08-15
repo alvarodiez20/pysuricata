@@ -1758,6 +1758,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#0043-2026-08-15" class="md-nav__link">
+    <span class="md-ellipsis">
+      [0.0.43] - 2026-08-15
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="[0.0.43] - 2026-08-15">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#removed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Removed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0042-2026-08-15" class="md-nav__link">
     <span class="md-ellipsis">
       [0.0.42] - 2026-08-15
@@ -1803,6 +1827,14 @@
 
 <h1 id="changelog">Changelog</h1>
 <p>All notable changes to PySuricata are documented here.</p>
+<h2 id="0043-2026-08-15">[0.0.43] - 2026-08-15</h2>
+<h3 id="removed">Removed</h3>
+<ul>
+<li><strong><code>scripts/create_ux_issues.py</code> and <code>docs/UX_ISSUES.md</code>.</strong> The twenty-two UX findings they carried are now GitHub issues, which is where a backlog belongs — an issue can be closed, commented on, and linked from a commit; a Python file holding issue bodies can only go stale. Everything in them was re-checked against 0.0.42 before filing: two were folded into existing issues (#39, #41) rather than duplicated, and one had to be corrected, because it claimed the sample-size knob was unreachable when it is reachable under a different name.</li>
+</ul>
+<p>No library change. <code>benchmarks/check_docs.py</code> drops <code>UX_ISSUES.md</code> from its
+list of planning documents to skip, and repository lint is clean again — the
+generator was the one file failing <code>ruff check</code>.</p>
 <h2 id="0042-2026-08-15">[0.0.42] - 2026-08-15</h2>
 <h1 id="95-and-33-the-bounded-memory-claim-now-holds-for-text-columns-and-row">95 and #33. The bounded-memory claim now holds for text columns, and row</h1>
 <p>signatures stop being re-hashed through a lossy conversion.</p>
@@ -2038,7 +2070,7 @@ down from 1,278.</p>
 <li><strong>Monotonicity detection is a sign test on <code>np.diff</code></strong> rather than a Python loop over every value: 45.2 -&gt; 0.6 ns/value in situ, 64x on the isolated kernel. The pair straddling a chunk boundary is compared against the carried last value, so chunked and unchunked results still agree.</li>
 <li><strong>The extreme-value heaps are the right way round.</strong> Keeping the k smallest values means evicting the largest, which is a max-heap's job; the code used a min-heap and made up the difference with an O(k) <code>max()</code> scan, a linear search for the matching entry and a full <code>heapify</code> on every insert — O(k log k) per value on a structure whose purpose is O(log k) inserts. Now <code>heappushpop</code>. Measured flat at the default k=5, where the scan was over five items; the point is that it no longer degrades as <code>max_extremes</code> rises.</li>
 </ul>
-<h3 id="removed">Removed</h3>
+<h3 id="removed_1">Removed</h3>
 <ul>
 <li><strong>The second reservoir in <code>OutlierDetector</code>.</strong> Every numeric column built one and fed it 10,000 sampled values on every chunk — and nothing ever read it: <code>detect_outliers()</code> has no caller, and the outlier counts in the report are computed in <code>finalize()</code> from the accumulator's own sample. The class stays (it is exported, and its detection methods work); it is simply no longer wired into the accumulator. Worth 2.5% of the numeric path and 10,000 floats per numeric column.</li>
 </ul>
@@ -2060,7 +2092,7 @@ since 0.0.26 on the same machine: <strong>2.31x</strong>.</p>
 <h2 id="0028-2026-08-15">[0.0.28] - 2026-08-15</h2>
 <p><strong>1.29x faster on mixed 200,000 x 14</strong> (1,517 ms -&gt; 1,175 ms), and two numeric
 cards now say nothing where they used to say something untrue.</p>
-<h3 id="removed_1">Removed</h3>
+<h3 id="removed_2">Removed</h3>
 <ul>
 <li><strong>The "Common values" table no longer appears on high-cardinality numeric columns.</strong> Misra-Gries ran on every numeric column unconditionally, so a column of 200,923 distinct floats rendered a ranked table of values that had occurred <em>once</em>. Top-k is now gated on the distinct estimate and fed only while its answer could carry information; the gate latches off and discards its partial counts, so the table a column gets does not depend on how it was chunked. Columns with fewer distinct values than counters, and columns the counters can meaningfully cover, are unaffected. This is also 34% of the numeric accumulator.</li>
 <li><strong>A fallback in <code>NumericAccumulator.finalize()</code> that invented common values.</strong> When the sketch returned fewer than five entries it recomputed them from the reservoir sample and multiplied the counts by the sampling ratio "to represent the full dataset" — reporting a value that occurred once as having occurred <code>sample_scale</code> times, formatted in the report exactly like a measured count. It also overrode the <em>exact</em> counters on any column with fewer than five distinct values, replacing a correct answer with an estimate. An absent table is the honest output when nothing is common.</li>
@@ -2085,7 +2117,7 @@ cards now say nothing where they used to say something untrue.</p>
 <li><strong><code>Accumulator.update()</code> crashed on numpy arrays and pandas Series.</strong> The categorical, datetime and boolean accumulators guarded with <code>if not arr</code>, which raises <code>ValueError: truth value of an array ... is ambiguous</code> for exactly the array types the library passes internally — the categorical path even converts its input to a Series on the next line. Now guarded on length, as the numeric accumulator already was.</li>
 <li><strong><code>NumericAccumulator.reset()</code> raised <code>AttributeError</code> on the default configuration.</strong> It called <code>reset()</code> on three components that had none (<code>StreamingMoments</code>, <code>OutlierDetector</code>, <code>PerformanceMetrics</code>), two of which are enabled by default. Those methods now exist, and <code>reset()</code> also clears chunk metadata, which it was leaving in place for the next run to append to.</li>
 </ul>
-<h3 id="removed_2">Removed</h3>
+<h3 id="removed_3">Removed</h3>
 <ul>
 <li><strong><code>NumericCardRenderer._simulate_chunk_distribution</code></strong> — dead code with no caller in the render path that fabricated plausible-looking chunk sizes and missing-value counts from a global-RNG draw. Invented data has no place in a report, and this was the last thing in the package touching the stdlib <code>random</code> module.</li>
 </ul>
@@ -2256,7 +2288,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>No regression</strong> — Report generation is ~15% faster (0.045s vs 0.053s avg on Titanic dataset, 891 rows × 12 cols)</li>
 <li>Template substitution makes one pass over the document instead of 34, and duplicate-column renaming uses a shallow copy rather than deep-copying the frame</li>
 </ul>
-<h3 id="removed_3">Removed</h3>
+<h3 id="removed_4">Removed</h3>
 <ul>
 <li><code>style.css</code> (monolithic), <code>style.css.backup</code>, <code>style_updated.css</code>, <code>chart.min.js</code>, <code>functionality.js.backup</code>, <code>cards_new.py</code></li>
 </ul>
@@ -2291,7 +2323,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Removed <code>.claude/skills</code></strong> — Cleaned up unused skill symlinks</li>
 <li><strong>Documentation improvements</strong> — Rewrote API reference, complexity analysis, quality flags (tables), stats overview</li>
 </ul>
-<h3 id="removed_4">Removed</h3>
+<h3 id="removed_5">Removed</h3>
 <ul>
 <li><strong><code>report_preview.png</code></strong> — Replaced with link to live interactive report on GitHub Pages</li>
 <li>Stale dates from stats documentation pages</li>
