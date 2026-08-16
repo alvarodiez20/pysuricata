@@ -234,8 +234,8 @@ class AdaptiveChunker:
         # never produced the behaviour it documented: asking for 50,000 rows
         # silently gave something else, which makes chunk-dependent behaviour
         # impossible to reason about or test.
-        if requested_size:
-            return max(self.min_chunk_size, min(requested_size, self.max_chunk_size))
+        if requested_size > 0:
+            return requested_size
 
         # No size requested: size it from the data.
         return self.adaptive_chunk_size(source)
