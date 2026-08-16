@@ -238,6 +238,15 @@ class TemporalChartRenderer:
             f'stroke="var(--axis, #8F8474)" stroke-width="1.5" />'
         )
 
+        # The y unit, stated once. These charts count records per bucket, and
+        # nothing on them said so -- a reader could as easily have taken the
+        # axis for a share, or for the values of the column itself.
+        svg_parts.append(
+            f'<text class="unit-label" x="{ml}" y="{mt - 7}" text-anchor="start" '
+            f'font-family="var(--font-mono)" font-size="10" letter-spacing="0.12em" '
+            f'fill="var(--muted, #57524A)">RECORDS</text>'
+        )
+
         # Y-axis labels
         for tick in y_ticks:
             y = mt + inner_h * (1 - tick / max_count)
