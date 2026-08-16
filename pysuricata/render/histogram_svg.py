@@ -458,6 +458,20 @@ class SVGHistogramRenderer:
         if value == 0:
             return "0"
 
+        # A count label is guaranteed four glyphs, not merely encouraged to be
+        # short. The y gutter is a fixed 44px -- 27px of 11px mono, a 5px tick
+        # and 8px of air -- so that the plot's left edge does not move between
+        # columns and bars line up down the page. A five-glyph label either
+        # overflows that or forces the gutter to breathe, and a gutter that
+        # breathes loses the alignment the fixed one buys.
+        #
+        # This used to `prefer` short: `12,500` came out as six glyphs and
+        # `12.5M` as five. Nobody reads seven significant figures off an axis,
+        # and the exact peak is printed in the caption line, so abbreviating
+        # costs nothing.
+        if is_count:
+            return self._format_count_in_four_glyphs(value)
+
         # Beyond this an axis label stops being readable as a quantity and
         # starts being a ruler: `-2,000,000,000,000,000` is 22 characters, wide
         # enough to collide with its neighbours and too long to take in at a
@@ -473,31 +487,72 @@ class SVGHistogramRenderer:
                     )
                     return f"{text}{suffix}"
 
-        if is_count:
-            # For histogram counts (y-axis), always format as integers
-            if abs(value) >= 1000:
-                return f"{int(value):,}"
-            else:
-                return f"{int(value)}"
-        else:
-            # For data values (x-axis)
-            # Check if value is effectively an integer
-            if abs(value - round(value)) < 1e-9:
-                int_val = int(round(value))
-                if abs(int_val) >= 1000:
-                    return f"{int_val:,}"
-                else:
-                    return f"{int_val}"
+        # An x label is a data value, not a count. It gets no glyph budget: it
+        # lives in the caption row, which is as wide as the plot.
+        if abs(value - round(value)) < 1e-9:
+            int_val = int(round(value))
+            return f"{int_val:,}" if abs(int_val) >= 1000 else f"{int_val}"
 
-            # Non-integer values
-            if abs(value) >= 1e6 or (abs(value) < 1e-3 and value != 0):
-                return fmt_compact_scientific(value)
-            elif abs(value) >= 1000:
-                return f"{value:,.1f}"
-            elif abs(value) >= 1:
-                return f"{value:.1f}"
-            else:
-                return f"{value:.3f}"
+        if abs(value) >= 1e6 or (abs(value) < 1e-3 and value != 0):
+            return fmt_compact_scientific(value)
+        if abs(value) >= 1000:
+            return f"{value:,.1f}"
+        if abs(value) >= 1:
+            return f"{value:.1f}"
+        return f"{value:.3f}"
+
+    #: Largest first. int64 tops out near 9.2e18, so `E` is the last band a
+    #: row count can reach.
+    _COUNT_BANDS = (
+        (1e18, "E"),
+        (1e15, "P"),
+        (1e12, "T"),
+        (1e9, "B"),
+        (1e6, "M"),
+        (1e3, "K"),
+    )
+
+    def _format_count_in_four_glyphs(self, value: float) -> str:
+        """A row count in at most four characters, always.
+
+        The rules that make the bound hold, each of which a plausible-looking
+        implementation gets wrong:
+
+        * **No thousands separator under 10,000.** `1,000` is five glyphs;
+          `1000` is four.
+        * **One decimal only below 10.** `12.5K` is five glyphs, so anything
+          that scales to 10 or more rounds to a whole number: 12,700 is `13K`.
+          (12,500 is `12K`, not `13K` -- Python rounds halves to even. That is
+          fine for an axis label and would not be for a total.)
+        * **Promote when rounding overflows the band.** 999,999 scales to
+          999.999 in the `K` band and rounds to 1000, which would print
+          `1000K`. It belongs in the next band up, as `1.0M`.
+        """
+        sign = "-" if value < 0 else ""
+        magnitude = abs(value)
+
+        if magnitude < 10_000:
+            return f"{sign}{int(round(magnitude))}"
+
+        for index, (limit, suffix) in enumerate(self._COUNT_BANDS):
+            if magnitude < limit:
+                continue
+            scaled = magnitude / limit
+            if scaled < 10 and abs(scaled - round(scaled)) >= 0.05:
+                return f"{sign}{scaled:.1f}{suffix}"
+            whole = int(round(scaled))
+            if whole >= 1000 and index > 0:
+                # Rounding pushed it into the band above.
+                bigger_limit, bigger_suffix = self._COUNT_BANDS[index - 1]
+                promoted = magnitude / bigger_limit
+                if promoted < 10 and abs(promoted - round(promoted)) >= 0.05:
+                    return f"{sign}{promoted:.1f}{bigger_suffix}"
+                return f"{sign}{int(round(promoted))}{bigger_suffix}"
+            return f"{sign}{whole}{suffix}"
+
+        # Unreachable for any finite count: 10,000 is already above the
+        # smallest band. Kept so the function is total.
+        return f"{sign}{int(round(magnitude))}"
 
     def _render_axes(
         self, hist_data: HistogramData, inner_width: int, inner_height: int
