@@ -200,6 +200,7 @@ attr::Tue::count	120
 attr::Tue::pct	13.5
 attr::Wed::count	120
 attr::Wed::pct	13.5
+attr::col_age::count	0
 attr::col_age::count	10
 attr::col_age::count	10
 attr::col_age::count	10
@@ -370,6 +371,7 @@ attr::col_age::count	95
 attr::col_age::count	95
 attr::col_age::count	98
 attr::col_age::count	98
+attr::col_age::pct	0
 attr::col_age::pct	0.3
 attr::col_age::pct	0.3
 attr::col_age::pct	0.3
@@ -621,6 +623,7 @@ attr::col_fare::count	25
 attr::col_fare::count	256
 attr::col_fare::count	26
 attr::col_fare::count	26
+attr::col_fare::count	26
 attr::col_fare::count	27
 attr::col_fare::count	27
 attr::col_fare::count	27
@@ -812,6 +815,7 @@ attr::col_fare::pct	2.2
 attr::col_fare::pct	2.8
 attr::col_fare::pct	2.9
 attr::col_fare::pct	2.9
+attr::col_fare::pct	2.9
 attr::col_fare::pct	21.3
 attr::col_fare::pct	21.8
 attr::col_fare::pct	22.2
@@ -866,6 +870,18 @@ attr::col_fare::pct	7.6
 attr::col_fare::pct	7.9
 attr::col_fare::pct	8.2
 attr::col_fare::pct	9.1
+attr::col_fare::value	130.401531111
+attr::col_fare::value	130.566829599
+attr::col_fare::value	133.496447433
+attr::col_fare::value	139.38010157
+attr::col_fare::value	139.554509291
+attr::col_fare::value	140.524465311
+attr::col_fare::value	142.781603204
+attr::col_fare::value	147.599808193
+attr::col_fare::value	147.80384909
+attr::col_fare::value	162.402632192
+attr::col_fare::value	166.076141713
+attr::col_fare::value	176.265539114
 kv::::booked 311	56
 kv::::columns	8
 kv::::duplicates	0
@@ -933,13 +949,9 @@ kv::col_empty::empty or zero	0
 kv::col_empty::unique	0
 kv::col_fare::10ᵗʰ	24.93
 kv::col_fare::2ⁿᵈ	116.6
-kv::col_fare::2ⁿᵈ	406
 kv::col_fare::3ʳᵈ	12.02
-kv::col_fare::3ʳᵈ	659
 kv::col_fare::4ᵗʰ	126.2
-kv::col_fare::4ᵗʰ	679
 kv::col_fare::5ᵗʰ	14.37
-kv::col_fare::5ᵗʰ	248
 kv::col_fare::6ᵗʰ	15.02
 kv::col_fare::7ᵗʰ	18.88
 kv::col_fare::8ᵗʰ	21.04
@@ -971,7 +983,6 @@ kv::col_fare::q1 (p25)	19.08
 kv::col_fare::q3 (p75)	54.23
 kv::col_fare::q3 (p75)	54.23
 kv::col_fare::range	175.9
-kv::col_fare::severity 1ˢᵗ	307
 kv::col_fare::skew	1.307
 kv::col_fare::std dev	28.4
 kv::col_fare::std dev	28.4

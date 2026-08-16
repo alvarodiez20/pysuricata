@@ -1711,6 +1711,12 @@
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
   font-size: 12px;
+  /* A grid item's `min-width` is `auto`, so it refuses to shrink below its
+     own content and pushes the track wider instead. At 390px that made
+     `extreme · 48.6x` overflow the pane by 11px and the whole card scroll
+     sideways. `min-width: 0` lets it wrap into the column it was given. */
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 #pysuricata-report .fence-table__idx {
@@ -1775,8 +1781,20 @@
 
   #pysuricata-report .fence-table__head,
   #pysuricata-report .fence-table__row {
-    grid-template-columns: 48px 72px 1fr 1fr;
+    grid-template-columns: 40px minmax(0, 68px) minmax(0, 1fr) minmax(0, 1fr);
     gap: 8px;
+  }
+
+  /* The cluster counts go, the fence label stays.
+
+     The renderer already thins them out, but it works in percentages of an
+     axis whose width it cannot know: a 7% gap is 77px at a 1,099px track and
+     16px at 224px, which is narrower than the label it is meant to clear. So
+     the width-dependent half of the decision is made here, the same split the
+     histogram's tick tiers use -- and nothing is lost, because each capsule
+     keeps its values in `title` and the table lists them. */
+  #pysuricata-report .fence__count {
+    display: none;
   }
 }
 
