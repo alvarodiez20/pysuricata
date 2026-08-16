@@ -85,7 +85,11 @@ class DateTimeCardRenderer(CardRenderer):
 
         if flags.missing:
             severity = "bad" if miss_pct > 20 else "warn"
-            flag_items.append(f'<li class="flag {severity}">Missing</li>')
+            threshold = ">20%" if miss_pct > 20 else "≤20%"
+            flag_items.append(
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{miss_pct:.1f}%">Missing</li>'
+            )
 
         if flags.monotonic_increasing:
             flag_items.append('<li class="flag good">Monotonic ↑</li>')
@@ -800,7 +804,11 @@ class DateTimeCardRenderer(CardRenderer):
                     "missing",
                     "Missing Values",
                     f'<div class="sub">{missing_table}</div>',
-                    int(getattr(stats, "missing", 0) or 0) > 0,
+                    # Same rule as every other card kind: the pane only knows
+                    # something the card face does not when there is more than
+                    # one chunk -- where in the read the gaps fall.
+                    int(getattr(stats, "missing", 0) or 0) > 0
+                    and len(getattr(stats, "chunk_metadata", None) or []) > 1,
                 ),
             ],
         )

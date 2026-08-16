@@ -193,7 +193,6 @@ class MissingValuesHeatmapRenderer:
         return """
         <div class="missing-values-heatmap no-missing">
             <div class="success-message">
-                <span class="icon">✓</span>
                 <span class="message">No missing values detected in any column!</span>
             </div>
         </div>

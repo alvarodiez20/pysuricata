@@ -119,7 +119,9 @@ class CategoricalCardRenderer(CardRenderer):
         miss_cls = "crit" if miss_pct > 20 else ("warn" if miss_pct > 0 else "")
 
         quality_flags = self.quality_assessor.assess_categorical_quality(stats)
-        quality_flags_html = self._build_quality_flags_html(quality_flags, miss_pct)
+        quality_flags_html = self._build_quality_flags_html(
+            quality_flags, miss_pct, stats
+        )
 
         # Compute derived stats
         cat_stats = self._compute_categorical_stats(stats)
@@ -155,6 +157,11 @@ class CategoricalCardRenderer(CardRenderer):
             norm_tab_btn,
             norm_tab_pane,
             missing_table,
+            # NOT gated on chunk count, unlike the numeric and datetime
+            # cards. `html.py` calls `finalize()` without chunk metadata for
+            # this kind, so the accumulator has none to give -- gating on it
+            # would hide the pane permanently rather than tighten the rule.
+            # See #193.
             has_missing=int(getattr(stats, "missing", 0) or 0) > 0,
         )
         controls_html = self._build_controls_section(col_id, topn_list, default_topn)
@@ -179,12 +186,26 @@ class CategoricalCardRenderer(CardRenderer):
         safe_mode_label = self.safe_html_escape(str(mode_label))
         mode_pct = (mode_n / max(1, total)) * 100.0 if total else 0.0
 
-        # Entropy calculation
-        if total > 0 and items:
+        # Every figure below is computed from the top-k sketch, and the sketch
+        # can legitimately come back **empty**. Misra-Gries only guarantees a
+        # value survives if it appears more than n/(k+1) times; `Cabin` has 204
+        # values over 147 distinct levels and its most frequent appears 4
+        # times, against a threshold of exactly 4. Nothing qualifies, so the
+        # sketch is empty -- and it is *right* to be empty.
+        #
+        # What was wrong is what the card did with that. `entropy` became
+        # `float("nan")` and rendered as the literal `NaN`, while `Rare levels`
+        # and `Top 5 coverage` fell through to their zero initialisers and
+        # printed `0 (0.0%)` and `0.0%` -- three statistics stating a fact
+        # about the column, when the truth is that this column has no heavy
+        # hitters to compute them from. Unknown is not zero.
+        tracked = bool(items) and total > 0
+
+        if tracked:
             probs = [c / total for _, c in items]
             entropy = float(-sum(p * math.log2(max(p, 1e-12)) for p in probs))
         else:
-            entropy = float("nan")
+            entropy = None
 
         # Rare levels analysis
         rare_count = 0
@@ -210,11 +231,12 @@ class CategoricalCardRenderer(CardRenderer):
         empty_cls = "warn" if empty_zero > 0 else ""
 
         return {
+            "tracked": tracked,
             "mode_label": mode_label,
             "safe_mode_label": safe_mode_label,
             "mode_n": int(mode_n),
             "mode_pct": float(mode_pct),
-            "entropy": float(entropy),
+            "entropy": entropy,
             "rare_count": int(rare_count),
             "rare_cov": float(rare_cov),
             "rare_cls": rare_cls,
@@ -225,7 +247,9 @@ class CategoricalCardRenderer(CardRenderer):
             "unique_est": int(getattr(stats, "unique_est", 0)),
         }
 
-    def _build_quality_flags_html(self, flags: QualityFlags, miss_pct: float) -> str:
+    def _build_quality_flags_html(
+        self, flags: QualityFlags, miss_pct: float, stats: CategoricalStats
+    ) -> str:
         """The chips, with the number each one already knows on its face.
 
         `_quality_flags_markup` builds them; this puts the value on the
@@ -234,17 +258,39 @@ class CategoricalCardRenderer(CardRenderer):
         markup, and the annotation lives in one place rather than being
         repeated at every one of them.
         """
-        return annotate_flags(self._quality_flags_markup(flags, miss_pct))
+        return annotate_flags(self._quality_flags_markup(flags, miss_pct, stats))
 
-    def _quality_flags_markup(self, flags: QualityFlags, miss_pct: float) -> str:
-        """Build quality flags HTML for categorical data."""
+    def _quality_flags_markup(
+        self,
+        flags: QualityFlags,
+        miss_pct: float,
+        stats: CategoricalStats | None = None,
+    ) -> str:
+        """Build quality flags HTML for categorical data.
+
+        A chip carries `data-value` only where the number reads as a prefix to
+        the label -- `annotate_flags` renders the face as `{value} {label}`, so
+        the test is whether the result is a sentence.
+
+        `19.9% missing` and `12 empty strings` pass. `72% high cardinality` and
+        `31.2% many rare levels` do not: those need a phrase rather than a
+        prefix, and inventing one would be worse than the word on its own. They
+        stay bare deliberately, not by omission.
+        """
         flag_items = []
 
         if flags.high_cardinality:
             flag_items.append('<li class="flag warn">High cardinality</li>')
 
         if flags.dominant_category:
-            flag_items.append('<li class="flag warn">Dominant category</li>')
+            share = self._dominant_share(stats)
+            if share is None:
+                flag_items.append('<li class="flag warn">Dominant category</li>')
+            else:
+                flag_items.append(
+                    f'<li class="flag warn" data-threshold="one level dominates" '
+                    f'data-value="{share:.1f}%">Dominant category</li>'
+                )
 
         if flags.many_rare_levels:
             flag_items.append('<li class="flag warn">Many rare levels</li>')
@@ -256,17 +302,51 @@ class CategoricalCardRenderer(CardRenderer):
             flag_items.append('<li class="flag">Trim variants</li>')
 
         if flags.empty_strings:
-            flag_items.append('<li class="flag">Empty strings</li>')
+            # "Empty or zero", not "Empty strings". The accumulator counts
+            # `value == "" or value == "0"`, and putting the number on the chip
+            # is what made that visible: titanic's `SibSp` and `Parch` profile
+            # as categorical and rendered `608 empty strings` and `678 empty
+            # strings`, when what they have is 608 and 678 *zeros* and not one
+            # empty string between them. The vague label had been hiding a
+            # false one.
+            empty = int(getattr(stats, "empty_zero", 0) or 0) if stats else 0
+            if empty > 0:
+                flag_items.append(
+                    f'<li class="flag" data-threshold=\'empty string or "0"\' '
+                    f'data-value="{empty:,}">Empty or zero</li>'
+                )
+            else:
+                flag_items.append('<li class="flag">Empty or zero</li>')
 
         if flags.missing:
             severity = "bad" if miss_pct > 20 else "warn"
-            flag_items.append(f'<li class="flag {severity}">Missing</li>')
+            threshold = ">20%" if miss_pct > 20 else "≤20%"
+            flag_items.append(
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{miss_pct:.1f}%">Missing</li>'
+            )
 
         return (
             f'<ul class="quality-flags">{"".join(flag_items)}</ul>'
             if flag_items
             else ""
         )
+
+    @staticmethod
+    def _dominant_share(stats: CategoricalStats | None) -> float | None:
+        """The mode's share of non-missing rows, or None if it cannot be known.
+
+        None rather than 0.0 when the top-k sketch is empty -- the same
+        distinction `_compute_categorical_stats` makes. A chip reading
+        `0.0% dominant category` would be a contradiction.
+        """
+        if stats is None:
+            return None
+        items = list(getattr(stats, "top_items", None) or [])
+        count = int(getattr(stats, "count", 0) or 0)
+        if not items or count <= 0:
+            return None
+        return items[0][1] / count * 100.0
 
     def _left_stats(
         self, stats: CategoricalStats, miss_cls: str, miss_pct: float, cat_stats: dict
@@ -286,16 +366,37 @@ class CategoricalCardRenderer(CardRenderer):
                 f"{int(getattr(stats, 'missing', 0)):,} ({miss_pct:.1f}%)",
                 f"num {miss_cls}",
             ),
+            # Same reasoning as Entropy below: with an empty top-k sketch there
+            # is no mode to report, and `0.0%` claims there is one and that it
+            # covers nothing.
             ("Mode", f"<code>{cat_stats['safe_mode_label']}</code>", None),
-            ("Mode %", f"{cat_stats['mode_pct']:.1f}%", "num"),
             (
-                "Empty strings",
+                "Mode %",
+                self._unknown_cell(
+                    "no value repeats often enough to be tracked in the top-k sketch"
+                )
+                if not cat_stats.get("tracked", True)
+                else f"{cat_stats['mode_pct']:.1f}%",
+                "num",
+            ),
+            (
+                "Empty or zero",
                 f"{int(cat_stats['empty_zero']):,}",
                 f"num {cat_stats['empty_cls']}",
             ),
         ]
 
         return data
+
+    def _unknown_cell(self, reason: str) -> str:
+        """An em dash that says why, rather than a number that is not true.
+
+        The `title` matters more than the dash. A reader who sees `—` where
+        they expected a percentage will want to know whether the report failed
+        or the column has nothing to report, and those are opposite
+        conclusions about their data.
+        """
+        return f'<span title="{self.safe_html_escape(reason)}">—</span>'
 
     def _length_display(self, value) -> str:
         """A length, or an em dash when there is genuinely nothing to show.
@@ -326,16 +427,35 @@ class CategoricalCardRenderer(CardRenderer):
         `Embarked` quirk about one-character labels; `Name`, whose labels
         average 26.97 characters, printed `NaN` just the same.
         """
+        # An em dash where the top-k sketch found nothing to summarise. See
+        # `_compute_categorical_stats`: an empty sketch is a real answer about
+        # a column with no repeated values, and `0.0%` is a different, false
+        # answer that looks equally confident.
+        unknown = not cat_stats.get("tracked", True)
+        no_heavy_hitters = (
+            "no value repeats often enough to be tracked in the top-k sketch"
+        )
+
         data = [
-            ("Entropy", self.format_number(cat_stats["entropy"]), "num"),
+            (
+                "Entropy",
+                self._unknown_cell(no_heavy_hitters)
+                if unknown
+                else self.format_number(cat_stats["entropy"]),
+                "num",
+            ),
             (
                 "Rare levels",
-                f"{int(cat_stats['rare_count']):,} ({cat_stats['rare_cov']:.1f}%)",
+                self._unknown_cell(no_heavy_hitters)
+                if unknown
+                else f"{int(cat_stats['rare_count']):,} ({cat_stats['rare_cov']:.1f}%)",
                 f"num {cat_stats['rare_cls']}",
             ),
             (
                 "Top 5 coverage",
-                f"{cat_stats['top5_cov']:.1f}%",
+                self._unknown_cell(no_heavy_hitters)
+                if unknown
+                else f"{cat_stats['top5_cov']:.1f}%",
                 f"num {cat_stats['top5_cls']}",
             ),
             (

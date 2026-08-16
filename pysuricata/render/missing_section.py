@@ -258,7 +258,6 @@ class MissingValuesSectionRenderer:
             return """
             <div class="scrollable-list">
                 <div class="no-missing-state">
-                    <span class="icon">✓</span>
                     <p>No missing values detected in any column</p>
                 </div>
             </div>
@@ -306,7 +305,6 @@ class MissingValuesSectionRenderer:
             return """
             <div class="scrollable-list">
                 <div class="no-missing-state">
-                    <span class="icon">✓</span>
                     <p>No missing values detected in any column</p>
                 </div>
             </div>

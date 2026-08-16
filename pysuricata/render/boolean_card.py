@@ -77,7 +77,11 @@ class BooleanCardRenderer(CardRenderer):
 
         if flags.missing:
             severity = "bad" if miss_pct > 20 else "warn"
-            flag_items.append(f'<li class="flag {severity}">Missing</li>')
+            threshold = ">20%" if miss_pct > 20 else "≤20%"
+            flag_items.append(
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{miss_pct:.1f}%">Missing</li>'
+            )
 
         if flags.constant:
             flag_items.append('<li class="flag bad">Constant</li>')
@@ -287,6 +291,11 @@ class BooleanCardRenderer(CardRenderer):
                     "missing",
                     "Missing Values",
                     f'<div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>',
+                    # NOT gated on chunk count, unlike the numeric and
+                    # datetime cards. `html.py` calls `finalize()` without
+                    # chunk metadata for this kind, so the accumulator has none
+                    # to give -- gating on it would hide the pane permanently
+                    # rather than tighten the rule. See #193.
                     int(getattr(stats, "missing", 0) or 0) > 0,
                 ),
             ],

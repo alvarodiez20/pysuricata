@@ -86,9 +86,22 @@ The pipeline runs `guard → build → smoke → publish → release`, in that o
    3.14, asked for its version, then made to profile a frame and check
    `schema_version`. CI tests the repository; this tests the artifact, which is
    not the same object.
-4. **publish** — Trusted Publishing over OIDC, gated on a `pypi` environment
-   with a required reviewer. No long-lived credential, and one human
-   confirmation before the only step that cannot be undone.
+4. **publish** — Trusted Publishing over OIDC, so no long-lived credential
+   lives in the repository.
+
+    !!! warning "Pushing the tag publishes. There is no confirmation step."
+
+        The `pypi` environment has no protection rules, so nothing pauses
+        between the tag and PyPI. A published version cannot be replaced, only
+        yanked — and a yanked version keeps its number forever.
+
+        The three jobs above are what stand in for a reviewer: the tag must
+        match `pyproject.toml`, the changelog must carry notes, and the built
+        wheel must install and profile a frame on 3.10 and 3.14. Check the
+        version you are about to tag before you push it.
+
+        A required reviewer can be added back under **Settings → Environments
+        → pypi**.
 5. **release** — GitHub release created **after** PyPI has the package, with
    notes lifted from `CHANGELOG.md`.
 

@@ -478,7 +478,7 @@ kv::count	891
 kv::distribution 1ˢᵗ	11.79
 kv::distribution 1ˢᵗ	33
 kv::duplicates	0
-kv::empty strings	0
+kv::empty or zero	0
 kv::entropy	0.9855
 kv::entropy	0.9999
 kv::entropy	1.045

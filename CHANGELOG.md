@@ -15,15 +15,272 @@ quoted when both sides were measured in the same round-robin run.
 ## [Unreleased]
 
 ### Changed
-- **The browser demo adopts the minimal redesign (#196).** One 600px reading column, the report's own paper/ink and blue tokens from `docs/design/tokens.css` in place of the demo's separate green palette, mono micro-labels, and figures as a label/value ledger rather than boxed tiles. The report frame breaks out of the reading column to 1120px, since at 600px the report's own cards wrap one per row. Nothing that worked was dropped — the log, the streamed 5M-row demo, the JSON download, the version line and the sandboxed report frame all survive, restyled.
+
+- **The browser demo adopts the minimal redesign** ([#196]). One 600px reading
+  column, the report's own paper/ink and blue tokens from
+  `docs/design/tokens.css` in place of the demo's separate green palette, mono
+  micro-labels, and figures as a label/value ledger rather than boxed tiles. The
+  report frame breaks out of the reading column to 1120px, since at 600px the
+  report's own cards wrap one per row. Nothing that worked was dropped — the
+  log, the streamed 5M-row demo, the JSON download, the version line and the
+  sandboxed report frame all survive, restyled.
+
+- **The closed `Details` row names what is behind it** ([#154], 5b.8) —
+  `statistics · 48 common values · 5 lowest and highest · 11 outliers`. The tab
+  set was known at render time and never printed, so the word "Details"
+  promised nothing and a reader had to open every card to learn whether opening
+  was worth it. `11 outliers` is the reason to open it; `no outliers` is the
+  reason not to. Each tab carries its count too, so the right one can be picked
+  first time.
+- **The Missing Values pane renders only when it knows something** (5b.7):
+  missing > 0 **and** more than one chunk. With a single chunk it stated one
+  fact four times — a Present stat, a Missing stat, a two-segment bar and a
+  one-segment chunk strip — under a header already flagging the percentage. The
+  only thing it knows that the card face does not is *where in the read* the
+  gaps fall. Applies to numeric and datetime; categorical and boolean are never
+  handed chunk metadata to gate on, which is filed as [#193].
+- **The active tab's underline moved onto the label.** The button is 44px tall
+  because it is a tap target, so a `border-bottom` on it painted the rule ~29px
+  below the word — a second hairline floating under the strip. The tinted
+  background went with it: a filled tab competing with an underline says the
+  same thing twice, and the tint was a colour on neither scale.
 
 ### Fixed
-- **A second file in the same session profiles again (#196).** WORKERFS leaves the mount point's child nodes behind on unmount, so mounting the second file onto `/data` failed with an opaque `ErrnoError`. Every run now mounts under its own directory and releases the previous one.
-- **A failed run no longer inflates the next run's heap figure.** The previous report stayed pinned in the Python heap because cleanup ran only on the success path, so the next run's "peak heap" was partly measuring the last one. Cleanup now runs on the error path too.
-- **The page no longer shows one run's figures while the next is still going**, and a late message from a superseded run can no longer repaint a panel a newer run already owns. Runs carry an id, and every run begins by clearing what the last one left.
-- **Picking the same file twice works.** Re-selecting an identical file fires no `change` event, which read as a dead button; the input is reset before the file is handled.
-- **A worker that cannot be constructed says so.** It previously threw past the rest of the script, leaving three disabled buttons and no explanation.
-- **The report reaches the frame through a blob URL rather than `srcdoc`.** Chrome silently drops a `srcdoc` document past roughly 700 KB — no error, no console warning, just a blank frame. Measured: 684 KB renders, 721 KB does not, which any wide or high-cardinality frame clears.
+
+- **A second file in the same session profiles again** ([#196]). WORKERFS leaves
+  the mount point's child nodes behind on unmount, so mounting the second file
+  onto `/data` failed with an opaque `ErrnoError`. Every run now mounts under
+  its own directory and releases the previous one.
+- **A failed run no longer inflates the next run's heap figure.** The previous
+  report stayed pinned in the Python heap because cleanup ran only on the
+  success path, so the next run's "peak heap" was partly measuring the last one.
+  Cleanup now runs on the error path too.
+- **The page no longer shows one run's figures while the next is still going**,
+  and a late message from a superseded run can no longer repaint a panel a newer
+  run already owns. Runs carry an id, and every run begins by clearing what the
+  last one left.
+- **Picking the same file twice works.** Re-selecting an identical file fires no
+  `change` event, which read as a dead button; the input is reset before the
+  file is handled.
+- **A worker that cannot be constructed says so.** It previously threw past the
+  rest of the script, leaving three disabled buttons and no explanation.
+- **The report reaches the frame through a blob URL rather than `srcdoc`.**
+  Chrome silently drops a `srcdoc` document past roughly 700 KB — no error, no
+  console warning, just a blank frame. Measured: 684 KB renders, 721 KB does
+  not, which any wide or high-cardinality frame clears.
+
+- **The histogram fills its card** ([#147]). At a 1240px viewport the `<svg>`
+  element was already 1,099px wide and the bars occupied **356px** of it — 68%
+  blank — because `preserveAspectRatio` defaults to `xMidYMid meet` and the
+  container's fixed height was the limiting dimension. Bars now cover 100% of
+  the plot at 1240px **and** at 390px.
+
+  The fix is a split: bars, gridlines and axis rules go in an SVG stretched
+  with `preserveAspectRatio="none"` and `vector-effect="non-scaling-stroke"`,
+  and every label is HTML at a percentage offset. That is the only arrangement
+  that gives a full-width chart *and* 11px labels at every viewport — uniform
+  scaling makes them 28.8px on a desktop and 3.5px on a phone.
+- **Bars no longer merge on a narrow screen.** The gap was `bar_width - 1`, a
+  1-unit gap in viewBox space that scales with x: 1.1px at a 1,100px plot and
+  **0.28px at 284px**. Bars are drawn edge to edge with a non-scaling `--paper`
+  stroke, which is 1px by construction.
+- The y gutter is fixed at 44px, so the plot's left edge is identical on every
+  numeric card and bars line up down the page.
+- Nine x tick labels are written and tiered by importance; CSS drops them to
+  five and then three. Tier 1 is the two ends **and the midpoint** — a range
+  with no middle says nothing about whether a distribution is centred.
+- The x unit moved from the right end of the axis into a caption line carrying
+  the bin count and the exact peak (`years · 25 bins · peak 83 rows at
+  25.9–29.1`). At 1,100px the unit and `ROWS` were a hand-span apart and had
+  stopped reading as a pair; the peak matters more now that the y labels
+  abbreviate to four glyphs.
+- The empty state is a sentence rather than `No data` centred in a blank
+  420×200 canvas, which read as a chart that had failed.
+
+[#147]: https://github.com/alvarodiez20/pysuricata/issues/147
+
+- **The top-missing list says what it counted** ([#182]). It showed five
+  columns and stopped, with no indication there were more — `total_significant`
+  was computed, stored on the result object and printed nowhere. A frame with
+  23 partially-missing columns now ends the list with `+ 18 more columns with
+  missing values`. A list that truncates in silence is worse than a shorter
+  list, because the reader cannot tell they are seeing part of the answer.
+- **The missing threshold is defined once.** It was in three places —
+  `MissingColumnsAnalyzer.MIN_THRESHOLD_PCT` at 0.0, the factory at 0.5, and
+  `ProfileConfig` at 0.0 — and since the render path reads the config, the
+  factory's 0.5 had never applied to a report. The value stays **0.0**, which
+  is what every shipped report has used; raising it would quietly drop columns
+  from people's summaries.
+- **The no-missing state is a sentence, not a fake row.** It rendered a list
+  item with a `<code>` reading `No missing data`, a `0 (0.0%)` figure and a
+  zero-width bar — a table row impersonating data, with an element drawn to
+  represent nothing.
+
+- **Quality chips print the number they already carry** ([#184]). Every chip
+  emitted `data-value` and `data-threshold` and displayed neither on the
+  categorical, boolean and datetime cards, so a card said `Missing` where it
+  could say `19.9% missing`. `Dominant category` and `Empty or zero` gained
+  theirs too. `High cardinality`, `Monotonic ↑` and `Positive-only` stay bare
+  on purpose — those need a phrase rather than a numeric prefix, and inventing
+  one would read worse than the word.
+- **`Empty strings` was the wrong name and is now `Empty or zero`.** The
+  accumulator counts `value == "" or value == "0"`. Putting the number on the
+  chip is what made that visible: titanic's `SibSp` and `Parch` profile as
+  categorical and rendered `608 empty strings` and `678 empty strings`, when
+  they have 608 and 678 *zeros* and not one empty string between them. The
+  vague label had been hiding a false one.
+
+- **A histogram y-axis count label is now guaranteed at most four glyphs**
+  ([#183]). It used to *prefer* short and not guarantee it: `12,500` came out
+  as six characters and `12.5M` as five. That matters because the redesigned
+  chart fixes the y gutter at 44px so the plot's left edge does not move
+  between columns — a wider label either overflows it or forces the gutter to
+  breathe, and a breathing gutter loses the alignment the fixed one buys.
+
+- **A column whose values never repeat no longer reports zeros it cannot
+  know** ([#181]). `Cabin` printed `Entropy NaN` — the only `NaN` in the whole
+  report — alongside `Rare levels 0 (0.0%)`, `Top 5 coverage 0.0%` and
+  `Mode % 0.0%`. All four come from the top-k sketch, which was empty and
+  correctly so: Misra-Gries only guarantees a survivor above `n/(k+1)`, and
+  `Cabin`'s most frequent value appears 4 times in 204 against a threshold of
+  exactly 4. The four cells now render an em dash carrying the reason. `NaN`
+  announced itself; `0.0%` did not, which is why it is the more dangerous of
+  the two.
+
+### Changed
+
+- **No emoji anywhere in the report** ([#180]). Eight went: a `🔗` before a
+  heading reading *Correlations*, a `📋` on every header tooltip, three `✓`
+  in empty states whose sentence already said it, and `❓ 0️⃣ ➖` on the
+  quality indicators. `∞` stays — it names the thing it counts and is
+  mathematical notation, not an emoji.
+
+  Two reasons. They render at a different weight and baseline on every
+  platform, which shows in a report that otherwise sets every figure in one
+  mono face; and inline glyphs are **announced by screen readers**, so `✓` in
+  front of "No missing values detected" was read out as "check mark no missing
+  values detected".
+
+### Changed
+
+- The `pypi` environment no longer requires a reviewer, so **pushing a version
+  tag publishes to PyPI with no confirmation step**. `cd.yml` and
+  `docs/versioning.md` said otherwise and now say this; a comment asserting a
+  safety property that has been removed is worse than no comment, because it is
+  what someone reads to decide whether a push is reversible. The `guard` and
+  `smoke` jobs stand in for the reviewer.
+- **The PyPI summary now says what the tool does.** It read "A lightweight EDA
+  tool inspired by the curious nature of suricates. Built just for fun 🔬",
+  which describes the project's origin rather than the package someone is
+  deciding whether to install. It is now "Streaming EDA profiler: one pass over
+  pandas or polars, bounded memory, a self-contained HTML report."
+- The PyPI sidebar gains Homepage, Documentation, Changelog and Issues links —
+  it carried only a repository link — and the package declares keywords, so it
+  is findable by search rather than only by name.
+
+  Note that release metadata on PyPI is immutable per version, so none of this
+  changes the 0.1.0 page. It takes effect with the next release.
+
+### Fixed
+
+- **Every interactive target in the report is now at least 44×44** at 390px
+  ([#122]). Ten kinds were smaller — the card info links at 24×24, the filter
+  tabs at 29px tall, the search field at 33, pagination at 39×29, the
+  needs-attention rows at 16. The two footer links stay small on purpose: they
+  sit inline in a run of metadata text, which is WCAG 2.5.8's own exception.
+- **The pagination page numbers are buttons**, not `<span>`s with click
+  listeners. They had no role, could not be reached by keyboard, and announced
+  "2" as their entire accessible name.
+- **204 contrast failures in light and 93 in dark**, found by measuring every
+  text node against the background actually painted behind it rather than
+  against the page. They came from eight framework colours printed on a 10%
+  wash of themselves — outlier severity, correlation strength, correlation
+  sign. All eight now read the design tokens; the sign reads no colour at all,
+  since `_00-tokens.css` already encodes it by which side of centre the bar
+  sits on. Both themes are now clean over 2,334 text nodes.
+- **The quality flags carry a shape as well as a hue** — circle, triangle,
+  square. `--q-good` and `--q-bad` are 1.05:1 apart in luminance, so in
+  greyscale a chip reading "Positive-only" and one reading "24.28 heavy-tailed"
+  were the same chip. The marks are drawn rather than typed so screen readers
+  do not read out a check mark before a label that already says what it is.
+- **`prefers-reduced-motion` is honoured**, against 49 transitions and
+  animations that previously ignored it. The state change is kept; only the
+  travel is removed.
+
+### Changed
+
+- **The compatibility shim in `_00-tokens.css` is gone** ([#122]), along with
+  the 285 dead selectors it was holding up — the pre-redesign missing-values
+  section, the old correlation heatmap, and the datetime and boolean markup the
+  redesign replaced. Verified by computed style across 143,068 elements in four
+  reports and both themes: removing them changes nothing.
+- `--accent-color` used to map to `--q-good`, so the olive that means "passes a
+  check" was also drawing focus rings, hover borders and the active tab. It now
+  reads `--data-1`, which is what the header and the details toggle already use
+  for `:focus-visible`.
+- The untokenised-colour ratchet drops from 88 to 70. Eleven of those needed no
+  decision at all — they were sitting in rules for markup nobody renders.
+
+[#122]: https://github.com/alvarodiez20/pysuricata/issues/122
+[#180]: https://github.com/alvarodiez20/pysuricata/issues/180
+[#181]: https://github.com/alvarodiez20/pysuricata/issues/181
+[#182]: https://github.com/alvarodiez20/pysuricata/issues/182
+[#183]: https://github.com/alvarodiez20/pysuricata/issues/183
+[#184]: https://github.com/alvarodiez20/pysuricata/issues/184
+
+## [0.1.0] - 2026-08-16
+
+**The first release that promises anything.**
+
+The sixty-one releases before this one were not decisions. `version-check`
+required a bump on every pull request and `cd.yml` published on every push to
+`main`, so one merged PR was exactly one PyPI release, unconditionally — a
+rewritten kernel and a fixed typo the same size of event. `0.0.71 → 0.0.72`
+could not describe a change, because the version was incremented by the *act of
+merging* rather than by a judgement about what merged.
+
+That is fixed, and this is the first version to arrive on purpose:
+
+- **Publishing happens on a pushed tag**, through an ordered pipeline that
+  smoke-tests the built wheel in a clean virtualenv before anything reaches
+  PyPI, and creates the GitHub release only after PyPI has the package.
+- **`docs/versioning.md` states the contract.** At 0.x, a minor bump is what a
+  major bump becomes at 1.0 — it is the one allowed to break you, and a patch
+  never is. With an enumerated covered surface and an explicit not-covered list.
+- **`pysuricata~=0.1.0` is now a real guarantee.**
+
+Why 0.1.0 and not 1.0.0: the API is demonstrably still moving. `ReportConfig`
+is waiting to be deprecated, `numeric_sample_size` is not a passthrough keyword,
+the five checkpoint options are due to collapse into `progress_report=`, and the
+triage block is about to be reshaped. `1.0.0` is a promise you cannot withdraw.
+The five gates for it are listed in `docs/versioning.md`.
+
+### Honesty about approximation
+Three figures stopped claiming more precision than they have. The quantiles are
+reservoir estimates and now say so; the duplicate count carries the bound that
+actually applies to it rather than the sketch's own, which understated the error
+by up to two orders of magnitude; and the label-length statistics, which had
+been reading from a dict that never carried them and printing `NaN` for every
+categorical column in every report, now print the values the accumulator had all
+along.
+
+
+### Fixed
+- **`--data-3` could not legally carry a standalone mark (#156).** At `#7FA0B5` it was **2.63:1** on the paper — below the 3:1 non-text minimum (WCAG 1.4.11), which is the entire job a third step exists for. It is now `#5C7F99`.
+
+  | | paper | track |
+  |---|---:|---:|
+  | old `#7FA0B5` | **2.63** ✗ | 2.24 ✗ |
+  | new `#5C7F99` light | 4.03 ✓ | 3.42 ✓ |
+  | new `#5C7F99` dark | 4.09 ✓ | 3.51 ✓ |
+
+- **`--data-3` now carries no text.** At 4.03:1 against the paper and 3.83:1 against the ink it reaches neither text minimum, so it is a fill and never a label background. `--on-data-3` is removed, and a composition-bar segment on that step sends its count to the legend — the mechanism a too-narrow segment already uses.
+
+### Added
+- `test_data_3_carries_no_text` asserts a **failure** on purpose: raising `--data-3` far enough to carry text breaks the build and forces the conversation, rather than quietly reintroducing a label nobody measured. Paired with `test_data_3_can_stand_alone`, which asserts the property the old value failed.
+
+### Note
+The handoff also proposed `#4A6E8A` for the **dark** `--data-4`. **Not taken.** It separates from `--data-2` by only **1.95:1**, and those two carry the two-dataset comparison, which needs 2:1; it is also 1.27:1 from `--data-3`, so two adjacent steps would be indistinguishable. The repo's `#2C4A62` gives 3.36 and 2.19 and is kept. The handoff labels its dark section *"PROPOSED, NOT YET VERIFIED as a whole"* — it measured each step against the surfaces, not the steps against each other. Every ratio above was recomputed here rather than copied.
 
 ### Fixed
 - **Per-column per-chunk missing counts are now produced (#139).** `mark_chunk_boundary()` was only ever called from `finalize()`, so the recorded boundaries counted **renders**, not chunks — one for an uninterrupted run, two for a checkpointed one, never the chunk count. The engine now marks a boundary after every chunk it consumes.

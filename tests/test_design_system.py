@@ -86,6 +86,12 @@ class TestTypeIsNotAColour:
         assert all("--data-" in fill for fill in fills), fills
         assert len(set(fills)) == 4, f"each rank needs its own step: {fills}"
         for fill, ink in _STEPS:
+            if ink is None:
+                # `--data-3` carries no text: it reaches the 3:1 non-text
+                # minimum and neither text minimum, so it is a fill and never a
+                # label background. None is the honest pairing.
+                assert "--data-3" in fill, (fill, ink)
+                continue
             assert "--on-data-" in ink, (fill, ink)
 
     def test_no_quality_token_is_used_for_a_column_type(self):
@@ -259,7 +265,11 @@ class TestTokensAreDefinedInExactlyOnePlace:
             f"decides the value: {offenders[:5]}"
         )
 
-    @pytest.mark.parametrize("token", ["--axis", "--axis-text", "--bar", "--ink"])
+    # `--axis-text` and `--bar` used to be on this list. They were shim names,
+    # and the shim is gone: the axis labels read `--muted` and the default
+    # chart fill reads `--data-2`, which are the tokens the values always
+    # resolved to.
+    @pytest.mark.parametrize("token", ["--axis", "--muted", "--data-2", "--ink"])
     def test_a_token_the_charts_rely_on_has_a_single_definition(self, token):
         definitions = [
             f"{sheet.name}:{number}"
@@ -272,22 +282,73 @@ class TestTokensAreDefinedInExactlyOnePlace:
         assert all(d.startswith(TOKENS.name) for d in definitions), definitions
 
 
-class TestTheCompatibilityShim:
-    """The shim maps legacy variable names onto the new scale so the rest of
-    the CSS keeps working while later phases land. It is scaffolding, and the
-    thing about scaffolding is that it gets left up."""
+class TestTheCompatibilityShimIsGone:
+    """The shim mapped sixteen legacy names onto the new scale so the rest of
+    the CSS kept working while later phases landed. It was scaffolding, and the
+    thing about scaffolding is that it gets left up -- so this used to assert
+    it was *labelled* temporary. #122 removed it, and the assertion inverts:
+    neither the block nor any name it defined may come back.
 
-    def test_it_is_labelled_as_temporary(self):
-        text = TOKENS.read_text()
-        assert "COMPATIBILITY SHIM" in text
-        assert "DELETE THIS BLOCK" in text
+    A legacy name returning is not cosmetic. Without the shim it resolves to
+    nothing, so `border-color: var(--chip-br-light)` silently computes to the
+    initial value and a border quietly turns black -- valid CSS, no warning,
+    wrong report.
+    """
 
-    def test_every_legacy_name_it_maps_resolves_to_a_new_token(self):
+    #: Every name the shim used to define.
+    RETIRED = (
+        "--divider",
+        "--divider-light",
+        "--divider-dark",
+        "--chip-bg",
+        "--chip-bg-light",
+        "--chip-bg-dark",
+        "--chip-br",
+        "--chip-br-light",
+        "--chip-br-dark",
+        "--appbar-bg",
+        "--border-color",
+        "--accent-color",
+        "--bar",
+        "--axis-text",
+        "--scroll-track",
+        "--scroll-thumb",
+    )
+
+    def test_the_block_is_deleted(self):
         text = TOKENS.read_text()
-        shim = text.split("COMPATIBILITY SHIM", 1)[1].split("}", 1)[0]
-        mappings = re.findall(r"(--[\w-]+):\s*([^;]+);", shim)
-        assert mappings, "the shim block parsed as empty"
-        defined = set(re.findall(r"(--[\w-]+):", text))
-        for name, value in mappings:
-            for referenced in re.findall(r"var\((--[\w-]+)\)", value):
-                assert referenced in defined, f"{name} maps to undefined {referenced}"
+        assert "DELETE THIS BLOCK" not in text
+        # The name survives in the note that records what each token became.
+        # A definition does not.
+        assert not re.search(r"^\s*--divider\s*:", text, re.M)
+
+    @pytest.mark.parametrize("name", RETIRED)
+    def test_the_legacy_name_is_neither_defined_nor_referenced(self, name):
+        defined = _declarations(rf"^\s*{re.escape(name)}\s*:")
+        used = _declarations(rf"var\(\s*{re.escape(name)}\s*[,)]")
+        assert not defined, f"{name} is defined again: {defined[:3]}"
+        assert not used, f"{name} is referenced again: {used[:3]}"
+
+    def test_every_reference_in_the_stylesheets_resolves(self):
+        """The general form of the rule above: no `var()` may name a custom
+        property that nothing defines. This is what makes deleting a token
+        safe to do -- the failure mode it prevents is invisible in a browser
+        because CSS treats an unresolvable var as 'use the initial value'.
+        """
+        # Comments first. The stylesheets explain themselves in prose that
+        # quotes the CSS being explained, and the first version of this check
+        # reported `--triple-left` as a dangling reference when the only place
+        # it appears is a note saying what the numeric card used to do.
+        text = "\n".join(
+            re.sub(r"/\*.*?\*/", "", sheet.read_text(), flags=re.S)
+            for sheet in STYLESHEETS
+        )
+        defined = set(re.findall(r"^\s*(--[\w-]+)\s*:", text, re.M))
+        dangling = {
+            name
+            # A `var(--x, fallback)` with a fallback is allowed to name
+            # something undefined; that is what the fallback is for.
+            for name in re.findall(r"var\(\s*(--[\w-]+)\s*\)", text)
+            if name not in defined
+        }
+        assert not dangling, sorted(dangling)

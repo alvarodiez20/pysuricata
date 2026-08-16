@@ -31,10 +31,22 @@ from dataclasses import dataclass
 # Steps of the data scale, assigned by rank rather than by type. Type is not a
 # colour -- the legend says which is which. Assigning a hue per type is what
 # made olive mean both "categorical" and "passes".
+#
+# The second element is the text colour a segment may carry, or `None` when it
+# may carry none. `--data-3` and `--data-4` are both `None`, for different
+# reasons, and both are measured:
+#
+#   --data-3  #5C7F99  paper on it 4.03, ink on it 3.83 -- neither reaches the
+#             4.5:1 text minimum, so it is a fill and never a label background.
+#   --data-4  #A8BECD  1.83:1 on the paper. Stack-internal only; it is legal
+#             beside another segment and a ghost on its own.
+#
+# The count still appears in the legend, which is where it goes for a narrow
+# segment already -- so this reuses a mechanism rather than adding one.
 _STEPS = (
     ("var(--data-1, #2C4A62)", "var(--on-data-1, #FBF9F5)"),
     ("var(--data-2, #3E6280)", "var(--on-data-2, #FBF9F5)"),
-    ("var(--data-3, #7FA0B5)", "var(--on-data-3, #22201C)"),
+    ("var(--data-3, #5C7F99)", None),
     ("var(--data-4, #A8BECD)", "var(--on-data-4, #22201C)"),
 )
 
@@ -51,7 +63,8 @@ class Segment:
     count: int
     percent: float
     fill: str
-    ink: str
+    #: Text colour legal on this fill, or None when the fill carries no text.
+    ink: str | None
 
 
 def apportion(counts: list[int]) -> list[float]:
@@ -149,14 +162,19 @@ class CompositionBarRenderer:
         for segment in drawn:
             # The count goes inside when the segment can hold it. Below that it
             # would overlap its neighbour, and the legend carries it anyway.
+            # Two reasons a segment holds no count: it is too narrow, or its
+            # fill carries no legal text colour. Both send the number to the
+            # legend, which has it either way.
+            wide_enough = segment.percent >= _MIN_SHARE_FOR_LABEL
             inner = (
                 f'<span class="composition__count">{segment.count:,}</span>'
-                if segment.percent >= _MIN_SHARE_FOR_LABEL
+                if wide_enough and segment.ink is not None
                 else ""
             )
+            colour = f";color:{segment.ink}" if segment.ink is not None else ""
             cells.append(
                 f'<div class="composition__seg" style="width:{segment.percent:g}%;'
-                f'background:{segment.fill};color:{segment.ink}"'
+                f'background:{segment.fill}{colour}"'
                 f' data-type="{segment.label}" data-count="{segment.count}"'
                 f' data-percentage="{segment.percent:g}">{inner}</div>'
             )

@@ -1,57 +1,129 @@
-/* === SVG Histogram Styles === */
+/* =============================================================
+   HISTOGRAM
+
+   Two coordinate systems that never mix, which is the whole of #147.
+
+   The SVG is stretched to whatever width it is given, with
+   `preserveAspectRatio="none"`. That is what fills the card: before this,
+   the element was already 1,099px wide at a 1240px viewport and the bars
+   occupied 356px of it, because the default `xMidYMid meet` scaled the
+   drawing to the *limiting* dimension -- the fixed 210px height -- and
+   centred the result in 743px of white.
+
+   Nothing with a glyph in it goes inside that stretch. Every label is HTML
+   at a percentage offset, so it renders at 11px whether the plot is 284px
+   or 820px wide. The alternative -- uniform scaling -- makes the labels
+   28.8px at desktop and 3.5px on a phone, and there is no single canvas
+   size that is right for both.
+
+   The consequence to keep in mind when editing: any length that must look
+   the same at every width has to be either a stroke marked
+   `non-scaling-stroke`, or an HTML pixel value. A number inside the viewBox
+   is a *fraction of the data*, not a distance.
+   ============================================================= */
+
+#pysuricata-report .hist {
+  /* The gutter is fixed and never negotiates, so the plot's left edge sits
+     at the same x on every card and bars line up down the page. It can be
+     fixed because a count label is guaranteed four glyphs (#183): 27px of
+     11px mono, a 5px tick, 8px of air. */
+  --hist-gutter: 44px;
+  --hist-height: 200px;
+
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.3;
+}
+
+/* The plot caps at 820px. Past ~800px the extra width buys almost nothing:
+   50 bins is 16px each at 800px and 22px at 1,100px, and nobody reads a
+   22px bar more accurately than a 16px one. Capping frees ~380px beside the
+   chart for the controls and takes ~40px of height off every numeric
+   card. */
+#pysuricata-report .hist__plot {
+  display: grid;
+  grid-template-columns: var(--hist-gutter) minmax(0, 1fr);
+  max-width: calc(820px + var(--hist-gutter));
+}
+
+#pysuricata-report .hist__gutter {
+  position: relative;
+  height: var(--hist-height);
+}
+
+/* `translateY(-50%)` centres a label on its gridline. The first and last
+   are nudged inward instead, or the top label floats above the plot and the
+   `0` hangs below the axis. */
+#pysuricata-report .hist__y {
+  position: absolute;
+  right: 13px;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+#pysuricata-report .hist__y:first-of-type {
+  transform: translateY(-2px);
+}
+
+#pysuricata-report .hist__y:last-of-type {
+  transform: translateY(-100%);
+}
+
+/* The tick, drawn in HTML so it is 5px at every width. */
+#pysuricata-report .hist__y::after {
+  content: "";
+  position: absolute;
+  right: -8px;
+  top: 50%;
+  width: 5px;
+  border-top: 1px solid var(--axis);
+}
+
+#pysuricata-report .hist__unit {
+  position: absolute;
+  left: 0;
+  bottom: -18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+#pysuricata-report .hist__area {
+  position: relative;
+  height: var(--hist-height);
+}
+
 #pysuricata-report .hist-svg {
   display: block;
   width: 100%;
-  height: auto;
-  max-width: 100%;
+  height: 100%;
 }
 
+/* ---- marks ---------------------------------------------------- */
 #pysuricata-report .hist-svg .bar {
+  fill: var(--data-2);
+  /* The separator, and the reason it is a stroke rather than a gap. A gap
+     in viewBox units scales with x: the old `bar_width - 1` was 1.1px at a
+     1,100px plot and 0.28px at 284px, where the bars merged into one block.
+     A non-scaling stroke is 1px by definition, at any width. */
+  stroke: var(--paper);
+  stroke-width: 1;
+  pointer-events: auto;
   cursor: pointer;
-  transition: fill-opacity 0.2s ease, stroke-width 0.2s ease;
+  transition: fill 0.15s ease;
 }
 
 #pysuricata-report .hist-svg .bar:hover {
-  fill-opacity: 0.9;
-  stroke-width: 1.5;
+  fill: var(--data-1);
 }
 
-#pysuricata-report .hist-svg .tick-label {
-  user-select: none;
-  pointer-events: none;
-}
-
-#pysuricata-report .hist-svg .hist-title {
-  font-weight: 600;
-  fill: currentColor;
-}
-
-#pysuricata-report .hist-svg .hist-empty {
-  font-style: italic;
-  opacity: 0.7;
-}
-
-/* Dark mode adjustments for SVG histograms */
-#pysuricata-report:not(.light) .hist-svg .tick-label {
-  fill: #ccc;
-}
-
-#pysuricata-report:not(.light) .hist-svg .hist-title {
-  fill: #f9f9f9;
-}
-
-#pysuricata-report:not(.light) .hist-svg .hist-empty {
-  fill: #999;
-}
-
-/* Ensure SVG histograms work with existing tooltip system */
-#pysuricata-report .hist-svg .bar[data-count] {
-  /* This ensures the existing tooltip JavaScript can find these elements */
-}
-
-
-#pysuricata-report .hist-svg .axis,
-#pysuricata-report .hist-svg .tick {
+#pysuricata-report .hist-svg .axis {
   stroke: var(--axis);
   stroke-width: 1;
   shape-rendering: crispEdges;
@@ -59,42 +131,106 @@
 
 #pysuricata-report .hist-svg .grid {
   stroke: var(--axis);
-  stroke-opacity: .25;
+  stroke-opacity: 0.25;
   stroke-dasharray: 2 2;
   shape-rendering: crispEdges;
 }
 
-#pysuricata-report .hist-svg .tick-label {
-  font-size: 11px;
-  fill: var(--axis-text);
+/* ---- x labels, tiered ----------------------------------------
+   The renderer cannot know the viewport, so it writes nine labels tagged by
+   importance and CSS drops tiers: nine, then five, then three. Tier 1 is the
+   two ends *and the midpoint*, and never drops -- a range with no middle
+   tells you nothing about whether the distribution is centred, which is what
+   the first version of this shipped on a phone. */
+#pysuricata-report .hist__x {
+  position: relative;
+  height: 18px;
+  margin-top: 6px;
 }
 
-#pysuricata-report .hist-svg .tick.minor {
-  stroke-opacity: .6;
-}
-
-/* Every figure and axis label is monospace: columns of digits then align
-   without font-variant-numeric hacks, and a tick label cannot drift to a
-   different face than the table beneath it. `inherit` pulled in the body
-   sans and beat the presentation attribute on the element. */
-#pysuricata-report .hist-svg text {
+#pysuricata-report .hist__tick {
+  position: absolute;
+  transform: translateX(-50%);
   font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
 }
 
-#pysuricata-report .hist-svg .bar {
-  fill: var(--bar);
-  opacity: .9;
-  pointer-events: auto;
-  border-radius: 6px 6px 0 0;
+#pysuricata-report .hist__tick[data-anchor="start"] {
+  transform: none;
 }
 
-#pysuricata-report .hist-svg .axis-title {
-  font-size: 10px;
-  fill: var(--axis-text);
+#pysuricata-report .hist__tick[data-anchor="end"] {
+  transform: translateX(-100%);
 }
 
-#pysuricata-report .hist-svg .axis-title.y {
-  dominant-baseline: middle;
+#pysuricata-report .hist__tick::before {
+  content: "";
+  position: absolute;
+  top: -7px;
+  left: 50%;
+  height: 4px;
+  border-left: 1px solid var(--axis);
+}
+
+#pysuricata-report .hist__tick[data-anchor="start"]::before {
+  left: 0;
+}
+
+#pysuricata-report .hist__tick[data-anchor="end"]::before {
+  left: auto;
+  right: 0;
+}
+
+#pysuricata-report .hist__caption {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ---- empty --------------------------------------------------- */
+#pysuricata-report .hist--empty {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+}
+
+#pysuricata-report .hist__nodata {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* =============================================================
+   BREAKPOINTS
+
+   Nine ticks -> five -> three, and the chart shortens.
+
+   The widths come from how much room a *label* needs rather than from device
+   classes -- nine 11px mono labels of up to six glyphs start touching at
+   roughly 760px, and three need about 440px. They are written as 768 and 480
+   because `test_css_integrity` keeps every breakpoint in the report on one
+   standard set, and a stylesheet with its own private pair of widths is how a
+   layout ends up reflowing in two places at once.
+   ============================================================= */
+@media (max-width: 768px) {
+  #pysuricata-report .hist__x .hist__tick[data-tier="3"] {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  #pysuricata-report .hist__x .hist__tick[data-tier="2"] {
+    display: none;
+  }
+
+  #pysuricata-report .hist {
+    --hist-height: 150px;
+    --hist-gutter: 38px;
+  }
 }
 
 /* Modern, centered bin buttons under the histogram */

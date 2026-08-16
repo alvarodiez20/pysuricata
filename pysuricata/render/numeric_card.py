@@ -66,8 +66,9 @@ class NumericCardRenderer(CardRenderer):
             f"<div class='stats-quant'>{stats_table}{quant_stats_table}</div>"
         )
 
-        details_html = self._build_details_section(
+        details_html, pane_summary = self._build_details_section(
             col_id,
+            stats,
             stats_quantiles,
             common_table,
             extremes_table,
@@ -75,13 +76,12 @@ class NumericCardRenderer(CardRenderer):
             outliers_high,
             corr_table,
             missing_table,
-            has_missing=int(getattr(stats, "missing", 0) or 0) > 0,
-            has_correlations=bool(getattr(stats, "corr_top", None)),
         )
 
         controls_html = self._build_controls_section(
             col_id,
             log_default=bool(getattr(quality_flags, "log_scale_suggested", False)),
+            pane_summary=pane_summary,
         )
 
         return self._assemble_card(
@@ -994,7 +994,6 @@ class NumericCardRenderer(CardRenderer):
         summary_html = f"""
         <div class="correlation-summary">
             <div class="summary-header">
-                <span class="icon">🔗</span>
                 <span class="title">Correlations</span>
                 <span class="count">{len(corr_data)} significant correlations</span>
             </div>
@@ -1425,7 +1424,6 @@ class NumericCardRenderer(CardRenderer):
                 "label": "Missing Data",
                 "value": f"{stats.missing:,} ({missing_pct:.1f}%)",
                 "severity": quality_severity,
-                "icon": "❓",
                 "description": "Values that are completely absent",
             }
         )
@@ -1440,7 +1438,6 @@ class NumericCardRenderer(CardRenderer):
                     "label": "Zero Values",
                     "value": f"{stats.zeros:,} ({zeros_pct:.1f}%)",
                     "severity": zero_severity,
-                    "icon": "0️⃣",
                     "description": "Values equal to zero",
                 }
             )
@@ -1452,7 +1449,7 @@ class NumericCardRenderer(CardRenderer):
                     "label": "Infinite Values",
                     "value": f"{stats.inf:,} ({inf_pct:.1f}%)",
                     "severity": "critical",
-                    "icon": "∞",
+                    "symbol": "∞",
                     "description": "Values that are infinite",
                 }
             )
@@ -1465,7 +1462,6 @@ class NumericCardRenderer(CardRenderer):
                     "label": "Negative Values",
                     "value": f"{stats.negatives:,} ({neg_pct:.1f}%)",
                     "severity": neg_severity,
-                    "icon": "➖",
                     "description": "Values less than zero",
                 }
             )
@@ -1494,7 +1490,7 @@ class NumericCardRenderer(CardRenderer):
         for indicator in quality_indicators:
             indicator_items.append(f"""
                 <div class="indicator-item {indicator["severity"]}">
-                    <div class="indicator-icon">{indicator["icon"]}</div>
+                    <div class="indicator-icon">{indicator.get("symbol", "")}</div>
                     <div class="indicator-content">
                         <div class="indicator-label">{indicator["label"]}</div>
                         <div class="indicator-value">{indicator["value"]}</div>
@@ -1618,9 +1614,55 @@ class NumericCardRenderer(CardRenderer):
 
         return recommendations_html
 
+    #: What each pane is worth opening for, in the order the tabs appear.
+    #: Order is fixed so a tab never moves; it only appears or does not.
+    def _pane_counts(self, stats: NumericStats) -> dict[str, str]:
+        """The figure beside each tab, and in the closed strip.
+
+        Every one of these is already on `stats`. The pane was rendering them
+        and the reader could not see any of it without opening all six.
+        """
+        counts: dict[str, str] = {}
+
+        common = len(getattr(stats, "top_values", None) or [])
+        if common:
+            counts["common"] = f"{common:,}"
+
+        lows = len(getattr(stats, "min_items", None) or [])
+        highs = len(getattr(stats, "max_items", None) or [])
+        if lows or highs:
+            counts["extremes"] = f"{max(lows, highs):,}"
+
+        outliers = int(getattr(stats, "outliers_iqr", 0) or 0)
+        if outliers:
+            counts["outliers"] = f"{outliers:,}"
+
+        partners = len(getattr(stats, "corr_top", None) or [])
+        if partners:
+            counts["corr"] = f"{partners:,}"
+
+        missing = int(getattr(stats, "missing", 0) or 0)
+        total = missing + int(getattr(stats, "count", 0) or 0)
+        if missing and total:
+            counts["missing"] = f"{missing / total * 100:.1f}%"
+
+        return counts
+
+    #: How each pane reads in the closed strip. `11 outliers` beside the button
+    #: is the reason to open it; its absence is the reason not to.
+    _PANE_NOUNS = {
+        "stats": "statistics",
+        "common": "common values",
+        "extremes": "lowest and highest",
+        "outliers": "outliers",
+        "corr": "correlations",
+        "missing": "missing",
+    }
+
     def _build_details_section(
         self,
         col_id: str,
+        stats: NumericStats,
         stats_quantiles: str,
         common_table: str,
         extremes_table: str,
@@ -1628,17 +1670,24 @@ class NumericCardRenderer(CardRenderer):
         outliers_high: str,
         corr_table: str,
         missing_table: str,
-        *,
-        has_missing: bool = True,
-        has_correlations: bool = True,
-    ) -> str:
-        """Details tabs, in a fixed order, minus the ones with nothing to say.
+    ) -> tuple[str, str]:
+        """Details tabs in a fixed order, minus the ones with nothing to say.
 
-        The Missing Values pane used to render on every column -- including ones
-        with no missing values, where it drew a 100%-present bar and a
-        one-segment chunk strip reading 0.0%. The Correlations pane repeated the
-        section-level empty state inside a card. Both cost a click to learn
-        nothing (#154, 5b.4).
+        Returns the section and the one-line summary that goes beside the
+        closed `Details` button.
+
+        Two panes are gated:
+
+        **Correlations** repeated the section-level empty state inside a card.
+
+        **Missing Values** rendered on every column -- including ones with no
+        missing values, where it drew a 100%-present bar and a one-segment
+        chunk strip reading 0.0%. It is now gated on *missing > 0 and more than
+        one chunk*, which is the only condition under which it knows something
+        the card face does not: **where in the read the gaps fall**. With one
+        chunk it restates a percentage the header already carries, four times
+        over. On a single-chunk frame every numeric card loses a tab and
+        nothing goes with it.
         """
         outliers = (
             '<div class="stats-quant">'
@@ -1646,34 +1695,67 @@ class NumericCardRenderer(CardRenderer):
             f'<div class="sub">{outliers_high}</div>'
             "</div>"
         )
-        return self._build_tabbed_details(
-            col_id,
-            [
-                ("stats", "Statistics", stats_quantiles, bool(stats_quantiles.strip())),
-                ("common", "Common values", common_table, bool(common_table.strip())),
-                (
-                    "extremes",
-                    "Min/Max Values",
-                    extremes_table,
-                    bool(extremes_table.strip()),
-                ),
-                ("outliers", "Outliers", outliers, True),
-                (
-                    "corr",
-                    "Correlations",
-                    f'<div class="sub">{corr_table}</div>',
-                    has_correlations,
-                ),
-                (
-                    "missing",
-                    "Missing Values",
-                    f'<div class="sub">{missing_table}</div>',
-                    has_missing,
-                ),
-            ],
-        )
+        chunks = len(getattr(stats, "chunk_metadata", None) or [])
+        has_missing = int(getattr(stats, "missing", 0) or 0) > 0
 
-    def _build_controls_section(self, col_id: str, log_default: bool = False) -> str:
+        panes = [
+            ("stats", "Statistics", stats_quantiles, bool(stats_quantiles.strip())),
+            ("common", "Common values", common_table, bool(common_table.strip())),
+            (
+                "extremes",
+                "Min/Max Values",
+                extremes_table,
+                bool(extremes_table.strip()),
+            ),
+            ("outliers", "Outliers", outliers, True),
+            (
+                "corr",
+                "Correlations",
+                f'<div class="sub">{corr_table}</div>',
+                bool(getattr(stats, "corr_top", None)),
+            ),
+            (
+                "missing",
+                "Missing Values",
+                f'<div class="sub">{missing_table}</div>',
+                has_missing and chunks > 1,
+            ),
+        ]
+
+        counts = self._pane_counts(stats)
+        html = self._build_tabbed_details(col_id, panes, counts)
+        return html, self._summarise_panes(panes, counts)
+
+    def _summarise_panes(
+        self, panes: list[tuple[str, str, str, bool]], counts: dict[str, str]
+    ) -> str:
+        """`statistics · 10 common values · 11 outliers · 2 correlations`.
+
+        The tab set is known at render time and was not printed, so `Details`
+        promised nothing and a reader had to open every card to learn whether
+        opening was worth it.
+        """
+        parts = []
+        for key, _, _, worth in panes:
+            if not worth:
+                continue
+            noun = self._PANE_NOUNS.get(key, key)
+            badge = counts.get(key)
+            if badge:
+                parts.append(f"{badge} {noun}")
+            elif key == "outliers":
+                # Zero is the informative case for this one, and it is the
+                # reason *not* to open the pane -- half of what the strip is
+                # for. It reads as a phrase here and would be nonsense as a tab
+                # badge, where `Outliers no` was the first attempt.
+                parts.append("no outliers")
+            else:
+                parts.append(noun)
+        return " \u00b7 ".join(parts)
+
+    def _build_controls_section(
+        self, col_id: str, log_default: bool = False, pane_summary: str = ""
+    ) -> str:
         """Build controls section.
 
         Args:
@@ -1693,10 +1775,19 @@ class NumericCardRenderer(CardRenderer):
         lin_active = "" if log_default else " active"
         log_active = " active" if log_default else ""
 
+        # What is behind the button. Without it "Details" promises nothing, so
+        # a reader opens every card to find out whether opening was worth it.
+        summary_html = (
+            f'<span class="details-panes">{self.safe_html_escape(pane_summary)}</span>'
+            if pane_summary
+            else ""
+        )
+
         return f"""
         <div class="card-controls" role="group" aria-label="Numeric controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="{col_id}-details" aria-expanded="false">Details</button>
+                {summary_html}
             </div>
             <div class="controls-slot">
                 <div class="hist-controls" data-scale="{scale}" data-bin="25">

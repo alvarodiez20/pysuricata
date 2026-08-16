@@ -198,11 +198,38 @@ class TestItStaysOnTheDataScale:
             assert quality not in html, quality
 
     def test_the_text_on_each_segment_is_paired_with_its_fill(self, renderer):
-        """`--on-data-*` exists so a label is never dark ink on a dark step."""
+        """`--on-data-*` exists so a label is never dark ink on a dark step.
+
+        `--data-3` is the exception and has no partner: at 4.03:1 on the paper
+        and 3.83:1 on the ink it reaches neither text minimum, so it carries no
+        label at all. A pairing would be a promise the palette cannot keep.
+        """
         html = renderer.render(3, 8, 1, 2)
-        for index in range(1, 5):
+        for index in (1, 2, 4):
             if f"--data-{index}," in html:
                 assert f"--on-data-{index}," in html
+        assert "--on-data-3" not in html
+
+    def test_a_data_3_segment_carries_no_count_and_no_text_colour(self, renderer):
+        """The count goes to the legend, the way a too-narrow segment's does."""
+        html = renderer.render(3, 8, 1, 2)
+        segment = re.search(
+            r'<div class="composition__seg"[^>]*--data-3[^>]*>(.*?)</div>', html
+        )
+        assert segment, "no --data-3 segment in a four-type bar"
+        assert "composition__count" not in segment.group(1)
+        assert "color:" not in segment.group(0)
+
+    def test_the_count_is_still_reachable_in_the_legend(self, renderer):
+        """Dropping the in-segment label must not drop the number."""
+        html = renderer.render(3, 8, 1, 2)
+        legend = (
+            html[html.index("composition__legend") :]
+            if "composition__legend" in html
+            else html
+        )
+        for count in (3, 8, 1, 2):
+            assert f">{count}<" in legend
 
 
 class TestTheAccessibleDescription:

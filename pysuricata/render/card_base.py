@@ -59,7 +59,10 @@ class CardRenderer:
         return '<span class="badge">approx</span>' if approx else ""
 
     def _build_tabbed_details(
-        self, col_id: str, panes: "list[tuple[str, str, str, bool]]"
+        self,
+        col_id: str,
+        panes: "list[tuple[str, str, str, bool]]",
+        counts: "dict[str, str] | None" = None,
     ) -> str:
         """A tabbed details section, rendering only the tabs that have something.
 
@@ -75,6 +78,10 @@ class CardRenderer:
 
         The first surviving pane is the active one, so a card whose Statistics
         tab is dropped still opens on something.
+
+        `counts` maps a pane key to the figure that pane is worth opening for
+        -- `11` beside Outliers. A reader picking a tab should not have to
+        guess which one holds the thing they came for.
         """
         kept = [(key, label, html) for key, label, html, worth in panes if worth]
         if not kept:
@@ -86,11 +93,24 @@ class CardRenderer:
         # where the local interpreter, being newer, ran it happily. Second 3.10
         # slip of the day; the first reached CI.
         active_tab = ' class="active"'
-        tabs = "".join(
-            f'<button role="tab"{active_tab if i == 0 else ""} '
-            f'data-tab="{key}">{label}</button>'
-            for i, (key, label, _) in enumerate(kept)
-        )
+        counts = counts or {}
+
+        def tab(index: int, key: str, label: str) -> str:
+            # The label lives in its own span so the active underline can go on
+            # the text rather than on the 44px tap box. On the box the rule
+            # paints ~29px below the word and reads as a second hairline
+            # floating under the strip.
+            badge = counts.get(key)
+            inner = f'<span class="tab__label">{label}'
+            if badge:
+                inner += f' <span class="tab__count">{badge}</span>'
+            inner += "</span>"
+            return (
+                f'<button role="tab"{active_tab if index == 0 else ""} '
+                f'data-tab="{key}">{inner}</button>'
+            )
+
+        tabs = "".join(tab(i, key, label) for i, (key, label, _) in enumerate(kept))
         bodies = "".join(
             f'<section class="tab-pane{" active" if i == 0 else ""}" '
             f'data-tab="{key}">{html}</section>'
@@ -548,7 +568,9 @@ class TableBuilder:
             flag_items.append(f'<li class="{self.css.flag}">Trim variants</li>')
 
         if flags.empty_strings:
-            flag_items.append(f'<li class="{self.css.flag}">Empty strings</li>')
+            # The accumulator counts `value == "" or value == "0"`, so the
+            # label has to say both.
+            flag_items.append(f'<li class="{self.css.flag}">Empty or zero</li>')
 
         # Boolean flags
         if flags.imbalanced:

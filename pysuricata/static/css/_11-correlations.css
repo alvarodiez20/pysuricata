@@ -165,9 +165,9 @@
 #pysuricata-report .correlation-summary {
   margin-bottom: 16px;
   padding: 12px;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .correlation-summary .summary-header {
@@ -183,7 +183,7 @@
 }
 
 #pysuricata-report .correlation-summary .count {
-  color: var(--text-secondary);
+  color: var(--ink-2);
   font-weight: 500;
 }
 
@@ -202,24 +202,35 @@
   font-weight: 500;
 }
 
+/* Correlation strength is a word, and it reads the ink scale.
+
+   The four bands were four unrelated hues -- magenta, orange, blue, grey --
+   each on a 10% wash of itself, and three of the four failed 4.5:1 against
+   that wash. The data scale is not the answer either: `_00-tokens.css` maps
+   |r| onto --data-1..4 for the diverging *bar*, and --data-3 and --data-4
+   carry no text at all. So the bar keeps the data scale and the label takes
+   the ink one, which is what a label is.
+
+   Emphasis survives without hue: the strong bands are already `font-weight`
+   600 and the bar beside them is already longer. */
 #pysuricata-report .strength-item.very-strong {
-  background: rgba(220, 38, 127, 0.1);
-  color: #dc267f;
+  background: transparent;
+  color: var(--ink);
 }
 
 #pysuricata-report .strength-item.strong {
-  background: rgba(234, 88, 12, 0.1);
-  color: #ea580c;
+  background: transparent;
+  color: var(--ink);
 }
 
 #pysuricata-report .strength-item.moderate {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--data-1);
+  background: transparent;
+  color: var(--ink-2);
 }
 
 #pysuricata-report .strength-item.weak {
-  background: rgba(107, 114, 128, 0.1);
-  color: #6b7280;
+  background: transparent;
+  color: var(--muted);
 }
 
 /* ============================================================================
@@ -240,14 +251,14 @@
   border-radius: 4px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report:not(.light) .correlations-table.enhanced {
   background: #2a2a2a;
   color: #e0e0e0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  border-color: var(--chip-br-dark);
+  border-color: var(--rule-strong);
 }
 
 /* Table Header - Enhanced with Gradients */
@@ -256,7 +267,7 @@
   font-weight: 600;
   text-align: center;
   padding: 10px 8px;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--rule-strong);
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -266,13 +277,13 @@
 
 #pysuricata-report:not(.light) .correlations-table.enhanced th {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
-  border-bottom-color: var(--chip-br-dark);
+  border-bottom-color: var(--rule-strong);
 }
 
 /* Table Cell - Matching Common Values Styling */
 #pysuricata-report .correlations-table.enhanced td {
   padding: 8px;
-  border-bottom: 1px solid var(--chip-br-light);
+  border-bottom: 1px solid var(--rule-strong);
   vertical-align: middle;
   text-align: center;
   font-size: 0.8rem;
@@ -280,7 +291,7 @@
 }
 
 #pysuricata-report:not(.light) .correlations-table.enhanced td {
-  border-bottom-color: var(--chip-br-dark);
+  border-bottom-color: var(--rule-strong);
 }
 
 /* Remove border from last row like common values */
@@ -340,31 +351,33 @@
 }
 
 /* Correlation Value Colors */
+/* No colour on the sign. `_00-tokens.css` is explicit: sign is encoded by
+   which side of centre the diverging bar sits on, and by the `+` or `-`
+   printed in the value itself. Green-for-positive added a third encoding
+   that said nothing the other two did not, and it failed 4.5:1 in both
+   themes while saying it. */
 #pysuricata-report .correlations-table.enhanced .correlation-value.positive {
-  color: #059669;
+  color: var(--ink);
 }
 
-#pysuricata-report .correlations-table.enhanced .correlation-value.negative {
-  color: #dc2626;
-}
 
 /* Strength Colors - Plain Text */
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="very-strong"] {
-  color: #dc267f;
+  color: var(--ink);
   font-weight: 600;
 }
 
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="strong"] {
-  color: #ea580c;
+  color: var(--ink);
   font-weight: 600;
 }
 
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="moderate"] {
-  color: var(--data-1);
+  color: var(--ink-2);
 }
 
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="weak"] {
-  color: #6b7280;
+  color: var(--muted);
 }
 
 /* ============================================================================
@@ -418,7 +431,7 @@
 #pysuricata-report .no-correlations {
   text-align: center;
   padding: 24px;
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 #pysuricata-report .no-correlations .icon {
@@ -554,14 +567,14 @@
   margin-top: 0;
   padding: 20px;
   background: rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   border-radius: 0;
   transition: background-color 0.2s ease;
 }
 
 #pysuricata-report:not(.light) .correlations-section-redesign {
   background: rgba(255, 255, 255, 0.04);
-  border-color: var(--chip-br-dark);
+  border-color: var(--rule-strong);
 }
 
 /* Header section with title and count badge */
@@ -571,24 +584,24 @@
   justify-content: space-between;
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--rule-strong);
 }
 
 #pysuricata-report .correlation-section-title {
   margin: 0;
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 #pysuricata-report .correlation-count-badge {
   padding: 0.5rem 1rem;
-  background: var(--chip-bg);
-  border: 1px solid var(--chip-br);
+  background: transparent;
+  border: 1px solid var(--rule-strong);
   border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 /* Legend header for list view (replaces title with legend) */
@@ -598,7 +611,7 @@
   justify-content: space-between;
   margin-bottom: 1.5rem;
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 2px solid var(--rule-strong);
   flex-wrap: wrap;
   gap: 1rem;
 }
@@ -622,7 +635,7 @@
   margin-bottom: 1.5rem;
   scroll-behavior: smooth;
   scrollbar-width: thin;
-  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  scrollbar-color: var(--rule-strong) var(--track);
 }
 
 /* Custom scrollbar styling - matching Missing Values section format */
@@ -631,11 +644,11 @@
 }
 
 #pysuricata-report .correlations-container::-webkit-scrollbar-track {
-  background: var(--scroll-track);
+  background: var(--track);
 }
 
 #pysuricata-report .correlations-container::-webkit-scrollbar-thumb {
-  background: var(--scroll-thumb);
+  background: var(--rule-strong);
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -653,14 +666,14 @@
 #pysuricata-report .correlation-row {
   margin-bottom: 0.75rem;
   padding: 0.5rem;
-  background: var(--card-bg);
+  background: transparent;
   border-radius: 0;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--rule-strong);
   transition: all 0.2s ease;
 }
 
 #pysuricata-report .correlation-row:hover {
-  border-color: var(--accent-color);
+  border-color: var(--data-1);
   box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
 }
 
@@ -669,20 +682,12 @@
 }
 
 /* Correlation row header: rank, column pair, value */
-#pysuricata-report .correlation-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-  gap: 1rem;
-  flex-wrap: wrap;
-}
 
 #pysuricata-report .rank-badge {
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--chip-bg);
+  color: var(--ink-2);
+  background: transparent;
   padding: 3px 6px;
   border-radius: 4px;
   min-width: 32px;
@@ -698,7 +703,7 @@
 }
 
 #pysuricata-report .col-pair .col-name {
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 /* Column name chip format for correlations */
@@ -722,7 +727,7 @@
 }
 
 #pysuricata-report .col-pair .arrow {
-  color: var(--text-secondary);
+  color: var(--ink-2);
   opacity: 0.6;
   font-size: 0.85rem;
 }
@@ -738,91 +743,19 @@
 }
 
 #pysuricata-report .correlation-value.positive {
-  color: #4caf50;
-  background: rgba(76, 175, 80, 0.1);
+  color: var(--ink);
+  background: transparent;
 }
 
-#pysuricata-report .correlation-value.negative {
-  color: #f44336;
-  background: rgba(244, 67, 54, 0.1);
-}
 
 /* Correlation strength bar */
-#pysuricata-report .correlation-bar {
-  height: 16px;
-  background: var(--bg-secondary);
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid var(--border-color);
-  margin: 4px 0;
-  position: relative;
-}
 
-#pysuricata-report .correlation-bar .bar-fill {
-  height: 100%;
-  transition: width 0.3s ease;
-  border-radius: 5px;
-}
 
 /* Strength-based gradient colors */
-#pysuricata-report .correlation-bar .bar-fill.very-strong {
-  background: linear-gradient(90deg, #d32f2f 0%, #f44336 100%);
-}
 
-#pysuricata-report .correlation-bar .bar-fill.strong {
-  background: linear-gradient(90deg, #f57c00 0%, #ff9800 100%);
-}
-
-#pysuricata-report .correlation-bar .bar-fill.moderate {
-  background: linear-gradient(90deg, #fbc02d 0%, #ffeb3b 100%);
-}
-
-#pysuricata-report .correlation-bar .bar-fill.weak {
-  background: linear-gradient(90deg, #9e9e9e 0%, #bdbdbd 100%);
-}
 
 /* Correlation metadata: strength label and direction */
-#pysuricata-report .correlation-meta {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 8px;
-  gap: 1rem;
-}
 
-#pysuricata-report .strength-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  padding: 4px 10px;
-  border-radius: 4px;
-}
-
-#pysuricata-report .strength-label.very-strong {
-  color: #d32f2f;
-  background: rgba(211, 47, 47, 0.1);
-}
-
-#pysuricata-report .strength-label.strong {
-  color: #f57c00;
-  background: rgba(245, 124, 0, 0.1);
-}
-
-#pysuricata-report .strength-label.moderate {
-  color: #fbc02d;
-  background: rgba(251, 192, 45, 0.1);
-}
-
-#pysuricata-report .strength-label.weak {
-  color: #9e9e9e;
-  background: rgba(158, 158, 158, 0.1);
-}
-
-#pysuricata-report .direction-indicator {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
-}
 
 #pysuricata-report .direction-icon {
   font-size: 1rem;
@@ -830,7 +763,7 @@
 
 #pysuricata-report .direction-text {
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 /* Correlation matrix view (for small datasets) */
@@ -839,7 +772,7 @@
   margin-bottom: 1.5rem;
   scroll-behavior: smooth;
   scrollbar-width: thin;
-  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  scrollbar-color: var(--rule-strong) var(--track);
 }
 
 /* Custom scrollbar styling - matching Sample section horizontal scrollbar */
@@ -848,11 +781,11 @@
 }
 
 #pysuricata-report .correlation-matrix-container::-webkit-scrollbar-track {
-  background: var(--scroll-track);
+  background: var(--track);
 }
 
 #pysuricata-report .correlation-matrix-container::-webkit-scrollbar-thumb {
-  background: var(--scroll-thumb);
+  background: var(--rule-strong);
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -874,11 +807,11 @@
 }
 
 #pysuricata-report .correlation-matrix th {
-  background: var(--bg-secondary);
+  background: transparent;
   padding: 8px;
   font-weight: 600;
   text-align: left;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--rule-strong);
   font-size: 0.8rem;
 }
 
@@ -903,7 +836,7 @@
 #pysuricata-report .correlation-matrix .corr-cell {
   padding: 10px;
   text-align: center;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--rule-strong);
   font-family: var(--font-mono);
   font-weight: 600;
   cursor: pointer;
@@ -917,52 +850,31 @@
 }
 
 /* Matrix cell colors by strength */
-#pysuricata-report .correlation-matrix .corr-cell.diagonal {
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  font-weight: 500;
-  cursor: default;
-}
 
 #pysuricata-report .correlation-matrix .corr-cell.very-strong.positive {
   background: rgba(76, 175, 80, 0.9);
   color: white;
 }
 
-#pysuricata-report .correlation-matrix .corr-cell.very-strong.negative {
-  background: rgba(244, 67, 54, 0.9);
-  color: white;
-}
 
 #pysuricata-report .correlation-matrix .corr-cell.strong.positive {
   background: rgba(76, 175, 80, 0.6);
   color: white;
 }
 
-#pysuricata-report .correlation-matrix .corr-cell.strong.negative {
-  background: rgba(244, 67, 54, 0.6);
-  color: white;
-}
 
 #pysuricata-report .correlation-matrix .corr-cell.moderate.positive {
   background: rgba(76, 175, 80, 0.3);
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
-#pysuricata-report .correlation-matrix .corr-cell.moderate.negative {
-  background: rgba(244, 67, 54, 0.3);
-  color: var(--text-primary);
-}
 
 #pysuricata-report .correlation-matrix .corr-cell.weak {
-  background: var(--bg-secondary);
-  color: var(--text-secondary);
+  background: transparent;
+  color: var(--ink-2);
   opacity: 0.6;
 }
 
-#pysuricata-report .correlation-matrix .corr-cell.weak .weak-val {
-  font-size: 0.75rem;
-}
 
 /* No correlations empty state */
 #pysuricata-report .no-correlations-state {
@@ -972,22 +884,22 @@
   justify-content: center;
   padding: 3rem;
   text-align: center;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 0;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .no-correlations-state .icon {
   font-size: 3rem;
   margin-bottom: 1rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
   opacity: 0.5;
 }
 
 #pysuricata-report .no-correlations-state p {
   margin: 0;
   font-size: 1rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 /* Legend styling */
@@ -997,7 +909,7 @@
   justify-content: center;
   align-items: center;
   padding: 1rem;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 6px;
   font-size: 0.875rem;
   flex-wrap: wrap;
@@ -1046,10 +958,6 @@
     gap: 0.75rem;
   }
 
-  #pysuricata-report .correlation-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 
   #pysuricata-report .col-pair {
     max-width: 100%;
