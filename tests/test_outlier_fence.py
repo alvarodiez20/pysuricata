@@ -351,3 +351,93 @@ class TestTheRenderedPane:
         decided by arrival order -- the harness already drops `min_items` and
         `max_items` indices for the same reason."""
         assert not re.search(r'class="fence-table__idx"[^>]*data-', report)
+
+
+class TestTheTwoTailsShareTheAxis:
+    """5b.5. What this replaced was two tables headed `Min values` and `Max
+    values`, five rows each of index and value. Ten numbers, no context — and
+    a reader could not tell that **every one of `Age`'s five maxima crosses
+    the fence and not one of its five minima does**, which is the whole story
+    of that column's tails and was already computable."""
+
+    @pytest.fixture(scope="class")
+    def report(self) -> str:
+        rng = np.random.default_rng(0)
+        return _markup_only(
+            profile(
+                pd.DataFrame(
+                    {
+                        "fare": rng.lognormal(3, 0.9, 600),
+                        "steady": rng.normal(0, 1, 600),
+                    }
+                ),
+                seed=0,
+            ).html
+        )
+
+    def test_the_bare_two_table_listing_is_gone(self, report):
+        assert "Min values" not in report and "Max values" not in report
+
+    def test_each_row_says_where_it_sits(self, report):
+        notes = re.findall(
+            r'class="tails__note" data-severity="(\w+)">([^<]*)<', report
+        )
+        assert notes
+        assert any(severity == "inside" for severity, _ in notes)
+        assert any(severity in {"moderate", "high", "extreme"} for severity, _ in notes)
+
+    def test_the_asymmetry_is_stated(self, report):
+        ledes = re.findall(r'class="fence-lede">([^<]+)<', report)
+        assert any("tail" in lede for lede in ledes)
+
+    def test_the_severity_words_agree_with_the_outliers_pane(self):
+        """The acceptance criterion, and the reason `classify` is imported
+        rather than reimplemented: a value that is `high` in one pane cannot be
+        `moderate` in the other."""
+        from pysuricata.render.outlier_fence import classify
+
+        stats = _stats(sample_vals=[45.0, 50.0, 55.0, 200.0], min=45.0, max=200.0)
+        fence = build_fence(stats)
+        for row in fence.rows:
+            if row.iqr_severity == "none":
+                continue
+            assert classify(fence, row.value)[0] == row.iqr_severity
+
+    def test_a_value_inside_the_fence_is_not_a_quality_judgement(self):
+        from pysuricata.render.outlier_fence import classify
+
+        stats = _stats(sample_vals=[45.0, 50.0, 55.0, 200.0], min=45.0, max=200.0)
+        fence = build_fence(stats)
+        assert classify(fence, 50.0) == ("inside", "inside the fence")
+
+    def test_ties_are_marked(self):
+        """`Age` holds 0.75 twice and 71 twice, and the pane listed them as
+        separate rows without comment — so one value looked like two findings.
+
+        Built here rather than taken from the rendered fixture: the fixture's
+        columns are continuous and hold no repeated value at all, so a check
+        against it would pass on a report where ties are never marked.
+        """
+        from pysuricata.render.numeric_card import NumericCardRenderer
+
+        stats = _stats(
+            sample_vals=[float(v) for v in range(10, 61)],
+            min=10.0,
+            max=60.0,
+            min_items=[("r1", 10.0), ("r2", 10.0), ("r3", 11.0)],
+            max_items=[("r9", 60.0), ("r8", 59.0)],
+        )
+        html = NumericCardRenderer()._build_extremes_table(stats)
+        ties = re.findall(r'class="tails__tie"[^>]*>(×\d+)<', html)
+        assert ties == ["×2", "×2"], html[:400]
+
+    def test_the_quiet_case_says_it_once(self):
+        """Both tails inside the fence used to render `all 5 sit inside the
+        fence.` twice in one sentence, which reads as a template that did not
+        notice it was describing the same thing."""
+        from pysuricata.render.numeric_card import NumericCardRenderer
+
+        rows = [{"severity": "inside"} for _ in range(5)]
+        sentence = NumericCardRenderer()._tails_verdict(rows, list(rows))
+        assert sentence.count("inside the fence") == 1
+        assert "Neither tail" in sentence

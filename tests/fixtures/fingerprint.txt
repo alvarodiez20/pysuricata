@@ -542,6 +542,16 @@ attr::col_age::pct	9.2
 attr::col_age::pct	9.7
 attr::col_age::pct	9.8
 attr::col_age::pct	9.9
+attr::col_age::value	1
+attr::col_age::value	1
+attr::col_age::value	1
+attr::col_age::value	1
+attr::col_age::value	1
+attr::col_age::value	79
+attr::col_age::value	79
+attr::col_age::value	79
+attr::col_age::value	79
+attr::col_age::value	79
 attr::col_fare::count	1
 attr::col_fare::count	1
 attr::col_fare::count	1
@@ -870,6 +880,10 @@ attr::col_fare::pct	7.6
 attr::col_fare::pct	7.9
 attr::col_fare::pct	8.2
 attr::col_fare::pct	9.1
+attr::col_fare::value	0.388326086527
+attr::col_fare::value	0.507866864235
+attr::col_fare::value	1.44603234056
+attr::col_fare::value	1.46542961297
 attr::col_fare::value	130.401531111
 attr::col_fare::value	130.566829599
 attr::col_fare::value	133.496447433
@@ -878,10 +892,16 @@ attr::col_fare::value	139.554509291
 attr::col_fare::value	140.524465311
 attr::col_fare::value	142.781603204
 attr::col_fare::value	147.599808193
+attr::col_fare::value	147.599808193
+attr::col_fare::value	147.80384909
 attr::col_fare::value	147.80384909
 attr::col_fare::value	162.402632192
+attr::col_fare::value	162.402632192
+attr::col_fare::value	166.076141713
 attr::col_fare::value	166.076141713
 attr::col_fare::value	176.265539114
+attr::col_fare::value	176.265539114
+attr::col_fare::value	2.2526764199
 kv::::booked 311	56
 kv::::columns	8
 kv::::duplicates	0

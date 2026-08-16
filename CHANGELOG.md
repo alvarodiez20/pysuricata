@@ -24,6 +24,16 @@ quoted when both sides were measured in the same round-robin run.
   report's own cards wrap one per row. Nothing that worked was dropped — the
   log, the streamed 5M-row demo, the JSON download, the version line and the
   sandboxed report frame all survive, restyled.
+- **Min/Max plots both tails on the fence's axis** ([#154], 5b.5). It was two
+  tables headed `Min values` and `Max values`, five rows each of index and
+  value — ten numbers, no context. A reader could not tell that **every one of
+  `Age`'s five maxima crosses the IQR fence and not one of its five minima
+  does**, which is the whole story of that column's tails and was already
+  computable. The pane now reads *The low tail is ordinary — all 5 sit inside
+  the fence. Every one of the 5 highest crosses it.* above the same figure the
+  Outliers pane draws, and gives each row its position (`high · 2.3× IQR`,
+  `inside the fence`). Repeated values are marked, so `Age`'s two 0.75s and two
+  71s stop looking like four findings.
 - **The Outliers pane draws the fence** ([#154], 5b.2). It opened with roughly
   60px announcing `Low Outliers — 0 outliers (0.0%)` over three severity chips
   all reading zero, said the same again for the high side, then listed the

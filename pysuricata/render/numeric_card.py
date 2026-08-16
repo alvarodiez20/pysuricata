@@ -16,6 +16,8 @@ from .histogram_svg import SVGHistogramRenderer
 from .identifier import identifier_facts, looks_like_identifier
 from .outlier_fence import (
     build_fence,
+    classify,
+    cluster_marks,
     fence_verdict,
     method_note,
     render_figure,
@@ -62,7 +64,7 @@ class NumericCardRenderer(CardRenderer):
 
         stats_table = self._build_stats_table(stats)
         common_table = self._build_common_values_table(stats)
-        extremes_table = self._build_extremes_table(stats)
+        extremes_table = self._build_extremes_table(stats, quantiles, col_id)
         outliers_pane = self._build_outliers_pane(stats, quantiles, col_id)
         corr_table = self._build_correlation_table(stats)
         missing_table = self._build_missing_values_table(stats)
@@ -566,26 +568,203 @@ class NumericCardRenderer(CardRenderer):
             "</table>"
         )
 
-    def _build_extremes_table(self, stats: NumericStats) -> str:
-        """Build extremes table."""
+    def _build_extremes_table(
+        self,
+        stats: NumericStats,
+        quantiles: QuantileData | None = None,
+        col_id: str = "",
+    ) -> str:
+        """The two tails, on the axis that says whether either one is unusual.
 
-        def _sub(label: str, items: list) -> str:
+        Phase 5b.5 (#154). What this replaces was two tables headed `Min
+        values` and `Max values`, five rows each of index and value. Ten
+        numbers, no context — and a reader could not tell that **every one of
+        `Age`'s five maxima is an outlier and not one of its five minima is**,
+        which is the whole story of that column's tails and was already
+        computable from the fence.
+
+        So the pane plots both tails on the Outliers pane's axis and gives each
+        row its position. `classify` is imported rather than reimplemented: a
+        value that reads `high` in one pane cannot read `moderate` in the
+        other, and two implementations cannot guarantee that however carefully
+        they are written.
+        """
+        lows = [(i, float(v)) for i, v in (getattr(stats, "min_items", None) or [])]
+        highs = [(i, float(v)) for i, v in (getattr(stats, "max_items", None) or [])]
+        if not lows and not highs:
+            return '<p class="fence-none">No extreme values were tracked.</p>'
+
+        try:
+            fence = build_fence(stats, quantiles)
+        except Exception:
+            fence = None
+
+        if fence is None:
+            # No fence means no position to report, so this falls back to the
+            # bare listing rather than inventing a verdict.
+            return self._build_extremes_listing(lows, highs)
+
+        name = self.safe_html_escape(stats.name)
+        low_rows = self._tail_rows(fence, lows)
+        high_rows = self._tail_rows(fence, highs)
+
+        marks = cluster_marks(
+            fence,
+            [(value, classify(fence, value)[0]) for _, value in lows + highs],
+        )
+
+        header = (
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · extreme values</span>'
+            '<span class="fence-head__rule"></span>'
+            f'<span class="fence-head__count">{len(lows)} lowest · '
+            f"{len(highs)} highest of {fence.n_total:,}</span>"
+            "</div>"
+        )
+        lede = f'<p class="fence-lede">{self._tails_verdict(low_rows, high_rows)}</p>'
+        figure = render_figure(
+            fence,
+            name,
+            self.format_number,
+            marks=marks,
+            described=(
+                f"{name} value axis: {len(lows)} lowest and {len(highs)} highest "
+                "against the IQR fence"
+            ),
+            legend="tails",
+        )
+        body = (
+            '<div class="tails-body">'
+            f"{self._tail_column('lowest', low_rows, col_id)}"
+            f"{self._tail_column('highest', high_rows, col_id)}"
+            "</div>"
+        )
+        return f'<div class="fence-pane">{header}{lede}{figure}{body}</div>'
+
+    def _tail_rows(self, fence, items: list[tuple]) -> list[dict]:
+        """One row per tracked value, with ties marked.
+
+        `Age` holds 0.75 twice and 71 twice, and the pane listed them as
+        separate rows without comment -- so the same value looked like two
+        findings.
+        """
+        seen: dict[float, int] = {}
+        for _, value in items:
+            seen[round(value, 12)] = seen.get(round(value, 12), 0) + 1
+
+        rows = []
+        for index, value in items:
+            severity, phrase = classify(fence, value)
+            ties = seen[round(value, 12)]
+            rows.append(
+                {
+                    "index": str(index),
+                    "value": value,
+                    "severity": severity,
+                    "phrase": phrase,
+                    "ties": ties,
+                }
+            )
+        return rows
+
+    def _tails_verdict(self, lows: list[dict], highs: list[dict]) -> str:
+        """The sentence the two bare tables never said.
+
+        On `Age`: *The low tail is ordinary — all five sit inside the fence.
+        Every one of the five highest crosses it.*
+
+        The asymmetry is the finding, so the both-quiet case gets one clause
+        rather than two. Saying `all 5 sit inside the fence` twice reads as a
+        template that did not notice it was describing the same thing.
+        """
+        low_beyond = sum(1 for row in lows if row["severity"] != "inside")
+        high_beyond = sum(1 for row in highs if row["severity"] != "inside")
+        tracked = len(lows) + len(highs)
+
+        if not tracked:
+            return "No extreme values were tracked for this column."
+
+        if not (low_beyond or high_beyond):
+            return (
+                f"Neither tail is unusual: all {tracked} tracked values sit "
+                "inside the fence."
+            )
+
+        def describe(rows: list[dict], beyond: int, side: str) -> str:
+            if beyond == 0:
+                return f"all {len(rows)} sit inside the fence"
+            if beyond == len(rows):
+                return f"every one of the {len(rows)} {side} crosses it"
+            return f"{beyond} of {len(rows)} cross it"
+
+        if not lows:
+            return f"The high tail: {describe(highs, high_beyond, 'highest')}."
+        if not highs:
+            return f"The low tail: {describe(lows, low_beyond, 'lowest')}."
+
+        low = describe(lows, low_beyond, "lowest")
+        high = describe(highs, high_beyond, "highest")
+        opening = "The low tail is ordinary — " if low_beyond == 0 else "The low tail: "
+        return f"{opening}{low}. {high[0].upper()}{high[1:]}."
+
+    def _tail_column(self, side: str, rows: list[dict], col_id: str = "") -> str:
+        if not rows:
+            return ""
+        beyond = sum(1 for row in rows if row["severity"] != "inside")
+        if beyond == 0:
+            summary, tone = "none beyond a fence", "good"
+        elif beyond == len(rows):
+            summary, tone = f"all {beyond} beyond the IQR fence", "warn"
+        else:
+            summary, tone = f"{beyond} beyond the IQR fence", "warn"
+
+        lines = "".join(
+            f'<div class="tails__row">'
+            f'<span class="tails__idx">{self.safe_html_escape(row["index"])}</span>'
+            f'<span class="tails__val" data-col="{col_id}" '
+            f'data-value="{row["value"]:.12g}">{self.format_number(row["value"])}'
+            + (
+                f'<span class="tails__tie" title="this value appears '
+                f'{row["ties"]} times in the tail">×{row["ties"]}</span>'
+                if row["ties"] > 1
+                else ""
+            )
+            + "</span>"
+            f'<span class="tails__note" data-severity="{row["severity"]}">'
+            f"{row['phrase']}</span>"
+            f"</div>"
+            for row in rows
+        )
+        return (
+            '<div class="tails__col">'
+            f'<div class="tails__head"><span class="tails__side">{len(rows)} {side}</span>'
+            f'<span class="tails__summary" data-tone="{tone}">{summary}</span></div>'
+            f"{lines}</div>"
+        )
+
+    def _build_extremes_listing(self, lows: list[tuple], highs: list[tuple]) -> str:
+        """The bare tails, for a column with no fence to place them against."""
+
+        def column(side: str, items: list[tuple]) -> str:
             if not items:
-                return f"<div class='sub'><div class='hdr'>{label}</div><div class='muted'>—</div></div>"
-            rows = "".join(
-                f"<tr><td>{self.safe_html_escape(str(idx))}</td><td class='num'>{self.format_number(val)}</td></tr>"
-                for idx, val in items
+                return ""
+            lines = "".join(
+                f'<div class="tails__row">'
+                f'<span class="tails__idx">{self.safe_html_escape(str(index))}</span>'
+                f'<span class="tails__val">{self.format_number(value)}</span>'
+                f'<span class="tails__note" data-severity="inside"></span>'
+                f"</div>"
+                for index, value in items
             )
             return (
-                f"<div class='sub'><div class='hdr'>{label}</div>"
-                f"<table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody>{rows}</tbody></table></div>"
+                '<div class="tails__col">'
+                f'<div class="tails__head"><span class="tails__side">'
+                f"{len(items)} {side}</span></div>{lines}</div>"
             )
 
         return (
-            "<div class='extremes stats-quant'>"
-            + _sub("Min values", list(getattr(stats, "min_items", []) or []))
-            + _sub("Max values", list(getattr(stats, "max_items", []) or []))
-            + "</div>"
+            '<div class="fence-pane"><div class="tails-body">'
+            f"{column('lowest', lows)}{column('highest', highs)}</div></div>"
         )
 
     def _build_outliers_pane(

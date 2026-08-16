@@ -63,7 +63,10 @@ def test_numeric_details_tabs_present():
     assert "P90" in html or "P95" in html
     # Content sniff
     assert "Top correlations" in html or "Correlations" in html
-    assert "Min values" in html and "Max values" in html
+    # 5b.5 replaced the two `Min values` / `Max values` tables with one pane
+    # plotting both tails on the Outliers pane's axis, so the headings are the
+    # tail sizes and the content is the position of each value.
+    assert "lowest" in html and "highest" in html
 
 
 def test_numeric_card_missing_chunk_visualization():
@@ -169,9 +172,8 @@ def test_numeric_card_correlation_and_missing_tables():
     s.missing = 0
     assert "0.0%" in renderer._build_missing_values_table(s)
 
-    # Extremes table empty handling
+    # Extremes pane with nothing tracked: a sentence, not a dash in a table.
     s.min_items = []
     s.max_items = []
     extremes_html = renderer._build_extremes_table(s)
-    assert "—" in extremes_html
-    assert "extremes" in extremes_html
+    assert "No extreme values were tracked" in extremes_html

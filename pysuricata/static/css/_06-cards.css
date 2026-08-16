@@ -1530,11 +1530,13 @@
    so a wide value at either end sits inside the figure rather than
    overhanging it. */
 #pysuricata-report .fence__fencelabel[data-anchor="start"],
+#pysuricata-report .fence__count[data-anchor="start"],
 #pysuricata-report .fence__tick[data-anchor="start"] {
   transform: none;
 }
 
 #pysuricata-report .fence__fencelabel[data-anchor="end"],
+#pysuricata-report .fence__count[data-anchor="end"],
 #pysuricata-report .fence__tick[data-anchor="end"] {
   transform: translateX(-100%);
 }
@@ -1597,6 +1599,15 @@
 #pysuricata-report .fence__mark[data-severity="high"],
 #pysuricata-report .fence__mark[data-severity="extreme"] {
   background: var(--q-bad);
+}
+
+/* The Min/Max pane plots values on both sides of the fence, so it needs
+   a fill for the ones that did not cross. It takes the data scale
+   rather than the warm one: a value inside the fence is not a quality
+   judgement, and the warm scale is never used for data. */
+#pysuricata-report .fence__mark[data-severity="inside"],
+#pysuricata-report .fence__legend .key--mark[data-severity="inside"] {
+  background: var(--data-2);
 }
 
 #pysuricata-report .fence__axis {
@@ -1750,6 +1761,110 @@
   color: var(--muted);
 }
 
+/* ---- the two tails (5b.5) ------------------------------------
+   The same axis as the Outliers pane, because the design requires a
+   reader who has opened one to be able to read the other. What this
+   replaced was two tables of bare index and value, in which a reader
+   could not see that every one of `Age`'s five maxima crosses the
+   fence and not one of its five minima does. */
+#pysuricata-report .tails-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 34px;
+  border-top: 1px solid var(--ink);
+  padding-top: 16px;
+}
+
+#pysuricata-report .tails__col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#pysuricata-report .tails__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+}
+
+#pysuricata-report .tails__side {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+#pysuricata-report .tails__summary {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Olive is legal here in a way it is not on a severity chip: "none
+   beyond a fence" really is a check that passed. */
+#pysuricata-report .tails__summary[data-tone="good"] {
+  color: var(--q-good);
+}
+
+#pysuricata-report .tails__summary[data-tone="warn"] {
+  color: var(--q-warn-text);
+}
+
+#pysuricata-report .tails__row {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 84px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .tails__idx,
+#pysuricata-report .tails__val,
+#pysuricata-report .tails__note {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#pysuricata-report .tails__idx {
+  color: var(--muted);
+}
+
+#pysuricata-report .tails__val {
+  font-size: 13px;
+  text-align: right;
+  color: var(--ink);
+}
+
+/* `Age` holds 0.75 twice and 71 twice, and the pane listed them as
+   separate rows without comment -- so one value looked like two
+   findings. */
+#pysuricata-report .tails__tie {
+  margin-left: 5px;
+  font-size: 10px;
+  color: var(--muted);
+  cursor: help;
+}
+
+#pysuricata-report .tails__note {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+#pysuricata-report .tails__note[data-severity="high"] {
+  color: var(--q-warn-text);
+}
+
+#pysuricata-report .tails__note[data-severity="extreme"] {
+  color: var(--q-bad);
+}
+
 #pysuricata-report .fence-methods {
   display: flex;
   flex-direction: column;
@@ -1795,6 +1910,16 @@
      keeps its values in `title` and the table lists them. */
   #pysuricata-report .fence__count {
     display: none;
+  }
+
+  #pysuricata-report .tails-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  #pysuricata-report .tails__row {
+    grid-template-columns: 56px minmax(0, 72px) minmax(0, 1fr);
+    gap: 8px;
   }
 }
 
