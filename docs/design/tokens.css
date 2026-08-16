@@ -1,0 +1,226 @@
+/* =============================================================
+   pysuricata report — design tokens
+   Replaces the token layer of _00-tokens.css.
+
+   Two scales that never mix:
+     --data-*  blue. Every chart, bar, histogram, segment.
+     --q-*     warm. Data quality only: pass, warning, fail.
+
+   Reason: the old palette assigned a hue per column type
+   (numeric/categorical/datetime/boolean) and the per-column cards
+   inherited it. Inside a card the type badge already names the type,
+   so the hue carried nothing — and it collided. Olive meant both
+   "categorical" and "passes"; rust meant both "boolean" and "fails".
+   A rust bar and a rust warning chip sat in the same card meaning
+   unrelated things. Data is now blue; type is a word.
+
+   Every ratio below was measured, in both themes. Three rules at the
+   bottom of this file are NOT expressible as a token pair, so
+   test_contrast.py cannot catch them — each one was a real defect
+   found in review before it was written down.
+   ============================================================= */
+
+#pysuricata-report {
+  /* ---- surfaces & text ---------------------------------- */
+  --paper:        #FBF9F5;
+  --ink:          #22201C;  /* on paper 15.1:1 */
+  --ink-2:        #4A453D;  /* body prose, on paper 9.0:1 */
+  --muted:        #57524A;  /* captions, secondary figures, on paper 7.4:1 */
+  --rule:         #E2DCD1;  /* hairline between rows. on paper 1.3:1 */
+  --rule-strong:  #CFC7B8;  /* container edge. on paper 1.6:1 */
+  --axis:         #8F8474;  /* chart axis and ticks. on paper 3.5:1 */
+  --track:        #EDE6DA;  /* empty portion of a bar */
+
+  /* ---- data: one hue, four steps ------------------------
+     The "legal on" column is the constraint that matters. A mark
+     sitting on the paper or on an empty track needs 3:1 (WCAG 1.4.11);
+     a segment inside a stack is bounded by its neighbours and does not.
+
+       token     hex      paper  track  legal on            text on it
+       --------  -------  -----  -----  ------------------  ----------
+       --data-1  #2C4A62  8.82   7.48   paper, track, stack  paper
+       --data-2  #3E6280  6.12   5.19   paper, track, stack  paper
+       --data-3  #5C7F99  4.03   3.42   paper, track, stack  NONE
+       --data-4  #A8BECD  1.83   1.55   stack only           ink
+
+     --data-3 was #7FA0B5 in the first cut and is changed here: at
+     2.63:1 on the paper it could not legally carry a standalone mark,
+     which is the job a third step exists for. #5C7F99 clears 3:1 on
+     both surfaces in both themes. It is too mid-tone for text either
+     way (ink 3.83, paper 4.03) — so --data-3 may be a fill, never a
+     label background.
+     ------------------------------------------------------- */
+  --data-1:       #2C4A62;
+  --data-2:       #3E6280;  /* DEFAULT for every chart */
+  --data-3:       #5C7F99;
+  --data-4:       #A8BECD;  /* stack-internal only — see rule 1 */
+
+  /* Text colour to use ON each data step. --data-3 carries none. */
+  --on-data-1:    var(--paper);
+  --on-data-2:    var(--paper);
+  --on-data-4:    var(--ink);
+
+  /* ---- data quality: never used for data ---------------- */
+  --q-good:       #4A5D1E;  /* passes a check. on paper 6.9:1 */
+  --q-warn-text:  #8F6417;  /* warning AS TEXT. on paper 5.0:1 */
+  --q-warn-fill:  #A2731A;  /* warning AS FILL/BORDER. on paper 4.0:1 — clears the 3:1 non-text minimum, FAILS as text */
+  --q-bad:        #963F1C;  /* fails a check. on paper 6.6:1 */
+
+  /* ---- type ---------------------------------------------- */
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+
+  /* ---- layout -------------------------------------------- */
+  --appbar-h:      52px;
+  --appbar-h-sm:   48px;
+  --tap-min:       44px;   /* every interactive target, both axes */
+  --anchor-offset: 60px;   /* in-page anchors under the sticky bar */
+}
+
+/* -------------------------------------------------------------
+   DARK MODE — PROPOSED, NOT YET VERIFIED as a whole, though the
+   data scale below was measured. Note it REVERSES: bars sit on a
+   dark ground, so the default fill becomes a light step.
+
+     token     hex      paper  track  legal on
+     --data-1  #A8BECD  9.02   7.74   paper, track, stack
+     --data-2  #7FA0B5  6.28   5.39   paper, track, stack
+     --data-3  #5C7F99  4.09   3.51   paper, track, stack
+     --data-4  #4A6E8A  3.21   2.76   stack only
+   ------------------------------------------------------------- */
+#pysuricata-report:not(.light) {
+  --paper:        #1C1A17;
+  --ink:          #F2EFE9;
+  --ink-2:        #D6D1C7;
+  --muted:        #A8A196;
+  --rule:         #332F29;
+  --rule-strong:  #46413A;
+  --axis:         #7A7165;  /* on the dark paper 3.6:1 */
+  --track:        #2A2721;
+
+  --data-1:       #A8BECD;
+  --data-2:       #7FA0B5;  /* default chart fill in dark mode */
+  --data-3:       #5C7F99;
+  --data-4:       #4A6E8A;  /* stack-internal only */
+
+  --on-data-1:    var(--paper);
+  --on-data-2:    var(--paper);
+  --on-data-4:    var(--ink);
+
+  --q-good:       #A9C46C;
+  --q-warn-text:  #E0B057;
+  --q-warn-fill:  #C08A1E;
+  --q-bad:        #E08A63;
+}
+
+/* =============================================================
+   THREE RULES A CONTRAST TEST CANNOT CHECK
+
+   test_contrast.py asserts token PAIRS. These three are about which
+   surface a mark lands on, what order marks paint in, and what a
+   zero value should draw. Each was a real defect caught in review.
+   ============================================================= */
+
+/* -------------------------------------------------------------
+   RULE 1 — Only --data-1, --data-2 and --data-3 may sit on the
+   paper or on an empty --track. --data-4 is stack-internal only:
+   legal beside another segment, never alone on a background.
+
+   How it goes wrong: --data-4 reads as a reasonable "quiet" choice
+   for a subordinate chart, and at 1.83:1 it is a ghost. If a chart
+   should be subordinate, demote it one step and promote the mark
+   that outranks it — do not push it under the contrast floor.
+   ------------------------------------------------------------- */
+
+/* -------------------------------------------------------------
+   RULE 2 — A quality-coloured mark crossing a data fill must
+   either protrude past it onto the paper, or paint UNDERNEATH it.
+
+   --q-bad on --data-2 is 1.08:1; --q-warn-fill on --data-2 is
+   1.53:1. No warm colour is visible on a blue fill. So:
+
+     a) a reference line across a bar chart goes BEFORE the bars in
+        DOM order, so bars occlude it, and carries its value as a
+        tick in the axis gutter where it meets the paper;
+     b) a marker inside a filled band (a median, a mean) must
+        protrude past the band edge, and is differentiated from its
+        neighbour by SHAPE, not colour alone;
+     c) a legend swatch must be the colour actually drawn. A swatch
+        naming a mark the reader cannot find is worse than no legend.
+
+   How it goes wrong: it looks correct in the code and vanishes in
+   the render, and the mark disappears over exactly the bars that
+   cross the reference — the interesting ones.
+   ------------------------------------------------------------- */
+
+/* -------------------------------------------------------------
+   RULE 3 — A zero count draws nothing.
+
+   A 1px floor is right for a small non-zero value that would
+   otherwise vanish, and wrong for zero:
+
+     const h = v === 0 ? 0 : Math.max(1, (v / max) * H);
+
+   The month chart is where this matters. Ten empty months drawn as
+   ten 1px bars assert data that is not there, on the one chart whose
+   purpose is to show that ten of twelve buckets are empty.
+   ------------------------------------------------------------- */
+
+/* -------------------------------------------------------------
+   MISSING-VALUE SEVERITY — the one place data uses the warm scale,
+   because the encoding IS severity: Cabin at 77% should look worse
+   than Embarked at 0.2%.
+     >= 50%  --q-bad
+     >=  5%  --q-warn-fill
+     >   0%  --q-good
+     ==  0%  --muted
+   ------------------------------------------------------------- */
+
+/* -------------------------------------------------------------
+   CORRELATION STRENGTH — use --data-2 for every bar.
+
+   The first cut specified three strength bands. On a diverging bar
+   the LENGTH already encodes |r| — it is |r| × half the track — so
+   the bands restated what the bar was already saying, and two of
+   the three tints then failed rule 1. Sign is position: left of
+   centre for negative, right for positive, value printed.
+
+   If you do want bands, --data-1 / --data-2 / --data-3 are the only
+   legal three, and none of them may carry text.
+   ------------------------------------------------------------- */
+
+/* -------------------------------------------------------------
+   MICRO-LABEL — every section header and stat caption.
+   ------------------------------------------------------------- */
+#pysuricata-report .micro-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* -------------------------------------------------------------
+   COMPATIBILITY SHIM
+   Maps the legacy variable names onto the new scale so existing
+   rules keep working while the phases land. DELETE once every
+   phase is done — it is scaffolding, not part of the system.
+   ------------------------------------------------------------- */
+#pysuricata-report {
+  --divider:       var(--rule);
+  --divider-light: var(--rule);
+  --divider-dark:  var(--rule);
+  --chip-bg:       transparent;
+  --chip-bg-light: transparent;
+  --chip-bg-dark:  transparent;
+  --chip-br:       var(--rule-strong);
+  --chip-br-light: var(--rule-strong);
+  --chip-br-dark:  var(--rule-strong);
+  --appbar-bg:     var(--paper);
+  --border-color:  var(--rule-strong);
+  --accent-color:  var(--q-good);
+  --bar:           var(--data-2);
+  --axis-text:     var(--muted);
+  --scroll-track:  var(--track);
+  --scroll-thumb:  var(--rule-strong);
+}
