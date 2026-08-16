@@ -757,11 +757,11 @@
 
 #pysuricata-report .header-grid {
   row-gap: 0.2rem;
-  grid-template-columns: 78px 1fr;
+  grid-template-columns: auto 1fr;
 }
 
-#pysuricata-report .header-grid .logo img {
-  height: 54px;
+#pysuricata-report .header-grid .logo .logo-mark {
+  height: 40px;
 }
 
 #pysuricata-report .title-nav h1 {

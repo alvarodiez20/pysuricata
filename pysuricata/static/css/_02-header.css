@@ -19,8 +19,9 @@
 /* 2-row grid, logo spans both rows */
 #pysuricata-report .header-grid {
   display: grid;
-  grid-template-columns: 80px 1fr;
-  /* slightly larger logo column */
+  grid-template-columns: auto 1fr;
+  /* The mark plus the typeset name; sized by content rather than a fixed
+     column, because the name is text and text is not a fixed width. */
   grid-template-rows: auto auto;
   grid-template-areas:
     "logo title"
@@ -43,26 +44,30 @@
   background: none;
 }
 
-/* Ensure embedded logo images render */
-#pysuricata-report #logo img {
-  height: 60px;
-  /* slightly larger image */
+/* The lockup: drawn mark, typeset name.
+   There is deliberately no light/dark variant here. The mark is inline SVG with
+   its own two colours, which read on either background, and the name is text,
+   so it follows currentColor. The pair of PNGs this replaced existed only
+   because the wordmark was baked into the artwork and had to be recoloured. */
+#pysuricata-report #logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#pysuricata-report #logo .logo-mark {
+  height: 44px;
   width: auto;
   display: block;
+  flex: none;
 }
 
-/* Default: show light, hide dark */
-#pysuricata-report #logo #logo-dark {
-  display: none;
-}
-
-/* In dark mode, swap visibility */
-#pysuricata-report:not(.light) #logo #logo-light {
-  display: none;
-}
-
-#pysuricata-report:not(.light) #logo #logo-dark {
-  display: block;
+#pysuricata-report #logo .wordmark {
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.01em;
+  color: inherit;
+  white-space: nowrap;
 }
 
 /* Top row: title (left), nav + toggle (right) */
@@ -218,12 +223,12 @@
 }
 
 @media (max-width: 560px) {
-  #pysuricata-report .header-grid {
-    grid-template-columns: 66px 1fr;
+  #pysuricata-report #logo .logo-mark {
+    height: 34px;
   }
 
-  #pysuricata-report .header-grid .logo img {
-    height: 50px;
+  #pysuricata-report #logo .wordmark {
+    font-size: 0.95rem;
   }
 }
 
