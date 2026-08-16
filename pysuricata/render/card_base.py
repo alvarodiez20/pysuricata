@@ -58,6 +58,38 @@ class CardRenderer:
         """Return an 'approx' badge if values are approximate, else empty string."""
         return '<span class="badge">approx</span>' if approx else ""
 
+    def _build_stat_row(self, rows: list[tuple[str, str, str | None]]) -> str:
+        """One full-width stat row in place of two narrow tables.
+
+        The tables were 240px each beside a squeezed chart. As a row they take
+        the card's full width, which is what lets the chart have the rest.
+
+        `minmax(0, 1fr)` rather than `1fr`: a grid track's default minimum is
+        its content, so one long value -- `-1.2345678e+18` is the case that does
+        it -- widens its column and pushes the others out of alignment instead
+        of wrapping inside its own cell.
+
+        Lives here rather than on one renderer because all four card kinds need
+        the same row. #114 restacked the numeric card and left the other three
+        on `.triple-row`, so a report mixing column types showed two different
+        card architectures side by side -- which is more jarring than either
+        one alone.
+        """
+        cells = []
+        for label, value, cls in rows:
+            tone = ""
+            for level in ("crit", "warn"):
+                if level in (cls or ""):
+                    tone = f" is-{level}"
+                    break
+            cells.append(
+                f'<div class="vstat{tone}">'
+                f'<div class="vstat__cap">{label}</div>'
+                f'<div class="vstat__val">{value}</div>'
+                "</div>"
+            )
+        return f'<div class="vstat-row">{"".join(cells)}</div>'
+
     def _build_chunk_distribution_simple(self, stats, total_values: int) -> str:
         """Build chunk-level missing values distribution bar.
 

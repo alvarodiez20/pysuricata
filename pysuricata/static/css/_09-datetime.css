@@ -1,20 +1,20 @@
 /* =============================
    DATETIME VARIABLES – triple layout & mini‑charts
    ============================= */
-#pysuricata-report .var-card__body .triple-row .chart .dt-chart {
+#pysuricata-report .var-card__body .var-chart .dt-chart {
   display: block;
   width: 100%;
   min-height: 90px;
 }
 
-#pysuricata-report .var-card__body .triple-row .chart .dt-chart:first-child {
+#pysuricata-report .var-card__body .var-chart .dt-chart:first-child {
   min-height: 220px;
   /* main timeline area */
   flex: 1 1 auto;
   /* allow to stretch like histogram */
 }
 
-#pysuricata-report .var-card__body .triple-row .chart .dt-chart:not(:first-child) {
+#pysuricata-report .var-card__body .var-chart .dt-chart:not(:first-child) {
   margin-top: 8px;
   /* space between small multiples */
 }
@@ -69,11 +69,11 @@
 
 /* Responsive: keep datetime charts tidy on narrow screens */
 @media (max-width: 768px) {
-  #pysuricata-report .var-card__body .triple-row .chart .dt-chart:first-child {
+  #pysuricata-report .var-card__body .var-chart .dt-chart:first-child {
     min-height: 200px;
   }
 
-  #pysuricata-report .var-card__body .triple-row .chart .dt-chart {
+  #pysuricata-report .var-card__body .var-chart .dt-chart {
     min-height: 80px;
   }
 }
@@ -130,37 +130,12 @@
   opacity: 1;
 }
 
-/* =============================
-   Datetime card polish — fix wrapping, clipping and layout
-   ============================= */
-/* Prevent label/value wrapping inside the small key/value tables. Keep single line with ellipsis. */
-#pysuricata-report .var-card__body .triple-row .stats-left table.kv,
-#pysuricata-report .var-card__body .triple-row .stats-right table.kv {
-  table-layout: fixed;
-  /* two columns => stable widths */
-}
 
-#pysuricata-report .var-card__body .triple-row .stats-left table.kv th,
-#pysuricata-report .var-card__body .triple-row .stats-left table.kv td,
-#pysuricata-report .var-card__body .triple-row .stats-right table.kv th,
-#pysuricata-report .var-card__body .triple-row .stats-right table.kv td {
-  white-space: nowrap;
-}
 
-#pysuricata-report .var-card__body .triple-row .stats-left table.kv td,
-#pysuricata-report .var-card__body .triple-row .stats-right table.kv td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  /* one-line with … */
-}
+
 
 /* Make header cells obey the box and prefer truncation over wrapping */
-#pysuricata-report .var-card__body .triple-row .stats-left table.kv th,
-#pysuricata-report .var-card__body .triple-row .stats-right table.kv th {
-  overflow: visible;
-  text-overflow: clip;
-  /* Allow labels to display fully without truncation */
-}
+
 
 /* Ensure the outer SVG does not clip tick labels at the right/bottom edges */
 #pysuricata-report .dt-svg {
@@ -174,17 +149,8 @@
   }
 }
 
-
-/*# =============================
-#   DATETIME card – align chart height with tables & trim bottom whitespace
-# =============================
-/* Triple row alignment is now handled by the general rule above */
-#pysuricata-report .var-card__body .triple-row>* {
-  align-self: stretch;
-}
-
 /* Let the main datetime chart fill its column height without relying on % heights */
-#pysuricata-report .var-card__body .triple-row .chart .dt-chart:first-child {
+#pysuricata-report .var-card__body .var-chart .dt-chart:first-child {
   display: flex;
   /* container controls child sizing */
   flex: 1 1 auto;
@@ -193,7 +159,7 @@
   /* allow shrinking if needed */
 }
 
-#pysuricata-report .var-card__body .triple-row .chart .dt-chart:first-child>.dt-svg {
+#pysuricata-report .var-card__body .var-chart .dt-chart:first-child>.dt-svg {
   flex: 1 1 auto;
   /* SVG fills the dt-chart block */
   width: 100%;
@@ -206,18 +172,13 @@
   padding-bottom: 8px;
 }
 
-/* Avoid extra vertical space from nested margins under the triple row */
-#pysuricata-report .var-card:has(.dt-chart) .var-card__body .triple-row table {
-  margin-bottom: 0;
-}
-
 #pysuricata-report .var-card:has(.dt-chart) .card-controls {
   margin-top: 4px;
   margin-bottom: 0;
 }
 
 /* Ensure the chart column itself has no bottom padding so it aligns with tables (datetime only) */
-#pysuricata-report .var-card:has(.dt-chart) .var-card__body .triple-row .chart {
+#pysuricata-report .var-card:has(.dt-chart) .var-card__body .var-chart {
   padding-bottom: 0;
 }
 
@@ -277,18 +238,8 @@
   }
 }
 
-/* Timestamp value display improvements */
-#pysuricata-report .var-card__body .triple-row .stats-right table.kv .timestamp-value {
-  overflow: visible;
-  text-overflow: unset;
-  white-space: normal;
-  word-break: break-all;
-  max-width: none;
-  font-size: 0.85rem;
-}
-
 /* Chart container overflow handling */
-#pysuricata-report .var-card__body .triple-row .chart {
+#pysuricata-report .var-card__body .var-chart {
   overflow: hidden;
 }
 

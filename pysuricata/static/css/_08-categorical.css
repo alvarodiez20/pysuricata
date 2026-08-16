@@ -60,11 +60,11 @@
 #   Categorical mini‑bars (Top‑N) – sizing + typography
 #   ============================================= */
 /* Make categorical variants fill the chart column just like histograms */
-#pysuricata-report .var-card__body .triple-row .chart .hist-variants .cat.variant {
+#pysuricata-report .var-card__body .var-chart .hist-variants .cat.variant {
   height: 100%;
 }
 
-#pysuricata-report .var-card__body .triple-row .chart .hist-variants .cat.variant>svg {
+#pysuricata-report .var-card__body .var-chart .hist-variants .cat.variant>svg {
   width: 100%;
   height: 100%;
   display: block;

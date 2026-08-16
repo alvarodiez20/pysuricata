@@ -352,32 +352,6 @@ class NumericCardRenderer(CardRenderer):
 
         return data
 
-    def _build_stat_row(self, rows: list[tuple[str, str, str]]) -> str:
-        """One four-column stat row in place of two narrow tables.
-
-        The tables were 240px each beside a squeezed chart. As a row they take
-        the card's full width, which is what lets the histogram have the rest.
-
-        `minmax(0, 1fr)` rather than `1fr`: a grid track's default minimum is
-        its content, so one long value -- `-1.2345678e+18` is the case that
-        does it -- widens its column and pushes the others out of alignment
-        instead of wrapping inside its own cell.
-        """
-        cells = []
-        for label, value, cls in rows:
-            tone = ""
-            for level in ("crit", "warn"):
-                if level in (cls or ""):
-                    tone = f" is-{level}"
-                    break
-            cells.append(
-                f'<div class="vstat{tone}">'
-                f'<div class="vstat__cap">{label}</div>'
-                f'<div class="vstat__val">{value}</div>'
-                "</div>"
-            )
-        return f'<div class="vstat-row">{"".join(cells)}</div>'
-
     def _compute_quantiles_from_sample(
         self, sample_vals: Sequence[float]
     ) -> QuantileData:
