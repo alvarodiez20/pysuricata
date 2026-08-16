@@ -65,6 +65,28 @@ def _missing_so_far(accs: dict[str, Any]) -> int:
     return sum(int(getattr(acc, "missing", 0)) for acc in accs.values())
 
 
+def _mark_chunk_boundary(accs) -> None:
+    """Tell every accumulator that a chunk ended.
+
+    `mark_chunk_boundary()` was only ever called from `finalize()`, so the
+    per-column boundaries recorded the number of *renders* rather than the
+    number of chunks: an uninterrupted run produced one, and a checkpointed one
+    produced two. Neither is the chunk count (#139).
+
+    The consequence reached the page. A `Missing Values` pane on a column with
+    no missing values drew a severity-coloured segment reading `data-missing`
+    1563 on an 891-row frame -- 175.4% -- because a single boundary accumulated
+    every chunk's counter into one segment sized as if it were one chunk.
+
+    Duck-typed rather than gated on a type: only the numeric accumulator
+    implements it today, and the others should start working the moment they do.
+    """
+    for acc in accs.values():
+        mark = getattr(acc, "mark_chunk_boundary", None)
+        if mark is not None:
+            mark()
+
+
 def _select_columns(chunk: Any, columns: tuple[str, ...] | None) -> Any:
     """Restrict a chunk to the configured column subset.
 
@@ -418,6 +440,7 @@ class StreamingEngine:
             adapter.consume_chunk(
                 first_chunk, accs, kinds, config, self.logger, row_offset=0
             )
+            _mark_chunk_boundary(accs)
             if corr_est is not None:
                 adapter.update_corr(first_chunk, corr_est, self.logger)
             adapter.update_row_kmv(first_chunk, row_kmv)
@@ -477,6 +500,7 @@ class StreamingEngine:
                 adapter.consume_chunk(
                     chunk, accs, kinds, config, self.logger, row_offset=current_row
                 )
+                _mark_chunk_boundary(accs)
                 if corr_est is not None:
                     adapter.update_corr(chunk, corr_est, self.logger)
                 adapter.update_row_kmv(chunk, row_kmv)

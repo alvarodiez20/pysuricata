@@ -4,15 +4,14 @@ Phase 7 (#120). `Data Completeness` and `Missing per Chunk` over three rows was
 two clicks for one screen of content — and with a single chunk the second tab
 held one full-width block per column, a tab that hid nothing.
 
-The by-chunk half of that issue is **not implemented here, and cannot be**: the
-per-column per-chunk missing counts it needs are never produced. That is #139,
-found while doing this. The renderer for the strip is written and correct; the
-route degrades to the single-column view because the chunk count derived from
-real data is always 1, which is what #120's own edge case asks for when the
-metadata is unavailable.
+The by-chunk half of that issue could not be implemented at first: the
+per-column per-chunk counts it needs were never produced, because
+`mark_chunk_boundary()` was only ever called from `finalize()`. That was #139,
+found while doing this, and it is now fixed -- the engine marks a boundary after
+every chunk it consumes, so the strip renders.
 
-The tests below therefore cover the view that ships, the degradation, and the
-strip renderer in isolation so it is ready when the data arrives.
+The tests below cover both routes: the single-column view a small frame still
+gets, and the strip a chunked one now gets.
 """
 
 from __future__ import annotations
@@ -204,34 +203,129 @@ class TestTheStripRendererIsReady:
         assert "miss-seg" not in out
 
 
-class TestTheDataGapIsRealAndDetected:
-    """#139. Recorded as a test so the day the engine starts marking chunk
-    boundaries, this fails and tells someone the view can be turned on."""
+class TestTheByChunkViewIsOn:
+    """#139, fixed. This class used to assert the opposite.
 
-    def test_no_accumulator_currently_reports_more_than_one_chunk(self):
+    `mark_chunk_boundary()` was only ever called from `finalize()`, so the
+    boundaries counted *renders* rather than chunks -- one for an uninterrupted
+    run, two for a checkpointed one, never the chunk count. The engine now marks
+    a boundary after every chunk it consumes.
+
+    The old test was written to fail the day this was fixed, and it did not,
+    because its fixture asked for `chunk_size=150` on 900 rows -- and the
+    chunker raises anything below 1000 to 1000, so the frame arrived as a single
+    chunk. A guard whose fixture cannot reach the condition it guards is not a
+    guard. The fixtures here chunk for real, and the assertions say so.
+    """
+
+    @staticmethod
+    def _chunked_frame(rows: int = 5000, missing: int = 1200) -> pd.DataFrame:
         rng = np.random.default_rng(0)
-        n = 900
-        values = rng.normal(0, 1, n)
-        values[rng.choice(n, 200, replace=False)] = np.nan
+        values = rng.normal(0, 1, rows)
+        values[rng.choice(rows, missing, replace=False)] = np.nan
+        return pd.DataFrame({"gappy": values, "solid": rng.normal(0, 1, rows)})
+
+    def test_the_engine_records_one_boundary_per_chunk(self):
         import pysuricata.render.missing_section as module
 
-        seen: list[int] = []
+        seen: dict[str, list] = {}
         original = module.MissingValuesSectionRenderer.render_section
 
         def spy(self, kinds_map, accs, n_rows, n_cols, total_missing_cells):
-            for _, (_, acc) in kinds_map.items():
-                per_chunk = self._per_chunk_missing(acc)
-                seen.append(len(per_chunk) if per_chunk else 0)
+            for name, (_, acc) in kinds_map.items():
+                seen[name] = self._per_chunk_missing(acc) or []
             return original(self, kinds_map, accs, n_rows, n_cols, total_missing_cells)
 
         module.MissingValuesSectionRenderer.render_section = spy
         try:
-            profile(pd.DataFrame({"num": values}), seed=0, chunk_size=150)
+            profile(self._chunked_frame(), seed=0, chunk_size=1000)
         finally:
             module.MissingValuesSectionRenderer.render_section = original
 
         assert seen, "the section was never rendered"
-        assert max(seen) <= 1, (
-            "an accumulator now reports per-chunk missing counts -- #139 may be "
-            f"fixed, and the by-chunk view can be enabled: {seen}"
-        )
+        for name, chunks in seen.items():
+            assert len(chunks) == 5, f"{name}: {len(chunks)} boundaries, expected 5"
+
+    def test_the_counts_add_up_to_the_column_total(self):
+        import pysuricata.render.missing_section as module
+
+        seen: dict[str, list] = {}
+        original = module.MissingValuesSectionRenderer.render_section
+
+        def spy(self, kinds_map, accs, n_rows, n_cols, total_missing_cells):
+            for name, (_, acc) in kinds_map.items():
+                seen[name] = self._per_chunk_missing(acc) or []
+            return original(self, kinds_map, accs, n_rows, n_cols, total_missing_cells)
+
+        module.MissingValuesSectionRenderer.render_section = spy
+        try:
+            profile(self._chunked_frame(), seed=0, chunk_size=1000)
+        finally:
+            module.MissingValuesSectionRenderer.render_section = original
+
+        assert sum(c[2] for c in seen["gappy"]) == 1200
+        assert sum(c[2] for c in seen["solid"]) == 0
+
+    def test_the_boundaries_tile_the_rows_without_gaps_or_overlap(self):
+        import pysuricata.render.missing_section as module
+
+        seen: dict[str, list] = {}
+        original = module.MissingValuesSectionRenderer.render_section
+
+        def spy(self, kinds_map, accs, n_rows, n_cols, total_missing_cells):
+            for name, (_, acc) in kinds_map.items():
+                seen[name] = self._per_chunk_missing(acc) or []
+            return original(self, kinds_map, accs, n_rows, n_cols, total_missing_cells)
+
+        module.MissingValuesSectionRenderer.render_section = spy
+        try:
+            profile(self._chunked_frame(), seed=0, chunk_size=1000)
+        finally:
+            module.MissingValuesSectionRenderer.render_section = original
+
+        chunks = seen["gappy"]
+        assert chunks[0][0] == 0
+        assert chunks[-1][1] == 4999
+        for previous, following in zip(chunks, chunks[1:], strict=False):
+            assert following[0] == previous[1] + 1
+
+    def test_no_chunk_reports_more_missing_than_it_has_rows(self):
+        """The failure this produced on the page: a segment read `data-missing`
+        1563 on an 891-row frame -- 175.4% -- because one boundary accumulated
+        every chunk's counter while being sized as a single chunk."""
+        import pysuricata.render.missing_section as module
+
+        seen: dict[str, list] = {}
+        original = module.MissingValuesSectionRenderer.render_section
+
+        def spy(self, kinds_map, accs, n_rows, n_cols, total_missing_cells):
+            for name, (_, acc) in kinds_map.items():
+                seen[name] = self._per_chunk_missing(acc) or []
+            return original(self, kinds_map, accs, n_rows, n_cols, total_missing_cells)
+
+        module.MissingValuesSectionRenderer.render_section = spy
+        try:
+            profile(self._chunked_frame(), seed=0, chunk_size=1000)
+        finally:
+            module.MissingValuesSectionRenderer.render_section = original
+
+        for name, chunks in seen.items():
+            for start, end, missing in chunks:
+                assert 0 <= missing <= (end - start + 1), (name, start, end, missing)
+
+    def test_the_strip_now_renders_in_a_real_report(self):
+        """#120's by-chunk half, unblocked."""
+        html = profile(self._chunked_frame(), seed=0, chunk_size=1000).html
+        markup = re.sub(r"<(script|style)\b.*?</\1>", "", html, flags=re.S | re.I)
+        section = _section(markup)
+        assert "miss-strip" in section
+        assert section.count("miss-seg") == 5
+
+    def test_an_unchunked_frame_still_degrades_to_one_row(self):
+        """The single-chunk route is still the common case and must not have
+        become a one-segment strip."""
+        rng = np.random.default_rng(0)
+        frame = pd.DataFrame({"a": rng.choice([None, "x"], 300, p=[0.2, 0.8])})
+        section = _section(profile(frame, seed=0).html)
+        assert "miss-seg" not in section
+        assert 'class="miss-row"' in section

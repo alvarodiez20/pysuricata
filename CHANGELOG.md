@@ -14,6 +14,15 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+- **Per-column per-chunk missing counts are now produced (#139).** `mark_chunk_boundary()` was only ever called from `finalize()`, so the recorded boundaries counted **renders**, not chunks — one for an uninterrupted run, two for a checkpointed one, never the chunk count. The engine now marks a boundary after every chunk it consumes.
+
+  This is the root cause of the impossible figure found in #154: a segment reading `data-missing="1563"` on an 891-row frame — 175.4% — because a single boundary accumulated every chunk's counter while being sized as one chunk.
+
+  Verified on 5,000 rows at `chunk_size=1000`: five boundaries, tiling `[0,999] … [4000,4999]` with no gap or overlap, counts summing to the column's 1,200 missing, and no chunk reporting more missing than it has rows.
+
+- **#120's by-chunk view is unblocked** and renders — five segments for five chunks. Small frames still degrade to the one-row-per-column view, which is the common case.
+
 ### Changed
 - **A details tab renders only when it has something to say (#154, 5b.4).** The Missing Values pane rendered on **every** column, including ones with no missing values, where it drew a 100%-present bar and a one-segment chunk strip reading `0.0%`. A click to learn nothing. All four card types now drop it when the column is complete; the order of the remaining tabs is unchanged, so a tab appears or does not but never moves.
 - The **Correlations** pane no longer repeats the section-level empty state inside a card. It renders only when the column has a correlation above the threshold.
