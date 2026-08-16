@@ -11,7 +11,6 @@ from .._version import resolve_version as _resolve_pysuricata_version
 from ..compute.core.types import ColumnKinds
 from ..utils import (
     embed_favicon,
-    embed_image,
     load_css_dir,
     load_script,
     load_template,
@@ -35,6 +34,31 @@ from .triage import flag_slug as _flag_slug
 # else that looks brace-wrapped -- CSS custom properties, JS object literals --
 # either fails to match or resolves to no key and is left verbatim.
 _PLACEHOLDER_RE = re.compile(r"\{(\w+)\}")
+
+
+def _build_logo(svg_path: str) -> str:
+    """The header lockup: the mark inline as SVG, the product name as type.
+
+    This used to be two base64 PNGs -- 578 KB of a 1.23 MB report, 47% of the
+    document, to draw a mark 30 CSS pixels tall. There were two because the
+    artwork had the wordmark baked into it, and the wordmark needed a different
+    colour in dark mode, so the report shipped both and hid one with CSS.
+
+    Setting the name as type instead of art removes the duplicate outright: text
+    follows ``currentColor`` into dark mode, so there is nothing to swap and
+    nothing to keep in sync. It also reads better, because the drawn wordmark is
+    a display face whose letters land about eight pixels tall at header size.
+
+    If the asset is missing -- a partial install, a stripped wheel -- the report
+    still renders, with the name and without the mark. A logo is not worth
+    failing a profile run over.
+    """
+    try:
+        with open(svg_path, encoding="utf-8") as handle:
+            mark = handle.read().strip()
+    except OSError:
+        mark = ""
+    return f'<span id="logo">{mark}<span class="wordmark">pysuricata</span></span>'
 
 
 def render_html_snapshot(
@@ -263,25 +287,7 @@ def render_html_snapshot(
     missing_values_section_html = missing_section_renderer.render_section(
         kinds_map, accs, n_rows, n_cols, total_missing_cells
     )
-    logo_light_path = os.path.join(
-        static_dir, "images", "logo_suricata_transparent.png"
-    )
-    logo_dark_path = os.path.join(
-        static_dir, "images", "logo_suricata_transparent_dark_mode.png"
-    )
-    logo_light_img = embed_image(
-        logo_light_path,
-        element_id="logo-light",
-        alt_text="PySuricata report logo",
-        mime_type="image/png",
-    )
-    logo_dark_img = embed_image(
-        logo_dark_path,
-        element_id="logo-dark",
-        alt_text="PySuricata report logo (dark mode)",
-        mime_type="image/png",
-    )
-    logo_html = f'<span id="logo">{logo_light_img}{logo_dark_img}</span>'
+    logo_html = _build_logo(os.path.join(static_dir, "images", "logo_mark.svg"))
     favicon_path = os.path.join(static_dir, "images", "favicon.ico")
     favicon_tag = embed_favicon(favicon_path)
 

@@ -19,6 +19,49 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.49] - 2026-08-16
+
+**The report is now half the size it was.** 1,110,756 bytes → 543,577 bytes on an
+891 × 8 frame, measured before and after in the same run.
+
+### Changed
+- **The logo is inline SVG instead of two base64 PNGs.** They were **592 KB of a
+  1.11 MB report** — more bytes than the data, the CSS, the JavaScript and the
+  markup put together — to draw a mark 30 CSS pixels tall.
+
+  There were two because the artwork had the wordmark baked into it, and a drawn
+  wordmark has to be recoloured for dark mode, so the report shipped both copies
+  and hid one with CSS. Setting the name as **type** beside the mark removes the
+  duplicate outright: text follows `currentColor`, so there is nothing to swap
+  and nothing to keep in sync. It also reads better, because the drawn wordmark
+  is a display face whose letters land about eight pixels tall at header size.
+
+  The traced mark is **10,814 bytes**, 16× smaller than the PNG it came from. No
+  point on it moves further than one source pixel — 1/20 of a rendered pixel at
+  header size — from the artwork's true boundary.
+
+### Added
+- **`scripts/trace_logo.py`**, which produced that asset and can reproduce it.
+  It is committed so the mark can be regenerated if the artwork changes, and so
+  the tolerance is a recorded decision with its measurements attached rather
+  than a number someone once picked. A test asserts the committed SVG is exactly
+  what the tracer produces from the artwork, so the two cannot drift apart.
+- **A size guard on the report's embedded payload.** This is the failure mode
+  that had gone unnoticed for a year: nothing breaks when an inlined image gets
+  big, so the report simply got heavier every release until somebody measured
+  it. The test now fails if the embedded payload exceeds 64 KB.
+
+### Removed
+- `logo_suricata_transparent_dark_mode.png`, which existed only for the swap
+  described above and is no longer referenced anywhere.
+
+### Verified
+The report's **fact fingerprint is byte-identical** across this change — 598
+facts, checked with `scripts/report_fingerprint.py`. The self-download button
+still round-trips: the inline mark survives re-serialisation with its SVG
+namespace and all three paths intact, which was worth checking because that
+button finds its content by regex and fails silently.
+
 ## [0.0.48] - 2026-08-16
 
 Repository housekeeping ahead of the report redesign. No library code changed.
@@ -690,7 +733,9 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.47...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.49...HEAD
+[0.0.49]: https://github.com/alvarodiez20/pysuricata/compare/0.0.48...0.0.49
+[0.0.48]: https://github.com/alvarodiez20/pysuricata/compare/0.0.47...0.0.48
 [0.0.47]: https://github.com/alvarodiez20/pysuricata/compare/0.0.46...0.0.47
 [0.0.46]: https://github.com/alvarodiez20/pysuricata/compare/0.0.45...0.0.46
 [0.0.45]: https://github.com/alvarodiez20/pysuricata/compare/0.0.44...0.0.45
