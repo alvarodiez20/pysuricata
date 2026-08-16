@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PySuricata — profile a CSV in your browser</title>
+<meta name="description" content="Profile a 500 MB CSV in a browser tab. PySuricata runs entirely client-side via WebAssembly — your data never leaves your machine.">
+<link rel="icon" href="assets/favicon.ico">
+<meta property="og:title" content="PySuricata — profile a CSV in your browser">
+<meta property="og:description" content="Drop a CSV. Get a full profiling report. Nothing is uploaded — the whole engine runs in your browser.">
+<meta property="og:type" content="website">
+<style>
+  /* Palette is the report's own, from docs/design/tokens.css, so the page and
+     the report it embeds are visibly the same object. Contrast ratios against
+     the paper are documented there; do not substitute by eye. */
+  :root {
+    --paper:       #FBF9F5;
+    --ink:         #22201C;  /* 15.1:1 on paper */
+    --ink-2:       #4A453D;  /*  9.0:1 — body prose */
+    --muted:       #57524A;  /*  7.4:1 — captions, micro-labels */
+    --rule:        #E2DCD1;
+    --rule-strong: #CFC7B8;
+    --track:       #EDE6DA;  /* log ground */
+    --link:        #3E6280;  /* --data-2, 6.12:1 */
+    --link-hover:  #2C4A62;  /* --data-1, 8.82:1 */
+    --on-link:     #FBF9F5;
+    --q-good:      #4A5D1E;
+    --q-warn-text: #8F6417;  /* legal as text */
+    --q-warn-fill: #A2731A;  /* fill and border only */
+    --q-bad:       #963F1C;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    --gutter: clamp(22px, 6vw, 28px);
+    --measure: 600px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:       #1C1A17;
+      --ink:         #F2EFE9;
+      --ink-2:       #D6D1C7;
+      --muted:       #A8A196;
+      --rule:        #332F29;
+      --rule-strong: #46413A;
+      --track:       #2A2721;
+      --link:        #7FA0B5;  /* the scale reverses on dark paper */
+      --link-hover:  #A8BECD;
+      --on-link:     #1C1A17;
+      --q-good:      #A9C46C;
+      --q-warn-text: #E0B057;
+      --q-warn-fill: #C08A1E;
+      --q-bad:       #E08A63;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font: 400 17px/1.55 var(--sans);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  a { color: var(--link); text-underline-offset: 3px; }
+  a:hover { color: var(--link-hover); }
+  button { font: inherit; }
+  :focus-visible { outline: 2px solid var(--link); outline-offset: 2px; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .3; } }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+
+  .col { width: 100%; max-width: var(--measure); margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* Micro-label: mono, uppercase, wide-tracked. The one recurring device. */
+  .label {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: .13em;
+    text-transform: uppercase; color: var(--muted);
+  }
+
+  header { border-bottom: 1px solid var(--rule); }
+  header nav {
+    height: 52px; display: flex; align-items: center; gap: clamp(16px, 5vw, 24px);
+    font-family: var(--mono); font-size: 11.5px; letter-spacing: .09em; text-transform: uppercase;
+  }
+  .brand {
+    margin-right: auto; display: flex; align-items: center; gap: 9px; padding: 8px 0;
+    text-decoration: none; color: var(--ink); font-family: var(--sans);
+    font-size: 15px; font-weight: 600; letter-spacing: -.01em; text-transform: none;
+  }
+  .brand img { display: block; width: auto; height: 28px; }
+  header nav a:not(.brand) { color: var(--muted); text-decoration: none; padding: 14px 0; }
+  header nav a:not(.brand):hover { color: var(--link); }
+
+  main { flex: 1 1 auto; padding: clamp(40px, 12vw, 84px) 0 64px; }
+
+  h1 {
+    font-size: clamp(29px, 7vw, 40px); line-height: 1.1; letter-spacing: -.03em;
+    font-weight: 600; margin: 0 0 18px; max-width: 20ch; text-wrap: balance;
+  }
+  .lede { font-size: 17px; line-height: 1.6; color: var(--ink-2); margin: 0; max-width: 52ch; text-wrap: pretty; }
+
+  /* Actions. The drop target is the whole page, so there is no dashed box to
+     draw — the rule above the buttons is what lights up on dragover. */
+  .actions {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px;
+    margin: clamp(30px, 7vw, 40px) 0 0;
+  }
+  .btn {
+    min-height: 44px; padding: 11px 20px; font-size: 16px; font-weight: 500; cursor: pointer;
+    border: 1px solid var(--link); border-radius: 3px; background: var(--link); color: var(--on-link);
+    transition: background .13s, border-color .13s, color .13s;
+  }
+  .btn:hover:not(:disabled) { background: var(--link-hover); border-color: var(--link-hover); }
+  .btn.ghost { background: transparent; color: var(--link); }
+  .btn.ghost:hover:not(:disabled) { background: var(--link); color: var(--on-link); }
+  .btn.quiet {
+    border-color: var(--rule-strong); background: transparent; color: var(--ink);
+    padding: 10px 15px; font-size: 15px; font-weight: 400;
+  }
+  .btn.quiet:hover:not(:disabled) { border-color: var(--link); color: var(--link); background: transparent; }
+  .linkbtn {
+    min-height: 44px; padding: 0; background: none; border: 0; cursor: pointer;
+    color: var(--link); font-size: 15px; text-decoration: underline; text-underline-offset: 3px;
+  }
+  .linkbtn:hover:not(:disabled) { color: var(--link-hover); }
+  .btn:disabled, .linkbtn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* Status: one line, always present. The dot carries the state. */
+  .status {
+    display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap;
+    margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 12.5px; letter-spacing: .03em; color: var(--muted);
+    transition: border-color .13s;
+  }
+  .status .marker {
+    width: 6px; height: 6px; flex: 0 0 auto; border-radius: 50%;
+    background: var(--link); align-self: center;
+  }
+  .status.working .marker { background: var(--q-warn-fill); animation: pulse 1.1s ease-in-out infinite; }
+  .status.done .marker { background: var(--q-good); }
+  .status.failed .marker { background: var(--q-bad); }
+  .status .text { min-width: 0; color: var(--ink-2); }
+  .status .detail { margin-left: auto; color: var(--muted); }
+  body.dragging .status { border-top-color: var(--link); }
+  body.dragging .status .text { color: var(--link); }
+
+  .log {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.85; color: var(--muted);
+    background: var(--track); margin: 14px 0 0; padding: 12px 14px; border-radius: 3px;
+    max-height: 168px; overflow: auto; white-space: pre-wrap;
+  }
+
+  .note {
+    margin-top: 18px; padding: 12px 0 12px 14px; font-size: 15px; line-height: 1.55;
+    color: var(--ink-2); border-left: 2px solid var(--rule-strong);
+  }
+  .note b { display: block; margin-bottom: 3px; color: var(--ink); font-weight: 600; }
+  .note.warn { border-left-color: var(--q-warn-fill); }
+  .note.err { border-left-color: var(--q-bad); }
+
+  /* Result. Figures as a label/value ledger rather than boxed tiles. */
+  .result { margin-top: clamp(26px, 6vw, 34px); }
+  .ledger {
+    margin: 0; display: grid; grid-template-columns: auto 1fr;
+    font-family: var(--mono); font-size: 13px;
+  }
+  .ledger dt {
+    padding: 9px 18px 9px 0; border-top: 1px solid var(--rule); color: var(--muted);
+    letter-spacing: .09em; text-transform: uppercase; font-size: 10.5px; line-height: 1.9;
+  }
+  .ledger dd {
+    padding: 9px 0; border-top: 1px solid var(--rule); margin: 0; text-align: right;
+    font-variant-numeric: tabular-nums; font-size: 14px; color: var(--ink);
+  }
+  .ledger dd small { color: var(--muted); font-size: 12px; margin-left: 2px; }
+
+  .result-actions {
+    display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: center; margin-top: 20px;
+  }
+  .result-name {
+    font-size: 15px; font-weight: 600; flex: 1 1 160px; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  /* The report earns more width than the reading column: it is the payoff, and
+     at 600px its own cards would wrap to one per row. Breaks out of .col. */
+  .frame-wrap {
+    margin-top: 20px;
+    width: min(1120px, calc(100vw - 2 * var(--gutter)));
+    margin-left: 50%; transform: translateX(-50%);
+  }
+  iframe#report {
+    display: block; width: 100%; height: min(72vh, 620px); min-height: 420px;
+    border: 1px solid var(--rule); border-radius: 3px; background: var(--paper);
+  }
+
+  .closing {
+    margin: clamp(52px, 12vw, 76px) 0 0; padding-top: 18px; border-top: 1px solid var(--rule);
+    font-size: 15px; line-height: 1.6; color: var(--ink-2); max-width: 56ch; text-wrap: pretty;
+  }
+
+  footer { padding: 0 0 40px; }
+  footer .col {
+    font-family: var(--mono); font-size: 11.5px; line-height: 2; letter-spacing: .05em;
+    color: var(--muted); display: flex; flex-wrap: wrap; gap: 4px 16px;
+  }
+  footer a { color: var(--muted); }
+  footer .push { margin-left: auto; }
+
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <nav class="col">
+    <a class="brand" href="https://alvarodiez20.github.io/pysuricata/">
+      <img src="assets/mark.png" alt="">
+      PySuricata
+    </a>
+    <a href="https://alvarodiez20.github.io/pysuricata/">Docs</a>
+    <a href="https://pypi.org/project/pysuricata/">PyPI</a>
+    <a href="https://github.com/alvarodiez20/pysuricata">GitHub</a>
+  </nav>
+</header>
+
+<main class="col">
+
+  <h1>Profile a big CSV in a browser tab.</h1>
+  <p class="lede">
+    Drop a file and PySuricata returns a full EDA report — per-column distributions,
+    missing values, quality alerts. There is no server: the profiler is compiled to
+    WebAssembly and runs inside this page, so <strong>your data never leaves your machine</strong>.
+  </p>
+
+  <div class="actions">
+    <button class="btn" id="pick" disabled>Choose a file</button>
+    <button class="linkbtn" id="sample" disabled>or try the 60 KB sample</button>
+    <button class="linkbtn" id="bigdemo" disabled>stream 5M generated rows</button>
+    <input type="file" id="file" accept=".csv,.tsv,.txt,.parquet,.pq" class="hidden">
+  </div>
+
+  <div class="status" id="status">
+    <span class="marker"></span>
+    <span class="text" id="statusText">Starting…</span>
+    <span class="detail" id="statusDetail"></span>
+  </div>
+
+  <pre class="log hidden" id="log" aria-live="polite"></pre>
+
+  <div id="notes"></div>
+
+  <div class="result hidden" id="resultPanel">
+    <dl class="ledger" id="ledger"></dl>
+    <div class="result-actions">
+      <strong class="result-name" id="reportTitle">Report</strong>
+      <button class="btn ghost" id="download">Download the report</button>
+      <button class="btn quiet" id="downloadStats">JSON</button>
+      <button class="linkbtn" id="reset">another file</button>
+    </div>
+    <div class="frame-wrap">
+      <!-- No allow-same-origin: the report embeds the user's own values, so it runs
+           in an opaque origin and cannot reach this page's storage or DOM. -->
+      <iframe id="report" title="PySuricata report" sandbox="allow-scripts allow-downloads"></iframe>
+    </div>
+  </div>
+
+  <p class="closing">
+    Statistics come from streaming sketches, so memory tracks column count rather than
+    row count. Counts and moments are exact; quantiles, distinct counts and duplicates
+    are estimated, and the report marks each one. Frames wider than 250 columns are
+    refused here — run those locally.
+  </p>
+
+</main>
+
+<footer>
+  <div class="col">
+    <span>pip install pysuricata</span>
+    <span>MIT licensed</span>
+    <span id="versions">runtime loading…</span>
+    <a class="push" href="https://github.com/alvarodiez20/pysuricata">Source</a>
+  </div>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+
+  const params = new URLSearchParams(location.search);
+  const LOCAL = params.has("local");
+  const CONFIG = {
+    // Pyodide is pulled from jsDelivr rather than self-hosted: ~19 MB of runtime
+    // that a public CDN serves for free, keeping this origin's egress at ~1 MB
+    // per cold visitor. ?local=1 points at a mirror for offline testing.
+    pyodideBase: LOCAL ? "/pyodide/" : "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/",
+    indexUrls: LOCAL ? ["http://127.0.0.1:8765/pypi/{package_name}/json"] : null,
+  };
+  const MAX_COLUMNS = 250;
+  const MAX_BYTES = 600 * 1024 * 1024;
+  const CHUNK_SIZE = 200000;
+  // Overridable so the row count can be dialled down when testing the page.
+  const BIG_DEMO_ROWS = Number(params.get("rows")) || 5000000;
+
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    pick: $("pick"), file: $("file"), sample: $("sample"), big: $("bigdemo"),
+    status: $("status"), statusText: $("statusText"), statusDetail: $("statusDetail"),
+    log: $("log"), notes: $("notes"),
+    resultPanel: $("resultPanel"), ledger: $("ledger"), report: $("report"), reportTitle: $("reportTitle"),
+    download: $("download"), downloadStats: $("downloadStats"), reset: $("reset"), versions: $("versions"),
+  };
+
+  let ready = false, busy = false, last = null;
+  // Held so it can be revoked when the next report replaces it. Revoking any
+  // earlier than that would pull the document out from under a live frame.
+  let reportUrl = null;
+  // Every run gets an id. A message from a superseded run (a late error, say)
+  // must not repaint the panel a newer run already owns.
+  let runId = 0;
+  let dragDepth = 0;
+
+  const t0 = performance.now();
+  const stamp = () => `${((performance.now() - t0) / 1000).toFixed(1)}s`;
+  const fmtBytes = (b) => b >= 1073741824 ? (b / 1073741824).toFixed(2) + " GB"
+    : b >= 1048576 ? (b / 1048576).toFixed(1) + " MB"
+    : (b / 1024).toFixed(0) + " KB";
+  const fmtNum = (n) => (n === null || n === undefined) ? "—" : Number(n).toLocaleString();
+
+  function logLine(text) {
+    els.log.classList.remove("hidden");
+    els.log.textContent += `${stamp().padStart(6)}  ${text}\n`;
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+  function setState(cls, text, detail) {
+    els.status.className = `status${cls ? " " + cls : ""}`;
+    els.statusText.textContent = text;
+    els.statusDetail.textContent = detail || "";
+  }
+  function setStatus(text, detail) {
+    setState(busy ? "working" : "", text, detail);
+    logLine(text);
+  }
+  function note(kind, title, body) {
+    const d = document.createElement("div");
+    d.className = `note ${kind}`;
+    d.innerHTML = "<b></b><span></span>";
+    d.querySelector("b").textContent = title;
+    d.querySelector("span").textContent = body;
+    els.notes.appendChild(d);
+  }
+  function clearNotes() { els.notes.textContent = ""; }
+  function setBusy(v) {
+    busy = v;
+    for (const b of [els.pick, els.sample, els.big]) b.disabled = v || !ready;
+  }
+
+  /* Everything a previous run left on screen. Called by reset and by the start
+     of every run, so a second profile never inherits the first one's figures. */
+  function clearResult() {
+    els.resultPanel.classList.add("hidden");
+    els.ledger.textContent = "";
+    els.report.removeAttribute("src");
+    if (reportUrl) { URL.revokeObjectURL(reportUrl); reportUrl = null; }
+    els.reportTitle.textContent = "Report";
+    last = null;
+  }
+
+  // A worker that cannot be constructed — file:// origin, a CSP that forbids
+  // worker-src, an offline first load — used to throw here and take the rest of
+  // the script with it, leaving three dead buttons and no explanation.
+  let worker;
+  try {
+    worker = new Worker("worker.js");
+  } catch (err) {
+    setState("failed", "The runtime could not start", "");
+    note("err", "This page needs to be served over HTTP.",
+      `The profiler runs in a Web Worker, which the browser refuses to create here: ${err && err.message || err}`);
+    return;
+  }
+
+  worker.onerror = (e) => {
+    setBusy(false);
+    setState("failed", "The runtime stopped", "");
+    note("err", "The worker failed.", e && e.message ? e.message : "worker.js could not be loaded or threw.");
+  };
+
+  worker.postMessage({ type: "boot", config: CONFIG });
+  setBusy(true);
+  setStatus("Booting the WebAssembly runtime…", "one-time, then cached");
+
+  worker.onmessage = (e) => {
+    const m = e.data;
+    // Boot messages carry no run id; everything else must match the live run.
+    if (m.run !== undefined && m.run !== runId) return;
+
+    if (m.type === "status") { setStatus(m.text, m.detail); return; }
+    if (m.type === "log") { if (m.text && m.text.trim()) logLine(m.text.trim()); return; }
+
+    if (m.type === "ready") {
+      ready = true;
+      setBusy(false);
+      setState("", "Runtime ready — drop a file to profile it",
+        `booted in ${m.bootSecs.toFixed(1)}s · ${m.heapMB} MB heap`);
+      els.versions.textContent =
+        `pysuricata ${m.versions.pysuricata} · pandas ${m.versions.pandas} · Python ${m.versions.python} on WebAssembly`;
+      logLine(`ready — pysuricata ${m.versions.pysuricata}, pandas ${m.versions.pandas}, python ${m.versions.python}`);
+      return;
+    }
+
+    if (m.type === "preflight") {
+      logLine(`schema: ${m.n_cols} columns${m.n_rows ? `, ${fmtNum(m.n_rows)} rows` : ""}, ${fmtBytes(m.bytes)} on disk`);
+      return;
+    }
+
+    if (m.type === "refused") {
+      setBusy(false);
+      setState("failed", "Refused — too wide for a browser tab");
+      logLine(`refused: ${m.reason}`);
+      note("warn", m.reason, m.detail);
+      return;
+    }
+
+    if (m.type === "error") {
+      setBusy(false);
+      setState("failed", "Failed — the runtime is still up, try another file");
+      logLine("error: " + m.message);
+      note("err", "That did not work.", m.message);
+      return;
+    }
+
+    if (m.type === "done") {
+      setBusy(false);
+      last = m;
+      setState("done", "Done — nothing left this tab",
+        `${m.profileSecs.toFixed(1)}s to profile · ${m.heapMB} MB peak heap`);
+      logLine(`profiled in ${m.profileSecs.toFixed(1)}s — ${fmtBytes(m.meta.html_bytes)} of HTML`);
+      renderResult(m);
+    }
+  };
+
+  function row(k, v, sub) {
+    const dt = document.createElement("dt");
+    dt.textContent = k;
+    const dd = document.createElement("dd");
+    dd.textContent = v;
+    if (sub) {
+      const s = document.createElement("small");
+      s.textContent = sub;
+      dd.appendChild(s);
+    }
+    els.ledger.append(dt, dd);
+  }
+
+  function renderResult(m) {
+    const pct = (x) => (x === null || x === undefined) ? "—" : Number(x).toFixed(2);
+    els.ledger.textContent = "";
+    row("Rows", fmtNum(m.meta.rows));
+    row("Columns", fmtNum(m.meta.cols));
+    row("Missing", pct(m.meta.missing_pct), "%");
+    row("Duplicates", pct(m.meta.duplicate_pct), "% est");
+    row("Profiled in", m.profileSecs.toFixed(1), "s");
+    // For the streamed run the interesting number is how little the heap moved.
+    if (m.streamed && m.heapBefore) row("Heap", `${m.heapBefore} → ${m.heapMB}`, "MB");
+    else row("Peak heap", String(m.heapMB), "MB");
+    if (m.meta.bytes_seen) row("Data seen", fmtBytes(m.meta.bytes_seen));
+
+    // Not srcdoc: Chrome silently drops a srcdoc document past ~700 KB — no
+    // error, no console warning, just a blank frame. Measured: 684 KB renders,
+    // 721 KB does not. Any report of a wide or high-cardinality frame clears
+    // that, so the report is handed over as a blob URL instead.
+    if (reportUrl) URL.revokeObjectURL(reportUrl);
+    reportUrl = URL.createObjectURL(new Blob([m.html], { type: "text/html" }));
+    els.report.src = reportUrl;
+    els.resultPanel.classList.remove("hidden");
+    els.resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function saveBlob(content, filename, mime) {
+    const url = URL.createObjectURL(new Blob([content], { type: mime }));
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+  const baseName = () => (els.reportTitle.textContent || "report").replace(/\.[^.]+$/, "");
+
+  /* Common preamble for every run: drop the previous one entirely, then arm. */
+  function beginRun() {
+    runId += 1;
+    clearNotes();
+    clearResult();
+    els.log.textContent = "";
+    els.log.classList.add("hidden");
+    setBusy(true);
+    return runId;
+  }
+
+  function start(file) {
+    if (busy || !ready) return;
+    if (file.size > MAX_BYTES) {
+      clearNotes();
+      note("warn", `That file is ${fmtBytes(file.size)}.`,
+        `The demo caps at ${fmtBytes(MAX_BYTES)} so a browser tab does not run out of address space. PySuricata itself has no such limit — run it locally for bigger files.`);
+      return;
+    }
+    const run = beginRun();
+    const isParquet = /\.(parquet|pq)$/i.test(file.name);
+    els.reportTitle.textContent = file.name;
+    setState("working", "Profiling…", "one core, no threads");
+    logLine(`${file.name} — ${fmtBytes(file.size)}, staying local`);
+    worker.postMessage({
+      type: "profile", run, file, name: file.name, isParquet,
+      chunkSize: CHUNK_SIZE, maxColumns: MAX_COLUMNS,
+    });
+  }
+
+  els.pick.onclick = () => els.file.click();
+  // Reset the input first: picking the same file twice fires no change event
+  // otherwise, which reads as a dead button on the second attempt.
+  els.file.onchange = () => {
+    const f = els.file.files[0];
+    els.file.value = "";
+    if (f) start(f);
+  };
+
+  els.sample.onclick = async () => {
+    if (busy || !ready) return;
+    const run = beginRun();
+    els.reportTitle.textContent = "titanic.csv";
+    setState("working", "Fetching the sample dataset…", "60 KB from this site");
+    logLine("fetching sample/titanic.csv");
+    try {
+      const res = await fetch("sample/titanic.csv");
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      const blob = await res.blob();
+      if (run !== runId) return;  // superseded while the fetch was in flight
+      const file = new File([blob], "titanic.csv", { type: "text/csv" });
+      logLine(`titanic.csv — ${fmtBytes(file.size)}, staying local`);
+      setState("working", "Profiling…", "one core, no threads");
+      worker.postMessage({
+        type: "profile", run, file, name: file.name, isParquet: false,
+        chunkSize: CHUNK_SIZE, maxColumns: MAX_COLUMNS,
+      });
+    } catch (err) {
+      if (run !== runId) return;
+      setBusy(false);
+      setState("failed", "Failed — could not load the sample");
+      note("err", "The sample did not load.", String(err && err.message || err));
+    }
+  };
+
+  els.big.onclick = () => {
+    if (busy || !ready) return;
+    const run = beginRun();
+    els.reportTitle.textContent = `Streamed sensor readings (${BIG_DEMO_ROWS.toLocaleString()} rows)`;
+    setState("working", "Streaming generated rows…", "one core, no threads");
+    logLine(`streaming ${BIG_DEMO_ROWS.toLocaleString()} rows × 10 columns — generated on demand, nothing downloaded`);
+    logLine(`expect roughly ${Math.max(5, Math.round(BIG_DEMO_ROWS / 150000))}s — the heap figure is the point, not the clock`);
+    worker.postMessage({ type: "generate", run, rows: BIG_DEMO_ROWS, chunkSize: CHUNK_SIZE });
+  };
+
+  els.download.onclick = () => last && saveBlob(last.html, baseName() + "-pysuricata.html", "text/html");
+  els.downloadStats.onclick = () => last && saveBlob(last.stats, baseName() + "-pysuricata.json", "application/json");
+  els.reset.onclick = () => {
+    runId += 1;             // orphan anything still in flight
+    clearNotes();
+    clearResult();
+    els.log.textContent = "";
+    els.log.classList.add("hidden");
+    if (!busy) setState("", "Runtime ready — drop a file to profile it", "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  /* Drag and drop over the whole page. dragenter/dragleave fire for every child
+     element, so the highlight is refcounted rather than toggled. */
+  window.addEventListener("dragenter", (e) => {
+    e.preventDefault();
+    dragDepth += 1;
+    if (!busy && ready) document.body.classList.add("dragging");
+  });
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("dragleave", (e) => {
+    e.preventDefault();
+    dragDepth = Math.max(0, dragDepth - 1);
+    if (dragDepth === 0) document.body.classList.remove("dragging");
+  });
+  window.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dragDepth = 0;
+    document.body.classList.remove("dragging");
+    const f = e.dataTransfer && e.dataTransfer.files[0];
+    if (f) start(f);
+  });
+
+  // Test hook: lets the headless harness observe outcomes without scraping DOM.
+  window.__demo = {
+    get ready() { return ready; },
+    get busy() { return busy; },
+    get last() { return last; },
+    get runId() { return runId; },
+  };
+})();
+</script>
+</body>
+</html>

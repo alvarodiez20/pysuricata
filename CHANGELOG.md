@@ -16,6 +16,14 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **The browser demo adopts the minimal redesign** ([#196]). One 600px reading
+  column, the report's own paper/ink and blue tokens from
+  `docs/design/tokens.css` in place of the demo's separate green palette, mono
+  micro-labels, and figures as a label/value ledger rather than boxed tiles. The
+  report frame breaks out of the reading column to 1120px, since at 600px the
+  report's own cards wrap one per row. Nothing that worked was dropped — the
+  log, the streamed 5M-row demo, the JSON download, the version line and the
+  sandboxed report frame all survive, restyled.
 - **The Outliers pane draws the fence** ([#154], 5b.2). It opened with roughly
   60px announcing `Low Outliers — 0 outliers (0.0%)` over three severity chips
   all reading zero, said the same again for the high side, then listed the
@@ -57,6 +65,27 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **A second file in the same session profiles again** ([#196]). WORKERFS leaves
+  the mount point's child nodes behind on unmount, so mounting the second file
+  onto `/data` failed with an opaque `ErrnoError`. Every run now mounts under
+  its own directory and releases the previous one.
+- **A failed run no longer inflates the next run's heap figure.** The previous
+  report stayed pinned in the Python heap because cleanup ran only on the
+  success path, so the next run's "peak heap" was partly measuring the last one.
+  Cleanup now runs on the error path too.
+- **The page no longer shows one run's figures while the next is still going**,
+  and a late message from a superseded run can no longer repaint a panel a newer
+  run already owns. Runs carry an id, and every run begins by clearing what the
+  last one left.
+- **Picking the same file twice works.** Re-selecting an identical file fires no
+  `change` event, which read as a dead button; the input is reset before the
+  file is handled.
+- **A worker that cannot be constructed says so.** It previously threw past the
+  rest of the script, leaving three disabled buttons and no explanation.
+- **The report reaches the frame through a blob URL rather than `srcdoc`.**
+  Chrome silently drops a `srcdoc` document past roughly 700 KB — no error, no
+  console warning, just a blank frame. Measured: 684 KB renders, 721 KB does
+  not, which any wide or high-cardinality frame clears.
 - **The invariance harness was comparing 45% of the facts it collected.**
   `report_fingerprint.diff()` read both fingerprints into a `dict`, and the
   keys were not unique — `age` and `fare` both emit a `Median` row, one
