@@ -528,3 +528,92 @@ class TestCommonValuesRankVisibly:
             r'class="common__value" data-col="col_x" data-value="([^"]+)"', html
         )
         assert tagged == ["7", "9"]
+
+
+class TestEveryPartnerIsShown:
+    """5b.6. The pane repeated the section-level empty state inside a card —
+    `No significant correlations found`, on a column that has partners and
+    simply has no *strong* ones.
+
+    `Age` has exactly two numeric partners in the Titanic frame, so listing
+    both is **complete** information in two rows. "Both partners are weak, the
+    stronger is Fare at +0.096" is a finding; "no significant correlations" is
+    a shrug that leaves a reader unable to tell an uncorrelated column from one
+    the threshold happened to hide.
+    """
+
+    def _renderer(self):
+        from pysuricata.render.numeric_card import NumericCardRenderer
+
+        return NumericCardRenderer()
+
+    def test_a_weak_partner_is_still_listed(self):
+        stats = _stats(corr_top=[("fare", 0.096)], corr_threshold=0.5)
+        html = self._renderer()._build_correlation_table(stats)
+        assert "fare" in html and "+0.096" in html
+        assert "No significant correlations" not in html
+
+    def test_the_strongest_is_named_and_its_weakness_stated(self):
+        stats = _stats(corr_top=[("fare", 0.096), ("id", 0.037)], corr_threshold=0.5)
+        html = self._renderer()._build_correlation_table(stats)
+        assert "strongest is fare at +0.096" in html
+        assert "below the 0.50 threshold" in html
+
+    def test_completeness_is_said_when_the_list_is_complete(self):
+        """A list that stops at five and a list that *is* the whole set look
+        identical, and only one lets a reader stop wondering."""
+        stats = _stats(corr_top=[("a", 0.4), ("b", 0.2)], corr_threshold=0.5)
+        html = self._renderer()._build_correlation_table(stats)
+        assert "all 2 of this column's numeric partners" in html
+
+    def test_one_partner_reads_as_one(self):
+        stats = _stats(corr_top=[("a", 0.4)], corr_threshold=0.5)
+        html = self._renderer()._build_correlation_table(stats)
+        assert "only numeric partner" in html
+
+    def test_the_list_caps_at_five_with_a_remainder(self):
+        """A 40-column frame would otherwise render 39 rows inside a card."""
+        stats = _stats(
+            corr_top=[(f"c{i}", 0.5 - i / 100) for i in range(11)],
+            corr_threshold=0.5,
+        )
+        html = self._renderer()._build_correlation_table(stats)
+        assert html.count('class="corr-partner"') == 5
+        assert "6 more, all below" in html
+
+    def test_partners_are_ordered_by_strength_not_sign(self):
+        stats = _stats(corr_top=[("weak", 0.1), ("strong", -0.9)], corr_threshold=0.5)
+        html = self._renderer()._build_correlation_table(stats)
+        assert html.index("strong") < html.index("weak")
+
+    def test_a_column_with_no_partners_renders_no_pane(self):
+        assert self._renderer()._build_correlation_table(_stats(corr_top=[])) == ""
+
+    def test_sign_is_position_and_never_colour(self):
+        """A red bar for a negative correlation reads as *bad*, and a negative
+        correlation is often the interesting one."""
+        renderer = self._renderer()
+        negative = renderer._build_correlation_table(
+            _stats(corr_top=[("a", -0.8)], corr_threshold=0.5)
+        )
+        positive = renderer._build_correlation_table(
+            _stats(corr_top=[("a", 0.8)], corr_threshold=0.5)
+        )
+        fills = re.compile(
+            r'corr-bar__fill" style="left:([\d.]+)%;width:([\d.]+)%;background:([^"]+)"'
+        )
+        neg_left, neg_width, neg_bg = fills.search(negative).groups()
+        pos_left, pos_width, pos_bg = fills.search(positive).groups()
+
+        assert neg_bg == pos_bg, "the two signs must share a fill"
+        assert float(neg_left) < 50.0 <= float(pos_left)
+        assert neg_width == pos_width, "equal magnitude, equal length"
+
+    def test_the_bar_matches_the_section_level_one(self):
+        """The pane and the section plot the same numbers; a reader who has
+        learned to read one must not have to relearn the other."""
+        from pysuricata.render.correlations_section import CorrelationsSectionRenderer
+
+        section = CorrelationsSectionRenderer()._diverging_bar(-0.42, "var(--data-2)")
+        pane = self._renderer()._diverging_bar(-0.42)
+        assert section == pane

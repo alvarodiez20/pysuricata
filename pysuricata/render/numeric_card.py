@@ -11,7 +11,6 @@ from .card_config import (
 )
 from .card_types import NumericStats, QualityFlags, QuantileData
 from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
-from .format_utils import ordinal_number
 from .histogram_svg import SVGHistogramRenderer
 from .identifier import identifier_facts, looks_like_identifier
 from .outlier_fence import (
@@ -895,127 +894,110 @@ class NumericCardRenderer(CardRenderer):
         figure = render_figure(fence, name, self.format_number)
         return f'<div class="fence-pane">{header}{lede}{figure}{body}</div>'
 
+    #: The pane lists at most this many partners. Beyond it the list stops
+    #: informing and starts scrolling -- a 40-column frame would render 39 rows
+    #: inside a card.
+    _MAX_PARTNERS = 5
+
     def _build_correlation_table(self, stats: NumericStats) -> str:
-        """Build enhanced correlation table with visual improvements and summary statistics.
+        """Every partner this column has, strongest first, capped at five.
 
-        This method creates a professional, feature-rich table that provides comprehensive
-        insights into correlations with visual indicators, strength categorization, and context.
+        Phase 5b.6 (#154). The pane repeated the section-level empty state
+        inside a card: `No significant correlations found`, on a column that
+        has partners and simply has no *strong* ones.
 
-        Args:
-            stats: NumericStats object containing correlation data
+        `Age` has exactly two numeric partners in the Titanic frame, so listing
+        both is **complete** information in two rows -- nothing is withheld and
+        the reader can stop wondering. "Both partners are weak, the stronger is
+        Fare at +0.096" is a finding; "no significant correlations" is a shrug
+        that leaves a reader unable to tell an uncorrelated column from one the
+        threshold happened to hide.
 
-        Returns:
-            HTML string for the enhanced correlations table with summary
+        The bar is the section's own `_diverging_bar` shape, so sign stays
+        position and never colour -- a red bar for a negative correlation reads
+        as *bad*, and a negative correlation is often the interesting one.
         """
-        corr_data = getattr(stats, "corr_top", []) or []
+        partners = list(getattr(stats, "corr_top", None) or [])
+        if not partners:
+            return ""
 
-        if not corr_data:
-            threshold = getattr(stats, "corr_threshold", 0.5)
-            return f"""
-        <div class="correlation-summary">
-            <div class="no-correlations">
-                <span class="message">No significant correlations found</span>
-                <small>Correlations below {threshold:.1f} threshold are not shown</small>
-            </div>
-        </div>
+        partners.sort(key=lambda pair: abs(pair[1]), reverse=True)
+        threshold = float(getattr(stats, "corr_threshold", 0.5) or 0.0)
+
+        # `corr_max_per_col` is documented as a maximum, so it still binds --
+        # it just cannot push the list past the point where it stops being
+        # readable inside a card.
+        limit = min(self._MAX_PARTNERS, len(partners))
+        shown, hidden = partners[:limit], partners[limit:]
+
+        name = self.safe_html_escape(stats.name)
+        strongest, value = shown[0]
+        if abs(value) < threshold:
+            lede = (
+                f"Every partner is weak. The strongest is "
+                f"{self.safe_html_escape(str(strongest))} at {value:+.3f}, "
+                f"below the {threshold:.2f} threshold."
+            )
+        else:
+            lede = (
+                f"The strongest partner is "
+                f"{self.safe_html_escape(str(strongest))} at {value:+.3f}."
+            )
+
+        rows = "".join(
+            f'<div class="corr-partner">'
+            f'<span class="corr-partner__name">{self.safe_html_escape(str(other))}</span>'
+            f"{self._diverging_bar(corr)}"
+            f'<span class="corr-partner__value">{corr:+.3f}</span>'
+            f"</div>"
+            for other, corr in shown
+        )
+
+        # Completeness is the point of this pane, so it says which case it is
+        # in. A list that stops at five and a list that *is* the whole set look
+        # identical, and only one of them lets a reader stop wondering.
+        if hidden:
+            note = f"{len(hidden)} more, all below {abs(shown[-1][1]):.2f}."
+        elif len(shown) == 1:
+            note = "That is this column's only numeric partner, so nothing is withheld."
+        else:
+            note = (
+                f"Those are all {len(shown)} of this column's numeric partners, "
+                "so nothing is withheld."
+            )
+        more = f'<p class="corr-partner__more">{note}</p>'
+
+        return (
+            '<div class="fence-pane">'
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · correlations</span>'
+            '<span class="fence-head__rule"></span>'
+            f'<span class="fence-head__count">{len(partners)} numeric '
+            f"partner{'s' if len(partners) != 1 else ''}</span>"
+            "</div>"
+            f'<p class="fence-lede">{lede}</p>'
+            f'<div class="corr-partners">{rows}</div>'
+            f"{more}"
+            "</div>"
+        )
+
+    def _diverging_bar(self, corr: float) -> str:
+        """Zero at the centre, negative left, positive right.
+
+        Byte-identical in shape to `correlations_section._diverging_bar`, and
+        deliberately so: the per-column pane and the section-level list plot
+        the same numbers, and a reader who learns to read one must not have to
+        relearn the other.
         """
-
-        # Calculate summary statistics
-        corr_values = [abs(corr) for _, corr in corr_data]
-        sum(corr_values) / len(corr_values) if corr_values else 0
-
-        # Categorize correlations by strength
-        strength_counts = {"very_strong": 0, "strong": 0, "moderate": 0, "weak": 0}
-        for _, corr in corr_data:
-            abs_corr = abs(corr)
-            if abs_corr >= 0.9:
-                strength_counts["very_strong"] += 1
-            elif abs_corr >= 0.7:
-                strength_counts["strong"] += 1
-            elif abs_corr >= 0.5:
-                strength_counts["moderate"] += 1
-            else:
-                strength_counts["weak"] += 1
-
-        # Build summary header
-        summary_html = f"""
-        <div class="correlation-summary">
-            <div class="summary-header">
-                <span class="title">Correlations</span>
-                <span class="count">{len(corr_data)} significant correlations</span>
-            </div>
-            <div class="strength-breakdown">
-                <span class="strength-item very-strong">Very Strong: {strength_counts["very_strong"]}</span>
-                <span class="strength-item strong">Strong: {strength_counts["strong"]}</span>
-                <span class="strength-item moderate">Moderate: {strength_counts["moderate"]}</span>
-                <span class="strength-item weak">Weak: {strength_counts["weak"]}</span>
-            </div>
-        </div>
-        """
-
-        # Build enhanced table rows
-        parts = []
-        for i, (col_name, corr_value) in enumerate(corr_data):
-            abs_corr = abs(corr_value)
-
-            # Determine strength and color
-            if abs_corr >= 0.9:
-                strength = "Very Strong"
-                strength_class = "very-strong"
-            elif abs_corr >= 0.7:
-                strength = "Strong"
-                strength_class = "strong"
-            elif abs_corr >= 0.5:
-                strength = "Moderate"
-                strength_class = "moderate"
-            else:
-                strength = "Weak"
-                strength_class = "weak"
-
-            # Direction indicator
-            direction = "positive" if corr_value > 0 else "negative"
-            direction_icon = "↑" if corr_value > 0 else "↓"
-
-            # Ranking
-            rank_icon = ordinal_number(i + 1)
-
-            parts.append(f'''
-            <tr class="correlation-row strength-{strength_class}">
-                <td class="rank">{rank_icon}</td>
-                <td class="column">
-                    <code class="missing-col" title="{self.safe_html_escape(col_name)}">{self.safe_html_escape(col_name)}</code>
-                </td>
-                <td class="correlation-value {direction}">
-                    {corr_value:+.3f}
-                </td>
-                <td class="strength" data-strength="{strength_class}">
-                    {strength}
-                </td>
-                <td class="direction">
-                    <span class="direction-icon">{direction_icon}</span>
-                    <span class="direction-text">{direction.title()}</span>
-                </td>
-            </tr>
-            ''')
-
-        table_html = f"""
-        <table class="correlations-table enhanced">
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Column</th>
-                    <th>Correlation</th>
-                    <th>Strength</th>
-                    <th>Direction</th>
-                </tr>
-            </thead>
-            <tbody>
-                {"".join(parts)}
-            </tbody>
-        </table>
-        """
-
-        return summary_html + table_html
+        magnitude = min(abs(corr), 1.0) * 50.0
+        left = 50.0 - magnitude if corr < 0 else 50.0
+        return (
+            '<span class="corr-bar" aria-hidden="true">'
+            '<span class="corr-bar__zero"></span>'
+            f'<span class="corr-bar__fill" style="left:{left:.2f}%;'
+            f'width:{magnitude:.2f}%;background:var(--data-2)"></span>'
+            "</span>"
+        )
 
     def _build_missing_values_table(self, stats: NumericStats) -> str:
         """Build simple missing values analysis."""

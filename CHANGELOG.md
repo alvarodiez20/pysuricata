@@ -24,6 +24,23 @@ quoted when both sides were measured in the same round-robin run.
   report's own cards wrap one per row. Nothing that worked was dropped — the
   log, the streamed 5M-row demo, the JSON download, the version line and the
   sandboxed report frame all survive, restyled.
+- **Sub-threshold correlation pairs are now kept per column** ([#154], 5b.6) —
+  a deliberate change to the `summarize()` payload, and one of the two the
+  invariance harness names as permitted. `corr_top` previously held only pairs
+  at or above `corr_threshold` (default 0.50), so on most frames it was empty
+  and every per-column pane rendered an empty state. It now holds every numeric
+  partner, strongest first, bounded by `corr_max_cols` (default 50). No other
+  field changed: every differing key in the golden payload is `corr_top`, and
+  every one goes from `[]` to a populated list.
+
+- **The per-column correlations pane shows every partner** ([#154], 5b.6).
+  It repeated the section-level empty state inside a card — `No significant
+  correlations found`, on a column that has partners and simply has no strong
+  ones. `Age` has exactly two numeric partners in the Titanic frame, so listing
+  both is *complete* information in two rows: **the strongest partner is Fare
+  at +0.096**, and the pane says so rather than shrugging. Capped at five with
+  a `6 more, all below 0.04` line, on the same diverging bar as the
+  section-level list so sign stays position and never colour.
 - **Common values rank visibly** ([#154], 5b.3). Five columns become three —
   the ordinals `1ˢᵗ 2ⁿᵈ 3ʳᵈ` were decoration on a list that is already ordered,
   and count and percent are one fact about one value rather than two. **The bar
