@@ -23,6 +23,17 @@ quoted when both sides were measured in the same round-robin run.
   between columns — a wider label either overflows it or forces the gutter to
   breathe, and a breathing gutter loses the alignment the fixed one buys.
 
+- **A column whose values never repeat no longer reports zeros it cannot
+  know** ([#181]). `Cabin` printed `Entropy NaN` — the only `NaN` in the whole
+  report — alongside `Rare levels 0 (0.0%)`, `Top 5 coverage 0.0%` and
+  `Mode % 0.0%`. All four come from the top-k sketch, which was empty and
+  correctly so: Misra-Gries only guarantees a survivor above `n/(k+1)`, and
+  `Cabin`'s most frequent value appears 4 times in 204 against a threshold of
+  exactly 4. The four cells now render an em dash carrying the reason. `NaN`
+  announced itself; `0.0%` did not, which is why it is the more dangerous of
+  the two.
+
+[#181]: https://github.com/alvarodiez20/pysuricata/issues/181
 [#183]: https://github.com/alvarodiez20/pysuricata/issues/183
 
 ### Changed
