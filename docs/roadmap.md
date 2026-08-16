@@ -1,180 +1,345 @@
-# PySuricata roadmap v8 — re-audit at 0.0.62
+# PySuricata roadmap v10 — re-audit at 0.0.62
 
-Supersedes v7 (0.0.50). Two things changed shape since.
+Supersedes v8 (0.0.62), which was a narrow re-audit written the same day; the
+performance and coverage work here is new, and the two findings v8 recorded — the
+height decision and the dead-selector class of bug — are folded in below.
 
-**The redesign is finished as a body of work.** v7 called #110–#125 "the largest
-open item by some distance." Fifteen of its sixteen issues are closed. What is
-left is not more design: it is an accessibility close-out (#122), a `compare()`
-view (#121), and turning the acceptance criteria into tests (#124).
+Three things changed shape since v7.
 
-**A new class of defect surfaced, and it is the interesting finding of this
-audit.** `+ add a note` in the summary section did nothing for eleven versions.
-Not slowly, not partially — nothing, with a clean console. The redesign renamed
-the block from `.description-value` to `.description-block`; the JavaScript
-still looked for the old name; and every entry point in that file guards on a
-null container and returns quietly. **A test suite of 1,735 tests did not
-notice, because not one of them asserted that a selector resolves.**
+**The report is finished enough to publish.** Phases 1–7 of the migration landed
+in thirteen commits — #128–#141 — and every tell catalogued at 0.0.38 is gone
+from what a reader sees. The one acceptance criterion that was not met is the
+histogram's width.
 
-That is not a bug in a control. It is a gap in what the suite was capable of
-seeing, and it was created by exactly the migration v7 was most confident
-about — the one with a fingerprint proving the *facts* never changed. The facts
-never did. Nothing in the fingerprint has an opinion about whether a button
-works.
+**The surface around the report is now the weakest part of the project.** The
+README describes a library from two hundred commits ago, and the demo dataset
+cannot exercise the features the redesign added — Titanic has no datetime column
+and no correlation pair above 0.5, so the datetime card and both populated
+correlation views never render in the one example anybody looks at. None of that
+is visible from inside the repository, which is why it survived.
+
+**A control can be correct, well-typed, well-tested and dead.** `+ add a note`
+did nothing for eleven versions: the redesign renamed the block's class, the
+JavaScript kept looking for the old one, and every entry point in that file
+guards on a null container and returns quietly. 1,735 tests did not notice,
+because not one of them asserted that a selector *resolves*. Fixed and
+generalised in #142. It is the counterweight to #141: the fingerprint proved the
+facts never changed, and it was right — it has no opinion about whether a button
+works. A migration's confidence is bounded by the axis it instrumented.
 
 | | |
 |---|---|
-| 0.0.16 → 0.0.31 | **2.48×** (mixed 200k × 14, round-robin, best of 5) |
-| `NumericAccumulator.update` | **152 ns/value**, from 828 at 0.0.16 |
-| Report size, 891 × 12 | **600,028 B**, from 629,117 at 0.0.50 — **−4.6%** |
-| Report size, 891 × 8 | **538,660 B**, from 551,198 at 0.0.50 — **−2.3%** |
-| Tests | **1,759**, from 1,473 at 0.0.50 |
-| Open correctness items | **1** (#139, reopened — see below) |
+| 0.0.16 → 0.0.61 | **3.01×** (mixed 200k × 14, clean round-robin, best of 5) |
+| UX findings closed | **18 / 22** |
+| Report, 20,000 × 5 | **519,418 B**, no external assets, no raster images |
+| Coverage | **81.00%**, 1,759 tests, 9,335 statements |
+| Open correctness items | **1** — quantiles printed as exact (#146) |
 
-The headline ratio is **still** unchanged and **still** has not been re-measured
-since 0.0.31. v7 said re-run it before publishing anything; that remains true
-and is now two audits old. Nothing since has touched a hot path, so it is stale
-rather than wrong — but "stale rather than wrong" is a claim that decays.
+The headline ratio **has been re-measured**, which v7 noted it had not: 3.01× at
+0.0.61, and 0.0.61 is 3.4% *faster* than 0.0.42, so thirteen commits of
+render-layer rewriting cost nothing. `summarize()` does not render, which is why
+that is the expected result rather than a lucky one.
 
 ## What landed since v7
 
-| | Verified in the source |
+| | |
 |---|---|
-| **#111–#120** | Header, summary, sample, all four card kinds, correlations, missing values. Every phase byte-identical under the fingerprint except the two that were meant to change facts. |
-| **#123** | The invariance harness: fingerprint (598 facts), golden `summarize()` payload on three frames, fact coverage (154 of 154 statistics reach the page). Each guard verified to **fail** on a real regression rather than assumed to work. |
-| **#103, #104, #41** | Sample open by default; the donut replaced by a stacked composition bar; the distinct count no longer exceeds the row count or claims to be exact. |
-| **logo** | 592 KB of base64 PNG replaced by a 10.8 KB inline SVG — 51% of the report, for a mark drawn at 30 CSS pixels. |
-| **the note button** | Fixed, and generalised: every `getElementById` and class selector in the bundled JS is now checked against real rendered markup. |
+| **#128** | the logo was 47% of the report — inline SVG, and the fixed cost halved |
+| **#129–#136** | phases 1–5: tokens and type, the 52 px header, the stat row and stacked bar, the borderless sample, the restacked numeric card, axis units, the high-cardinality branch, boolean contrast |
+| **#137** | quality chips show the number they already had in the DOM |
+| **#138, #140** | correlations that report a weak result; missing values routed on chunk count |
+| **#141** | the test that proves the facts do not change while the presentation does |
+| **#126** | the impossible unique count — clamped, and `approx: True` on both sides |
+| **#107** | UX‑17, UX‑18, UX‑19 in one commit |
+| **#108** | the accumulator boundary, prepared for a second implementation — and measured today at **0.97–1.01× of 0.0.42**, so the preparation cost nothing |
+| **#109** | `compare(a, b)` |
 
-## The measurement rules
+#141 is the one worth calling out. Thirteen consecutive commits rewrote every
+template and stylesheet in the project; the only reason that was reviewable is
+that a test asserted, on each of them, that the numbers had not moved.
 
-Five now. Each cost a real retraction or a near miss.
+## The measurement rules, with one clause added
 
-1. **A ratio is only quotable when both sides were measured in the same
-   round-robin**, on the same machine, within the same run.
-2. **`cProfile` over-weights kernels that make many small calls.** It ranked the
-   reservoir at ~30% of self time when replacing it with a 5× faster one moved
-   wall clock by 4%.
-3. **A benchmark only measures the call sites it calls.** Holding `KMV._values`
-   as an array won its own benchmark by 2.7× and lost 35% end to end.
-4. **A guard is worth only as much as the guarantee that what it reads is what
-   runs.** `test_contrast.py` asserted the axis colour cleared 3:1 and passed
-   for as long as it existed, while a second stylesheet redefined that token and
-   the page drew a different colour.
-5. **A check over rendered output is only as good as the markup the fixture
-   reaches.** New at 0.0.62, and rule 3 restated for the render layer. Writing
-   the selector check produced two confident false positives:
+A ratio is quotable only when both sides were measured in the same round-robin,
+on the same machine, within the same run — **and nothing else was running.**
 
-   | reported dead | why it wasn't |
-   |---|---|
-   | the numeric Linear/Log toggle | `[1.0, 2, 3, 4, 5] * 40` has five distinct values, so it profiles as **categorical** — the fixture had no numeric card at all |
-   | the flag filter | a frame with no quality problems renders no `.needs-attention` block |
+That clause is new and it was earned today. The first round-robin put 0.0.61 at
+1,599 ms against 0.0.42's 1,448 — a 10.5% regression, well outside the ±1% this
+harness reproduces to. The hypothesis was ready-made: #108 introduced an
+abstraction boundary in the accumulator hot path, which is exactly where a few
+percent goes. Bisecting seven commits refused it — 1,203 to 1,271 ms, no
+monotonic trend, HEAD at 1.008× — and the cause was mine: the coverage suite was
+running in parallel, so a four-and-a-half-minute pytest run was competing for two
+cores with the benchmark measuring against it.
 
-   Both controls work; both were checked in a browser before anything was
-   changed. A fixture that misses a branch does not report "unknown", it reports
-   "absent", and absent reads as broken.
+Interleaving cancels drift between versions. It does not cancel contention from a
+neighbour. Worth asserting in `benchmarks/versions.py`: refuse to run above a load
+threshold, or at minimum print the load average beside the numbers.
 
-**The report-size series is not reproducible, and that is a sixth rule waiting
-to be written.** v7 quotes 543,577 B at 0.0.49 on "an 891 × 8 frame." The frame
-was never pinned, so the figure cannot be reproduced — the closest
-reconstruction gives 551,198 B at the adjacent commit. The numbers in this
-document's table were measured across three interleaved rounds on two pinned
-frames and are internally consistent; they are **not** comparable to v7's. Pin
-the frames the way `tests/fixtures/` pins the invariance inputs.
+Fourth time in this audit that a measurement artefact nearly became a claim, and
+the first time it was caught before it was written down.
 
----
+## What is still open
+
+| # | Finding | State |
+|---|---|---|
+| UX‑21 | `Processed bytes (≈)` in the primary stat row | half — the donut is gone, this is not |
+| UX‑22 | `ComputeOptions` at 22 fields; `numeric_sample_size` not a keyword | open — and it is the knob UX‑8 drives |
+| UX‑8 | `memory_budget=` | open, deliberately post-launch |
+| — | `ReportConfig is ProfileConfig` | open, no deprecation warning |
+
+## Found in this audit
+
+### The histogram never got its width
+
+```html
+<svg class="hist-svg" width="420" height="200" viewBox="0 0 420 200">
+```
+
+A fixed 420 px canvas, centred in a card that is now around 1,900 px wide.
+Phase 5.1's argument for the restack was precise about why it mattered — *"it
+gains ~550px of width, which is what finally makes 50 bins legible and the log
+toggle worth using"* — and that did not happen. The chart moved rather than grew.
+Cheapest visual win remaining, and "the histogram is at least 900 px at a 1240 px
+viewport" is exactly the kind of assertion the layout tests already run.
+
+### The CSS grew, and the ban list was too narrow to notice
+
+| | v6 audit | today |
+|---|---:|---:|
+| lines of CSS | 8,561 | **8,990** |
+| distinct hex values | 90 | **100** |
+| `linear-gradient` | 67 | 55 |
+| `box-shadow` | 104 | 89 |
+| `border-radius` | 158 | 147 |
+
+Phase 1's acceptance was that none of nine named hexes appears in `static/css/`
+or `render/`. **All nine are clear** — and there are a hundred, including
+Tailwind's amber/red/green and Material's orange/green/red. The list named the
+old *accent* colours and missed the semantic ramp, so the check passes while both
+frameworks' defaults are still in the file.
+
+Replace it with the inverse assertion: **every hex in `static/css/` must appear
+in `_00-tokens.css`.** One test, cannot be outgrown, and it turns commits 15 and
+17 from a tidy-up into a ratchet.
+
+### The report is 519 KB only while it is narrow
+
+20,000 rows, columns cycling through all five kinds:
+
+| columns | bytes |
+|---:|---:|
+| 2 | 464,582 |
+| 5 | 519,418 |
+| 10 | 702,185 |
+| 20 | **1,062,649** |
+
+Fit: **~363 KB fixed + ~33 KB per column**, residuals within 5%.
+
+578 KB came off the *fixed* cost, which is why a narrow report halved. Nothing
+came off the per-column term — so a 20-column report is back over a megabyte and
+a 60-column one would be around 2.3 MB. Say which shape a size refers to before
+quoting it. The next win is per-column: six pre-rendered histograms per numeric
+column (three bin counts × two scales) is the obvious place to look.
+
+### `finalize()` does not consume randomness — but the quantiles are unlabelled estimates
+
+This was written up as the project's one open correctness item, on the grounds
+that finalising at chunk 3 of 6 diverges from an uninterrupted run on eleven
+fields including `median`, `q1`, `q3`, `iqr` and `mad`. **Re-checked at 0.0.62
+with a control, and it does not hold.**
+
+```
+unseeded, neither finalized mid-stream : 9 fields differ   <- the control
+unseeded, one finalized mid-stream     : 11 fields differ
+seeded,   neither finalized mid-stream : none
+seeded,   one finalized mid-stream     : chunk_metadata
+```
+
+The eleven were two **unseeded** runs being compared. A control with no
+`finalize()` anywhere already differs on nine of them, so the comparison never
+isolated the thing it named. With a seed the median is bit-identical either way
+(`0.007186`), and `ReservoirSampler.values()` returns `self._buf` — it consumes
+no randomness, so the stated two-line mechanism does not exist.
+
+What survives is smaller and belongs to #139: `mark_chunk_boundary()` is called
+only from `finalize()`, so `chunk_metadata` counts *renders*, not chunks.
+
+**The real finding is the one the bad comparison was standing on top of (#146).**
+The quantiles genuinely are reservoir estimates, they genuinely do move — eight
+unseeded runs spread `1.86 × 10⁻²` on a true median of `2.8 × 10⁻³` — and the
+card prints them to four significant figures with no approximation marker, three
+orders of magnitude finer than the estimate supports. `CLAUDE.md` has a standing
+rule that approximate values must be labelled; the unique count follows it and
+the quantiles do not.
+
+It is invisible to the suite because **every test seeds**. `profile(df, seed=0)`
+is bit-reproducible; `profile(df)` — what a user writes — is not.
+
+Fourth measurement artefact in two audits, and the first one that was caught by
+running a control rather than by someone re-deriving it later.
+
+## The surface
+
+### The committed example report is the design you replaced — the published one is not
+
+`docs/assets/titanic_report.html` is **1,178,450 bytes**, of which 578,276 are the
+old logo PNG. 464 uses of `#3b82f6`. Zero occurrences of `--paper`. Last
+regenerated at `663ed24` — **PR #23**.
+
+The obvious conclusion is that the README's link serves the design the redesign
+replaced. **It does not**, and this was written down twice before anyone checked
+the URL rather than the file:
+
+```
+$ curl -sI https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html
+last-modified: Sun, 16 Aug 2026 09:41:41 GMT      # minutes after #142 merged
+$ curl -s ... | wc -c
+600049                                             # current output
+```
+
+`docs.yml` runs the regeneration script *before* `mkdocs build` and then deploys,
+on every push to `main`. So the published report has never been stale. What is
+stale is the copy committed to the repository, which nothing serves and no CI job
+reads.
+
+That makes this repo hygiene rather than the highest-priority item, and it
+reframes the fix (#143). The question is not *regenerate it* but **why a build
+artefact is committed at all**: three workflows already produce it, the only
+local consumer is `mkdocs serve`, and committing it means every rendering change
+either produces a megabyte diff or drifts silently. Forty-five versions of drift
+is the evidence that nobody wants that diff. Ignore it and delete it from the
+tree, rather than resetting it once and re-arming the same trap.
+
+### Titanic cannot demonstrate what the library does
+
+No datetime column at all, so the datetime card and the four temporal small
+multiples never render in the one example anybody looks at. No correlation pair
+above 0.5 — the design handoff had to use illustrative numbers for the ranked list
+and the matrix for exactly this reason. No identifier column. 891 rows.
+
+| Candidate | Rows | What it adds |
+|---|---:|---|
+| **NYC Yellow Taxi**, one month of Parquet | ~3M | Two datetimes; strong real correlations (`trip_distance` ↔ `fare_amount` ↔ `total_amount`); categoricals; real missing values; ~50 MB, so **the streaming and DuckDB story is visible in the same example** |
+| **UCI Bike Sharing** `hour.csv` | 17,379 | Datetime, `temp`↔`atemp` ≈ 0.99, two booleans. No missing values, no identifier |
+| seaborn `taxis.csv` | 6,433 | Pickup and dropoff datetimes, distance↔fare. The low-risk quick-start swap |
+
+Use two: something instant in the quick start, taxi data for the linked showcase.
+*(Recommendations from known properties, not measurements — the sandbox could not
+reach the hosts to profile them. Verify before committing.)*
+
+### The README describes a project from two hundred commits ago
+
+Wrong: sketch `k` says 1024 and is **2048**; sample `s` says 10 000 and is
+**20 000**; the CLI section documents two of three subcommands; the configuration
+example teaches `ReportConfig` and the two-constructor ceremony **#87 removed**;
+`chunk_size = 250_000` is 5× the default.
+
+Missing: `pysuricata check` — the differentiator is not in the README — DuckDB,
+Parquet and Arrow, `compare()`, keyword options, `preset=`, `progress=`,
+`py.typed`, `schema_version`, and a screenshot.
+
+192 lines, and one number in them, for a project whose thesis is measured
+performance and bounded memory. A draft rewrite is in hand; every code example in
+it was executed against 0.0.61, which caught one error in the draft itself —
+`Comparison` has no `save_html`, only `to_dict()`.
+
+### The triage block lists rather than triages
+
+```html
+<a href="#col_d">d</a>
+   <span class="flag bad"  data-flag="87-99-heavy-tailed">87.99 heavy-tailed</span>
+   <span class="flag bad"  data-flag="3-0-many-outliers">3.0% many outliers</span>
+<a href="#col_gappy">gappy</a>
+   <span class="flag bad"  data-flag="37-8-missing">37.8% missing</span>
+<a href="#col_const">const</a>
+   <span class="flag warn" data-flag="dominant-category">Dominant category</span>
+```
+
+1. **It is not ranked.** `bad` and `warn` are in the class and unused, and 37.8%
+   missing is listed *below* a 3.0% outlier flag. Rank by severity, then by
+   `value / threshold` — the one quantity comparable across flag types. 37.8%
+   missing against a 20% threshold is 1.9×; 3.0% outliers against 1% is 3.0×.
+2. **Half the rows carry no number.** `Dominant category` is a bare word beside
+   two rows that quantify themselves; `const` is 99.8% one value, so say that.
+   Same for `Quasi-constant` → `0.3% unique`.
+3. **The thresholds were dropped in this layer.** Card chips carry
+   `data-threshold` and `data-value` — #137 added them. The attention chips have
+   only `data-flag`, so `37.8% missing` says *what* and not *why it is here*.
+4. **Nothing aligns.** `grid-template-columns: max-content 1fr`, the same row grid
+   used everywhere else in the redesign.
+5. **"3 of 4 columns need a look" is a list.** Above roughly half the columns
+   flagged the framing stops working: rank and cap at the worst five to ten. And
+   the inverse is missing — when nothing is flagged the block disappears, which
+   reads as a broken feature. It should say *"All 12 columns look fine — none
+   crossed a quality threshold."* That is the empty-state argument #138 already
+   accepted for correlations.
+
+None of it needs a new statistic. Severity, value and threshold are all computed
+and all present somewhere in the document; the fix is ordering, formatting, and
+carrying two attributes one layer further.
+
+## The height decision, made
+
+Open across seven hand-offs and blocking #122. Both targets are raised to their
+measured values, and #114's internal conflict is resolved in favour of its
+accessibility criteria over its compactness estimate:
+
+| | was | now |
+|---|---|---|
+| #112 summary | ≤560px | **≤627px** |
+| #114 numeric card | ≤600px | **≤820px** |
+
+Pinned to `docs/assets/titanic.csv` at 390 × 844, details collapsed. Set *at* the
+measured value, as ratchets.
+
+Neither original number reproduced, and the reason generalises: **neither
+criterion named a dataset or a viewport height.** Same failure as the report-size
+series in v7, in a different part of the project, found the same way — by trying
+to reproduce it. Pin the conditions whenever a number goes in an acceptance box.
+
+Setting them surfaced #145: three of the four card kinds have no height criterion
+at all, and the tallest card in the report is a categorical one at **923px**,
+above the numeric card that has the only target.
 
 ## What to do next
 
-**1 · Close out the redesign (#122, #124, #121).** In that order.
+**1 · The pre-launch day.** Make the histogram responsive (#147) — a fixed 420px
+canvas in a ~1,900px card, so #114's stated reason for the restack was never
+delivered. Label the quantiles approximate (#146). Round the sample table's
+figures. Move `Processed bytes` into the details panel. Stop committing the
+example report (#143). Install the [Codecov GitHub App](https://github.com/apps/codecov).
 
-**#122 is the one that matters**, and it carries a decision that has been open
-across six separate hand-offs and is now blocking: **the height criteria on
-#112 (599px measured against a ≤560 target) and #114 (775px against ≤600)**.
+**1b · The surface, one day.** Land the rewritten README; swap the demo dataset
+for one with a datetime column and a real correlation; rank the triage block and
+give every row a number.
 
-#114's is not a matter of effort. It is a conflict between two of its own
-acceptance criteria: six controls at the required 44×44 wrap to 148px, and
-fourteen stats in the specified two-column mobile grid are seven rows. One
-decision resolves both, and it can be applied retroactively — but it has to be
-made rather than built past, which is what happened five times.
+**2 · Publish.** All three posts are unblocked at once, which was not true at the
+last audit — the retraction, DuckDB plus the memory model, and a third that is
+better than it sounds: thirteen commits rewrote every stylesheet in the project
+and the reason it was reviewable is a test.
 
-#122 also removes the compatibility shim. That is scaffolding, and scaffolding
-gets left up: 195 colour literals still sit in components the visual phases own,
-and the shim coming out is what makes that count reach zero.
+**3 · The deletion pass — commits 15 and 17.** The inverse-hex assertion, then
+delete until it passes: 100 hexes to ~12, 55 gradients, 89 shadows, the shim.
+Target 8,990 → ~2,500 lines. Then the accessibility pass.
 
-**#124 should absorb the selector check.** The acceptance criteria it exists to
-run are mostly geometric — heights, contrast, target sizes — and the note button
-is the proof that geometry is not the only thing that silently stops being true.
+**4 · Phase 5b, the partial report.** Unblocked once #139 makes `chunk_metadata`
+count chunks rather than renders.
 
-**2 · #139, reopened.** Per-column per-chunk missing counts are never produced.
-It was closed by a **keyword in a PR body, not by a fix** — the write-up of the
-gap sat in the commit message that GitHub read as a closing reference. Three
-verified findings stand: the renderer reads `chunk_metadata` off an object that
-does not carry it, only the numeric accumulator tracks it at all, and
-`mark_chunk_boundary()` is called only from `finalize()`, so there is exactly
-one boundary no matter how many chunks ran.
+**5 · The memory budget**, preceded by adding `numeric_sample_size` to the
+passthrough keywords.
 
-The strip renderer is written and tested in isolation, and
-`TestTheDataGapIsRealAndDetected` fails the day the engine starts marking
-boundaries — so the view turns on by someone noticing a red test.
-
-**3 · Regenerate the example report.** `docs/assets/titanic_report.html` is
-1,180,196 B and was last written by PR #23, at **0.0.17**. Every reader of the
-documentation is looking at a pre-redesign report roughly twice the size of what
-the library now emits — including the base64 logo the release notes say was
-removed. This is the cheapest credibility fix available and it is currently the
-largest gap between what the project claims and what a visitor sees.
-
-**4 · Publish (#38, one weekend).** Unchanged except that it now has a
-precondition it did not have in v7: re-run the incumbent round-robin *and* the
-version series, so the two headline numbers are each one measurement rather than
-two. The 13.3× against ydata-profiling has not been re-measured since 0.0.26.
-
-**5 · Prove the memory claim, then ship the budget (#92, then #79).** "Bounded
-memory, so it fits in CI" is the reason to prefer this over a profiler that
-loads the frame, and it has still never been measured on a constrained runner.
-
-Only then #79. The model in `docs/adr/memory-budget.md` is fitted on **numeric
-columns only**, and a text-heavy frame is the shape most likely to be large — so
-the budget would be optimistic exactly where it matters. It must be a planner
-that derives settings, never a cap that raises `MemoryError`, and it must report
-the accuracy consequence of what it chose: quantile error is `1/√k`, ±0.7% at
-k=20,000 and ±3.2% at k=1,000.
-
-**6 · The native core (#44, 3–5 weekends).** Unchanged: **KMV first, moments
-last**, because moments were 1.3–5% of the numeric path while KMV was half of
-it. The crate is vendored with 20 passing tests, nothing imports it, and there
-is still no `[fast]` extra.
-
-**7 · The rest of the report's weight (#39).** The redesign took 891 × 12 from
-629 KB to 600 KB — real, but a rounding error against the 250 KB target. The
-logo was the last easy win. What remains is structural: a JSON payload block,
-and not pre-rendering six histograms per column. Both are now unblocked, since
-the markup they would restructure has stopped moving.
-
-### One piece of infrastructure
-
-**#125 — CI has never run on `main`.** `ci.yml` triggers on `pull_request` only,
-so every check the project relies on has only ever run against a proposed merge,
-never against the result. The fix needs care rather than effort: `version-check`
-and `changelog-check` compare against `origin/main` and would fail on every push
-to `main` by construction, so the push trigger has to be scoped to `lint`,
-`test` and `accuracy`.
-
-It has a second half found during the redesign: every workflow keys on
-`pull_request: branches: [main]`, so a **stacked** PR gets zero checks. Sixteen
-of the redesign PRs were stacked, and the ones that ran green did so only
-because they were retargeted at `main` before merge.
+**6 · Resume, then the native core.** #108 already prepared the boundary, and
+today's measurement says that preparation cost nothing — which is the result you
+want before building on it. KMV first, moments last.
 
 ---
 
-*Measurements: performance figures unchanged from v6 — 0.0.31 at `4831a36`, plus
-0.0.27, 0.0.26, 0.0.21 and 0.0.16 each on `sys.path` in its own interpreter;
-five round-robin rounds, best of five per version; `mixed` suite at 200,000 × 14,
-seed 0; 2-core x86-64 Linux container. **Report sizes re-measured for this
-audit**: 0.0.50 at `70e9701` against 0.0.62 at `de36425`, each on `sys.path` in
-its own interpreter, three interleaved rounds, byte length of the emitted HTML;
-frames are `docs/assets/titanic.csv` (891 × 12) and a seeded 891 × 8 frame
-covering all four card kinds. Output is deterministic — all three rounds agreed
-exactly — so best-of is not meaningful here and the single value is quoted. Test
-count from `pytest -m "not benchmark"` at 0.0.62. Absolute times are not
-comparable across sessions; ratios within a single round-robin are.*
+*Measurements: 0.0.61 at `0191b80`, plus 0.0.42, 0.0.27 and 0.0.16, each on
+`sys.path` in its own interpreter; five round-robin rounds, best per version;
+`mixed` suite at 200,000 × 14, seed 0; 2-core x86-64 Linux container with nothing
+else running. Bisect over seven commits, four rounds. Coverage from
+`pytest --cov=pysuricata` at the same commit. Report sizes from frames of 20,000
+rows with columns cycling through all five kinds. UX assertions from a live 0.0.61
+import. Absolute times are not comparable across sessions; ratios within a single
+round-robin are, provided nothing else is running.*
