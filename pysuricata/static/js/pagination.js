@@ -105,7 +105,11 @@
             }
             applyFilters();
             const grid = document.getElementById('cards-grid');
-            if (grid) grid.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            // An explicit `behavior` beats CSS `scroll-behavior`, so the
+            // reduced-motion rule in _01-base.css cannot reach this one.
+            const reduce = window.matchMedia &&
+                window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (grid) grid.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
         });
     }
 
@@ -214,9 +218,13 @@
         const pageNumbers = document.getElementById('page-numbers');
         let html = '';
 
+        // A button, not a span with a click listener. The span version could
+        // not be reached by keyboard, announced no role, and had "2" as its
+        // whole accessible name.
         for (let i = 1; i <= totalPages; i++) {
             const active = i === currentPage ? 'active' : '';
-            html += `<span class="page-number ${active}" data-page="${i}">${i}</span>`;
+            const current = i === currentPage ? ' aria-current="page"' : '';
+            html += `<button type="button" class="page-number ${active}" data-page="${i}" aria-label="Go to page ${i}"${current}>${i}</button>`;
         }
 
         pageNumbers.innerHTML = html;
@@ -224,7 +232,9 @@
         // Add click listeners
         pageNumbers.querySelectorAll('.page-number').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                goToPage(parseInt(e.target.dataset.page));
+                // currentTarget, not target: a click can land on a text node
+                // inside the button once it is a real button rather than a span.
+                goToPage(parseInt(e.currentTarget.dataset.page));
             });
         });
     }

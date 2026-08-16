@@ -12,20 +12,12 @@
 /* Section divider line - removed excessive spacing */
 #pysuricata-report .section-divider {
   border: none;
-  border-top: 1px solid var(--divider);
+  border-top: 1px solid var(--rule);
   margin: 0.05rem 0 0.05rem 0;
   opacity: 0.6;
 }
 
 /* Section description text */
-#pysuricata-report .section-description {
-  font-size: 0.95rem;
-  line-height: 1.5;
-  color: inherit;
-  opacity: 0.8;
-  margin: 0 0 1.5rem 0;
-  max-width: 800px;
-}
 
 /* Logo clickable styling */
 #pysuricata-report .logo a {
@@ -72,8 +64,7 @@
 }
 
 /* Ensure superscript characters render properly without spacing */
-#pysuricata-report .rank sup,
-#pysuricata-report .rank .superscript {
+#pysuricata-report .rank sup {
   font-size: 0.7em;
   line-height: 0;
   vertical-align: super;
@@ -82,35 +73,7 @@
 }
 
 /* Alternative approach: use CSS for ordinal suffixes instead of Unicode */
-#pysuricata-report .rank.ordinal-1::after {
-  content: "st";
-  font-size: 0.7em;
-  vertical-align: super;
-}
 
-#pysuricata-report .rank.ordinal-2::after {
-  content: "nd";
-  font-size: 0.7em;
-  vertical-align: super;
-}
-
-#pysuricata-report .rank.ordinal-3::after {
-  content: "rd";
-  font-size: 0.7em;
-  vertical-align: super;
-}
-
-#pysuricata-report .rank.ordinal-4::after,
-#pysuricata-report .rank.ordinal-5::after,
-#pysuricata-report .rank.ordinal-6::after,
-#pysuricata-report .rank.ordinal-7::after,
-#pysuricata-report .rank.ordinal-8::after,
-#pysuricata-report .rank.ordinal-9::after,
-#pysuricata-report .rank.ordinal-10::after {
-  content: "th";
-  font-size: 0.7em;
-  vertical-align: super;
-}
 
 /* Enhanced clickable section styling */
 #pysuricata-report .details-toggle {
@@ -162,7 +125,7 @@
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   background: rgba(0, 0, 0, 0.08);
-  border-color: var(--accent-color);
+  border-color: var(--data-1);
 }
 
 #pysuricata-report:not(.light) .details-section .tabs [role="tab"]:hover:not(.active) {
@@ -241,9 +204,9 @@
   gap: 0.75rem;
   margin-bottom: 1.5rem;
   padding: 1rem;
-  background: var(--card-bg);
+  background: transparent;
   border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 /* Controls row - search first, then buttons */
@@ -258,11 +221,12 @@
 #pysuricata-report .controls-row input {
   flex: 1;
   min-width: 200px;
+  min-height: var(--tap-min);
   padding: 0.5rem 0.75rem;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   border-radius: 4px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: transparent;
+  color: var(--ink);
   font-size: 0.82rem;
 }
 
@@ -277,8 +241,8 @@
 #pysuricata-report .filter-buttons button:hover {
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  background: var(--hover-bg);
-  border-color: var(--accent-color);
+  background: transparent;
+  border-color: var(--data-1);
   border-radius: 6px;
   /* Override tab-like border-radius */
 }
@@ -289,21 +253,25 @@
 
 #pysuricata-report .controls-row input:focus {
   outline: none;
-  border-color: var(--accent-color);
+  border-color: var(--data-1);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 }
 
 #pysuricata-report .controls-row input::placeholder {
-  color: var(--text-muted);
+  color: var(--muted);
 }
 
 /* Filter tabs */
 #pysuricata-report .tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
   padding: 0.375rem 0.75rem;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   border-radius: 3px;
-  background: var(--bg-primary);
-  color: var(--text-secondary);
+  background: transparent;
+  color: var(--ink-2);
   cursor: pointer;
   font-size: 0.8rem;
   white-space: nowrap;
@@ -315,19 +283,19 @@
 }
 
 #pysuricata-report .tab:hover {
-  background: var(--hover-bg);
+  background: transparent;
   border-radius: 6px 6px 0 0;
-  border-color: var(--accent-color);
-  color: var(--text-primary);
+  border-color: var(--data-1);
+  color: var(--ink);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
   transition: all 0.2s ease;
 }
 
 #pysuricata-report .tab.active {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border-color: var(--accent-color);
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--data-1);
   border-width: 2px;
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
@@ -338,22 +306,22 @@
 
 /* Dark mode adjustments for tabs */
 #pysuricata-report:not(.light) .tab {
-  background: var(--bg-primary);
-  border-color: var(--border-color);
-  color: var(--text-secondary);
+  background: transparent;
+  border-color: var(--rule-strong);
+  color: var(--ink-2);
 }
 
 #pysuricata-report:not(.light) .tab:hover {
-  background: var(--hover-bg);
+  background: transparent;
   border-radius: 6px 6px 0 0;
-  border-color: var(--accent-color);
-  color: var(--text-primary);
+  border-color: var(--data-1);
+  color: var(--ink);
 }
 
 #pysuricata-report:not(.light) .tab.active {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border-color: var(--accent-color);
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--data-1);
   border-width: 2px;
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
@@ -366,9 +334,9 @@
 #pysuricata-report .info {
   text-align: center;
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--muted);
   padding: 0.375rem;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 3px;
 }
 
@@ -382,21 +350,26 @@
 }
 
 #pysuricata-report .pagination button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
   padding: 0.375rem 0.75rem;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   border-radius: 3px;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: transparent;
+  color: var(--ink);
   cursor: pointer;
   font-size: 0.8rem;
   transition: all 0.2s ease;
 }
 
 #pysuricata-report .pagination button:hover:not(:disabled) {
-  background: var(--hover-bg);
+  background: transparent;
   border-radius: 6px;
-  border-color: var(--accent-color);
-  color: var(--text-primary);
+  border-color: var(--data-1);
+  color: var(--ink);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
 }
@@ -412,28 +385,41 @@
   gap: 0.125rem;
 }
 
+/* A `<button>` since #122, not a `<span>` with a click listener — which had
+   no role, no keyboard access and no focus ring. `font: inherit` and the
+   explicit background undo the UA button styling that comes with it. */
 #pysuricata-report .page-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
   padding: 0.375rem 0.5rem;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   border-radius: 3px;
-  background: var(--bg-primary);
-  color: var(--text-secondary);
+  background: transparent;
+  color: var(--ink-2);
   cursor: pointer;
-  min-width: 1.75rem;
   text-align: center;
+  font-family: inherit;
   font-size: 0.8rem;
 }
 
+#pysuricata-report .page-number:focus-visible {
+  outline: 2px solid var(--data-1);
+  outline-offset: 2px;
+}
+
 #pysuricata-report .page-number:hover {
-  background: var(--hover-bg);
+  background: transparent;
   border-radius: 6px;
-  border-color: var(--accent-color);
+  border-color: var(--data-1);
 }
 
 #pysuricata-report .page-number.active {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border-color: var(--accent-color);
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--data-1);
   border-width: 2px;
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
@@ -446,7 +432,7 @@
 #pysuricata-report .no-results {
   text-align: center;
   padding: 2rem 1rem;
-  color: var(--text-muted);
+  color: var(--muted);
   font-size: 1rem;
 }
 
@@ -468,38 +454,38 @@
 
 /* Dark mode */
 #pysuricata-report:not(.light) .vars-controls {
-  background: var(--card-bg);
-  border-color: var(--border-color);
+  background: transparent;
+  border-color: var(--rule-strong);
 }
 
 #pysuricata-report:not(.light) .controls-row input {
-  background: var(--bg-primary);
-  border-color: var(--border-color);
-  color: var(--text-primary);
+  background: transparent;
+  border-color: var(--rule-strong);
+  color: var(--ink);
 }
 
 #pysuricata-report:not(.light) .controls-row input:focus {
-  border-color: var(--accent-color);
+  border-color: var(--data-1);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
 }
 
 #pysuricata-report:not(.light) .tab {
-  background: var(--bg-primary);
-  border-color: var(--border-color);
-  color: var(--text-secondary);
+  background: transparent;
+  border-color: var(--rule-strong);
+  color: var(--ink-2);
 }
 
 #pysuricata-report:not(.light) .tab:hover {
-  background: var(--hover-bg);
+  background: transparent;
   border-radius: 6px 6px 0 0;
-  border-color: var(--accent-color);
-  color: var(--text-primary);
+  border-color: var(--data-1);
+  color: var(--ink);
 }
 
 #pysuricata-report:not(.light) .tab.active {
-  background: var(--bg-primary);
-  color: var(--text-primary);
-  border-color: var(--accent-color);
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--data-1);
   border-width: 2px;
   font-weight: 700;
   box-shadow: 0 2px 6px rgba(59, 130, 246, 0.4);
@@ -509,31 +495,26 @@
 }
 
 #pysuricata-report:not(.light) .pagination button {
-  background: var(--bg-primary);
-  border-color: var(--border-color);
-  color: var(--text-primary);
+  background: transparent;
+  border-color: var(--rule-strong);
+  color: var(--ink);
 }
 
 #pysuricata-report:not(.light) .pagination button:hover:not(:disabled) {
-  background: var(--hover-bg);
+  background: transparent;
   border-radius: 6px;
-  border-color: var(--accent-color);
-  color: var(--text-primary);
+  border-color: var(--data-1);
+  color: var(--ink);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
 }
 
 #pysuricata-report:not(.light) .page-number {
-  background: var(--bg-primary);
-  border-color: var(--border-color);
-  color: var(--text-secondary);
+  background: transparent;
+  border-color: var(--rule-strong);
+  color: var(--ink-2);
 }
 
-#pysuricata-report:not(.light) .page-number:hover {
-  background: var(--hover-bg);
-  border-radius: 6px;
-  border-color: var(--accent-color);
-}
 
 /* Responsive */
 @media (max-width: 768px) {
@@ -578,7 +559,6 @@
     text-align: center;
   }
 }
-
 
 
 /* =============================

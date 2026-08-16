@@ -11,10 +11,21 @@ A ban list can always be outgrown by a colour nobody thought to ban. The
 assertion runs the other way here: **every hex outside `_00-tokens.css` must
 equal a value the token file defines.**
 
-That cannot be satisfied today -- 88 file/value pairs do not -- so it ships as a
+That cannot be satisfied today -- 70 file/value pairs do not -- so it ships as a
 ratchet against a recorded baseline. A new literal fails immediately; removing
 one is expected and fails too, loudly, telling you to shrink the baseline. The
 number only goes down.
+
+It started at 88 and reached 70 in #122. Eleven went without anyone choosing a
+colour: they sat in rules for markup the redesign had already replaced, and
+left with 285 dead selectors. That is worth noticing about this kind of debt --
+a good deal of it is not a decision anyone still has to make.
+
+The other seven were chosen, and they were chosen because they *failed*. A
+contrast audit over the rendered report found 204 text nodes below 4.5:1, all
+of them tracing back to eight framework literals printed on a 10% wash of
+themselves. Every one would have passed if measured against `--paper`. See
+#122's note on ancestor backgrounds, and `test_contrast.py`.
 
 Two things are deliberately not counted:
 
@@ -35,19 +46,16 @@ import pytest
 CSS_DIR = Path(__file__).resolve().parents[1] / "pysuricata" / "static" / "css"
 TOKENS = CSS_DIR / "_00-tokens.css"
 
-#: Every file/value pair that does not yet resolve to a token, as of 0.0.72.
+#: Every file/value pair that does not yet resolve to a token, as of 0.1.0.
 #: Delete entries as they are tokenised. Adding one requires a reason in review.
 BASELINE: set[str] = {
-    # _03-summary.css
     "_03-summary.css #3b8ad1",
     "_03-summary.css #4a9ae1",
     "_03-summary.css #d14e3e",
     "_03-summary.css #d1a53e",
     "_03-summary.css #e15e4e",
     "_03-summary.css #e1b54e",
-    # _05-sample.css
     "_05-sample.css #1a1a1a",
-    # _06-cards.css
     "_06-cards.css #0366d6",
     "_06-cards.css #111",
     "_06-cards.css #16a34a",
@@ -60,21 +68,16 @@ BASELINE: set[str] = {
     "_06-cards.css #93c5fd",
     "_06-cards.css #aaa",
     "_06-cards.css #bfdbfe",
-    "_06-cards.css #d73a49",
     "_06-cards.css #d97706",
     "_06-cards.css #dbeafe",
-    "_06-cards.css #dc2626",
     "_06-cards.css #e0e0e0",
     "_06-cards.css #ef4444",
     "_06-cards.css #f59e0b",
-    "_06-cards.css #f66a0a",
     "_06-cards.css #f9f9f9",
     "_06-cards.css #fff",
-    # _07-histogram.css
     "_07-histogram.css #999",
     "_07-histogram.css #ccc",
     "_07-histogram.css #f9f9f9",
-    # _08-categorical.css
     "_08-categorical.css #007acc",
     "_08-categorical.css #2a2a2a",
     "_08-categorical.css #4db8ff",
@@ -82,55 +85,36 @@ BASELINE: set[str] = {
     "_08-categorical.css #66c2ff",
     "_08-categorical.css #aaa",
     "_08-categorical.css #e0e0e0",
-    # _09-datetime.css
     "_09-datetime.css #2563eb",
     "_09-datetime.css #6b7280",
     "_09-datetime.css #9ca3af",
     "_09-datetime.css #d1d5db",
     "_09-datetime.css #f9f9f9",
-    # _10-boolean.css
     "_10-boolean.css #fff",
-    # _11-correlations.css
-    "_11-correlations.css #059669",
     "_11-correlations.css #2a2a2a",
-    "_11-correlations.css #4caf50",
-    "_11-correlations.css #6b7280",
-    "_11-correlations.css #9e9e9e",
-    "_11-correlations.css #bdbdbd",
     "_11-correlations.css #d32f2f",
-    "_11-correlations.css #dc2626",
-    "_11-correlations.css #dc267f",
     "_11-correlations.css #e0e0e0",
-    "_11-correlations.css #ea580c",
     "_11-correlations.css #f44336",
     "_11-correlations.css #f57c00",
     "_11-correlations.css #fbc02d",
     "_11-correlations.css #ff9800",
     "_11-correlations.css #ffeb3b",
-    # _12-missing.css
-    "_12-missing.css #059669",
     "_12-missing.css #10b981",
-    "_12-missing.css #16a34a",
     "_12-missing.css #1a1a1a",
     "_12-missing.css #22c55e",
     "_12-missing.css #34d399",
     "_12-missing.css #45a049",
-    "_12-missing.css #4ade80",
     "_12-missing.css #4caf50",
     "_12-missing.css #66bb6a",
     "_12-missing.css #86efac",
-    "_12-missing.css #b91c1c",
-    "_12-missing.css #d97706",
     "_12-missing.css #dc2626",
     "_12-missing.css #e5e7eb",
-    "_12-missing.css #ea580c",
     "_12-missing.css #ef4444",
     "_12-missing.css #ef5350",
     "_12-missing.css #f44336",
     "_12-missing.css #f57c00",
     "_12-missing.css #f59e0b",
     "_12-missing.css #f87171",
-    "_12-missing.css #f97316",
     "_12-missing.css #fb923c",
     "_12-missing.css #fbbf24",
     "_12-missing.css #ff9800",
@@ -185,7 +169,7 @@ class TestTheRatchetOnlyTurnsOneWay:
 
     def test_the_count_is_what_the_roadmap_says(self):
         """So the number in the audit cannot drift from the number in the code."""
-        assert len(BASELINE) == 88
+        assert len(BASELINE) == 70
 
 
 class TestTheAssertionIsWorthHaving:
@@ -193,7 +177,7 @@ class TestTheAssertionIsWorthHaving:
         """#110 banned nine named accent colours and they are all gone. These
         are the framework defaults that walked in behind them."""
         offenders = {entry.split()[1] for entry in _offenders()}
-        # Tailwind blue-600, green-500, amber-500; Material red 700.
+        # Tailwind blue-600, green-500; Material red 700.
         for sneaked in ("#2563eb", "#22c55e", "#d32f2f"):
             assert sneaked in offenders, f"expected {sneaked} in the recorded debt"
 

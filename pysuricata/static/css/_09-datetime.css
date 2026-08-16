@@ -1,23 +1,7 @@
 /* =============================
    DATETIME VARIABLES – triple layout & mini‑charts
    ============================= */
-#pysuricata-report .var-card__body .var-chart .dt-chart {
-  display: block;
-  width: 100%;
-  min-height: 90px;
-}
 
-#pysuricata-report .var-card__body .var-chart .dt-chart:first-child {
-  min-height: 220px;
-  /* main timeline area */
-  flex: 1 1 auto;
-  /* allow to stretch like histogram */
-}
-
-#pysuricata-report .var-card__body .var-chart .dt-chart:not(:first-child) {
-  margin-top: 8px;
-  /* space between small multiples */
-}
 
 /* SVG baseline for datetime charts (mirrors .hist-svg styling) */
 #pysuricata-report .dt-svg {
@@ -49,50 +33,23 @@
 
 #pysuricata-report .dt-svg .tick-label {
   font-size: 11px;
-  fill: var(--axis-text);
+  fill: var(--muted);
 }
 
 #pysuricata-report .dt-svg .bar {
-  fill: var(--bar);
+  fill: var(--data-2);
   opacity: .9;
 }
 
 
 /* Compact captions for small multiples */
-#pysuricata-report .dt-caption {
-  font-size: .8rem;
-  opacity: .85;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 
 /* Responsive: keep datetime charts tidy on narrow screens */
-@media (max-width: 768px) {
-  #pysuricata-report .var-card__body .var-chart .dt-chart:first-child {
-    min-height: 200px;
-  }
-
-  #pysuricata-report .var-card__body .var-chart .dt-chart {
-    min-height: 80px;
-  }
-}
 
 /* =============================
    Datetime SVG: axis titles & responsive ticks
    ============================= */
-#pysuricata-report .dt-svg .axis-title {
-  font-size: 10px;
-  fill: var(--axis-text);
-}
 
-#pysuricata-report .dt-svg .axis-title.y {
-  dominant-baseline: middle;
-}
-
-#pysuricata-report .dt-svg .axis-title.x {
-  dominant-baseline: hanging;
-}
 
 /* Keep tick labels readable on small screens */
 @media (max-width: 560px) {
@@ -104,34 +61,6 @@
 /* =============================
    Suggestions list (used in Datetime details)
    ============================= */
-#pysuricata-report .suggestions {
-  list-style: none;
-  margin: 0;
-  padding-left: 0;
-  display: grid;
-  row-gap: 6px;
-}
-
-#pysuricata-report .suggestions li {
-  position: relative;
-  padding-left: 22px;
-  line-height: 1.35;
-}
-
-#pysuricata-report .suggestions li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.1rem;
-  opacity: .9;
-}
-
-#pysuricata-report:not(.light) .suggestions li::before {
-  opacity: 1;
-}
-
-
-
 
 
 /* Make header cells obey the box and prefer truncation over wrapping */
@@ -150,37 +79,12 @@
 }
 
 /* Let the main datetime chart fill its column height without relying on % heights */
-#pysuricata-report .var-card__body .var-chart .dt-chart:first-child {
-  display: flex;
-  /* container controls child sizing */
-  flex: 1 1 auto;
-  /* stretch to full column height */
-  min-height: 0;
-  /* allow shrinking if needed */
-}
 
-#pysuricata-report .var-card__body .var-chart .dt-chart:first-child>.dt-svg {
-  flex: 1 1 auto;
-  /* SVG fills the dt-chart block */
-  width: 100%;
-  height: 100%;
-  display: block;
-}
 
 /* Remove extra bottom padding on datetime cards specifically */
-#pysuricata-report .var-card:has(.dt-chart) .var-card__body {
-  padding-bottom: 8px;
-}
 
-#pysuricata-report .var-card:has(.dt-chart) .card-controls {
-  margin-top: 4px;
-  margin-bottom: 0;
-}
 
 /* Ensure the chart column itself has no bottom padding so it aligns with tables (datetime only) */
-#pysuricata-report .var-card:has(.dt-chart) .var-card__body .var-chart {
-  padding-bottom: 0;
-}
 
 
 /* =============================
@@ -190,7 +94,7 @@
 /* Datetime timeline SVG enhancements */
 #pysuricata-report .dt-svg .hist-title {
   font-weight: 600;
-  fill: var(--text-primary);
+  fill: var(--ink);
 }
 
 #pysuricata-report:not(.light) .dt-svg .hist-title {
@@ -198,7 +102,7 @@
 }
 
 #pysuricata-report .dt-svg .line {
-  stroke: var(--bar);
+  stroke: var(--data-2);
   stroke-width: 1.5;
   fill: none;
   cursor: pointer;
@@ -216,14 +120,14 @@
 }
 
 #pysuricata-report .dt-svg .hot:hover {
-  fill: var(--bar);
+  fill: var(--data-2);
   opacity: 0.15;
 }
 
 /* X-axis tick label improvements */
 #pysuricata-report .dt-svg .x-tick-label {
   font-size: 11px;
-  fill: var(--axis-text);
+  fill: var(--muted);
   max-width: 100px;
   overflow: visible;
   text-overflow: unset;
@@ -297,7 +201,7 @@
   margin: 0 0 0.25rem 0;
   font-size: 0.9rem;
   font-weight: 600;
-  color: var(--text-secondary);
+  color: var(--ink-2);
   letter-spacing: -0.01em;
 }
 

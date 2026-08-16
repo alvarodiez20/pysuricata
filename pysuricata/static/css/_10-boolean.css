@@ -66,20 +66,11 @@
 }
 
 
-
 /* Only apply ellipsis to td (values), not th (labels) */
 
 
 /* Theme-aware Boolean Chart Styling */
-.boolean-chart.enhanced {
-  padding: 16px;
-  border-radius: 0;
-  transition: all 0.3s ease;
-}
 
-.boolean-chart.enhanced:hover {
-  transform: translateY(-2px);
-}
 
 .chart-container {
   position: relative;
@@ -115,13 +106,6 @@
 }
 
 /* Chart legend styling */
-.chart-legend {
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 12px;
-  padding: 8px 0;
-}
 
 .legend-item {
   display: flex;
@@ -182,14 +166,8 @@
   }
 }
 
-.boolean-chart.enhanced {
-  animation: chartLoad 0.5s ease-out;
-}
 
 /* Dark theme overrides */
-#pysuricata-report:not(.light) .boolean-chart.enhanced {
-  border-color: var(--chart-border-dark, #374151);
-}
 
 #pysuricata-report:not(.light) .legend-item {
   border-color: var(--legend-border-dark, rgba(255, 255, 255, 0.1));
@@ -197,10 +175,6 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .chart-legend {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
 
   .legend-item {
     font-size: 11px;
@@ -214,10 +188,6 @@
 
 /* Responsive design */
 @media (max-width: 768px) {
-  .chart-legend {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
 
   .legend-item {
     font-size: 11px;

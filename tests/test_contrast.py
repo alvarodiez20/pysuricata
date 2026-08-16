@@ -228,3 +228,95 @@ def test_data_3_can_stand_alone(themes, theme):
             f"[{theme}] --data-3 on --{surface} is {ratio:.2f}:1, needs "
             f"{AA_NON_TEXT}:1 to carry a standalone mark"
         )
+
+
+# --------------------------------------------------------------------------- #
+# greyscale: the check a contrast ratio cannot make
+# --------------------------------------------------------------------------- #
+CSS_DIR = TOKENS_CSS.parent
+
+
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_the_data_scale_survives_greyscale(themes, theme):
+    """Adjacent steps stay apart when the hue is removed.
+
+    This is nearly free for the data scale, and that is the point of it being
+    one hue in luminance steps rather than four colours: contrast *is* a
+    luminance ratio, so a scale that passes on the page also passes in grey.
+    """
+    tokens = themes[theme]
+    steps = ["data-1", "data-2", "data-3", "data-4"]
+    for first, second in zip(steps, steps[1:], strict=False):
+        ratio = contrast(tokens[first], tokens[second])
+        assert ratio >= 1.3, (
+            f"[{theme}] --{first} and --{second} are {ratio:.2f}:1 apart. "
+            "Adjacent steps of the data scale must stay separable without hue."
+        )
+
+
+def test_the_quality_scale_does_not_survive_greyscale(themes):
+    """And is therefore never allowed to be the only carrier.
+
+    `--q-good` (#4A5D1E) and `--q-bad` (#963F1C) are 1.05:1 apart in
+    luminance: olive and rust are, in grey, the same grey. That is not a bug
+    in the palette -- the warm scale is chosen for *hue* distinctness, and
+    forcing three bands onto separate luminances would push one of them out of
+    its contrast budget against the paper.
+
+    It is a bug in any component that leans on it alone, which is why the
+    quality flags carry a shape as well. This test asserts the collapse so the
+    reason for those shapes cannot be optimised away by someone who measures
+    the tokens, finds them distinct in hue, and removes the marks.
+    """
+    tokens = themes["light"]
+    ratio = contrast(tokens["q-good"], tokens["q-bad"])
+    assert ratio < 1.3, (
+        f"--q-good and --q-bad are now {ratio:.2f}:1 apart in luminance. If "
+        "the scale has been re-chosen to separate in greyscale, that is good "
+        "news -- update this test, and the shape marks on .flag become "
+        "belt-and-braces rather than load-bearing."
+    )
+
+
+def test_each_quality_band_carries_a_shape_not_only_a_colour():
+    """WCAG 1.4.1. The flags say "Positive-only" and "Missing" -- no number, no
+    band name -- so with the hue gone they are the same chip.
+
+    Checked as three distinct geometries rather than as three rules existing,
+    because two bands given the same shape would satisfy 'a rule per band' and
+    fail the reader.
+    """
+    css = (CSS_DIR / "_06-cards.css").read_text(encoding="utf-8")
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+
+    signatures = {}
+    for band in ("good", "warn", "bad"):
+        match = re.search(
+            rf"\.quality-flags \.flag\.{band}::before \{{(.*?)\}}", css, re.S
+        )
+        assert match, f"the {band} flag has no ::before mark"
+        body = match.group(1)
+        shape = re.findall(r"(border-radius|clip-path|width)\s*:\s*([^;]+);", body)
+        signatures[band] = tuple(sorted(shape))
+
+    assert len(set(signatures.values())) == 3, (
+        f"two bands share a shape, so they are still telling apart by colour "
+        f"alone: {signatures}"
+    )
+
+
+def test_the_mark_is_drawn_rather_than_spoken():
+    """`content: "✓"` was the first version. Generated content is announced by
+    screen readers, so every flag would have gained a spoken "check mark"
+    before a label that already says what it is. An empty content with a drawn
+    shape is silent.
+    """
+    css = (CSS_DIR / "_06-cards.css").read_text(encoding="utf-8")
+    css = re.sub(r"/\*.*?\*/", "", css, flags=re.S)
+    block = re.search(r"\.quality-flags \.flag::before \{(.*?)\}", css, re.S)
+    assert block, "the shared ::before rule is gone"
+    content = re.search(r"content\s*:\s*([^;]+);", block.group(1))
+    assert content and content.group(1).strip() in ('""', "''"), (
+        f"the mark is {content and content.group(1)!r}, which a screen reader "
+        "will read out. Draw the shape instead."
+    )

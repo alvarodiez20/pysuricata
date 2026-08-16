@@ -91,22 +91,6 @@
   min-width: 0;
 }
 
-#pysuricata-report .miss-seg {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
-#pysuricata-report .miss-seg.good {
-  background: var(--q-good);
-}
-
-#pysuricata-report .miss-seg.warn {
-  background: var(--q-warn-fill);
-}
-
-#pysuricata-report .miss-seg.bad {
-  background: var(--q-bad);
-}
 
 /* No rail at all when the counts are not kept for this column kind. A blank
    rail would read as "no missing values in any chunk". */
@@ -172,33 +156,8 @@
 /* =============================
    Summary → Top missing columns: fixed vertical height (5 rows)
    ============================= */
-#pysuricata-report .top-missing-card .bars,
-#pysuricata-report #top-missing .bars,
-#pysuricata-report .missing-list,
-#pysuricata-report .meter-list {
-  --tm-row-h: 28px;
-  /* row height */
-  --tm-row-gap: 8px;
-  /* space between rows */
-  display: grid;
-  grid-auto-rows: var(--tm-row-h);
-  row-gap: var(--tm-row-gap);
-  align-content: start;
-  /* stick rows to top; keep reserved space below */
-  min-height: calc(5 * var(--tm-row-h) + 4 * var(--tm-row-gap));
-}
 
 /* Align each row's label | bar | percentage on one line */
-#pysuricata-report .missing-list .row,
-#pysuricata-report .meter-list .row,
-#pysuricata-report .top-missing-card .bars .row {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  /* label | bar | pct */
-  column-gap: 10px;
-  align-items: center;
-  min-height: var(--tm-row-h);
-}
 
 /* === SVG Histogram Styles === */
 
@@ -206,9 +165,9 @@
 #pysuricata-report .missing-summary {
   margin-bottom: 16px;
   padding: 16px;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 0;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .missing-summary .summary-header {
@@ -225,140 +184,22 @@
 
 #pysuricata-report .missing-summary .title {
   font-size: 1.1rem;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
-#pysuricata-report .quality-indicator {
-  padding: 6px 12px;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-#pysuricata-report .quality-indicator.critical {
-  background: rgba(220, 38, 38, 0.15);
-  color: #dc2626;
-  border: 1px solid rgba(220, 38, 38, 0.3);
-}
-
-#pysuricata-report .quality-indicator.high {
-  background: rgba(234, 88, 12, 0.15);
-  color: #ea580c;
-  border: 1px solid rgba(234, 88, 12, 0.3);
-}
-
-#pysuricata-report .quality-indicator.medium {
-  background: rgba(245, 158, 11, 0.15);
-  color: #f59e0b;
-  border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-#pysuricata-report .quality-indicator.low {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.3);
-}
-
-#pysuricata-report .data-overview {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 16px;
-  margin-top: 12px;
-}
-
-#pysuricata-report .overview-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 12px;
-  background: var(--bg-tertiary);
-  border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
-}
-
-#pysuricata-report .overview-item .label {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-#pysuricata-report .overview-item .value {
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 2px;
-}
-
-#pysuricata-report .overview-item .percentage {
-  font-size: 0.75rem;
-  color: var(--text-secondary);
-}
-
-#pysuricata-report .overview-item.present {
-  border-left: 4px solid #22c55e;
-}
-
-#pysuricata-report .overview-item.missing {
-  border-left: 4px solid #dc2626;
-}
 
 /* Missing Values Visualization */
-#pysuricata-report .missing-visualization {
-  margin-bottom: 20px;
-  padding: 16px;
-  background: var(--bg-secondary);
-  border-radius: 0;
-  border: 1px solid var(--chip-br-light);
-}
 
-#pysuricata-report .progress-container {
-  width: 100%;
-}
-
-#pysuricata-report .progress-label {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
-}
 
 #pysuricata-report .progress-bar {
   position: relative;
   height: 8px;
-  background: var(--bg-tertiary);
+  background: transparent;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
-#pysuricata-report .progress-fill {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  transition: width 0.3s ease;
-}
-
-#pysuricata-report .progress-fill.present {
-  background: linear-gradient(90deg, #22c55e, #16a34a);
-  z-index: 2;
-}
-
-#pysuricata-report .progress-fill.missing {
-  background: linear-gradient(90deg, #dc2626, #b91c1c);
-  z-index: 1;
-}
-
-#pysuricata-report .progress-legend {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 8px;
-  font-size: 0.8rem;
-}
 
 #pysuricata-report .legend-item {
   display: flex;
@@ -380,9 +221,9 @@
 #pysuricata-report .quality-indicators {
   margin-bottom: 20px;
   padding: 16px;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .indicators-header {
@@ -399,7 +240,7 @@
 
 #pysuricata-report .indicators-header .title {
   font-size: 1rem;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 #pysuricata-report .indicators-grid {
@@ -408,37 +249,6 @@
   gap: 12px;
 }
 
-#pysuricata-report .indicator-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 12px;
-  background: var(--bg-tertiary);
-  border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-#pysuricata-report .indicator-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-#pysuricata-report .indicator-item.critical {
-  border-left: 4px solid #dc2626;
-}
-
-#pysuricata-report .indicator-item.high {
-  border-left: 4px solid #ea580c;
-}
-
-#pysuricata-report .indicator-item.medium {
-  border-left: 4px solid #f59e0b;
-}
-
-#pysuricata-report .indicator-item.low {
-  border-left: 4px solid #22c55e;
-}
 
 #pysuricata-report .indicator-icon {
   font-size: 1.5em;
@@ -452,29 +262,29 @@
 #pysuricata-report .indicator-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   margin-bottom: 4px;
 }
 
 #pysuricata-report .indicator-value {
   font-size: 1rem;
   font-weight: 700;
-  color: var(--text-primary);
+  color: var(--ink);
   margin-bottom: 4px;
 }
 
 #pysuricata-report .indicator-description {
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
   line-height: 1.3;
 }
 
 /* Recommendations Section */
 #pysuricata-report .recommendations {
   padding: 16px;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 0;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .recommendations-header {
@@ -491,7 +301,7 @@
 
 #pysuricata-report .recommendations-header .title {
   font-size: 1rem;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 #pysuricata-report .recommendations-list {
@@ -500,67 +310,29 @@
   gap: 12px;
 }
 
-#pysuricata-report .recommendation-item {
-  padding: 12px 16px;
-  background: var(--bg-tertiary);
-  border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-#pysuricata-report .recommendation-item:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-#pysuricata-report .recommendation-item.critical {
-  border-left: 4px solid #dc2626;
-}
-
-#pysuricata-report .recommendation-item.high {
-  border-left: 4px solid #ea580c;
-}
-
-#pysuricata-report .recommendation-item.medium {
-  border-left: 4px solid #f59e0b;
-}
-
-#pysuricata-report .recommendation-item.low {
-  border-left: 4px solid #22c55e;
-}
 
 #pysuricata-report .recommendation-title {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   margin-bottom: 4px;
 }
 
 #pysuricata-report .recommendation-description {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
   line-height: 1.4;
 }
 
 /* Responsive Design for Missing Values */
 @media (max-width: 768px) {
-  #pysuricata-report .data-overview {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
 
   #pysuricata-report .indicators-grid {
     grid-template-columns: 1fr;
     gap: 10px;
   }
 
-  #pysuricata-report .indicator-item {
-    padding: 10px;
-  }
 
-  #pysuricata-report .recommendation-item {
-    padding: 10px 12px;
-  }
 
   #pysuricata-report .missing-summary .summary-header {
     flex-direction: column;
@@ -568,11 +340,7 @@
     gap: 8px;
   }
 
-  #pysuricata-report .quality-indicator {
-    font-size: 0.8rem;
-    padding: 4px 8px;
   }
-}
 
 
 /* =============================================================================
@@ -583,9 +351,9 @@
 #pysuricata-report .missing-per-chunk-enhanced {
   margin-top: 1.5rem;
   padding: 1.25rem;
-  background: var(--card-bg);
+  background: transparent;
   border-radius: 0;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
 }
@@ -602,7 +370,7 @@
   gap: 0.75rem;
   margin-bottom: 1.25rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .chunk-header .icon {
@@ -613,17 +381,17 @@
 #pysuricata-report .missing-per-chunk-enhanced .chunk-header .title {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   flex: 1;
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .chunk-header .overall-stats {
   font-size: 0.85rem;
-  color: var(--text-secondary);
-  background: var(--bg-secondary);
+  color: var(--ink-2);
+  background: transparent;
   padding: 0.25rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 /* Chunk bars container */
@@ -640,17 +408,17 @@
   align-items: center;
   gap: 1rem;
   padding: 0.75rem;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   transition: all 0.2s ease;
   cursor: pointer;
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .chunk-bar-item:hover {
-  background: var(--hover-bg);
+  background: transparent;
   border-radius: 6px 6px 0 0;
-  border-color: var(--accent-color);
+  border-color: var(--data-1);
   transform: translateX(2px);
 }
 
@@ -665,51 +433,34 @@
 #pysuricata-report .missing-per-chunk-enhanced .chunk-label {
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .chunk-stats {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
   font-weight: 500;
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .chunk-size {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--muted);
 }
 
 /* Chunk bar container */
 #pysuricata-report .missing-per-chunk-enhanced .chunk-bar-container {
   flex: 1;
   height: 8px;
-  background: var(--bg-primary);
+  background: transparent;
   border-radius: 6px;
   overflow: hidden;
   position: relative;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* Chunk bar fill with severity-based colors */
-#pysuricata-report .missing-per-chunk-enhanced .chunk-bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
-  overflow: hidden;
-}
 
-#pysuricata-report .missing-per-chunk-enhanced .chunk-bar-fill::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
-  animation: shimmer 2s infinite;
-}
 
 @keyframes shimmer {
   0% {
@@ -722,28 +473,15 @@
 }
 
 /* Severity-based color schemes */
-#pysuricata-report .missing-per-chunk-enhanced .chunk-bar-fill.low {
-  background: linear-gradient(135deg, #10b981, #34d399);
-  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-}
 
-#pysuricata-report .missing-per-chunk-enhanced .chunk-bar-fill.medium {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-bar-fill.high {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
-}
 
 /* Summary statistics section */
 #pysuricata-report .missing-per-chunk-enhanced .chunk-summary {
   margin-bottom: 1rem;
   padding: 1rem;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 0;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .summary-stats {
@@ -758,14 +496,14 @@
   align-items: center;
   text-align: center;
   padding: 0.5rem;
-  background: var(--bg-primary);
+  background: transparent;
   border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .stat-label {
   font-size: 0.75rem;
-  color: var(--text-muted);
+  color: var(--muted);
   margin-bottom: 0.25rem;
   font-weight: 500;
 }
@@ -773,44 +511,26 @@
 #pysuricata-report .missing-per-chunk-enhanced .stat-value {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 /* Severity-specific styling for stat items */
-#pysuricata-report .missing-per-chunk-enhanced .stat-item.severity-critical {
-  border-color: #ef4444;
-  background: rgba(239, 68, 68, 0.05);
-}
 
-#pysuricata-report .missing-per-chunk-enhanced .stat-item.severity-high {
-  border-color: #f59e0b;
-  background: rgba(245, 158, 11, 0.05);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .stat-item.severity-medium {
-  border-color: var(--data-1);
-  background: rgba(59, 130, 246, 0.05);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .stat-item.severity-low {
-  border-color: #10b981;
-  background: rgba(16, 185, 129, 0.05);
-}
 
 /* Insights section */
 #pysuricata-report .missing-per-chunk-enhanced .chunk-insights {
   margin-bottom: 1rem;
   padding: 1rem;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 0;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .chunk-insights h5 {
   margin: 0 0 0.75rem 0;
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .insights-list {
@@ -822,8 +542,8 @@
 #pysuricata-report .missing-per-chunk-enhanced .insights-list li {
   padding: 0.5rem 0;
   font-size: 0.85rem;
-  color: var(--text-secondary);
-  border-bottom: 1px solid var(--border-color);
+  color: var(--ink-2);
+  border-bottom: 1px solid var(--rule-strong);
   position: relative;
   padding-left: 1.5rem;
 }
@@ -846,7 +566,7 @@
   justify-content: center;
   gap: 1.5rem;
   padding-top: 1rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .legend-item {
@@ -859,7 +579,7 @@
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .legend-color.low {
@@ -876,14 +596,14 @@
 
 #pysuricata-report .missing-per-chunk-enhanced .legend-label {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
   font-weight: 500;
 }
 
 /* Dark mode adjustments */
 #pysuricata-report:not(.light) .missing-per-chunk-enhanced {
-  background: var(--card-bg);
-  border-color: var(--border-color);
+  background: transparent;
+  border-color: var(--rule-strong);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -892,14 +612,11 @@
 }
 
 #pysuricata-report:not(.light) .missing-per-chunk-enhanced .chunk-bar-container {
-  background: var(--bg-primary);
-  border-color: var(--border-color);
+  background: transparent;
+  border-color: var(--rule-strong);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
-#pysuricata-report:not(.light) .missing-per-chunk-enhanced .chunk-bar-fill::after {
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
-}
 
 /* Responsive design */
 @media (max-width: 768px) {
@@ -950,276 +667,37 @@
    ============================================================================= */
 
 /* Main container for the simplified missing per chunk visualization */
-#pysuricata-report .missing-per-chunk-simple {
-  margin-top: 1.5rem;
-  padding: 1rem;
-  background: var(--card-bg);
-  border-radius: 0;
-  border: 1px solid var(--chip-br-light);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-}
 
 /* Header section */
-#pysuricata-report .missing-per-chunk-simple .chunk-header-simple {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
-}
 
-#pysuricata-report .missing-per-chunk-simple .chunk-header-simple .icon {
-  font-size: 1rem;
-  opacity: 0.8;
-}
-
-#pysuricata-report .missing-per-chunk-simple .chunk-header-simple .title {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  flex: 1;
-}
-
-#pysuricata-report .missing-per-chunk-simple .chunk-header-simple .overall-stats {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  background: var(--bg-secondary);
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  border: 1px solid var(--chip-br-light);
-}
 
 /* Single bar container */
-#pysuricata-report .missing-per-chunk-simple .chunk-bar-single {
-  display: flex;
-  height: 24px;
-  background: var(--bg-primary);
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid var(--chip-br-light);
-  margin-bottom: 1rem;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-}
 
 /* Individual chunk segments */
-#pysuricata-report .missing-per-chunk-simple .chunk-segment {
-  height: 100%;
-  position: relative;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  border-right: 1px solid rgba(255, 255, 255, 0.2);
-}
 
-#pysuricata-report .missing-per-chunk-simple .chunk-segment:last-child {
-  border-right: none;
-}
-
-#pysuricata-report .missing-per-chunk-simple .chunk-segment:hover {
-  transform: scaleY(1.1);
-  z-index: 2;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
 
 /* Segment content */
-#pysuricata-report .missing-per-chunk-simple .segment-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  height: 100%;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: white;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-}
 
-#pysuricata-report .missing-per-chunk-simple .segment-label {
-  font-size: 0.6rem;
-  opacity: 0.9;
-  line-height: 1;
-}
-
-#pysuricata-report .missing-per-chunk-simple .segment-missing {
-  font-size: 0.7rem;
-  font-weight: 700;
-  line-height: 1;
-}
 
 /* Severity-based colors for segments */
-#pysuricata-report .missing-per-chunk-simple .chunk-segment.low {
-  background: linear-gradient(135deg, #10b981, #34d399);
-}
 
-#pysuricata-report .missing-per-chunk-simple .chunk-segment.medium {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-}
-
-#pysuricata-report .missing-per-chunk-simple .chunk-segment.high {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-}
 
 /* Compact summary */
-#pysuricata-report .missing-per-chunk-simple .chunk-summary-simple {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.75rem;
-  padding: 0.5rem;
-  background: var(--bg-secondary);
-  border-radius: 4px;
-  border: 1px solid var(--chip-br-light);
-}
 
-#pysuricata-report .missing-per-chunk-simple .summary-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  flex: 1;
-}
-
-#pysuricata-report .missing-per-chunk-simple .summary-label {
-  font-size: 0.7rem;
-  color: var(--text-muted);
-  margin-bottom: 0.2rem;
-  font-weight: 500;
-}
-
-#pysuricata-report .missing-per-chunk-simple .summary-value {
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--text-primary);
-}
 
 /* Severity-specific styling for summary items */
-#pysuricata-report .missing-per-chunk-simple .summary-item.severity-critical {
-  color: #ef4444;
-}
 
-#pysuricata-report .missing-per-chunk-simple .summary-item.severity-high {
-  color: #f59e0b;
-}
-
-#pysuricata-report .missing-per-chunk-simple .summary-item.severity-medium {
-  color: var(--data-1);
-}
-
-#pysuricata-report .missing-per-chunk-simple .summary-item.severity-low {
-  color: #10b981;
-}
 
 /* Simplified insights */
-#pysuricata-report .missing-per-chunk-simple .chunk-insight-simple {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem;
-  background: var(--bg-secondary);
-  border-radius: 4px;
-  border: 1px solid var(--chip-br-light);
-  margin-bottom: 0.75rem;
-}
 
-#pysuricata-report .missing-per-chunk-simple .insight-icon {
-  font-size: 0.8rem;
-}
-
-#pysuricata-report .missing-per-chunk-simple .insight-text {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  font-style: italic;
-}
 
 /* Simplified legend */
-#pysuricata-report .missing-per-chunk-simple .chunk-legend-simple {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid var(--border-color);
-}
 
-#pysuricata-report .missing-per-chunk-simple .legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-}
-
-#pysuricata-report .missing-per-chunk-simple .legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  border: 1px solid var(--chip-br-light);
-}
-
-#pysuricata-report .missing-per-chunk-simple .legend-color.low {
-  background: linear-gradient(135deg, #10b981, #34d399);
-}
-
-#pysuricata-report .missing-per-chunk-simple .legend-color.medium {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-}
-
-#pysuricata-report .missing-per-chunk-simple .legend-color.high {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-}
-
-#pysuricata-report .missing-per-chunk-simple .legend-label {
-  font-size: 0.7rem;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
 
 /* Dark mode adjustments */
-#pysuricata-report:not(.light) .missing-per-chunk-simple {
-  background: var(--card-bg);
-  border-color: var(--border-color);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
-}
 
-#pysuricata-report:not(.light) .missing-per-chunk-simple .chunk-bar-single {
-  background: var(--bg-primary);
-  border-color: var(--border-color);
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
-}
 
 /* Responsive design */
-@media (max-width: 768px) {
-  #pysuricata-report .missing-per-chunk-simple .chunk-header-simple {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.3rem;
-  }
-
-  #pysuricata-report .missing-per-chunk-simple .chunk-summary-simple {
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  #pysuricata-report .missing-per-chunk-simple .chunk-legend-simple {
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: center;
-  }
-
-  #pysuricata-report .missing-per-chunk-simple .segment-content {
-    font-size: 0.6rem;
-  }
-
-  #pysuricata-report .missing-per-chunk-simple .segment-label {
-    font-size: 0.5rem;
-  }
-
-  #pysuricata-report .missing-per-chunk-simple .segment-missing {
-    font-size: 0.6rem;
-  }
-}
 
 
 /* =============================================================================
@@ -1230,9 +708,9 @@
 #pysuricata-report .dataprep-spectrum {
   margin-top: 1.5rem;
   padding: 1.25rem;
-  background: var(--card-bg);
+  background: transparent;
   border-radius: 0;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   transition: all 0.3s ease;
 }
@@ -1249,32 +727,32 @@
   align-items: center;
   margin-bottom: 1rem;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .dataprep-spectrum .spectrum-title {
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 #pysuricata-report .dataprep-spectrum .spectrum-stats {
   font-size: 0.85rem;
-  color: var(--text-secondary);
-  background: var(--bg-secondary);
+  color: var(--ink-2);
+  background: transparent;
   padding: 0.25rem 0.75rem;
   border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 /* Main spectrum bar */
 #pysuricata-report .dataprep-spectrum .spectrum-bar {
   display: flex;
   height: 24px;
-  background: var(--bg-primary);
+  background: transparent;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
   margin-bottom: 1rem;
 }
@@ -1334,49 +812,15 @@
   align-items: center;
   margin-bottom: 1rem;
   padding: 0.75rem;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 0;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
-#pysuricata-report .dataprep-spectrum .severity-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid;
-}
-
-#pysuricata-report .dataprep-spectrum .severity-indicator.low {
-  color: #059669;
-  background: rgba(16, 185, 129, 0.1);
-  border-color: rgba(16, 185, 129, 0.3);
-}
-
-#pysuricata-report .dataprep-spectrum .severity-indicator.medium {
-  color: #d97706;
-  background: rgba(245, 158, 11, 0.1);
-  border-color: rgba(245, 158, 11, 0.3);
-}
-
-#pysuricata-report .dataprep-spectrum .severity-indicator.high {
-  color: #dc2626;
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
-}
-
-#pysuricata-report .dataprep-spectrum .severity-indicator.critical {
-  color: #b91c1c;
-  background: rgba(185, 28, 28, 0.1);
-  border-color: rgba(185, 28, 28, 0.3);
-}
 
 #pysuricata-report .dataprep-spectrum .spectrum-note {
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: var(--muted);
   font-style: italic;
 }
 
@@ -1386,7 +830,7 @@
   justify-content: center;
   gap: 1.5rem;
   padding-top: 0.75rem;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .dataprep-spectrum .legend-item {
@@ -1399,7 +843,7 @@
   width: 16px;
   height: 16px;
   border-radius: 4px;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .dataprep-spectrum .legend-color.spectrum-low {
@@ -1416,14 +860,14 @@
 
 #pysuricata-report .dataprep-spectrum .legend-label {
   font-size: 0.8rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
   font-weight: 500;
 }
 
 /* Dark mode adjustments */
 #pysuricata-report:not(.light) .dataprep-spectrum {
-  background: var(--card-bg);
-  border-color: var(--border-color);
+  background: transparent;
+  border-color: var(--rule-strong);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
@@ -1432,8 +876,8 @@
 }
 
 #pysuricata-report:not(.light) .dataprep-spectrum .spectrum-bar {
-  background: var(--bg-primary);
-  border-color: var(--border-color);
+  background: transparent;
+  border-color: var(--rule-strong);
   box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
@@ -1477,8 +921,8 @@
    MISSING VALUES HEATMAP
    ============================= */
 #pysuricata-report .missing-values-heatmap {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: 1px solid var(--rule-strong);
   border-radius: 0;
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -1491,7 +935,7 @@
 #pysuricata-report .heatmap-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   margin: 0 0 0.5rem 0;
 }
 
@@ -1499,7 +943,7 @@
   display: flex;
   gap: 1.5rem;
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 #pysuricata-report .heatmap-legend {
@@ -1508,7 +952,7 @@
   gap: 1rem;
   align-items: center;
   padding: 0.75rem;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 4px;
   margin-bottom: 1rem;
   font-size: 0.85rem;
@@ -1516,7 +960,7 @@
 
 #pysuricata-report .heatmap-legend .legend-title {
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   margin-right: 0.5rem;
 }
 
@@ -1572,13 +1016,13 @@
   gap: 1rem;
   align-items: center;
   padding: 0.5rem;
-  background: var(--bg-surface);
+  background: transparent;
   border-radius: 4px;
   transition: background 0.2s ease;
 }
 
 #pysuricata-report .heatmap-row:hover {
-  background: var(--bg-secondary);
+  background: transparent;
 }
 
 #pysuricata-report .heatmap-label {
@@ -1589,13 +1033,13 @@
 
 #pysuricata-report .heatmap-label code {
   font-size: 0.9rem;
-  color: var(--text-primary);
+  color: var(--ink);
   font-weight: 500;
 }
 
 #pysuricata-report .heatmap-label .missing-summary {
   font-size: 0.75rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 #pysuricata-report .heatmap-spectrum {
@@ -1603,42 +1047,10 @@
   border-radius: 4px;
   overflow: hidden;
   display: flex;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: 1px solid var(--rule-strong);
 }
 
-#pysuricata-report .hm-segment {
-  height: 100%;
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative;
-}
-
-#pysuricata-report .hm-segment:hover {
-  transform: scaleY(1.2);
-  z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-#pysuricata-report .hm-segment.hm-none {
-  background: #e5e7eb;
-}
-
-#pysuricata-report .hm-segment.hm-low {
-  background: linear-gradient(180deg, #86efac 0%, #4ade80 100%);
-}
-
-#pysuricata-report .hm-segment.hm-medium {
-  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 100%);
-}
-
-#pysuricata-report .hm-segment.hm-high {
-  background: linear-gradient(180deg, #fb923c 0%, #f97316 100%);
-}
-
-#pysuricata-report .hm-segment.hm-critical {
-  background: linear-gradient(180deg, #ef4444 0%, #dc2626 100%);
-}
 
 #pysuricata-report .heatmap-expandable {
   margin-top: 8px;
@@ -1648,18 +1060,18 @@
   margin-top: 1rem;
   width: 100%;
   padding: 0.75rem;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: transparent;
+  border: 1px solid var(--rule-strong);
   border-radius: 4px;
-  color: var(--text-primary);
+  color: var(--ink);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 #pysuricata-report .expand-heatmap-btn:hover {
-  background: var(--hover-bg);
-  border-color: var(--accent-color);
+  background: transparent;
+  border-color: var(--data-1);
 }
 
 /* Responsive heatmap */
@@ -1669,7 +1081,7 @@
   }
 
   #pysuricata-report .heatmap-label {
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--rule-strong);
     padding-bottom: 0.5rem;
   }
 }
@@ -1692,18 +1104,18 @@
 #pysuricata-report .tab-pane[data-tab="missing"] .chunk-distribution h4 {
   font-size: 0.95rem;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   margin: 0 0 0.5rem 0;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report:not(.light) .tab-pane[data-tab="missing"] h4.section-title,
 #pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .section-title,
 #pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .missing-analysis-header h4,
 #pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .chunk-distribution h4 {
-  color: var(--text-primary);
-  border-bottom-color: var(--border-color);
+  color: var(--ink);
+  border-bottom-color: var(--rule-strong);
 }
 
 /* Data Completeness - scoped to missing tab */
@@ -1727,20 +1139,20 @@
 
 #pysuricata-report .tab-pane[data-tab="missing"] .stat-label {
   font-weight: 500;
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 #pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .stat-label {
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 #pysuricata-report .tab-pane[data-tab="missing"] .stat-value {
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 #pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .stat-value {
-  color: var(--text-primary);
+  color: var(--ink);
 }
 
 #pysuricata-report .tab-pane[data-tab="missing"] .stat-pct {
@@ -1754,13 +1166,13 @@
   border-radius: 4px;
   overflow: hidden;
   display: flex;
-  background: var(--bg-secondary);
-  border: 1px solid var(--divider-light);
+  background: transparent;
+  border: 1px solid var(--rule);
 }
 
 #pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .completeness-bar {
-  background: var(--bg-secondary);
-  border-color: var(--divider-dark);
+  background: transparent;
+  border-color: var(--rule);
 }
 
 #pysuricata-report .tab-pane[data-tab="missing"] .completeness-bar .bar-fill {
@@ -1781,12 +1193,12 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
   margin-bottom: 0.5rem;
 }
 
 #pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .chunk-info {
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 #pysuricata-report .tab-pane[data-tab="missing"] .chunk-spectrum {
@@ -1794,14 +1206,14 @@
   border-radius: 4px;
   overflow: hidden;
   display: flex;
-  background: var(--bg-secondary);
-  border: 1px solid var(--divider-light);
+  background: transparent;
+  border: 1px solid var(--rule);
   margin-bottom: 0.75rem;
 }
 
 #pysuricata-report:not(.light) .tab-pane[data-tab="missing"] .chunk-spectrum {
-  background: var(--bg-secondary);
-  border-color: var(--divider-dark);
+  background: transparent;
+  border-color: var(--rule);
 }
 
 #pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment {
@@ -1938,50 +1350,6 @@
   margin-top: 0;
 }
 
-#pysuricata-report .missing-section-tabs {
-  display: flex;
-  gap: 0.5rem;
-  border-bottom: 2px solid var(--border-color);
-  margin-bottom: 1.5rem;
-}
-
-#pysuricata-report .missing-section-tabs button {
-  padding: 0.75rem 1.5rem;
-  background: transparent;
-  border: none;
-  border-bottom: 3px solid transparent;
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: all 0.2s ease;
-  position: relative;
-  z-index: 10;
-  pointer-events: auto;
-  border-radius: 6px 6px 0 0;
-  min-width: 120px;
-  text-align: center;
-}
-
-#pysuricata-report .missing-section-tabs button.active {
-  color: var(--text-primary);
-  border-bottom-color: var(--bar);
-}
-
-#pysuricata-report .missing-section-tabs button:hover {
-  color: var(--text-primary);
-  background: var(--hover-bg);
-  border-radius: 6px 6px 0 0;
-}
-
-#pysuricata-report .missing-tab-content {
-  display: none;
-}
-
-#pysuricata-report .missing-tab-content.active {
-  display: block;
-}
-
 
 /* =============================================================================
    REDESIGNED MISSING VALUES SECTION - TWO COMPACT TABS (2024)
@@ -1994,81 +1362,24 @@
   margin-top: 0;
   padding: 20px;
   background: rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   border-radius: 0;
   transition: background-color 0.2s ease;
 }
 
 #pysuricata-report:not(.light) .missing-values-section-redesign {
   background: rgba(255, 255, 255, 0.04);
-  border-color: var(--chip-br-dark);
+  border-color: var(--rule-strong);
 }
 
 /* Tabs and badge header (no title, no separator line) */
-#pysuricata-report .missing-tabs-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-  gap: 1rem;
-}
 
-#pysuricata-report .missing-count-badge {
-  padding: 0.5rem 1rem;
-  background: var(--chip-bg);
-  border: 1px solid var(--chip-br);
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  white-space: nowrap;
-  align-self: center;
-}
 
 /* Tab navigation */
-#pysuricata-report .missing-tabs {
-  display: flex;
-  gap: 8px;
-  border-bottom: 2px solid var(--border-color);
-  flex: 1;
-}
 
-#pysuricata-report .missing-tabs button {
-  padding: 10px 20px;
-  border: none;
-  background: transparent;
-  border-bottom: 3px solid transparent;
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-  transition: all 0.2s ease;
-}
-
-#pysuricata-report .missing-tabs button.active {
-  border-bottom-color: var(--accent-color);
-  color: var(--text-primary);
-  font-weight: 600;
-}
-
-#pysuricata-report .missing-tabs button:hover {
-  color: var(--text-primary);
-  background: rgba(59, 130, 246, 0.05);
-  border-radius: 6px 6px 0 0;
-}
-
-#pysuricata-report:not(.light) .missing-tabs button:hover {
-  background: rgba(59, 130, 246, 0.1);
-}
 
 /* Tab content areas */
-#pysuricata-report .missing-tab-content {
-  display: none;
-}
 
-#pysuricata-report .missing-tab-content.active {
-  display: block;
-}
 
 /* Scrollable list container (both tabs) */
 #pysuricata-report .scrollable-list {
@@ -2079,7 +1390,7 @@
   margin-bottom: 1.5rem;
   scroll-behavior: smooth;
   scrollbar-width: thin;
-  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  scrollbar-color: var(--rule-strong) var(--track);
 }
 
 /* Custom scrollbar styling - matching Sample section format */
@@ -2088,11 +1399,11 @@
 }
 
 #pysuricata-report .scrollable-list::-webkit-scrollbar-track {
-  background: var(--scroll-track);
+  background: var(--track);
 }
 
 #pysuricata-report .scrollable-list::-webkit-scrollbar-thumb {
-  background: var(--scroll-thumb);
+  background: var(--rule-strong);
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;
@@ -2118,7 +1429,7 @@
   gap: 12px;
   align-items: center;
   padding: 6px 12px;
-  border-bottom: 1px solid var(--divider);
+  border-bottom: 1px solid var(--rule);
   transition: background 0.15s ease;
 }
 
@@ -2134,7 +1445,7 @@
   font-family: var(--font-mono);
   font-size: 0.9rem;
   font-weight: 500;
-  color: var(--text-primary);
+  color: var(--ink);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2162,24 +1473,13 @@
   border-color: rgba(255, 255, 255, 0.18);
 }
 
-#pysuricata-report .compact-row .stats {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-}
-
-#pysuricata-report .compact-row .pct {
-  color: var(--text-secondary);
-  font-weight: 500;
-}
 
 #pysuricata-report .compact-row .bar {
   height: 20px;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 4px;
   overflow: hidden;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .compact-row .fill {
@@ -2205,13 +1505,13 @@
   border-radius: 4px;
   overflow: hidden;
   display: flex;
-  background: var(--bg-secondary);
-  border: 1px solid var(--divider-light);
+  background: transparent;
+  border: 1px solid var(--rule);
 }
 
 #pysuricata-report:not(.light) .compact-row .completeness-bar-dual {
-  background: var(--bg-secondary);
-  border-color: var(--divider-dark);
+  background: transparent;
+  border-color: var(--rule);
 }
 
 #pysuricata-report .compact-row .completeness-bar-dual .bar-fill.present {
@@ -2301,8 +1601,8 @@
   border-radius: 4px;
   overflow: hidden;
   display: flex;
-  background: var(--bg-secondary);
-  border: 1px solid var(--divider);
+  background: transparent;
+  border: 1px solid var(--rule);
 }
 
 #pysuricata-report .chunk-segment {
@@ -2338,15 +1638,15 @@
   gap: 12px;
   padding: 8px 12px;
   margin-bottom: 8px;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 6px;
-  border: 1px solid var(--divider);
+  border: 1px solid var(--rule);
   font-size: 0.85rem;
 }
 
 #pysuricata-report .chunk-legend .legend-label {
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--ink);
   margin-right: 4px;
 }
 
@@ -2376,7 +1676,7 @@
 }
 
 #pysuricata-report .chunk-legend .legend-text {
-  color: var(--text-secondary);
+  color: var(--ink-2);
   font-weight: 500;
 }
 
@@ -2388,9 +1688,9 @@
   justify-content: center;
   padding: 3rem;
   text-align: center;
-  background: var(--bg-secondary);
+  background: transparent;
   border-radius: 0;
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report .no-missing-state .icon {
@@ -2402,94 +1702,18 @@
 #pysuricata-report .no-missing-state p {
   margin: 0;
   font-size: 1rem;
-  color: var(--text-secondary);
+  color: var(--ink-2);
 }
 
 /* No chunk data state */
-#pysuricata-report .no-chunk-data-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 3rem;
-  text-align: center;
-  background: var(--bg-secondary);
-  border-radius: 0;
-  border: 1px solid var(--border-color);
-}
 
-#pysuricata-report .no-chunk-data-state .icon {
-  font-size: 3rem;
-  margin-bottom: 1rem;
-  color: var(--data-1);
-}
-
-#pysuricata-report .no-chunk-data-state p {
-  margin: 0 0 0.5rem 0;
-  font-size: 1rem;
-  color: var(--text-secondary);
-}
-
-#pysuricata-report .no-chunk-data-state p.small {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  margin: 0;
-}
 
 /* Legend styling */
-#pysuricata-report .missing-values-section-redesign .missing-legend {
-  display: flex;
-  gap: 1.5rem;
-  justify-content: center;
-  align-items: center;
-  padding: 1rem;
-  background: var(--bg-secondary);
-  border-radius: 6px;
-  font-size: 0.875rem;
-  flex-wrap: wrap;
-  margin-top: 1.5rem;
-}
 
-#pysuricata-report .missing-legend .legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-#pysuricata-report .missing-legend .color-box {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
-  border: 1px solid rgba(0, 0, 0, 0.1);
-}
-
-#pysuricata-report:not(.light) .missing-legend .color-box {
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-#pysuricata-report .missing-legend .color-box.low {
-  background: #4caf50;
-}
-
-#pysuricata-report .missing-legend .color-box.medium {
-  background: #ff9800;
-}
-
-#pysuricata-report .missing-legend .color-box.high {
-  background: #f44336;
-}
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  #pysuricata-report .missing-tabs-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
 
-  #pysuricata-report .missing-count-badge {
-    align-self: flex-start;
-  }
 
   #pysuricata-report .compact-row {
     grid-template-columns: 1fr;
@@ -2506,15 +1730,7 @@
     width: 100%;
   }
 
-  #pysuricata-report .chunk-row {
-    grid-template-columns: 1fr;
-    height: auto;
-    gap: 8px;
-  }
 
-  #pysuricata-report .chunk-row .short-name {
-    margin-bottom: 4px;
-  }
 
   #pysuricata-report .scrollable-list {
     max-height: 500px;
@@ -2523,110 +1739,22 @@
 
 
 /* Bar Chart Styles */
-#pysuricata-report .missing-bar-chart {
-  padding: 1rem;
-}
 
-#pysuricata-report .missing-bar-item {
-  display: grid;
-  grid-template-columns: 200px 1fr 100px;
-  gap: 1rem;
-  align-items: center;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border-color);
-}
-
-#pysuricata-report .missing-bar-item:last-child {
-  border-bottom: none;
-}
-
-#pysuricata-report .missing-var-name {
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  padding: 0.15rem 0.4rem;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  color: inherit;
-  display: inline-block;
-}
-
-
-
-#pysuricata-report:not(.light) .missing-var-name {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.18);
-}
-
-#pysuricata-report .missing-bar-visual {
-  background: var(--bg-secondary);
-  height: 8px;
-  border-radius: 4px;
-  overflow: hidden;
-  position: relative;
-}
-
-
-
-#pysuricata-report:not(.light) .missing-bar-visual {
-  background: var(--divider-dark);
-}
-
-#pysuricata-report .missing-bar-fill {
-  height: 100%;
-  transition: width 0.3s ease;
-  border-radius: 4px;
-}
-
-#pysuricata-report .missing-bar-fill.low {
-  background: #22c55e;
-}
-
-#pysuricata-report .missing-bar-fill.medium {
-  background: #f59e0b;
-}
-
-#pysuricata-report .missing-bar-fill.high {
-  background: #ef4444;
-}
-
-#pysuricata-report .missing-bar-label {
-  text-align: right;
-  font-size: 0.85rem;
-  font-weight: 600;
-}
 
 /* Spectrum Styles - reuse existing spectrum CSS */
-#pysuricata-report .missing-spectrum-container {
-  padding: 1rem;
-}
 
-#pysuricata-report .missing-spectrum-item {
-  margin-bottom: 1.5rem;
-}
-
-#pysuricata-report .missing-spectrum-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 0.5rem;
-  font-size: 0.82rem;
-}
 
 #pysuricata-report .missing-spectrum-bar {
   height: 24px;
   border-radius: 4px;
   overflow: hidden;
   display: flex;
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 
-
 #pysuricata-report:not(.light) .missing-spectrum-bar {
-  border-color: var(--chip-br-dark);
+  border-color: var(--rule-strong);
 }
 
 #pysuricata-report .spectrum-segment {
@@ -2653,36 +1781,3 @@
 }
 
 /* Missing Values Container */
-#pysuricata-report .missing-values-container {
-  background: rgba(0, 0, 0, 0.02);
-  border: 1px solid var(--chip-br-light);
-  border-radius: 0;
-  padding: 10px 12px;
-  margin: 1rem 0;
-  transition: background-color .2s ease, transform .12s ease;
-}
-
-
-
-#pysuricata-report:not(.light) .missing-values-container {
-  border-color: var(--chip-br-dark);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-#pysuricata-report .missing-values-container:hover {
-  background: rgba(0, 0, 0, 0.04);
-  transform: translateY(-1px);
-}
-
-#pysuricata-report:not(.light) .missing-values-container:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-#pysuricata-report .missing-values-container .missing-section-tabs {
-  margin-bottom: 1.5rem;
-  padding-bottom: 0;
-}
-
-#pysuricata-report .missing-values-container .missing-tab-content {
-  margin-top: 0;
-}

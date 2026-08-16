@@ -64,8 +64,17 @@
     }
   }
 
+  // An explicit `behavior` beats the CSS `scroll-behavior` property, so the
+  // reduced-motion rule in _01-base.css cannot reach these on its own.
+  function motionBehavior() {
+    return window.matchMedia &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'auto'
+      : 'smooth';
+  }
+
   function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: motionBehavior() });
   }
 
   // Delegated click handler for data-action attributes

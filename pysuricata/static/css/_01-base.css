@@ -75,3 +75,35 @@ body.suricata-standalone:not(.light) {
   margin: 0 auto;
   padding: 0.75rem 1rem;
 }
+
+/* =============================================================
+   REDUCED MOTION
+
+   49 transitions and animations across the stylesheets, and nothing
+   asked whether the reader wanted them. `prefers-reduced-motion` is
+   set by people for whom movement causes nausea or migraine, and a
+   report that lifts a card, slides a panel and scrolls smoothly to a
+   section is a lot of movement to meet unannounced.
+
+   The state change is kept and only the *travel* is removed: a hover
+   that raises a button by a pixel still raises it, it simply arrives
+   there rather than moving there. That is the distinction WCAG 2.3.3
+   draws — the objection is to motion, not to feedback.
+
+   `scroll-behavior` is included because pagination and the back-to-top
+   control both animate the viewport, which is the largest moving thing
+   on the page. The JS passes `behavior: 'smooth'` explicitly, and an
+   explicit argument beats the CSS property, so `functionality.js` and
+   `pagination.js` check the media query themselves.
+   ============================================================= */
+@media (prefers-reduced-motion: reduce) {
+
+  #pysuricata-report *,
+  #pysuricata-report *::before,
+  #pysuricata-report *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

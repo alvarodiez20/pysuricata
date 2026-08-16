@@ -14,7 +14,47 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
-Nothing yet.
+### Fixed
+
+- **Every interactive target in the report is now at least 44×44** at 390px
+  ([#122]). Ten kinds were smaller — the card info links at 24×24, the filter
+  tabs at 29px tall, the search field at 33, pagination at 39×29, the
+  needs-attention rows at 16. The two footer links stay small on purpose: they
+  sit inline in a run of metadata text, which is WCAG 2.5.8's own exception.
+- **The pagination page numbers are buttons**, not `<span>`s with click
+  listeners. They had no role, could not be reached by keyboard, and announced
+  "2" as their entire accessible name.
+- **204 contrast failures in light and 93 in dark**, found by measuring every
+  text node against the background actually painted behind it rather than
+  against the page. They came from eight framework colours printed on a 10%
+  wash of themselves — outlier severity, correlation strength, correlation
+  sign. All eight now read the design tokens; the sign reads no colour at all,
+  since `_00-tokens.css` already encodes it by which side of centre the bar
+  sits on. Both themes are now clean over 2,334 text nodes.
+- **The quality flags carry a shape as well as a hue** — circle, triangle,
+  square. `--q-good` and `--q-bad` are 1.05:1 apart in luminance, so in
+  greyscale a chip reading "Positive-only" and one reading "24.28 heavy-tailed"
+  were the same chip. The marks are drawn rather than typed so screen readers
+  do not read out a check mark before a label that already says what it is.
+- **`prefers-reduced-motion` is honoured**, against 49 transitions and
+  animations that previously ignored it. The state change is kept; only the
+  travel is removed.
+
+### Changed
+
+- **The compatibility shim in `_00-tokens.css` is gone** ([#122]), along with
+  the 285 dead selectors it was holding up — the pre-redesign missing-values
+  section, the old correlation heatmap, and the datetime and boolean markup the
+  redesign replaced. Verified by computed style across 143,068 elements in four
+  reports and both themes: removing them changes nothing.
+- `--accent-color` used to map to `--q-good`, so the olive that means "passes a
+  check" was also drawing focus rings, hover borders and the active tab. It now
+  reads `--data-1`, which is what the header and the details toggle already use
+  for `:focus-visible`.
+- The untokenised-colour ratchet drops from 88 to 70. Eleven of those needed no
+  decision at all — they were sitting in rules for markup nobody renders.
+
+[#122]: https://github.com/alvarodiez20/pysuricata/issues/122
 
 ## [0.1.0] - 2026-08-16
 

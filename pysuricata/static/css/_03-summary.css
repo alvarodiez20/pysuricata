@@ -457,13 +457,10 @@
 
 
 /* Responsive: stack to 2 columns on narrow screens */
-@media (max-width: 560px) {
-}
 
 /* =============================
    QUICK INSIGHTS (chip wall)
    ============================= */
-
 
 
 #pysuricata-report .quick a svg {

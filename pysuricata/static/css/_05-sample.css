@@ -6,13 +6,13 @@
 }
 
 #pysuricata-report details.card {
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
   border-radius: 0;
   background: rgba(0, 0, 0, 0.02);
 }
 
 #pysuricata-report:not(.light) details.card {
-  border-color: var(--chip-br-dark);
+  border-color: var(--rule-strong);
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -20,6 +20,7 @@
   list-style: none;
   cursor: pointer;
   padding: 12px 14px;
+  min-height: var(--tap-min);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -66,12 +67,12 @@
 
 #pysuricata-report details.card>.card-content {
   padding: 12px 14px;
-  border-top: 1px solid var(--divider-light);
+  border-top: 1px solid var(--rule);
   border-radius: 0;
 }
 
 #pysuricata-report:not(.light) details.card>.card-content {
-  border-top-color: var(--divider-dark);
+  border-top-color: var(--rule);
 }
 
 #pysuricata-report .sample-scroll {
@@ -96,7 +97,7 @@
 /* Theme-aware horizontal scrollbar styling for sample area */
 #pysuricata-report .sample-scroll {
   scrollbar-width: thin;
-  scrollbar-color: var(--scroll-thumb) var(--scroll-track);
+  scrollbar-color: var(--rule-strong) var(--track);
 }
 
 #pysuricata-report .sample-scroll::-webkit-scrollbar {
@@ -104,11 +105,11 @@
 }
 
 #pysuricata-report .sample-scroll::-webkit-scrollbar-track {
-  background: var(--scroll-track);
+  background: var(--track);
 }
 
 #pysuricata-report .sample-scroll::-webkit-scrollbar-thumb {
-  background: var(--scroll-thumb);
+  background: var(--rule-strong);
   border-radius: 6px;
   border: 2px solid transparent;
   background-clip: padding-box;
