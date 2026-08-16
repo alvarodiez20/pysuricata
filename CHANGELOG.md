@@ -14,7 +14,34 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
-Nothing yet. Planned work is tracked in
+### Changed
+- **Publishing is triggered by pushing a version tag, not by merging (#159).**
+
+  `cd.yml` triggered on `push: branches: [main]` while `version-check` required a bump on every pull request. Each rule is defensible alone; together they made **one merged pull request exactly one PyPI release, unconditionally**. A rewritten kernel and a fixed typo were the same size of event, so `0.0.71 → 0.0.72` carried no information and nobody could pin against anything. Semantic versioning was not un-adopted — it was unreachable, because the version was incremented by the *act of merging* rather than by a judgement about what merged.
+
+  ```bash
+  git tag v0.1.0 && git push origin v0.1.0
+  ```
+
+- **`version-check` validates a bump instead of demanding one.** A pull request need not bump — **this one does not, and that is the first demonstration of the change**. If it does bump, `scripts/check_version.py` asserts the step is legal (one component raised, the ones below reset, nothing skipped, no downgrade) and that a matching changelog section exists.
+
+- **The pipeline is ordered: `guard → build → smoke → publish → release`.** `release` and `publish` previously ran in parallel with no `needs:` between them, so **PyPI could receive a package whose tag step had failed**.
+
+- **`actions/create-release@v1`** — archived by GitHub in 2021, still running Node 12 — replaced with `gh release create`. `checkout@v3` and `setup-python@v4` raised to v4/v5.
+
+### Added
+- **`smoke`** — the built **wheel** is installed into an empty virtualenv on 3.10 and 3.14, asked for its version, then made to profile a frame and check `schema_version`. CI tests the repository; this tests the artifact, which is not the same object: a missing package-data glob ships a wheel with no templates and a green test suite.
+- **`scripts/release_notes.py`** lifts the `## [X.Y.Z]` section out of `CHANGELOG.md` and **refuses to release a version that has none**. The changelog already enforced on every PR becomes the release page for free.
+- **`docs/versioning.md` (#160)** — the contract. At 0.x a minor bump is what a major becomes at 1.0, with an enumerated covered surface and an explicit not-covered list. The exclusion for *the exact value of any approximate figure* is already load-bearing: recent releases changed how quantiles are presented and what bound the duplicate count carries, and neither should force a minor bump.
+- `tests/test_release_tooling.py` (33 tests).
+
+### Note
+`check_step` shipped its central rule wrong in the first draft: it asked that only one component *change*, which **rejects `0.0.72 → 0.1.0`** — the exact release this reform exists to enable — because bumping minor forces patch from 72 to 0. A reset is part of the bump, not a second decision. Caught by running the rule over real cases before trusting it, and kept as a test.
+
+### Requires a repository setting
+Trusted Publishing needs a one-time configuration on PyPI (publisher: this repo, workflow `cd.yml`, environment `pypi`) and a `pypi` environment in GitHub settings with a required reviewer. Until that exists the `publish` job fails — deliberately, rather than falling back to the long-lived `PYPI_TOKEN`.
+
+Planned work is tracked in
 [`docs/roadmap.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/roadmap.md),
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
