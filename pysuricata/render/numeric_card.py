@@ -994,7 +994,6 @@ class NumericCardRenderer(CardRenderer):
         summary_html = f"""
         <div class="correlation-summary">
             <div class="summary-header">
-                <span class="icon">🔗</span>
                 <span class="title">Correlations</span>
                 <span class="count">{len(corr_data)} significant correlations</span>
             </div>
@@ -1425,7 +1424,6 @@ class NumericCardRenderer(CardRenderer):
                 "label": "Missing Data",
                 "value": f"{stats.missing:,} ({missing_pct:.1f}%)",
                 "severity": quality_severity,
-                "icon": "❓",
                 "description": "Values that are completely absent",
             }
         )
@@ -1440,7 +1438,6 @@ class NumericCardRenderer(CardRenderer):
                     "label": "Zero Values",
                     "value": f"{stats.zeros:,} ({zeros_pct:.1f}%)",
                     "severity": zero_severity,
-                    "icon": "0️⃣",
                     "description": "Values equal to zero",
                 }
             )
@@ -1452,7 +1449,7 @@ class NumericCardRenderer(CardRenderer):
                     "label": "Infinite Values",
                     "value": f"{stats.inf:,} ({inf_pct:.1f}%)",
                     "severity": "critical",
-                    "icon": "∞",
+                    "symbol": "∞",
                     "description": "Values that are infinite",
                 }
             )
@@ -1465,7 +1462,6 @@ class NumericCardRenderer(CardRenderer):
                     "label": "Negative Values",
                     "value": f"{stats.negatives:,} ({neg_pct:.1f}%)",
                     "severity": neg_severity,
-                    "icon": "➖",
                     "description": "Values less than zero",
                 }
             )
@@ -1494,7 +1490,7 @@ class NumericCardRenderer(CardRenderer):
         for indicator in quality_indicators:
             indicator_items.append(f"""
                 <div class="indicator-item {indicator["severity"]}">
-                    <div class="indicator-icon">{indicator["icon"]}</div>
+                    <div class="indicator-icon">{indicator.get("symbol", "")}</div>
                     <div class="indicator-content">
                         <div class="indicator-label">{indicator["label"]}</div>
                         <div class="indicator-value">{indicator["value"]}</div>
