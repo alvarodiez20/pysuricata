@@ -44,7 +44,12 @@ class Process:
         return 0.0
 `;
 
-const post = (type, payload = {}) => self.postMessage({ type, ...payload });
+/* The run this worker is currently serving. Echoed back on every message so the
+ * page can drop anything belonging to a run it has already moved past. */
+let runId;
+
+const post = (type, payload = {}) =>
+  self.postMessage(runId === undefined ? { type, ...payload } : { type, run: runId, ...payload });
 const status = (text, detail = null) => post("status", { text, detail });
 
 /** WASM heap size — a fair proxy for what the runtime is actually holding. */
@@ -53,6 +58,23 @@ function heapMB() {
     return Math.round(pyodide._module.HEAPU8.length / 1048576);
   } catch {
     return null;
+  }
+}
+
+/* Drop the previous run's report from the Python heap. A failed run used to
+ * leave it pinned, so the next run started from an inflated baseline and the
+ * heap figure the page prints stopped being true. Best-effort by design: on an
+ * early failure the names may never have been bound. */
+function releasePython() {
+  try {
+    pyodide.runPython(`
+import gc
+for _n in ("_report", "_stats", "_ds"):
+    globals().pop(_n, None)
+gc.collect()
+`);
+  } catch {
+    /* nothing to release */
   }
 }
 
@@ -97,20 +119,30 @@ json.dumps({
   });
 }
 
+/* Every mount gets its own directory. Unmounting WORKERFS leaves the mount
+ * point's child nodes behind, so re-mounting onto the same path fails on the
+ * second file with an opaque ErrnoError — which is what used to break a second
+ * profile in the same session. A fresh path per run sidesteps it, and the old
+ * mount is released so the previous Blob is not pinned. */
+let mounted = null;
+
+function unmountLast() {
+  if (!mounted) return;
+  try {
+    pyodide.FS.unmount(mounted);
+  } catch {
+    /* already gone */
+  }
+  mounted = null;
+}
+
 /** Mount a File into the WASM filesystem without copying its bytes. */
 function mountFile(file) {
-  const dir = "/data";
-  try {
-    pyodide.FS.unmount(dir);
-  } catch {
-    /* nothing mounted yet */
-  }
-  try {
-    pyodide.FS.mkdirTree(dir);
-  } catch {
-    /* already exists */
-  }
+  unmountLast();
+  const dir = `/data/run-${runId ?? 0}`;
+  pyodide.FS.mkdirTree(dir);
   pyodide.FS.mount(pyodide.FS.filesystems.WORKERFS, { files: [file] }, dir);
+  mounted = dir;
   return `${dir}/${file.name}`;
 }
 
@@ -163,6 +195,7 @@ json.dumps({"n_cols": len(cols), "n_rows": rows, "bytes": size,
         "and ~66 KB of HTML per column). A browser tab runs out first. Run wide " +
         "frames locally, or pass columns=[...] to profile a subset.",
     });
+    unmountLast();  // a refusal still holds the Blob until the mount goes
     return;
   }
 
@@ -204,7 +237,7 @@ json.dumps({
   status("Rendering…");
   const html = pyodide.runPython("_report.html");
   const stats = pyodide.runPython("import json; json.dumps(_stats, default=str)");
-  pyodide.runPython("del _report, _stats, _ds");
+  releasePython();
 
   post("done", {
     html,
@@ -283,7 +316,7 @@ json.dumps({
   status("Rendering…");
   const html = pyodide.runPython("_report.html");
   const stats = pyodide.runPython("import json; json.dumps(_stats, default=str)");
-  pyodide.runPython("del _report, _stats, _ds")
+  releasePython();
 
   post("done", {
     html,
@@ -298,15 +331,20 @@ json.dumps({
 }
 
 self.onmessage = async (e) => {
-  const { type } = e.data;
+  const { type, run } = e.data;
+  runId = run;
   try {
     if (type === "boot") await boot(e.data.config);
     else if (type === "profile") await profileFile(e.data);
     else if (type === "generate") await generate(e.data);
   } catch (err) {
+    // Report the failure and then clean up, so the next run starts from the
+    // same state a successful run would have left behind.
     post("error", {
       message: err && err.message ? err.message : String(err),
       stack: err && err.stack ? String(err.stack).slice(0, 4000) : null,
     });
+    releasePython();
+    unmountLast();
   }
 };
