@@ -10,12 +10,70 @@ from __future__ import annotations
 
 import html as _html
 import math
+import re
 from dataclasses import dataclass
 
 import numpy as np
 
 from .format_utils import fmt_compact_scientific
 from .svg_utils import nice_log_ticks_from_log10, nice_ticks
+
+# Units the column name states outright. Deliberately short, and deliberately
+# not clever: this maps a name to a unit only where the name *is* the unit.
+#
+# The absent branch is the one that matters. A column called `score` has no
+# unit, and labelling its axis "SCORE" would be worse than leaving it bare --
+# the header already says the column is called score, so the label would add a
+# word and no information, while looking like a unit. Anything not listed here
+# gets no label at all.
+_UNIT_BY_NAME: tuple[tuple[frozenset[str], str], ...] = (
+    (frozenset({"age", "years", "year", "yr", "yrs"}), "YEARS"),
+    (frozenset({"month", "months"}), "MONTHS"),
+    (frozenset({"day", "days"}), "DAYS"),
+    (frozenset({"hour", "hours", "hrs"}), "HOURS"),
+    (frozenset({"minute", "minutes", "mins"}), "MINUTES"),
+    (frozenset({"second", "seconds", "secs", "duration", "elapsed"}), "SECONDS"),
+    (frozenset({"ms", "millis", "milliseconds"}), "MS"),
+    (frozenset({"bytes", "size", "nbytes"}), "BYTES"),
+    (frozenset({"kb"}), "KB"),
+    (frozenset({"mb"}), "MB"),
+    (frozenset({"count", "counts", "n", "num", "total", "qty", "quantity"}), "COUNT"),
+    (frozenset({"pct", "percent", "percentage"}), "%"),
+    (frozenset({"ratio", "rate", "share", "fraction", "proportion"}), "RATIO"),
+    (frozenset({"km"}), "KM"),
+    (frozenset({"m", "metres", "meters"}), "M"),
+    (frozenset({"cm"}), "CM"),
+    (frozenset({"kg"}), "KG"),
+    (frozenset({"celsius", "degc"}), "°C"),
+)
+
+# A trailing `_unit` in the name is a stronger signal than the whole name: an
+# `age_years` column names its unit explicitly.
+_SPLIT = re.compile(r"[^a-z0-9]+")
+
+
+def derive_x_unit(column_name: str) -> str | None:
+    """The unit of a numeric column's x axis, or None when it has none.
+
+    Returns None far more often than not, and that is the intended behaviour --
+    an axis with no unit is honest, an axis labelled with a restatement of the
+    column name is not.
+
+    Args:
+        column_name: The column's name.
+
+    Returns:
+        A short uppercase unit, or None when the name does not state one.
+    """
+    words = [w for w in _SPLIT.split((column_name or "").lower()) if w]
+    if not words:
+        return None
+    # Last word first: `age_years` is years, `years_since_x` is not.
+    for word in (words[-1], words[0]):
+        for names, unit in _UNIT_BY_NAME:
+            if word in names:
+                return unit
+    return None
 
 
 @dataclass
@@ -45,7 +103,10 @@ class HistogramConfig:
     tick_length: int = 5
 
     # Text styling
-    font_family: str = "Arial, sans-serif"
+    # Figures are monospace everywhere in the report; an axis label in a
+    # different face than the table beneath it reads as a different kind of
+    # number.
+    font_family: str = "var(--font-mono)"
     font_size: int = 11
     label_font_size: int = 10
     title_font_size: int = 12
@@ -243,18 +304,42 @@ class SVGHistogramRenderer:
         # Add axes
         svg_parts.extend(self._render_axes(hist_data, inner_width, inner_height))
 
-        # Add title
-        if title:
-            svg_parts.append(
-                f'<text x="{self.config.width // 2}" y="15" '
-                f'text-anchor="middle" class="hist-title" '
-                f'font-family="{self.config.font_family}" '
-                f'font-size="{self.config.title_font_size}">'
-                f"{self.safe_html_escape(title)}</text>"
-            )
+        # No in-chart title. The card header already carries the column name,
+        # so printing it again inside the plot spent a line of the chart on a
+        # word the reader had just read. The <title> element above stays --
+        # that is the accessible name, not a caption.
+        svg_parts.extend(self._render_unit_labels(title, inner_width))
 
         svg_parts.append("</svg>")
         return "\n".join(svg_parts)
+
+    def _render_unit_labels(self, column_name: str, inner_width: int) -> list[str]:
+        """`ROWS` over the y axis, and the x unit at the right end of it.
+
+        Nothing on the old chart said which axis was years and which was rows,
+        which is the actual gap -- the column name was printed instead, and the
+        header already had that.
+        """
+        parts = [
+            f'<text x="{self.config.margin_left}" y="{self.config.margin_top - 7}" '
+            f'text-anchor="start" class="unit-label" '
+            f'font-family="{self.config.font_family}" font-size="10" '
+            f'letter-spacing="0.12em" fill="{self.config.axis_color}">ROWS</text>'
+        ]
+        unit = derive_x_unit(column_name)
+        if unit:
+            y = self.config.margin_top + self._inner_height() + 32
+            parts.append(
+                f'<text x="{self.config.margin_left + inner_width}" y="{y}" '
+                f'text-anchor="end" class="unit-label" '
+                f'font-family="{self.config.font_family}" font-size="10" '
+                f'letter-spacing="0.12em" fill="{self.config.axis_color}">'
+                f"{self.safe_html_escape(unit)}</text>"
+            )
+        return parts
+
+    def _inner_height(self) -> int:
+        return self.config.height - self.config.margin_top - self.config.margin_bottom
 
     def _render_empty_histogram(self, title: str) -> str:
         """Render an empty histogram when no data is available."""
@@ -348,8 +433,10 @@ class SVGHistogramRenderer:
             parts.append(
                 f'<rect class="bar" x="{x:.1f}" y="{y:.1f}" '
                 f'width="{bar_w:.1f}" height="{bar_h:.1f}" '
-                f'fill="{self.config.bar_color}" fill-opacity="{self.config.bar_opacity}" '
-                f'stroke="{self.config.bar_stroke}" stroke-width="{self.config.bar_stroke_width}" '
+                # No stroke, no fill-opacity, no rounded corners: each of
+                # those changes the apparent length of a bar, which is the one
+                # thing the bar encodes.
+                f'fill="{self.config.bar_color}" '
                 f'data-count="{int(count)}" data-pct="{pct:.1f}" '
                 f'data-x0="{x0_label}" data-x1="{x1_label}" '
                 f'data-col="{col_id}"/>'
@@ -370,6 +457,21 @@ class SVGHistogramRenderer:
         # Special case: zero
         if value == 0:
             return "0"
+
+        # Beyond this an axis label stops being readable as a quantity and
+        # starts being a ruler: `-2,000,000,000,000,000` is 22 characters, wide
+        # enough to collide with its neighbours and too long to take in at a
+        # glance. Compact notation is shorter than both that and `-2.0e+15`.
+        if abs(value) >= 1e6:
+            for limit, suffix in ((1e12, "T"), (1e9, "B"), (1e6, "M")):
+                if abs(value) >= limit:
+                    scaled = value / limit
+                    text = (
+                        f"{scaled:.0f}"
+                        if abs(scaled - round(scaled)) < 0.05
+                        else f"{scaled:.1f}"
+                    )
+                    return f"{text}{suffix}"
 
         if is_count:
             # For histogram counts (y-axis), always format as integers
@@ -493,10 +595,26 @@ class SVGHistogramRenderer:
                     f'stroke="{self.config.axis_color}" stroke-width="{self.config.axis_stroke_width}"/>'
                 )
 
-                # Label
+                # The first and last labels are anchored to the plot edge
+                # rather than centred on their tick, so a wide value at either
+                # end sits inside the chart instead of overhanging it -- which
+                # on the left ran under the y-axis labels and on the right ran
+                # off the SVG entirely.
+                left_edge = self.config.margin_left
+                right_edge = self.config.margin_left + inner_width
+                if x_pos - left_edge < 18:
+                    anchor = "start"
+                    label_x = left_edge
+                elif right_edge - x_pos < 18:
+                    anchor = "end"
+                    label_x = right_edge
+                else:
+                    anchor = "middle"
+                    label_x = x_pos
+
                 parts.append(
-                    f'<text x="{x_pos:.1f}" y="{self.config.margin_top + inner_height + self.config.tick_length + 15}" '
-                    f'text-anchor="middle" class="tick-label" '
+                    f'<text x="{label_x:.1f}" y="{self.config.margin_top + inner_height + self.config.tick_length + 15}" '
+                    f'text-anchor="{anchor}" class="tick-label" '
                     f'font-family="{self.config.font_family}" '
                     f'font-size="{self.config.label_font_size}" '
                     f'fill="{self.config.axis_color}">'
