@@ -102,11 +102,22 @@ def compute_mean(values: np.ndarray) -> float:
 # Install docs dependencies
 uv sync --dev
 
+# The example report is generated, not committed. Every docs workflow runs
+# this before building; run it once locally so the iframe on the home page
+# has something to show.
+uv run python scripts/regenerate_example_report.py
+
 # Build docs
 uv run mkdocs serve
 
 # Open http://localhost:8000 in browser
 ```
+
+`docs/assets/titanic_report.html` is in `.gitignore`. It used to be committed,
+and it drifted from 0.0.17 onward until it was 1,180,196 bytes against 600,028
+of real output -- because every rendering change either produced a megabyte diff
+or produced none, and nobody wanted the diff. `mkdocs build --strict` does not
+need the file to be present.
 
 ### Documentation Style
 
