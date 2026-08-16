@@ -16,6 +16,25 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **The Outliers pane draws the fence** ([#154], 5b.2). It opened with roughly
+  60px announcing `Low Outliers — 0 outliers (0.0%)` over three severity chips
+  all reading zero, said the same again for the high side, then listed the
+  values in a `rowspan` table with no picture of what they had crossed. An
+  outlier is *defined* by a threshold, so the threshold is now the graphic:
+  an IQR band with the fence marked and the values beyond it as capsules,
+  amber for moderate and rust for high or extreme.
+  - **The empty low side became a sentence.** `Age`'s lower fence sits at
+    −6.7 years and its minimum is 0.42, so the column cannot have a low
+    outlier — a fact from two numbers already on `stats`. The verdict branches
+    four ways over it, and the impossibility claim is decided against the
+    *exact* minimum rather than the sample, so it is never a confident guess.
+  - **One row per value, both verdicts side by side.** The `rowspan` gave a
+    value flagged by two methods two rows and a value flagged by one a single
+    row, so the table's shape encoded something other than the data. The
+    methods' disagreement — `IQR flags 7; MAD flags 1` on Titanic's `Age` — is
+    now stated in prose instead of left as two sets of chips to reconcile.
+  - Values closer together than one mark collapse into a capsule carrying its
+    count, with the values in its `title`.
 - **The closed `Details` row names what is behind it** ([#154], 5b.8) —
   `statistics · 48 common values · 5 lowest and highest · 11 outliers`. The tab
   set was known at render time and never printed, so the word "Details"
