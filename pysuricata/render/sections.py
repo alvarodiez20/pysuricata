@@ -8,44 +8,51 @@ dependencies where possible and provides a pandas-free HTML path for
 polars datasets.
 """
 
+import html as _html
 from collections.abc import Iterable, Sequence
 from typing import TYPE_CHECKING, Any
-
-import numpy as np
 
 if TYPE_CHECKING:
     import pandas as pd
     import polars as pl
 
 
-def _build_sample_table_html(pdf: pd.DataFrame) -> str:
-    """Build an HTML table for a pandas sample frame.
+# A real null renders as an em dash, never as the string "nan". The literal is
+# what pandas prints and it reads as a value -- a column of "nan" looks like
+# text data rather than absence. The true value goes in a title so nothing is
+# lost, and the glyph carries a class so it can meet the 4.5:1 text minimum:
+# it is data, not decoration.
+_NULL_GLYPH = '<span class="nil" title="{title}">—</span>'
 
-    The function right-aligns numeric columns by wrapping values in
-    ``<span class="num">``. It expects the first column to contain
-    positional row numbers, which are kept as-is.
+# Long values clamp with an ellipsis and keep the whole string in a title. A
+# 500-character cell otherwise stretches the pane until nothing else fits.
+_CELL_CLAMP = 260
 
-    Args:
-        pdf: Pandas DataFrame already containing a positional first column.
 
-    Returns:
-        str: An HTML table string with inline spans for numeric values.
+def _is_null(value: Any) -> bool:
+    """Whether a cell holds an actual null.
+
+    Deliberately not a string test. A column named ``nan``, and a string whose
+    characters happen to be ``n``, ``a``, ``n``, are both real data and must
+    render as themselves -- which is the difference between reporting absence
+    and corrupting a value.
     """
+    if value is None:
+        return True
     try:
-        import pandas as pd  # type: ignore
-
-        # Right-align numeric columns via a span
-        try:
-            num_cols = pdf.select_dtypes(include=[np.number]).columns
-            for c in num_cols:
-                pdf[c] = pdf[c].map(
-                    lambda v: f'<span class="num">{v}</span>' if pd.notna(v) else ""
-                )
-        except Exception:
-            pass
-        return pdf.to_html(classes="sample-table", index=False, escape=False)
+        return bool(value != value)  # NaN is the only value unequal to itself
     except Exception:
-        return "<em>Unable to render sample preview.</em>"
+        return False
+
+
+def _cell(value: Any) -> tuple[str, str]:
+    """Return the cell's HTML body and its title attribute."""
+    if _is_null(value):
+        return _NULL_GLYPH.format(title=_html.escape(str(value))), ""
+    text = str(value)
+    escaped = _html.escape(text)
+    title = f' title="{escaped}"' if len(text) > 24 else ""
+    return escaped, title
 
 
 def _build_simple_table_html(
@@ -53,37 +60,55 @@ def _build_simple_table_html(
     rows: Iterable[Sequence[Any]],
     numeric_idx: Sequence[int],
 ) -> str:
-    """Build a plain HTML table without requiring pandas.
+    """Build the sample table.
+
+    One builder for both backends -- pandas hands over rows and polars hands
+    over rows, so there is no reason for the two to produce different markup,
+    and they used to.
+
+    The row index is frozen with ``position: sticky`` rather than split into a
+    second table beside the scroll pane. Two tables have to be kept in vertical
+    step by hand, and any cell that wraps in one of them silently desynchronises
+    the pair -- the failure the design package warns about. A sticky column is
+    the same element as the row it belongs to, so it cannot drift from it.
 
     Args:
-        columns: Column headers in display order.
-        rows: Iterable of row tuples/lists matching ``columns`` order.
-        numeric_idx: Zero-based indices of columns to right-align using the
-            ``<span class="num">`` wrapper.
+        columns: Column headers in display order, index column first.
+        rows: Row values matching ``columns``.
+        numeric_idx: Indices to right-align.
 
     Returns:
-        str: HTML for a table suitable for embedding in the sample section.
+        str: The table markup.
     """
     try:
         num_set = {int(i) for i in numeric_idx}
     except Exception:
         num_set = set()
-    # Header
-    thead = "<thead><tr>" + "".join(f"<th>{c}</th>" for c in columns) + "</tr></thead>"
-    # Body
-    body_cells: list[str] = []
-    for r in rows:
+
+    head_cells = []
+    for index, name in enumerate(columns):
+        classes = ["idx"] if index == 0 else []
+        if index in num_set:
+            classes.append("num")
+        attr = f' class="{" ".join(classes)}"' if classes else ""
+        head_cells.append(f"<th{attr}>{_html.escape(str(name))}</th>")
+    thead = f"<thead><tr>{''.join(head_cells)}</tr></thead>"
+
+    body_rows: list[str] = []
+    for row in rows:
         try:
             cells = []
-            for j, v in enumerate(r):
-                if j in num_set and v is not None and v != "":
-                    cells.append(f'<td><span class="num">{v}</span></td>')
-                else:
-                    cells.append(f"<td>{'' if v is None else v}</td>")
-            body_cells.append("<tr>" + "".join(cells) + "</tr>")
+            for index, value in enumerate(row):
+                classes = ["idx"] if index == 0 else []
+                if index in num_set:
+                    classes.append("num")
+                body, title = _cell(value)
+                attr = f' class="{" ".join(classes)}"' if classes else ""
+                cells.append(f"<td{attr}{title}>{body}</td>")
+            body_rows.append(f"<tr>{''.join(cells)}</tr>")
         except Exception:
             continue
-    tbody = "<tbody>" + "".join(body_cells) + "</tbody>"
+    tbody = f"<tbody>{''.join(body_rows)}</tbody>"
     return f'<table class="sample-table">{thead}{tbody}</table>'
 
 
@@ -202,7 +227,8 @@ def render_sample_section_pandas(
         sample_html_table = _build_simple_table_html(columns, rows, num_idx)
     except Exception:
         sample_html_table, n = "<em>Unable to render sample preview.</em>", 0
-    return _wrap_sample_content(sample_html_table, n)
+        columns = []
+    return _wrap_sample_content(sample_html_table, n, max(0, len(columns) - 1))
 
 
 def render_sample_section_polars(
@@ -225,8 +251,8 @@ def render_sample_section_polars(
         (cols, rows, numeric_idx), n = _sample_polars(df, sample_rows, seed=seed)
         sample_html_table = _build_simple_table_html(cols, rows, numeric_idx)
     except Exception:
-        sample_html_table, n = "<em>Unable to render sample preview.</em>", 0
-    return _wrap_sample_content(sample_html_table, n)
+        sample_html_table, n, cols = "<em>Unable to render sample preview.</em>", 0, []
+    return _wrap_sample_content(sample_html_table, n, max(0, len(cols) - 1))
 
 
 def render_sample_section(
@@ -263,17 +289,31 @@ def render_sample_section(
     return _wrap_sample_content("<em>Unable to render sample preview.</em>", 0)
 
 
-def _wrap_sample_content(sample_html_table: str, n_rows: int) -> str:
-    """Wrap a table HTML string for embedding in the new sample section.
+def _wrap_sample_content(sample_html_table: str, n_rows: int, n_cols: int = 0) -> str:
+    """Wrap the table with the two facts a reader needs to trust it.
+
+    Both were previously missing or buried: that the rows are a random draw
+    from the first chunk rather than the head of the file, and that there is
+    more to the right than fits. Stating the overflow is the difference between
+    a table that looks complete and one that says it is not.
 
     Args:
-        sample_html_table: HTML string for the sample table body.
-        n_rows: Number of rows included in the sample (for the caption).
+        sample_html_table: The table markup.
+        n_rows: Rows drawn.
+        n_cols: Columns in the frame, excluding the row index. Zero suppresses
+            the column notice.
 
     Returns:
-        str: A ready-to-embed content containing the sample table with scrolling.
+        str: The sample content.
     """
+    # Only when there is something to scroll. A one-column frame has nothing
+    # off-screen, and the arrow would point at nothing.
+    scroll_note = (
+        f'<span class="sample-note__cols">{n_cols:,} cols · scroll →</span>'
+        if n_cols > 1
+        else ""
+    )
     return f"""
+    <p class="sample-note">{scroll_note}<span class="sample-note__rows">{n_rows:,} rows drawn at random from the first chunk</span></p>
     <div class="sample-scroll">{sample_html_table}</div>
-    <p class="muted small">Showing {n_rows} randomly sampled rows from the first chunk.</p>
     """

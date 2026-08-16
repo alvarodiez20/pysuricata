@@ -19,6 +19,28 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.53] - 2026-08-16
+
+Phase 4 of the report redesign (#113), and it closes #103. The fact fingerprint
+is byte-identical, 598 facts, across six consecutive commits now.
+
+### Changed
+- **A missing value renders as an em dash, not the string `nan`.** The literal is what pandas prints, and it reads as a value: a column of `nan` looks like text data rather than absence. The real value is kept in a `title`, and the glyph takes a text-grade colour because it *is* data.
+
+  The distinction that matters here is between a null and a string that spells one. **A column named `nan`, the three characters `n`, `a`, `n`, and a zero are all real data** and render as themselves. Dashing them would not be tidying up — it would be corrupting a value and calling it missing.
+- **The cell borders are gone.** The table drew one on every cell — about 300 for a 10 × 13 sample — and striped alternate rows on top, so the grid competed with the data it held. What is left is a rule above the header, one under it, and a hairline under each row, which is the job the striping was doing.
+- **The row index is frozen** when the table scrolls sideways, so a wide frame never loses your place in the row.
+- **The table says what it is showing**: `12 cols · scroll →` when there is something off-screen, and `10 rows drawn at random from the first chunk` — because they are not the head of the file, and a reader who assumes they are will misread every value in the table.
+- **Long values clamp** at 260px with the full string in a `title`. One 500-character cell used to widen the pane until nothing else fit.
+- **The sample opens on load** (#103). It is the fastest way to see whether the profile matches the data, and behind a click most readers never opened it. Still collapsible.
+
+### Removed
+- The pandas `to_html` table builder, which was dead: both backends already funnelled through the same simple builder, and the two used to emit different markup for the same table.
+- The `<span class="num">` wrapper on every numeric cell. Right-alignment is a class on the cell now — the span was an element per numeric value to do what one attribute does.
+
+### Note on the frozen index
+The design specifies two tables side by side, and names the risk itself: rows of differing height drift out of step. This uses `position: sticky` on the index cell instead. A sticky cell is part of the row it belongs to, so the alignment cannot come apart — the failure mode is removed rather than tested for.
+
 ## [0.0.52] - 2026-08-16
 
 Phase 3 of the report redesign (#112), and it closes #104. **The summary is
@@ -816,7 +838,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.52...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.53...HEAD
+[0.0.53]: https://github.com/alvarodiez20/pysuricata/compare/0.0.52...0.0.53
 [0.0.52]: https://github.com/alvarodiez20/pysuricata/compare/0.0.51...0.0.52
 [0.0.51]: https://github.com/alvarodiez20/pysuricata/compare/0.0.50...0.0.51
 [0.0.50]: https://github.com/alvarodiez20/pysuricata/compare/0.0.49...0.0.50

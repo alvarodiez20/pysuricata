@@ -166,9 +166,12 @@
         <section id="sample" class="collapsible-card">
           <span id="dataset-sample" class="anchor-alias"></span>
           <h2 class="section-title">Sample</h2>
-          <details class="card" id="sample-details">
+          <!-- open by default (#103): the sample is the fastest way to see
+               whether the profile matches the data, and hiding it behind a
+               click meant most readers never looked. -->
+          <details class="card" id="sample-details" open>
             <summary>
-              <span id="sample-toggle-text">Show sample</span>
+              <span id="sample-toggle-text">Hide sample</span>
               <span class="chev" aria-hidden="true">▸</span>
             </summary>
             <div class="card-content">

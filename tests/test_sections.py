@@ -83,8 +83,10 @@ def test_render_sample_section_pandas_alignment():
 
     df = pd.DataFrame({"num": [1.5, 2.5, None], "txt": ["a", "b", "c"]})
     html = render_sample_section_pandas(df, sample_rows=3)
-    # Numeric values should be wrapped in span.num at least once
-    assert '<span class="num">' in html
+    # Right-alignment is a class on the cell now, not a <span> inside it. The
+    # span existed only to carry that alignment, so it was an element per
+    # numeric cell to do what one attribute does.
+    assert '<td class="num"' in html
 
 
 def test_render_sample_section_polars_negative_rows():
@@ -104,5 +106,6 @@ def test_render_sample_section_polars_more_than_len_alignment():
 
     df = pl.DataFrame({"num": [1, 2, 3, 4], "txt": ["a", "b", "c", "d"]})
     html = render_sample_section_polars(df, sample_rows=10)
-    # Should contain a numeric span for alignment (first column is positional index)
-    assert '<span class="num">' in html
+    # The positional index is column 0 and is also right-aligned.
+    assert '<td class="idx num"' in html
+    assert '<td class="num"' in html
