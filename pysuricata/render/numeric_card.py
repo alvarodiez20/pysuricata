@@ -16,6 +16,7 @@ from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
 from .format_utils import ordinal_number
 from .histogram_svg import SVGHistogramRenderer
 from .identifier import identifier_facts, looks_like_identifier
+from .triage import annotate_flags
 
 
 class NumericCardRenderer(CardRenderer):
@@ -112,6 +113,19 @@ class NumericCardRenderer(CardRenderer):
         }
 
     def _build_quality_flags_html(
+        self, flags: QualityFlags, percentages: dict, stats: NumericStats
+    ) -> str:
+        """The chips, with the number each one already knows on its face.
+
+        `_quality_flags_markup` builds them; this puts the value on the
+        chip and the threshold in a title. Splitting it this way means the
+        forty-two places that emit a chip carry on emitting the same
+        markup, and the annotation lives in one place rather than being
+        repeated at every one of them.
+        """
+        return annotate_flags(self._quality_flags_markup(flags, percentages, stats))
+
+    def _quality_flags_markup(
         self, flags: QualityFlags, percentages: dict, stats: NumericStats
     ) -> str:
         """Build quality flags HTML with percentage context and threshold tooltips."""

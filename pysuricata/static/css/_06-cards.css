@@ -1,3 +1,8 @@
+/* The `.stat-badges` rules that used to sit here styled markup no report
+   contains: the renderer that emitted them is gone, and what remained was a
+   block of CSS plus a rule to hide the thing it styled. Hidden markup and
+   dead rules are both still bytes in a single-file report (#39). */
+
 /*# =============================
 #    NUMERIC VARIABLES – OUTSIDE DROPDOWNS
 #    Cards, badges, mini-viz, and CSS-only toggles
@@ -103,46 +108,12 @@
   opacity: .8;
 }
 
-/* Stat badges row (count, missing %, unique, zeros %, negatives %, outliers) */
-#pysuricata-report .stat-badges {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
 
-#pysuricata-report .stat-badges li {
-  padding: 0.28rem 0.5rem;
-  border-radius: 6px;
-  background: var(--chip-bg-light);
-  border: 1px solid var(--chip-br-light);
-  font-size: .8rem;
-  line-height: 1;
-}
 
-#pysuricata-report:not(.light) .stat-badges li {
-  background: var(--chip-bg-dark);
-  border-color: var(--chip-br-dark);
-}
 
-#pysuricata-report .stat-badges li.crit {
-  border-color: var(--q-bad);
-}
 
-#pysuricata-report .stat-badges li.warn {
-  border-color: var(--q-warn-fill);
-}
 
-#pysuricata-report .stat-badges li.good {
-  border-color: var(--q-good);
-}
 
-/* Hide numeric header chips */
-#pysuricata-report .stat-badges {
-  display: none;
-}
 
 /* Mini-viz area */
 #pysuricata-report .viz {
@@ -553,10 +524,11 @@
 
 #pysuricata-report .quality-flags .flag {
   padding: 0.28rem 0.55rem;
-  border-radius: 6px;
-  border: 1px solid var(--chip-br-light);
-  background: var(--chip-bg-light);
-  font-size: .8rem;
+  border-radius: 4px;
+  border: 1px solid var(--rule-strong);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
   line-height: 1;
   white-space: nowrap;
 }
@@ -567,19 +539,29 @@
 }
 
 /* Semantic colors — subtle backgrounds for emphasis */
+/* Outlined, not filled. Each of these carried a tinted background in a colour
+   left over from the old palette -- rgba(241, 94, 78) and friends, which are
+   not on either scale -- so a row of chips read as a row of coloured blocks
+   with the severity competing against the text inside it. The border states
+   the severity; the text states the fact. */
 #pysuricata-report .quality-flags .flag.bad {
   border-color: var(--q-bad);
-  background: rgba(241, 94, 78, .12);
+  color: var(--q-bad);
+  background: transparent;
 }
 
 #pysuricata-report .quality-flags .flag.warn {
   border-color: var(--q-warn-fill);
-  background: rgba(241, 197, 78, .12);
+  /* --q-warn-text, not --q-warn-fill: the fill step sits deliberately below
+     the text minimum so a bar can be lighter than a word. This is a word. */
+  color: var(--q-warn-text);
+  background: transparent;
 }
 
 #pysuricata-report .quality-flags .flag.good {
   border-color: var(--q-good);
-  background: rgba(138, 201, 38, .12);
+  color: var(--q-good);
+  background: transparent;
 }
 
 /* Enhanced hover state for all flags (tooltip system handles them) */

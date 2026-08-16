@@ -54,6 +54,52 @@ _ACTIONABLE_WARNINGS = frozenset(
 _SEVERITY_RANK = {"bad": 0, "warn": 1}
 
 
+_ATTR = re.compile(r'(?P<name>data-(?:threshold|value))="(?P<value>[^"]*)"')
+
+
+def annotate_flags(flags_html: str) -> str:
+    """Put the number a chip already knows on the face of the chip.
+
+    Every chip carries ``data-threshold`` and ``data-value`` in the DOM and
+    displayed neither -- so a card said ``Missing`` where it could have said
+    ``19.9% missing``, and the reader had to open the details pane, or the
+    inspector, to learn whether that meant two rows or two hundred.
+
+    Done here rather than at each of the forty-two places a chip is emitted:
+    those attributes are a contract every one of them already satisfies, so one
+    transform over the contract is both less code and less to keep in step.
+
+    The threshold moves into a ``title``. It answers a different question --
+    *why is this flagged* rather than *what is it* -- and putting both on the
+    face turns the chip into a sentence.
+
+    Args:
+        flags_html: A rendered quality-flag list.
+
+    Returns:
+        The same markup with each chip's value on its face and its threshold in
+        a title. A chip carrying no value is returned untouched.
+    """
+
+    def rewrite(match: re.Match[str]) -> str:
+        severity = match.group("severity")
+        attrs = match.group("attrs")
+        label = match.group("label").strip()
+        found = {m.group("name"): m.group("value") for m in _ATTR.finditer(attrs)}
+        value = (found.get("data-value") or "").strip()
+        threshold = (found.get("data-threshold") or "").strip()
+        if not value or not label:
+            return match.group(0)
+
+        title = f' title="threshold: {_html.escape(threshold)}"' if threshold else ""
+        # The value leads: it is the fact, and the label says what the fact is
+        # about. `48.7% has negatives` reads; `Has negatives 48.7%` does not.
+        face = f"{value} {label[0].lower() + label[1:]}"
+        return f'<li class="flag{severity}"{attrs}{title}>{_html.escape(face)}</li>'
+
+    return _CHIP.sub(rewrite, flags_html)
+
+
 def extract_chips(card_html: str) -> list[tuple[str, str]]:
     """Read the quality chips out of a rendered card.
 
