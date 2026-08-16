@@ -63,7 +63,7 @@ class NumericCardRenderer(CardRenderer):
         stats_table = self._build_stats_table(stats)
         common_table = self._build_common_values_table(stats)
         extremes_table = self._build_extremes_table(stats)
-        outliers_pane = self._build_outliers_pane(stats, quantiles)
+        outliers_pane = self._build_outliers_pane(stats, quantiles, col_id)
         corr_table = self._build_correlation_table(stats)
         missing_table = self._build_missing_values_table(stats)
 
@@ -589,7 +589,10 @@ class NumericCardRenderer(CardRenderer):
         )
 
     def _build_outliers_pane(
-        self, stats: NumericStats, quantiles: QuantileData | None = None
+        self,
+        stats: NumericStats,
+        quantiles: QuantileData | None = None,
+        col_id: str = "",
     ) -> str:
         """The fence, the marks that crossed it, and one row per value.
 
@@ -628,8 +631,9 @@ class NumericCardRenderer(CardRenderer):
             '<div class="fence-head">'
             f'<span class="fence-head__title">{name} · outliers</span>'
             '<span class="fence-head__rule"></span>'
-            f'<span class="fence-head__count">{fence.n_outliers:,} of '
-            f"{fence.n_total:,} values · {pct:.1f}%</span>"
+            f'<span class="fence-head__count" data-col="{col_id}" '
+            f'data-count="{fence.n_outliers}" data-pct="{pct:.1f}">'
+            f"{fence.n_outliers:,} of {fence.n_total:,} values · {pct:.1f}%</span>"
             "</div>"
         )
         lede = f'<p class="fence-lede">{fence_verdict(fence, self.format_number)}</p>'
@@ -641,7 +645,7 @@ class NumericCardRenderer(CardRenderer):
 
         body = (
             '<div class="fence-body">'
-            f"{render_table(fence, self.format_number)}"
+            f"{render_table(fence, self.format_number, col_id)}"
             '<div class="fence-methods">'
             '<span class="fence-methods__title">The two methods</span>'
             f'<p class="fence-methods__note">{method_note(fence)}</p>'

@@ -164,7 +164,7 @@ class TestTheRatchetOnlyTurnsOneWay:
 
     def test_the_count_is_what_the_roadmap_says(self):
         """So the number in the audit cannot drift from the number in the code."""
-        assert len(BASELINE) == 66
+        assert len(BASELINE) == 65
 
 
 class TestTheAssertionIsWorthHaving:

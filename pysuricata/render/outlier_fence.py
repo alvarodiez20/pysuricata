@@ -42,6 +42,11 @@ _CLUSTER_PCT = 2.0
 #: How many rows the table lists. The rest stay in the count.
 _MAX_ROWS = 12
 
+#: Minimum gap between two *labels* on the axis, as a percentage of it. Marks
+#: may sit 2% apart and still be countable as capsules; their labels cannot --
+#: `×14` is about 24px and 2% of a 1,099px axis is 22.
+_LABEL_MIN_GAP_PCT = 7.0
+
 #: Distance bands, in IQRs and in MADs. Kept as they were -- the words appear
 #: in two panes now (5b.5 reads them too) and a value that is `high` in one
 #: cannot be `moderate` in the other.
@@ -89,13 +94,15 @@ class Fence:
     median: float
     whisker_lo: float
     whisker_hi: float
-    #: The axis, which is stretched to reach the fences -- a fence off the end
-    #: of the ruler is a fence a reader cannot see.
-    domain_lo: float
-    domain_hi: float
-    #: The column's own extremes. Distinct from the domain, and the sentence
-    #: has to quote *these*: "below the minimum of 0.42" is the claim, and
-    #: quoting a domain that was widened to the fence would make it circular.
+    #: The axis: the column's own range, and nothing wider.
+    #:
+    #: An earlier version stretched it to reach both fences, on the reasoning
+    #: that a fence off the end of the ruler cannot be seen. That was solving a
+    #: problem that does not exist -- a fence is only *drawn* when a value
+    #: crosses it, and a crossed fence is inside the data range by definition.
+    #: What the stretch did instead was put `-6.688` at the left end of `Age`,
+    #: an age no row holds, presented as where the data starts, and spend 9% of
+    #: the width getting there.
     value_lo: float
     value_hi: float
     n_total: int
@@ -129,11 +136,16 @@ class Fence:
         return self.value_hi > self.hi
 
     def pct(self, value: float) -> float:
-        """Position on the axis, clamped to it."""
-        span = self.domain_hi - self.domain_lo
+        """Position on the axis, clamped to it.
+
+        The clamp matters for the whiskers: `P1` and `P99` come from the same
+        sample the axis does, so they land inside it, but a caller passing an
+        uncrossable fence would otherwise position it off the figure.
+        """
+        span = self.value_hi - self.value_lo
         if span <= 0:
             return 50.0
-        return min(100.0, max(0.0, (value - self.domain_lo) / span * 100.0))
+        return min(100.0, max(0.0, (value - self.value_lo) / span * 100.0))
 
 
 def _band(distance: float, bands: tuple[tuple[float, str], ...]) -> str:
@@ -175,11 +187,7 @@ def build_fence(stats, quantiles=None) -> Fence | None:
     value_hi = float(stats.max) if _finite(stats.max) else max(sample)
     value_lo = min(value_lo, min(sample))
     value_hi = max(value_hi, max(sample))
-    # The fences are drawn, so the axis has to reach them even when no value
-    # does -- a fence off the end of the ruler is a fence a reader cannot see.
-    domain_lo = min(value_lo, lo_fence)
-    domain_hi = max(value_hi, hi_fence)
-    if not (domain_hi > domain_lo):
+    if not (value_hi > value_lo):
         return None
 
     mad = float(stats.mad) if _finite(stats.mad) else 0.0
@@ -272,8 +280,6 @@ def build_fence(stats, quantiles=None) -> Fence | None:
         median=float(median),
         whisker_lo=_whisker(quantiles, "p1", value_lo),
         whisker_hi=_whisker(quantiles, "p99", value_hi),
-        domain_lo=domain_lo,
-        domain_hi=domain_hi,
         value_lo=value_lo,
         value_hi=value_hi,
         n_total=int(getattr(stats, "count", 0) or 0),
@@ -406,8 +412,8 @@ def method_note(fence: Fence) -> str:
             "methods disagree because they measure different things."
         )
     return (
-        f"Both methods flag the same {fence.n_iqr:,}. They ask different "
-        "questions and happen to agree on this column."
+        f"IQR flags {fence.n_iqr:,} and MAD flags {fence.n_mad:,}. They ask "
+        "different questions and happen to agree on this column."
     )
 
 
@@ -438,6 +444,9 @@ def render_figure(fence: Fence, name: str, fmt) -> str:
         f'width:{max(0.0, q3_pct - q1_pct):.3f}%"></span>'
     )
 
+    # The fence labels are placed first and never dropped: the fence is what
+    # the pane is about, and a count label is a detail the table repeats.
+    taken: list[float] = []
     for crossable, pct, value in (
         (fence.lo_possible, lo_pct, fence.lo),
         (fence.hi_possible, hi_pct, fence.hi),
@@ -450,6 +459,7 @@ def render_figure(fence: Fence, name: str, fmt) -> str:
             f'<span class="fence__fencelabel" data-anchor="{anchor}" '
             f'style="left:{pct:.3f}%">fence {escape(fmt(value))}</span>'
         )
+        taken.append(pct)
 
     track.append(
         f'<span class="fence__median" style="left:{fence.pct(fence.median):.3f}%"></span>'
@@ -461,15 +471,25 @@ def render_figure(fence: Fence, name: str, fmt) -> str:
             f'<span class="fence__mark" data-severity="{mark.severity}" '
             f'title="{escape(title)}" style="left:{mark.pct:.3f}%"></span>'
         )
-        if mark.count > 1:
+        # Marks are 2% apart at the closest, which is enough for the capsules
+        # and not enough for their labels: `x14` is ~24px, and 2% of a 1,099px
+        # axis is 22. `Fare` has 116 outliers in ten clusters and printed ten
+        # counts across the tail as one unreadable pile. So a count is printed
+        # only where there is room for it, the same drop rule the percentile
+        # ladder uses -- and nothing is lost, because the capsule keeps its
+        # values in `title` and the table below lists them.
+        if mark.count > 1 and all(
+            abs(mark.pct - other) >= _LABEL_MIN_GAP_PCT for other in taken
+        ):
             label_row.append(
                 f'<span class="fence__count" style="left:{mark.pct:.3f}%">'
                 f"×{mark.count}</span>"
             )
+            taken.append(mark.pct)
 
     ticks = []
     for fraction in (0.0, 0.25, 0.5, 0.75, 1.0):
-        value = fence.domain_lo + (fence.domain_hi - fence.domain_lo) * fraction
+        value = fence.value_lo + (fence.value_hi - fence.value_lo) * fraction
         anchor = "start" if fraction == 0.0 else ("end" if fraction == 1.0 else "")
         ticks.append(
             f'<span class="fence__tick" data-anchor="{anchor}" '
@@ -497,12 +517,24 @@ def render_figure(fence: Fence, name: str, fmt) -> str:
     )
 
 
-def render_table(fence: Fence, fmt) -> str:
+def render_table(fence: Fence, fmt, col_id: str = "") -> str:
     """One row per value, both verdicts side by side.
 
     The `rowspan` this replaces gave a value flagged by both methods two rows
     and a value flagged by one a single row, so the table's shape encoded
     something other than the data.
+
+    Each value carries `data-col`/`data-value`, which is how the invariance
+    fingerprint sees it: the extractor pairs adjacent `<td>`s and `__cap`/
+    `__val` divs, and this pane is neither. Tagging the fact in the DOM is the
+    durable hook the rest of the report already uses, and it survives any
+    restyling of the grid around it.
+
+    The **row index is deliberately not tagged.** It is not a fact about the
+    data: where several rows share a value, which index is recorded is decided
+    by arrival order, and the harness already drops `min_items`/`max_items`
+    indices for exactly that reason -- twelve rows shared a maximum and CI
+    recorded a different one from this machine.
     """
     head = (
         '<div class="fence-table__head">'
@@ -512,7 +544,8 @@ def render_table(fence: Fence, fmt) -> str:
     rows = "".join(
         f'<div class="fence-table__row">'
         f'<span class="fence-table__idx">{escape(row.index)}</span>'
-        f'<span class="fence-table__val">{escape(fmt(row.value))}</span>'
+        f'<span class="fence-table__val" data-col="{escape(col_id)}" '
+        f'data-value="{row.value:.12g}">{escape(fmt(row.value))}</span>'
         f'<span class="fence-table__verdict" data-severity="{row.iqr_severity}">'
         f"{escape(row.iqr)}</span>"
         f'<span class="fence-table__verdict" data-severity="{row.mad_severity}">'

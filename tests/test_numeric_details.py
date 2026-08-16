@@ -102,46 +102,49 @@ def test_numeric_card_missing_chunk_visualization():
 
 
 def test_numeric_card_outliers_severity_and_tables():
-    from pysuricata.render.numeric_card import NumericCardRenderer
+    """The severity bands, read through the pane that now owns them.
+
+    These used to call `_get_outlier_severity` on the renderer. 5b.2 moved the
+    arithmetic into `render/outlier_fence.py` so the Min/Max pane can read the
+    same bands -- a value that is `high` in one pane cannot be `moderate` in
+    the other, and one implementation is the only way to guarantee it. The
+    thresholds are unchanged: 3.0/2.0 IQRs, 3.5/2.5 MADs.
+    """
+    from pysuricata.render.outlier_fence import (
+        _IQR_BANDS,
+        _MAD_BANDS,
+        _band,
+        build_fence,
+    )
+
+    assert _band(3.0, _IQR_BANDS) == "extreme"
+    assert _band(2.1, _IQR_BANDS) == "high"
+    assert _band(0.6, _IQR_BANDS) == "moderate"
+
+    assert _band(5.0, _MAD_BANDS) == "extreme"
+    assert _band(3.0, _MAD_BANDS) == "high"
+    assert _band(1.5, _MAD_BANDS) == "moderate"
 
     s = make_numeric_summary()
-    s.q1 = 10.0
-    s.q3 = 20.0
-    s.iqr = 10.0
-    s.median = 15.0
-    s.mad = 2.0
-    renderer = NumericCardRenderer()
+    s.q1, s.q3, s.iqr = 10.0, 20.0, 10.0
+    s.median, s.mad = 15.0, 2.0
+    s.min, s.max = 10.0, 50.0
+    s.count = 40
+    # A body inside the fence plus two values well past it, so the pane has
+    # something to draw and something to leave alone.
+    s.sample_vals = [float(v) for v in range(10, 21)] + [41.0, 50.0]
 
-    # IQR Severity
-    assert (
-        renderer._get_outlier_severity(50.0, "IQR", s)[1] == "extreme"
-    )  # 3x IQR (score=3.0)
-    assert (
-        renderer._get_outlier_severity(41.0, "IQR", s)[1] == "high"
-    )  # 2.1x IQR (score=2.1)
-    assert (
-        renderer._get_outlier_severity(26.0, "IQR", s)[1] == "moderate"
-    )  # 1.6x IQR (score=0.6)
+    fence = build_fence(s)
+    assert fence is not None
+    assert fence.hi == 35.0
+    assert fence.n_high == 2
+    # 10.0 is the minimum and the lower fence is -5.0, so no value can cross it.
+    assert not fence.lo_possible
+    assert fence.n_low == 0
 
-    # MAD Severity
-    assert renderer._get_outlier_severity(25.0, "MAD", s)[1] == "extreme"  # 5x MAD
-    assert renderer._get_outlier_severity(21.0, "MAD", s)[1] == "high"  # 3x MAD
-    assert renderer._get_outlier_severity(18.0, "MAD", s)[1] == "moderate"  # 1.5x MAD
-
-    # Fallback Severity
-    assert renderer._get_outlier_severity(20.0, "UNKNOWN", s)[1] == "moderate"
-
-    # Test enhanced outliers table with empty list
-    s.outliers_iqr = 10
-    empty_summary = renderer._format_enhanced_outliers_table([], {}, s, "high")
-    assert "0 outliers" in empty_summary
-
-    # Test enhanced outliers table with actual data
-    outliers = [(41.0, ["IQR"]), (21.0, ["MAD"]), (50.0, ["IQR", "MAD"])]
-    idx_map = {41.0: ["i0"], 21.0: ["i1"], 50.0: ["i2"]}
-    table_html = renderer._format_enhanced_outliers_table(outliers, idx_map, s, "high")
-    assert "High Outliers" in table_html
-    assert "Extreme:" in table_html
+    verdicts = {row.value: (row.iqr_severity, row.mad_severity) for row in fence.rows}
+    assert verdicts[50.0][0] == "extreme"  # 3.0x IQR past Q3
+    assert verdicts[41.0][0] == "high"  # 2.1x IQR past Q3
 
 
 def test_numeric_card_correlation_and_missing_tables():
