@@ -2938,11 +2938,13 @@ body.suricata-standalone:not(.light) {
    so a wide value at either end sits inside the figure rather than
    overhanging it. */
 #pysuricata-report .fence__fencelabel[data-anchor="start"],
+#pysuricata-report .fence__count[data-anchor="start"],
 #pysuricata-report .fence__tick[data-anchor="start"] {
   transform: none;
 }
 
 #pysuricata-report .fence__fencelabel[data-anchor="end"],
+#pysuricata-report .fence__count[data-anchor="end"],
 #pysuricata-report .fence__tick[data-anchor="end"] {
   transform: translateX(-100%);
 }
@@ -3005,6 +3007,15 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .fence__mark[data-severity="high"],
 #pysuricata-report .fence__mark[data-severity="extreme"] {
   background: var(--q-bad);
+}
+
+/* The Min/Max pane plots values on both sides of the fence, so it needs
+   a fill for the ones that did not cross. It takes the data scale
+   rather than the warm one: a value inside the fence is not a quality
+   judgement, and the warm scale is never used for data. */
+#pysuricata-report .fence__mark[data-severity="inside"],
+#pysuricata-report .fence__legend .key--mark[data-severity="inside"] {
+  background: var(--data-2);
 }
 
 #pysuricata-report .fence__axis {
@@ -3158,6 +3169,397 @@ body.suricata-standalone:not(.light) {
   color: var(--muted);
 }
 
+/* ---- the quantile strip (5b.1) --------------------------------
+   The nine percentiles were a column of numbers printed under a
+   histogram that draws the very shape they describe, so the two could
+   not be read against each other.
+
+   Three details here are requirements rather than choices:
+
+   - The whiskers are *two* spans terminating at the band edges. One
+     span running P1 to P99 paints across the box, which reads as a
+     range containing it -- a weaker and different claim.
+   - The median protrudes past both band edges and the mean sits
+     entirely above the band. They land ~24px apart inside a dark
+     fill, so they are told apart by shape, not colour (rule 2).
+   - Labels alternate between two rows, so a pair that survives the
+     drop rule still cannot overprint. */
+#pysuricata-report .qstrip {
+  display: flex;
+  flex-direction: column;
+  padding: 0 5px;
+}
+
+#pysuricata-report .qstrip__track {
+  position: relative;
+  height: 40px;
+}
+
+#pysuricata-report .qstrip__whisker {
+  position: absolute;
+  top: 23px;
+  height: 2px;
+  background: var(--data-2);
+}
+
+#pysuricata-report .qstrip__box {
+  position: absolute;
+  top: 13px;
+  height: 22px;
+  background: var(--data-1);
+}
+
+#pysuricata-report .qstrip__median {
+  position: absolute;
+  top: 9px;
+  height: 30px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+}
+
+/* Drawn, not typed. A screen reader announces CSS generated content,
+   so a caret made of borders stays out of the accessible name while a
+   typed glyph would be read aloud. */
+#pysuricata-report .qstrip__mean {
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--q-bad);
+}
+
+#pysuricata-report .qstrip__axis {
+  height: 1px;
+  background: var(--axis);
+}
+
+#pysuricata-report .qstrip__ladder {
+  position: relative;
+  height: 52px;
+  margin-top: 2px;
+}
+
+#pysuricata-report .qstrip__tick {
+  position: absolute;
+  top: 0;
+  height: 5px;
+  width: 1px;
+  background: var(--rule-strong);
+}
+
+#pysuricata-report .qstrip__label {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-50%);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+/* The alternating rows. `P1` and `P5` can clear the 4% drop rule and
+   still be adjacent, and two labels on one line at 4% apart touch. */
+#pysuricata-report .qstrip__label[data-row="0"],
+#pysuricata-report .qstrip__label[data-row="2"],
+#pysuricata-report .qstrip__label[data-row="4"],
+#pysuricata-report .qstrip__label[data-row="6"],
+#pysuricata-report .qstrip__label[data-row="8"] {
+  top: 8px;
+}
+
+#pysuricata-report .qstrip__label[data-row="1"],
+#pysuricata-report .qstrip__label[data-row="3"],
+#pysuricata-report .qstrip__label[data-row="5"],
+#pysuricata-report .qstrip__label[data-row="7"] {
+  top: 30px;
+}
+
+#pysuricata-report .qstrip__label[data-anchor="start"] {
+  transform: none;
+}
+
+#pysuricata-report .qstrip__label[data-anchor="end"] {
+  transform: translateX(-100%);
+}
+
+#pysuricata-report .qstrip__name {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+#pysuricata-report .qstrip__figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+/* The two lines that spend thresholds the report already holds.
+   `data-threshold="JB chi-squared < 5.99"` has been in the DOM all
+   along and never shown, so a reader was handed 18.63 with no way to
+   judge it. */
+#pysuricata-report .qstrip__prose {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 76ch;
+  text-wrap: pretty;
+}
+
+#pysuricata-report .fence__legend .key--qbox {
+  width: 14px;
+  height: 10px;
+  background: var(--data-1);
+}
+
+#pysuricata-report .fence__legend .key--qwhisker {
+  width: 14px;
+  height: 2px;
+  background: var(--data-2);
+}
+
+#pysuricata-report .fence__legend .key--qmedian {
+  width: 2px;
+  height: 12px;
+  background: var(--ink);
+}
+
+#pysuricata-report .fence__legend .key--qmean {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--q-bad);
+}
+
+/* ---- correlations, per column (5b.6) --------------------------
+   The pane repeated the section-level empty state inside a card:
+   `No significant correlations found`, on a column that has
+   partners and simply has no strong ones.
+
+   The bar is the section's own `.corr-bar`, reused rather than
+   reinvented -- the two plot the same numbers, and a reader who has
+   learned to read one must not have to relearn the other. Sign is
+   position and never colour. */
+#pysuricata-report .corr-partners {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ink);
+}
+
+#pysuricata-report .corr-partner {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr) minmax(0, 76px);
+  gap: 14px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .corr-partner__name,
+#pysuricata-report .corr-partner__value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  min-width: 0;
+}
+
+#pysuricata-report .corr-partner__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+#pysuricata-report .corr-partner__value {
+  text-align: right;
+  color: var(--ink);
+}
+
+#pysuricata-report .corr-partner__more {
+  margin: 10px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* ---- common values (5b.3) ------------------------------------
+   Five columns become three. The ordinals `1st 2nd 3rd` were
+   decoration on a list that is already ordered, and count and percent
+   are one fact about one value rather than two.
+
+   The bar is scaled to the *most common value*, not to 100%. At 3.2%
+   of 714 rows every bar was 3% of its track and all ten looked
+   identical -- a ranking drawn so the ranking cannot be seen. The
+   trade is that relative scaling hides absolute rarity, which the
+   caption has to carry. */
+#pysuricata-report .common__rows {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ink);
+}
+
+#pysuricata-report .common__row {
+  display: grid;
+  grid-template-columns: minmax(0, 92px) minmax(0, 1fr) minmax(0, 116px);
+  align-items: center;
+  gap: 14px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .common__value,
+#pysuricata-report .common__stat {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#pysuricata-report .common__value {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+#pysuricata-report .common__stat {
+  font-size: 12px;
+  text-align: right;
+  color: var(--muted);
+}
+
+/* The track is the same neutral the report uses behind every
+   proportional fill, so a bar's length is the only thing encoding a
+   quantity. */
+#pysuricata-report .common__track {
+  display: block;
+  height: 10px;
+  min-width: 0;
+  background: var(--track);
+}
+
+#pysuricata-report .common__bar {
+  display: block;
+  height: 10px;
+  background: var(--data-2);
+}
+
+#pysuricata-report .common__caption {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+/* ---- the two tails (5b.5) ------------------------------------
+   The same axis as the Outliers pane, because the design requires a
+   reader who has opened one to be able to read the other. What this
+   replaced was two tables of bare index and value, in which a reader
+   could not see that every one of `Age`'s five maxima crosses the
+   fence and not one of its five minima does. */
+#pysuricata-report .tails-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 34px;
+  border-top: 1px solid var(--ink);
+  padding-top: 16px;
+}
+
+#pysuricata-report .tails__col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#pysuricata-report .tails__head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+}
+
+#pysuricata-report .tails__side {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+#pysuricata-report .tails__summary {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* Olive is legal here in a way it is not on a severity chip: "none
+   beyond a fence" really is a check that passed. */
+#pysuricata-report .tails__summary[data-tone="good"] {
+  color: var(--q-good);
+}
+
+#pysuricata-report .tails__summary[data-tone="warn"] {
+  color: var(--q-warn-text);
+}
+
+#pysuricata-report .tails__row {
+  display: grid;
+  grid-template-columns: 68px minmax(0, 84px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .tails__idx,
+#pysuricata-report .tails__val,
+#pysuricata-report .tails__note {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#pysuricata-report .tails__idx {
+  color: var(--muted);
+}
+
+#pysuricata-report .tails__val {
+  font-size: 13px;
+  text-align: right;
+  color: var(--ink);
+}
+
+/* `Age` holds 0.75 twice and 71 twice, and the pane listed them as
+   separate rows without comment -- so one value looked like two
+   findings. */
+#pysuricata-report .tails__tie {
+  margin-left: 5px;
+  font-size: 10px;
+  color: var(--muted);
+  cursor: help;
+}
+
+#pysuricata-report .tails__note {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+#pysuricata-report .tails__note[data-severity="high"] {
+  color: var(--q-warn-text);
+}
+
+#pysuricata-report .tails__note[data-severity="extreme"] {
+  color: var(--q-bad);
+}
+
 #pysuricata-report .fence-methods {
   display: flex;
   flex-direction: column;
@@ -3203,6 +3605,26 @@ body.suricata-standalone:not(.light) {
      keeps its values in `title` and the table lists them. */
   #pysuricata-report .fence__count {
     display: none;
+  }
+
+  #pysuricata-report .tails-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  #pysuricata-report .tails__row {
+    grid-template-columns: 56px minmax(0, 72px) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  #pysuricata-report .common__row {
+    grid-template-columns: minmax(0, 72px) minmax(0, 1fr) minmax(0, 92px);
+    gap: 8px;
+  }
+
+  #pysuricata-report .corr-partner {
+    grid-template-columns: minmax(0, 96px) minmax(0, 1fr) minmax(0, 60px);
+    gap: 8px;
   }
 }
 
@@ -9866,7 +10288,7 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-16 21:38:54</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-16 22:18:49</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Profiled in</span> <span class="v">0.13 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
@@ -9960,7 +10382,7 @@ body.suricata-standalone:not(.light) {
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260816-213854-9152" data-original-markdown=""
+            data-report-id="20260816-221849-8005" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>
@@ -10056,7 +10478,7 @@ body.suricata-standalone:not(.light) {
         <div class="card-controls" role="group" aria-label="Numeric controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_PassengerId-details" aria-expanded="false">Details</button>
-                <span class="details-panes">statistics · 24 common values · 5 lowest and highest · no outliers</span>
+                <span class="details-panes">statistics · 5 lowest and highest · no outliers · 2 correlations</span>
             </div>
             <div class="controls-slot">
                 <div class="hist-controls" data-scale="lin" data-bin="25">
@@ -10074,7 +10496,7 @@ body.suricata-standalone:not(.light) {
         </div>
         
                 <div class="vstat-row"><div class="vstat"><div class="vstat__cap">Count</div><div class="vstat__val">891</div></div><div class="vstat"><div class="vstat__cap">Missing</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Type</div><div class="vstat__val">identifier (key-like)</div></div><div class="vstat"><div class="vstat__cap">Rows</div><div class="vstat__val">891</div></div><div class="vstat"><div class="vstat__cap">Distinct (≈)</div><div class="vstat__val">891</div></div><div class="vstat"><div class="vstat__cap">Duplicates (≈)</div><div class="vstat__val">0</div></div><div class="vstat"><div class="vstat__cap">Missing</div><div class="vstat__val">0</div></div><div class="vstat"><div class="vstat__cap">Range</div><div class="vstat__val">1 – 891</div></div><div class="vstat"><div class="vstat__cap">Gaps in range</div><div class="vstat__val">0</div></div><div class="vstat"><div class="vstat__cap">Order</div><div class="vstat__val">ascending</div></div><div class="vstat"><div class="vstat__cap">Processed bytes (≈)</div><div class="vstat__val">7.0 KB</div></div></div>
-                <section id="col_PassengerId-details" class="details-section" hidden><nav class="tabs" role="tablist" aria-label="More details"><button role="tab" class="active" data-tab="stats"><span class="tab__label">Statistics</span></button><button role="tab" data-tab="common"><span class="tab__label">Common values <span class="tab__count">24</span></span></button><button role="tab" data-tab="extremes"><span class="tab__label">Min/Max Values <span class="tab__count">5</span></span></button><button role="tab" data-tab="outliers"><span class="tab__label">Outliers</span></button></nav><div class="tab-panes"><section class="tab-pane active" data-tab="stats"><div class='stats-quant'><table class="kv"><tbody><tr><th>Mean</th><td class="num">446</td></tr><tr><th>Std Dev</th><td class="num">257.4</td></tr><tr><th>Variance</th><td class="num">6.623e+04</td></tr><tr><th>Std Error</th><td class="num">8.622</td></tr><tr><th>Coeff. of Var</th><td class="num">0.577</td></tr><tr><th>Geometric mean</th><td class="num">329.4</td></tr><tr><th>IQR</th><td class="num">445</td></tr><tr><th>MAD</th><td class="num">223</td></tr><tr><th>Skew</th><td class="num">0</td></tr><tr><th>Kurtosis</th><td class="num">-1.2</td></tr><tr><th>Jarque–Bera χ²</th><td class="num">53.46</td></tr><tr><th>95% CI (mean)</th><td class="num">[429.1 – 462.9]</td></tr><tr><th>Granularity</th><td>1.0 (decimals: 0)</td></tr><tr><th>Heaping %</th><td class="num">19.98</td></tr></tbody></table><table class="kv"><tbody><tr><th>Min</th><td class="num">1</td></tr><tr><th>P1 (≈)</th><td class="num">9.9</td></tr><tr><th>P5 (≈)</th><td class="num">45.5</td></tr><tr><th>P10 (≈)</th><td class="num">90</td></tr><tr><th>Q1 (P25)</th><td class="num">223.5</td></tr><tr><th>Median (P50)</th><td class="num">446</td></tr><tr><th>Q3 (P75)</th><td class="num">668.5</td></tr><tr><th>P90 (≈)</th><td class="num">802</td></tr><tr><th>P95 (≈)</th><td class="num">846.5</td></tr><tr><th>P99 (≈)</th><td class="num">882.1</td></tr><tr><th>Range</th><td class="num">890</td></tr><tr><th>Std Dev</th><td class="num">257.4</td></tr></tbody></table></div></section><section class="tab-pane" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='num common-value'>868</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='num common-value'>869</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='num common-value'>870</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='num common-value'>871</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='num common-value'>872</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='num common-value'>873</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='num common-value'>874</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='num common-value'>875</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='num common-value'>876</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='num common-value'>877</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr></tbody></table></section><section class="tab-pane" data-tab="extremes"><div class='extremes stats-quant'><div class='sub'><div class='hdr'>Min values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>0</td><td class='num'>1</td></tr><tr><td>1</td><td class='num'>2</td></tr><tr><td>2</td><td class='num'>3</td></tr><tr><td>3</td><td class='num'>4</td></tr><tr><td>4</td><td class='num'>5</td></tr></tbody></table></div><div class='sub'><div class='hdr'>Max values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>890</td><td class='num'>891</td></tr><tr><td>889</td><td class='num'>890</td></tr><tr><td>888</td><td class='num'>889</td></tr><tr><td>887</td><td class='num'>888</td></tr><tr><td>886</td><td class='num'>887</td></tr></tbody></table></div></div></section><section class="tab-pane" data-tab="outliers"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">PassengerId · outliers</span><span class="fence-head__rule"></span><span class="fence-head__count" data-col="col_PassengerId" data-count="0" data-pct="0.0">0 of 891 values · 0.0%</span></div><p class="fence-lede">No value lies outside the fence at -444 and 1,336, so this column has no outliers by the IQR rule.</p></div></section></div></section>
+                <section id="col_PassengerId-details" class="details-section" hidden><nav class="tabs" role="tablist" aria-label="More details"><button role="tab" class="active" data-tab="stats"><span class="tab__label">Statistics</span></button><button role="tab" data-tab="extremes"><span class="tab__label">Min/Max Values <span class="tab__count">5</span></span></button><button role="tab" data-tab="outliers"><span class="tab__label">Outliers</span></button><button role="tab" data-tab="corr"><span class="tab__label">Correlations <span class="tab__count">2</span></span></button></nav><div class="tab-panes"><section class="tab-pane active" data-tab="stats"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">PassengerId · statistics</span><span class="fence-head__rule"></span><span class="fence-head__count">891 values · 1 to 891</span></div><div class="qstrip" role="img" aria-label="Distribution shape: interquartile range 223.5 to 668.5, median 446"><div class="qstrip__track"><span class="qstrip__whisker" style="left:1.000%;width:24.000%"></span><span class="qstrip__whisker" style="left:75.000%;width:24.000%"></span><span class="qstrip__box" style="left:25.000%;width:50.000%" title="Interquartile range 223.5 to 668.5 — the middle half of the data"></span><span class="qstrip__median" style="left:50.000%" title="Median 446"></span><span class="qstrip__mean" style="left:50.000%" title="Mean 446"></span></div><div class="qstrip__axis"></div><div class="qstrip__ladder"><span class="qstrip__tick" style="left:1.000%"></span><span class="qstrip__label" data-row="0" data-anchor="start" style="left:1.000%"><span class="qstrip__name">P1</span><span class="qstrip__figure">9.9</span></span><span class="qstrip__tick" style="left:5.000%"></span><span class="qstrip__label" data-row="1" style="left:5.000%"><span class="qstrip__name">P5</span><span class="qstrip__figure">45.5</span></span><span class="qstrip__tick" style="left:10.000%"></span><span class="qstrip__label" data-row="2" style="left:10.000%"><span class="qstrip__name">P10</span><span class="qstrip__figure">90</span></span><span class="qstrip__tick" style="left:25.000%"></span><span class="qstrip__label" data-row="3" style="left:25.000%"><span class="qstrip__name">Q1</span><span class="qstrip__figure">223.5</span></span><span class="qstrip__tick" style="left:50.000%"></span><span class="qstrip__label" data-row="4" style="left:50.000%"><span class="qstrip__name">P50</span><span class="qstrip__figure">446</span></span><span class="qstrip__tick" style="left:75.000%"></span><span class="qstrip__label" data-row="5" style="left:75.000%"><span class="qstrip__name">Q3</span><span class="qstrip__figure">668.5</span></span><span class="qstrip__tick" style="left:90.000%"></span><span class="qstrip__label" data-row="6" style="left:90.000%"><span class="qstrip__name">P90</span><span class="qstrip__figure">802</span></span><span class="qstrip__tick" style="left:95.000%"></span><span class="qstrip__label" data-row="7" style="left:95.000%"><span class="qstrip__name">P95</span><span class="qstrip__figure">846.5</span></span><span class="qstrip__tick" style="left:99.000%"></span><span class="qstrip__label" data-row="8" data-anchor="end" style="left:99.000%"><span class="qstrip__name">P99</span><span class="qstrip__figure">882.1</span></span></div></div><ul class="fence__legend"><li><span class="key key--qbox"></span>IQR 223.5 – 668.5</li><li><span class="key key--qwhisker"></span>P1 – P99</li><li><span class="key key--qmedian"></span>median 446</li><li><span class="key key--qmean"></span>mean 446</li></ul><p class="qstrip__prose">Jarque–Bera is 53.46 against a 5.99 critical value — far enough from normal to reject it.</p><p class="qstrip__prose">The mean carries a ±16.9 95% interval, so 446 is well determined at this sample size.</p></div><div class='stats-quant'><table class="kv"><tbody><tr><th>Mean</th><td class="num">446</td></tr><tr><th>Std Dev</th><td class="num">257.4</td></tr><tr><th>Variance</th><td class="num">6.623e+04</td></tr><tr><th>Std Error</th><td class="num">8.622</td></tr><tr><th>Coeff. of Var</th><td class="num">0.577</td></tr><tr><th>Geometric mean</th><td class="num">329.4</td></tr><tr><th>IQR</th><td class="num">445</td></tr><tr><th>MAD</th><td class="num">223</td></tr><tr><th>Skew</th><td class="num">0</td></tr><tr><th>Kurtosis</th><td class="num">-1.2</td></tr><tr><th>Jarque–Bera χ²</th><td class="num">53.46</td></tr><tr><th>95% CI (mean)</th><td class="num">[429.1 – 462.9]</td></tr><tr><th>Granularity</th><td>1.0 (decimals: 0)</td></tr><tr><th>Heaping %</th><td class="num">19.98</td></tr></tbody></table><table class="kv"><tbody><tr><th>Min</th><td class="num">1</td></tr><tr><th>P1 (≈)</th><td class="num">9.9</td></tr><tr><th>P5 (≈)</th><td class="num">45.5</td></tr><tr><th>P10 (≈)</th><td class="num">90</td></tr><tr><th>Q1 (P25)</th><td class="num">223.5</td></tr><tr><th>Median (P50)</th><td class="num">446</td></tr><tr><th>Q3 (P75)</th><td class="num">668.5</td></tr><tr><th>P90 (≈)</th><td class="num">802</td></tr><tr><th>P95 (≈)</th><td class="num">846.5</td></tr><tr><th>P99 (≈)</th><td class="num">882.1</td></tr><tr><th>Range</th><td class="num">890</td></tr></tbody></table></div></section><section class="tab-pane" data-tab="extremes"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">PassengerId · extreme values</span><span class="fence-head__rule"></span><span class="fence-head__count">5 lowest · 5 highest of 891</span></div><p class="fence-lede">Neither tail is unusual: all 10 tracked values sit inside the fence.</p><div class="fence" role="img" aria-label="PassengerId value axis: 5 lowest and 5 highest against the IQR fence"><div class="fence__labels"><span class="fence__count" data-anchor="start" style="left:0.000%">×5</span><span class="fence__count" data-anchor="end" style="left:99.551%">×5</span></div><div class="fence__track"><span class="fence__whisker" style="left:1.000%;width:24.000%"></span><span class="fence__whisker" style="left:75.000%;width:24.000%"></span><span class="fence__box" style="left:25.000%;width:50.000%"></span><span class="fence__median" style="left:50.000%"></span><span class="fence__mark" data-severity="inside" title="1, 2, 3, 4, 5" style="left:0.000%"></span><span class="fence__mark" data-severity="inside" title="887, 888, 889, 890, 891" style="left:99.551%"></span></div><div class="fence__axis"></div><div class="fence__ticks"><span class="fence__tick" data-anchor="start" style="left:0.000%">1</span><span class="fence__tick" data-anchor="" style="left:25.000%">223.5</span><span class="fence__tick" data-anchor="" style="left:50.000%">446</span><span class="fence__tick" data-anchor="" style="left:75.000%">668.5</span><span class="fence__tick" data-anchor="end" style="left:100.000%">891</span></div></div><ul class="fence__legend"><li><span class="key key--box"></span>IQR and P1–P99</li><li><span class="key key--median"></span>median 446</li><li><span class="key key--mark" data-severity="inside"></span>inside the fence</li><li><span class="key key--mark" data-severity="moderate"></span>moderate</li><li><span class="key key--mark" data-severity="extreme"></span>high or extreme</li></ul><div class="tails-body"><div class="tails__col"><div class="tails__head"><span class="tails__side">5 lowest</span><span class="tails__summary" data-tone="good">none beyond a fence</span></div><div class="tails__row"><span class="tails__idx">0</span><span class="tails__val" data-col="col_PassengerId" data-value="1">1</span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">1</span><span class="tails__val" data-col="col_PassengerId" data-value="2">2</span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">2</span><span class="tails__val" data-col="col_PassengerId" data-value="3">3</span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">3</span><span class="tails__val" data-col="col_PassengerId" data-value="4">4</span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">4</span><span class="tails__val" data-col="col_PassengerId" data-value="5">5</span><span class="tails__note" data-severity="inside">inside the fence</span></div></div><div class="tails__col"><div class="tails__head"><span class="tails__side">5 highest</span><span class="tails__summary" data-tone="good">none beyond a fence</span></div><div class="tails__row"><span class="tails__idx">890</span><span class="tails__val" data-col="col_PassengerId" data-value="891">891</span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">889</span><span class="tails__val" data-col="col_PassengerId" data-value="890">890</span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">888</span><span class="tails__val" data-col="col_PassengerId" data-value="889">889</span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">887</span><span class="tails__val" data-col="col_PassengerId" data-value="888">888</span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">886</span><span class="tails__val" data-col="col_PassengerId" data-value="887">887</span><span class="tails__note" data-severity="inside">inside the fence</span></div></div></div></div></section><section class="tab-pane" data-tab="outliers"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">PassengerId · outliers</span><span class="fence-head__rule"></span><span class="fence-head__count" data-col="col_PassengerId" data-count="0" data-pct="0.0">0 of 891 values · 0.0%</span></div><p class="fence-lede">No value lies outside the fence at -444 and 1,336, so this column has no outliers by the IQR rule.</p></div></section><section class="tab-pane" data-tab="corr"><div class="sub"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">PassengerId · correlations</span><span class="fence-head__rule"></span><span class="fence-head__count">2 numeric partners</span></div><p class="fence-lede">Every partner is weak. The strongest is Age at +0.037, below the 0.50 threshold.</p><div class="corr-partners"><div class="corr-partner"><span class="corr-partner__name">Age</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:1.84%;background:var(--data-2)"></span></span><span class="corr-partner__value">+0.037</span></div><div class="corr-partner"><span class="corr-partner__name">Fare</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:0.63%;background:var(--data-2)"></span></span><span class="corr-partner__value">+0.013</span></div></div><p class="corr-partner__more">Those are all 2 of this column's numeric partners, so nothing is withheld.</p></div></div></section></div></section>
             </div>
         </article>
         
@@ -10265,7 +10687,7 @@ body.suricata-standalone:not(.light) {
         <div class="card-controls" role="group" aria-label="Numeric controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Age-details" aria-expanded="false">Details</button>
-                <span class="details-panes">statistics · 48 common values · 5 lowest and highest · 11 outliers</span>
+                <span class="details-panes">statistics · 48 common values · 5 lowest and highest · 11 outliers · 2 correlations</span>
             </div>
             <div class="controls-slot">
                 <div class="hist-controls" data-scale="lin" data-bin="25">
@@ -10283,7 +10705,7 @@ body.suricata-standalone:not(.light) {
         </div>
         
                 <div class="vstat-row"><div class="vstat"><div class="vstat__cap">Count</div><div class="vstat__val">714</div></div><div class="vstat"><div class="vstat__cap">Unique</div><div class="vstat__val">88</div></div><div class="vstat is-warn"><div class="vstat__cap">Missing</div><div class="vstat__val">177 (19.9%)</div></div><div class="vstat is-crit"><div class="vstat__cap">Outliers</div><div class="vstat__val">11 (1.5%)</div></div><div class="vstat"><div class="vstat__cap">Zeros</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Infinites</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Negatives</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Min</div><div class="vstat__val">0.42</div></div><div class="vstat"><div class="vstat__cap">Q1 (P25)</div><div class="vstat__val">20.12</div></div><div class="vstat"><div class="vstat__cap">Median</div><div class="vstat__val">28</div></div><div class="vstat"><div class="vstat__cap">Mean</div><div class="vstat__val">29.7</div></div><div class="vstat"><div class="vstat__cap">Q3 (P75)</div><div class="vstat__val">38</div></div><div class="vstat"><div class="vstat__cap">Max</div><div class="vstat__val">80</div></div><div class="vstat"><div class="vstat__cap">Processed bytes (≈)</div><div class="vstat__val">7.0 KB</div></div></div>
-                <section id="col_Age-details" class="details-section" hidden><nav class="tabs" role="tablist" aria-label="More details"><button role="tab" class="active" data-tab="stats"><span class="tab__label">Statistics</span></button><button role="tab" data-tab="common"><span class="tab__label">Common values <span class="tab__count">48</span></span></button><button role="tab" data-tab="extremes"><span class="tab__label">Min/Max Values <span class="tab__count">5</span></span></button><button role="tab" data-tab="outliers"><span class="tab__label">Outliers <span class="tab__count">11</span></span></button></nav><div class="tab-panes"><section class="tab-pane active" data-tab="stats"><div class='stats-quant'><table class="kv"><tbody><tr><th>Mean</th><td class="num">29.7</td></tr><tr><th>Std Dev</th><td class="num">14.53</td></tr><tr><th>Variance</th><td class="num">211</td></tr><tr><th>Std Error</th><td class="num">0.5436</td></tr><tr><th>Coeff. of Var</th><td class="num">0.4891</td></tr><tr><th>Geometric mean</th><td class="num">24.43</td></tr><tr><th>IQR</th><td class="num">17.88</td></tr><tr><th>MAD</th><td class="num">9</td></tr><tr><th>Skew</th><td class="num">0.3883</td></tr><tr><th>Kurtosis</th><td class="num">0.1686</td></tr><tr><th>Jarque–Bera χ²</th><td class="num">18.79</td></tr><tr><th>95% CI (mean)</th><td class="num">[28.63 – 30.76]</td></tr><tr><th>Granularity</th><td>0.968 (decimals: 3)</td></tr><tr><th>Heaping %</th><td class="num">22.27</td></tr></tbody></table><table class="kv"><tbody><tr><th>Min</th><td class="num">0.42</td></tr><tr><th>P1 (≈)</th><td class="num">1</td></tr><tr><th>P5 (≈)</th><td class="num">4</td></tr><tr><th>P10 (≈)</th><td class="num">14</td></tr><tr><th>Q1 (P25)</th><td class="num">20.12</td></tr><tr><th>Median (P50)</th><td class="num">28</td></tr><tr><th>Q3 (P75)</th><td class="num">38</td></tr><tr><th>P90 (≈)</th><td class="num">50</td></tr><tr><th>P95 (≈)</th><td class="num">56</td></tr><tr><th>P99 (≈)</th><td class="num">65.87</td></tr><tr><th>Range</th><td class="num">79.58</td></tr><tr><th>Std Dev</th><td class="num">14.53</td></tr></tbody></table></div></section><section class="tab-pane" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='num common-value'>24</td><td class='num common-count'>23</td><td class='num common-pct'>3.2%</td><td class='progress-bar'><div class='bar-fill' style='width:3.2%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='num common-value'>22</td><td class='num common-count'>20</td><td class='num common-pct'>2.8%</td><td class='progress-bar'><div class='bar-fill' style='width:2.8%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='num common-value'>18</td><td class='num common-count'>19</td><td class='num common-pct'>2.7%</td><td class='progress-bar'><div class='bar-fill' style='width:2.7%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='num common-value'>19</td><td class='num common-count'>18</td><td class='num common-pct'>2.5%</td><td class='progress-bar'><div class='bar-fill' style='width:2.5%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='num common-value'>28</td><td class='num common-count'>18</td><td class='num common-pct'>2.5%</td><td class='progress-bar'><div class='bar-fill' style='width:2.5%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='num common-value'>30</td><td class='num common-count'>18</td><td class='num common-pct'>2.5%</td><td class='progress-bar'><div class='bar-fill' style='width:2.5%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='num common-value'>21</td><td class='num common-count'>17</td><td class='num common-pct'>2.4%</td><td class='progress-bar'><div class='bar-fill' style='width:2.4%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='num common-value'>36</td><td class='num common-count'>17</td><td class='num common-pct'>2.4%</td><td class='progress-bar'><div class='bar-fill' style='width:2.4%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='num common-value'>25</td><td class='num common-count'>16</td><td class='num common-pct'>2.2%</td><td class='progress-bar'><div class='bar-fill' style='width:2.2%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='num common-value'>29</td><td class='num common-count'>13</td><td class='num common-pct'>1.8%</td><td class='progress-bar'><div class='bar-fill' style='width:1.8%'></div></td></tr></tbody></table></section><section class="tab-pane" data-tab="extremes"><div class='extremes stats-quant'><div class='sub'><div class='hdr'>Min values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>803</td><td class='num'>0.42</td></tr><tr><td>755</td><td class='num'>0.67</td></tr><tr><td>469</td><td class='num'>0.75</td></tr><tr><td>644</td><td class='num'>0.75</td></tr><tr><td>78</td><td class='num'>0.83</td></tr></tbody></table></div><div class='sub'><div class='hdr'>Max values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>630</td><td class='num'>80</td></tr><tr><td>851</td><td class='num'>74</td></tr><tr><td>493</td><td class='num'>71</td></tr><tr><td>96</td><td class='num'>71</td></tr><tr><td>116</td><td class='num'>70.5</td></tr></tbody></table></div></div></section><section class="tab-pane" data-tab="outliers"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Age · outliers</span><span class="fence-head__rule"></span><span class="fence-head__count" data-col="col_Age" data-count="11" data-pct="1.5">11 of 714 values · 1.5%</span></div><p class="fence-lede">All 11 are high. The lower fence sits at -6.688, below the minimum of 0.42, so no value can cross it.</p><div class="fence" role="img" aria-label="Age values with the IQR fence and 11 values beyond it"><div class="fence__labels"><span class="fence__fencelabel" data-anchor="end" style="left:80.915%">fence 64.81</span></div><div class="fence__track"><span class="fence__whisker" style="left:0.729%;width:24.032%"></span><span class="fence__whisker" style="left:47.223%;width:35.021%"></span><span class="fence__box" style="left:24.761%;width:22.462%"></span><span class="fence__line" style="left:80.915%"></span><span class="fence__median" style="left:34.657%"></span><span class="fence__mark" data-severity="moderate" title="65, 66" style="left:81.151%"></span><span class="fence__mark" data-severity="moderate" title="70, 70.5, 71" style="left:87.434%"></span><span class="fence__mark" data-severity="high" title="74" style="left:92.460%"></span><span class="fence__mark" data-severity="high" title="80" style="left:100.000%"></span></div><div class="fence__axis"></div><div class="fence__ticks"><span class="fence__tick" data-anchor="start" style="left:0.000%">0.42</span><span class="fence__tick" data-anchor="" style="left:25.000%">20.32</span><span class="fence__tick" data-anchor="" style="left:50.000%">40.21</span><span class="fence__tick" data-anchor="" style="left:75.000%">60.11</span><span class="fence__tick" data-anchor="end" style="left:100.000%">80</span></div></div><ul class="fence__legend"><li><span class="key key--box"></span>IQR and P1–P99</li><li><span class="key key--median"></span>median 28</li><li><span class="key key--mark" data-severity="moderate"></span>moderate</li><li><span class="key key--mark" data-severity="extreme"></span>high or extreme</li></ul><div class="fence-body"><div class="fence-table"><div class="fence-table__head"><span>Row</span><span>Value</span><span>By IQR</span><span>By MAD</span></div><div class="fence-table__row"><span class="fence-table__idx">630</span><span class="fence-table__val" data-col="col_Age" data-value="80">80</span><span class="fence-table__verdict" data-severity="high">high · 2.3×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 3.9×</span></div><div class="fence-table__row"><span class="fence-table__idx">851</span><span class="fence-table__val" data-col="col_Age" data-value="74">74</span><span class="fence-table__verdict" data-severity="high">high · 2.0×</span><span class="fence-table__verdict" data-severity="none">—</span></div><div class="fence-table__row"><span class="fence-table__idx">493</span><span class="fence-table__val" data-col="col_Age" data-value="71">71</span><span class="fence-table__verdict" data-severity="moderate">moderate · 1.8×</span><span class="fence-table__verdict" data-severity="none">—</span></div><div class="fence-table__row"><span class="fence-table__idx">116</span><span class="fence-table__val" data-col="col_Age" data-value="70.5">70.5</span><span class="fence-table__verdict" data-severity="moderate">moderate · 1.8×</span><span class="fence-table__verdict" data-severity="none">—</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Age" data-value="70">70</span><span class="fence-table__verdict" data-severity="moderate">moderate · 1.8×</span><span class="fence-table__verdict" data-severity="none">—</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Age" data-value="66">66</span><span class="fence-table__verdict" data-severity="moderate">moderate · 1.6×</span><span class="fence-table__verdict" data-severity="none">—</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Age" data-value="65">65</span><span class="fence-table__verdict" data-severity="moderate">moderate · 1.5×</span><span class="fence-table__verdict" data-severity="none">—</span></div></div><p class="fence-table__note">A dash means the row index was not tracked.</p><div class="fence-methods"><span class="fence-methods__title">The two methods</span><p class="fence-methods__note">IQR flags 7; MAD flags 1. They ask different questions — distance from the middle half of the data, against distance from the median in typical deviations — so both verdicts are printed rather than reconciled.</p></div></div></div></section></div></section>
+                <section id="col_Age-details" class="details-section" hidden><nav class="tabs" role="tablist" aria-label="More details"><button role="tab" class="active" data-tab="stats"><span class="tab__label">Statistics</span></button><button role="tab" data-tab="common"><span class="tab__label">Common values <span class="tab__count">48</span></span></button><button role="tab" data-tab="extremes"><span class="tab__label">Min/Max Values <span class="tab__count">5</span></span></button><button role="tab" data-tab="outliers"><span class="tab__label">Outliers <span class="tab__count">11</span></span></button><button role="tab" data-tab="corr"><span class="tab__label">Correlations <span class="tab__count">2</span></span></button></nav><div class="tab-panes"><section class="tab-pane active" data-tab="stats"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Age · statistics</span><span class="fence-head__rule"></span><span class="fence-head__count">714 values · 0.42 to 80</span></div><div class="qstrip" role="img" aria-label="Distribution shape: interquartile range 20.12 to 38, median 28"><div class="qstrip__track"><span class="qstrip__whisker" style="left:0.729%;width:24.032%"></span><span class="qstrip__whisker" style="left:47.223%;width:35.021%"></span><span class="qstrip__box" style="left:24.761%;width:22.462%" title="Interquartile range 20.12 to 38 — the middle half of the data"></span><span class="qstrip__median" style="left:34.657%" title="Median 28"></span><span class="qstrip__mean" style="left:36.792%" title="Mean 29.7"></span></div><div class="qstrip__axis"></div><div class="qstrip__ladder"><span class="qstrip__tick" style="left:0.729%"></span><span class="qstrip__label" data-row="0" data-anchor="start" style="left:0.729%"><span class="qstrip__name">P1</span><span class="qstrip__figure">1</span></span><span class="qstrip__tick" style="left:17.065%"></span><span class="qstrip__label" data-row="1" style="left:17.065%"><span class="qstrip__name">P10</span><span class="qstrip__figure">14</span></span><span class="qstrip__tick" style="left:24.761%"></span><span class="qstrip__label" data-row="2" style="left:24.761%"><span class="qstrip__name">Q1</span><span class="qstrip__figure">20.12</span></span><span class="qstrip__tick" style="left:34.657%"></span><span class="qstrip__label" data-row="3" style="left:34.657%"><span class="qstrip__name">P50</span><span class="qstrip__figure">28</span></span><span class="qstrip__tick" style="left:47.223%"></span><span class="qstrip__label" data-row="4" style="left:47.223%"><span class="qstrip__name">Q3</span><span class="qstrip__figure">38</span></span><span class="qstrip__tick" style="left:62.302%"></span><span class="qstrip__label" data-row="5" style="left:62.302%"><span class="qstrip__name">P90</span><span class="qstrip__figure">50</span></span><span class="qstrip__tick" style="left:69.842%"></span><span class="qstrip__label" data-row="6" style="left:69.842%"><span class="qstrip__name">P95</span><span class="qstrip__figure">56</span></span><span class="qstrip__tick" style="left:82.244%"></span><span class="qstrip__label" data-row="7" style="left:82.244%"><span class="qstrip__name">P99</span><span class="qstrip__figure">65.87</span></span></div></div><ul class="fence__legend"><li><span class="key key--qbox"></span>IQR 20.12 – 38</li><li><span class="key key--qwhisker"></span>P1 – P99</li><li><span class="key key--qmedian"></span>median 28</li><li><span class="key key--qmean"></span>mean 29.7</li></ul><p class="qstrip__prose">Jarque–Bera is 18.79 against a 5.99 critical value — far enough from normal to reject it.</p><p class="qstrip__prose">The mean carries a ±1.066 95% interval, so 29.7 is well determined at this sample size.</p></div><div class='stats-quant'><table class="kv"><tbody><tr><th>Mean</th><td class="num">29.7</td></tr><tr><th>Std Dev</th><td class="num">14.53</td></tr><tr><th>Variance</th><td class="num">211</td></tr><tr><th>Std Error</th><td class="num">0.5436</td></tr><tr><th>Coeff. of Var</th><td class="num">0.4891</td></tr><tr><th>Geometric mean</th><td class="num">24.43</td></tr><tr><th>IQR</th><td class="num">17.88</td></tr><tr><th>MAD</th><td class="num">9</td></tr><tr><th>Skew</th><td class="num">0.3883</td></tr><tr><th>Kurtosis</th><td class="num">0.1686</td></tr><tr><th>Jarque–Bera χ²</th><td class="num">18.79</td></tr><tr><th>95% CI (mean)</th><td class="num">[28.63 – 30.76]</td></tr><tr><th>Granularity</th><td>0.968 (decimals: 3)</td></tr><tr><th>Heaping %</th><td class="num">22.27</td></tr></tbody></table><table class="kv"><tbody><tr><th>Min</th><td class="num">0.42</td></tr><tr><th>P1 (≈)</th><td class="num">1</td></tr><tr><th>P5 (≈)</th><td class="num">4</td></tr><tr><th>P10 (≈)</th><td class="num">14</td></tr><tr><th>Q1 (P25)</th><td class="num">20.12</td></tr><tr><th>Median (P50)</th><td class="num">28</td></tr><tr><th>Q3 (P75)</th><td class="num">38</td></tr><tr><th>P90 (≈)</th><td class="num">50</td></tr><tr><th>P95 (≈)</th><td class="num">56</td></tr><tr><th>P99 (≈)</th><td class="num">65.87</td></tr><tr><th>Range</th><td class="num">79.58</td></tr></tbody></table></div></section><section class="tab-pane" data-tab="common"><div class="fence-pane common"><div class="fence-head"><span class="fence-head__title">Age · common values</span><span class="fence-head__rule"></span></div><p class="fence-lede">All 10 are whole numbers, though the column stores 3 decimals. 22.3% of values end in a 0 or a 5.</p><div class="common__rows"><div class="common__row"><span class="common__value" data-col="col_Age" data-value="24">24</span><span class="common__track"><span class="common__bar" style="width:100.0%"></span></span><span class="common__stat" data-col="col_Age" data-count="23" data-pct="3.2">23 · 3.2%</span></div><div class="common__row"><span class="common__value" data-col="col_Age" data-value="22">22</span><span class="common__track"><span class="common__bar" style="width:87.0%"></span></span><span class="common__stat" data-col="col_Age" data-count="20" data-pct="2.8">20 · 2.8%</span></div><div class="common__row"><span class="common__value" data-col="col_Age" data-value="18">18</span><span class="common__track"><span class="common__bar" style="width:82.6%"></span></span><span class="common__stat" data-col="col_Age" data-count="19" data-pct="2.7">19 · 2.7%</span></div><div class="common__row"><span class="common__value" data-col="col_Age" data-value="19">19</span><span class="common__track"><span class="common__bar" style="width:78.3%"></span></span><span class="common__stat" data-col="col_Age" data-count="18" data-pct="2.5">18 · 2.5%</span></div><div class="common__row"><span class="common__value" data-col="col_Age" data-value="28">28</span><span class="common__track"><span class="common__bar" style="width:78.3%"></span></span><span class="common__stat" data-col="col_Age" data-count="18" data-pct="2.5">18 · 2.5%</span></div><div class="common__row"><span class="common__value" data-col="col_Age" data-value="30">30</span><span class="common__track"><span class="common__bar" style="width:78.3%"></span></span><span class="common__stat" data-col="col_Age" data-count="18" data-pct="2.5">18 · 2.5%</span></div><div class="common__row"><span class="common__value" data-col="col_Age" data-value="21">21</span><span class="common__track"><span class="common__bar" style="width:73.9%"></span></span><span class="common__stat" data-col="col_Age" data-count="17" data-pct="2.4">17 · 2.4%</span></div><div class="common__row"><span class="common__value" data-col="col_Age" data-value="36">36</span><span class="common__track"><span class="common__bar" style="width:73.9%"></span></span><span class="common__stat" data-col="col_Age" data-count="17" data-pct="2.4">17 · 2.4%</span></div><div class="common__row"><span class="common__value" data-col="col_Age" data-value="25">25</span><span class="common__track"><span class="common__bar" style="width:69.6%"></span></span><span class="common__stat" data-col="col_Age" data-count="16" data-pct="2.2">16 · 2.2%</span></div><div class="common__row"><span class="common__value" data-col="col_Age" data-value="29">29</span><span class="common__track"><span class="common__bar" style="width:56.5%"></span></span><span class="common__stat" data-col="col_Age" data-count="13" data-pct="1.8">13 · 1.8%</span></div></div><p class="common__caption">bar is scaled to the most common value, not to 100%</p></div></section><section class="tab-pane" data-tab="extremes"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Age · extreme values</span><span class="fence-head__rule"></span><span class="fence-head__count">5 lowest · 5 highest of 714</span></div><p class="fence-lede">The low tail is ordinary — all 5 sit inside the fence. Every one of the 5 highest crosses it.</p><div class="fence" role="img" aria-label="Age value axis: 5 lowest and 5 highest against the IQR fence"><div class="fence__labels"><span class="fence__fencelabel" data-anchor="end" style="left:80.915%">fence 64.81</span><span class="fence__count" data-anchor="start" style="left:0.000%">×5</span><span class="fence__count" style="left:88.062%">×3</span></div><div class="fence__track"><span class="fence__whisker" style="left:0.729%;width:24.032%"></span><span class="fence__whisker" style="left:47.223%;width:35.021%"></span><span class="fence__box" style="left:24.761%;width:22.462%"></span><span class="fence__line" style="left:80.915%"></span><span class="fence__median" style="left:34.657%"></span><span class="fence__mark" data-severity="inside" title="0.42, 0.67, 0.75, 0.75, 0.83" style="left:0.000%"></span><span class="fence__mark" data-severity="moderate" title="70.5, 71, 71" style="left:88.062%"></span><span class="fence__mark" data-severity="high" title="74" style="left:92.460%"></span><span class="fence__mark" data-severity="high" title="80" style="left:100.000%"></span></div><div class="fence__axis"></div><div class="fence__ticks"><span class="fence__tick" data-anchor="start" style="left:0.000%">0.42</span><span class="fence__tick" data-anchor="" style="left:25.000%">20.32</span><span class="fence__tick" data-anchor="" style="left:50.000%">40.21</span><span class="fence__tick" data-anchor="" style="left:75.000%">60.11</span><span class="fence__tick" data-anchor="end" style="left:100.000%">80</span></div></div><ul class="fence__legend"><li><span class="key key--box"></span>IQR and P1–P99</li><li><span class="key key--median"></span>median 28</li><li><span class="key key--mark" data-severity="inside"></span>inside the fence</li><li><span class="key key--mark" data-severity="moderate"></span>moderate</li><li><span class="key key--mark" data-severity="extreme"></span>high or extreme</li></ul><div class="tails-body"><div class="tails__col"><div class="tails__head"><span class="tails__side">5 lowest</span><span class="tails__summary" data-tone="good">none beyond a fence</span></div><div class="tails__row"><span class="tails__idx">803</span><span class="tails__val" data-col="col_Age" data-value="0.42">0.42</span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">755</span><span class="tails__val" data-col="col_Age" data-value="0.67">0.67</span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">469</span><span class="tails__val" data-col="col_Age" data-value="0.75">0.75<span class="tails__tie" title="this value appears 2 times in the tail">×2</span></span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">644</span><span class="tails__val" data-col="col_Age" data-value="0.75">0.75<span class="tails__tie" title="this value appears 2 times in the tail">×2</span></span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">78</span><span class="tails__val" data-col="col_Age" data-value="0.83">0.83</span><span class="tails__note" data-severity="inside">inside the fence</span></div></div><div class="tails__col"><div class="tails__head"><span class="tails__side">5 highest</span><span class="tails__summary" data-tone="warn">all 5 beyond the IQR fence</span></div><div class="tails__row"><span class="tails__idx">630</span><span class="tails__val" data-col="col_Age" data-value="80">80</span><span class="tails__note" data-severity="high">high · 2.3× IQR</span></div><div class="tails__row"><span class="tails__idx">851</span><span class="tails__val" data-col="col_Age" data-value="74">74</span><span class="tails__note" data-severity="high">high · 2.0× IQR</span></div><div class="tails__row"><span class="tails__idx">493</span><span class="tails__val" data-col="col_Age" data-value="71">71<span class="tails__tie" title="this value appears 2 times in the tail">×2</span></span><span class="tails__note" data-severity="moderate">moderate · 1.8× IQR</span></div><div class="tails__row"><span class="tails__idx">96</span><span class="tails__val" data-col="col_Age" data-value="71">71<span class="tails__tie" title="this value appears 2 times in the tail">×2</span></span><span class="tails__note" data-severity="moderate">moderate · 1.8× IQR</span></div><div class="tails__row"><span class="tails__idx">116</span><span class="tails__val" data-col="col_Age" data-value="70.5">70.5</span><span class="tails__note" data-severity="moderate">moderate · 1.8× IQR</span></div></div></div></div></section><section class="tab-pane" data-tab="outliers"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Age · outliers</span><span class="fence-head__rule"></span><span class="fence-head__count" data-col="col_Age" data-count="11" data-pct="1.5">11 of 714 values · 1.5%</span></div><p class="fence-lede">All 11 are high. The lower fence sits at -6.688, below the minimum of 0.42, so no value can cross it.</p><div class="fence" role="img" aria-label="Age values with the IQR fence and 11 values beyond it"><div class="fence__labels"><span class="fence__fencelabel" data-anchor="end" style="left:80.915%">fence 64.81</span></div><div class="fence__track"><span class="fence__whisker" style="left:0.729%;width:24.032%"></span><span class="fence__whisker" style="left:47.223%;width:35.021%"></span><span class="fence__box" style="left:24.761%;width:22.462%"></span><span class="fence__line" style="left:80.915%"></span><span class="fence__median" style="left:34.657%"></span><span class="fence__mark" data-severity="moderate" title="65, 66" style="left:81.151%"></span><span class="fence__mark" data-severity="moderate" title="70, 70.5, 71" style="left:87.434%"></span><span class="fence__mark" data-severity="high" title="74" style="left:92.460%"></span><span class="fence__mark" data-severity="high" title="80" style="left:100.000%"></span></div><div class="fence__axis"></div><div class="fence__ticks"><span class="fence__tick" data-anchor="start" style="left:0.000%">0.42</span><span class="fence__tick" data-anchor="" style="left:25.000%">20.32</span><span class="fence__tick" data-anchor="" style="left:50.000%">40.21</span><span class="fence__tick" data-anchor="" style="left:75.000%">60.11</span><span class="fence__tick" data-anchor="end" style="left:100.000%">80</span></div></div><ul class="fence__legend"><li><span class="key key--box"></span>IQR and P1–P99</li><li><span class="key key--median"></span>median 28</li><li><span class="key key--mark" data-severity="moderate"></span>moderate</li><li><span class="key key--mark" data-severity="extreme"></span>high or extreme</li></ul><div class="fence-body"><div class="fence-table"><div class="fence-table__head"><span>Row</span><span>Value</span><span>By IQR</span><span>By MAD</span></div><div class="fence-table__row"><span class="fence-table__idx">630</span><span class="fence-table__val" data-col="col_Age" data-value="80">80</span><span class="fence-table__verdict" data-severity="high">high · 2.3×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 3.9×</span></div><div class="fence-table__row"><span class="fence-table__idx">851</span><span class="fence-table__val" data-col="col_Age" data-value="74">74</span><span class="fence-table__verdict" data-severity="high">high · 2.0×</span><span class="fence-table__verdict" data-severity="none">—</span></div><div class="fence-table__row"><span class="fence-table__idx">493</span><span class="fence-table__val" data-col="col_Age" data-value="71">71</span><span class="fence-table__verdict" data-severity="moderate">moderate · 1.8×</span><span class="fence-table__verdict" data-severity="none">—</span></div><div class="fence-table__row"><span class="fence-table__idx">116</span><span class="fence-table__val" data-col="col_Age" data-value="70.5">70.5</span><span class="fence-table__verdict" data-severity="moderate">moderate · 1.8×</span><span class="fence-table__verdict" data-severity="none">—</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Age" data-value="70">70</span><span class="fence-table__verdict" data-severity="moderate">moderate · 1.8×</span><span class="fence-table__verdict" data-severity="none">—</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Age" data-value="66">66</span><span class="fence-table__verdict" data-severity="moderate">moderate · 1.6×</span><span class="fence-table__verdict" data-severity="none">—</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Age" data-value="65">65</span><span class="fence-table__verdict" data-severity="moderate">moderate · 1.5×</span><span class="fence-table__verdict" data-severity="none">—</span></div></div><p class="fence-table__note">A dash means the row index was not tracked.</p><div class="fence-methods"><span class="fence-methods__title">The two methods</span><p class="fence-methods__note">IQR flags 7; MAD flags 1. They ask different questions — distance from the middle half of the data, against distance from the median in typical deviations — so both verdicts are printed rather than reconciled.</p></div></div></div></section><section class="tab-pane" data-tab="corr"><div class="sub"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Age · correlations</span><span class="fence-head__rule"></span><span class="fence-head__count">2 numeric partners</span></div><p class="fence-lede">Every partner is weak. The strongest is Fare at +0.096, below the 0.50 threshold.</p><div class="corr-partners"><div class="corr-partner"><span class="corr-partner__name">Fare</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:4.80%;background:var(--data-2)"></span></span><span class="corr-partner__value">+0.096</span></div><div class="corr-partner"><span class="corr-partner__name">PassengerId</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:1.84%;background:var(--data-2)"></span></span><span class="corr-partner__value">+0.037</span></div></div><p class="corr-partner__more">Those are all 2 of this column's numeric partners, so nothing is withheld.</p></div></div></section></div></section>
             </div>
         </article>
         
@@ -10462,7 +10884,7 @@ body.suricata-standalone:not(.light) {
         <div class="card-controls" role="group" aria-label="Numeric controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="col_Fare-details" aria-expanded="false">Details</button>
-                <span class="details-panes">statistics · 36 common values · 5 lowest and highest · 116 outliers</span>
+                <span class="details-panes">statistics · 36 common values · 5 lowest and highest · 116 outliers · 2 correlations</span>
             </div>
             <div class="controls-slot">
                 <div class="hist-controls" data-scale="lin" data-bin="25">
@@ -10480,7 +10902,7 @@ body.suricata-standalone:not(.light) {
         </div>
         
                 <div class="vstat-row"><div class="vstat"><div class="vstat__cap">Count</div><div class="vstat__val">891</div></div><div class="vstat"><div class="vstat__cap">Unique</div><div class="vstat__val">248</div></div><div class="vstat"><div class="vstat__cap">Missing</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat is-crit"><div class="vstat__cap">Outliers</div><div class="vstat__val">116 (13.0%)</div></div><div class="vstat"><div class="vstat__cap">Zeros</div><div class="vstat__val">15 (1.7%)</div></div><div class="vstat"><div class="vstat__cap">Infinites</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Negatives</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Min</div><div class="vstat__val">0</div></div><div class="vstat"><div class="vstat__cap">Q1 (P25)</div><div class="vstat__val">7.91</div></div><div class="vstat"><div class="vstat__cap">Median</div><div class="vstat__val">14.45</div></div><div class="vstat"><div class="vstat__cap">Mean</div><div class="vstat__val">32.2</div></div><div class="vstat"><div class="vstat__cap">Q3 (P75)</div><div class="vstat__val">31</div></div><div class="vstat"><div class="vstat__cap">Max</div><div class="vstat__val">512.3</div></div><div class="vstat"><div class="vstat__cap">Processed bytes (≈)</div><div class="vstat__val">7.0 KB</div></div></div>
-                <section id="col_Fare-details" class="details-section" hidden><nav class="tabs" role="tablist" aria-label="More details"><button role="tab" class="active" data-tab="stats"><span class="tab__label">Statistics</span></button><button role="tab" data-tab="common"><span class="tab__label">Common values <span class="tab__count">36</span></span></button><button role="tab" data-tab="extremes"><span class="tab__label">Min/Max Values <span class="tab__count">5</span></span></button><button role="tab" data-tab="outliers"><span class="tab__label">Outliers <span class="tab__count">116</span></span></button></nav><div class="tab-panes"><section class="tab-pane active" data-tab="stats"><div class='stats-quant'><table class="kv"><tbody><tr><th>Mean</th><td class="num">32.2</td></tr><tr><th>Std Dev</th><td class="num">49.69</td></tr><tr><th>Variance</th><td class="num">2,469</td></tr><tr><th>Std Error</th><td class="num">1.665</td></tr><tr><th>Coeff. of Var</th><td class="num">1.543</td></tr><tr><th>Geometric mean</th><td class="num">18.98</td></tr><tr><th>IQR</th><td class="num">23.09</td></tr><tr><th>MAD</th><td class="num">6.904</td></tr><tr><th>Skew</th><td class="num">4.779</td></tr><tr><th>Kurtosis</th><td class="num">33.2</td></tr><tr><th>Jarque–Bera χ²</th><td class="num">4.432e+04</td></tr><tr><th>95% CI (mean)</th><td class="num">[28.94 – 35.47]</td></tr><tr><th>Granularity</th><td>2.4973509999999997 (decimals: 10)</td></tr><tr><th>Heaping %</th><td class="num">53.98</td></tr></tbody></table><table class="kv"><tbody><tr><th>Min</th><td class="num">0</td></tr><tr><th>P1 (≈)</th><td class="num">0</td></tr><tr><th>P5 (≈)</th><td class="num">7.225</td></tr><tr><th>P10 (≈)</th><td class="num">7.55</td></tr><tr><th>Q1 (P25)</th><td class="num">7.91</td></tr><tr><th>Median (P50)</th><td class="num">14.45</td></tr><tr><th>Q3 (P75)</th><td class="num">31</td></tr><tr><th>P90 (≈)</th><td class="num">77.96</td></tr><tr><th>P95 (≈)</th><td class="num">112.1</td></tr><tr><th>P99 (≈)</th><td class="num">249</td></tr><tr><th>Range</th><td class="num">512.3</td></tr><tr><th>Std Dev</th><td class="num">49.69</td></tr></tbody></table></div></section><section class="tab-pane" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='num common-value'>8.05</td><td class='num common-count'>29</td><td class='num common-pct'>3.3%</td><td class='progress-bar'><div class='bar-fill' style='width:3.3%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='num common-value'>13</td><td class='num common-count'>28</td><td class='num common-pct'>3.1%</td><td class='progress-bar'><div class='bar-fill' style='width:3.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='num common-value'>7.896</td><td class='num common-count'>24</td><td class='num common-pct'>2.7%</td><td class='progress-bar'><div class='bar-fill' style='width:2.7%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='num common-value'>7.75</td><td class='num common-count'>20</td><td class='num common-pct'>2.2%</td><td class='progress-bar'><div class='bar-fill' style='width:2.2%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='num common-value'>26</td><td class='num common-count'>17</td><td class='num common-pct'>1.9%</td><td class='progress-bar'><div class='bar-fill' style='width:1.9%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='num common-value'>10.5</td><td class='num common-count'>10</td><td class='num common-pct'>1.1%</td><td class='progress-bar'><div class='bar-fill' style='width:1.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='num common-value'>0</td><td class='num common-count'>7</td><td class='num common-pct'>0.8%</td><td class='progress-bar'><div class='bar-fill' style='width:0.8%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='num common-value'>7.775</td><td class='num common-count'>5</td><td class='num common-pct'>0.6%</td><td class='progress-bar'><div class='bar-fill' style='width:0.6%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='num common-value'>30</td><td class='num common-count'>4</td><td class='num common-pct'>0.4%</td><td class='progress-bar'><div class='bar-fill' style='width:0.4%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='num common-value'>7.925</td><td class='num common-count'>4</td><td class='num common-pct'>0.4%</td><td class='progress-bar'><div class='bar-fill' style='width:0.4%'></div></td></tr></tbody></table></section><section class="tab-pane" data-tab="extremes"><div class='extremes stats-quant'><div class='sub'><div class='hdr'>Min values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>302</td><td class='num'>0</td></tr><tr><td>413</td><td class='num'>0</td></tr><tr><td>806</td><td class='num'>0</td></tr><tr><td>815</td><td class='num'>0</td></tr><tr><td>481</td><td class='num'>0</td></tr></tbody></table></div><div class='sub'><div class='hdr'>Max values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>737</td><td class='num'>512.3</td></tr><tr><td>679</td><td class='num'>512.3</td></tr><tr><td>258</td><td class='num'>512.3</td></tr><tr><td>341</td><td class='num'>263</td></tr><tr><td>438</td><td class='num'>263</td></tr></tbody></table></div></div></section><section class="tab-pane" data-tab="outliers"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Fare · outliers</span><span class="fence-head__rule"></span><span class="fence-head__count" data-col="col_Fare" data-count="116" data-pct="13.0">116 of 891 values · 13.0%</span></div><p class="fence-lede">All 116 are high. The lower fence sits at -26.72, below the minimum of 0, so no value can cross it.</p><div class="fence" role="img" aria-label="Fare values with the IQR fence and 116 values beyond it"><div class="fence__labels"><span class="fence__fencelabel" data-anchor="start" style="left:12.811%">fence 65.63</span><span class="fence__count" style="left:20.773%">×4</span><span class="fence__count" style="left:28.599%">×3</span><span class="fence__count" style="left:41.250%">×2</span><span class="fence__count" style="left:51.212%">×2</span></div><div class="fence__track"><span class="fence__whisker" style="left:0.000%;width:1.544%"></span><span class="fence__whisker" style="left:6.051%;width:42.552%"></span><span class="fence__box" style="left:1.544%;width:4.507%"></span><span class="fence__line" style="left:12.811%"></span><span class="fence__median" style="left:2.821%"></span><span class="fence__mark" data-severity="extreme" title="50.4958, 51.4792, 51.8625, 52, 52.5542, 53.1, 55, 55.4417, 55.9, 56.4958, 56.9292, 57, 57.9792, 59.4" style="left:9.856%"></span><span class="fence__mark" data-severity="extreme" title="61.175, 61.3792, 61.9792, 63.3583, 65, 66.6, 69.3, 69.55, 71, 71.2833" style="left:11.941%"></span><span class="fence__mark" data-severity="high" title="73.5, 75.25, 76.2917, 76.7292, 77.2875, 77.9583, 78.2667, 78.85, 79.2, 79.65, 80, 81.8583, 82.1708, 83.1583, 83.475" style="left:14.346%"></span><span class="fence__mark" data-severity="high" title="86.5, 89.1042, 90, 91.0792, 93.5" style="left:16.884%"></span><span class="fence__mark" data-severity="extreme" title="106.425, 108.9, 110.883, 113.275" style="left:20.773%"></span><span class="fence__mark" data-severity="extreme" title="120" style="left:23.422%"></span><span class="fence__mark" data-severity="extreme" title="133.65, 134.5, 135.633" style="left:26.087%"></span><span class="fence__mark" data-severity="extreme" title="146.521, 151.55, 153.463" style="left:28.599%"></span><span class="fence__mark" data-severity="extreme" title="164.9" style="left:32.180%"></span><span class="fence__mark" data-severity="extreme" title="211.338, 211.5" style="left:41.250%"></span><span class="fence__mark" data-severity="extreme" title="221.779, 227.525" style="left:43.288%"></span><span class="fence__mark" data-severity="extreme" title="247.5" style="left:48.313%"></span><span class="fence__mark" data-severity="extreme" title="262.375, 263" style="left:51.212%"></span><span class="fence__mark" data-severity="extreme" title="512.3" style="left:100.000%"></span></div><div class="fence__axis"></div><div class="fence__ticks"><span class="fence__tick" data-anchor="start" style="left:0.000%">0</span><span class="fence__tick" data-anchor="" style="left:25.000%">128.1</span><span class="fence__tick" data-anchor="" style="left:50.000%">256.2</span><span class="fence__tick" data-anchor="" style="left:75.000%">384.2</span><span class="fence__tick" data-anchor="end" style="left:100.000%">512.3</span></div></div><ul class="fence__legend"><li><span class="key key--box"></span>IQR and P1–P99</li><li><span class="key key--median"></span>median 14.45</li><li><span class="key key--mark" data-severity="moderate"></span>moderate</li><li><span class="key key--mark" data-severity="extreme"></span>high or extreme</li></ul><div class="fence-body"><div class="fence-table"><div class="fence-table__head"><span>Row</span><span>Value</span><span>By IQR</span><span>By MAD</span></div><div class="fence-table__row"><span class="fence-table__idx">737</span><span class="fence-table__val" data-col="col_Fare" data-value="512.3292">512.3</span><span class="fence-table__verdict" data-severity="extreme">extreme · 20.8×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 48.6×</span></div><div class="fence-table__row"><span class="fence-table__idx">341</span><span class="fence-table__val" data-col="col_Fare" data-value="263">263</span><span class="fence-table__verdict" data-severity="extreme">extreme · 10.0×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 24.3×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="262.375">262.4</span><span class="fence-table__verdict" data-severity="extreme">extreme · 10.0×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 24.2×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="247.5208">247.5</span><span class="fence-table__verdict" data-severity="extreme">extreme · 9.4×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 22.8×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="227.525">227.5</span><span class="fence-table__verdict" data-severity="extreme">extreme · 8.5×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 20.8×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="221.7792">221.8</span><span class="fence-table__verdict" data-severity="extreme">extreme · 8.3×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 20.3×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="211.5">211.5</span><span class="fence-table__verdict" data-severity="extreme">extreme · 7.8×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 19.2×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="211.3375">211.3</span><span class="fence-table__verdict" data-severity="extreme">extreme · 7.8×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 19.2×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="164.8667">164.9</span><span class="fence-table__verdict" data-severity="extreme">extreme · 5.8×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 14.7×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="153.4625">153.5</span><span class="fence-table__verdict" data-severity="extreme">extreme · 5.3×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 13.6×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="151.55">151.6</span><span class="fence-table__verdict" data-severity="extreme">extreme · 5.2×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 13.4×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="146.5208">146.5</span><span class="fence-table__verdict" data-severity="extreme">extreme · 5.0×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 12.9×</span></div></div><p class="fence-table__note">12 of 116 shown, the most extreme first. A dash means the row index was not tracked.</p><div class="fence-methods"><span class="fence-methods__title">The two methods</span><p class="fence-methods__note">IQR flags 45; MAD flags 64. They ask different questions — distance from the middle half of the data, against distance from the median in typical deviations — so both verdicts are printed rather than reconciled.</p></div></div></div></section></div></section>
+                <section id="col_Fare-details" class="details-section" hidden><nav class="tabs" role="tablist" aria-label="More details"><button role="tab" class="active" data-tab="stats"><span class="tab__label">Statistics</span></button><button role="tab" data-tab="common"><span class="tab__label">Common values <span class="tab__count">36</span></span></button><button role="tab" data-tab="extremes"><span class="tab__label">Min/Max Values <span class="tab__count">5</span></span></button><button role="tab" data-tab="outliers"><span class="tab__label">Outliers <span class="tab__count">116</span></span></button><button role="tab" data-tab="corr"><span class="tab__label">Correlations <span class="tab__count">2</span></span></button></nav><div class="tab-panes"><section class="tab-pane active" data-tab="stats"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Fare · statistics</span><span class="fence-head__rule"></span><span class="fence-head__count">891 values · 0 to 512.3</span></div><div class="qstrip" role="img" aria-label="Distribution shape: interquartile range 7.91 to 31, median 14.45"><div class="qstrip__track"><span class="qstrip__whisker" style="left:0.000%;width:1.544%"></span><span class="qstrip__whisker" style="left:6.051%;width:42.552%"></span><span class="qstrip__box" style="left:1.544%;width:4.507%" title="Interquartile range 7.91 to 31 — the middle half of the data"></span><span class="qstrip__median" style="left:2.821%" title="Median 14.45"></span><span class="qstrip__mean" style="left:6.286%" title="Mean 32.2"></span></div><div class="qstrip__axis"></div><div class="qstrip__ladder"><span class="qstrip__tick" style="left:0.000%"></span><span class="qstrip__label" data-row="0" data-anchor="start" style="left:0.000%"><span class="qstrip__name">P1</span><span class="qstrip__figure">0</span></span><span class="qstrip__tick" style="left:2.821%"></span><span class="qstrip__label" data-row="1" style="left:2.821%"><span class="qstrip__name">P50</span><span class="qstrip__figure">14.45</span></span><span class="qstrip__tick" style="left:15.216%"></span><span class="qstrip__label" data-row="2" style="left:15.216%"><span class="qstrip__name">P90</span><span class="qstrip__figure">77.96</span></span><span class="qstrip__tick" style="left:21.876%"></span><span class="qstrip__label" data-row="3" style="left:21.876%"><span class="qstrip__name">P95</span><span class="qstrip__figure">112.1</span></span><span class="qstrip__tick" style="left:48.603%"></span><span class="qstrip__label" data-row="4" style="left:48.603%"><span class="qstrip__name">P99</span><span class="qstrip__figure">249</span></span></div></div><ul class="fence__legend"><li><span class="key key--qbox"></span>IQR 7.91 – 31</li><li><span class="key key--qwhisker"></span>P1 – P99</li><li><span class="key key--qmedian"></span>median 14.45</li><li><span class="key key--qmean"></span>mean 32.2</li></ul><p class="qstrip__prose">Jarque–Bera is 4.432e+04 against a 5.99 critical value — far enough from normal to reject it.</p><p class="qstrip__prose">The mean carries a ±3.263 95% interval, so 32.2 is well determined at this sample size.</p></div><div class='stats-quant'><table class="kv"><tbody><tr><th>Mean</th><td class="num">32.2</td></tr><tr><th>Std Dev</th><td class="num">49.69</td></tr><tr><th>Variance</th><td class="num">2,469</td></tr><tr><th>Std Error</th><td class="num">1.665</td></tr><tr><th>Coeff. of Var</th><td class="num">1.543</td></tr><tr><th>Geometric mean</th><td class="num">18.98</td></tr><tr><th>IQR</th><td class="num">23.09</td></tr><tr><th>MAD</th><td class="num">6.904</td></tr><tr><th>Skew</th><td class="num">4.779</td></tr><tr><th>Kurtosis</th><td class="num">33.2</td></tr><tr><th>Jarque–Bera χ²</th><td class="num">4.432e+04</td></tr><tr><th>95% CI (mean)</th><td class="num">[28.94 – 35.47]</td></tr><tr><th>Granularity</th><td>2.4973509999999997 (decimals: 10)</td></tr><tr><th>Heaping %</th><td class="num">53.98</td></tr></tbody></table><table class="kv"><tbody><tr><th>Min</th><td class="num">0</td></tr><tr><th>P1 (≈)</th><td class="num">0</td></tr><tr><th>P5 (≈)</th><td class="num">7.225</td></tr><tr><th>P10 (≈)</th><td class="num">7.55</td></tr><tr><th>Q1 (P25)</th><td class="num">7.91</td></tr><tr><th>Median (P50)</th><td class="num">14.45</td></tr><tr><th>Q3 (P75)</th><td class="num">31</td></tr><tr><th>P90 (≈)</th><td class="num">77.96</td></tr><tr><th>P95 (≈)</th><td class="num">112.1</td></tr><tr><th>P99 (≈)</th><td class="num">249</td></tr><tr><th>Range</th><td class="num">512.3</td></tr></tbody></table></div></section><section class="tab-pane" data-tab="common"><div class="fence-pane common"><div class="fence-head"><span class="fence-head__title">Fare · common values</span><span class="fence-head__rule"></span></div><p class="fence-lede">54.0% of values end in a 0 or a 5.</p><div class="common__rows"><div class="common__row"><span class="common__value" data-col="col_Fare" data-value="8.05">8.05</span><span class="common__track"><span class="common__bar" style="width:100.0%"></span></span><span class="common__stat" data-col="col_Fare" data-count="29" data-pct="3.3">29 · 3.3%</span></div><div class="common__row"><span class="common__value" data-col="col_Fare" data-value="13">13</span><span class="common__track"><span class="common__bar" style="width:96.6%"></span></span><span class="common__stat" data-col="col_Fare" data-count="28" data-pct="3.1">28 · 3.1%</span></div><div class="common__row"><span class="common__value" data-col="col_Fare" data-value="7.8958">7.896</span><span class="common__track"><span class="common__bar" style="width:82.8%"></span></span><span class="common__stat" data-col="col_Fare" data-count="24" data-pct="2.7">24 · 2.7%</span></div><div class="common__row"><span class="common__value" data-col="col_Fare" data-value="7.75">7.75</span><span class="common__track"><span class="common__bar" style="width:69.0%"></span></span><span class="common__stat" data-col="col_Fare" data-count="20" data-pct="2.2">20 · 2.2%</span></div><div class="common__row"><span class="common__value" data-col="col_Fare" data-value="26">26</span><span class="common__track"><span class="common__bar" style="width:58.6%"></span></span><span class="common__stat" data-col="col_Fare" data-count="17" data-pct="1.9">17 · 1.9%</span></div><div class="common__row"><span class="common__value" data-col="col_Fare" data-value="10.5">10.5</span><span class="common__track"><span class="common__bar" style="width:34.5%"></span></span><span class="common__stat" data-col="col_Fare" data-count="10" data-pct="1.1">10 · 1.1%</span></div><div class="common__row"><span class="common__value" data-col="col_Fare" data-value="0">0</span><span class="common__track"><span class="common__bar" style="width:24.1%"></span></span><span class="common__stat" data-col="col_Fare" data-count="7" data-pct="0.8">7 · 0.8%</span></div><div class="common__row"><span class="common__value" data-col="col_Fare" data-value="7.775">7.775</span><span class="common__track"><span class="common__bar" style="width:17.2%"></span></span><span class="common__stat" data-col="col_Fare" data-count="5" data-pct="0.6">5 · 0.6%</span></div><div class="common__row"><span class="common__value" data-col="col_Fare" data-value="30">30</span><span class="common__track"><span class="common__bar" style="width:13.8%"></span></span><span class="common__stat" data-col="col_Fare" data-count="4" data-pct="0.4">4 · 0.4%</span></div><div class="common__row"><span class="common__value" data-col="col_Fare" data-value="7.925">7.925</span><span class="common__track"><span class="common__bar" style="width:13.8%"></span></span><span class="common__stat" data-col="col_Fare" data-count="4" data-pct="0.4">4 · 0.4%</span></div></div><p class="common__caption">bar is scaled to the most common value, not to 100%</p></div></section><section class="tab-pane" data-tab="extremes"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Fare · extreme values</span><span class="fence-head__rule"></span><span class="fence-head__count">5 lowest · 5 highest of 891</span></div><p class="fence-lede">The low tail is ordinary — all 5 sit inside the fence. Every one of the 5 highest crosses it.</p><div class="fence" role="img" aria-label="Fare value axis: 5 lowest and 5 highest against the IQR fence"><div class="fence__labels"><span class="fence__fencelabel" data-anchor="start" style="left:12.811%">fence 65.63</span><span class="fence__count" data-anchor="start" style="left:0.000%">×5</span><span class="fence__count" style="left:51.334%">×2</span><span class="fence__count" data-anchor="end" style="left:100.000%">×3</span></div><div class="fence__track"><span class="fence__whisker" style="left:0.000%;width:1.544%"></span><span class="fence__whisker" style="left:6.051%;width:42.552%"></span><span class="fence__box" style="left:1.544%;width:4.507%"></span><span class="fence__line" style="left:12.811%"></span><span class="fence__median" style="left:2.821%"></span><span class="fence__mark" data-severity="inside" title="0, 0, 0, 0, 0" style="left:0.000%"></span><span class="fence__mark" data-severity="extreme" title="263, 263" style="left:51.334%"></span><span class="fence__mark" data-severity="extreme" title="512.329, 512.329, 512.329" style="left:100.000%"></span></div><div class="fence__axis"></div><div class="fence__ticks"><span class="fence__tick" data-anchor="start" style="left:0.000%">0</span><span class="fence__tick" data-anchor="" style="left:25.000%">128.1</span><span class="fence__tick" data-anchor="" style="left:50.000%">256.2</span><span class="fence__tick" data-anchor="" style="left:75.000%">384.2</span><span class="fence__tick" data-anchor="end" style="left:100.000%">512.3</span></div></div><ul class="fence__legend"><li><span class="key key--box"></span>IQR and P1–P99</li><li><span class="key key--median"></span>median 14.45</li><li><span class="key key--mark" data-severity="inside"></span>inside the fence</li><li><span class="key key--mark" data-severity="moderate"></span>moderate</li><li><span class="key key--mark" data-severity="extreme"></span>high or extreme</li></ul><div class="tails-body"><div class="tails__col"><div class="tails__head"><span class="tails__side">5 lowest</span><span class="tails__summary" data-tone="good">none beyond a fence</span></div><div class="tails__row"><span class="tails__idx">302</span><span class="tails__val" data-col="col_Fare" data-value="0">0<span class="tails__tie" title="this value appears 5 times in the tail">×5</span></span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">413</span><span class="tails__val" data-col="col_Fare" data-value="0">0<span class="tails__tie" title="this value appears 5 times in the tail">×5</span></span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">806</span><span class="tails__val" data-col="col_Fare" data-value="0">0<span class="tails__tie" title="this value appears 5 times in the tail">×5</span></span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">815</span><span class="tails__val" data-col="col_Fare" data-value="0">0<span class="tails__tie" title="this value appears 5 times in the tail">×5</span></span><span class="tails__note" data-severity="inside">inside the fence</span></div><div class="tails__row"><span class="tails__idx">481</span><span class="tails__val" data-col="col_Fare" data-value="0">0<span class="tails__tie" title="this value appears 5 times in the tail">×5</span></span><span class="tails__note" data-severity="inside">inside the fence</span></div></div><div class="tails__col"><div class="tails__head"><span class="tails__side">5 highest</span><span class="tails__summary" data-tone="warn">all 5 beyond the IQR fence</span></div><div class="tails__row"><span class="tails__idx">737</span><span class="tails__val" data-col="col_Fare" data-value="512.3292">512.3<span class="tails__tie" title="this value appears 3 times in the tail">×3</span></span><span class="tails__note" data-severity="extreme">extreme · 20.8× IQR</span></div><div class="tails__row"><span class="tails__idx">679</span><span class="tails__val" data-col="col_Fare" data-value="512.3292">512.3<span class="tails__tie" title="this value appears 3 times in the tail">×3</span></span><span class="tails__note" data-severity="extreme">extreme · 20.8× IQR</span></div><div class="tails__row"><span class="tails__idx">258</span><span class="tails__val" data-col="col_Fare" data-value="512.3292">512.3<span class="tails__tie" title="this value appears 3 times in the tail">×3</span></span><span class="tails__note" data-severity="extreme">extreme · 20.8× IQR</span></div><div class="tails__row"><span class="tails__idx">341</span><span class="tails__val" data-col="col_Fare" data-value="263">263<span class="tails__tie" title="this value appears 2 times in the tail">×2</span></span><span class="tails__note" data-severity="extreme">extreme · 10.0× IQR</span></div><div class="tails__row"><span class="tails__idx">438</span><span class="tails__val" data-col="col_Fare" data-value="263">263<span class="tails__tie" title="this value appears 2 times in the tail">×2</span></span><span class="tails__note" data-severity="extreme">extreme · 10.0× IQR</span></div></div></div></div></section><section class="tab-pane" data-tab="outliers"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Fare · outliers</span><span class="fence-head__rule"></span><span class="fence-head__count" data-col="col_Fare" data-count="116" data-pct="13.0">116 of 891 values · 13.0%</span></div><p class="fence-lede">All 116 are high. The lower fence sits at -26.72, below the minimum of 0, so no value can cross it.</p><div class="fence" role="img" aria-label="Fare values with the IQR fence and 116 values beyond it"><div class="fence__labels"><span class="fence__fencelabel" data-anchor="start" style="left:12.811%">fence 65.63</span><span class="fence__count" style="left:20.773%">×4</span><span class="fence__count" style="left:28.599%">×3</span><span class="fence__count" style="left:41.250%">×2</span><span class="fence__count" style="left:51.212%">×2</span></div><div class="fence__track"><span class="fence__whisker" style="left:0.000%;width:1.544%"></span><span class="fence__whisker" style="left:6.051%;width:42.552%"></span><span class="fence__box" style="left:1.544%;width:4.507%"></span><span class="fence__line" style="left:12.811%"></span><span class="fence__median" style="left:2.821%"></span><span class="fence__mark" data-severity="extreme" title="50.4958, 51.4792, 51.8625, 52, 52.5542, 53.1, 55, 55.4417, 55.9, 56.4958, 56.9292, 57, 57.9792, 59.4" style="left:9.856%"></span><span class="fence__mark" data-severity="extreme" title="61.175, 61.3792, 61.9792, 63.3583, 65, 66.6, 69.3, 69.55, 71, 71.2833" style="left:11.941%"></span><span class="fence__mark" data-severity="high" title="73.5, 75.25, 76.2917, 76.7292, 77.2875, 77.9583, 78.2667, 78.85, 79.2, 79.65, 80, 81.8583, 82.1708, 83.1583, 83.475" style="left:14.346%"></span><span class="fence__mark" data-severity="high" title="86.5, 89.1042, 90, 91.0792, 93.5" style="left:16.884%"></span><span class="fence__mark" data-severity="extreme" title="106.425, 108.9, 110.883, 113.275" style="left:20.773%"></span><span class="fence__mark" data-severity="extreme" title="120" style="left:23.422%"></span><span class="fence__mark" data-severity="extreme" title="133.65, 134.5, 135.633" style="left:26.087%"></span><span class="fence__mark" data-severity="extreme" title="146.521, 151.55, 153.463" style="left:28.599%"></span><span class="fence__mark" data-severity="extreme" title="164.9" style="left:32.180%"></span><span class="fence__mark" data-severity="extreme" title="211.338, 211.5" style="left:41.250%"></span><span class="fence__mark" data-severity="extreme" title="221.779, 227.525" style="left:43.288%"></span><span class="fence__mark" data-severity="extreme" title="247.5" style="left:48.313%"></span><span class="fence__mark" data-severity="extreme" title="262.375, 263" style="left:51.212%"></span><span class="fence__mark" data-severity="extreme" title="512.3" style="left:100.000%"></span></div><div class="fence__axis"></div><div class="fence__ticks"><span class="fence__tick" data-anchor="start" style="left:0.000%">0</span><span class="fence__tick" data-anchor="" style="left:25.000%">128.1</span><span class="fence__tick" data-anchor="" style="left:50.000%">256.2</span><span class="fence__tick" data-anchor="" style="left:75.000%">384.2</span><span class="fence__tick" data-anchor="end" style="left:100.000%">512.3</span></div></div><ul class="fence__legend"><li><span class="key key--box"></span>IQR and P1–P99</li><li><span class="key key--median"></span>median 14.45</li><li><span class="key key--mark" data-severity="moderate"></span>moderate</li><li><span class="key key--mark" data-severity="extreme"></span>high or extreme</li></ul><div class="fence-body"><div class="fence-table"><div class="fence-table__head"><span>Row</span><span>Value</span><span>By IQR</span><span>By MAD</span></div><div class="fence-table__row"><span class="fence-table__idx">737</span><span class="fence-table__val" data-col="col_Fare" data-value="512.3292">512.3</span><span class="fence-table__verdict" data-severity="extreme">extreme · 20.8×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 48.6×</span></div><div class="fence-table__row"><span class="fence-table__idx">341</span><span class="fence-table__val" data-col="col_Fare" data-value="263">263</span><span class="fence-table__verdict" data-severity="extreme">extreme · 10.0×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 24.3×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="262.375">262.4</span><span class="fence-table__verdict" data-severity="extreme">extreme · 10.0×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 24.2×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="247.5208">247.5</span><span class="fence-table__verdict" data-severity="extreme">extreme · 9.4×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 22.8×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="227.525">227.5</span><span class="fence-table__verdict" data-severity="extreme">extreme · 8.5×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 20.8×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="221.7792">221.8</span><span class="fence-table__verdict" data-severity="extreme">extreme · 8.3×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 20.3×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="211.5">211.5</span><span class="fence-table__verdict" data-severity="extreme">extreme · 7.8×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 19.2×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="211.3375">211.3</span><span class="fence-table__verdict" data-severity="extreme">extreme · 7.8×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 19.2×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="164.8667">164.9</span><span class="fence-table__verdict" data-severity="extreme">extreme · 5.8×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 14.7×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="153.4625">153.5</span><span class="fence-table__verdict" data-severity="extreme">extreme · 5.3×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 13.6×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="151.55">151.6</span><span class="fence-table__verdict" data-severity="extreme">extreme · 5.2×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 13.4×</span></div><div class="fence-table__row"><span class="fence-table__idx">—</span><span class="fence-table__val" data-col="col_Fare" data-value="146.5208">146.5</span><span class="fence-table__verdict" data-severity="extreme">extreme · 5.0×</span><span class="fence-table__verdict" data-severity="extreme">extreme · 12.9×</span></div></div><p class="fence-table__note">12 of 116 shown, the most extreme first. A dash means the row index was not tracked.</p><div class="fence-methods"><span class="fence-methods__title">The two methods</span><p class="fence-methods__note">IQR flags 45; MAD flags 64. They ask different questions — distance from the middle half of the data, against distance from the median in typical deviations — so both verdicts are printed rather than reconciled.</p></div></div></div></section><section class="tab-pane" data-tab="corr"><div class="sub"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Fare · correlations</span><span class="fence-head__rule"></span><span class="fence-head__count">2 numeric partners</span></div><p class="fence-lede">Every partner is weak. The strongest is Age at +0.096, below the 0.50 threshold.</p><div class="corr-partners"><div class="corr-partner"><span class="corr-partner__name">Age</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:4.80%;background:var(--data-2)"></span></span><span class="corr-partner__value">+0.096</span></div><div class="corr-partner"><span class="corr-partner__name">PassengerId</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:0.63%;background:var(--data-2)"></span></span><span class="corr-partner__value">+0.013</span></div></div><p class="corr-partner__more">Those are all 2 of this column's numeric partners, so nothing is withheld.</p></div></div></section></div></section>
             </div>
         </article>
         

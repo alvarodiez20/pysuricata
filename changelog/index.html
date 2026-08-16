@@ -2395,6 +2395,58 @@ quoted when both sides were measured in the same round-robin run.</p>
   report's own cards wrap one per row. Nothing that worked was dropped — the
   log, the streamed 5M-row demo, the JSON download, the version line and the
   sandboxed report frame all survive, restyled.</li>
+<li>
+<p><strong>Sub-threshold correlation pairs are now kept per column</strong> ([#154], 5b.6) —
+  a deliberate change to the <code>summarize()</code> payload, and one of the two the
+  invariance harness names as permitted. <code>corr_top</code> previously held only pairs
+  at or above <code>corr_threshold</code> (default 0.50), so on most frames it was empty
+  and every per-column pane rendered an empty state. It now holds every numeric
+  partner, strongest first, bounded by <code>corr_max_cols</code> (default 50). No other
+  field changed: every differing key in the golden payload is <code>corr_top</code>, and
+  every one goes from <code>[]</code> to a populated list.</p>
+</li>
+<li>
+<p><strong>The statistics pane opens with the distribution's shape</strong> ([#154], 5b.1).
+  Twenty-six key–value rows across two tables, with nothing in the layout
+  saying which to read — <code>Jarque–Bera χ²</code> carried the same weight as <code>Median</code>,
+  and <strong><code>Std Dev</code> was printed twice</strong>, once in each table. The nine percentiles
+  now sit on the axis the Outliers and Min/Max panes use, as a box with the IQR
+  band, whiskers terminating at the band edges, the median protruding past both
+  and the mean as a caret above it. Two prose lines spend thresholds the report
+  already held and never showed: <code>Jarque–Bera is 18.79 against a 5.99 critical
+  value — far enough from normal to reject it</code>, and the confidence interval as
+  a width (<code>±1.066</code>) rather than two endpoints. <code>Std Dev</code> is printed once, with
+  the moments where it belongs.</p>
+</li>
+<li><strong>The per-column correlations pane shows every partner</strong> ([#154], 5b.6).
+  It repeated the section-level empty state inside a card — <code>No significant
+  correlations found</code>, on a column that has partners and simply has no strong
+  ones. <code>Age</code> has exactly two numeric partners in the Titanic frame, so listing
+  both is <em>complete</em> information in two rows: <strong>the strongest partner is Fare
+  at +0.096</strong>, and the pane says so rather than shrugging. Capped at five with
+  a <code>6 more, all below 0.04</code> line, on the same diverging bar as the
+  section-level list so sign stays position and never colour.</li>
+<li><strong>Common values rank visibly</strong> ([#154], 5b.3). Five columns become three —
+  the ordinals <code>1ˢᵗ 2ⁿᵈ 3ʳᵈ</code> were decoration on a list that is already ordered,
+  and count and percent are one fact about one value rather than two. <strong>The bar
+  is scaled to the most common value, not to 100%</strong>: at 3.2% of 714 rows every
+  bar was 3% of its track and all ten looked identical, so the ranking could
+  not be seen. Relative scaling hides absolute rarity in exchange, which the
+  caption now carries. The pane also says the finding out loud — <em>All 10 are
+  whole numbers, though the column stores 3 decimals. 22.3% of values end in a
+  0 or a 5</em> — two numbers the report already computed and never put next to
+  each other. A column where nothing repeats loses the tab entirely rather than
+  drawing ten full-width bars over ten equally-common values.</li>
+<li><strong>Min/Max plots both tails on the fence's axis</strong> ([#154], 5b.5). It was two
+  tables headed <code>Min values</code> and <code>Max values</code>, five rows each of index and
+  value — ten numbers, no context. A reader could not tell that <strong>every one of
+  <code>Age</code>'s five maxima crosses the IQR fence and not one of its five minima
+  does</strong>, which is the whole story of that column's tails and was already
+  computable. The pane now reads <em>The low tail is ordinary — all 5 sit inside
+  the fence. Every one of the 5 highest crosses it.</em> above the same figure the
+  Outliers pane draws, and gives each row its position (<code>high · 2.3× IQR</code>,
+  <code>inside the fence</code>). Repeated values are marked, so <code>Age</code>'s two 0.75s and two
+  71s stop looking like four findings.</li>
 <li><strong>The Outliers pane draws the fence</strong> ([#154], 5b.2). It opened with roughly
   60px announcing <code>Low Outliers — 0 outliers (0.0%)</code> over three severity chips
   all reading zero, said the same again for the high side, then listed the
