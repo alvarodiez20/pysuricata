@@ -22,6 +22,17 @@ quoted when both sides were measured in the same round-robin run.
   safety property that has been removed is worse than no comment, because it is
   what someone reads to decide whether a push is reversible. The `guard` and
   `smoke` jobs stand in for the reviewer.
+- **The PyPI summary now says what the tool does.** It read "A lightweight EDA
+  tool inspired by the curious nature of suricates. Built just for fun 🔬",
+  which describes the project's origin rather than the package someone is
+  deciding whether to install. It is now "Streaming EDA profiler: one pass over
+  pandas or polars, bounded memory, a self-contained HTML report."
+- The PyPI sidebar gains Homepage, Documentation, Changelog and Issues links —
+  it carried only a repository link — and the package declares keywords, so it
+  is findable by search rather than only by name.
+
+  Note that release metadata on PyPI is immutable per version, so none of this
+  changes the 0.1.0 page. It takes effect with the next release.
 
 ### Fixed
 
