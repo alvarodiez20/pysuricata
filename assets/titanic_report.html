@@ -1120,137 +1120,111 @@ body.suricata-standalone:not(.light) {
   background: rgba(255, 255, 255, 0.45);
 }
 
-/* =============================================
-   SAMPLE TABLE - MATCHING REPORT STYLE
-   ============================================= */
+/* =============================================================
+   SAMPLE TABLE
 
-/* Sample table styling that matches the main report typography and design */
+   Phase 4 of the redesign. Keep the table, remove the decoration: the old one
+   drew a border on every cell -- about 300 of them for a 10 x 13 sample -- plus
+   zebra striping on top, so the grid competed with the data it was holding.
+
+   What is left is one rule above the header, one under it, and a hairline
+   under each row. The row rule does the job the striping was doing.
+   ============================================================= */
 #pysuricata-report table.sample-table {
   border-collapse: collapse;
   width: 100%;
   font-family: var(--font-mono);
-  font-size: 0.65rem;
-  /* Further reduced for better proportion */
-  line-height: 1.3;
-  /* Reduced from 1.4 for tighter spacing */
-  background: white;
-  border: none;
-  /* Removed border for cleaner look */
+  font-size: 12.5px;
+  line-height: 1.35;
+  background: transparent;
+  border: 0;
 }
 
-#pysuricata-report:not(.light) table.sample-table {
-  background: #1a1a1a;
-  color: #e0e0e0;
-}
-
-/* Column headers - clean table styling without chips */
 #pysuricata-report table.sample-table thead th {
   position: sticky;
   top: 0;
-  z-index: 10;
-  background: rgba(0, 0, 0, 0.02);
-  color: inherit;
-  font-weight: 600;
-  font-size: 0.8rem;
-  /* Increased for better readability */
-  padding: 3px 8px;
-  /* Reduced padding for tighter spacing */
-  border: 1px solid var(--chip-br-light);
-  border-bottom: 2px solid var(--chip-br-light);
-  text-align: center;
+  z-index: 2;
+  background: var(--paper);
+  color: var(--muted);
   font-family: var(--font-mono);
-}
-
-#pysuricata-report:not(.light) table.sample-table thead th {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: var(--chip-br-dark);
-  border-bottom-color: var(--chip-br-dark);
-}
-
-/* Row number column header - same styling as other headers */
-#pysuricata-report table.sample-table thead th:first-child {
-  background: rgba(0, 0, 0, 0.02);
-  text-align: center;
-  width: 50px;
-  font-size: 0.8rem;
+  font-size: 10.5px;
   font-weight: 500;
-  font-family: var(--font-mono);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+  padding: 6px 12px 7px;
+  border: 0;
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--rule-strong);
 }
 
-#pysuricata-report:not(.light) table.sample-table thead th:first-child {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-/* Table cells with proper spacing */
 #pysuricata-report table.sample-table td {
   padding: 6px 12px;
-  border: 1px solid var(--chip-br-light);
-  font-size: 0.85rem;
-  line-height: 1.3;
-  font-family: var(--font-mono);
-  /* Use monospace for all cells */
+  border: 0;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink);
+  /* Clamp rather than stretch: one 500-character value would otherwise widen
+     the pane until nothing else fits. The whole string stays in a title. */
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-#pysuricata-report:not(.light) table.sample-table td {
-  border-color: var(--chip-br-dark);
-}
-
-/* Numeric columns - match row number column styling */
-#pysuricata-report table.sample-table td {
-  text-align: left;
-  /* Default alignment */
-}
-
-#pysuricata-report table.sample-table td span.num {
-  display: inline;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-}
-
-/* Right-align cells containing numerical values */
-#pysuricata-report table.sample-table td:has(span.num) {
+#pysuricata-report table.sample-table th.num,
+#pysuricata-report table.sample-table td.num {
   text-align: right;
 }
 
-#pysuricata-report:not(.light) table.sample-table td span.num {
-  /* Background removed - no longer needed */
+/* The row index is frozen with `position: sticky` rather than split into a
+   second table beside the scroll pane. Two tables have to be kept in vertical
+   step by hand, and a cell that wraps in one of them desynchronises the pair;
+   a sticky cell is part of the row it belongs to and cannot drift from it. */
+#pysuricata-report table.sample-table th.idx,
+#pysuricata-report table.sample-table td.idx {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--paper);
+  color: var(--muted);
+  text-align: right;
+  width: 44px;
+  min-width: 44px;
+  padding-left: 0;
 }
 
-/* Row numbering - match report styling */
-#pysuricata-report table.sample-table tbody td:first-child {
-  background: rgba(0, 0, 0, 0.02);
-  color: #666;
-  font-weight: 500;
-  text-align: center;
-  width: 50px;
+#pysuricata-report table.sample-table thead th.idx {
+  z-index: 3;
+}
+
+/* A real null. The glyph is data, not decoration, so it takes a text-grade
+   colour and clears 4.5:1 -- an em dash at --rule would be invisible, which
+   is a different lie from printing "nan". */
+#pysuricata-report table.sample-table .nil {
+  color: var(--muted);
+}
+
+/* The row rule already separates rows; this is for tracking across a wide
+   table, which is what the striping was actually useful for. */
+#pysuricata-report table.sample-table tbody tr:hover td {
+  background: var(--track);
+}
+
+#pysuricata-report table.sample-table tbody tr:hover td.idx {
+  background: var(--track);
+}
+
+/* ---- the two facts that make the table trustworthy ------------ */
+#pysuricata-report .sample-note {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
-  border-right: 2px solid var(--chip-br-light);
-}
-
-#pysuricata-report:not(.light) table.sample-table tbody td:first-child {
-  background: rgba(255, 255, 255, 0.05);
-  color: #999;
-  border-right-color: var(--chip-br-dark);
-}
-
-
-/* Subtle zebra striping for readability */
-#pysuricata-report table.sample-table tbody tr:nth-child(even) {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-#pysuricata-report:not(.light) table.sample-table tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-/* Minimal hover effect - match report styling */
-#pysuricata-report table.sample-table tbody tr:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-
-#pysuricata-report:not(.light) table.sample-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.06);
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 0 0 8px;
 }
 
 /* Make Sample card title match the Summary h2 size */
@@ -10499,13 +10473,13 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-16 02:04:15</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-16 02:14:55</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <span><span class="k">Profiled in</span> <span class="v">0.11 s</span></span>
+            <span><span class="k">Profiled in</span> <span class="v">0.12 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Shape</span> <span class="v">891 rows × 12 columns</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.52</a>
+            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.53</a>
           </div>
         </div>
 
@@ -10543,7 +10517,7 @@ body.suricata-standalone:not(.light) {
             </div>
             <div class="stat stat--elapsed">
               <div class="stat__cap">Elapsed</div>
-              <div class="stat__val">0.11 s</div>
+              <div class="stat__val">0.12 s</div>
               <div class="stat__sub">wall clock</div>
             </div>
           </div>
@@ -10593,7 +10567,7 @@ body.suricata-standalone:not(.light) {
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260816-020415-8950" data-original-markdown=""
+            data-report-id="20260816-021455-5022" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>
@@ -10605,15 +10579,18 @@ body.suricata-standalone:not(.light) {
         <section id="sample" class="collapsible-card">
           <span id="dataset-sample" class="anchor-alias"></span>
           <h2 class="section-title">Sample</h2>
-          <details class="card" id="sample-details">
+          <!-- open by default (#103): the sample is the fastest way to see
+               whether the profile matches the data, and hiding it behind a
+               click meant most readers never looked. -->
+          <details class="card" id="sample-details" open>
             <summary>
-              <span id="sample-toggle-text">Show sample</span>
+              <span id="sample-toggle-text">Hide sample</span>
               <span class="chev" aria-hidden="true">▸</span>
             </summary>
             <div class="card-content">
               
-    <div class="sample-scroll"><table class="sample-table"><thead><tr><th></th><th>PassengerId</th><th>Survived</th><th>Pclass</th><th>Name</th><th>Sex</th><th>Age</th><th>SibSp</th><th>Parch</th><th>Ticket</th><th>Fare</th><th>Cabin</th><th>Embarked</th></tr></thead><tbody><tr><td><span class="num">311</span></td><td><span class="num">312</span></td><td><span class="num">1</span></td><td><span class="num">1</span></td><td>Ryerson, Miss. Emily Borie</td><td>female</td><td><span class="num">18.0</span></td><td><span class="num">2</span></td><td><span class="num">2</span></td><td>PC 17608</td><td><span class="num">262.375</span></td><td>B57 B59 B63 B66</td><td>C</td></tr><tr><td><span class="num">132</span></td><td><span class="num">133</span></td><td><span class="num">0</span></td><td><span class="num">3</span></td><td>Robins, Mrs. Alexander A (Grace Charity Laury)</td><td>female</td><td><span class="num">47.0</span></td><td><span class="num">1</span></td><td><span class="num">0</span></td><td>A/5. 3337</td><td><span class="num">14.5</span></td><td>nan</td><td>S</td></tr><tr><td><span class="num">63</span></td><td><span class="num">64</span></td><td><span class="num">0</span></td><td><span class="num">3</span></td><td>Skoog, Master. Harald</td><td>male</td><td><span class="num">4.0</span></td><td><span class="num">3</span></td><td><span class="num">2</span></td><td>347088</td><td><span class="num">27.9</span></td><td>nan</td><td>S</td></tr><tr><td><span class="num">252</span></td><td><span class="num">253</span></td><td><span class="num">0</span></td><td><span class="num">1</span></td><td>Stead, Mr. William Thomas</td><td>male</td><td><span class="num">62.0</span></td><td><span class="num">0</span></td><td><span class="num">0</span></td><td>113514</td><td><span class="num">26.55</span></td><td>C87</td><td>S</td></tr><tr><td><span class="num">83</span></td><td><span class="num">84</span></td><td><span class="num">0</span></td><td><span class="num">1</span></td><td>Carrau, Mr. Francisco M</td><td>male</td><td><span class="num">28.0</span></td><td><span class="num">0</span></td><td><span class="num">0</span></td><td>113059</td><td><span class="num">47.1</span></td><td>nan</td><td>S</td></tr><tr><td><span class="num">224</span></td><td><span class="num">225</span></td><td><span class="num">1</span></td><td><span class="num">1</span></td><td>Hoyt, Mr. Frederick Maxfield</td><td>male</td><td><span class="num">38.0</span></td><td><span class="num">1</span></td><td><span class="num">0</span></td><td>19943</td><td><span class="num">90.0</span></td><td>C93</td><td>S</td></tr><tr><td><span class="num">489</span></td><td><span class="num">490</span></td><td><span class="num">1</span></td><td><span class="num">3</span></td><td>Coutts, Master. Eden Leslie "Neville"</td><td>male</td><td><span class="num">9.0</span></td><td><span class="num">1</span></td><td><span class="num">1</span></td><td>C.A. 37671</td><td><span class="num">15.9</span></td><td>nan</td><td>S</td></tr><tr><td><span class="num">747</span></td><td><span class="num">748</span></td><td><span class="num">1</span></td><td><span class="num">2</span></td><td>Sinkkonen, Miss. Anna</td><td>female</td><td><span class="num">30.0</span></td><td><span class="num">0</span></td><td><span class="num">0</span></td><td>250648</td><td><span class="num">13.0</span></td><td>nan</td><td>S</td></tr><tr><td><span class="num">741</span></td><td><span class="num">742</span></td><td><span class="num">0</span></td><td><span class="num">1</span></td><td>Cavendish, Mr. Tyrell William</td><td>male</td><td><span class="num">36.0</span></td><td><span class="num">1</span></td><td><span class="num">0</span></td><td>19877</td><td><span class="num">78.85</span></td><td>C46</td><td>S</td></tr><tr><td><span class="num">13</span></td><td><span class="num">14</span></td><td><span class="num">0</span></td><td><span class="num">3</span></td><td>Andersson, Mr. Anders Johan</td><td>male</td><td><span class="num">39.0</span></td><td><span class="num">1</span></td><td><span class="num">5</span></td><td>347082</td><td><span class="num">31.275</span></td><td>nan</td><td>S</td></tr></tbody></table></div>
-    <p class="muted small">Showing 10 randomly sampled rows from the first chunk.</p>
+    <p class="sample-note"><span class="sample-note__cols">12 cols · scroll →</span><span class="sample-note__rows">10 rows drawn at random from the first chunk</span></p>
+    <div class="sample-scroll"><table class="sample-table"><thead><tr><th class="idx num"></th><th class="num">PassengerId</th><th class="num">Survived</th><th class="num">Pclass</th><th>Name</th><th>Sex</th><th class="num">Age</th><th class="num">SibSp</th><th class="num">Parch</th><th>Ticket</th><th class="num">Fare</th><th>Cabin</th><th>Embarked</th></tr></thead><tbody><tr><td class="idx num">311</td><td class="num">312</td><td class="num">1</td><td class="num">1</td><td title="Ryerson, Miss. Emily Borie">Ryerson, Miss. Emily Borie</td><td>female</td><td class="num">18.0</td><td class="num">2</td><td class="num">2</td><td>PC 17608</td><td class="num">262.375</td><td>B57 B59 B63 B66</td><td>C</td></tr><tr><td class="idx num">132</td><td class="num">133</td><td class="num">0</td><td class="num">3</td><td title="Robins, Mrs. Alexander A (Grace Charity Laury)">Robins, Mrs. Alexander A (Grace Charity Laury)</td><td>female</td><td class="num">47.0</td><td class="num">1</td><td class="num">0</td><td>A/5. 3337</td><td class="num">14.5</td><td><span class="nil" title="nan">—</span></td><td>S</td></tr><tr><td class="idx num">63</td><td class="num">64</td><td class="num">0</td><td class="num">3</td><td>Skoog, Master. Harald</td><td>male</td><td class="num">4.0</td><td class="num">3</td><td class="num">2</td><td>347088</td><td class="num">27.9</td><td><span class="nil" title="nan">—</span></td><td>S</td></tr><tr><td class="idx num">252</td><td class="num">253</td><td class="num">0</td><td class="num">1</td><td title="Stead, Mr. William Thomas">Stead, Mr. William Thomas</td><td>male</td><td class="num">62.0</td><td class="num">0</td><td class="num">0</td><td>113514</td><td class="num">26.55</td><td>C87</td><td>S</td></tr><tr><td class="idx num">83</td><td class="num">84</td><td class="num">0</td><td class="num">1</td><td>Carrau, Mr. Francisco M</td><td>male</td><td class="num">28.0</td><td class="num">0</td><td class="num">0</td><td>113059</td><td class="num">47.1</td><td><span class="nil" title="nan">—</span></td><td>S</td></tr><tr><td class="idx num">224</td><td class="num">225</td><td class="num">1</td><td class="num">1</td><td title="Hoyt, Mr. Frederick Maxfield">Hoyt, Mr. Frederick Maxfield</td><td>male</td><td class="num">38.0</td><td class="num">1</td><td class="num">0</td><td>19943</td><td class="num">90.0</td><td>C93</td><td>S</td></tr><tr><td class="idx num">489</td><td class="num">490</td><td class="num">1</td><td class="num">3</td><td title="Coutts, Master. Eden Leslie &quot;Neville&quot;">Coutts, Master. Eden Leslie &quot;Neville&quot;</td><td>male</td><td class="num">9.0</td><td class="num">1</td><td class="num">1</td><td>C.A. 37671</td><td class="num">15.9</td><td><span class="nil" title="nan">—</span></td><td>S</td></tr><tr><td class="idx num">747</td><td class="num">748</td><td class="num">1</td><td class="num">2</td><td>Sinkkonen, Miss. Anna</td><td>female</td><td class="num">30.0</td><td class="num">0</td><td class="num">0</td><td>250648</td><td class="num">13.0</td><td><span class="nil" title="nan">—</span></td><td>S</td></tr><tr><td class="idx num">741</td><td class="num">742</td><td class="num">0</td><td class="num">1</td><td title="Cavendish, Mr. Tyrell William">Cavendish, Mr. Tyrell William</td><td>male</td><td class="num">36.0</td><td class="num">1</td><td class="num">0</td><td>19877</td><td class="num">78.85</td><td>C46</td><td>S</td></tr><tr><td class="idx num">13</td><td class="num">14</td><td class="num">0</td><td class="num">3</td><td title="Andersson, Mr. Anders Johan">Andersson, Mr. Anders Johan</td><td>male</td><td class="num">39.0</td><td class="num">1</td><td class="num">5</td><td>347082</td><td class="num">31.275</td><td><span class="nil" title="nan">—</span></td><td>S</td></tr></tbody></table></div>
     
             </div>
           </details>
