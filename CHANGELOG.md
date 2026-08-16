@@ -33,7 +33,19 @@ quoted when both sides were measured in the same round-robin run.
   zero-width bar — a table row impersonating data, with an element drawn to
   represent nothing.
 
-[#182]: https://github.com/alvarodiez20/pysuricata/issues/182
+- **Quality chips print the number they already carry** ([#184]). Every chip
+  emitted `data-value` and `data-threshold` and displayed neither on the
+  categorical, boolean and datetime cards, so a card said `Missing` where it
+  could say `19.9% missing`. `Dominant category` and `Empty or zero` gained
+  theirs too. `High cardinality`, `Monotonic ↑` and `Positive-only` stay bare
+  on purpose — those need a phrase rather than a numeric prefix, and inventing
+  one would read worse than the word.
+- **`Empty strings` was the wrong name and is now `Empty or zero`.** The
+  accumulator counts `value == "" or value == "0"`. Putting the number on the
+  chip is what made that visible: titanic's `SibSp` and `Parch` profile as
+  categorical and rendered `608 empty strings` and `678 empty strings`, when
+  they have 608 and 678 *zeros* and not one empty string between them. The
+  vague label had been hiding a false one.
 
 - **A histogram y-axis count label is now guaranteed at most four glyphs**
   ([#183]). It used to *prefer* short and not guarantee it: `12,500` came out
@@ -52,9 +64,6 @@ quoted when both sides were measured in the same round-robin run.
   announced itself; `0.0%` did not, which is why it is the more dangerous of
   the two.
 
-[#181]: https://github.com/alvarodiez20/pysuricata/issues/181
-[#183]: https://github.com/alvarodiez20/pysuricata/issues/183
-
 ### Changed
 
 - **No emoji anywhere in the report** ([#180]). Eight went: a `🔗` before a
@@ -68,8 +77,6 @@ quoted when both sides were measured in the same round-robin run.
   mono face; and inline glyphs are **announced by screen readers**, so `✓` in
   front of "No missing values detected" was read out as "check mark no missing
   values detected".
-
-[#180]: https://github.com/alvarodiez20/pysuricata/issues/180
 
 ### Changed
 
@@ -132,6 +139,11 @@ quoted when both sides were measured in the same round-robin run.
   decision at all — they were sitting in rules for markup nobody renders.
 
 [#122]: https://github.com/alvarodiez20/pysuricata/issues/122
+[#180]: https://github.com/alvarodiez20/pysuricata/issues/180
+[#181]: https://github.com/alvarodiez20/pysuricata/issues/181
+[#182]: https://github.com/alvarodiez20/pysuricata/issues/182
+[#183]: https://github.com/alvarodiez20/pysuricata/issues/183
+[#184]: https://github.com/alvarodiez20/pysuricata/issues/184
 
 ## [0.1.0] - 2026-08-16
 

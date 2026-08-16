@@ -77,7 +77,11 @@ class BooleanCardRenderer(CardRenderer):
 
         if flags.missing:
             severity = "bad" if miss_pct > 20 else "warn"
-            flag_items.append(f'<li class="flag {severity}">Missing</li>')
+            threshold = ">20%" if miss_pct > 20 else "≤20%"
+            flag_items.append(
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{miss_pct:.1f}%">Missing</li>'
+            )
 
         if flags.constant:
             flag_items.append('<li class="flag bad">Constant</li>')

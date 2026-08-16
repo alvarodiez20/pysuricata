@@ -548,7 +548,9 @@ class TableBuilder:
             flag_items.append(f'<li class="{self.css.flag}">Trim variants</li>')
 
         if flags.empty_strings:
-            flag_items.append(f'<li class="{self.css.flag}">Empty strings</li>')
+            # The accumulator counts `value == "" or value == "0"`, so the
+            # label has to say both.
+            flag_items.append(f'<li class="{self.css.flag}">Empty or zero</li>')
 
         # Boolean flags
         if flags.imbalanced:

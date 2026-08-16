@@ -119,7 +119,9 @@ class CategoricalCardRenderer(CardRenderer):
         miss_cls = "crit" if miss_pct > 20 else ("warn" if miss_pct > 0 else "")
 
         quality_flags = self.quality_assessor.assess_categorical_quality(stats)
-        quality_flags_html = self._build_quality_flags_html(quality_flags, miss_pct)
+        quality_flags_html = self._build_quality_flags_html(
+            quality_flags, miss_pct, stats
+        )
 
         # Compute derived stats
         cat_stats = self._compute_categorical_stats(stats)
@@ -240,7 +242,9 @@ class CategoricalCardRenderer(CardRenderer):
             "unique_est": int(getattr(stats, "unique_est", 0)),
         }
 
-    def _build_quality_flags_html(self, flags: QualityFlags, miss_pct: float) -> str:
+    def _build_quality_flags_html(
+        self, flags: QualityFlags, miss_pct: float, stats: CategoricalStats
+    ) -> str:
         """The chips, with the number each one already knows on its face.
 
         `_quality_flags_markup` builds them; this puts the value on the
@@ -249,17 +253,39 @@ class CategoricalCardRenderer(CardRenderer):
         markup, and the annotation lives in one place rather than being
         repeated at every one of them.
         """
-        return annotate_flags(self._quality_flags_markup(flags, miss_pct))
+        return annotate_flags(self._quality_flags_markup(flags, miss_pct, stats))
 
-    def _quality_flags_markup(self, flags: QualityFlags, miss_pct: float) -> str:
-        """Build quality flags HTML for categorical data."""
+    def _quality_flags_markup(
+        self,
+        flags: QualityFlags,
+        miss_pct: float,
+        stats: CategoricalStats | None = None,
+    ) -> str:
+        """Build quality flags HTML for categorical data.
+
+        A chip carries `data-value` only where the number reads as a prefix to
+        the label -- `annotate_flags` renders the face as `{value} {label}`, so
+        the test is whether the result is a sentence.
+
+        `19.9% missing` and `12 empty strings` pass. `72% high cardinality` and
+        `31.2% many rare levels` do not: those need a phrase rather than a
+        prefix, and inventing one would be worse than the word on its own. They
+        stay bare deliberately, not by omission.
+        """
         flag_items = []
 
         if flags.high_cardinality:
             flag_items.append('<li class="flag warn">High cardinality</li>')
 
         if flags.dominant_category:
-            flag_items.append('<li class="flag warn">Dominant category</li>')
+            share = self._dominant_share(stats)
+            if share is None:
+                flag_items.append('<li class="flag warn">Dominant category</li>')
+            else:
+                flag_items.append(
+                    f'<li class="flag warn" data-threshold="one level dominates" '
+                    f'data-value="{share:.1f}%">Dominant category</li>'
+                )
 
         if flags.many_rare_levels:
             flag_items.append('<li class="flag warn">Many rare levels</li>')
@@ -271,17 +297,51 @@ class CategoricalCardRenderer(CardRenderer):
             flag_items.append('<li class="flag">Trim variants</li>')
 
         if flags.empty_strings:
-            flag_items.append('<li class="flag">Empty strings</li>')
+            # "Empty or zero", not "Empty strings". The accumulator counts
+            # `value == "" or value == "0"`, and putting the number on the chip
+            # is what made that visible: titanic's `SibSp` and `Parch` profile
+            # as categorical and rendered `608 empty strings` and `678 empty
+            # strings`, when what they have is 608 and 678 *zeros* and not one
+            # empty string between them. The vague label had been hiding a
+            # false one.
+            empty = int(getattr(stats, "empty_zero", 0) or 0) if stats else 0
+            if empty > 0:
+                flag_items.append(
+                    f'<li class="flag" data-threshold=\'empty string or "0"\' '
+                    f'data-value="{empty:,}">Empty or zero</li>'
+                )
+            else:
+                flag_items.append('<li class="flag">Empty or zero</li>')
 
         if flags.missing:
             severity = "bad" if miss_pct > 20 else "warn"
-            flag_items.append(f'<li class="flag {severity}">Missing</li>')
+            threshold = ">20%" if miss_pct > 20 else "≤20%"
+            flag_items.append(
+                f'<li class="flag {severity}" data-threshold="{threshold}" '
+                f'data-value="{miss_pct:.1f}%">Missing</li>'
+            )
 
         return (
             f'<ul class="quality-flags">{"".join(flag_items)}</ul>'
             if flag_items
             else ""
         )
+
+    @staticmethod
+    def _dominant_share(stats: CategoricalStats | None) -> float | None:
+        """The mode's share of non-missing rows, or None if it cannot be known.
+
+        None rather than 0.0 when the top-k sketch is empty -- the same
+        distinction `_compute_categorical_stats` makes. A chip reading
+        `0.0% dominant category` would be a contradiction.
+        """
+        if stats is None:
+            return None
+        items = list(getattr(stats, "top_items", None) or [])
+        count = int(getattr(stats, "count", 0) or 0)
+        if not items or count <= 0:
+            return None
+        return items[0][1] / count * 100.0
 
     def _left_stats(
         self, stats: CategoricalStats, miss_cls: str, miss_pct: float, cat_stats: dict
@@ -315,7 +375,7 @@ class CategoricalCardRenderer(CardRenderer):
                 "num",
             ),
             (
-                "Empty strings",
+                "Empty or zero",
                 f"{int(cat_stats['empty_zero']):,}",
                 f"num {cat_stats['empty_cls']}",
             ),
