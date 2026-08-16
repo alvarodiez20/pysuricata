@@ -513,7 +513,8 @@ class DatetimeAccumulator(PicklableAccumulator):
             business_hours_ratio=business_hours_ratio,
             seasonal_pattern=seasonal_pattern,
             source_timezone=self._source_timezone,
-            unique_est=self._uniques.estimate(),
+            # Clamped: see the note in numeric.py.
+            unique_est=min(self._uniques.estimate(), self.count),
             chunk_metadata=chunk_metadata,
         )
 

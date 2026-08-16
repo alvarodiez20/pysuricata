@@ -7,6 +7,23 @@ description: Version history and release notes for PySuricata
 
 All notable changes to PySuricata are documented here.
 
+## [0.0.47] - 2026-08-16
+
+The first of three things to fix before the redesign takes a screenshot of
+anything. Commit 0 of the report migration: correctness before presentation, so
+every baseline the migration measures against is taken from correct output.
+
+### Fixed
+- **The distinct count could exceed the row count, and claimed to be exact.** 20,000 standard normals reported **20,197 distinct**, and a 20,000-row primary key reported 19,478 — both with `approx: False`.
+
+  The sketch is not at fault: KMV at k=2048 has a relative standard error near `1/√(k−2)`, about 2.2%, and both figures sit inside it. The reporting was at fault. More distinct values than rows is arithmetically impossible, and a reader who notices it does not conclude *sketch tolerance* — they conclude the numbers cannot be trusted, and that judgement lands on every other statistic on the page.
+
+  `unique_est` is now clamped to the row count on numeric, categorical and datetime columns, and `approx` is true whenever the value came from the sketch rather than from KMV's exact counter — it previously meant *sampling was involved*, so a column small enough to hold every value in the reservoir reported `False` while publishing a sketched distinct count. The card already prints `Unique (≈)` when `approx` is set, so the page stops claiming a precision it does not have.
+- **A perfect key was not recognised as one, for the same reason.** The identifier check required the distinct estimate to reach 0.98 of the row count — *inside* the estimator's own 2.2% error — so `np.arange(20_000)` came back at 0.974 and was profiled as a measurement, with a mean. The tolerance is now 0.95, two standard errors out, which is where a threshold has to sit relative to the error of the thing it tests.
+
+### Not changed
+The distinct figure is marked `(≈)` but does not yet print its bound. Showing `20,000 ± 440` is more honest still, and needs the sketch to expose its own error — that goes with the quality-flag threshold work in #118.
+
 ## [0.0.46] - 2026-08-16
 
 #65. Dataset comparison as a first-class output.

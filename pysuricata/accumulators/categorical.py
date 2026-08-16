@@ -441,14 +441,19 @@ class CategoricalAccumulator(PicklableAccumulator):
         most_common_ratio = self._calculate_most_common_ratio(top_items)
         diversity_ratio = self._calculate_diversity_ratio()
 
-        # Determine if approximation was used: tracker is full → unique count is estimated
-        approx = len(top_items) >= self.config.top_k_size
+        # Approximate if the top-k tracker filled, or if the distinct count
+        # came from the KMV sketch rather than its exact counter. The second
+        # arm was missing, so a column with few enough levels to fit the tracker
+        # reported approx=False while publishing a sketched distinct count.
+        approx = len(top_items) >= self.config.top_k_size or not self._uniques.is_exact
 
         return CategoricalSummary(
             name=self.name,
             count=self.count,
             missing=self.missing,
-            unique_est=self._uniques.estimate(),
+            # Clamped: see the note in numeric.py. A distinct count above the
+            # row count is impossible and costs the reader's trust in the page.
+            unique_est=min(self._uniques.estimate(), self.count),
             top_items=top_items,
             approx=approx,
             mem_bytes=self._bytes_seen,
