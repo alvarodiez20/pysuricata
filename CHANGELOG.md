@@ -19,6 +19,29 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.59] - 2026-08-16
+
+Phase 6 of the report redesign (#119): correlations. Nothing removed or changed
+in the fact fingerprint.
+
+### Changed
+- **"No significant correlations found" now reports what was found.** This is the common case — both example reports hit it — and nothing was actually missing: the pairs *were* computed, and every one came back weak. That is a finding, not an absence.
+
+  > All **3** numeric pairs are weakly related. The strongest is **0.025**, under the **0.50** reporting threshold.
+
+  The pairs below threshold are listed with their real values, capped at ten and stating how many were checked — with forty numeric columns there are 780 pairs, and the cap is not the count.
+- **Sign is position, not colour.** One diverging bar per row: zero at the centre, negative running left, positive running right, with the scale in the header. Colouring a negative correlation red reads as *bad*, and a negative correlation is often the interesting one. This also survives greyscale and needs no legend.
+- **The three strength bands are three steps of one blue** rather than three hues, and the rank badges are gone — the list is ordered, so `#1` beside the first row states what its position already says.
+- **The matrix is a lower triangle.** The full square printed every pair twice and spent a diagonal saying `1.00` once per column: half the ink for none of the information. Its ceiling drops from 15 columns to **10**, where the cells stop being wide enough to label, and two numeric columns now take the list — one pair reads better as a sentence than as a single cell.
+- **Weak cells stay visible and go quiet** rather than being left blank. A blank cell is indistinguishable from a pair that could not be computed, and an all-weak row is information.
+- **The count says what was checked**: `7 pairs above 0.50, of 190 checked`.
+
+### Removed
+- The `📊`, `📈` and `📉` emoji, from the correlations section and from the numeric card — not part of this brand, and they render inconsistently across platforms. The card's direction indicators become arrows, which carry the same meaning in one glyph that renders everywhere.
+
+### Verified
+#119 notes that no correlation above 0.5 had ever been seen in a real report here, so both populated views were designed against illustrative numbers. Both were checked against datasets with genuine structure before merging: a five-column frame for the matrix and a twelve-column one with six positive and six negative relationships for the list.
+
 ## [0.0.58] - 2026-08-16
 
 Phase 5.7 of the report redesign (#118): three defects found while designing,
@@ -940,7 +963,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.58...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.59...HEAD
+[0.0.59]: https://github.com/alvarodiez20/pysuricata/compare/0.0.58...0.0.59
 [0.0.58]: https://github.com/alvarodiez20/pysuricata/compare/0.0.57...0.0.58
 [0.0.57]: https://github.com/alvarodiez20/pysuricata/compare/0.0.56...0.0.57
 [0.0.56]: https://github.com/alvarodiez20/pysuricata/compare/0.0.55...0.0.56

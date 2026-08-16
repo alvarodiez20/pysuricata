@@ -1,3 +1,161 @@
+/* =============================================================
+   CORRELATIONS — sign is position, strength is a step (#119)
+
+   The old list coloured negative correlations red, which reads as *bad* --
+   and a negative correlation is often the interesting one. A diverging bar
+   puts zero at the centre and lets the side carry the sign: it survives
+   greyscale, needs no legend, and stops the report passing judgement.
+   ============================================================= */
+#pysuricata-report .corr-scale {
+  display: grid;
+  grid-template-columns: 340px 1fr 84px;
+  gap: 14px;
+  padding-bottom: 6px;
+}
+
+#pysuricata-report .corr-scale span:nth-child(2) {
+  text-align: center;
+}
+
+#pysuricata-report .corr-scale span:last-child {
+  text-align: right;
+}
+
+#pysuricata-report .correlation-row {
+  display: grid;
+  grid-template-columns: 340px 1fr 84px;
+  gap: 14px;
+  align-items: center;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .correlation-row .col-pair {
+  display: flex;
+  gap: 7px;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+#pysuricata-report .correlation-row .col-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pysuricata-report .correlation-row .arrow {
+  color: var(--muted);
+  flex: none;
+}
+
+#pysuricata-report .correlation-value {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  text-align: right;
+  color: var(--ink);
+}
+
+/* ---- the diverging bar ---------------------------------------- */
+#pysuricata-report .corr-bar {
+  position: relative;
+  display: block;
+  height: 10px;
+  background: var(--track);
+  min-width: 0;
+}
+
+#pysuricata-report .corr-bar__zero {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: var(--rule-strong);
+}
+
+#pysuricata-report .corr-bar__fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+
+/* ---- the weak state, which is the common one ------------------- */
+#pysuricata-report .corr-weak__lede {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 68ch;
+}
+
+#pysuricata-report .corr-weak__list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+#pysuricata-report .corr-weak__row {
+  display: grid;
+  grid-template-columns: 340px 1fr 84px;
+  gap: 14px;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .corr-weak__pair,
+#pysuricata-report .corr-weak__value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pysuricata-report .corr-weak__value {
+  text-align: right;
+  color: var(--ink);
+}
+
+/* ---- the matrix, lower triangle -------------------------------- */
+#pysuricata-report .correlation-matrix .corr-cell.empty {
+  background: transparent;
+  border: 0;
+}
+
+/* Visible, and quiet. A weak pair hidden altogether is indistinguishable
+   from one that could not be computed, and an all-weak row is information. */
+#pysuricata-report .correlation-matrix .corr-cell.weak {
+  background: var(--track);
+  color: var(--muted);
+}
+
+#pysuricata-report .correlation-matrix .corr-cell.none {
+  background: transparent;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 768px) {
+  #pysuricata-report .corr-scale,
+  #pysuricata-report .correlation-row,
+  #pysuricata-report .corr-weak__row {
+    grid-template-columns: 1fr 84px;
+  }
+
+  /* The bar drops under the pair rather than shrinking to nothing. */
+  #pysuricata-report .correlation-row .corr-bar,
+  #pysuricata-report .corr-weak__row .corr-bar {
+    grid-column: 1 / -1;
+  }
+
+  #pysuricata-report .corr-scale span:nth-child(2) {
+    display: none;
+  }
+}
+
 /* ============================================================================
    CORRELATIONS SECTION - Complete Redesign
    Fixed vertical alignment issues with proper table cell centering

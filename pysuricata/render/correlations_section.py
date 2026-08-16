@@ -40,24 +40,34 @@ class CorrelationsSectionRenderer:
                 "Correlation analysis requires at least 2 numeric columns"
             )
 
-        # Collect all correlation data from estimator
-        all_correlations = self._collect_correlations(corr_est, threshold)
+        # Everything, not only what clears the threshold. The pairs below it
+        # were computed either way, and they are the *answer* in the common
+        # case: both example reports have no pair above 0.5, and "no
+        # significant correlations found" reports that as an absence when it is
+        # a finding -- three pairs were checked and all three came back weak.
+        every_pair = self._collect_correlations(corr_est, 0.0)
+        all_correlations = [c for c in every_pair if abs(c[2]) >= threshold]
 
         if not all_correlations:
-            return self._render_no_correlations_state(
-                f"No significant correlations found (threshold: {threshold:.2f})"
-            )
+            return self._render_weak_state(every_pair, threshold)
 
         # Count total correlations
         n_correlations = len(all_correlations)
 
         # Decide rendering strategy based on number of columns
-        is_matrix_view = len(numeric_columns) <= 15
+        # 10, not 15: at fifteen columns the cells are 30px and the labels stop
+        # fitting, so the matrix becomes a grid of colours with nothing to say
+        # which pair each one is. Two columns is one pair, which the list
+        # states in a sentence and the matrix draws as a single cell.
+        is_matrix_view = 2 < len(numeric_columns) <= self.MATRIX_MAX_COLUMNS
 
         if is_matrix_view:
             # Matrix view for small datasets
+            # Every pair, not only the strong ones. A cell left blank because
+            # its pair fell under the threshold is indistinguishable from one
+            # that could not be computed -- and an all-weak row is information.
             correlations_html = self._render_correlation_matrix(
-                all_correlations, numeric_columns
+                every_pair, numeric_columns, threshold
             )
         else:
             # List view for large datasets
@@ -71,7 +81,7 @@ class CorrelationsSectionRenderer:
             header_html = f"""
             <div class="correlation-section-header">
                 <h3 class="correlation-section-title">Correlation Analysis</h3>
-                <span class="correlation-count-badge">{n_correlations} significant correlation{"s" if n_correlations != 1 else ""} found</span>
+                <span class="correlation-count-badge">{n_correlations} pair{"s" if n_correlations != 1 else ""} above {threshold:.2f}, of {len(every_pair):,} checked</span>
             </div>
             """
             legend_html = ""  # No legend for matrix view
@@ -79,7 +89,7 @@ class CorrelationsSectionRenderer:
             # List view: replace title with legend in header
             header_html = f"""
             <div class="correlation-legend-header">
-                <span class="correlation-count-badge">{n_correlations} significant correlation{"s" if n_correlations != 1 else ""} found</span>
+                <span class="correlation-count-badge">{n_correlations} pair{"s" if n_correlations != 1 else ""} above {threshold:.2f}, of {len(every_pair):,} checked</span>
                 <div class="correlation-legend">
                     <span class="legend-item"><span class="color-box very-strong"></span>(≥0.9)</span>
                     <span class="legend-item"><span class="color-box strong"></span>(0.7-0.9)</span>
@@ -99,6 +109,93 @@ class CorrelationsSectionRenderer:
             {legend_html}
         </div>
         """
+
+    #: Above this the matrix cells are too small to label.
+    MATRIX_MAX_COLUMNS = 10
+
+    #: Below-threshold pairs shown in the weak state. With 40 numeric columns
+    #: there are 780 pairs; the point is to show that they were checked, not to
+    #: print all of them.
+    WEAK_SHOWN = 10
+
+    def _render_weak_state(
+        self, every_pair: list[tuple[str, str, float]], threshold: float
+    ) -> str:
+        """No pair cleared the threshold -- which is a result, not an absence.
+
+        The old copy was an emoji and "No significant correlations found". But
+        nothing was missing: the pairs were computed, and every one came back
+        weak. Saying how many were checked and how strong the strongest was
+        turns a shrug into an answer, and the numbers were already to hand.
+        """
+        if not every_pair:
+            return self._render_no_correlations_state(
+                "No numeric pairs were available to compare"
+            )
+
+        checked = len(every_pair)
+        strongest = every_pair[0]
+        pairs = "pair" if checked == 1 else "pairs"
+        verb = "is" if checked == 1 else "are"
+
+        rows = "".join(
+            self._render_weak_row(a, b, r) for a, b, r in every_pair[: self.WEAK_SHOWN]
+        )
+        shown = min(checked, self.WEAK_SHOWN)
+        # "top 10 of 780 checked", never "10 pairs" -- the cap is not the count.
+        caption = (
+            f"Showing the {shown} strongest of {checked:,} checked"
+            if checked > shown
+            else f"All {checked:,} {pairs}"
+        )
+
+        return f"""
+        <div class="corr-weak">
+            <p class="corr-weak__lede">
+                All <strong>{checked:,}</strong> numeric {pairs} {verb} weakly related.
+                The strongest is <strong>{abs(strongest[2]):.3f}</strong>, under the
+                <strong>{threshold:.2f}</strong> reporting threshold.
+            </p>
+            <p class="micro-label">{caption}</p>
+            <ul class="corr-weak__list">{rows}</ul>
+        </div>
+        """
+
+    def _render_weak_row(self, col_a: str, col_b: str, corr: float) -> str:
+        """One below-threshold pair, on the same diverging bar as the list."""
+        return (
+            '<li class="corr-weak__row">'
+            f'<span class="corr-weak__pair">{self._escape(col_a)} · {self._escape(col_b)}</span>'
+            f"{self._diverging_bar(corr, 'var(--data-4)')}"
+            f'<span class="corr-weak__value">{corr:+.3f}</span>'
+            "</li>"
+        )
+
+    def _diverging_bar(self, corr: float, fill: str) -> str:
+        """Zero at the centre, negative left, positive right.
+
+        Sign is position, not colour. A red bar for a negative correlation
+        reads as *bad*, and a negative correlation is often the interesting
+        one. This also survives greyscale and needs no legend.
+        """
+        magnitude = min(abs(corr), 1.0) * 50.0
+        if corr < 0:
+            left, width = 50.0 - magnitude, magnitude
+        else:
+            left, width = 50.0, magnitude
+        return (
+            '<span class="corr-bar" aria-hidden="true">'
+            '<span class="corr-bar__zero"></span>'
+            f'<span class="corr-bar__fill" style="left:{left:.2f}%;width:{width:.2f}%;'
+            f'background:{fill}"></span>'
+            "</span>"
+        )
+
+    @staticmethod
+    def _escape(text: str) -> str:
+        import html as _html
+
+        return _html.escape(str(text))
 
     def _collect_correlations(
         self, corr_est, threshold: float
@@ -151,48 +248,51 @@ class CorrelationsSectionRenderer:
         # Show top N correlations (or all if less)
         display_count = min(max_display, len(sorted_correlations))
 
-        for i, (col1, col2, corr) in enumerate(sorted_correlations[:display_count]):
+        for col1, col2, corr in sorted_correlations[:display_count]:
             abs_corr = abs(corr)
-            strength_class = self._get_strength_class(abs_corr)
-            direction = "positive" if corr > 0 else "negative"
-            direction_icon = "📈" if corr > 0 else "📉"
-            strength_label = self._get_strength_label(abs_corr)
-
-            rank = i + 1
+            # Three bands, three steps of one blue. Strength is how far the bar
+            # runs; the step darkens with it rather than replacing it.
+            fill = (
+                "var(--data-1)"
+                if abs_corr >= 0.9
+                else "var(--data-2)"
+                if abs_corr >= 0.7
+                else "var(--data-3)"
+            )
             escaped_col1 = _html.escape(col1)
             escaped_col2 = _html.escape(col2)
 
+            # No rank badge. The list is ordered, so "#1" beside the first row
+            # states what its position already says. No direction icon either:
+            # the bar's side is the sign.
             bar_items.append(
                 f"""
             <div class="correlation-row">
-                <div class="correlation-header">
-                    <span class="rank-badge">#{rank}</span>
-                    <div class="col-pair" title="{escaped_col1} ↔ {escaped_col2}">
-                        <span class="col-name correlation-col">{escaped_col1}</span>
-                        <span class="arrow">↔</span>
-                        <span class="col-name correlation-col">{escaped_col2}</span>
-                    </div>
-                    <span class="correlation-value {direction}">
-                        {corr:+.3f}
-                    </span>
+                <div class="col-pair" title="{escaped_col1} ↔ {escaped_col2}">
+                    <span class="col-name correlation-col">{escaped_col1}</span>
+                    <span class="arrow">↔</span>
+                    <span class="col-name correlation-col">{escaped_col2}</span>
                 </div>
-                <div class="correlation-bar">
-                    <div class="bar-fill {strength_class}"
-                         style="width: {abs_corr * 100:.1f}%"
-                         title="Correlation strength: {abs_corr:.3f}"></div>
-                </div>
+                {self._diverging_bar(corr, fill)}
+                <span class="correlation-value">{corr:+.3f}</span>
             </div>
             """
             )
 
         return f"""
         <div class="correlations-container">
+            <div class="corr-scale micro-label" aria-hidden="true">
+                <span>− 1.0</span><span>← 0 →</span><span>+ 1.0</span>
+            </div>
             {"".join(bar_items)}
         </div>
         """
 
     def _render_correlation_matrix(
-        self, correlations: list[tuple[str, str, float]], numeric_columns: list[str]
+        self,
+        correlations: list[tuple[str, str, float]],
+        numeric_columns: list[str],
+        threshold: float = 0.5,
     ) -> str:
         """Render full correlation matrix heatmap (for small datasets).
 
@@ -209,60 +309,57 @@ class CorrelationsSectionRenderer:
             corr_dict[(col1, col2)] = corr
             corr_dict[(col2, col1)] = corr  # Symmetric
 
-        # Build matrix HTML
+        # Lower triangle only. The full square prints every pair twice and
+        # spends a diagonal saying 1.00 once per column -- half the ink for
+        # none of the information. The last column and the first row are
+        # dropped with it, since they hold nothing but the mirror.
         matrix_html = ['<table class="correlation-matrix">']
 
-        # Header row
         matrix_html.append("<thead><tr><th></th>")
-        for col in numeric_columns:
+        for col in numeric_columns[:-1]:
             escaped = _html.escape(col)
             matrix_html.append(f'<th title="{escaped}">{escaped}</th>')
         matrix_html.append("</tr></thead>")
 
-        # Data rows
         matrix_html.append("<tbody>")
-        for i, row_col in enumerate(numeric_columns):
+        for i, row_col in enumerate(numeric_columns[1:], start=1):
             escaped_row = _html.escape(row_col)
             matrix_html.append(f'<tr><th title="{escaped_row}">{escaped_row}</th>')
 
-            for j, col_col in enumerate(numeric_columns):
-                if i == j:
-                    # Diagonal: correlation with self = 1.0
+            for j, col_col in enumerate(numeric_columns[:-1]):
+                if j >= i:
+                    matrix_html.append('<td class="corr-cell empty"></td>')
+                    continue
+
+                corr = corr_dict.get((row_col, col_col))
+                if corr is None:
+                    # A constant column has no variance and correlates with
+                    # nothing. Showing that as 0.00 would claim a measurement
+                    # that was never made.
                     matrix_html.append(
-                        '<td class="corr-cell diagonal" data-corr="1.00">1.00</td>'
+                        '<td class="corr-cell none" title="not comparable">·</td>'
                     )
-                else:
-                    # Off-diagonal: look up correlation
-                    corr = corr_dict.get((row_col, col_col), 0.0)
-                    abs_corr = abs(corr)
-                    strength_class = self._get_strength_class(abs_corr)
-                    direction_class = "positive" if corr > 0 else "negative"
+                    continue
 
-                    # Only show cell if correlation is significant (≥0.5)
-                    if abs_corr >= 0.5:
-                        matrix_html.append(
-                            f'<td class="corr-cell {strength_class} {direction_class}" '
-                            f'data-corr="{corr:.3f}" '
-                            f'title="{escaped_row} ↔ {_html.escape(col_col)}: {corr:+.3f}">'
-                            f"{corr:+.2f}</td>"
-                        )
-                    else:
-                        # Weak correlation: show as faded
-                        matrix_html.append(
-                            f'<td class="corr-cell weak" data-corr="{corr:.3f}" '
-                            f'title="{escaped_row} ↔ {_html.escape(col_col)}: {corr:+.3f}">'
-                            f'<span class="weak-val">{corr:+.2f}</span></td>'
-                        )
-
+                # Below the threshold the cell stays visible and goes quiet.
+                # Hiding it would make a weak pair look like an unmeasured one.
+                strength = (
+                    self._get_strength_class(abs(corr))
+                    if abs(corr) >= threshold
+                    else "weak"
+                )
+                escaped_pair = _html.escape(f"{row_col} ↔ {col_col}")
+                # The tint is |r|; the sign is the printed number. A red cell
+                # for a negative correlation reads as "bad", and a negative
+                # correlation is often the interesting one.
+                matrix_html.append(
+                    f'<td class="corr-cell {strength}" data-corr="{corr:.2f}" '
+                    f'title="{escaped_pair}: {corr:+.3f}">{corr:+.2f}</td>'
+                )
             matrix_html.append("</tr>")
-        matrix_html.append("</tbody>")
-        matrix_html.append("</table>")
+        matrix_html.append("</tbody></table>")
 
-        return f"""
-        <div class="correlation-matrix-container">
-            {"".join(matrix_html)}
-        </div>
-        """
+        return f'<div class="correlation-matrix-container">{"".join(matrix_html)}</div>'
 
     def _render_no_correlations_state(self, message: str) -> str:
         """Render empty state when no correlations are available.
@@ -276,7 +373,6 @@ class CorrelationsSectionRenderer:
         return f"""
         <div class="correlations-section-redesign">
             <div class="no-correlations-state">
-                <span class="icon">📊</span>
                 <p>{_html.escape(message)}</p>
             </div>
         </div>

@@ -791,7 +791,7 @@ class NumericCardRenderer(CardRenderer):
         """
         if not outliers:
             # Still show summary box even with 0 outliers
-            direction_icon = "📉" if direction == "low" else "📈"
+            direction_icon = "↓" if direction == "low" else "↑"
             direction_label = "Low Outliers" if direction == "low" else "High Outliers"
 
             summary_html = f"""
@@ -850,7 +850,7 @@ class NumericCardRenderer(CardRenderer):
                     has_mad = True
 
         # Build summary header
-        direction_icon = "📉" if direction == "low" else "📈"
+        direction_icon = "↓" if direction == "low" else "↑"
         direction_label = "Low Outliers" if direction == "low" else "High Outliers"
 
         # Build severity breakdown - show both methods if both are present
@@ -981,7 +981,6 @@ class NumericCardRenderer(CardRenderer):
             return f"""
         <div class="correlation-summary">
             <div class="no-correlations">
-                <span class="icon">📊</span>
                 <span class="message">No significant correlations found</span>
                 <small>Correlations below {threshold:.1f} threshold are not shown</small>
             </div>
@@ -1043,7 +1042,7 @@ class NumericCardRenderer(CardRenderer):
 
             # Direction indicator
             direction = "positive" if corr_value > 0 else "negative"
-            direction_icon = "📈" if corr_value > 0 else "📉"
+            direction_icon = "↑" if corr_value > 0 else "↓"
 
             # Ranking
             rank_icon = ordinal_number(i + 1)
@@ -1369,7 +1368,6 @@ class NumericCardRenderer(CardRenderer):
         return f"""
         <div class="missing-per-chunk-enhanced">
             <div class="chunk-header">
-                <span class="icon">📊</span>
                 <span class="title">Missing Values per Chunk</span>
                 <span class="overall-stats">
                     {stats.missing:,} missing ({insights.get("overall_missing_pct", 0):.1f}% overall)
