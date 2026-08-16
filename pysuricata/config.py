@@ -100,7 +100,9 @@ class EngineConfig:
     force_column_types: dict[str, str] | None = None
 
     # Missing columns display options
-    missing_columns_threshold_pct: float = 0.0  # Minimum missing percentage to display
+    # The single source for this value; `MissingColumnsAnalyzer` documents that
+    # it defers here. It used to be one of three, and the other two disagreed.
+    missing_columns_threshold_pct: float = 0.0
     missing_columns_max_initial: int = 5  # Maximum columns shown initially
     missing_columns_max_expanded: int = 10  # Maximum columns shown when expanded
 

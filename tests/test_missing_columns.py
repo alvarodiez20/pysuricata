@@ -105,8 +105,7 @@ class TestMissingColumnsRenderer:
 
     def test_render_no_missing_columns(self):
         """Test rendering when no significant missing columns exist."""
-        # Use factory with default threshold (0.5%) to filter out low percentages
-        renderer = create_missing_columns_renderer()
+        renderer = create_missing_columns_renderer(min_threshold_pct=0.5)
         miss_list = [
             ("col1", 0.1, 2),
             ("col2", 0.3, 6),
@@ -114,7 +113,7 @@ class TestMissingColumnsRenderer:
 
         html = renderer.render_missing_columns_html(miss_list, n_cols=2, n_rows=1000)
 
-        assert "No missing data" in html
+        assert "No column has missing values" in html
         assert "expand-btn" not in html  # No expand button
 
     def test_render_small_dataset_no_expand(self):
@@ -180,11 +179,17 @@ class TestFactoryFunction:
     """Test the factory function for creating renderers."""
 
     def test_create_renderer_default_config(self):
-        """Test creating renderer with default configuration."""
+        """The factory used to default to 0.5 while the class said 0.0 and the
+        config said 0.0. The config wins in the render path, so the factory
+        never actually applied 0.5 to a report -- it only made the code read as
+        though it did."""
         renderer = create_missing_columns_renderer()
 
         assert isinstance(renderer, MissingColumnsRenderer)
-        assert renderer.analyzer.min_threshold_pct == 0.5
+        assert (
+            renderer.analyzer.min_threshold_pct
+            == MissingColumnsAnalyzer.MIN_THRESHOLD_PCT
+        )
 
     def test_create_renderer_custom_threshold(self):
         """Test creating renderer with custom threshold."""
@@ -223,7 +228,7 @@ class TestIntegrationScenarios:
         renderer = create_missing_columns_renderer()
 
         html = renderer.render_missing_columns_html([], n_cols=0, n_rows=0)
-        assert "No missing data" in html
+        assert "No column has missing values" in html
 
     def test_edge_case_all_columns_insignificant(self):
         """Test behavior when all columns have insignificant missing data."""
@@ -236,9 +241,116 @@ class TestIntegrationScenarios:
         renderer = create_missing_columns_renderer(min_threshold_pct=1.0)
         html = renderer.render_missing_columns_html(miss_list, n_cols=3, n_rows=1000)
 
-        assert "No missing data" in html
+        assert "No column has missing values" in html
         assert "expand-btn" not in html
 
 
 if __name__ == "__main__":
     pytest.main([__file__])
+
+
+class TestTheListSaysWhatItCounted:
+    """`total_significant` was computed, stored on the result, and printed
+    nowhere -- so a frame with 23 partially-missing columns showed five and
+    read as though that were all of them.
+
+    A list that truncates in silence is worse than a shorter list: the reader
+    has no way to know they are looking at part of the answer.
+    """
+
+    def test_the_remainder_is_stated(self):
+        renderer = MissingColumnsRenderer()
+        miss_list = [(f"col{i}", 20.0 - i * 0.5, 100) for i in range(23)]
+
+        html = renderer.render_missing_columns_html(miss_list, n_cols=23, n_rows=1000)
+
+        assert "18 more columns" in html, html[-300:]
+
+    def test_it_is_singular_for_one(self):
+        renderer = MissingColumnsRenderer()
+        miss_list = [(f"col{i}", 20.0 - i, 100) for i in range(6)]
+
+        html = renderer.render_missing_columns_html(miss_list, n_cols=6, n_rows=1000)
+
+        assert "1 more column with missing values" in html
+
+    def test_nothing_is_added_when_the_list_is_complete(self):
+        renderer = MissingColumnsRenderer()
+        miss_list = [("col1", 5.0, 100), ("col2", 3.0, 60)]
+
+        html = renderer.render_missing_columns_html(miss_list, n_cols=2, n_rows=1000)
+
+        assert "more column" not in html
+
+    def test_the_remainder_names_the_threshold_it_counted_against(self):
+        """`+ 18 more columns` is ambiguous without it -- more than what?
+
+        At the shipped default of 0 the phrasing changes: "above 0% missing"
+        is a strange way to say "has any missing at all".
+        """
+        renderer = create_missing_columns_renderer(min_threshold_pct=2.0)
+        miss_list = [(f"col{i}", 20.0 - i * 0.5, 100) for i in range(23)]
+
+        html = renderer.render_missing_columns_html(miss_list, n_cols=23, n_rows=1000)
+
+        assert "above 2% missing" in html
+
+
+class TestTheThresholdIsWrittenDownOnce:
+    """It was 0.0 on the class and 0.5 in the factory, so the same class
+    filtered differently depending on how it was built, and nothing in the
+    report said which had happened."""
+
+    def test_the_remainder_reads_naturally_at_the_default(self):
+        renderer = create_missing_columns_renderer()
+        miss_list = [(f"col{i}", 20.0 - i * 0.5, 100) for i in range(23)]
+
+        html = renderer.render_missing_columns_html(miss_list, n_cols=23, n_rows=1000)
+
+        assert "18 more columns with missing values" in html
+        assert "above 0% missing" not in html
+
+    def test_direct_construction_and_the_factory_agree(self):
+        assert (
+            MissingColumnsAnalyzer().min_threshold_pct
+            == create_missing_columns_renderer().analyzer.min_threshold_pct
+        )
+
+    def test_the_default_is_the_class_constant(self):
+        assert (
+            MissingColumnsAnalyzer().min_threshold_pct
+            == MissingColumnsAnalyzer.MIN_THRESHOLD_PCT
+        )
+
+    def test_an_explicit_value_is_still_honoured(self):
+        """`None` means "use the default"; a number means that number, and the
+        two must not collapse into each other."""
+        assert MissingColumnsAnalyzer(min_threshold_pct=7.5).min_threshold_pct == 7.5
+        assert MissingColumnsAnalyzer(min_threshold_pct=0.0).min_threshold_pct == 0.0
+
+    def test_the_config_default_matches_the_analyzer(self):
+        """The render path reads `ProfileConfig`, so a disagreement here means
+        the value in the code is not the value in the report."""
+        from pysuricata.config import EngineConfig
+
+        assert (
+            EngineConfig().missing_columns_threshold_pct
+            == MissingColumnsAnalyzer.MIN_THRESHOLD_PCT
+        )
+
+
+class TestTheEmptyStateIsNotAFakeRow:
+    def test_it_draws_no_bar(self):
+        """The old empty state rendered a zero-width `.missing-fill` -- an
+        element drawn to represent nothing."""
+        renderer = create_missing_columns_renderer()
+        html = renderer.render_missing_columns_html([], n_cols=3, n_rows=1000)
+
+        assert "missing-fill" not in html
+        assert "width:0%" not in html
+
+    def test_it_quotes_no_zero_statistic(self):
+        renderer = create_missing_columns_renderer()
+        html = renderer.render_missing_columns_html([], n_cols=3, n_rows=1000)
+
+        assert "0 (0.0%)" not in html

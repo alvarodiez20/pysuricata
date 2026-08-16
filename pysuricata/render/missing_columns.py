@@ -13,17 +13,33 @@ import html as _html
 class MissingColumnsAnalyzer:
     """Analyzer for determining missing columns to display."""
 
-    # Configuration constants
-    MIN_THRESHOLD_PCT = 0.0  # Show all columns with any missing data
-    MAX_DISPLAY = 5  # Maximum columns shown (no expand)
+    #: The one threshold, and it matches `ProfileConfig`.
+    #:
+    #: There were three. This constant said 0.0, the factory below said 0.5,
+    #: and `config.py` said 0.0 -- and since the render path reads the config,
+    #: the factory default had never actually applied to a report. So the same
+    #: class filtered differently depending on how it was built, and the one
+    #: value a reader could have found by reading the code was the wrong one.
+    #:
+    #: The value stays 0.0 rather than moving to the 0.5 the factory claimed:
+    #: 0.0 is what every shipped report has used, and raising it would quietly
+    #: drop columns from people's summaries. `ProfileConfig` is where to change
+    #: it.
+    MIN_THRESHOLD_PCT = 0.0
 
-    def __init__(self, min_threshold_pct: float = MIN_THRESHOLD_PCT):
+    #: How many rows the summary panel has space for.
+    MAX_DISPLAY = 5
+
+    def __init__(self, min_threshold_pct: float | None = None):
         """Initialize the analyzer with custom threshold.
 
         Args:
-            min_threshold_pct: Minimum missing percentage to display (default: 0.0%)
+            min_threshold_pct: Minimum missing percentage to display. Defaults
+                to `MIN_THRESHOLD_PCT`.
         """
-        self.min_threshold_pct = min_threshold_pct
+        self.min_threshold_pct = (
+            self.MIN_THRESHOLD_PCT if min_threshold_pct is None else min_threshold_pct
+        )
 
     def analyze_missing_columns(
         self, miss_list: list[tuple[str, float, int]], n_cols: int, n_rows: int
@@ -95,8 +111,9 @@ class MissingColumnsRenderer:
         if not result.columns:
             return self._render_no_missing_columns()
 
-        # Always return just the initial list (max 5 items)
-        return self._render_columns_list(result.columns)
+        return self._render_columns_list(result.columns) + self._render_remainder(
+            result
+        )
 
     def _render_columns_list(self, columns: list[tuple[str, float, int]]) -> str:
         """Render a list of missing columns as HTML."""
@@ -118,6 +135,29 @@ class MissingColumnsRenderer:
 
         return "".join(html_parts)
 
+    def _render_remainder(self, result: MissingColumnsResult) -> str:
+        """`+ 18 more columns` when the list is cut short.
+
+        `total_significant` was computed, stored on the result, and printed
+        nowhere -- so a frame with 23 partially-missing columns showed five and
+        read as though that were all of them. A list that truncates in silence
+        is worse than a shorter list, because the reader has no way to know
+        they are looking at part of the answer.
+        """
+        hidden = result.total_significant - len(result.columns)
+        if hidden <= 0:
+            return ""
+        noun = "column" if hidden == 1 else "columns"
+        # "above 0% missing" is a strange way to say "has any missing at all",
+        # and 0 is the shipped default, so it is the phrasing most readers
+        # would see.
+        qualifier = (
+            "with missing values"
+            if result.threshold_used <= 0
+            else f"above {result.threshold_used:g}% missing"
+        )
+        return f'<li class="miss-more">+ {hidden:,} more {noun} {qualifier}</li>'
+
     def _get_severity_class(self, pct: float) -> str:
         """Get CSS class based on missing percentage severity."""
         if pct <= 5:
@@ -128,28 +168,26 @@ class MissingColumnsRenderer:
             return "high"
 
     def _render_no_missing_columns(self) -> str:
-        """Render HTML when no missing columns exist."""
-        # Return just the list item - template provides the <ul> wrapper
-        return """
-            <li class="missing-item">
-                <div class="missing-info">
-                    <code class="missing-col">No missing data</code>
-                    <span class="missing-stats">0 (0.0%)</span>
-                </div>
-                <div class="missing-bar">
-                    <div class="missing-fill low" style="width:0%;"></div>
-                </div>
-            </li>
+        """A sentence, not a row.
+
+        This used to render a full list item -- a `<code>` reading
+        `No missing data`, a `0 (0.0%)` stat and a zero-width bar -- which is a
+        table row impersonating data. An empty state should look like an empty
+        state; the zero-width bar in particular is an element drawn to
+        represent nothing.
         """
+        return '<li class="miss-none">No column has missing values</li>'
 
 
 def create_missing_columns_renderer(
-    min_threshold_pct: float = 0.5,
+    min_threshold_pct: float | None = None,
 ) -> MissingColumnsRenderer:
     """Factory function to create a configured missing columns renderer.
 
     Args:
-        min_threshold_pct: Minimum missing percentage to display (default: 0.5%)
+        min_threshold_pct: Minimum missing percentage to display. Defaults to
+            `MissingColumnsAnalyzer.MIN_THRESHOLD_PCT`, which is the only place
+            the value is written down.
 
     Returns:
         Configured MissingColumnsRenderer instance
