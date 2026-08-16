@@ -1771,14 +1771,6 @@
 <code>pysuricata</code> repo. Each phase is independently shippable and independently
 reviewable. Work them in order — phase 1 establishes tokens every later phase
 depends on.</p>
-<blockquote>
-<p><strong>Amended 2026-08-16.</strong> Three additions to the plan as handed over, marked
-<em>(amendment)</em> throughout: a <strong>commit 0</strong> carrying the data fixes that were at
-commit 12, a <strong>phase 5b</strong> for the partial report, and a <strong>phase 10</strong> for resume.
-The rationale for each is at the point of insertion. Testing for the whole
-migration is in <a href="../MIGRATION_TESTING/"><code>docs/MIGRATION_TESTING.md</code></a>, which
-replaces the "Tests to update" list at the end of this file.</p>
-</blockquote>
 <p><strong>Constraints that hold throughout</strong></p>
 <ul>
 <li>Reports stay <strong>single-file</strong>: inline CSS, inline JS, inline SVG. No external assets, no web fonts.</li>
@@ -1855,6 +1847,10 @@ replaces the "Tests to update" list at the end of this file.</p>
 <td>correlations (three states) and missing values (two options)</td>
 </tr>
 <tr>
+<td><code>Details.dc.html</code></td>
+<td>the details panes for all four types, plus an audit of what landed. Newest turn at the top</td>
+</tr>
+<tr>
 <td><code>Variables.dc.html</code></td>
 <td>superseded exploration of three variables layouts. Kept for the reasoning; 4b won</td>
 </tr>
@@ -1865,47 +1861,59 @@ everything except the datetime card, which uses <code>daily_2026-08-16</code>. T
 exceptions are labelled in the files themselves — the correlation values above
 0.5 (Titanic has none) and the second series in the comparison charts.</p>
 <hr />
-<h2 id="phase-0-correct-the-numbers-first-amendment">Phase 0 — Correct the numbers first <em>(amendment)</em></h2>
-<p>Files: <code>accumulators/</code>, <code>render/card_base.py</code>, <code>compute/</code></p>
-<p>Nothing in this phase is design work, and all of it must land <strong>before</strong> phase 1.
-The reason is baselines: every golden payload, fact list and screenshot taken
-during this migration becomes the reference the next sixteen commits are checked
-against, and three of the numbers in today's output are wrong. A baseline taken
-from a wrong report certifies the wrongness.</p>
-<h3 id="01-clamp-the-distinct-estimate">0.1 Clamp the distinct estimate</h3>
-<p>Phase 5.7 already carries this: <code>Name</code> reports <strong>892 distinct against 891 rows</strong>.
-It is here instead because it touches <code>accumulators/</code>, so it needs the accuracy
-oracle rather than a snapshot review — a different kind of review from every
-other commit in the sequence, and one that should not be buried at position 12.</p>
-<p>Clamp to <code>min(estimate, count)</code>, set <code>approx: True</code> for any value that came from
-the sketch rather than the exact counter, and keep the <code>(≈)</code> marker.</p>
-<h3 id="02-the-quasi-constant-rule-not-in-the-plan-as-handed-over">0.2 The quasi-constant rule <em>(not in the plan as handed over)</em></h3>
-<p><code>age</code> — 67 distinct integers over 18–85 in 20,000 rows — is flagged
-<strong>Quasi-Constant</strong>, severity <code>bad</code>, from <code>data-value="0.3%"</code>: a unique <em>ratio</em>.
-The type classifier was fixed for this case; the same reasoning survives in the
-quality-flag layer.</p>
-<p>This matters here because <strong>phase 5.7 makes it worse</strong>. Showing a flag's value
-against its threshold, outlined in its severity colour, renders this false alarm
-more legibly — and phase 3's triage block puts it at the top of the page. On a
-two-column frame the report currently opens with <em>"1 of 2 columns need a look"</em>
-and names the healthy column.</p>
-<p>Replace the ratio test with the cardinality ceiling used by the classifier, and
-add the test that profiles the same column at 1k / 100k / 10M rows and asserts
-the flag set does not change.</p>
-<h3 id="03-finalize-must-not-consume-randomness">0.3 <code>finalize()</code> must not consume randomness</h3>
-<p><code>finalize()</code> advances <code>ReservoirSampler._rng</code>. Every call therefore changes every
-subsequent sampling decision, so <strong><code>checkpoint_write_html=True</code> silently changes
-the report's quantiles, median, IQR, MAD and histogram</strong>. Verified: finalising at
-chunk 3 of 6 and continuing diverges from an uninterrupted run on <code>sample_vals</code>
-and four dependent fields.</p>
-<p>It is a correctness bug on its own, and it is also the precondition for phase 5b
-— a partial report is a mid-stream <code>finalize()</code>, so until this is fixed, any
-progressive rendering corrupts the run it is reporting on.</p>
-<p><strong>Acceptance:</strong> <code>unique &lt;= count</code> for every column; <code>age</code> raises no flag at 1k,
-100k and 10M rows; <code>finalize()</code> mutates nothing, and a mid-stream <code>finalize()</code>
-followed by more chunks equals an uninterrupted run field for field; the accuracy
-oracle gains a case for <strong>profiling with partial renders on equals profiling with
-them off</strong>; all 51 existing oracle tests still pass.</p>
+<h2 id="status-as-of-the-last-audit">Status, as of the last audit</h2>
+<p>Read against the source, not the example reports — <code>examples/titanic_report.html</code> and
+<code>reports/daily_2026-08-16.html</code> both predate the numeric restack, so they disagree with
+the code. <strong>Regenerate them</strong>; an audit should be able to read the report.</p>
+<table>
+<thead>
+<tr>
+<th>Phase</th>
+<th>State</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 · tokens, typography, micro-label</td>
+<td><strong>landed.</strong> Verbatim, plus an <code>--axis</code> token split out of <code>--rule-strong</code></td>
+</tr>
+<tr>
+<td>5.1 · numeric card restack</td>
+<td><strong>landed</strong> (<code>numeric_card.py</code> emits <code>vstat-row</code>)</td>
+</tr>
+<tr>
+<td>5.1 · categorical, datetime, boolean cards</td>
+<td><strong>still open</strong> — <code>categorical_card.py:672</code>, <code>datetime_card.py:842</code>, <code>boolean_card.py:539</code> still emit <code>.triple-row</code>. Tracked as #158</td>
+</tr>
+<tr>
+<td>5.7 · flag chips show their value</td>
+<td><strong>landed</strong> since this audit (#137). Chips render <code>20.0% missing</code>, with the threshold in a <code>title</code></td>
+</tr>
+<tr>
+<td>6.1 · correlations empty state</td>
+<td><strong>landed</strong> since this audit (#138)</td>
+</tr>
+<tr>
+<td>6.4 · remove emoji</td>
+<td><strong>partly landed.</strong> Gone from <code>correlations_section.py</code> (#138). <code>💡</code> and <code>ℹ️</code> remain in the numeric outlier and context notes — #157</td>
+</tr>
+<tr>
+<td>7 · missing values, drop the tabs</td>
+<td><strong>landed</strong> since this audit (#140). The by-chunk half is blocked on #139</td>
+</tr>
+<tr>
+<td>— · details behind a toggle</td>
+<td><strong>kept.</strong> Still worth revisiting once the panes are worth opening — phases 5b (#154) and 5c (#155)</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><strong>Note on this table.</strong> The handoff audited a snapshot from before phases 2–7 landed, so
+four of its rows read "not applied" for work that has since shipped. Every row above was
+re-verified against <code>main</code> at <code>ae9d2e8</code> by rendering a report and reading the markup,
+not by reading the handoff. Where the handoff was still right — the three unrestacked
+card types, the surviving emoji — an issue is linked.</p>
+</blockquote>
 <hr />
 <h2 id="phase-1-tokens-and-typography">Phase 1 — Tokens and typography</h2>
 <p>Files: <code>static/css/_00-tokens.css</code>, <code>_01-base.css</code></p>
@@ -1914,6 +1922,28 @@ the measured contrast ratios, the dark-mode proposal, and a compatibility shim
 mapping the legacy variable names onto the new scale so nothing breaks mid-way.
 <strong>Delete the shim once phase 12 lands</strong> — it is scaffolding.</p>
 <p>Two scales, and they never mix: <strong>blue means data, warm means data quality.</strong></p>
+<p><code>tokens.css</code> carries three rules a contrast test cannot check, because they are
+about which surface a mark lands on, what order marks paint in, and what a zero
+value draws. Each was a real defect caught in review, twice in one case:</p>
+<ol>
+<li><strong>Only <code>--data-1</code>, <code>--data-2</code> and <code>--data-3</code> may sit on the paper or on an empty
+   <code>--track</code>.</strong> <code>--data-4</code> is stack-internal only. It reads as a reasonable "quiet"
+   choice for a subordinate chart and at 1.83:1 it is a ghost — if a chart should be
+   subordinate, demote it one step and promote the mark above it.</li>
+<li><strong>A quality-coloured mark crossing a data fill must protrude onto the paper or
+   paint underneath it.</strong> <code>--q-bad</code> on <code>--data-2</code> is 1.08:1; no warm colour is visible
+   on a blue fill. A reference line goes <em>before</em> the bars in DOM order so they occlude
+   it, and carries its value as a tick in the axis gutter. A marker inside a band must
+   protrude past the edge and differ from its neighbour by <strong>shape</strong>, not colour. A
+   legend swatch must be the colour actually drawn.</li>
+<li><strong>A zero count draws nothing.</strong> <code>v === 0 ? 0 : Math.max(1, …)</code>. A 1px floor is right
+   for a small non-zero value and wrong for zero — the month chart is where it matters,
+   since ten empty months drawn as ten 1px bars assert data that is not there.</li>
+</ol>
+<p><strong><code>--data-3</code> changes value</strong>, from <code>#7FA0B5</code> to <code>#5C7F99</code>. At 2.63:1 on the paper the
+old value could not legally carry a standalone mark, which is the job a third step
+exists for. <code>#5C7F99</code> clears 3:1 on both surfaces in both themes, and is too mid-tone
+to carry text either way — so it is a fill, never a label background.</p>
 <p>Two rules worth a comment in the CSS, because they are why the palette looks like this:</p>
 <ol>
 <li><strong>Type is not a colour.</strong> The donut assigned numeric/categorical/datetime/boolean
@@ -1952,64 +1982,7 @@ strongest "template" signal in the report. Replace with hairline rules and white
   <code>--segment-shadow-*</code>, <code>--label-shadow-*</code>, <code>--legend-shadow-*</code>, and the
   <code>--chart-bg-*</code> / <code>--svg-bg-*</code> gradient pair.</li>
 </ul>
-<h3 id="two-contrast-failures-to-settle-before-this-lands-amendment">Two contrast failures to settle before this lands <em>(amendment)</em></h3>
-<p><code>test_contrast.py</code> run against <code>tokens.css</code> as shipped gives <strong>36 pass, 2 fail</strong>,
-the same pair in both themes:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>[light] --rule-strong (#CFC7B8) on --paper (#FBF9F5) is 1.60:1, needs 3.0:1
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>[dark]  --rule-strong (#46413A) on --paper (#1C1A17) is 1.72:1, needs 3.0:1
-</span></code></pre></div>
-<p>Resolve it by <strong>splitting the token</strong>, not by relaxing the assertion — the test is
-only worth having while it is non-negotiable. <code>--rule-strong</code> is doing two jobs
-with different requirements: a decorative row divider, which WCAG 1.4.11 does not
-cover, and a <strong>chart axis line</strong>, which it does, as "part of a graphic required to
-understand the content". Keep <code>--rule-strong</code> as the hairline and add <code>--axis</code> at
-≥3:1 for axes and gridlines.</p>
-<p>Four more pairs the design uses and the test does not check:</p>
-<table>
-<thead>
-<tr>
-<th>Pair</th>
-<th>Used by</th>
-<th style="text-align: right;">Light</th>
-<th style="text-align: right;">Dark</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>data-4</code> on <code>paper</code></td>
-<td>below-threshold correlation bars (6.1)</td>
-<td style="text-align: right;"><strong>1.83</strong></td>
-<td style="text-align: right;"><strong>1.87</strong></td>
-</tr>
-<tr>
-<td><code>data-4</code> on <code>track</code></td>
-<td>palest step inside its own track</td>
-<td style="text-align: right;"><strong>1.55</strong></td>
-<td style="text-align: right;"><strong>1.60</strong></td>
-</tr>
-<tr>
-<td><code>data-3</code> on <code>paper</code></td>
-<td>second series</td>
-<td style="text-align: right;"><strong>2.63</strong></td>
-<td style="text-align: right;">3.21</td>
-</tr>
-<tr>
-<td>adjacent <code>data-*</code> segments</td>
-<td>stacked composition bar (3.2)</td>
-<td style="text-align: right;"><strong>1.44–2.33</strong></td>
-<td style="text-align: right;"><strong>1.44–1.95</strong></td>
-</tr>
-</tbody>
-</table>
-<p>The adjacency has a fix already written elsewhere in this document: the matrix in
-6.3 calls for "a 2px <code>--paper</code> gutter, so the grid reads as tiles rather than a
-table". <strong>Apply the same gutter between segments of the composition bar</strong> and the
-requirement is met without touching the palette. <code>--data-4</code> at 1.83:1 on the paper
-needs a palette decision, since as a below-threshold bar fill it is a graphic
-carrying information: darken it, or outline those bars in <code>--axis</code>.</p>
-<p><strong>Acceptance:</strong> <code>test_css_integrity.py</code> and the new <code>test_contrast.py</code> pass —
-including the added pairs, in <strong>both</strong> themes, from this commit rather than from
-commit 16; none of
+<p><strong>Acceptance:</strong> <code>test_css_integrity.py</code> and the new <code>test_contrast.py</code> pass; none of
 <code>#3b82f6 #8ac926 #ffca3a #ff595e #4ea3f1 #f15e4e #f1c54e #60a5fa #1d4ed8</code> appears
 anywhere in <code>static/css/</code> or <code>render/</code>.</p>
 <hr />
@@ -2024,8 +1997,8 @@ the wordmark is a hand-drawn display face whose letters land ~8px tall at bar si
 go soft as a raster; and type follows <code>currentColor</code> into dark mode, so the
 <code>#logo-light</code> / <code>#logo-dark</code> swap in <code>_02-header.css</code> disappears with it.</p>
 <h3 id="22-bar-contents">2.2 Bar contents</h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[mark 30px] pysuricata │ &lt;dataset name, mono 13px, --muted, ellipsis&gt;
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>… &lt;nav links 13.5px&gt; │ [download] [dark]
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>[mark 30px] pysuricata │ &lt;dataset name, mono 13px, --muted, ellipsis&gt;
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>… &lt;nav links 13.5px&gt; │ [download] [dark]
 </span></code></pre></div>
 <ul>
 <li>Nav: plain text, no pills, no background. Active = <code>--ink</code> with a <code>2px solid
@@ -2039,7 +2012,7 @@ go soft as a raster; and type follows <code>currentColor</code> into dark mode, 
 <p>Today: a bare timestamp, a bare duration, a bare version, context only in a <code>title</code>.
 Nobody can tell what <code>891 × 12</code> means, and a tooltip does not survive PDF export.
 Move metadata <strong>out of the bar</strong>, into a hairline line under the report title:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Generated 2026-03-01 00:15:48 │ Profiled in 0.06 s │ Shape 891 rows × 12 columns │ pysuricata 0.0.43
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Generated 2026-03-01 00:15:48 │ Profiled in 0.06 s │ Shape 891 rows × 12 columns │ pysuricata 0.0.43
 </span></code></pre></div>
 <p>Mono 12px, labels <code>--muted</code>, values <code>--ink</code>, 1px vertical rules between. Spelling out
 "891 rows × 12 columns" retires the tooltip. On mobile, wrap to three lines.</p>
@@ -2236,47 +2209,179 @@ below. <strong>Two steps of one hue</strong> — phase 1, rule 2.</p>
 chart element emitted for high-cardinality columns; month chart has 12 slots;
 <code>unique &lt;= count</code> for every column.</p>
 <hr />
-<h2 id="phase-5b-the-partial-report-amendment">Phase 5b — The partial report <em>(amendment)</em></h2>
-<p>Files: <code>checkpoint.py</code>, <code>compute/orchestration/engine.py</code>, <code>config.py</code>, <code>render/html.py</code></p>
-<p>Belongs here because it is a rendering concern and the renderer is already open.
-It depends on <strong>0.3</strong>.</p>
-<h3 id="what-exists-today">What exists today</h3>
-<p><code>pysuricata/checkpoint.py</code> writes gzipped pickles of the accumulator state every N
-chunks, optionally with an HTML snapshot, and rotates them. Five configuration
-options drive it. <strong>Nothing can read them</strong>: there is no <code>load</code>, <code>resume</code> or
-<code>restore</code> anywhere in the package, and all ten tests in <code>test_checkpoint.py</code> test
-the writer. Measured on 300,000 × 4 with <code>checkpoint_every_n_chunks=2</code>: three
-pickles at ~335 KB and three HTML snapshots at ~1,008 KB — about <strong>4 MB of disk
-for a 1.2-second profile</strong>, of which 57% is the logo, written again per snapshot.</p>
-<h3 id="what-to-build-instead">What to build instead</h3>
-<p>A partial report is worth more than the ability to resume, and costs far less. A
-crash at 90% that leaves a 90% report gives value without re-running anything, and
-it survives an OOM kill, a CI timeout and a Ctrl-C — none of which resume handles
-gracefully. It needs no source-identity check, no offset tracking and no format
-stability.</p>
+<h2 id="phase-5b-details-panes-numeric">Phase 5b — Details panes: numeric</h2>
+<p>Files: <code>render/numeric_card.py</code>, <code>render/card_base.py</code>, <code>_06-cards.css</code></p>
+<p>Design: <code>Details.dc.html</code>, options 9a–9e.</p>
+<p>The details pane is where every number that did not fit the card went. For <code>Age</code> that is
+26 key–value rows across two tables, with nothing in the layout saying which to read:
+<code>Jarque–Bera χ²</code> carries the same weight as <code>Median</code>, and <code>Std Dev</code> is printed twice,
+once in each table. Three problems run through it, and each fix costs no new statistics.</p>
+<h3 id="5b1-statistics-quantile-strip-aligned-to-the-histogram-9a">5b.1 Statistics — quantile strip aligned to the histogram (9a)</h3>
+<p>The nine percentiles are a shape. Printed as a column of numbers directly under a
+histogram drawing that shape, they cannot be read against it. Put them on the same axis:</p>
 <ul>
-<li><strong>One file, atomically replaced.</strong> Write to a temporary path, <code>fsync</code>, rename
-  over the target. One <code>report.html</code> that keeps getting better, not one file per
-  chunk. Delete the rotation logic with the per-chunk files.</li>
-<li><strong>Label it in the report itself</strong>, in the metadata line from 2.3:
-  <code>Partial · 6 of 40 chunks · 15% of rows</code>. A partial report that does not say so
-  is a correctness hazard, not a feature.</li>
-<li><strong>Collapse the five options into one.</strong> <code>progress_report="path.html"</code> plus an
-  interval. <code>checkpoint_write_html</code>, <code>checkpoint_max_to_keep</code> and
-  <code>checkpoint_prefix</code> all disappear; the interval should be <strong>time-based</strong>, since
-  chunk duration varies by two orders of magnitude between a narrow numeric frame
-  and a wide text one.</li>
-<li><strong>Reuse the logo decision from 2.1.</strong> Once the mark is inline SVG, a snapshot
-  costs kilobytes rather than a megabyte, which is what makes frequent snapshots
-  reasonable at all.</li>
+<li>The card histogram repeats at <code>--data-2</code>, subordinate to the strip.</li>
+<li>Below it, a box on the same scale: IQR band <code>--data-1</code>, whiskers <code>--data-2</code> <strong>split
+  into two spans terminating at the band edges</strong> (one span painting across the band is
+  wrong, and it is what a single P1–P99 line does).</li>
+<li>Median as a full-height rule in <code>--ink</code> <strong>protruding past both band edges</strong>; mean as a
+  <code>--q-bad</code> caret sitting entirely <strong>above</strong> the band, on the paper. They land ~24px apart
+  inside a dark fill, so they are differentiated by shape — rule 2 in <code>tokens.css</code>.</li>
+<li>A percentile ladder underneath, ticks at true position, labels on <strong>two alternating rows</strong>
+  so P1 and P5 do not collide. <strong>Drop rule:</strong> if two ticks fall within ~4% of each other,
+  print only the outer one and leave the rest to the table. On <code>Fare</code>, P1 through Q3 all
+  land in the first fifth of the axis.</li>
+<li>Two prose lines spending thresholds you already hold: <code>data-threshold="JB χ² &lt; 5.99"</code> is
+  in the DOM today and never shown, so a reader is handed 18.63 with no way to judge it.</li>
 </ul>
-<p>This is also what makes the Arrow/Parquet/DuckDB work pay off: a DuckDB relation
-over a directory of Parquet files is exactly the run long enough to want watching.</p>
-<p><strong>Acceptance:</strong> a long run writes a readable report from the first interval
-onward; killing the process at any point leaves that file valid HTML; the partial
-banner states chunk and row coverage; <strong>a run with progressive reporting on
-produces byte-identical output to the same run with it off</strong> (this is the 0.3
-oracle case, and it is the one that matters).</p>
+<p>Fall back to <strong>9b</strong> — the same two <code>kv</code> tables regrouped by what they answer, plus one bar
+width per percentile row — if a second chart per numeric column is not worth maintaining.
+It is a real improvement on its own at about a fifth of the work, and nothing collides
+whatever the distribution.</p>
+<h3 id="5b2-outliers-draw-the-fence-9c">5b.2 Outliers — draw the fence (9c)</h3>
+<p>The worst pane in the report. It opens with a block announcing <code>Low Outliers — 0 outliers
+(0.0%)</code> and three severity chips all reading zero, then the same again for the high side, a
+<code>rowspan</code> table, and two notes led by <code>💡</code> and <code>ℹ️</code>. Roughly 60px says nothing happened,
+and the values are listed with no picture of what they crossed.</p>
+<ul>
+<li>Draw the IQR fence and mark the points beyond it. An outlier is <em>defined</em> by a threshold,
+  so the threshold is the one graphic that explains the number.</li>
+<li><strong>Replace the empty low block with a sentence.</strong> <code>Age</code>'s lower fence sits at <strong>−6.7</strong>
+  years — no age can be below it, so this column cannot have a low outlier. Branch four
+  ways: no low fence possible, low outliers present, none present but possible, none at all.</li>
+<li>Flatten the <code>rowspan</code> table to one row per value with both verdicts side by side, and
+  state the disagreement in prose: IQR flags seven, MAD flags one, they ask different
+  questions.</li>
+<li>Points overlap when several outliers share a value — needs jitter or a count label.</li>
+</ul>
+<h3 id="5b3-common-values-9d">5b.3 Common values (9d)</h3>
+<p>Five columns become three. The ordinals <code>1ˢᵗ 2ⁿᵈ 3ʳᵈ</code> are decoration on an ordered list,
+and count plus percent belong together.</p>
+<p><strong>Scale the bar to the top value, not to 100%.</strong> At 3.2% of 714 rows the current bars are
+3% of their track and all ten look identical. State the scaling in the caption, since
+relative scaling hides absolute rarity.</p>
+<p>Then say the finding: all ten most common <code>Age</code> values are whole numbers though the column
+stores three decimals, and <code>Heaping %</code> is 22.27 — two numbers you already compute and
+never put next to each other.</p>
+<h3 id="5b4-a-tab-has-to-earn-itself-9e">5b.4 A tab has to earn itself (9e)</h3>
+<p>Render a tab only when it has something to say, and never when it repeats the card face.
+Keep the <strong>order fixed</strong> so a tab never moves, only appears or not.</p>
+<table>
+<thead>
+<tr>
+<th>Pane</th>
+<th>Today</th>
+<th>Do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Numeric · Correlations</td>
+<td>the section-level empty state, repeated inside a card</td>
+<td>name the strongest pair and its value — <code>Age</code>'s is 0.096 against <code>Fare</code></td>
+</tr>
+<tr>
+<td>Every type · Missing Values</td>
+<td>rendered at 0%, as a 100%-present bar and a one-segment chunk strip reading 0.0%</td>
+<td>render only when the column has missing values</td>
+</tr>
+<tr>
+<td>Datetime · Statistics</td>
+<td>seven rows repeat the card's own tables word for word</td>
+<td>keep only the four peak lines and the two ratios; rename it <strong>Patterns</strong></td>
+</tr>
+<tr>
+<td>Boolean · Breakdown</td>
+<td>a two-row table under a card already showing the same split</td>
+<td>drop it (see 5c.4)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Acceptance:</strong> no pane repeats a value shown on its card face; a column with 0 missing has
+no Missing tab; the low-outlier sentence is generated for all four cases; no emoji in
+<code>numeric_card.py</code> or its panes.</p>
+<hr />
+<h2 id="phase-5c-details-panes-categorical-datetime-boolean">Phase 5c — Details panes: categorical, datetime, boolean</h2>
+<p>Files: <code>render/categorical_card.py</code>, <code>datetime_card.py</code>, <code>boolean_card.py</code>,
+<code>accumulators/categorical.py</code>, <code>accumulators/datetime.py</code>, <code>_08-categorical.css</code>,
+<code>_09-datetime.css</code>, <code>_10-boolean.css</code></p>
+<p>Design: <code>Details.dc.html</code>, options 10a–10f. Each notes whether the data already exists.</p>
+<h3 id="5c1-normalization-report-collisions-not-transformations-10a">5c.1 Normalization: report collisions, not transformations (10a)</h3>
+<p>The pane prints original / <code>lower()</code> / <code>strip()</code>, so for <code>Embarked</code> it says <code>S → s → S</code>.
+That teaches nothing. The question it exists to answer is whether normalising would
+<strong>merge</strong> levels — the difference between three categories and two.</p>
+<p>Report a verdict (<code>3 levels stay 3 under lower() and 3 under strip(). Nothing merges.</code>)
+and list the merging groups only when there are any. Free: it is a
+<code>len(set(map(str.lower, levels)))</code> over data you already hold. Hedge honestly — only the
+top-K levels are tracked, so the verdict is "no collisions among the 10 tracked levels".</p>
+<p><strong>Bug this surfaces:</strong> <code>Embarked</code> carries <code>Case variants</code> and <code>Trim variants</code> flags while
+the pane finds no collisions to justify either. One of the two is wrong.</p>
+<h3 id="5c2-spend-the-length-reservoir-10b">5c.2 Spend the length reservoir (10b)</h3>
+<p><code>categorical.py</code> already keeps a 5,000-value <code>ReservoirSampler</code> of label lengths
+(<code>self._len_sample</code>) and the report spends it on two numbers, <code>avg_len</code> and <code>len_p90</code>. The
+whole distribution is sitting there.</p>
+<p>Draw it as a small histogram plus the longest and shortest value. On an identifier column
+the shape is the finding: <code>Ticket</code> clusters at 4–7 characters and 10–14 with a tail to 18,
+which is two ticket formats in one column — a cleaning finding available no other way.</p>
+<p>Two requirements: the reservoir must <strong>expose its sample</strong> (currently private), and add a
+<strong>suppression rule</strong> — draw the chart only when more than two distinct lengths appear, and
+print the single length as a sentence otherwise, or <code>Embarked</code> renders one bar at 1.</p>
+<p><strong>Bug to fix here:</strong> <code>Embarked</code> prints <code>Label length (avg)</code> as <strong><code>NaN</code></strong> and <code>Length p90</code>
+as an em dash, for a column whose three labels are all one character long.</p>
+<h3 id="5c3-high-cardinality-columns-need-a-details-pane-too-10c">5c.3 High-cardinality columns need a details pane too (10c)</h3>
+<p>Phase 5.4 replaced the meaningless top-values <em>chart</em> on the card. The details pane still
+opens on <code>Common values</code> — the same ten bars of one row each, 0.1% apiece. On the card the
+fix was to say there is nothing to plot; in the pane there <strong>is</strong> something to plot, just
+not that.</p>
+<ul>
+<li>Drop <code>Common values</code> for these columns; there is no ranking, and rendering one implies
+  a frequency that does not exist.</li>
+<li>Show the shape of the values: distinct against row count, length range, longest and
+  shortest, empty strings. Length and both extremes are already computed.</li>
+<li>A sample of ten arbitrary values tells a reader more about an identifier column than ten
+  equally-rare "most common" ones. This is <strong>new state</strong> — a small reservoir per
+  high-cardinality column — and putting raw values in a shared HTML file is a privacy
+  question the sample table already faces. Decide it deliberately rather than inheriting it.</li>
+</ul>
+<h3 id="5c4-datetime-label-the-axis-drop-the-empty-chart-10d">5c.4 Datetime: label the axis, drop the empty chart (10d)</h3>
+<p>Four small multiples with an <code>&lt;h4&gt;</code> each and no y axis on any of them, so a 211-record hour
+and a 2,626-record month draw identically — and the peaks that would resolve it live in a
+different tab.</p>
+<ul>
+<li>Give each chart its own zero-based y axis and print its peak inline in the header.</li>
+<li><code>by_year</code> is a <code>dict</code>, so a dataset inside one year renders <strong>a single bar at full
+  height</strong> — a chart whose only reading is "all of it". State the span in a line instead.</li>
+<li>Keep the month chart's <strong>12 fixed slots</strong>. <code>temporal_charts.py</code> already gets this right
+  and must not lose it: two populated months drawn as two half-width slabs reads as
+  "spread evenly across the timeline" instead of "2 of 12".</li>
+<li>Per-chart scales mean the three cannot be compared to each other by height. A shared
+  scale would fix that and flatten the hour chart to nothing — a real trade, taken on the
+  readable side. Say so in the caption.</li>
+</ul>
+<h3 id="5c5-datetime-say-the-series-is-regular-10e">5c.5 Datetime: say the series is regular (10e)</h3>
+<p>The strongest fact about <code>signed_up</code> is a table row reading <code>Interval std dev — 0.0
+seconds</code>, filed alphabetically between timezone and weekend ratio. A standard deviation of
+zero means every gap is identical: a record every 17 minutes, no gaps, machine-generated.</p>
+<p>Lead the pane with that sentence. On a real event stream the same line reads "median 4
+minutes, longest gap 3.2 days on 14 Feb", which is what anyone opens a datetime column
+to ask.</p>
+<p><strong>The one proposal needing new state.</strong> <code>_calculate_interval_stats</code> builds an interval
+array and returns two floats from it — a max and a p50 come free from the same array. "Longest
+gap and when" needs a timestamp kept alongside; the gap strip needs per-bucket counts you
+may not want to store. Take the free half first.</p>
+<h3 id="5c6-boolean-no-details-pane-10f">5c.6 Boolean: no details pane (10f)</h3>
+<p>Dropping <code>Breakdown</code> leaves boolean with no details section at all. That is correct — two
+values, two counts, one bar, nothing withheld. Worth a comment in <code>boolean_card.py</code> so it
+reads as a decision rather than an omission.</p>
+<p>The one thing a boolean pane could add that the card cannot is <strong>true rate by chunk</strong>: a
+flag that is 12% early and 60% late is a pipeline change, and a single 38.4% hides it. Two
+counts per chunk is the cheapest new state in this document and would serve the categorical
+mode share too. But chunks are an artifact of how the file was read — reorder the input and
+the chart changes — so it needs a caveat line, and I would not build it before someone asks.</p>
+<p><strong>Acceptance:</strong> no normalization row per level when nothing merges; length chart suppressed
+below three distinct lengths; <code>avg_len</code> never <code>NaN</code>; no year chart when the span is inside
+one year; month chart has 12 slots and <strong>zero counts draw nothing</strong> (rule 3); boolean has no
+details section.</p>
 <hr />
 <h2 id="phase-6-correlations">Phase 6 — Correlations</h2>
 <p>Files: <code>render/correlations_section.py</code>, <code>_11-correlations.css</code></p>
@@ -2334,8 +2439,10 @@ render site.</p>
   left, positive runs right. Header reads <code>− 1.0 ← 0 → + 1.0</code>. This survives greyscale,
   needs no legend, and stops the report using red for "negative" — which reads as "bad"
   when a negative correlation is often the interesting one.</li>
-<li><strong>Three strength bands become three steps of one blue</strong>, not three hues:
-  <code>|r| ≥ 0.9 → --data-1</code>, <code>≥ 0.7 → --data-2</code>, <code>≥ 0.5 → --data-3</code>.</li>
+<li><strong>Drop the strength bands.</strong> The first cut specified three tints. On a diverging bar
+  the length already encodes <code>|r|</code> — it is <code>|r|</code> × half the track — so the bands restated
+  what the bar was already saying, and two of the three then failed rule 1. Every bar is
+  <code>--data-2</code>.</li>
 <li><strong>Drop the rank badges.</strong> The list is ordered; <code>#1</code> next to the first row is noise.</li>
 </ul>
 <p>Row grid <code>340px 1fr 84px</code>: pair (mono, both names with <code>↔</code>, ellipsis plus <code>title</code>),
@@ -2404,17 +2511,18 @@ come from <code>--q-*</code>; complete columns are summarised, not listed.</p>
 <hr />
 <h2 id="phase-8-comparison-of-two-datasets">Phase 8 — Comparison of two datasets</h2>
 <p>Not built yet; the colour decision is settled and should be honoured when it is.</p>
-<p>Both datasets stay <strong>inside the blue scale</strong>: <code>--data-2</code> for one, <code>--data-4</code> for the
-other, side-by-side bars within each bin so neither hides the other. No second hue enters
+<p>Both datasets stay <strong>inside the blue scale</strong>: <code>--data-1</code> for one, <code>--data-3</code> for the
+other, side-by-side bars within each bin so neither hides the other. (The first cut
+paired <code>--data-2</code> with <code>--data-4</code>; <code>--data-4</code> cannot sit on the paper — rule 1.) No second hue enters
 the report — the warm range stays entirely with data quality. <code>test_contrast.py</code> asserts
 those two steps stay far enough apart to separate.</p>
 <p><strong>Deltas are not verdicts.</strong> Do not colour increases green and decreases red. More rows
 is neutral; more missing values is not. Direction goes in a glyph, colour is reserved for
 crossing a threshold:</p>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ROWS       1,047    ↑ 156 · 17.5%        --ink-2
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>COLUMNS    12       no change            --muted
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>MISSING    11.3%    ↑ 3.2pp · over 10%   --q-warn-text
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>DUPLICATES 0        no change            --muted
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>ROWS       1,047    ↑ 156 · 17.5%        --ink-2
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>COLUMNS    12       no change            --muted
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>MISSING    11.3%    ↑ 3.2pp · over 10%   --q-warn-text
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>DUPLICATES 0        no change            --muted
 </span></code></pre></div>
 <p>Otherwise the page shouts about the row count and whispers about the only number that
 matters.</p>
@@ -2438,43 +2546,6 @@ matters.</p>
 <li>No horizontal scroll anywhere except the sample scroll pane and the nav rails.</li>
 </ol>
 <hr />
-<h2 id="phase-10-resume-amendment-and-not-before-launch">Phase 10 — Resume <em>(amendment, and not before launch)</em></h2>
-<p>Files: <code>accumulators/*</code>, <code>checkpoint.py</code>, <code>compute/orchestration/engine.py</code>, <code>benchmarks/accuracy.py</code></p>
-<p>Separated from 5b deliberately. The difficulty here is the project's strongest
-claim: the accuracy oracle proves <code>chunked == unchunked</code> across 51 tests, and
-resume introduces a <strong>third path</strong> that must produce identical results across a
-process restart. A resume that is <em>nearly</em> right quietly breaks that claim, which
-is worse than not having resume.</p>
-<p>The good news is that the hard half is already solved in principle: <code>_rng</code> and
-<code>_seed</code> live on the accumulator, so the sampling path can be reproduced.</p>
-<ul>
-<li><strong>Do not pickle.</strong> Give each accumulator an explicit <code>to_state()</code> /
-  <code>from_state()</code> returning plain dicts and typed arrays. Today the snapshot
-  pickles live instances — <code>NumericAccumulator</code> has 30 attributes and no
-  <code>__slots__</code> — so any refactor invalidates every checkpoint on disk and fails at
-  <em>unpickling</em> with an <code>AttributeError</code> rather than a version error. A
-  <code>"version": 1</code> field is written and never checked. It is also arbitrary code
-  execution on a file that may sit in a CI cache.</li>
-<li><strong>Check identity before resuming.</strong> Source fingerprint (path, size, mtime,
-  schema hash) plus row offset. Refuse to resume against different data rather
-  than emitting a plausible, wrong profile — that is the worst failure available
-  here and the one to design against first.</li>
-<li><strong>Route it through <code>merge()</code>.</strong> Resume is state plus more chunks, which is
-  nearly what merge already does, and merge was fixed with 392 lines of tests.</li>
-<li><strong>Write atomically</strong>, for the same reason as 5b: <code>save()</code> currently writes
-  straight to the final path, and crashes are likeliest under memory pressure,
-  which is exactly when checkpointing runs.</li>
-</ul>
-<p><strong>Acceptance:</strong> the oracle gains a third path and
-<code>resumed == chunked == unchunked</code> holds across every fixture; a checkpoint from a
-different source is refused with a clear message; the format carries a version
-that is checked on load; <code>test_checkpoint.py</code> tests a round trip rather than only
-the writer.</p>
-<p><strong>Until this ships</strong>, the five checkpoint options should either be wired to 5b or
-removed. Options that appear to work, produce artifacts nothing can consume, and
-change your results are the worst available API surface — and they are five of the
-twenty-two fields that make <code>ComputeOptions</code> a cognitive-load problem.</p>
-<hr />
 <h2 id="commit-sequence">Commit sequence</h2>
 <table>
 <thead>
@@ -2486,33 +2557,13 @@ twenty-two fields that make <code>ComputeOptions</code> a cognitive-load problem
 </thead>
 <tbody>
 <tr>
-<td><strong>0a</strong></td>
-<td><strong>clamp the distinct estimate; <code>approx: True</code> for sketch values</strong></td>
-<td><code>accumulators/</code>, <code>render/card_base.py</code></td>
-</tr>
-<tr>
-<td><strong>0b</strong></td>
-<td><strong>replace the quasi-constant ratio rule with the cardinality ceiling</strong></td>
-<td><code>compute/</code>, <code>render/card_base.py</code></td>
-</tr>
-<tr>
-<td><strong>0c</strong></td>
-<td><strong>stop <code>finalize()</code> consuming the sampler's RNG</strong>, + the oracle case</td>
-<td><code>accumulators/</code>, <code>benchmarks/accuracy.py</code></td>
-</tr>
-<tr>
-<td><strong>0d</strong></td>
-<td><strong>take every baseline</strong> — golden payload, rendered-fact list, screenshots</td>
-<td><code>tests/fixtures/</code></td>
-</tr>
-<tr>
 <td>1</td>
-<td>tokens, typography, drop decorative shadows and gradients; <strong>split <code>--rule-strong</code> from <code>--axis</code></strong></td>
+<td>tokens, typography, drop decorative shadows and gradients</td>
 <td><code>_00-tokens.css</code>, <code>_01-base.css</code></td>
 </tr>
 <tr>
 <td>2</td>
-<td>contrast test, <strong>extended pairs, both themes</strong></td>
+<td>contrast test</td>
 <td><code>tests/test_contrast.py</code></td>
 </tr>
 <tr>
@@ -2522,7 +2573,7 @@ twenty-two fields that make <code>ComputeOptions</code> a cognitive-load problem
 </tr>
 <tr>
 <td>4</td>
-<td>summary: stat row, stacked composition bar (<strong>2px gutter</strong>), missing rows, quick facts</td>
+<td>summary: stat row, stacked composition bar, missing rows, quick facts</td>
 <td><code>render/sections.py</code>, <code>render/donut_chart.py</code>, <code>_03-summary.css</code>, <code>_04-donut.css</code></td>
 </tr>
 <tr>
@@ -2561,19 +2612,59 @@ twenty-two fields that make <code>ComputeOptions</code> a cognitive-load problem
 <td><code>boolean_card.py</code>, <code>datetime_card.py</code>, <code>temporal_charts.py</code>, <code>_09-datetime.css</code>, <code>_10-boolean.css</code></td>
 </tr>
 <tr>
-<td><strong>11b</strong></td>
-<td><strong>partial report: one atomic file, partial banner, drop rotation</strong></td>
-<td><code>checkpoint.py</code>, <code>engine.py</code>, <code>config.py</code></td>
+<td>12</td>
+<td>data fixes: clamp KMV distinct, flag thresholds, delete dead <code>.stat-badges</code></td>
+<td><code>accumulators/</code>, <code>card_base.py</code>, <code>_06-cards.css</code></td>
 </tr>
 <tr>
-<td></td>
-<td>▲ <strong>cut line for launch</strong> — everything above is what a visitor sees</td>
-<td></td>
+<td>12a</td>
+<td>details: numeric statistics pane — quantile strip (5b.1)</td>
+<td><code>numeric_card.py</code>, <code>_06-cards.css</code></td>
 </tr>
 <tr>
-<td>~~12~~</td>
-<td>~~data fixes~~ — <em>moved to 0a–0c</em>; delete the dead <code>.stat-badges</code> renderer here</td>
+<td>12b</td>
+<td>details: outliers pane — fence, low-side sentence, flat table, no emoji (5b.2)</td>
+<td><code>numeric_card.py</code>, <code>_06-cards.css</code></td>
+</tr>
+<tr>
+<td>12c</td>
+<td>details: common values, three columns, bar scaled to top (5b.3)</td>
 <td><code>card_base.py</code>, <code>_06-cards.css</code></td>
+</tr>
+<tr>
+<td>12d</td>
+<td>details: a tab renders only when it has something to say (5b.4)</td>
+<td><code>card_base.py</code>, all four card renderers</td>
+</tr>
+<tr>
+<td>12e</td>
+<td>details: normalization reports collisions; fix the flag contradiction (5c.1)</td>
+<td><code>categorical_card.py</code>, <code>triage.py</code></td>
+</tr>
+<tr>
+<td>12f</td>
+<td>details: length distribution — expose the reservoir, fix <code>NaN</code> (5c.2)</td>
+<td><code>accumulators/categorical.py</code>, <code>categorical_card.py</code></td>
+</tr>
+<tr>
+<td>12g</td>
+<td>details: high-cardinality pane, length + extremes half only (5c.3)</td>
+<td><code>categorical_card.py</code>, <code>identifier.py</code></td>
+</tr>
+<tr>
+<td>12h</td>
+<td>details: temporal axes, drop the single-year chart, zero draws nothing (5c.4)</td>
+<td><code>temporal_charts.py</code>, <code>datetime_card.py</code></td>
+</tr>
+<tr>
+<td>12i</td>
+<td>details: regularity line, max and median interval (5c.5)</td>
+<td><code>accumulators/datetime.py</code>, <code>datetime_card.py</code></td>
+</tr>
+<tr>
+<td>12j</td>
+<td>details: drop the boolean pane (5c.6)</td>
+<td><code>boolean_card.py</code>, <code>_10-boolean.css</code></td>
 </tr>
 <tr>
 <td>13</td>
@@ -2587,12 +2678,12 @@ twenty-two fields that make <code>ComputeOptions</code> a cognitive-load problem
 </tr>
 <tr>
 <td>15</td>
-<td>remove the compatibility shim — <strong>shrink it per phase, not all here</strong></td>
+<td>remove the compatibility shim from <code>tokens.css</code></td>
 <td><code>_00-tokens.css</code></td>
 </tr>
 <tr>
 <td>16</td>
-<td>dark mode contrast pass — <strong>confirmation, since commit 2 already covers dark</strong></td>
+<td>dark mode contrast pass</td>
 <td><code>_00-tokens.css</code></td>
 </tr>
 <tr>
@@ -2600,33 +2691,18 @@ twenty-two fields that make <code>ComputeOptions</code> a cognitive-load problem
 <td>accessibility pass: targets, rails, contrast, greyscale</td>
 <td>across</td>
 </tr>
-<tr>
-<td><strong>18+</strong></td>
-<td><strong>resume</strong> (phase 10) — after launch, with the oracle's third path</td>
-<td><code>accumulators/*</code>, <code>checkpoint.py</code>, <code>benchmarks/accuracy.py</code></td>
-</tr>
 </tbody>
 </table>
-<p><strong>The cut line matters.</strong> Commits 0–11b are the header, summary, sample and the
-five card types: everything a visitor sees in a screenshot. Correlations, missing
-values and the comparison view sit below the fold and can land after publishing.</p>
 <h2 id="tests-to-update">Tests to update</h2>
-<p>The full strategy — what this migration can break, and the harness that catches
-it — is in <a href="../MIGRATION_TESTING/"><code>docs/MIGRATION_TESTING.md</code></a>. Two pieces of it
-carry most of the weight and are worth naming here, because they are what make a
-seventeen-commit diff reviewable at all:</p>
 <ul>
-<li><strong>A golden <code>summarize()</code> payload.</strong> Sixteen of the eighteen commits must leave it
-  byte-identical. The two that may not are 0a and 13.</li>
-<li><strong>A rendered-fact list.</strong> 117 of the 125 numeric statistics in <code>summarize()</code>
-  appear somewhere in today's HTML; that set must not shrink. Commit 8 — two
-  fourteen-row tables becoming a four-cell stat row — is where one gets dropped,
-  and no snapshot diff would show it.</li>
-</ul>
-<p>Beyond those:</p>
-<ul>
-<li><strong><code>tests/test_contrast.py</code></strong> — new, provided. Add it early (commit 2); it is what
-  catches a palette regression before review does.</li>
+<li><strong><code>tests/test_contrast.py</code></strong> — provided, and updated since the first handoff. Add it
+  early (commit 2); it is what catches a palette regression before review does. It now also
+  asserts the two roles that are easy to lose: <code>--data-3</code> carries no text, and <code>--data-4</code>
+  is <em>expected to fail</em> against the paper because it is stack-internal only.</li>
+<li>The three rules at the bottom of <code>tokens.css</code> are <strong>not</strong> testable as token pairs — they
+  are about surface, paint order and zero handling. A DOM-level check is possible and worth
+  it for rule 3: assert no <code>&lt;rect&gt;</code> in a generated report has <code>height="1"</code> where its
+  <code>data-count</code> is <code>0</code>.</li>
 <li><code>test_css_integrity.py</code> — token names change. Add an assertion that no legacy hex
   appears in <code>static/css/</code>.</li>
 <li><code>test_html_templating.py</code> — metadata chips become a metadata line; the description
@@ -2642,13 +2718,14 @@ seventeen-commit diff reviewable at all:</p>
 </ul>
 <h2 id="still-open">Still open</h2>
 <ol>
-<li>
-<p><strong><code>--data-4</code> at 1.83:1 on the paper</strong> needs a palette decision before commit 13,
-   since it is the fill for below-threshold correlation bars <em>(amendment)</em>.</p>
-</li>
-<li>
-<p><strong>Dark mode values are proposed, not verified</strong> (<code>tokens.css</code>, and phase 16).</p>
-</li>
+<li><strong>Dark mode values are proposed, not verified</strong> (<code>tokens.css</code>, and phase 16) — though the
+   dark data scale itself was measured and is in the file.</li>
+<li><strong>The details toggle</strong> added since the first handoff is not designed. It collapses the
+   whole pane behind one button, so the tab set is invisible until clicked. Worth revisiting
+   once phases 5b and 5c make the panes worth opening.</li>
+<li><strong>Whether raw values may appear in a details pane</strong> (5c.3). The sample table already puts
+   real rows in the file, so the precedent exists, but a value reservoir per high-cardinality
+   column should be a deliberate decision.</li>
 <li><strong>Correlation values above 0.5 have never been seen in a real report here</strong> — both
    example reports return none, so 6.2 and 6.3 have been designed against illustrative
    numbers. Generate a report from a dataset with genuine correlations and check the two
