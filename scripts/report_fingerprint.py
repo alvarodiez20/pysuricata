@@ -175,6 +175,13 @@ def _pairs_from_kv(doc: str) -> list[tuple[str, str]]:
             label, value = _text(m.group(1)), _text(m.group(2))
             if not label or not value or len(label) > 40:
                 continue
+            # A label is a word. Two adjacent numbers are a row of the sample
+            # table, not a statistic and its name -- `<td>0</td><td>79</td>`
+            # was being recorded as the fact `kv::0 = 79`. Those rows are a
+            # random draw, so they made the fingerprint differ between machines
+            # while looking like data had changed.
+            if not any(character.isalpha() for character in label):
+                continue
             if not _NUMBER.fullmatch(value):
                 continue
             if _is_run_dependent(label):

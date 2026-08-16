@@ -125,11 +125,28 @@ def test_chunking_does_not_change_the_facts():
 #: short strings measures differently depending on what else is alive -- two
 #: runs of the same frame in one suite disagreed by 160 bytes. Pinning that in
 #: a fixture makes the test fail for reasons no reader can act on.
-_PROCESS_DEPENDENT = ("mem_bytes", "memory_bytes")
+_PROCESS_DEPENDENT = (
+    "mem_bytes",
+    "memory_bytes",
+    # Which values a tie keeps. `name` is 891 distinct strings each seen once,
+    # so the top-k counters are all equal and the retained set is decided by
+    # iteration order -- and Python randomises string hashing per process. CI
+    # kept `passenger 867` where this machine kept `passenger 281`. That is not
+    # a change in the data, and pinning it would fail on every machine but one.
+    "top_values",
+)
 
 
 def _stable(payload: object) -> object:
-    """The payload with the process-dependent fields dropped."""
+    """The payload with the process-dependent fields dropped, and every float
+    rounded to a precision that survives a different machine.
+
+    Floating-point results are not bit-identical across platforms: CI reported
+    `gran_step` as 0.14612157448464427 where this machine had
+    ...463808, a difference in the last three digits of seventeen. Twelve
+    significant figures is far tighter than any real change to a statistic and
+    far looser than the noise -- the same compromise the fingerprint makes.
+    """
     if isinstance(payload, dict):
         return {
             key: _stable(value)
@@ -138,6 +155,8 @@ def _stable(payload: object) -> object:
         }
     if isinstance(payload, list):
         return [_stable(item) for item in payload]
+    if isinstance(payload, float):
+        return float(f"{payload:.12g}")
     return payload
 
 
