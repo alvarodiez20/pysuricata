@@ -19,6 +19,25 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.55] - 2026-08-16
+
+Phase 5.2 of the report redesign (#115): the histogram says what its axes mean.
+Nothing removed or changed in the fact fingerprint.
+
+### Changed
+- **The column name is no longer printed inside the chart.** The card header carries it, so the plot was spending a line on a word the reader had just read — while still leaving nothing to say which axis was years and which was rows.
+- **The axes are labelled**: `ROWS` above the y column, and the x unit at the right end of its axis. Both mono 10px in `--axis`.
+- **The x unit is derived only when the column name states one.** `age` and `age_years` are years, `elapsed_ms` is milliseconds, `size_bytes` is bytes. **A column called `score` gets no label at all** — inventing `SCORE` would add a word and no information while looking like a unit, which is worse than a bare axis. Nine name families are recognised; everything else is unitless.
+- **The first and last x labels sit inside the plot.** Centred on their tick, the first ran under the y-axis labels and the last ran off the SVG; they anchor to the plot edge instead.
+- **Bars carry no stroke, no `fill-opacity` and no rounded corners.** Each of those changes a bar's apparent length, which is the one thing it encodes.
+- Axis figures are monospace, like every other figure in the report.
+
+### Fixed
+- **Very large magnitudes no longer print in full.** A tick read `-2,000,000,000,000,000` — 22 characters, wide enough to collide with its neighbours and too long to take in. Values past a million are compacted to `2M` / `2B` / `2T`, which is shorter than both that and `-2.0e+15`.
+
+### Measured
+The chart is **959px wide** on a 1,013px card, against 420px before — a gain of **539px**, which is what makes 50 bins legible and the log toggle worth using.
+
 ## [0.0.54] - 2026-08-16
 
 Phase 5.1 of the report redesign (#114): the numeric card restacked. No number
@@ -861,7 +880,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.54...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.55...HEAD
+[0.0.55]: https://github.com/alvarodiez20/pysuricata/compare/0.0.54...0.0.55
 [0.0.54]: https://github.com/alvarodiez20/pysuricata/compare/0.0.53...0.0.54
 [0.0.53]: https://github.com/alvarodiez20/pysuricata/compare/0.0.52...0.0.53
 [0.0.52]: https://github.com/alvarodiez20/pysuricata/compare/0.0.51...0.0.52
