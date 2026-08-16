@@ -19,6 +19,20 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.65] - 2026-08-16
+
+Documentation only.
+
+### Changed
+- **`docs/integration.md`** replaced with the updated design handoff, which adds phases **5b** (numeric details pane) and **5c** (categorical, datetime and boolean details panes) and a revised commit sequence.
+- **Its status table was rewritten.** The handoff audited a snapshot from before phases 2–7 landed, so four rows read *not applied* for work that has since shipped — flag chip values (#137), the correlations empty state (#138), the correlations emoji (#138) and the missing-values tabs (#140). Every row was re-verified against `main` by rendering a report and reading the markup. Where the handoff was still right, an issue is linked.
+
+### Added
+- `docs/design/` — the handoff README, the proposed `tokens.css`, and the updated contrast test kept as `contrast_test.reference.py` (deliberately not named `test_*`, so pytest does not collect a file that asserts token values the repo does not have yet).
+
+### Issues filed from this handoff and from roadmap v11
+#154 numeric details pane · #155 categorical/datetime/boolean details panes · #156 `--data-3` value change and the three untestable rules · #157 surviving emoji · #158 three card types still on `.triple-row` · #159 the release pipeline · #160 versioning and `0.1.0` · #161 the duplicate count's propagated error
+
 ## [0.0.64] - 2026-08-16
 
 ### Fixed
