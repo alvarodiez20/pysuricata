@@ -316,6 +316,9 @@
   };
 
   let ready = false, busy = false, last = null;
+  // Held so it can be revoked when the next report replaces it. Revoking any
+  // earlier than that would pull the document out from under a live frame.
+  let reportUrl = null;
   // Every run gets an id. A message from a superseded run (a late error, say)
   // must not repaint the panel a newer run already owns.
   let runId = 0;
@@ -361,7 +364,8 @@
   function clearResult() {
     els.resultPanel.classList.add("hidden");
     els.ledger.textContent = "";
-    els.report.removeAttribute("srcdoc");
+    els.report.removeAttribute("src");
+    if (reportUrl) { URL.revokeObjectURL(reportUrl); reportUrl = null; }
     els.reportTitle.textContent = "Report";
     last = null;
   }
@@ -465,7 +469,13 @@
     else row("Peak heap", String(m.heapMB), "MB");
     if (m.meta.bytes_seen) row("Data seen", fmtBytes(m.meta.bytes_seen));
 
-    els.report.srcdoc = m.html;
+    // Not srcdoc: Chrome silently drops a srcdoc document past ~700 KB — no
+    // error, no console warning, just a blank frame. Measured: 684 KB renders,
+    // 721 KB does not. Any report of a wide or high-cardinality frame clears
+    // that, so the report is handed over as a blob URL instead.
+    if (reportUrl) URL.revokeObjectURL(reportUrl);
+    reportUrl = URL.createObjectURL(new Blob([m.html], { type: "text/html" }));
+    els.report.src = reportUrl;
     els.resultPanel.classList.remove("hidden");
     els.resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
