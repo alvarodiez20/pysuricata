@@ -11,7 +11,7 @@ A ban list can always be outgrown by a colour nobody thought to ban. The
 assertion runs the other way here: **every hex outside `_00-tokens.css` must
 equal a value the token file defines.**
 
-That cannot be satisfied today -- 70 file/value pairs do not -- so it ships as a
+That cannot be satisfied today -- 67 file/value pairs do not -- so it ships as a
 ratchet against a recorded baseline. A new literal fails immediately; removing
 one is expected and fails too, loudly, telling you to shrink the baseline. The
 number only goes down.
@@ -75,9 +75,6 @@ BASELINE: set[str] = {
     "_06-cards.css #f59e0b",
     "_06-cards.css #f9f9f9",
     "_06-cards.css #fff",
-    "_07-histogram.css #999",
-    "_07-histogram.css #ccc",
-    "_07-histogram.css #f9f9f9",
     "_08-categorical.css #007acc",
     "_08-categorical.css #2a2a2a",
     "_08-categorical.css #4db8ff",
@@ -169,7 +166,7 @@ class TestTheRatchetOnlyTurnsOneWay:
 
     def test_the_count_is_what_the_roadmap_says(self):
         """So the number in the audit cannot drift from the number in the code."""
-        assert len(BASELINE) == 70
+        assert len(BASELINE) == 67
 
 
 class TestTheAssertionIsWorthHaving:

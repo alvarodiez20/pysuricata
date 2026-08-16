@@ -16,6 +16,36 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The histogram fills its card** ([#147]). At a 1240px viewport the `<svg>`
+  element was already 1,099px wide and the bars occupied **356px** of it — 68%
+  blank — because `preserveAspectRatio` defaults to `xMidYMid meet` and the
+  container's fixed height was the limiting dimension. Bars now cover 100% of
+  the plot at 1240px **and** at 390px.
+
+  The fix is a split: bars, gridlines and axis rules go in an SVG stretched
+  with `preserveAspectRatio="none"` and `vector-effect="non-scaling-stroke"`,
+  and every label is HTML at a percentage offset. That is the only arrangement
+  that gives a full-width chart *and* 11px labels at every viewport — uniform
+  scaling makes them 28.8px on a desktop and 3.5px on a phone.
+- **Bars no longer merge on a narrow screen.** The gap was `bar_width - 1`, a
+  1-unit gap in viewBox space that scales with x: 1.1px at a 1,100px plot and
+  **0.28px at 284px**. Bars are drawn edge to edge with a non-scaling `--paper`
+  stroke, which is 1px by construction.
+- The y gutter is fixed at 44px, so the plot's left edge is identical on every
+  numeric card and bars line up down the page.
+- Nine x tick labels are written and tiered by importance; CSS drops them to
+  five and then three. Tier 1 is the two ends **and the midpoint** — a range
+  with no middle says nothing about whether a distribution is centred.
+- The x unit moved from the right end of the axis into a caption line carrying
+  the bin count and the exact peak (`years · 25 bins · peak 83 rows at
+  25.9–29.1`). At 1,100px the unit and `ROWS` were a hand-span apart and had
+  stopped reading as a pair; the peak matters more now that the y labels
+  abbreviate to four glyphs.
+- The empty state is a sentence rather than `No data` centred in a blank
+  420×200 canvas, which read as a chart that had failed.
+
+[#147]: https://github.com/alvarodiez20/pysuricata/issues/147
+
 - **The top-missing list says what it counted** ([#182]). It showed five
   columns and stopped, with no indication there were more — `total_significant`
   was computed, stored on the result object and printed nowhere. A frame with
