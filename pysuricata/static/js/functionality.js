@@ -168,7 +168,11 @@
   // Insert a pin link into the quick nav if one isn't present
   function ensurePinButton() {
     if (document.getElementById(PIN_BTN_ID)) return;
-    const quickNav = document.querySelector('#pysuricata-report .quick');
+    // The icon group, not the nav. A pin dropped into .quick lands among the
+    // text section links, and on mobile into the rail that has to fit five
+    // labels at 390px without scrolling.
+    const quickNav = document.querySelector('#pysuricata-report .bar-actions')
+      || document.querySelector('#pysuricata-report .quick');
     if (!quickNav) return;
     const a = document.createElement('a');
     a.href = '#';

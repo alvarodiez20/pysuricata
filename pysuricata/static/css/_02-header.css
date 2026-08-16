@@ -1,194 +1,200 @@
-/* =============================
-   HEADER / APP BAR
-   ============================= */
+/* =============================================================
+   HEADER / APP BAR — one bar, 52px
+
+   Phase 2 of the redesign. What this replaces was a two-row grid with a
+   78px logo column holding a vertical lockup: about 96px of chrome, most of
+   it artwork, before any data. A vertical lockup inside a horizontal bar is
+   what forced that height, which is why the mark and the name are now set
+   side by side.
+
+   The bar is a single row: brand, what was profiled, the sections, the two
+   actions. The report's own title and metadata moved out of the bar and into
+   the page, because they belong to the report rather than to the chrome --
+   and because a bare timestamp in a bar tells nobody what it is a timestamp
+   of.
+
+   The indigo/amber toggle icon and the calendar and clock chip icons that
+   used to live at the end of this file are gone. The chips no longer exist,
+   and their colours were on neither of the two scales -- indigo-500 and
+   amber-500 were simply picked. Header icons take --ink-2 and draw with
+   currentColor.
+   ============================================================= */
 #pysuricata-report .appbar {
   background: var(--appbar-bg);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--divider);
+  border-bottom: 1px solid var(--rule);
   position: sticky;
   top: 0;
   z-index: 50;
-  transition: background .2s ease, border-color .2s ease;
 }
 
 #pysuricata-report.unpinned .appbar {
   position: static;
 }
 
-/* 2-row grid, logo spans both rows */
-#pysuricata-report .header-grid {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  /* The mark plus the typeset name; sized by content rather than a fixed
-     column, because the name is text and text is not a fixed width. */
-  grid-template-rows: auto auto;
-  grid-template-areas:
-    "logo title"
-    "logo meta";
-  column-gap: 0.5rem;
-  row-gap: 0.2rem;
-  /* a touch more breathing room between lines */
-  align-items: center;
-}
-
-/* Logo */
-#pysuricata-report .header-grid .logo {
-  grid-area: logo;
+#pysuricata-report .appbar .bar {
+  height: var(--appbar-h);
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 60px;
-  /* ensure visible area */
-  width: 100%;
-  background: none;
+  gap: 14px;
+  padding-top: 0;
+  padding-bottom: 0;
+  position: relative;
 }
 
-/* The lockup: drawn mark, typeset name.
-   There is deliberately no light/dark variant here. The mark is inline SVG with
-   its own two colours, which read on either background, and the name is text,
-   so it follows currentColor. The pair of PNGs this replaced existed only
-   because the wordmark was baked into the artwork and had to be recoloured. */
+/* ---- brand -------------------------------------------------- */
+#pysuricata-report .brand {
+  display: flex;
+  align-items: center;
+  flex: none;
+  color: inherit;
+  text-decoration: none;
+}
+
+#pysuricata-report .brand:hover {
+  text-decoration: none;
+  opacity: 0.75;
+}
+
 #pysuricata-report #logo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
+/* 30px, against the 44px the stacked lockup needed. The mark is the only
+   part of the artwork used here; the name is set as type beside it, which is
+   what removed the light/dark image swap -- text follows currentColor. */
 #pysuricata-report #logo .logo-mark {
-  height: 44px;
+  height: 30px;
   width: auto;
   display: block;
   flex: none;
 }
 
 #pysuricata-report #logo .wordmark {
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: 0.01em;
-  color: inherit;
+  font-weight: 650;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
   white-space: nowrap;
 }
 
-/* Top row: title (left), nav + toggle (right) */
-#pysuricata-report .title-nav {
-  grid-area: title;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+/* ---- what was profiled -------------------------------------- */
+/* Emitted with its separator or not at all, so an in-memory frame -- which
+   has no name, and is most inputs -- leaves no rule dangling in the bar. */
+#pysuricata-report .bar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--rule-strong);
+  flex: none;
 }
 
-#pysuricata-report .title-nav h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0;
+#pysuricata-report .dataset-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Shrinks before the nav and the actions do, so a long filename ellipses
+     rather than pushing the buttons off the end of the bar. */
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
-#pysuricata-report .nav-and-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-/* Quick links - minimal clean design with no default background */
+/* ---- sections ------------------------------------------------ */
 #pysuricata-report .quick {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
   align-items: center;
+  gap: 22px;
+  margin-left: auto;
+  flex: none;
 }
 
-#pysuricata-report .header-grid .quick a,
-#pysuricata-report .header-grid .quick a:visited {
-  color: inherit;
+/* Plain text, no pills. The active section is marked by colour and a rule
+   under it rather than a filled shape -- there is nothing here to press. */
+#pysuricata-report .quick a,
+#pysuricata-report .quick a:visited {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  padding-bottom: 3px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  /* A 13.5px line box is about 21px tall, which is under the 24px minimum in
+     WCAG 2.5.8. The box is grown rather than the type, so the label still
+     reads at the design's size and the bar still measures 52px. The rule that
+     marks the active section sits on the bottom edge, so the text is aligned
+     there rather than centred -- otherwise the rule drifts away from it. */
+  display: inline-flex;
+  align-items: flex-end;
+  min-height: 26px;
+}
+
+#pysuricata-report .quick a:hover {
+  color: var(--ink);
   text-decoration: none;
 }
 
-#pysuricata-report .quick a {
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0.35rem 0.75rem;
-  /* A hover affordance, so it keeps a radius -- but 6px, not a pill. The pill
-     shape goes entirely in phase 2, where the nav becomes plain text. */
-  border-radius: 6px;
+#pysuricata-report .quick a.active {
+  color: var(--ink);
+  border-bottom-color: var(--q-good);
+}
+
+#pysuricata-report .quick a:focus-visible {
+  outline: 2px solid var(--data-1);
+  outline-offset: 3px;
+}
+
+/* The long label wherever it fits; the short one only on the mobile rail,
+   where five of them have to fit 390px without scrolling. */
+#pysuricata-report .quick .nav-short {
+  display: none;
+}
+
+/* ---- actions ------------------------------------------------- */
+#pysuricata-report .bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+#pysuricata-report .icon-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
   background: transparent;
-  transition: all 0.2s ease;
+  border-radius: 3px;
+  color: var(--ink-2);
+  cursor: pointer;
+  padding: 0;
   position: relative;
 }
 
-/* Hover state - subtle background only, no border, no underline */
-#pysuricata-report .quick a:hover {
-  background: rgba(0, 0, 0, 0.06);
-  transform: translateY(-1px);
-  text-decoration: none;
-}
-
-#pysuricata-report:not(.light) .quick a:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* Active state - shows current section */
-#pysuricata-report .quick a.active {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--data-1);
-  text-decoration: none;
-}
-
-#pysuricata-report:not(.light) .quick a.active {
-  background: rgba(59, 130, 246, 0.12);
-  color: var(--data-1);
-}
-
-/* Focus state - accessibility */
-#pysuricata-report .quick a:focus-visible {
-  outline: 2px solid var(--data-1);
-  outline-offset: 2px;
-}
-
-/* Toggle button (monochrome) */
-#pysuricata-report .appbar .toggle-button {
-  position: static;
-  border: none;
-  background: transparent;
-  font-size: 1.3rem;
-  cursor: pointer;
-  padding: 0.3rem;
-  border-radius: 50%;
-  color: inherit;
-  transition: background-color 0.2s, transform 0.2s;
-}
-
-#pysuricata-report .appbar .toggle-button:hover {
-  background-color: rgba(0, 0, 0, 0.08);
-  transform: scale(1.1);
-}
-
-#pysuricata-report:not(.light) .appbar .toggle-button:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-/* Bottom row: metadata left-aligned under title */
-#pysuricata-report .meta {
-  grid-area: meta;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  font-size: 0.85rem;
-  opacity: 0.9;
-}
-
-
-/* Pin button placement and hover styling */
-#pysuricata-report .meta #pin-button {
-  margin-left: auto;
+/* The visual box is 30px, which is what a 52px bar has room for. The
+   *target* is 44px, which is what a finger needs. Growing the box would blow
+   the bar height, so the hit area is extended past the paint instead: the
+   two are not the same rectangle, and only one of them is visible. */
+#pysuricata-report .icon-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  transform: translate(-50%, -50%);
 }
 
 #pysuricata-report .icon-btn:hover {
-  background: var(--chip-bg);
-  filter: brightness(1.05);
+  color: var(--ink);
+  background: var(--track);
 }
 
 #pysuricata-report .icon-btn:focus-visible {
@@ -196,94 +202,161 @@
   outline-offset: 2px;
 }
 
-#pysuricata-report #pin-button {
-  border: none;
+#pysuricata-report .icon-btn svg {
+  display: block;
 }
 
+/* ---- the report's own title and metadata --------------------- */
+#pysuricata-report .report-head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
+#pysuricata-report .report-head h1 {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Labelled, because the bar used to carry a bare timestamp, a bare duration
+   and a bare "891 × 12" whose meaning lived in a `title` attribute -- and a
+   tooltip survives neither printing nor a screenshot nor PDF export. */
+#pysuricata-report .report-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+}
+
+#pysuricata-report .report-meta .k {
+  color: var(--muted);
+}
+
+#pysuricata-report .report-meta .v {
+  color: var(--ink);
+}
+
+#pysuricata-report .report-meta .meta-sep {
+  width: 1px;
+  height: 11px;
+  background: var(--rule-strong);
+}
+
+/* ---- mobile --------------------------------------------------- */
+@media (max-width: 768px) {
+  /* The rail anchors to the bar itself rather than to the centred container,
+     so it runs edge to edge. Inside the container it was boxed by the page
+     gutter and lost 40px, which is the difference between five labels fitting
+     at 390px and the rail scrolling. */
+  #pysuricata-report .appbar {
+    position: sticky;
+  }
+
+  #pysuricata-report .appbar .bar {
+    position: static;
+    height: var(--appbar-h-sm);
+    gap: 10px;
+  }
+
+  #pysuricata-report #logo .logo-mark {
+    height: 26px;
+  }
+
+  #pysuricata-report #logo .wordmark {
+    font-size: 14px;
+  }
+
+  #pysuricata-report .icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* The sections drop to their own rail under the bar. */
+  #pysuricata-report .appbar .quick {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    margin: 0;
+    /* Sized so all five labels fit at 390px without swiping, which is the
+       criterion. The rail spans the report, and the report carries a 20px
+       margin, so there are 350px to work with -- not 390. At the desktop
+       13.5px with a 16px gap the labels need 359 and it scrolls. At 13px with
+       a 10px gap and an 8px inset they need 340, which leaves 10px of
+       headroom for the font metrics to differ by platform.
+       overflow-x stays as the safety net for narrower phones. */
+    gap: 10px;
+    padding: 0 8px;
+    font-size: 13px;
+    background: var(--appbar-bg);
+    border-bottom: 1px solid var(--rule);
+    overflow-x: auto;
+    /* min-height, never height: with overflow-x a fixed height has the
+       scrollbar subtracted from it, which silently leaves a 29px rail that
+       fails the 44px target while measuring as though it passed. */
+    min-height: var(--tap-min);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  #pysuricata-report .appbar .quick::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* On the rail there is room, and a finger needs it: the links fill the
+     full 44px rather than sitting as 26px text inside it. */
+  #pysuricata-report .appbar .quick a {
+    font-size: 13px;
+    min-height: var(--tap-min);
+    align-items: center;
+    padding-bottom: 0;
+    border-bottom: 0;
+    border-top: 2px solid transparent;
+  }
+
+  #pysuricata-report .appbar .quick a.active {
+    border-top-color: var(--q-good);
+  }
+
+  /* The brand is a link too, and 30px is short of a thumb. */
+  #pysuricata-report .brand {
+    min-height: var(--tap-min);
+  }
+
+  #pysuricata-report .quick .nav-long {
+    display: none;
+  }
+
+  #pysuricata-report .quick .nav-short {
+    display: inline;
+  }
+
+  /* Room for the rail, so the first section does not sit under it. */
+  #pysuricata-report .appbar {
+    margin-bottom: var(--tap-min);
+  }
+
+  #pysuricata-report .report-head h1 {
+    font-size: 22px;
+  }
+
+  #pysuricata-report .report-meta {
+    gap: 10px;
+  }
+}
+
+/* ---- chips, still used outside the header --------------------- */
 #pysuricata-report .chip {
   padding: 0.35rem 0.6rem;
   border-radius: 6px;
   font-size: 0.85rem;
   line-height: 1;
-  background: var(--chip-bg-light);
-  border: 1px solid var(--chip-br-light);
-}
-
-#pysuricata-report:not(.light) .chip {
-  background: var(--chip-bg-dark);
-  border-color: var(--chip-br-dark);
-}
-
-/* Responsive header tweaks */
-@media (max-width: 768px) {
-  #pysuricata-report .title-nav {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.4rem;
-  }
-}
-
-@media (max-width: 560px) {
-  #pysuricata-report #logo .logo-mark {
-    height: 34px;
-  }
-
-  #pysuricata-report #logo .wordmark {
-    font-size: 0.95rem;
-  }
-}
-
-#pysuricata-report .icon-btn {
-  border: 1px solid var(--chip-br-light);
-  background: transparent;
-  border-radius: 6px;
-  width: 32px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: inherit;
-  /* SVGs use currentColor */
-  transition: color .25s ease, background-color .2s ease, transform .12s ease;
-}
-
-#pysuricata-report:not(.light) .icon-btn {
-  border-color: var(--chip-br-dark);
-}
-
-/* ── Colored header icons ─────────────────────────────── */
-/* Moon icon (shown in light mode → click to go dark) */
-#pysuricata-report.light #toggle-icon svg {
-  stroke: #6366f1;
-  /* indigo-500 */
-}
-
-/* Sun icon (shown in dark mode → click to go light) */
-#pysuricata-report:not(.light) #toggle-icon svg {
-  stroke: #f59e0b;
-  /* amber-500 */
-}
-
-/* Calendar chip icon */
-#pysuricata-report .chip[data-tooltip-type="date"] svg {
-  stroke: #0ea5e9;
-  /* sky-500 */
-}
-
-#pysuricata-report:not(.light) .chip[data-tooltip-type="date"] svg {
-  stroke: #38bdf8;
-  /* sky-400 */
-}
-
-/* Clock chip icon */
-#pysuricata-report .chip[data-tooltip-type="duration"] svg {
-  stroke: #10b981;
-  /* emerald-500 */
-}
-
-#pysuricata-report:not(.light) .chip[data-tooltip-type="duration"] svg {
-  stroke: #34d399;
-  /* emerald-400 */
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-br);
 }

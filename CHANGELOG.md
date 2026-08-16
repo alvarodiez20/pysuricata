@@ -19,6 +19,32 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.51] - 2026-08-16
+
+Phase 2 of the report redesign (#111): one header bar, and metadata that says
+what it is. **No number on the page changes** — the fact fingerprint is
+byte-identical, 598 facts, and has now stayed so across four consecutive
+commits of the migration.
+
+### Changed
+- **The header is one 52px bar**, down from about 96px. It was a two-row grid with a 78px logo column holding a vertical lockup — and a vertical lockup inside a horizontal bar is exactly what forces a tall header. The mark and the name now sit side by side at 30px. Mobile is 48px.
+- **The sections are plain text.** The active one is marked by colour and a 2px rule beneath it rather than a filled pill: there is nothing here to press.
+- **The metadata left the bar and got labels.** It used to be a bare timestamp, a bare duration, a bare version, and a bare `891 × 12` whose meaning lived in a `title` attribute — and a tooltip survives neither printing, nor a screenshot, nor PDF export, which are three of the four ways anyone reads a report they did not just generate. It now reads `Generated … │ Profiled in … │ Shape 891 rows × 8 columns │ pysuricata 0.0.51`, under the report title, and the shape is spelled out so the tooltip is not needed.
+- **The bar names what was profiled**, when there is a name to give. `profile("passengers.csv")` shows the filename; an in-memory frame shows nothing, and the separator is emitted with the name or not at all, so the common case leaves no rule dangling. Available as `dataset_name` for callers who want to set it.
+- **The pin joined the icon group.** It used to sit alone at `margin-left: auto` in a metadata row that no longer exists, and `functionality.js` injects one into the nav when it finds none — which would have dropped an icon into the text sections and into the mobile rail.
+
+### Removed
+- The indigo, amber, sky and emerald header icon colours. None of them was on either scale; they were simply picked. Header icons take `--ink-2` and draw with `currentColor`.
+- The compact-mode block in `_06-cards.css` that shrank the old header by trimming its padding and font sizes. Every selector in it named an element the template no longer emits.
+
+### Accessibility
+- **Every action is a 44×44 target** while still painting at 30px, because a 52px bar has no room for a 44px box. The hit area is extended past the paint — the two are not the same rectangle, and only one is visible.
+- **Section links clear the 24×24 minimum** in WCAG 2.5.8. A 13.5px line box is about 21px tall, so the box was grown rather than the type.
+- **The mobile rail fits all five sections at 390px** without swiping, measured: 325px of content in 334px of rail. It uses `min-height`, never `height` — with `overflow-x` a fixed height has the scrollbar subtracted from it, which silently leaves a 29px rail that fails the target while measuring as though it passed.
+
+### Verified
+The self-download still round-trips: bar, mark, five section links, three actions, the metadata line and all eight cards survive re-serialisation. That button finds its content by regex and fails silently, so it is checked whenever the header markup moves.
+
 ## [0.0.50] - 2026-08-16
 
 Phase 1 of the report redesign (#110): the token layer, the typography, and the
@@ -765,7 +791,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.50...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.51...HEAD
+[0.0.51]: https://github.com/alvarodiez20/pysuricata/compare/0.0.50...0.0.51
 [0.0.50]: https://github.com/alvarodiez20/pysuricata/compare/0.0.49...0.0.50
 [0.0.49]: https://github.com/alvarodiez20/pysuricata/compare/0.0.48...0.0.49
 [0.0.48]: https://github.com/alvarodiez20/pysuricata/compare/0.0.47...0.0.48

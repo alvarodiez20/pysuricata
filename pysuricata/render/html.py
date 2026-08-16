@@ -61,6 +61,24 @@ def _build_logo(svg_path: str) -> str:
     return f'<span id="logo">{mark}<span class="wordmark">pysuricata</span></span>'
 
 
+def _build_dataset_name(name: str | None) -> str:
+    """The name of what was profiled, for the header bar.
+
+    Returns the empty string when there is nothing to show, and the separator
+    is part of what is returned rather than part of the template. An in-memory
+    frame has no name -- most inputs are in-memory frames -- so the absent case
+    is the common one, and a template that hard-coded the divider would render
+    a rule with nothing after it on most reports.
+    """
+    text = (name or "").strip()
+    if not text:
+        return ""
+    return (
+        '<span class="bar-sep" aria-hidden="true"></span>'
+        f'<span class="dataset-name" title="{_html.escape(text)}">{_html.escape(text)}</span>'
+    )
+
+
 def render_html_snapshot(
     *,
     kinds: ColumnKinds,
@@ -331,6 +349,7 @@ def render_html_snapshot(
         "favicon": favicon_tag,
         "logo": logo_html,
         "report_title": report_title or cfg.title,
+        "dataset_name_html": _build_dataset_name(getattr(cfg, "dataset_name", "")),
         "report_date": report_date,
         "report_id": report_id,
         "pysuricata_version": pysuricata_version,

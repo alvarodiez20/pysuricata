@@ -743,36 +743,13 @@
 /*# =============================
 #   COMPACT MODE: header height & vertical rhythm
 # ============================= */
-/* Make header shorter without touching other containers */
-#pysuricata-report .appbar .container {
-  padding-top: 0.2rem;
-  padding-bottom: 0.2rem;
-}
-
-#pysuricata-report .header-grid {
-  row-gap: 0.2rem;
-  grid-template-columns: auto 1fr;
-}
-
-#pysuricata-report .header-grid .logo .logo-mark {
-  height: 40px;
-}
-
-#pysuricata-report .title-nav h1 {
-  font-size: 1.4rem;
-}
-
-#pysuricata-report .nav-and-toggle {
-  gap: 0.5rem;
-}
-
-#pysuricata-report .quick a {
-  padding: 0.25rem 0.6rem;
-}
-
-#pysuricata-report .meta {
-  gap: 0.4rem;
-}
+/* The compact-mode block that used to sit here shrank a 96px two-row header
+   by trimming its padding, its row gap and its font sizes. The bar it was
+   compensating for is gone: _02-header.css now sets the height directly from
+   --appbar-h, and every selector here -- .header-grid, .title-nav,
+   .nav-and-toggle, .meta -- referred to elements the template no longer
+   emits. The one live rule, the .quick a padding, fought the new nav's
+   padding-bottom, which is what draws the active-section rule. */
 
 /* Reduce space between rows/sections a bit */
 
