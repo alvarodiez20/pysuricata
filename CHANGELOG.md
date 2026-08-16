@@ -19,6 +19,25 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.63] - 2026-08-16
+
+Documentation only. Roadmap re-audited at 0.0.62 (v10), superseding v8.
+
+### Changed
+- **`docs/roadmap.md`** — v10. The redesign is finished as a body of work; the performance headline is re-measured (**3.01×**, which v7 and v8 both flagged as overdue); and the surface around the report is now the weakest part of the project.
+
+### Fixed
+Two findings that did not survive being checked, both corrected before they reached a decision:
+
+- **The published example report was never stale.** `docs.yml` regenerates it before `mkdocs build` and deploys on every push to `main`, so the README's link serves current output (600,049 B, inline-SVG logo) — not the 1,178,450 B artifact committed at 0.0.17. The conclusion had been drawn from the committed file rather than the served URL, twice. What remains is repo hygiene, and the question is why a build artifact is committed at all (#143).
+- **`finalize()` does not consume randomness.** It had been recorded as the one open correctness item, on the basis that a mid-stream `finalize()` diverges on eleven fields including the median. Running a control refuted it: two *unseeded* runs with no `finalize()` anywhere already differ on nine of them. With a seed the median is bit-identical either way, and `ReservoirSampler.values()` returns the buffer — it consumes no randomness, so the stated mechanism does not exist.
+
+  The real bug underneath is **#146**: the quantiles are reservoir estimates printed to four significant figures with no approximation marker, while eight unseeded runs spread `1.86 × 10⁻²` on a true median of `2.8 × 10⁻³`. Invisible to the suite because every test seeds.
+
+### Added
+- **The height decision**, open across seven hand-offs and blocking #122. #112 moves from ≤560px to **≤627px** and #114 from ≤600px to **≤820px**, both pinned to a named dataset and viewport and set at the measured value as ratchets. Neither original number reproduced, because neither criterion had named a dataset or a viewport — the same failure as v7's report-size series.
+- Seven issues for the audit's verified findings: #145 card heights, #146 quantiles, #147 histogram width, #148 hex ratchet, #149 triage block, #150 demo dataset, #151 README.
+
 ## [0.0.62] - 2026-08-16
 
 ### Fixed
