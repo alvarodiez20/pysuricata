@@ -602,252 +602,328 @@ body.suricata-standalone:not(.light) {
   background: var(--chip-bg);
   border: 1px solid var(--chip-br);
 }
-/* =============================
-   SUMMARY SECTION (cards & lists)
-   ============================= */
+/* =============================================================
+   SUMMARY — stat row, composition bar, quick facts, margin note
+
+   Phase 3 of the redesign. What this replaces: five bordered cards for five
+   numbers, then three more cards each held open at `min-height: 280px`. On a
+   phone that was three 280px boxes for content needing a fraction of it, and
+   a summary about 1,100px tall before the reader reached any column.
+
+   Nothing here has a box. One rule above the stat row, hairlines between the
+   cells, and whitespace elsewhere.
+   ============================================================= */
 #pysuricata-report #summary {
-  margin: 0.05rem 0 0.05rem;
+  margin: 0.05rem 0;
 }
 
 #pysuricata-report #summary h2 {
-  margin: 0 0 .75rem;
+  margin: 0 0 .5rem;
   font-size: 1.25rem;
   line-height: 1.25;
 }
 
-#pysuricata-report #summary .summary-grid {
+/* ---- the stat row ------------------------------------------- */
+#pysuricata-report .stat-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(5, 1fr);
+  border-top: 1px solid var(--ink);
+  border-bottom: 1px solid var(--rule);
 }
 
-#pysuricata-report #summary .summary-grid.second-row {
-  margin-top: 12px;
+#pysuricata-report .stat {
+  padding: 10px 14px 12px;
+  border-left: 1px solid var(--rule);
+  min-width: 0;
 }
 
-/* Auto-dense 3-column layout for second row */
-#pysuricata-report #summary .summary-grid.second-row {
-  grid-auto-flow: dense;
-  /* allow items to backfill gaps */
-  grid-template-columns: repeat(3, minmax(180px, 1fr));
+#pysuricata-report .stat:first-child {
+  border-left: 0;
+  padding-left: 0;
 }
 
-@media (max-width: 1024px) {
-  #pysuricata-report #summary .summary-grid.second-row {
-    grid-template-columns: repeat(2, minmax(180px, 1fr));
-  }
-}
-
-#pysuricata-report #summary .summary-card {
-  padding: 14px;
-  border-radius: 0;
-  border: 1px solid var(--chip-br-light);
-  background: rgba(0, 0, 0, 0.02);
-}
-
-/* First row cards - keep compact */
-#pysuricata-report #summary .summary-grid:not(.second-row) .summary-card {
-  display: block;
-}
-
-/* Only apply min-height to second-row cards (Column types, Top missing, Quick insights) */
-#pysuricata-report #summary .summary-grid.second-row .summary-card {
-  min-height: 280px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Better space distribution for Column types card */
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child {
-  justify-content: space-between;
-}
-
-#pysuricata-report:not(.light) #summary .summary-card {
-  border-color: var(--chip-br-dark);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-#pysuricata-report #summary .summary-card .label {
-  font-size: .8rem;
-  opacity: .8;
-  margin: 0 0 12px;
-}
-
-#pysuricata-report #summary .summary-card .value {
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-
-/* Generic summary list (two-column rows). We EXCLUDE .top-missing here. */
-#pysuricata-report #summary .summary-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  row-gap: 4px;
-}
-
-#pysuricata-report #summary .summary-list:not(.top-missing) li {
-  display: flex;
-  justify-content: space-between;
-  gap: .75rem;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-#pysuricata-report #summary .summary-list:not(.top-missing) li span:first-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* =============================
-   TOP MISSING COLUMNS (bars)
-   ============================= */
-/* The UL wrapper */
-#pysuricata-report #summary .summary-list.top-missing {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  /* do not stretch gaps between items */
-  align-content: flex-start;
-  gap: 16px;
-  /* uniform vertical spacing between rows */
-  margin: 0;
-  padding: 0;
-}
-
-/* Each LI is a 2-row grid: info row + bar row */
-#pysuricata-report .top-missing .missing-item {
-  display: grid;
-  grid-template-rows: auto 8px;
-  row-gap: 4px;
-  list-style: none;
-}
-
-/* Expandable content styling */
-#pysuricata-report .top-missing .expandable-content {
+/* Elapsed is the sixth cell, and only on the two-column mobile grid, where
+   five cells would leave one stranded on a row of its own. */
+#pysuricata-report .stat--elapsed {
   display: none;
 }
 
-#pysuricata-report .top-missing .expandable-content .missing-item {
-  opacity: 0.9;
+#pysuricata-report .stat__cap {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
-/* Expand button styling */
-#pysuricata-report .expand-btn {
-  background: transparent;
-  border: 1px solid var(--chip-br-light);
-  border-radius: 6px;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all 0.2s ease;
+#pysuricata-report .stat__val {
+  font-family: var(--font-mono);
+  font-size: 29px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  line-height: 1.12;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+#pysuricata-report .stat__sub {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+/* --q-warn-text, not --q-warn-fill: this is 11.5px type, and the fill step
+   sits deliberately below the text minimum so bars can be lighter than
+   words. Using the fill here would be a legible-looking 4.0:1. */
+#pysuricata-report .stat__sub.is-warn {
+  color: var(--q-warn-text);
+}
+
+/* ---- panels -------------------------------------------------- */
+#pysuricata-report .summary-panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  margin-top: 18px;
+}
+
+#pysuricata-report .panel {
+  min-width: 0;
+}
+
+#pysuricata-report .panel .micro-label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+/* ---- composition bar ----------------------------------------- */
+#pysuricata-report .composition__bar {
+  display: flex;
+  width: 100%;
+  height: 33px;
+  overflow: hidden;
+}
+
+#pysuricata-report .composition__seg {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  margin-top: 0.5rem;
-  width: 100%;
   justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  min-width: 0;
 }
 
-#pysuricata-report:not(.light) .expand-btn {
-  border-color: var(--chip-br-dark);
-}
-
-#pysuricata-report .expand-btn:hover {
-  background: var(--chip-bg);
-  border-color: var(--accent-color);
-  transform: translateY(-1px);
-}
-
-#pysuricata-report .expand-btn:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
-}
-
-#pysuricata-report .expand-icon {
-  font-size: 0.75rem;
-  transition: transform 0.2s ease;
-}
-
-#pysuricata-report .expand-btn[data-expanded="true"] .expand-icon {
-  transform: rotate(180deg);
-}
-
-/* Expand controls container */
-#pysuricata-report .expand-controls {
-  margin-top: 0.5rem;
-  list-style: none;
-}
-
-/* Info row: column name (left) + count/percent (right) */
-#pysuricata-report .missing-info {
+#pysuricata-report .composition__legend {
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  list-style: none;
+  padding: 0;
+  margin: 9px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+#pysuricata-report .composition__item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+#pysuricata-report .composition__item.is-zero {
+  color: var(--muted);
+}
+
+#pysuricata-report .composition__swatch {
+  width: 9px;
+  height: 9px;
+  flex: none;
+}
+
+/* A zero-count type has no segment, so its swatch is an outline rather than
+   a fill -- the palest step of the data scale is close enough to --track
+   that a filled swatch would imply a share it does not have. */
+#pysuricata-report .composition__swatch.is-zero {
+  background: transparent;
+  border: 1px solid var(--rule-strong);
+}
+
+#pysuricata-report .composition__label {
+  color: inherit;
+}
+
+#pysuricata-report .composition__value {
+  color: var(--muted);
+}
+
+#pysuricata-report .composition.is-empty .composition__empty {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
   margin: 0;
 }
 
-/* Column name chip (code-like) */
-#pysuricata-report .missing-col {
+/* ---- top missing --------------------------------------------- */
+#pysuricata-report .miss-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+/* Name, bar, figure on one line. The renderer emits the name and the figure
+   inside a wrapper with the bar as a sibling, which is a two-row shape;
+   `display: contents` dissolves the wrapper so all three become cells of the
+   same grid, and `order` puts the bar between them without touching the
+   markup that `missing_columns.py` produces. */
+#pysuricata-report .miss-list .missing-item {
+  display: grid;
+  grid-template-columns: 104px 1fr 100px;
+  align-items: center;
+  gap: 10px;
+}
+
+#pysuricata-report .miss-list .missing-info {
+  display: contents;
+}
+
+#pysuricata-report .miss-list .missing-col {
+  order: 1;
   font-family: var(--font-mono);
-  font-size: 0.82rem;
-  padding: 0.15rem 0.4rem;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  color: inherit;
-  display: inline-block;
+  font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  background: none;
+  padding: 0;
 }
 
-#pysuricata-report:not(.light) .missing-col {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.18);
+#pysuricata-report .miss-list .missing-bar {
+  order: 2;
+  height: 6px;
+  background: var(--track);
+  overflow: hidden;
 }
 
-#pysuricata-report .missing-stats {
-  font-weight: 500;
+#pysuricata-report .miss-list .missing-fill {
+  height: 100%;
+}
+
+#pysuricata-report .miss-list .missing-stats {
+  order: 3;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+#pysuricata-report .miss-complete {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+
+/* ---- quick facts --------------------------------------------- */
+#pysuricata-report .quick-facts {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  margin: 16px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  overflow-wrap: anywhere;
+}
+
+/* ---- description, as a margin note ---------------------------- */
+#pysuricata-report .description-block {
+  margin-top: 16px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  display: grid;
+  grid-template-columns: 88px 1fr auto;
+  gap: 14px;
+  align-items: baseline;
+}
+
+#pysuricata-report .description-block .description-content {
+  font-size: 14.5px;
+  line-height: 1.6;
+  border-left: 2px solid var(--q-good);
+  padding-left: 14px;
+}
+
+#pysuricata-report .description-block__action {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--data-1);
+  cursor: pointer;
   white-space: nowrap;
 }
 
-/* Bar container */
-#pysuricata-report .missing-bar {
-  position: relative;
-  height: 10px;
-  border-radius: 6px;
-  background: linear-gradient(to right, rgba(0, 0, 0, 0.03), rgba(0, 0, 0, 0.05));
-  overflow: hidden;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+/* Empty: one hairline row and nothing else. A report generated in a loop
+   never has a description, and an invitation nobody will accept should not
+   cost it a panel. */
+#pysuricata-report .description-block.is-empty {
+  align-items: center;
+  min-height: 44px;
+  padding-top: 0;
 }
 
-#pysuricata-report:not(.light) .missing-bar {
-  background: linear-gradient(to right, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.05));
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-  border-color: rgba(255, 255, 255, 0.08);
+#pysuricata-report .description-block.is-empty {
+  grid-template-columns: 1fr auto;
 }
 
-/* Percentage fill. Width is set inline: style="width: 23.4%;" */
-#pysuricata-report .missing-fill {
-  position: absolute;
-  left: 0;
-  top: 0;
-  height: 100%;
-  display: block;
-  transition: all 0.3s ease;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+/* Removed from the grid entirely rather than merely emptied, so the label and
+   the invitation share one row instead of the empty box pushing the action on
+   to a second. */
+#pysuricata-report .description-block.is-empty .description-content {
+  display: none;
 }
 
-#pysuricata-report .missing-fill.low {
-  background: var(--data-1);
-  box-shadow: 0 1px 3px rgba(78, 163, 241, 0.4);
+/* ---- mobile --------------------------------------------------- */
+@media (max-width: 768px) {
+  #pysuricata-report .stat-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  #pysuricata-report .stat {
+    padding: 8px 12px 10px;
+    border-top: 1px solid var(--rule);
+  }
+
+  #pysuricata-report .stat:nth-child(odd) {
+    border-left: 0;
+    padding-left: 0;
+  }
+
+  #pysuricata-report .stat:nth-child(-n+2) {
+    border-top: 0;
+  }
+
+  #pysuricata-report .stat--elapsed {
+    display: block;
+  }
+
+  #pysuricata-report .stat__val {
+    font-size: 23px;
+  }
+
+  #pysuricata-report .summary-panels {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  #pysuricata-report .description-block {
+    grid-template-columns: 1fr auto;
+  }
+
+  #pysuricata-report .description-block .description-content {
+    grid-column: 1 / -1;
+  }
 }
 
 #pysuricata-report .missing-fill.medium {
@@ -895,238 +971,30 @@ body.suricata-standalone:not(.light) {
    COLUMN TYPES (pretty tiles)
    ============================= */
 /* Target the first card in the second summary row ("Column types") */
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 10px;
-  margin: 0;
-}
+/* The column-type key that used to sit here -- four swatches drawn with
+   ::before on a .summary-list inside .second-row .summary-card -- is gone with
+   the cards. The composition legend replaces it, and takes its colours from
+   the renderer in composition_bar.py rather than from CSS, so the key and the
+   segment it labels can no longer disagree. test_design_system.py asserts the
+   data scale against that module now. */
 
-/* Turn each LI into a compact tile */
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 16px 10px;
-  border-radius: 0;
-  border: 1px solid var(--chip-br-light);
-  background: rgba(0, 0, 0, 0.02);
-  transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
-}
-
-#pysuricata-report:not(.light) #summary .summary-grid.second-row .summary-card:first-child .summary-list li {
-  border-color: var(--chip-br-dark);
-  background: rgba(255, 255, 255, 0.04);
-}
-
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:hover {
-  transform: translateY(-1px);
-  background: rgba(0, 0, 0, 0.04);
-}
-
-#pysuricata-report:not(.light) #summary .summary-grid.second-row .summary-card:first-child .summary-list li:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-/* Color swatch before each tile (matches donut palette) */
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li::before {
-  content: "";
-  display: block;
-  width: 14px;
-  height: 14px;
-  border-radius: 3px;
-  margin-bottom: 6px;
-  border: 1px solid var(--chip-br-light);
-}
-
-#pysuricata-report:not(.light) #summary .summary-grid.second-row .summary-card:first-child .summary-list li::before {
-  border-color: var(--chip-br-dark);
-}
-
-/* The column-type key, in four steps of the data scale, matching the donut
-   segment each one labels.
-
-   These were on --q-good / --q-warn-fill / --q-bad: the data-QUALITY scale.
-   That is the exact collision this palette exists to remove -- olive meaning
-   both "categorical" and "passes", rust meaning both "boolean" and "fails" --
-   and it survived the palette swap because the legacy hues were replaced by
-   whichever new token looked closest rather than by what they mean. A grep for
-   the old hexes cannot catch that, which is why the swatches are asserted
-   against the data scale in test_design_system.py. */
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(1)::before {
-  background: var(--data-1);
-}
-
-/* Numeric */
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(2)::before {
-  background: var(--data-2);
-}
-
-/* Categorical */
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(3)::before {
-  background: var(--data-3);
-}
-
-/* Datetime */
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(4)::before {
-  background: var(--data-4);
-}
-
-/* Boolean */
 
 /* Label (left span) becomes a subtle caption; value (right span) is bold/bigger */
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li span:first-child {
-  order: 2;
-  /* place under the value */
-  font-size: 0.8rem;
-  opacity: 0.8;
-}
 
-#pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li span:last-child {
-  order: 1;
-  /* show the number on top */
-  font-weight: 700;
-  font-size: 1.2rem;
-}
 
 /* Responsive: stack to 2 columns on narrow screens */
 @media (max-width: 560px) {
-  #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 /* =============================
    QUICK INSIGHTS (chip wall)
    ============================= */
-#pysuricata-report .chip-wall {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
 
-#pysuricata-report .chip-wall li {
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
-  background: var(--chip-bg-light);
-  border: 1px solid var(--chip-br-light);
-}
 
-#pysuricata-report:not(.light) .chip-wall li {
-  background: var(--chip-bg-dark);
-  border-color: var(--chip-br-dark);
-}
 
 #pysuricata-report .quick a svg {
   vertical-align: text-bottom;
   margin-right: 0px;
-}
-/* =============================
-   DTYPE PIE CHART SVG (interactive with custom tooltips)
-   Full pie slices from center to edge with lighter inner overlay
-   ============================= */
-#pysuricata-report .dtype-donut-svg {
-  display: block;
-  margin: 8px auto;
-  cursor: pointer;
-  border-radius: 50%;
-  overflow: visible;
-}
-
-/* Background circle - the empty portion of the ring, which is exactly what
-   --track means everywhere else. One token, both themes, no opacity fudge. */
-#pysuricata-report .donut-background {
-  fill: var(--track);
-}
-
-/* Segment hover effects - highlight on hover */
-#pysuricata-report .segment-path {
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-#pysuricata-report .segment-path:hover {
-  opacity: 0.85;
-  filter: brightness(1.15);
-  stroke: rgba(255, 255, 255, 0.6);
-  stroke-width: 2;
-}
-
-/* Dark mode - adjust stroke color for hover */
-#pysuricata-report:not(.light) .segment-path:hover {
-  stroke: rgba(255, 255, 255, 0.4);
-}
-
-/* Inner segments - subtle overlay matching original CSS exactly */
-#pysuricata-report .segment-inner {
-  fill: rgba(0, 0, 0, 0.06);
-  pointer-events: none;
-  transition: fill 0.2s ease;
-}
-
-#pysuricata-report:not(.light) .segment-inner {
-  fill: rgba(255, 255, 255, 0.08);
-}
-
-/* Center circle - subtle background color */
-#pysuricata-report .donut-center {
-  fill: var(--chip-bg-light);
-}
-
-#pysuricata-report:not(.light) .donut-center {
-  fill: var(--chip-bg-dark);
-}
-
-/* Custom Donut Chart Tooltip - Matches Histogram Style */
-#pysuricata-report .donut-tooltip {
-  position: absolute;
-  z-index: 1000;
-  pointer-events: none;
-  display: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(20, 20, 20, 0.92);
-  color: #fff;
-  font-size: .85rem;
-  line-height: 1.4;
-  white-space: nowrap;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(8px);
-}
-
-#pysuricata-report.light .donut-tooltip {
-  background: rgba(255, 255, 255, 0.96);
-  color: #111;
-  border-color: rgba(0, 0, 0, 0.15);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
-}
-
-#pysuricata-report .donut-tooltip .type-label {
-  font-weight: 700;
-  font-size: 0.9rem;
-}
-
-#pysuricata-report .donut-tooltip .type-stats {
-  font-size: 0.8rem;
-}
-
-#pysuricata-report .donut-tooltip .line {
-  margin: 2px 0;
-}
-
-#pysuricata-report .donut-tooltip .muted {
-  opacity: .75;
-}
-
-/* Legacy: Hide old dtype-legend if it exists */
-#pysuricata-report .dtype-legend {
-  display: none !important;
 }
 /* =============================
    DATASET SAMPLE (collapsible card)
@@ -8915,9 +8783,6 @@ body.suricata-standalone:not(.light) {
     const root = document.getElementById(ROOT_ID);
     const tip = root && root.querySelector('.hist-tooltip');
     if (tip) tip.style.display = 'none';
-    // Also hide donut tooltip
-    const donutTip = root && root.querySelector('.donut-tooltip');
-    if (donutTip) donutTip.style.display = 'none';
   }
   function positionTip(e, tip, root) {
     const r = root.getBoundingClientRect();
@@ -8969,30 +8834,11 @@ body.suricata-standalone:not(.light) {
       return;
     }
 
-    // Donut chart segment tooltips (Column types pie chart)
-    const donutSegment = e.target.closest('.segment-path');
-    if (donutSegment) {
-      const type = donutSegment.getAttribute('data-type') || 'Unknown';
-      const count = donutSegment.getAttribute('data-count') || '0';
-      const pct = donutSegment.getAttribute('data-percentage') || '0.0';
-
-      const html = `<div class="line"><strong>${type}</strong></div>` +
-        `<div class="line">${count} ${count === '1' ? 'column' : 'columns'} <span class="muted">(${pct}%)</span></div>`;
-
-      // Use donut-tooltip class instead of hist-tooltip
-      const root = document.getElementById(ROOT_ID);
-      if (!root) return;
-      let tip = root.querySelector('.donut-tooltip');
-      if (!tip) {
-        tip = document.createElement('div');
-        tip.className = 'donut-tooltip';
-        root.appendChild(tip);
-      }
-      tip.innerHTML = html;
-      tip.style.display = 'block';
-      positionTip(e, tip, root);
-      return;
-    }
+    // The donut's segment tooltip is gone with the donut. It existed because
+    // an arc cannot be read to a value, so the number had to be revealed on
+    // hover; the stacked bar prints each count inside its own segment and
+    // lists every count in the legend, including the zeros. A tooltip that
+    // repeats what is already on screen is a hover target that does nothing.
 
     // Missing values distribution tooltips (chunk and spectrum segments)
     const missingSegment = e.target.closest('.chunk-segment, .spectrum-segment');
@@ -10653,13 +10499,13 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-16 01:56:04</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-16 02:04:15</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <span><span class="k">Profiled in</span> <span class="v">0.09 s</span></span>
+            <span><span class="k">Profiled in</span> <span class="v">0.11 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Shape</span> <span class="v">891 rows × 12 columns</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.51</a>
+            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.52</a>
           </div>
         </div>
 
@@ -10667,93 +10513,49 @@ body.suricata-standalone:not(.light) {
         <section id="summary">
           <h2>Summary</h2>
 
-          <div class="summary-grid">
-            <div class="summary-card">
-              <div class="label">Rows</div>
-              <div class="value">891</div>
+          <!-- Stat row: one rule above, hairlines between. Five cards with
+               their own borders were five boxes to say five numbers. -->
+          <div class="stat-row">
+            <div class="stat">
+              <div class="stat__cap">Rows</div>
+              <div class="stat__val">891</div>
+              <div class="stat__sub">single pass</div>
             </div>
-            <div class="summary-card">
-              <div class="label">Columns</div>
-              <div class="value">12</div>
+            <div class="stat">
+              <div class="stat__cap">Columns</div>
+              <div class="stat__val">12</div>
+              <div class="stat__sub">3 num · 8 cat · 1 bool</div>
             </div>
-            <div class="summary-card">
-              <div class="label" title="Sum of memory used by all columns across all chunks">Processed bytes (≈)</div>
-              <div class="value">121.4 KB</div>
+            <div class="stat">
+              <div class="stat__cap">Missing</div>
+              <div class="stat__val">8.1%</div>
+              <div class="stat__sub is-warn">866 cells</div>
             </div>
-            <div class="summary-card">
-              <div class="label">Missing</div>
-              <div class="value">866 (8.1%)</div>
+            <div class="stat">
+              <div class="stat__cap">Duplicates</div>
+              <div class="stat__val">0</div>
+              <div class="stat__sub">≈ KMV sketch</div>
             </div>
-            <div class="summary-card">
-              <div class="label" title="Approximate count using probabilistic KMV sketch algorithm">Duplicates (≈)</div>
-              <div class="value">0 (0.0%)</div>
+            <div class="stat">
+              <div class="stat__cap">Processed</div>
+              <div class="stat__val">121.4 KB</div>
+              <div class="stat__sub">across all chunks</div>
+            </div>
+            <div class="stat stat--elapsed">
+              <div class="stat__cap">Elapsed</div>
+              <div class="stat__val">0.11 s</div>
+              <div class="stat__sub">wall clock</div>
             </div>
           </div>
 
-          <div class="summary-grid second-row">
-            <div class="summary-card">
-              <div class="label">Column types</div>
-              
-        <svg class="dtype-donut-svg" viewBox="0 0 135 135"
-             width="135" height="135"
-             xmlns="http://www.w3.org/2000/svg"
-             role="img" aria-labelledby="donut-title-multi donut-desc-multi">
-            <title id="donut-title-multi">Column type distribution</title>
-            <desc id="donut-desc-multi">Numeric: 3 (25%), Categorical: 8 (67%), Boolean: 1 (8%)</desc>
-            
-            <circle cx="67.5" cy="67.5" r="67.5"
-                    fill="var(--track, #EDE6DA)" class="donut-background"/>
-            <g class="donut-segments">
-                
-            <g class="donut-segment" data-type="numeric">
-                <path d="M 67.5,67.5 L 67.50,0.00 A 67.5,67.5 0 0,1 135.00,67.50 Z"
-                      fill="var(--data-1, #2C4A62)"
-                      class="segment-path"
-                      data-type="Numeric"
-                      data-count="3"
-                      data-percentage="25.0">
-                </path>
-            </g>
-            <g class="donut-segment" data-type="categorical">
-                <path d="M 67.5,67.5 L 135.00,67.50 A 67.5,67.5 0 1,1 33.75,9.04 Z"
-                      fill="var(--data-2, #3E6280)"
-                      class="segment-path"
-                      data-type="Categorical"
-                      data-count="8"
-                      data-percentage="66.7">
-                </path>
-            </g>
-            <g class="donut-segment" data-type="boolean">
-                <path d="M 67.5,67.5 L 33.75,9.04 A 67.5,67.5 0 0,1 67.50,0.00 Z"
-                      fill="var(--data-4, #A8BECD)"
-                      class="segment-path"
-                      data-type="Boolean"
-                      data-count="1"
-                      data-percentage="8.3">
-                </path>
-            </g>
-            </g>
-            <g class="donut-inner-segments">
-                
-            <path d="M 67.5,67.5 L 67.50,17.50 A 50,50 0 0,1 117.50,67.50 Z"
-                  class="segment-inner"/>
-            <path d="M 67.5,67.5 L 117.50,67.50 A 50,50 0 1,1 42.50,24.20 Z"
-                  class="segment-inner"/>
-            <path d="M 67.5,67.5 L 42.50,24.20 A 50,50 0 0,1 67.50,17.50 Z"
-                  class="segment-inner"/>
-            </g>
-        </svg>
-        
-              <ul class="summary-list">
-                <li><span>Numeric</span><span>3</span></li>
-                <li><span>Categorical</span><span>8</span></li>
-                <li><span>Datetime</span><span>0</span></li>
-                <li><span>Boolean</span><span>1</span></li>
-              </ul>
+          <div class="summary-panels">
+            <div class="panel">
+              <div class="micro-label">Column types</div>
+              <div class="composition" role="img" aria-label="Column types: categorical 8 (66.7%), numeric 3 (25%), boolean 1 (8.3%)"><div class="composition__bar"><div class="composition__seg" style="width:66.7%;background:var(--data-1, #2C4A62);color:var(--on-data-1, #FBF9F5)" data-type="categorical" data-count="8" data-percentage="66.7"><span class="composition__count">8</span></div><div class="composition__seg" style="width:25%;background:var(--data-2, #3E6280);color:var(--on-data-2, #FBF9F5)" data-type="numeric" data-count="3" data-percentage="25"><span class="composition__count">3</span></div><div class="composition__seg" style="width:8.3%;background:var(--data-3, #7FA0B5);color:var(--on-data-3, #22201C)" data-type="boolean" data-count="1" data-percentage="8.3"><span class="composition__count">1</span></div></div><ul class="composition__legend"><li class="composition__item"><span class="composition__swatch" style="background:var(--data-1, #2C4A62)"></span><span class="composition__label">categorical</span><span class="composition__value">8</span></li><li class="composition__item"><span class="composition__swatch" style="background:var(--data-2, #3E6280)"></span><span class="composition__label">numeric</span><span class="composition__value">3</span></li><li class="composition__item"><span class="composition__swatch" style="background:var(--data-3, #7FA0B5)"></span><span class="composition__label">boolean</span><span class="composition__value">1</span></li><li class="composition__item is-zero"><span class="composition__swatch is-zero"></span><span class="composition__label">datetime</span><span class="composition__value">0</span></li></ul></div>
             </div>
-            <div class="summary-card">
-              <div class="label">Top missing columns</div>
-              <ul class="summary-list top-missing">
+            <div class="panel">
+              <div class="micro-label">Top missing columns</div>
+              <ul class="miss-list">
                 
             <li class="missing-item">
               <div class="missing-info">
@@ -10780,35 +10582,22 @@ body.suricata-standalone:not(.light) {
             </li>
             
               </ul>
-            </div>
-            <div class="summary-card">
-              <div class="label">Quick insights</div>
-              <ul class="chip-wall">
-                <li>Unique cols: 12</li>
-                <li>Constant cols: 0</li>
-                <li>High-card categoricals: 2</li>
-                <li>Date range: — → —</li>
-                <li>Text cols: 8 (avg len 5.8)</li>
-              </ul>
+              <p class="miss-complete">9 of 12 columns are complete</p>
             </div>
           </div>
 
-          <!-- Description Section -->
-          <div class="collapsible-card" style="margin-top: 12px;">
-            <details class="card">
-              <summary>
-                <span id="description-toggle-text">Description</span>
-                <span class="chev" aria-hidden="true">▸</span>
-              </summary>
-              <div class="card-content">
-                <div class="description-value" id="summary-description" data-report-id="20260816-015604-9803"
-                  data-original-markdown="" data-action="edit-description">
-                  <div class="description-content">
-                    <span class="placeholder">Click to add description...</span>
-                  </div>
-                </div>
-              </div>
-            </details>
+          <!-- Five bordered pills were five borders to say five short facts. -->
+          <p class="quick-facts">12 unique · 0 constant · 2 high-cardinality · 8 text (avg len 5.8) · no date range</p>
+
+          <!-- Description as a margin note. Empty costs one hairline row:
+               reports generated in a loop never have one and must not be
+               disfigured by an invitation nobody will accept. -->
+          <div class="description-block is-empty" id="summary-description"
+            data-report-id="20260816-020415-8950" data-original-markdown=""
+            data-action="edit-description">
+            <span class="micro-label description-block__label">Description</span>
+            <div class="description-content"></div>
+            <span class="description-block__action">+ add a note</span>
           </div>
         </section>
         <hr class="section-divider">
@@ -11511,40 +11300,40 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">891</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">891</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>Andersson, Mr. Anders Johan</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">0.264</td></tr><tr><th>Rare levels</th><td class="num ">24 (2.7%)</td></tr><tr><th>Top 5 coverage</th><td class="num warn">0.6%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
-            <div class="hist-variants"><div class="cat variant" id="col_Name-cat-top-5" data-topn="5"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="11.40" height="24.00" rx="2" ry="2"><title>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="23.00" text-anchor="end">Ahlin, Mrs. Johan (Johan…</text><text class="bar-value" x="195.40" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="11.40" height="24.00" rx="2" ry="2"><title>Arnold-Franchi, Mrs. Josef (Josefine Franchi)
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="53.00" text-anchor="end">Arnold-Franchi, Mrs. Jos…</text><text class="bar-value" x="195.40" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="11.40" height="24.00" rx="2" ry="2"><title>Cann, Mr. Ernest Charles
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="83.00" text-anchor="end">Cann, Mr. Ernest Charles</text><text class="bar-value" x="195.40" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="11.40" height="24.00" rx="2" ry="2"><title>Devaney, Miss. Margaret Delia
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="113.00" text-anchor="end">Devaney, Miss. Margaret …</text><text class="bar-value" x="195.40" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="228.00" height="24.00" rx="2" ry="2"><title>Other
-20 rows (2.2%)</title></rect><text class="bar-label" x="174" y="143.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="143.00" text-anchor="end">20 (2.2%)</text></g></svg></div><div class="cat variant active" id="col_Name-cat-top-10" data-topn="10"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="15.20" height="9.00" rx="2" ry="2"><title>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="15.50" text-anchor="end">Ahlin, Mrs. Johan (Johan…</text><text class="bar-value" x="199.20" y="15.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="23.00" width="15.20" height="9.00" rx="2" ry="2"><title>Arnold-Franchi, Mrs. Josef (Josefine Franchi)
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="30.50" text-anchor="end">Arnold-Franchi, Mrs. Jos…</text><text class="bar-value" x="199.20" y="30.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="15.20" height="9.00" rx="2" ry="2"><title>Cann, Mr. Ernest Charles
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="45.50" text-anchor="end">Cann, Mr. Ernest Charles</text><text class="bar-value" x="199.20" y="45.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="53.00" width="15.20" height="9.00" rx="2" ry="2"><title>Devaney, Miss. Margaret Delia
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="60.50" text-anchor="end">Devaney, Miss. Margaret …</text><text class="bar-value" x="199.20" y="60.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="15.20" height="9.00" rx="2" ry="2"><title>Fortune, Mr. Charles Alexander
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="75.50" text-anchor="end">Fortune, Mr. Charles Ale…</text><text class="bar-value" x="199.20" y="75.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="83.00" width="15.20" height="9.00" rx="2" ry="2"><title>Glynn, Miss. Mary Agatha
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="90.50" text-anchor="end">Glynn, Miss. Mary Agatha</text><text class="bar-value" x="199.20" y="90.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="15.20" height="9.00" rx="2" ry="2"><title>Holverson, Mr. Alexander Oskar
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="105.50" text-anchor="end">Holverson, Mr. Alexander…</text><text class="bar-value" x="199.20" y="105.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="113.00" width="15.20" height="9.00" rx="2" ry="2"><title>Kraeff, Mr. Theodor
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="120.50" text-anchor="end">Kraeff, Mr. Theodor</text><text class="bar-value" x="199.20" y="120.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="15.20" height="9.00" rx="2" ry="2"><title>Laroche, Miss. Simonne Marie Anne Andree
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="135.50" text-anchor="end">Laroche, Miss. Simonne M…</text><text class="bar-value" x="199.20" y="135.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="143.00" width="228.00" height="9.00" rx="2" ry="2"><title>Other
-15 rows (1.7%)</title></rect><text class="bar-label" x="174" y="150.50" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="150.50" text-anchor="end">15 (1.7%)</text></g></svg></div><div class="cat variant" id="col_Name-cat-top-15" data-topn="15"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="22.80" height="4.00" rx="2" ry="2"><title>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="13.00" text-anchor="end">Ahlin, Mrs. Johan (Johan…</text><text class="bar-value" x="206.80" y="13.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="18.00" width="22.80" height="4.00" rx="2" ry="2"><title>Arnold-Franchi, Mrs. Josef (Josefine Franchi)
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="23.00" text-anchor="end">Arnold-Franchi, Mrs. Jos…</text><text class="bar-value" x="206.80" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="28.00" width="22.80" height="4.00" rx="2" ry="2"><title>Cann, Mr. Ernest Charles
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="33.00" text-anchor="end">Cann, Mr. Ernest Charles</text><text class="bar-value" x="206.80" y="33.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="22.80" height="4.00" rx="2" ry="2"><title>Devaney, Miss. Margaret Delia
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="43.00" text-anchor="end">Devaney, Miss. Margaret …</text><text class="bar-value" x="206.80" y="43.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="48.00" width="22.80" height="4.00" rx="2" ry="2"><title>Fortune, Mr. Charles Alexander
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="53.00" text-anchor="end">Fortune, Mr. Charles Ale…</text><text class="bar-value" x="206.80" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="58.00" width="22.80" height="4.00" rx="2" ry="2"><title>Glynn, Miss. Mary Agatha
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="63.00" text-anchor="end">Glynn, Miss. Mary Agatha</text><text class="bar-value" x="206.80" y="63.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="22.80" height="4.00" rx="2" ry="2"><title>Holverson, Mr. Alexander Oskar
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="73.00" text-anchor="end">Holverson, Mr. Alexander…</text><text class="bar-value" x="206.80" y="73.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="78.00" width="22.80" height="4.00" rx="2" ry="2"><title>Kraeff, Mr. Theodor
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="83.00" text-anchor="end">Kraeff, Mr. Theodor</text><text class="bar-value" x="206.80" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="88.00" width="22.80" height="4.00" rx="2" ry="2"><title>Laroche, Miss. Simonne Marie Anne Andree
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="93.00" text-anchor="end">Laroche, Miss. Simonne M…</text><text class="bar-value" x="206.80" y="93.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="22.80" height="4.00" rx="2" ry="2"><title>Lennon, Mr. Denis
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="103.00" text-anchor="end">Lennon, Mr. Denis</text><text class="bar-value" x="206.80" y="103.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="108.00" width="22.80" height="4.00" rx="2" ry="2"><title>Mamee, Mr. Hanna
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="113.00" text-anchor="end">Mamee, Mr. Hanna</text><text class="bar-value" x="206.80" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="118.00" width="22.80" height="4.00" rx="2" ry="2"><title>Meyer, Mr. Edgar Joseph
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="123.00" text-anchor="end">Meyer, Mr. Edgar Joseph</text><text class="bar-value" x="206.80" y="123.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="22.80" height="4.00" rx="2" ry="2"><title>Nicola-Yarred, Miss. Jamila
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="133.00" text-anchor="end">Nicola-Yarred, Miss. Jam…</text><text class="bar-value" x="206.80" y="133.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="138.00" width="22.80" height="4.00" rx="2" ry="2"><title>O&#x27;Driscoll, Miss. Bridget
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="143.00" text-anchor="end">O&#x27;Driscoll, Miss. B…</text><text class="bar-value" x="206.80" y="143.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="148.00" width="228.00" height="4.00" rx="2" ry="2"><title>Other
+            <div class="hist-variants"><div class="cat variant" id="col_Name-cat-top-5" data-topn="5"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="11.40" height="24.00" rx="2" ry="2"><title>Andersson, Mr. Anders Johan
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="23.00" text-anchor="end">Andersson, Mr. Anders Jo…</text><text class="bar-value" x="195.40" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="11.40" height="24.00" rx="2" ry="2"><title>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="53.00" text-anchor="end">Asplund, Mrs. Carl Oscar…</text><text class="bar-value" x="195.40" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="11.40" height="24.00" rx="2" ry="2"><title>Beesley, Mr. Lawrence
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="83.00" text-anchor="end">Beesley, Mr. Lawrence</text><text class="bar-value" x="195.40" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="11.40" height="24.00" rx="2" ry="2"><title>Bonnell, Miss. Elizabeth
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="113.00" text-anchor="end">Bonnell, Miss. Elizabeth</text><text class="bar-value" x="195.40" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="228.00" height="24.00" rx="2" ry="2"><title>Other
+20 rows (2.2%)</title></rect><text class="bar-label" x="174" y="143.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="143.00" text-anchor="end">20 (2.2%)</text></g></svg></div><div class="cat variant active" id="col_Name-cat-top-10" data-topn="10"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="15.20" height="9.00" rx="2" ry="2"><title>Andersson, Mr. Anders Johan
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="15.50" text-anchor="end">Andersson, Mr. Anders Jo…</text><text class="bar-value" x="199.20" y="15.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="23.00" width="15.20" height="9.00" rx="2" ry="2"><title>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="30.50" text-anchor="end">Asplund, Mrs. Carl Oscar…</text><text class="bar-value" x="199.20" y="30.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="15.20" height="9.00" rx="2" ry="2"><title>Beesley, Mr. Lawrence
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="45.50" text-anchor="end">Beesley, Mr. Lawrence</text><text class="bar-value" x="199.20" y="45.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="53.00" width="15.20" height="9.00" rx="2" ry="2"><title>Bonnell, Miss. Elizabeth
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="60.50" text-anchor="end">Bonnell, Miss. Elizabeth</text><text class="bar-value" x="199.20" y="60.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="15.20" height="9.00" rx="2" ry="2"><title>Dahlberg, Miss. Gerda Ulrika
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="75.50" text-anchor="end">Dahlberg, Miss. Gerda Ul…</text><text class="bar-value" x="199.20" y="75.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="83.00" width="15.20" height="9.00" rx="2" ry="2"><title>Emir, Mr. Farred Chehab
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="90.50" text-anchor="end">Emir, Mr. Farred Chehab</text><text class="bar-value" x="199.20" y="90.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="15.20" height="9.00" rx="2" ry="2"><title>Fynney, Mr. Joseph J
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="105.50" text-anchor="end">Fynney, Mr. Joseph J</text><text class="bar-value" x="199.20" y="105.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="113.00" width="15.20" height="9.00" rx="2" ry="2"><title>Gustafsson, Mr. Alfred Ossian
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="120.50" text-anchor="end">Gustafsson, Mr. Alfred O…</text><text class="bar-value" x="199.20" y="120.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="15.20" height="9.00" rx="2" ry="2"><title>Hewlett, Mrs. (Mary D Kingcome) 
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="135.50" text-anchor="end">Hewlett, Mrs. (Mary D Ki…</text><text class="bar-value" x="199.20" y="135.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="143.00" width="228.00" height="9.00" rx="2" ry="2"><title>Other
+15 rows (1.7%)</title></rect><text class="bar-label" x="174" y="150.50" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="150.50" text-anchor="end">15 (1.7%)</text></g></svg></div><div class="cat variant" id="col_Name-cat-top-15" data-topn="15"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="22.80" height="4.00" rx="2" ry="2"><title>Andersson, Mr. Anders Johan
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="13.00" text-anchor="end">Andersson, Mr. Anders Jo…</text><text class="bar-value" x="206.80" y="13.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="18.00" width="22.80" height="4.00" rx="2" ry="2"><title>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="23.00" text-anchor="end">Asplund, Mrs. Carl Oscar…</text><text class="bar-value" x="206.80" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="28.00" width="22.80" height="4.00" rx="2" ry="2"><title>Beesley, Mr. Lawrence
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="33.00" text-anchor="end">Beesley, Mr. Lawrence</text><text class="bar-value" x="206.80" y="33.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="22.80" height="4.00" rx="2" ry="2"><title>Bonnell, Miss. Elizabeth
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="43.00" text-anchor="end">Bonnell, Miss. Elizabeth</text><text class="bar-value" x="206.80" y="43.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="48.00" width="22.80" height="4.00" rx="2" ry="2"><title>Dahlberg, Miss. Gerda Ulrika
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="53.00" text-anchor="end">Dahlberg, Miss. Gerda Ul…</text><text class="bar-value" x="206.80" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="58.00" width="22.80" height="4.00" rx="2" ry="2"><title>Emir, Mr. Farred Chehab
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="63.00" text-anchor="end">Emir, Mr. Farred Chehab</text><text class="bar-value" x="206.80" y="63.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="22.80" height="4.00" rx="2" ry="2"><title>Fynney, Mr. Joseph J
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="73.00" text-anchor="end">Fynney, Mr. Joseph J</text><text class="bar-value" x="206.80" y="73.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="78.00" width="22.80" height="4.00" rx="2" ry="2"><title>Gustafsson, Mr. Alfred Ossian
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="83.00" text-anchor="end">Gustafsson, Mr. Alfred O…</text><text class="bar-value" x="206.80" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="88.00" width="22.80" height="4.00" rx="2" ry="2"><title>Hewlett, Mrs. (Mary D Kingcome) 
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="93.00" text-anchor="end">Hewlett, Mrs. (Mary D Ki…</text><text class="bar-value" x="206.80" y="93.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="22.80" height="4.00" rx="2" ry="2"><title>Laleff, Mr. Kristo
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="103.00" text-anchor="end">Laleff, Mr. Kristo</text><text class="bar-value" x="206.80" y="103.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="108.00" width="22.80" height="4.00" rx="2" ry="2"><title>Markun, Mr. Johann
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="113.00" text-anchor="end">Markun, Mr. Johann</text><text class="bar-value" x="206.80" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="118.00" width="22.80" height="4.00" rx="2" ry="2"><title>Masselmani, Mrs. Fatima
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="123.00" text-anchor="end">Masselmani, Mrs. Fatima</text><text class="bar-value" x="206.80" y="123.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="22.80" height="4.00" rx="2" ry="2"><title>McGowan, Miss. Anna &quot;Annie&quot;
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="133.00" text-anchor="end">McGowan, Miss. Anna &quo…</text><text class="bar-value" x="206.80" y="133.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="138.00" width="22.80" height="4.00" rx="2" ry="2"><title>Najib, Miss. Adele Kiamie &quot;Jane&quot;
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="143.00" text-anchor="end">Najib, Miss. Adele Kiami…</text><text class="bar-value" x="206.80" y="143.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="148.00" width="228.00" height="4.00" rx="2" ry="2"><title>Other
 10 rows (1.1%)</title></rect><text class="bar-label" x="174" y="153.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="153.00" text-anchor="end">10 (1.1%)</text></g></svg></div></div>
         </div>
         </div>
@@ -11572,8 +11361,8 @@ body.suricata-standalone:not(.light) {
                 <button role="tab" data-tab="missing">Missing Values</button>
             </nav>
             <div class="tab-panes">
-                <section class="tab-pane active" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='cat common-value'>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='cat common-value'>Arnold-Franchi, Mrs. Josef (Josefine Franchi)</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='cat common-value'>Cann, Mr. Ernest Charles</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='cat common-value'>Devaney, Miss. Margaret Delia</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='cat common-value'>Fortune, Mr. Charles Alexander</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='cat common-value'>Glynn, Miss. Mary Agatha</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='cat common-value'>Holverson, Mr. Alexander Oskar</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='cat common-value'>Kraeff, Mr. Theodor</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='cat common-value'>Laroche, Miss. Simonne Marie Anne Andree</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='cat common-value'>Lennon, Mr. Denis</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr></tbody></table></section>
-                <section class="tab-pane" data-tab="normalize"><table class="kv"><thead><tr><th>Original</th><th>lower()</th><th>strip()</th></tr></thead><tbody><tr><td><code>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)</code></td><td><code>ahlin, mrs. johan (johanna persdotter larsson)</code></td><td><code>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)</code></td></tr><tr><td><code>Arnold-Franchi, Mrs. Josef (Josefine Franchi)</code></td><td><code>arnold-franchi, mrs. josef (josefine franchi)</code></td><td><code>Arnold-Franchi, Mrs. Josef (Josefine Franchi)</code></td></tr><tr><td><code>Cann, Mr. Ernest Charles</code></td><td><code>cann, mr. ernest charles</code></td><td><code>Cann, Mr. Ernest Charles</code></td></tr><tr><td><code>Devaney, Miss. Margaret Delia</code></td><td><code>devaney, miss. margaret delia</code></td><td><code>Devaney, Miss. Margaret Delia</code></td></tr><tr><td><code>Fortune, Mr. Charles Alexander</code></td><td><code>fortune, mr. charles alexander</code></td><td><code>Fortune, Mr. Charles Alexander</code></td></tr><tr><td><code>Glynn, Miss. Mary Agatha</code></td><td><code>glynn, miss. mary agatha</code></td><td><code>Glynn, Miss. Mary Agatha</code></td></tr></tbody></table></section>
+                <section class="tab-pane active" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='cat common-value'>Andersson, Mr. Anders Johan</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='cat common-value'>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='cat common-value'>Beesley, Mr. Lawrence</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='cat common-value'>Bonnell, Miss. Elizabeth</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='cat common-value'>Dahlberg, Miss. Gerda Ulrika</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='cat common-value'>Emir, Mr. Farred Chehab</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='cat common-value'>Fynney, Mr. Joseph J</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='cat common-value'>Gustafsson, Mr. Alfred Ossian</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='cat common-value'>Hewlett, Mrs. (Mary D Kingcome) </td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='cat common-value'>Laleff, Mr. Kristo</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr></tbody></table></section>
+                <section class="tab-pane" data-tab="normalize"><table class="kv"><thead><tr><th>Original</th><th>lower()</th><th>strip()</th></tr></thead><tbody><tr><td><code>Andersson, Mr. Anders Johan</code></td><td><code>andersson, mr. anders johan</code></td><td><code>Andersson, Mr. Anders Johan</code></td></tr><tr><td><code>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)</code></td><td><code>asplund, mrs. carl oscar (selma augusta emilia johansson)</code></td><td><code>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)</code></td></tr><tr><td><code>Beesley, Mr. Lawrence</code></td><td><code>beesley, mr. lawrence</code></td><td><code>Beesley, Mr. Lawrence</code></td></tr><tr><td><code>Bonnell, Miss. Elizabeth</code></td><td><code>bonnell, miss. elizabeth</code></td><td><code>Bonnell, Miss. Elizabeth</code></td></tr><tr><td><code>Dahlberg, Miss. Gerda Ulrika</code></td><td><code>dahlberg, miss. gerda ulrika</code></td><td><code>Dahlberg, Miss. Gerda Ulrika</code></td></tr><tr><td><code>Emir, Mr. Farred Chehab</code></td><td><code>emir, mr. farred chehab</code></td><td><code>Emir, Mr. Farred Chehab</code></td></tr></tbody></table></section>
                 <section class="tab-pane" data-tab="missing">
                     <div class="sub"><div class="hdr">Missing Values</div>
         <div class="missing-analysis-header">
@@ -12370,40 +12159,40 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">681</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>113043</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">681</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>112050</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">0.5169</td></tr><tr><th>Rare levels</th><td class="num ">47 (5.3%)</td></tr><tr><th>Top 5 coverage</th><td class="num warn">0.6%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
-            <div class="hist-variants"><div class="cat variant" id="col_Ticket-cat-top-5" data-topn="5"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="6.70" height="24.00" rx="2" ry="2"><title>113043
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="23.00" text-anchor="end">113043</text><text class="bar-value" x="130.70" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="6.70" height="24.00" rx="2" ry="2"><title>113510
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="53.00" text-anchor="end">113510</text><text class="bar-value" x="130.70" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="6.70" height="24.00" rx="2" ry="2"><title>113514
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="83.00" text-anchor="end">113514</text><text class="bar-value" x="130.70" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="6.70" height="24.00" rx="2" ry="2"><title>113784
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="113.00" text-anchor="end">113784</text><text class="bar-value" x="130.70" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="288.00" height="24.00" rx="2" ry="2"><title>Other
-43 rows (4.8%)</title></rect><text class="bar-label" x="114" y="143.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="143.00" text-anchor="end">43 (4.8%)</text></g></svg></div><div class="cat variant active" id="col_Ticket-cat-top-10" data-topn="10"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="7.58" height="9.00" rx="2" ry="2"><title>113043
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="15.50" text-anchor="end">113043</text><text class="bar-value" x="131.58" y="15.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="23.00" width="7.58" height="9.00" rx="2" ry="2"><title>113510
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="30.50" text-anchor="end">113510</text><text class="bar-value" x="131.58" y="30.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="7.58" height="9.00" rx="2" ry="2"><title>113514
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="45.50" text-anchor="end">113514</text><text class="bar-value" x="131.58" y="45.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="53.00" width="7.58" height="9.00" rx="2" ry="2"><title>113784
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="60.50" text-anchor="end">113784</text><text class="bar-value" x="131.58" y="60.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="7.58" height="9.00" rx="2" ry="2"><title>19988
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="75.50" text-anchor="end">19988</text><text class="bar-value" x="131.58" y="75.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="83.00" width="7.58" height="9.00" rx="2" ry="2"><title>226593
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="90.50" text-anchor="end">226593</text><text class="bar-value" x="131.58" y="90.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="7.58" height="9.00" rx="2" ry="2"><title>229236
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="105.50" text-anchor="end">229236</text><text class="bar-value" x="131.58" y="105.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="113.00" width="7.58" height="9.00" rx="2" ry="2"><title>234818
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="120.50" text-anchor="end">234818</text><text class="bar-value" x="131.58" y="120.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="7.58" height="9.00" rx="2" ry="2"><title>237671
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="135.50" text-anchor="end">237671</text><text class="bar-value" x="131.58" y="135.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="143.00" width="288.00" height="9.00" rx="2" ry="2"><title>Other
-38 rows (4.3%)</title></rect><text class="bar-label" x="114" y="150.50" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="150.50" text-anchor="end">38 (4.3%)</text></g></svg></div><div class="cat variant" id="col_Ticket-cat-top-15" data-topn="15"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="8.73" height="4.00" rx="2" ry="2"><title>113043
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="13.00" text-anchor="end">113043</text><text class="bar-value" x="132.73" y="13.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="18.00" width="8.73" height="4.00" rx="2" ry="2"><title>113510
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="23.00" text-anchor="end">113510</text><text class="bar-value" x="132.73" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="28.00" width="8.73" height="4.00" rx="2" ry="2"><title>113514
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="33.00" text-anchor="end">113514</text><text class="bar-value" x="132.73" y="33.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="8.73" height="4.00" rx="2" ry="2"><title>113784
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="43.00" text-anchor="end">113784</text><text class="bar-value" x="132.73" y="43.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="48.00" width="8.73" height="4.00" rx="2" ry="2"><title>19988
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="53.00" text-anchor="end">19988</text><text class="bar-value" x="132.73" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="58.00" width="8.73" height="4.00" rx="2" ry="2"><title>226593
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="63.00" text-anchor="end">226593</text><text class="bar-value" x="132.73" y="63.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="8.73" height="4.00" rx="2" ry="2"><title>229236
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="73.00" text-anchor="end">229236</text><text class="bar-value" x="132.73" y="73.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="78.00" width="8.73" height="4.00" rx="2" ry="2"><title>234818
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="83.00" text-anchor="end">234818</text><text class="bar-value" x="132.73" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="88.00" width="8.73" height="4.00" rx="2" ry="2"><title>237671
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="93.00" text-anchor="end">237671</text><text class="bar-value" x="132.73" y="93.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="8.73" height="4.00" rx="2" ry="2"><title>244361
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="103.00" text-anchor="end">244361</text><text class="bar-value" x="132.73" y="103.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="108.00" width="8.73" height="4.00" rx="2" ry="2"><title>248733
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="113.00" text-anchor="end">248733</text><text class="bar-value" x="132.73" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="118.00" width="8.73" height="4.00" rx="2" ry="2"><title>248740
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="123.00" text-anchor="end">248740</text><text class="bar-value" x="132.73" y="123.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="8.73" height="4.00" rx="2" ry="2"><title>250651
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="133.00" text-anchor="end">250651</text><text class="bar-value" x="132.73" y="133.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="138.00" width="8.73" height="4.00" rx="2" ry="2"><title>2647
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="143.00" text-anchor="end">2647</text><text class="bar-value" x="132.73" y="143.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="148.00" width="288.00" height="4.00" rx="2" ry="2"><title>Other
+            <div class="hist-variants"><div class="cat variant" id="col_Ticket-cat-top-5" data-topn="5"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="6.70" height="24.00" rx="2" ry="2"><title>112050
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="23.00" text-anchor="end">112050</text><text class="bar-value" x="130.70" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="6.70" height="24.00" rx="2" ry="2"><title>112058
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="53.00" text-anchor="end">112058</text><text class="bar-value" x="130.70" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="6.70" height="24.00" rx="2" ry="2"><title>113055
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="83.00" text-anchor="end">113055</text><text class="bar-value" x="130.70" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="6.70" height="24.00" rx="2" ry="2"><title>113783
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="113.00" text-anchor="end">113783</text><text class="bar-value" x="130.70" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="288.00" height="24.00" rx="2" ry="2"><title>Other
+43 rows (4.8%)</title></rect><text class="bar-label" x="114" y="143.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="143.00" text-anchor="end">43 (4.8%)</text></g></svg></div><div class="cat variant active" id="col_Ticket-cat-top-10" data-topn="10"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="7.58" height="9.00" rx="2" ry="2"><title>112050
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="15.50" text-anchor="end">112050</text><text class="bar-value" x="131.58" y="15.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="23.00" width="7.58" height="9.00" rx="2" ry="2"><title>112058
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="30.50" text-anchor="end">112058</text><text class="bar-value" x="131.58" y="30.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="7.58" height="9.00" rx="2" ry="2"><title>113055
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="45.50" text-anchor="end">113055</text><text class="bar-value" x="131.58" y="45.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="53.00" width="7.58" height="9.00" rx="2" ry="2"><title>113783
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="60.50" text-anchor="end">113783</text><text class="bar-value" x="131.58" y="60.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="7.58" height="9.00" rx="2" ry="2"><title>11774
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="75.50" text-anchor="end">11774</text><text class="bar-value" x="131.58" y="75.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="83.00" width="7.58" height="9.00" rx="2" ry="2"><title>17463
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="90.50" text-anchor="end">17463</text><text class="bar-value" x="131.58" y="90.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="7.58" height="9.00" rx="2" ry="2"><title>17466
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="105.50" text-anchor="end">17466</text><text class="bar-value" x="131.58" y="105.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="113.00" width="7.58" height="9.00" rx="2" ry="2"><title>19972
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="120.50" text-anchor="end">19972</text><text class="bar-value" x="131.58" y="120.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="7.58" height="9.00" rx="2" ry="2"><title>233866
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="135.50" text-anchor="end">233866</text><text class="bar-value" x="131.58" y="135.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="143.00" width="288.00" height="9.00" rx="2" ry="2"><title>Other
+38 rows (4.3%)</title></rect><text class="bar-label" x="114" y="150.50" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="150.50" text-anchor="end">38 (4.3%)</text></g></svg></div><div class="cat variant" id="col_Ticket-cat-top-15" data-topn="15"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="8.73" height="4.00" rx="2" ry="2"><title>112050
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="13.00" text-anchor="end">112050</text><text class="bar-value" x="132.73" y="13.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="18.00" width="8.73" height="4.00" rx="2" ry="2"><title>112058
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="23.00" text-anchor="end">112058</text><text class="bar-value" x="132.73" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="28.00" width="8.73" height="4.00" rx="2" ry="2"><title>113055
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="33.00" text-anchor="end">113055</text><text class="bar-value" x="132.73" y="33.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="8.73" height="4.00" rx="2" ry="2"><title>113783
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="43.00" text-anchor="end">113783</text><text class="bar-value" x="132.73" y="43.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="48.00" width="8.73" height="4.00" rx="2" ry="2"><title>11774
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="53.00" text-anchor="end">11774</text><text class="bar-value" x="132.73" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="58.00" width="8.73" height="4.00" rx="2" ry="2"><title>17463
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="63.00" text-anchor="end">17463</text><text class="bar-value" x="132.73" y="63.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="8.73" height="4.00" rx="2" ry="2"><title>17466
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="73.00" text-anchor="end">17466</text><text class="bar-value" x="132.73" y="73.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="78.00" width="8.73" height="4.00" rx="2" ry="2"><title>19972
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="83.00" text-anchor="end">19972</text><text class="bar-value" x="132.73" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="88.00" width="8.73" height="4.00" rx="2" ry="2"><title>233866
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="93.00" text-anchor="end">233866</text><text class="bar-value" x="132.73" y="93.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="8.73" height="4.00" rx="2" ry="2"><title>236852
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="103.00" text-anchor="end">236852</text><text class="bar-value" x="132.73" y="103.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="108.00" width="8.73" height="4.00" rx="2" ry="2"><title>244373
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="113.00" text-anchor="end">244373</text><text class="bar-value" x="132.73" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="118.00" width="8.73" height="4.00" rx="2" ry="2"><title>248698
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="123.00" text-anchor="end">248698</text><text class="bar-value" x="132.73" y="123.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="8.73" height="4.00" rx="2" ry="2"><title>248706
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="133.00" text-anchor="end">248706</text><text class="bar-value" x="132.73" y="133.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="138.00" width="8.73" height="4.00" rx="2" ry="2"><title>248723
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="143.00" text-anchor="end">248723</text><text class="bar-value" x="132.73" y="143.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="148.00" width="288.00" height="4.00" rx="2" ry="2"><title>Other
 33 rows (3.7%)</title></rect><text class="bar-label" x="114" y="153.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="153.00" text-anchor="end">33 (3.7%)</text></g></svg></div></div>
         </div>
         </div>
@@ -12431,7 +12220,7 @@ body.suricata-standalone:not(.light) {
                 <button role="tab" data-tab="missing">Missing Values</button>
             </nav>
             <div class="tab-panes">
-                <section class="tab-pane active" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='cat common-value'>113043</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='cat common-value'>113510</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='cat common-value'>113514</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='cat common-value'>113784</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='cat common-value'>19988</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='cat common-value'>226593</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='cat common-value'>229236</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='cat common-value'>234818</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='cat common-value'>237671</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='cat common-value'>244361</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr></tbody></table></section>
+                <section class="tab-pane active" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='cat common-value'>112050</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='cat common-value'>112058</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='cat common-value'>113055</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='cat common-value'>113783</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='cat common-value'>11774</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='cat common-value'>17463</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='cat common-value'>17466</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='cat common-value'>19972</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='cat common-value'>233866</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='cat common-value'>236852</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr></tbody></table></section>
                 <section class="tab-pane" data-tab="normalize"><table class="kv"><thead><tr><th>Original</th><th>lower()</th><th>strip()</th></tr></thead><tbody><tr><td colspan=3>—</td></tr></tbody></table></section>
                 <section class="tab-pane" data-tab="missing">
                     <div class="sub"><div class="hdr">Missing Values</div>
@@ -12772,7 +12561,7 @@ body.suricata-standalone:not(.light) {
             <div class="tab-panes">
                 <section class="tab-pane active" data-tab="stats"><div class='stats-quant'><table class="kv"><tbody><tr><th>Mean</th><td class="num">32.2</td></tr><tr><th>Std Dev</th><td class="num">49.69</td></tr><tr><th>Variance</th><td class="num">2,469</td></tr><tr><th>Std Error</th><td class="num">1.665</td></tr><tr><th>Coeff. of Var</th><td class="num">1.543</td></tr><tr><th>Geometric mean</th><td class="num">18.98</td></tr><tr><th>IQR</th><td class="num">23.09</td></tr><tr><th>MAD</th><td class="num">6.904</td></tr><tr><th>Skew</th><td class="num">4.779</td></tr><tr><th>Kurtosis</th><td class="num">33.2</td></tr><tr><th>Jarque–Bera χ²</th><td class="num">4.432e+04</td></tr><tr><th>95% CI (mean)</th><td class="num">[28.94 – 35.47]</td></tr><tr><th>Granularity</th><td>2.4973509999999997 (decimals: 10)</td></tr><tr><th>Heaping %</th><td class="num">53.98</td></tr></tbody></table><table class="kv"><tbody><tr><th>Min</th><td class="num">0</td></tr><tr><th>P1 (≈)</th><td class="num">0</td></tr><tr><th>P5 (≈)</th><td class="num">7.225</td></tr><tr><th>P10 (≈)</th><td class="num">7.55</td></tr><tr><th>Q1 (P25)</th><td class="num">7.91</td></tr><tr><th>Median (P50)</th><td class="num">14.45</td></tr><tr><th>Q3 (P75)</th><td class="num">31</td></tr><tr><th>P90 (≈)</th><td class="num">77.96</td></tr><tr><th>P95 (≈)</th><td class="num">112.1</td></tr><tr><th>P99 (≈)</th><td class="num">249</td></tr><tr><th>Range</th><td class="num">512.3</td></tr><tr><th>Std Dev</th><td class="num">49.69</td></tr></tbody></table></div></section>
                 <section class="tab-pane" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='num common-value'>8.05</td><td class='num common-count'>29</td><td class='num common-pct'>3.3%</td><td class='progress-bar'><div class='bar-fill' style='width:3.3%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='num common-value'>13</td><td class='num common-count'>28</td><td class='num common-pct'>3.1%</td><td class='progress-bar'><div class='bar-fill' style='width:3.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='num common-value'>7.896</td><td class='num common-count'>24</td><td class='num common-pct'>2.7%</td><td class='progress-bar'><div class='bar-fill' style='width:2.7%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='num common-value'>7.75</td><td class='num common-count'>20</td><td class='num common-pct'>2.2%</td><td class='progress-bar'><div class='bar-fill' style='width:2.2%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='num common-value'>26</td><td class='num common-count'>17</td><td class='num common-pct'>1.9%</td><td class='progress-bar'><div class='bar-fill' style='width:1.9%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='num common-value'>10.5</td><td class='num common-count'>10</td><td class='num common-pct'>1.1%</td><td class='progress-bar'><div class='bar-fill' style='width:1.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='num common-value'>0</td><td class='num common-count'>7</td><td class='num common-pct'>0.8%</td><td class='progress-bar'><div class='bar-fill' style='width:0.8%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='num common-value'>7.775</td><td class='num common-count'>5</td><td class='num common-pct'>0.6%</td><td class='progress-bar'><div class='bar-fill' style='width:0.6%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='num common-value'>30</td><td class='num common-count'>4</td><td class='num common-pct'>0.4%</td><td class='progress-bar'><div class='bar-fill' style='width:0.4%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='num common-value'>7.925</td><td class='num common-count'>4</td><td class='num common-pct'>0.4%</td><td class='progress-bar'><div class='bar-fill' style='width:0.4%'></div></td></tr></tbody></table></section>
-                <section class="tab-pane" data-tab="extremes"><div class='extremes stats-quant'><div class='sub'><div class='hdr'>Min values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>179</td><td class='num'>0</td></tr><tr><td>413</td><td class='num'>0</td></tr><tr><td>481</td><td class='num'>0</td></tr><tr><td>806</td><td class='num'>0</td></tr><tr><td>466</td><td class='num'>0</td></tr></tbody></table></div><div class='sub'><div class='hdr'>Max values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>679</td><td class='num'>512.3</td></tr><tr><td>258</td><td class='num'>512.3</td></tr><tr><td>737</td><td class='num'>512.3</td></tr><tr><td>341</td><td class='num'>263</td></tr><tr><td>438</td><td class='num'>263</td></tr></tbody></table></div></div></section>
+                <section class="tab-pane" data-tab="extremes"><div class='extremes stats-quant'><div class='sub'><div class='hdr'>Min values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>302</td><td class='num'>0</td></tr><tr><td>413</td><td class='num'>0</td></tr><tr><td>806</td><td class='num'>0</td></tr><tr><td>815</td><td class='num'>0</td></tr><tr><td>481</td><td class='num'>0</td></tr></tbody></table></div><div class='sub'><div class='hdr'>Max values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>737</td><td class='num'>512.3</td></tr><tr><td>679</td><td class='num'>512.3</td></tr><tr><td>258</td><td class='num'>512.3</td></tr><tr><td>341</td><td class='num'>263</td></tr><tr><td>438</td><td class='num'>263</td></tr></tbody></table></div></div></section>
                 <section class="tab-pane" data-tab="outliers">
                     <div class="stats-quant">
                         <div class="sub">
@@ -12814,7 +12603,7 @@ body.suricata-standalone:not(.light) {
             
             <div class="context-note"><small>💡 This shows the most extreme outliers from a representative sample. The general statistics show all 116 outliers (13.0%) in the full dataset.</small></div>
         </div>
-        <table class="outliers-table enhanced"><thead><tr><th>Rank</th><th>Index</th><th>Value</th><th>Method</th><th>Severity</th></tr></thead><tbody><tr class='outlier-row rank-1'><td class='rank' rowspan='2'>1ˢᵗ</td><td class='index' rowspan='2'>679</td><td class='num outlier-value' rowspan='2'>512.3</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (20.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-1'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (72.1× MAD)</span></td></tr><tr class='outlier-row rank-2'><td class='rank' rowspan='2'>2ⁿᵈ</td><td class='index' rowspan='2'>341</td><td class='num outlier-value' rowspan='2'>263</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (10.0× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-2'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (36.0× MAD)</span></td></tr><tr class='outlier-row rank-3'><td class='rank' rowspan='2'>3ʳᵈ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>262.4</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (10.0× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-3'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (35.9× MAD)</span></td></tr><tr class='outlier-row rank-4'><td class='rank' rowspan='2'>4ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>247.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (9.4× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-4'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (33.8× MAD)</span></td></tr><tr class='outlier-row rank-5'><td class='rank' rowspan='2'>5ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>227.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (8.5× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-5'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (30.9× MAD)</span></td></tr><tr class='outlier-row rank-6'><td class='rank' rowspan='2'>6ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>221.8</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (8.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-6'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (30.0× MAD)</span></td></tr><tr class='outlier-row rank-7'><td class='rank' rowspan='2'>7ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>211.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (7.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-7'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (28.5× MAD)</span></td></tr><tr class='outlier-row rank-8'><td class='rank' rowspan='2'>8ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>211.3</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (7.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-8'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (28.5× MAD)</span></td></tr><tr class='outlier-row rank-9'><td class='rank' rowspan='2'>9ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>164.9</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-9'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (21.8× MAD)</span></td></tr><tr class='outlier-row rank-10'><td class='rank' rowspan='2'>10ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>153.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-10'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (20.1× MAD)</span></td></tr></tbody></table><div class="outlier-note"><small>ℹ️ Index shown only for top/bottom extreme values tracked during profiling. Sample-based outliers may not have row indices.</small></div></div>
+        <table class="outliers-table enhanced"><thead><tr><th>Rank</th><th>Index</th><th>Value</th><th>Method</th><th>Severity</th></tr></thead><tbody><tr class='outlier-row rank-1'><td class='rank' rowspan='2'>1ˢᵗ</td><td class='index' rowspan='2'>737</td><td class='num outlier-value' rowspan='2'>512.3</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (20.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-1'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (72.1× MAD)</span></td></tr><tr class='outlier-row rank-2'><td class='rank' rowspan='2'>2ⁿᵈ</td><td class='index' rowspan='2'>341</td><td class='num outlier-value' rowspan='2'>263</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (10.0× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-2'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (36.0× MAD)</span></td></tr><tr class='outlier-row rank-3'><td class='rank' rowspan='2'>3ʳᵈ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>262.4</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (10.0× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-3'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (35.9× MAD)</span></td></tr><tr class='outlier-row rank-4'><td class='rank' rowspan='2'>4ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>247.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (9.4× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-4'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (33.8× MAD)</span></td></tr><tr class='outlier-row rank-5'><td class='rank' rowspan='2'>5ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>227.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (8.5× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-5'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (30.9× MAD)</span></td></tr><tr class='outlier-row rank-6'><td class='rank' rowspan='2'>6ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>221.8</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (8.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-6'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (30.0× MAD)</span></td></tr><tr class='outlier-row rank-7'><td class='rank' rowspan='2'>7ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>211.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (7.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-7'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (28.5× MAD)</span></td></tr><tr class='outlier-row rank-8'><td class='rank' rowspan='2'>8ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>211.3</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (7.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-8'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (28.5× MAD)</span></td></tr><tr class='outlier-row rank-9'><td class='rank' rowspan='2'>9ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>164.9</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-9'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (21.8× MAD)</span></td></tr><tr class='outlier-row rank-10'><td class='rank' rowspan='2'>10ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>153.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-10'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (20.1× MAD)</span></td></tr></tbody></table><div class="outlier-note"><small>ℹ️ Index shown only for top/bottom extreme values tracked during profiling. Sample-based outliers may not have row indices.</small></div></div>
                     </div>
                 </section>
                 <section class="tab-pane" data-tab="corr">
