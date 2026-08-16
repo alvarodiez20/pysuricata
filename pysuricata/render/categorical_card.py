@@ -157,6 +157,11 @@ class CategoricalCardRenderer(CardRenderer):
             norm_tab_btn,
             norm_tab_pane,
             missing_table,
+            # NOT gated on chunk count, unlike the numeric and datetime
+            # cards. `html.py` calls `finalize()` without chunk metadata for
+            # this kind, so the accumulator has none to give -- gating on it
+            # would hide the pane permanently rather than tighten the rule.
+            # See #193.
             has_missing=int(getattr(stats, "missing", 0) or 0) > 0,
         )
         controls_html = self._build_controls_section(col_id, topn_list, default_topn)

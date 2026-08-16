@@ -504,9 +504,25 @@ class TestDateTimeCardRenderer:
         assert "var-card" in html
 
     def test_missing_completeness_shown(self):
-        html = self.renderer.render_card(make_datetime(count=70, missing=30))
+        """The pane needs missing values **and** more than one chunk (#154,
+        5b.7). With a single chunk it states one fact four times under a header
+        already carrying it; the only thing it knows that the card face does
+        not is where in the read the gaps fall."""
+        html = self.renderer.render_card(
+            make_datetime(
+                count=70,
+                missing=30,
+                chunk_metadata=[(0, 49, 20), (50, 99, 10)],
+            )
+        )
         assert "70.0%" in html  # present_pct
         assert "30.0%" in html  # missing_pct
+
+    def test_missing_completeness_hidden_for_a_single_chunk(self):
+        html = self.renderer.render_card(
+            make_datetime(count=70, missing=30, chunk_metadata=[(0, 99, 30)])
+        )
+        assert "Data Completeness" not in html
 
 
 # ---------------------------------------------------------------------------
@@ -568,12 +584,18 @@ class TestCrossRendererConsistency:
         ],
     )
     def test_completeness_section_present_when_missing(self, renderer_class, stats_fn):
-        """Renderers with missing values should show Data Completeness section."""
+        """Renderers with missing values show the Data Completeness pane.
+
+        Numeric and datetime additionally require more than one chunk (#154,
+        5b.7); categorical does not, because its accumulator is never handed
+        chunk metadata to gate on (#193). The fixture supplies two chunks where
+        the type carries them, so this asserts the pane for every kind that can
+        render it.
+        """
         renderer = renderer_class()
-        # Use count=80, missing=20 where applicable
-        if renderer_class == BooleanCardRenderer:
-            stats = stats_fn()
-        else:
-            stats = stats_fn(count=80, missing=20)
+        extra = {}
+        if renderer_class in (NumericCardRenderer, DateTimeCardRenderer):
+            extra["chunk_metadata"] = [(0, 49, 10), (50, 99, 10)]
+        stats = stats_fn(count=80, missing=20, **extra)
         html = renderer.render_card(stats)
         assert "Data Completeness" in html

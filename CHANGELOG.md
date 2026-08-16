@@ -14,6 +14,28 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- **The closed `Details` row names what is behind it** ([#154], 5b.8) —
+  `statistics · 48 common values · 5 lowest and highest · 11 outliers`. The tab
+  set was known at render time and never printed, so the word "Details"
+  promised nothing and a reader had to open every card to learn whether opening
+  was worth it. `11 outliers` is the reason to open it; `no outliers` is the
+  reason not to. Each tab carries its count too, so the right one can be picked
+  first time.
+- **The Missing Values pane renders only when it knows something** (5b.7):
+  missing > 0 **and** more than one chunk. With a single chunk it stated one
+  fact four times — a Present stat, a Missing stat, a two-segment bar and a
+  one-segment chunk strip — under a header already flagging the percentage. The
+  only thing it knows that the card face does not is *where in the read* the
+  gaps fall. Applies to numeric and datetime; categorical and boolean are never
+  handed chunk metadata to gate on, which is filed as [#193].
+- **The active tab's underline moved onto the label.** The button is 44px tall
+  because it is a tap target, so a `border-bottom` on it painted the rule ~29px
+  below the word — a second hairline floating under the strip. The tinted
+  background went with it: a filled tab competing with an underline says the
+  same thing twice, and the tint was a colour on neither scale.
+
 ### Fixed
 
 - **The histogram fills its card** ([#147]). At a 1240px viewport the `<svg>`

@@ -1061,20 +1061,44 @@
   background: transparent;
 }
 
+/* The active marker goes on the label, not on the button.
+
+   The button is 44px tall because it is a tap target (#122). A
+   `border-bottom` on it paints the rule ~29px below the word, where it reads
+   as a second hairline floating under the strip rather than as an underline
+   belonging to the text. So the label sits in its own span and carries the
+   rule itself.
+
+   The tinted background goes with it. It was `rgba(59, 130, 246, 0.12)` --
+   a colour on neither scale -- and a filled tab competing with an underline
+   says the same thing twice. */
+#pysuricata-report .details-section .tabs [role="tab"] .tab__label {
+  display: inline-block;
+  border-bottom: 2px solid transparent;
+  padding-bottom: 2px;
+}
+
 #pysuricata-report .details-section .tabs [role="tab"].active {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: var(--data-1);
-  border-bottom: 2px solid var(--data-1);
-  color: #1e40af;
+  background: transparent;
+  border-color: var(--rule-strong);
+  color: var(--ink);
   font-weight: 600;
 }
 
-#pysuricata-report:not(.light) .details-section .tabs [role="tab"].active {
-  background: rgba(96, 165, 250, 0.2);
-  border-color: var(--data-1);
-  border-bottom: 2px solid var(--data-1);
-  color: #93c5fd;
-  font-weight: 600;
+#pysuricata-report .details-section .tabs [role="tab"].active .tab__label {
+  border-bottom-color: var(--data-1);
+}
+
+/* The count is the reason to pick this tab, so it reads as a figure rather
+   than as part of the word. */
+#pysuricata-report .details-section .tabs .tab__count {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+#pysuricata-report .details-section .tabs [role="tab"].active .tab__count {
+  color: var(--ink-2);
 }
 
 /* Tab panes visibility */
@@ -1757,4 +1781,15 @@
   color: inherit;
   cursor: pointer;
   font-size: 0.75rem;
+}
+
+/* What is behind the closed button. The tab set is known at render time and
+   was not printed, so `Details` promised nothing -- and a reader had to open
+   every card to learn whether opening was worth it. `11 outliers` beside the
+   button is the reason to open it; `no outliers` is the reason not to. */
+#pysuricata-report .details-panes {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 10px;
 }
