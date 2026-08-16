@@ -1818,6 +1818,15 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
+  <a href="#added" class="md-nav__link">
+    <span class="md-ellipsis">
+      Added
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#changed" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
@@ -1827,7 +1836,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added" class="md-nav__link">
+  <a href="#added_1" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -1887,7 +1896,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added_1" class="md-nav__link">
+  <a href="#added_2" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -2088,7 +2097,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added_2" class="md-nav__link">
+  <a href="#added_3" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -2130,7 +2139,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added_3" class="md-nav__link">
+  <a href="#added_4" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -2172,7 +2181,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#added_4" class="md-nav__link">
+  <a href="#added_5" class="md-nav__link">
     <span class="md-ellipsis">
       Added
     </span>
@@ -2244,6 +2253,14 @@ treated as a contract.</p>
 Numbers here come from the benchmark harness in <code>benchmarks/</code>; ratios are only
 quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD">Unreleased</a></h2>
+<h3 id="added">Added</h3>
+<ul>
+<li><strong>A ratchet on colour (#148).</strong> #110's acceptance was that four retired column-type hues do not appear in <code>static/css/</code>. All four are clear — and there are <strong>94 distinct hex values</strong> in the stylesheets, including Tailwind's blue-600, green-500 and amber-500 and Material's red-700. The ban list named the accents being replaced and missed everything that walked in behind them.</li>
+</ul>
+<p>A ban list can always be outgrown by a colour nobody thought to ban, so the assertion runs the other way: <strong>every hex outside <code>_00-tokens.css</code> must equal a value the token file defines.</strong> That cannot be satisfied today — 88 file/value pairs do not — so it ships as a ratchet against a recorded baseline. A new literal fails immediately; tokenising one also fails, loudly, telling you to shrink the baseline. The number only goes down.</p>
+<p>Two exclusions, both narrow: <code>var(--paper, #FBF9F5)</code> is a fallback <em>for a token that exists</em>, not an untokenised colour; and <code>body.suricata-standalone</code> sits outside <code>#pysuricata-report</code> and so cannot read tokens scoped there — the only place in the stylesheets that has to repeat a palette value, and the file already said so.</p>
+<p>The first draft of this test asserted that "the nine named colours" from #110 are clear. <strong>There is no such list</strong> — <code>test_design_system.py</code> carries four. The invented list went red on <code>#93c5fd</code>, which is how I found out it was mine rather than the project's. It now reads the real list from the test that owns it.</p>
+<p>Deleting the 88 is deliberately not in this change. <code>_12-missing.css</code> alone holds 27, and 212 of its 405 rules reference no class in a rendered report — but <code>.miss-strip</code> is the by-chunk view blocked by #139 and <code>.corr-scale</code> is the ranked-list correlation route, so both are <em>ahead of their data</em> rather than dead. Mass-deleting on one fixture is the mistake #158 made with the chart rules, twice. That needs the multi-route fixture corpus #124 is meant to establish.</p>
 <h3 id="changed">Changed</h3>
 <ul>
 <li><strong>Publishing is triggered by pushing a version tag, not by merging (#159).</strong></li>
@@ -2262,7 +2279,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <p><strong><code>actions/create-release@v1</code></strong> — archived by GitHub in 2021, still running Node 12 — replaced with <code>gh release create</code>. <code>checkout@v3</code> and <code>setup-python@v4</code> raised to v4/v5.</p>
 </li>
 </ul>
-<h3 id="added">Added</h3>
+<h3 id="added_1">Added</h3>
 <ul>
 <li><strong><code>smoke</code></strong> — the built <strong>wheel</strong> is installed into an empty virtualenv on 3.10 and 3.14, asked for its version, then made to profile a frame and check <code>schema_version</code>. CI tests the repository; this tests the artifact, which is not the same object: a missing package-data glob ships a wheel with no templates and a green test suite.</li>
 <li><strong><code>scripts/release_notes.py</code></strong> lifts the <code>## [X.Y.Z]</code> section out of <code>CHANGELOG.md</code> and <strong>refuses to release a version that has none</strong>. The changelog already enforced on every PR becomes the release page for free.</li>
@@ -2326,7 +2343,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <ul>
 <li>The em dash now means <em>absent</em>. It was standing in for <em>read from the wrong place</em>, which is a different thing and is what hid this.</li>
 </ul>
-<h3 id="added_1">Added</h3>
+<h3 id="added_2">Added</h3>
 <ul>
 <li><code>tests/test_label_length.py</code> (18 tests), including a guard aimed at the cause rather than the symptom: it asserts the derived dict still does <strong>not</strong> carry those keys, so reintroducing the old read fails even on a day the dict happens to have them.</li>
 </ul>
@@ -2464,7 +2481,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <li><strong>The missing-values tab switcher</strong> (~1,750 characters). #120 replaced the tabs with a chunk-count route and <code>test_missing_section_views.py</code> asserts the markup stays gone, so this listened for clicks on elements no report emits.</li>
 <li><strong>A <code>.details-panel</code> fallback</strong> for a pre-refactor layout — a second code path nobody exercised, reachable only when the primary branch failed to find its target, which is exactly when a silent <code>return</code> is wrong.</li>
 </ul>
-<h3 id="added_2">Added</h3>
+<h3 id="added_3">Added</h3>
 <ul>
 <li>
 <p>A repo-wide emoji guard covering the rendered report <em>and</em> the render sources, plus a separate assertion that <strong>no numeric character reference above U+2000</strong> appears anywhere in <code>pysuricata/</code> — the check that would have caught the boolean card.</p>
@@ -2510,7 +2527,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <ul>
 <li><strong>Small frames were being told their exact count was approximate.</strong> KMV counts exactly until it has seen <code>k</code> distinct values, so most frames have no estimation error here at all. <code>≈ KMV sketch</code> claimed otherwise on every one of them.</li>
 </ul>
-<h3 id="added_3">Added</h3>
+<h3 id="added_4">Added</h3>
 <ul>
 <li><code>RowKMV.duplicates_uncertainty()</code>, <code>.duplicates_are_resolvable()</code> and <code>.kmv_is_exact()</code>.</li>
 <li><code>tests/test_duplicate_uncertainty.py</code> (17 tests), including the property that matters: across duplicate rates of 0.1%, 1%, 10% and 50%, the truth lies inside the stated interval.</li>
@@ -2524,7 +2541,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <li><strong><code>docs/integration.md</code></strong> replaced with the updated design handoff, which adds phases <strong>5b</strong> (numeric details pane) and <strong>5c</strong> (categorical, datetime and boolean details panes) and a revised commit sequence.</li>
 <li><strong>Its status table was rewritten.</strong> The handoff audited a snapshot from before phases 2–7 landed, so four rows read <em>not applied</em> for work that has since shipped — flag chip values (#137), the correlations empty state (#138), the correlations emoji (#138) and the missing-values tabs (#140). Every row was re-verified against <code>main</code> by rendering a report and reading the markup. Where the handoff was still right, an issue is linked.</li>
 </ul>
-<h3 id="added_4">Added</h3>
+<h3 id="added_5">Added</h3>
 <ul>
 <li><code>docs/design/</code> — the handoff README, the proposed <code>tokens.css</code>, and the updated contrast test kept as <code>contrast_test.reference.py</code> (deliberately not named <code>test_*</code>, so pytest does not collect a file that asserts token values the repo does not have yet).</li>
 </ul>
@@ -2543,7 +2560,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <ul>
 <li><strong>Header controls reordered to pin → download → theme.</strong> The pin governs the bar it sits in, so it leads; the theme toggle is set once and left, so it trails.</li>
 </ul>
-<h3 id="added_5">Added</h3>
+<h3 id="added_6">Added</h3>
 <ul>
 <li><code>pysuricata/render/sampling.py</code> — one predicate, <code>quantiles_are_sampled()</code>, answering whether the reservoir saw the whole column. It returns <code>False</code> when the sample is absent or empty: those quantiles were not drawn from a reservoir at all, and marking them would attach a warning to the numbers that least need one.</li>
 <li><code>tests/test_sampled_quantiles.py</code> and <code>tests/test_header_actions.py</code> (34 tests).</li>
@@ -2563,7 +2580,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <li><strong><code>finalize()</code> does not consume randomness.</strong> It had been recorded as the one open correctness item, on the basis that a mid-stream <code>finalize()</code> diverges on eleven fields including the median. Running a control refuted it: two <em>unseeded</em> runs with no <code>finalize()</code> anywhere already differ on nine of them. With a seed the median is bit-identical either way, and <code>ReservoirSampler.values()</code> returns the buffer — it consumes no randomness, so the stated mechanism does not exist.</li>
 </ul>
 <p>The real bug underneath is <strong>#146</strong>: the quantiles are reservoir estimates printed to four significant figures with no approximation marker, while eight unseeded runs spread <code>1.86 × 10⁻²</code> on a true median of <code>2.8 × 10⁻³</code>. Invisible to the suite because every test seeds.</p>
-<h3 id="added_6">Added</h3>
+<h3 id="added_7">Added</h3>
 <ul>
 <li><strong>The height decision</strong>, open across seven hand-offs and blocking #122. #112 moves from ≤560px to <strong>≤627px</strong> and #114 from ≤600px to <strong>≤820px</strong>, both pinned to a named dataset and viewport and set at the measured value as ratchets. Neither original number reproduced, because neither criterion had named a dataset or a viewport — the same failure as v7's report-size series.</li>
 <li>Seven issues for the audit's verified findings: #145 card heights, #146 quantiles, #147 histogram width, #148 hex ratchet, #149 triage block, #150 demo dataset, #151 README.</li>
@@ -2576,7 +2593,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <li><strong>The editor had nowhere to type.</strong> The textarea is appended into a three-column grid; without an explicit span it landed in an 88px track. It now takes its own full-width row.</li>
 <li><strong>The invitation was under the minimum pointer target.</strong> Now 24px (WCAG 2.5.8) in its own right, rather than relying on the whole row being clickable.</li>
 </ul>
-<h3 id="added_7">Added</h3>
+<h3 id="added_8">Added</h3>
 <ul>
 <li><strong><code>tests/test_description_editor.py</code></strong> (23 tests). Most of it is not about the description block: it checks <strong>every</strong> <code>getElementById</code> and class selector in the bundled JS against real rendered markup, so the next rename is caught in whichever module it happens. Verified by reintroducing the bug — three tests fail.</li>
 </ul>
@@ -2592,7 +2609,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="0061-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.60...0.0.61">0.0.61</a> - 2026-08-16</h2>
 <p>The redesign's testing harness (#123), turning fourteen commits of manual
 checking into a guard.</p>
-<h3 id="added_8">Added</h3>
+<h3 id="added_9">Added</h3>
 <ul>
 <li><strong><code>tests/test_report_data_invariance.py</code></strong>, with committed fixtures. Three tests for the sentence the whole migration rests on — <em>presentation changes on every commit, the facts change on exactly two</em>:</li>
 <li><strong>The fingerprint.</strong> 598 facts, with colours, class names, element order, tag names, whitespace and SVG geometry discarded. An HTML snapshot would be 100% churn on every one of these commits, so nobody would read it, so a real regression would ride in unnoticed.</li>
@@ -2674,7 +2691,7 @@ the fact fingerprint.</p>
 <li><strong>The boolean bar's labels were illegible on the pale segment.</strong> Every one was <code>fill="white"</code>, which is fine on <code>--data-2</code> and about <strong>1.8:1</strong> on <code>--data-4</code> — against the 4.5:1 a label needs. <code>--on-data-*</code> exists to state which ink goes with which step, and it has to be used, not merely defined.</li>
 <li><strong>The bar was a 52px band</strong> for a column with two values. It is 38px now, in the 36–40 the design asks for. The height was a default argument in the renderer, so the 48 in the chart config had never taken effect.</li>
 </ul>
-<h3 id="added_9">Added</h3>
+<h3 id="added_10">Added</h3>
 <ul>
 <li><strong>The temporal charts name their unit</strong>: <code>RECORDS</code>, once, above the y axis. Nothing said these counted records per bucket — a reader could as easily have taken the axis for a share, or for the column's own values.</li>
 </ul>
@@ -2688,7 +2705,7 @@ the fact fingerprint.</p>
 <h2 id="0056-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.55...0.0.56">0.0.56</a> - 2026-08-16</h2>
 <p>Phase 5.3 of the report redesign (#116): a chart with nothing to say now says
 so. Nothing removed or changed in the fact fingerprint.</p>
-<h3 id="added_10">Added</h3>
+<h3 id="added_11">Added</h3>
 <ul>
 <li><strong>High-cardinality columns get a sentence instead of a chart.</strong> <code>Name</code>, <code>Ticket</code> and <code>Cabin</code> rendered ten bars of one row each — a chart drawn at full size, carrying no information, indistinguishable at a glance from one that carries plenty. <strong>No chart element is emitted at all</strong>, and no empty box: a container the height of a chart with nothing in it reads as a failed render rather than as <em>there is nothing to draw</em>.</li>
 </ul>
@@ -2853,7 +2870,7 @@ the fact fingerprint is byte-identical across it, 598 facts.</p>
 <p>The traced mark is <strong>10,814 bytes</strong>, 16× smaller than the PNG it came from. No
   point on it moves further than one source pixel — 1/20 of a rendered pixel at
   header size — from the artwork's true boundary.</p>
-<h3 id="added_11">Added</h3>
+<h3 id="added_12">Added</h3>
 <ul>
 <li><strong><code>scripts/trace_logo.py</code></strong>, which produced that asset and can reproduce it.
   It is committed so the mark can be regenerated if the artwork changes, and so
@@ -2882,7 +2899,7 @@ button finds its content by regex and fails silently.</p>
 <ul>
 <li><strong>The changelog moved to <code>CHANGELOG.md</code> at the repository root</strong>, which is where GitHub, PyPI and release tooling look for it. <code>docs/changelog.md</code> now includes that file verbatim through <code>pymdownx.snippets</code>, so the two cannot drift apart, and the CI freshness check follows the file. The root copy had been left behind at 0.0.42 while the docs copy carried five more releases; they are merged, and there is now one place to edit.</li>
 </ul>
-<h3 id="added_12">Added</h3>
+<h3 id="added_13">Added</h3>
 <ul>
 <li><strong><code>docs/integration.md</code> and <code>docs/MIGRATION_TESTING.md</code></strong> — the redesign plan and its testing strategy, referenced by every issue in the #110–#122 series.</li>
 <li><strong><code>scripts/report_fingerprint.py</code></strong> — reduces a rendered report to the set of <em>facts</em> it asserts, discarding colours, class names, element order and geometry. The redesign rewrites the render layer across seventeen commits, which makes an HTML snapshot test worthless: the diff is 100% churn on every commit, so nobody reads it, so a real regression rides in unnoticed. This holds the line that presentation may change on every commit while the numbers may not.</li>
@@ -2908,7 +2925,7 @@ every baseline the migration measures against is taken from correct output.</p>
 <p>The distinct figure is marked <code>(≈)</code> but does not yet print its bound. Showing <code>20,000 ± 440</code> is more honest still, and needs the sketch to expose its own error — that goes with the quality-flag threshold work in #118.</p>
 <h2 id="0046-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.45...0.0.46">0.0.46</a> - 2026-08-16</h2>
 <h1 id="65-dataset-comparison-as-a-first-class-output">65. Dataset comparison as a first-class output.</h1>
-<h3 id="added_13">Added</h3>
+<h3 id="added_14">Added</h3>
 <ul>
 <li><strong><code>compare(a, b)</code></strong>, and <a href="../comparing/">a page about it</a>. It reports what moved between two datasets — every delta, whether or not it crosses any threshold. Both sides accept anything <code>profile()</code> does, or a <code>summarize()</code> payload you already have, which is not re-profiled.</li>
 </ul>
@@ -2932,7 +2949,7 @@ every baseline the migration measures against is taken from correct output.</p>
 <h2 id="0045-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.44...0.0.45">0.0.45</a> - 2026-08-16</h2>
 <h1 id="64-and-105-no-behaviour-change-the-accumulator-boundary-becomes-something-a">64 and #105. No behaviour change: the accumulator boundary becomes something a</h1>
 <p>second implementation could satisfy, and the options grow a shape.</p>
-<h3 id="added_14">Added</h3>
+<h3 id="added_15">Added</h3>
 <ul>
 <li><strong><code>pysuricata.accumulators.protocols</code></strong> now describes the surface the engine may use: a <code>StreamingAccumulator</code> protocol, an <code>AccumulatorKind</code> tag, and an explicit pickle protocol. This is the prerequisite work for the native core (#44), and it is not tidiness — a PyO3 accumulator cannot satisfy <code>isinstance(acc, NumericAccumulator)</code>, cannot expose a <code>_uniques</code> attribute holding a Python <code>KMV</code>, and cannot be pickled by copying <code>__dict__</code>. Each of those was how something outside the accumulator package reached inside it.</li>
 <li><strong>Dispatch reads <code>acc.kind</code></strong> instead of testing types. The old <code>isinstance</code> chain's <em>order</em> was load-bearing without saying so anywhere.</li>
@@ -3011,7 +3028,7 @@ generator was the one file failing <code>ruff check</code>.</p>
 <p>Parquet file meant reading the whole thing into memory first — which
 contradicts the one claim the library is positioned on, for exactly the inputs
 where the claim matters most.</p>
-<h3 id="added_15">Added</h3>
+<h3 id="added_16">Added</h3>
 <ul>
 <li><strong><a href="https://alvarodiez20.github.io/pysuricata/data-sources/">Arrow, Parquet and DuckDB read without being materialised</a>.</strong> <code>profile()</code> and <code>summarize()</code> now accept a <code>pyarrow</code> Table, RecordBatch, RecordBatchReader or Dataset, a DuckDB relation, and anything exporting the Arrow PyCapsule interface. A DuckDB relation is a query that has not run yet, so a filtered join across several Parquet files can be profiled without any of it ever existing as a frame.</li>
 <li><strong><code>pysuricata.sources</code></strong> with <code>stream_parquet()</code>, <code>stream_arrow()</code> and <code>stream_duckdb()</code>, for when you want the batches rather than a profile. <code>stream_parquet(..., columns=[...])</code> never decodes the columns it does not read.</li>
@@ -3027,7 +3044,7 @@ where the claim matters most.</p>
 <h2 id="0040-2026-08-15"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.39...0.0.40">0.0.40</a> - 2026-08-15</h2>
 <h1 id="43-and-91-the-payload-becomes-a-contract-that-is-checked-rather-than">43 and #91. The payload becomes a contract that is checked rather than</h1>
 <p>described, and the gate learns the failure every other check passes.</p>
-<h3 id="added_16">Added</h3>
+<h3 id="added_17">Added</h3>
 <ul>
 <li><strong><a href="https://alvarodiez20.github.io/pysuricata/summary-schema/">A documented <code>summarize()</code> schema</a></strong> — every key, its type, which ones are estimates and with what error, and the stability policy. Adding a key does not change <code>schema_version</code>; renaming, removing, or changing the meaning or units of one does.</li>
 <li><strong>The payload now carries what the HTML shows.</strong> It was a strictly poorer view and nothing said so — a gap only findable by reading the renderer, which is how it happened twice already (#24 correlations, #59 numeric top values). Numeric columns gained <code>skew</code>, <code>kurtosis</code>, <code>variance</code>, <code>cv</code>, <code>se</code>, <code>gmean</code>, <code>iqr</code>, <code>mad</code>, <code>ci_lo</code>/<code>ci_hi</code>, <code>jb_chi2</code>, <code>inf</code>, <code>outliers_mod_zscore</code>, <code>heap_pct</code>, <code>bimodal</code>, the granularity pair, the extreme values with their row indices, and the histogram. Datetime columns gained fifteen fields, having previously published six. Categorical gained the entropy and diversity measures, the length statistics, and the case/whitespace variant estimates behind the quality flags. Boolean gained its ratios and entropy. Every kind gained <code>dtype</code>.</li>
@@ -3064,7 +3081,7 @@ fails.</p>
 Expectations, Soda, pointblank — asks you to author expectations first. A
 profiler already knows the shape of yesterday's data, so it can gate with no
 configuration at all.</p>
-<h3 id="added_17">Added</h3>
+<h3 id="added_18">Added</h3>
 <ul>
 <li><strong><code>pysuricata check &lt;data&gt; --baseline baseline.json</code></strong> — compares a dataset against a stored baseline and <strong>exits non-zero</strong> when a threshold is crossed. <code>profile</code> and <code>summarize</code> both exit 0 no matter what they found, which is what made them unusable in a pipeline. Exit codes are 0 pass, 1 threshold crossed, 2 the check could not run, so a build can tell drift from an outage. <code>--write-baseline</code> creates the baseline, <code>--json</code> emits a machine-readable result on stdout while progress stays on stderr, and <code>--warn-only</code> reports without failing.</li>
 <li><strong>Thresholds in a file or on the command line.</strong> <code>--thresholds</code> reads JSON or TOML, including a <code>[tool.pysuricata.check]</code> table in <code>pyproject.toml</code>; <code>--max-missing-pct</code> and <code>--min-rows</code> are absolute gates that need no baseline at all. A misspelled threshold is an error rather than a silent no-op — a typo that quietly loosens a gate is the worst failure mode a gate has.</li>
@@ -3081,7 +3098,7 @@ configuration at all.</p>
 <p><code>check</code> defaults to <code>--seed 0</code> rather than to no seed, so re-running it on unchanged data is a no-op rather than a coin flip. A baseline records the version and the payload's <code>schema_version</code>; reading one that does not match is an error telling you to regenerate it, not a comparison that silently succeeds against fields that moved.</p>
 <h2 id="0037-2026-08-15"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.36...0.0.37">0.0.37</a> - 2026-08-15</h2>
 <p>UX-7 (#78).</p>
-<h3 id="added_18">Added</h3>
+<h3 id="added_19">Added</h3>
 <ul>
 <li><strong><code>progress=</code> on <code>profile()</code> and <code>summarize()</code>.</strong> A 1.8-million-cell profile produced 46 bytes of output, none of it progress — for the use case this library is positioned on, a hung process and a working one looked identical. <code>log_every_n_chunks</code> existed but routes to a logger that is off by default, so it is invisible unless you configure logging first, which is not what you think to do while waiting to find out whether anything is happening.</li>
 </ul>
@@ -3094,7 +3111,7 @@ configuration at all.</p>
 <p>UX-4, UX-6 and UX-11 (#75, #77, #82). Three findings with one shape: the
 library already had the answer and either made the caller work to reach it or
 did not expose it at all.</p>
-<h3 id="added_19">Added</h3>
+<h3 id="added_20">Added</h3>
 <ul>
 <li><strong>Keyword options on <code>profile()</code> and <code>summarize()</code>.</strong> Setting one integer took three imports and two nested constructors, because the nesting modelled the module layout rather than intent — nobody thinks <em>"I would like to configure the compute subsystem"</em>, they think <em>"smaller chunks"</em>. The six most-reached-for settings are now keywords: <code>chunk_size</code>, <code>columns</code>, <code>sample</code>, <code>correlations</code>, <code>seed</code>, <code>title</code>.</li>
 <li><strong><code>preset="fast"</code> and <code>preset="thorough"</code></strong> — one word for an intent, rather than working out which of twenty-one knobs to turn. <code>config=</code> remains the full escape hatch, and combining it with a preset or a keyword is refused rather than silently ignored.</li>
@@ -3109,7 +3126,7 @@ did not expose it at all.</p>
 <p>UX-2 and UX-3 (#73, #74). Neither computes anything new: the signals were
 already tracked and the chips were already rendered. Both findings were that
 the report had the answer and did not use it.</p>
-<h3 id="added_20">Added</h3>
+<h3 id="added_21">Added</h3>
 <ul>
 <li><strong>Identifier columns are recognised and presented as keys.</strong> A monotonic, fully distinct, integral column with no nulls now gets an <strong>Identifier</strong> badge and a card answering what a key raises — rows, distinct, duplicates, gaps in the sequence, order — instead of a mean, a standard deviation, a flat uniform histogram and <code>Zeros: 1 (0.0%)</code>, which is true and meaningless. <code>summarize()</code> reports <code>"type": "identifier"</code> and carries <code>mono_inc</code>, <code>mono_dec</code> and <code>int_like</code>, so the payload is not poorer than the HTML.</li>
 <li><strong>A "needs attention" block opens the Variables section</strong>, naming the columns with real defects and linking to each card. Clicking one of its chips filters the list to those columns; clicking it again, or the All tab, restores source order in one click.</li>
@@ -3125,7 +3142,7 @@ the report had the answer and did not use it.</p>
 </ul>
 <h2 id="0034-2026-08-15"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.33...0.0.34">0.0.34</a> - 2026-08-15</h2>
 <p>Benchmark tooling only; no library changes.</p>
-<h3 id="added_21">Added</h3>
+<h3 id="added_22">Added</h3>
 <ul>
 <li><strong><code>benchmarks/versions.py</code></strong> — version-over-version timing in one interleaved round-robin. Each version is installed into its own throwaway virtualenv and timed in its own subprocess, so import cost, allocator state and garbage from one version cannot leak into the next.</li>
 </ul>
@@ -3147,7 +3164,7 @@ regression reported as an improvement — and a <em>3.56x</em> headline is reall
 <li><strong><code>repr(report)</code> returned the whole document.</strong> The dataclass default rendered every byte of <code>html</code>, so a bare <code>report</code> in a REPL printed over a megabyte and any traceback carried the report inline. It is now one line naming the shape and size.</li>
 <li><strong>A column of nothing but infinities raised <code>UnboundLocalError</code></strong> in <code>finalize()</code>.</li>
 </ul>
-<h3 id="added_22">Added</h3>
+<h3 id="added_23">Added</h3>
 <ul>
 <li><strong><code>profile()</code> and <code>summarize()</code> accept a file path</strong>, <code>str</code> or <code>PathLike</code>, for <code>.csv</code>, <code>.parquet</code> and <code>.json</code> — the same formats the CLI has always read. <code>profile("data.csv")</code> raised <code>TypeError</code> while <code>pysuricata profile data.csv</code> worked.</li>
 <li><strong><code>py.typed</code></strong>, so annotations are visible to type checkers rather than inferring as <code>Any</code>.</li>
@@ -3171,13 +3188,13 @@ and CI now fails a PR that reintroduces one.</p>
 <li>Dropped the hand-written <code>Last updated: 2025-10-12</code> footer from seven pages. A date nobody remembers to change is worse than no date.</li>
 <li><code>docs/roadmap.md</code> was on disk but missing from the nav, so it was never rendered.</li>
 </ul>
-<h3 id="added_23">Added</h3>
+<h3 id="added_24">Added</h3>
 <ul>
 <li><strong><code>check_docs --strict</code> and the generated-asset check run in CI.</strong> A renamed option or a moved summary key now fails the PR that did it. The checker had been papering over the largest defect class by injecting a <code>df</code> into every snippet, so every fence passed while a reader pasting the same code got <code>NameError</code>; it now runs each page's own declared setup instead. Three of its own false-positive classes are fixed too: fences nested in tabbed blocks are dedented before parsing, column names inside <code>summarize()["columns"][...]</code> are no longer checked against a synthetic frame, and filenames in badge URLs are no longer read as attribute access.</li>
 </ul>
 <h2 id="0031-2026-08-15"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.30...0.0.31">0.0.31</a> - 2026-08-15</h2>
 <p>Documentation and tooling only; no library changes.</p>
-<h3 id="added_24">Added</h3>
+<h3 id="added_25">Added</h3>
 <ul>
 <li><strong>Six interactive figures</strong>, embedded on the pages they explain: reservoir sampling (Algorithm R against Algorithm L), Misra-Gries eviction, the memory curve, the chunk lifecycle, the Welford-to-Pébay merge, and an annotated report card. Each runs the real algorithm in the browser with a fixed seed, so they are simulations rather than illustrations. They ship as plain HTML, SVG and vanilla JavaScript — no React, no CDN, no third-party requests, and they work offline.</li>
 </ul>
@@ -3282,7 +3299,7 @@ cards now say nothing where they used to say something untrue.</p>
 <ul>
 <li><strong>Reservoir acceptances are scheduled in bulk</strong> — Algorithm L's schedule depends only on the random generator and the reservoir size, never on the data, so there is no reason to derive it one acceptance at a time in Python. Writing the recurrence as a cumulative sum makes every term a vectorised array operation: <code>log W = cumsum(log u)/k</code>, <code>skip = floor(log v / log(1-W))</code>, <code>index = base + cumsum(skip) + i</code>. Accumulation drops from 59.1% to 49.9% of self time. The schedule is still generated from the draw sequence alone, so the sample remains identical however the stream is chunked.</li>
 </ul>
-<h3 id="added_25">Added</h3>
+<h3 id="added_26">Added</h3>
 <ul>
 <li>Tests covering the schedule's block boundary — a stream long enough to force several refills must still give an identical sample for 1, 13 and 977 chunks — plus strictly-increasing acceptance indices, in-range slot choices, and an implementation-independent check that the sample mean tracks the population.</li>
 </ul>
@@ -3299,7 +3316,7 @@ date parsing each under 5% of self time; they are now 0.7% and 0.3%.</p>
 <ul>
 <li><strong>Empty and all-null object columns no longer compute 0/0</strong> while sniffing, which produced a <code>RuntimeWarning</code> and a <code>nan</code> success rate.</li>
 </ul>
-<h3 id="added_26">Added</h3>
+<h3 id="added_27">Added</h3>
 <ul>
 <li>12 tests covering date-format classification, the <code>dateutil</code> fallback for unusual formats, all-null columns, and a bound on how much of a large column is parsed.</li>
 </ul>
@@ -3323,18 +3340,18 @@ suite (200,000 x 14: 3.190s -&gt; 1.739s).</p>
 <li><strong>Granularity detection crashed on very small numbers under numpy &gt;= 2.5</strong> — the step-size histogram guarded only that the spread was strictly positive. For values around 1e-15 the gaps between them differ by ~1e-31, which is narrower than one float64 ULP at that magnitude, so every computed bin edge rounds to the same value. numpy 2.5 rejects that outright (<code>Too many bins for data range</code>) where 2.1 silently returned degenerate bins, so profiling any column at that scale raised. Differences that are equal to within floating-point resolution now skip the histogram entirely — the granularity simply is that difference.</li>
 <li><strong>numpy floor for Python 3.14</strong> — numpy 2.1.3 publishes no cp314 wheels, so the resolver picked it on 3.14 and built it from source against a Python it never supported. The resulting binary computed <code>uint64</code> arithmetic wrongly for large arrays, collapsing every hash in the distinct-count sketch to the same value and reporting 300,000 distinct values as 1. Floored to <code>numpy&gt;=2.3.3</code> on 3.14, the first release with cp314 wheels.</li>
 </ul>
-<h3 id="added_27">Added</h3>
+<h3 id="added_28">Added</h3>
 <ul>
 <li><code>tests/test_accumulators_core.py</code> — 48 unit tests for the statistical core, asserting the mergeability and chunk-invariance properties the whole streaming design rests on. Coverage of <code>sketches.py</code> rises 84% → 85% and <code>algorithms.py</code> 79% → 85%.</li>
 </ul>
 <h2 id="0020-2026-08-14"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.19...0.0.20">0.0.20</a> - 2026-08-14</h2>
-<h3 id="added_28">Added</h3>
+<h3 id="added_29">Added</h3>
 <ul>
 <li><strong>Vendored the native core crate</strong> (<code>native/</code>) — the optional Rust kernels (<code>pysuricata-core</code>: hashing, KMV, moments, reservoir) are now tracked in git. Storing the source is not the same as starting Phase 3: nothing imports it, no build runs it, and the 37 native agreement tests in <code>benchmarks/accuracy.py</code> stay skipped until someone runs <code>maturin develop</code>. It was previously untracked working-tree state, one <code>git clean</code> from being lost.</li>
 <li><code>.gitignore</code> rules for Rust build artifacts. <code>Cargo.lock</code> is deliberately <em>not</em> ignored, since this crate ships wheels and pinning the versions that built them is what makes a release reproducible.</li>
 </ul>
 <h2 id="0019-2026-08-14"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.18...0.0.19">0.0.19</a> - 2026-08-14</h2>
-<h3 id="added_29">Added</h3>
+<h3 id="added_30">Added</h3>
 <ul>
 <li><strong>The accuracy oracle now runs in CI</strong> — a new <code>Accuracy</code> workflow runs <code>benchmarks/accuracy.py</code> on every pull request. The six statistical bugs fixed in 0.0.18 were only findable because that suite exists; nothing ran it automatically, so they could have regressed silently. This is the Phase 0 exit criterion from <code>docs/roadmap.md</code>.</li>
 <li><strong>Slow end-to-end invariants run on every push to <code>main</code></strong> — the chunked-vs-unchunked checks take tens of seconds per case, so they stay off the pull-request path but gate the branch.</li>
@@ -3356,7 +3373,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Correlations collapsed to 0.00 on large-mean columns</strong> — the naive <code>sx2 - sx*sx/n</code> variance cancels catastrophically for timestamps-as-int, IDs or prices near 1e6, and <code>max(0.0, …)</code> hid it. Switched to Welford/Chan pairwise co-moments.</li>
 <li><strong>Skewness used the sample variance in its denominator</strong> — g1 is defined against the population second moment; the n−1 form biased it by ((n−1)/n)^1.5 and never converged away.</li>
 </ul>
-<h3 id="added_30">Added</h3>
+<h3 id="added_31">Added</h3>
 <ul>
 <li><strong><code>corr_top</code> in <code>summarize()</code> output</strong> — correlations were computed and rendered into the HTML report but never emitted in the JSON summary, so the programmatic contract was strictly weaker than the visual one.</li>
 <li><strong><code>benchmarks/</code> accuracy oracle and performance harness</strong>, plus <code>docs/roadmap.md</code>.</li>
@@ -3390,7 +3407,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 </span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">)))</span>
 </span></code></pre></div>
 <p>Set <code>enable_auto_boolean_detection=False</code> to turn the promotion off entirely.</p>
-<h3 id="added_31">Added</h3>
+<h3 id="added_32">Added</h3>
 <ul>
 <li><strong>CSS integrity test suite</strong> — <code>test_css_integrity.py</code> with 9 automated checks (file presence, selector coverage, <code>!important</code> budget, breakpoint standardization, inline handler removal)</li>
 <li><strong>Pre-commit hooks</strong> — <code>.pre-commit-config.yaml</code> with trailing-whitespace, end-of-file-fixer, check-yaml/toml, ruff lint+format, and fast pytest</li>
@@ -3423,7 +3440,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><code>style.css</code> (monolithic), <code>style.css.backup</code>, <code>style_updated.css</code>, <code>chart.min.js</code>, <code>functionality.js.backup</code>, <code>cards_new.py</code></li>
 </ul>
 <h2 id="0016-2026-02-15"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.15...0.0.16">0.0.16</a> - 2026-02-15</h2>
-<h3 id="added_32">Added</h3>
+<h3 id="added_33">Added</h3>
 <ul>
 <li><strong>Polars nested type support</strong> — Structs and Lists are now gracefully handled as categorical variables (with debug warnings) instead of causing inference errors</li>
 </ul>
@@ -3432,7 +3449,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Performance optimization</strong> — optimized <code>_safe_compute</code> to use NumPy arrays for type checks, reducing overhead in large datasets</li>
 </ul>
 <h2 id="0015-2026-02-14"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.14...0.0.15">0.0.15</a> - 2026-02-14</h2>
-<h3 id="added_33">Added</h3>
+<h3 id="added_34">Added</h3>
 <ul>
 <li><strong>Python 3.14 CI testing</strong> — Added Python 3.14 to CI test matrix</li>
 <li><strong>Changelog CI check</strong> — PRs now require a changelog entry</li>
@@ -3459,7 +3476,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li>Stale dates from stats documentation pages</li>
 </ul>
 <h2 id="0014-2026-02-14"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.13...0.0.14">0.0.14</a> - 2026-02-14</h2>
-<h3 id="added_34">Added</h3>
+<h3 id="added_35">Added</h3>
 <ul>
 <li><strong>Polars LazyFrame support</strong> — LazyFrames are now automatically collected before profiling</li>
 <li><strong>ReportConfig alias</strong> — Added <code>ReportConfig</code> as an alias for <code>ProfileConfig</code> for better API discoverability</li>
@@ -3473,7 +3490,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Lighter dependencies</strong> — Removed unused dependencies: <code>matplotlib</code>, <code>seaborn</code>, <code>ipywidgets</code></li>
 </ul>
 <h2 id="0013-2026-01-02"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.12...0.0.13">0.0.13</a> - 2026-01-02</h2>
-<h3 id="added_35">Added</h3>
+<h3 id="added_36">Added</h3>
 <ul>
 <li><strong>CLI tool</strong> — New command-line interface with <code>pysuricata profile</code> and <code>pysuricata summarize</code> commands</li>
 <li><strong>Comprehensive stress tests</strong> — New <code>test_complexity_analysis.py</code> with time/space profiling</li>
@@ -3488,19 +3505,19 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Realistic benchmarks</strong> — Updated README and docs with measured performance figures</li>
 </ul>
 <h2 id="0012-2025-10-25"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.11...0.0.12">0.0.12</a> - 2025-10-25</h2>
-<h3 id="added_36">Added</h3>
+<h3 id="added_37">Added</h3>
 <ul>
 <li>Continued feature work on the report (<a href="https://github.com/alvarodiez20/pysuricata/pull/17">#17</a>).</li>
 </ul>
 <h2 id="0011-2025-10-12"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.10...0.0.11">0.0.11</a> - 2025-10-12</h2>
-<h3 id="added_37">Added</h3>
+<h3 id="added_38">Added</h3>
 <ul>
 <li>Enhanced documentation with mathematical formulas</li>
 <li>Comprehensive examples gallery</li>
 <li>Detailed algorithm documentation (Welford, Pébay, KMV, Misra-Gries)</li>
 </ul>
 <h2 id="0010-2025-10-03"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.9...0.0.10">0.0.10</a> - 2025-10-03</h2>
-<h3 id="added_38">Added</h3>
+<h3 id="added_39">Added</h3>
 <ul>
 <li><strong>Missing-values display</strong> — a dedicated section summarising missing data per column (<a href="https://github.com/alvarodiez20/pysuricata/pull/13">#13</a>).</li>
 </ul>
@@ -3510,7 +3527,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li>Stabilisation pass across the code base (<a href="https://github.com/alvarodiez20/pysuricata/pull/11">#11</a>).</li>
 </ul>
 <h2 id="008-2025-09-05"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.7...0.0.8">0.0.8</a> - 2025-09-05</h2>
-<h3 id="added_39">Added</h3>
+<h3 id="added_40">Added</h3>
 <ul>
 <li><strong>Logging</strong> throughout the profiling run (<a href="https://github.com/alvarodiez20/pysuricata/pull/9">#9</a>).</li>
 </ul>
@@ -3519,7 +3536,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li>Documentation build.</li>
 </ul>
 <h2 id="007-2025-09-03"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.6...0.0.7">0.0.7</a> - 2025-09-03</h2>
-<h3 id="added_40">Added</h3>
+<h3 id="added_41">Added</h3>
 <ul>
 <li><strong>Chunked processing</strong> — the first streaming pass over a file, and the point at which the library became a streaming profiler rather than a whole-frame one (<a href="https://github.com/alvarodiez20/pysuricata/pull/8">#8</a>).</li>
 </ul>
@@ -3528,12 +3545,12 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li>Report layout reformatted.</li>
 </ul>
 <h2 id="006-2025-08-27"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.5...0.0.6">0.0.6</a> - 2025-08-27</h2>
-<h3 id="added_41">Added</h3>
+<h3 id="added_42">Added</h3>
 <ul>
 <li>A first technical document, and a rewritten README (<a href="https://github.com/alvarodiez20/pysuricata/pull/6">#6</a>).</li>
 </ul>
 <h2 id="005-2025-08-27"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.4...0.0.5">0.0.5</a> - 2025-08-27</h2>
-<h3 id="added_42">Added</h3>
+<h3 id="added_43">Added</h3>
 <ul>
 <li><strong>Overview, Sample and Variables sections</strong> in the HTML report — the three-part structure the report still uses.</li>
 </ul>
@@ -3548,7 +3565,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li>Packaging of the HTML report template.</li>
 </ul>
 <h2 id="002-2025-03-29"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.1...0.0.2">0.0.2</a> - 2025-03-29</h2>
-<h3 id="added_43">Added</h3>
+<h3 id="added_44">Added</h3>
 <ul>
 <li><code>report_template.html</code>, and the first examples (<a href="https://github.com/alvarodiez20/pysuricata/pull/2">#2</a>).</li>
 </ul>
