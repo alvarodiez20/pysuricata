@@ -19,6 +19,25 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.62] - 2026-08-16
+
+### Fixed
+- **`+ add a note` did nothing.** Not slowly, not partially — nothing, with a clean console. The redesign renamed the description block from `.description-value` to `.description-block`, and `description-editor.js` was never updated. Every entry point in that file guards on a null container and returns quietly, so the rename turned a working control into an inert one and left no trace. It now finds the block by its `id`, which is what the template guarantees; the class is presentation and has moved once already.
+- **Saving a note would have left it invisible.** `.is-empty` sets `display: none` on `.description-content`, so fixing only the selector would have stored the note, escaped it, inserted it — and shown nothing. The class, the label (*Description* → *Note*) and the invitation (*+ add a note* → *edit*) now move together, on save and when a note is restored from `localStorage`.
+- **The editor had nowhere to type.** The textarea is appended into a three-column grid; without an explicit span it landed in an 88px track. It now takes its own full-width row.
+- **The invitation was under the minimum pointer target.** Now 24px (WCAG 2.5.8) in its own right, rather than relying on the whole row being clickable.
+
+### Added
+- **`tests/test_description_editor.py`** (23 tests). Most of it is not about the description block: it checks **every** `getElementById` and class selector in the bundled JS against real rendered markup, so the next rename is caught in whichever module it happens. Verified by reintroducing the bug — three tests fail.
+
+  Two false positives were found writing it, and both were the same mistake — a selector check is only as good as the markup the fixture reaches. `[1.0, 2, 3, 4, 5] * 40` has five distinct values and profiles as *categorical*, so the frame had no numeric card and the Linear/Log control was reported dead when it is not; and a frame with no quality problems renders no `.needs-attention` block, so the flag filter was reported dead too. Both were checked in a browser and work. The fixtures now cover every card kind and both correlation routes.
+
+### Removed
+- Five `.description-value` rules in `_13-utilities.css` that had styled nothing since the rename, and a client-side placeholder string (`Click to add description...`) that sat inside an element the empty state hides.
+
+### Known
+- Four selectors in `functionality.js` and `tooltips.js` still point at markup the redesign removed (`missing-tabs`, `missing-tab-content`, `details-panel`, `compact-row`). These are dead code, not dead controls — nothing renders a button that reaches them — and are listed explicitly in the new test with a guard that fails if any starts resolving again.
+
 ## [0.0.61] - 2026-08-16
 
 The redesign's testing harness (#123), turning fourteen commits of manual

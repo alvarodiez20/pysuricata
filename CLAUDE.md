@@ -62,41 +62,25 @@ Accumulators never see the frame, only arrays.
 
 ## Current priorities
 
-See `docs/roadmap.md` (v3, re-audited at 0.0.26) for the measured numbers.
+See `docs/roadmap.md` (**v8, re-audited at 0.0.62**) for the measured numbers and
+the ordering. Everything this section used to list as pending has landed: the
+chunk-size cap, the Misra-Gries gate, the KMV threshold pre-filter, the datetime
+vectorisation and the stale `-2e18` bound.
 
-Phase 0 is **complete**: all eleven audit items are closed, the accuracy oracle
-is green at 51 tests, and five targeted test files (63 tests) cover the items
-that used to have none. Do not regress any of it — a change that makes
-`benchmarks/accuracy.py` fail is wrong even if it is faster.
+**Phase 0 and Phase 1 are complete**, and the report redesign (#110–#125) is
+fifteen issues of sixteen closed. Do not regress any of it — a change that makes
+`benchmarks/accuracy.py` fail is wrong even if it is faster, and the same now
+goes for `tests/test_report_data_invariance.py`.
 
-**Phase 1 has three changes left, worth 1.88x together. All pure Python.**
+Next, in order: close out the redesign (**#122**, which carries a height
+decision that needs the user rather than more work; then #124, #121), **#139**
+(reopened — per-column per-chunk missing counts are never produced), regenerate
+the stale example report in `docs/assets/`, publish (#38), prove the memory
+claim (#92) before shipping the budget (#79), then the native core (#44) —
+**KMV first, moments last**, since moments are ~1.4% of the numeric path and KMV
+was half of it.
 
-1. **Cap the auto-chosen chunk size near 50,000 rows** (`compute/processing/chunking.py`).
-   Removing the `0.7*optimal + 0.3*requested` blend made `chunk_size` a real
-   option and exposed that the heuristic's own value is too large: a 200k-row
-   frame is now processed as one chunk. `chunk_size=50_000` is **1.34x** on
-   mixed 200k x 14. Add a test asserting the chosen size stays in a sane band.
-2. **Gate Misra-Gries on the KMV estimate** (`accumulators/numeric.py:335`).
-   **34%** of the numeric accumulator. On high-cardinality columns it renders a
-   "Common values" table of values that occurred *once* — so this removes
-   misleading output as well as cost. `should_track_top_k` in
-   `benchmarks/proposed_kernels.py` is written and verified against four column
-   shapes.
-3. **KMV threshold pre-filter** in `_batch_add_hashes` — **8.7x**, three lines,
-   estimates provably identical. KMV is **52%** of the numeric accumulator, the
-   largest single kernel. Code and proof in `benchmarks/proposed_kernels.py`.
-
-Then: **vectorise `DatetimeAccumulator.update`** — four per-row Python loops
-(`datetime.py:212, 234, 277, 280`), ~960 ms/column at 200k rows, the most
-expensive column kind and the only accumulator never touched. And fix the stale
-`-2e18` bound at `datetime.py:324`, which `_update_fallback` still carries after
-the window was widened everywhere else.
-
-**Then publish**, then the native core — **KMV first, moments last**. Moments are
-1.4% of the numeric path; KMV is 52%. The crate under `native/` is vendored but
-nothing imports it and there is no `[fast]` extra yet.
-
-Measurement discipline, both learned on this codebase:
+Measurement discipline, all learned on this codebase:
 
 - `cProfile` charges per Python call and over-weights kernels that make many
   small ones. It ranked the reservoir at ~30% of self time when swapping in a
@@ -114,3 +98,13 @@ Measurement discipline, both learned on this codebase:
   regression, and a 3.56x headline is really 2.48x. `benchmarks/end_to_end.py`
   and `benchmarks/versions.py` interleave every tool and version across rounds
   and label anything under three rounds *Not quotable*.
+- **A check over rendered output is only as good as the markup the fixture
+  reaches.** A frame of `[1.0, 2, 3, 4, 5] * 40` has five distinct values and
+  profiles as *categorical*, so a report built from it has no numeric card and
+  every numeric-card selector looks dead. A frame with no quality problems
+  renders no `.needs-attention` block, so the flag filter looks dead too. Both
+  controls work. A fixture that misses a branch reports "absent", not "unknown",
+  and absent reads as broken — confirm in a browser before calling anything dead.
+- **The report inlines its own CSS and JS**, so searching the whole document for
+  a class name finds it in the very source that references it. Strip `<script>`
+  and `<style>` before asserting anything about markup.

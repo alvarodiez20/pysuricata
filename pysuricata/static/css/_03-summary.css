@@ -280,6 +280,27 @@
   display: none;
 }
 
+/* Editing. The textarea is appended as a grid child, so without this it lands
+   in whichever 88px or auto track comes next and the reader types into a
+   sliver. It gets its own row, full width. */
+#pysuricata-report .description-block .description-editor {
+  grid-column: 1 / -1;
+}
+
+/* The invitation is the affordance, so it must clear the 24px minimum target
+   (WCAG 2.5.8) on its own -- the block-level `data-action` makes the whole row
+   clickable, but a control you can only hit by aiming at the row is not a
+   control the pointer target rule is satisfied by. */
+#pysuricata-report .description-block__action {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+
+#pysuricata-report .description-block.editing {
+  align-items: start;
+}
+
 /* ---- mobile --------------------------------------------------- */
 @media (max-width: 768px) {
   #pysuricata-report .stat-row {

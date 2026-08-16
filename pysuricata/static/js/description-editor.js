@@ -7,12 +7,20 @@
 
   const ROOT_ID = 'pysuricata-report';
   const STORAGE_KEY_PREFIX = 'pysuricata-description-';
-  const PLACEHOLDER_TEXT = 'Click to add description...';
 
   // ===== Private Helper Functions =====
 
+  // Located by id, not by class. The redesign renamed this block's class from
+  // `.description-value` to `.description-block`, and because every entry point
+  // here fails soft on a null container, the rename turned "+ add a note" into
+  // a button that did nothing at all -- silently, with no console error. The id
+  // is what the template guarantees; the class is presentation and may move
+  // again.
   function getDescriptionContainer() {
-    return document.querySelector(`#${ROOT_ID} .description-value`);
+    return (
+      document.getElementById('summary-description') ||
+      document.querySelector(`#${ROOT_ID} .description-block`)
+    );
   }
 
   function getStorageKey() {
@@ -66,8 +74,11 @@
 
   function renderMarkdownToHtml(markdown) {
     // Simple client-side markdown rendering (basic support)
+    // Empty renders as empty: the row itself carries the invitation, and
+    // `.is-empty` hides this element, so a placeholder here would be a string
+    // nobody can ever see.
     if (!markdown || !markdown.trim()) {
-      return `<span class="placeholder">${PLACEHOLDER_TEXT}</span>`;
+      return '';
     }
 
     // Escape HTML for security
@@ -99,6 +110,24 @@
     return html;
   }
 
+  // ===== State =====
+
+  // The server picks the empty/filled presentation once, at render time. Once
+  // the reader edits, the client owns it -- and must move all three parts
+  // together. Missing this is not cosmetic: `.is-empty` sets `display: none` on
+  // `.description-content`, so a note saved without clearing the class is
+  // stored, escaped, inserted, and invisible.
+  function applyState(container, markdown) {
+    const filled = Boolean(markdown && markdown.trim());
+    container.classList.toggle('is-empty', !filled);
+
+    const label = container.querySelector('.description-block__label');
+    if (label) label.textContent = filled ? 'Note' : 'Description';
+
+    const action = container.querySelector('.description-block__action');
+    if (action) action.textContent = filled ? 'edit' : '+ add a note';
+  }
+
   // ===== Init on Page Load =====
 
   function initializeDescription() {
@@ -109,6 +138,7 @@
       if (container && contentEl) {
         setMarkdownSource(container, saved);
         contentEl.innerHTML = renderMarkdownToHtml(saved);
+        applyState(container, saved);
       }
     }
   }
@@ -184,6 +214,7 @@
       // Clean up
       textarea.remove();
       container.classList.remove('editing');
+      applyState(container, newMarkdown);
     }
   };
 
