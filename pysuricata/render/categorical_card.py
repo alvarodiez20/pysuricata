@@ -128,7 +128,7 @@ class CategoricalCardRenderer(CardRenderer):
         approx_badge = self._build_approx_badge(stats.approx)
         stat_row = self._build_stat_row(
             self._left_stats(stats, miss_cls, miss_pct, cat_stats)
-            + self._right_stats(cat_stats)
+            + self._right_stats(stats, cat_stats)
         )
 
         # Chart and details
@@ -292,8 +292,35 @@ class CategoricalCardRenderer(CardRenderer):
 
         return data
 
-    def _right_stats(self, cat_stats: dict) -> list[tuple[str, str, str | None]]:
-        """The shape half: how the levels are distributed."""
+    def _length_display(self, value) -> str:
+        """A length, or an em dash when there is genuinely nothing to show.
+
+        The em dash means *absent*. It used to appear for values that were
+        merely being read from the wrong object, which is a different thing and
+        is what hid #155.
+        """
+        if value is None:
+            return "—"
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return "—"
+        if number != number:  # NaN
+            return "—"
+        return self.format_number(number)
+
+    def _right_stats(
+        self, stats: CategoricalStats, cat_stats: dict
+    ) -> list[tuple[str, str, str | None]]:
+        """The shape half: how the levels are distributed.
+
+        `avg_len` and `len_p90` come from `stats`, not from `cat_stats`.
+        `_compute_categorical_stats` has never built those keys, so the `.get()`
+        defaults were what rendered -- `NaN` and an em dash -- for **every**
+        categorical column in every report. The handoff reported it as an
+        `Embarked` quirk about one-character labels; `Name`, whose labels
+        average 26.97 characters, printed `NaN` just the same.
+        """
         data = [
             ("Entropy", self.format_number(cat_stats["entropy"]), "num"),
             (
@@ -308,10 +335,14 @@ class CategoricalCardRenderer(CardRenderer):
             ),
             (
                 "Label length (avg)",
-                self.format_number(cat_stats.get("avg_len", float("nan"))),
+                self._length_display(getattr(stats, "avg_len", None)),
                 "num",
             ),
-            ("Length p90", str(cat_stats.get("len_p90", "—")), None),
+            (
+                "Length p90",
+                self._length_display(getattr(stats, "len_p90", None)),
+                "num",
+            ),
             (
                 "Processed bytes (≈)",
                 self.format_bytes(int(cat_stats.get("mem_bytes", 0))),
