@@ -20,7 +20,7 @@
    currentColor.
    ============================================================= */
 #pysuricata-report .appbar {
-  background: var(--appbar-bg);
+  background: var(--paper);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--rule);
@@ -294,7 +294,7 @@
     gap: 10px;
     padding: 0 8px;
     font-size: 13px;
-    background: var(--appbar-bg);
+    background: var(--paper);
     border-bottom: 1px solid var(--rule);
     overflow-x: auto;
     /* min-height, never height: with overflow-x a fixed height has the
@@ -357,6 +357,6 @@
   border-radius: 6px;
   font-size: 0.85rem;
   line-height: 1;
-  background: var(--chip-bg);
-  border: 1px solid var(--chip-br);
+  background: transparent;
+  border: 1px solid var(--rule-strong);
 }

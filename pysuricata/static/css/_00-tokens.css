@@ -136,30 +136,39 @@
 }
 
 /* -------------------------------------------------------------
-   COMPATIBILITY SHIM
-   Maps the legacy variable names onto the new scale so existing
-   rules in _02-header.css … _13-utilities.css keep working while
-   the phases land. DELETE THIS BLOCK once every phase is done —
-   it is scaffolding, not part of the system.
+   The compatibility shim that used to sit here is gone (#122).
+
+   It mapped sixteen legacy names onto the new scale so the component
+   files kept working while phases 2–8 landed. Every reference has been
+   rewritten to the token it actually wanted, so the names below are
+   recorded only to say what they became — and `test_design_system.py`
+   fails if one of them comes back.
+
+     --divider, --divider-light, --divider-dark  ->  --rule
+     --chip-bg, --chip-bg-light, --chip-bg-dark  ->  transparent
+     --chip-br, --chip-br-light, --chip-br-dark  ->  --rule-strong
+     --border-color                              ->  --rule-strong
+     --appbar-bg                                 ->  --paper
+     --bar                                       ->  --data-2
+     --axis-text                                 ->  --muted
+     --scroll-track                              ->  --track
+     --scroll-thumb                              ->  --rule-strong
+     --accent-color                              ->  --data-1
+
+   The last one is not the mapping the shim had. `--accent-color` marks
+   a focused input, a hovered tab and the active tab — interaction, not
+   data quality — and the shim pointed it at --q-good, so the olive that
+   means "passes a check" was also drawing the focus border. That is the
+   exact collision this palette was rewritten to remove, one scale doing
+   two unrelated jobs. --data-1 is what the redesigned components already
+   use for `:focus-visible` in the header and on the details toggle, so
+   this makes the accent consistent rather than inventing a third scale.
+
+   The light/dark pairs collapse to one name each because the tokens are
+   already theme-aware. Exactly two `:not(.light)` rules existed only to
+   swap -light for -dark, so after the rewrite they restated the rule
+   they were overriding word for word; both are deleted.
    ------------------------------------------------------------- */
-#pysuricata-report {
-  --divider:       var(--rule);
-  --divider-light: var(--rule);
-  --divider-dark:  var(--rule);
-  --chip-bg:       transparent;
-  --chip-bg-light: transparent;
-  --chip-bg-dark:  transparent;
-  --chip-br:       var(--rule-strong);
-  --chip-br-light: var(--rule-strong);
-  --chip-br-dark:  var(--rule-strong);
-  --appbar-bg:     var(--paper);
-  --border-color:  var(--rule-strong);
-  --accent-color:  var(--q-good);
-  --bar:           var(--data-2);
-  --axis-text:     var(--muted);
-  --scroll-track:  var(--track);
-  --scroll-thumb:  var(--rule-strong);
-}
 
 /* -------------------------------------------------------------
    MISSING-VALUE SEVERITY — the one place data uses the warm scale,

@@ -66,12 +66,9 @@
 
 #pysuricata-report .hist-svg .tick-label {
   font-size: 11px;
-  fill: var(--axis-text);
+  fill: var(--muted);
 }
 
-#pysuricata-report .hist-svg .tick.minor {
-  stroke-opacity: .6;
-}
 
 /* Every figure and axis label is monospace: columns of digits then align
    without font-variant-numeric hacks, and a tick label cannot drift to a
@@ -82,19 +79,11 @@
 }
 
 #pysuricata-report .hist-svg .bar {
-  fill: var(--bar);
+  fill: var(--data-2);
   opacity: .9;
   pointer-events: auto;
   border-radius: 6px 6px 0 0;
 }
 
-#pysuricata-report .hist-svg .axis-title {
-  font-size: 10px;
-  fill: var(--axis-text);
-}
-
-#pysuricata-report .hist-svg .axis-title.y {
-  dominant-baseline: middle;
-}
 
 /* Modern, centered bin buttons under the histogram */

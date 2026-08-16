@@ -80,18 +80,18 @@
 }
 
 #pysuricata-report .cat-svg .bar {
-  fill: var(--bar);
+  fill: var(--data-2);
   opacity: .9;
 }
 
 #pysuricata-report .cat-svg .bar-label {
   font-size: 11px;
-  fill: var(--axis-text);
+  fill: var(--muted);
 }
 
 #pysuricata-report .cat-svg .bar-value {
   font-size: 11px;
-  fill: var(--axis-text);
+  fill: var(--muted);
 }
 
 /* Optional: keep long label/value text from poking outside on very narrow cards */
@@ -144,23 +144,23 @@
   font-size: 0.75rem;
   padding: 8px 12px;
   text-align: left;
-  border-bottom: 2px solid var(--chip-br-light);
+  border-bottom: 2px solid var(--rule-strong);
   font-family: var(--font-mono);
 }
 
 #pysuricata-report:not(.light) .common-values-table thead th {
   background: rgba(255, 255, 255, 0.08);
-  border-bottom-color: var(--chip-br-dark);
+  border-bottom-color: var(--rule-strong);
 }
 
 #pysuricata-report .common-values-table td {
   padding: 6px 12px;
-  border-bottom: 1px solid var(--chip-br-light);
+  border-bottom: 1px solid var(--rule-strong);
   font-family: var(--font-mono);
 }
 
 #pysuricata-report:not(.light) .common-values-table td {
-  border-bottom-color: var(--chip-br-dark);
+  border-bottom-color: var(--rule-strong);
 }
 
 #pysuricata-report .common-values-table .common-value {
@@ -212,10 +212,6 @@
 /* Tick marks are part of a graphic required to understand the chart, so
    WCAG 1.4.11 applies: --axis clears 3:1 in both themes. currentColor at
    0.9 opacity happened to look right on paper and had no such guarantee. */
-#pysuricata-report .tick-major {
-  stroke: var(--axis);
-  stroke-width: 1;
-}
 
 /* Better tick label styling with improved readability */
 /* Tick LABELS are text, so they need 4.5:1, which --axis does not have.
@@ -224,15 +220,11 @@
 #pysuricata-report .tick-label {
   font-family: var(--font-mono);
   font-size: 10px;
-  fill: var(--axis-text);
+  fill: var(--muted);
   font-weight: 500;
 }
 
 /* Specific improvements for log scale ticks */
-#pysuricata-report .hist[data-scale="log"] .tick-major {
-  stroke-width: 1.2;
-  opacity: 1;
-}
 
 #pysuricata-report .hist[data-scale="log"] .tick-label {
   font-size: 11px;
@@ -260,14 +252,14 @@
   border-radius: 6px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid var(--chip-br-light);
+  border: 1px solid var(--rule-strong);
 }
 
 #pysuricata-report:not(.light) .common-values-table.enhanced {
   background: #2a2a2a;
   color: #e0e0e0;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  border-color: var(--chip-br-dark);
+  border-color: var(--rule-strong);
 }
 
 #pysuricata-report .common-values-table.enhanced thead th {
@@ -277,7 +269,7 @@
   font-size: 0.75rem;
   padding: 10px 8px;
   text-align: center;
-  border-bottom: 2px solid var(--chip-br-light);
+  border-bottom: 2px solid var(--rule-strong);
   font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -285,19 +277,19 @@
 
 #pysuricata-report:not(.light) .common-values-table.enhanced thead th {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04));
-  border-bottom-color: var(--chip-br-dark);
+  border-bottom-color: var(--rule-strong);
 }
 
 #pysuricata-report .common-values-table.enhanced td {
   padding: 8px;
-  border-bottom: 1px solid var(--chip-br-light);
+  border-bottom: 1px solid var(--rule-strong);
   font-family: var(--font-mono);
   vertical-align: middle;
   text-align: center;
 }
 
 #pysuricata-report:not(.light) .common-values-table.enhanced td {
-  border-bottom-color: var(--chip-br-dark);
+  border-bottom-color: var(--rule-strong);
 }
 
 /* Rank column styling */
