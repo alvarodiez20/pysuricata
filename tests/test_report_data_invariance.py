@@ -136,6 +136,25 @@ _PROCESS_DEPENDENT = (
     "top_values",
 )
 
+#: Fields holding `(row_index, value)` pairs. The value is the fact; the row it
+#: came from is not, and with ties it is arbitrary -- twelve rows share the
+#: maximum age of 79, so CI recorded row 638 where this machine recorded 343.
+#: The indices are dropped and the values kept, so a changed maximum is still
+#: caught while an arbitrary choice among equals is not.
+_INDEXED_VALUES = ("min_items", "max_items")
+
+
+def _values_only(pairs: object) -> object:
+    if not isinstance(pairs, list):
+        return pairs
+    out = []
+    for pair in pairs:
+        if isinstance(pair, (list, tuple)) and len(pair) == 2:
+            out.append(pair[1])
+        else:
+            out.append(pair)
+    return out
+
 
 def _stable(payload: object) -> object:
     """The payload with the process-dependent fields dropped, and every float
@@ -149,7 +168,7 @@ def _stable(payload: object) -> object:
     """
     if isinstance(payload, dict):
         return {
-            key: _stable(value)
+            key: _stable(_values_only(value) if key in _INDEXED_VALUES else value)
             for key, value in payload.items()
             if key not in _PROCESS_DEPENDENT
         }
