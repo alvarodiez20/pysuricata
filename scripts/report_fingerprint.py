@@ -135,6 +135,33 @@ _PAIR_PATTERNS = (
 )
 
 
+# Values that measure the *run* rather than the data: wall-clock duration and
+# the generation timestamp. They differ between two renders of the same frame
+# -- the elapsed figure moved from 0.02s to 0.04s simply by running the suite
+# under load -- so including them makes every comparison flaky and trains
+# whoever sees it to re-baseline on red, which is the one habit this file
+# exists to prevent.
+_RUN_DEPENDENT = (
+    "elapsed",
+    "generated",
+    "profiled in",
+    "duration",
+    # Memory too. A column of a few repeated short strings -- "male"/"female",
+    # "C85"/"B42" -- measures differently depending on whether those exact
+    # string objects already exist in the process, because an object array
+    # stores pointers and the accounting walks unique objects. Two runs of the
+    # same frame in the same suite disagreed by 160 bytes for that reason. It
+    # is a property of the process, not of the data.
+    "processed",
+    "memory",
+)
+
+
+def _is_run_dependent(label: str) -> bool:
+    lowered = label.lower()
+    return any(marker in lowered for marker in _RUN_DEPENDENT)
+
+
 def _pairs_from_kv(doc: str) -> list[tuple[str, str]]:
     """Label/value pairs from the per-column statistics.
 
@@ -149,6 +176,8 @@ def _pairs_from_kv(doc: str) -> list[tuple[str, str]]:
             if not label or not value or len(label) > 40:
                 continue
             if not _NUMBER.fullmatch(value):
+                continue
+            if _is_run_dependent(label):
                 continue
             out.append((f"kv::{label.lower()}", _canon_number(value)))
     return out
