@@ -16,6 +16,7 @@ from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
 from .format_utils import ordinal_number
 from .histogram_svg import SVGHistogramRenderer
 from .identifier import identifier_facts, looks_like_identifier
+from .sampling import quantiles_are_sampled
 from .triage import annotate_flags
 
 
@@ -334,12 +335,17 @@ class NumericCardRenderer(CardRenderer):
             data.append(("Processed bytes (≈)", mem_display, "num"))
             return data
 
+        # Min, Max and Mean are exact -- the extremes come from every value
+        # (#118) and the mean from Welford over the stream -- so they must keep
+        # looking different from the three beside them that do not.
+        sampled = " (≈)" if quantiles_are_sampled(stats) else ""
+
         data = [
             ("Min", self.format_number(stats.min), "num"),
-            ("Q1 (P25)", self.format_number(stats.q1), "num"),
-            ("Median", self.format_number(stats.median), "num"),
+            (f"Q1 (P25){sampled}", self.format_number(stats.q1), "num"),
+            (f"Median{sampled}", self.format_number(stats.median), "num"),
             ("Mean", self.format_number(stats.mean), "num"),
-            ("Q3 (P75)", self.format_number(stats.q3), "num"),
+            (f"Q3 (P75){sampled}", self.format_number(stats.q3), "num"),
             ("Max", self.format_number(stats.max), "num"),
             ("Processed bytes (≈)", mem_display, "num"),
         ]
@@ -493,6 +499,10 @@ class NumericCardRenderer(CardRenderer):
 
     def _build_stats_table(self, stats: NumericStats) -> str:
         """Build detailed statistics table."""
+        # IQR and MAD are derived from the same reservoir as the quartiles, so
+        # they inherit the same status. Everything else in this table comes
+        # from the streaming moments, which see every value.
+        sampled = " (≈)" if quantiles_are_sampled(stats) else ""
         data = [
             ("Mean", self.format_number(stats.mean), "num"),
             ("Std Dev", self.format_number(stats.std), "num"),
@@ -500,8 +510,8 @@ class NumericCardRenderer(CardRenderer):
             ("Std Error", self.format_number(stats.se), "num"),
             ("Coeff. of Var", self.format_number(stats.cv), "num"),
             ("Geometric mean", self.format_number(stats.gmean), "num"),
-            ("IQR", self.format_number(stats.iqr), "num"),
-            ("MAD", self.format_number(stats.mad), "num"),
+            (f"IQR{sampled}", self.format_number(stats.iqr), "num"),
+            (f"MAD{sampled}", self.format_number(stats.mad), "num"),
             ("Skew", self.format_number(stats.skew), "num"),
             ("Kurtosis", self.format_number(stats.kurtosis), "num"),
             ("Jarque–Bera χ²", self.format_number(stats.jb_chi2), "num"),

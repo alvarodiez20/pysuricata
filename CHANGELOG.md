@@ -19,6 +19,25 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.64] - 2026-08-16
+
+### Fixed
+- **The quantiles were sampled estimates printed as if exact (#146).** `Q1`, `Median`, `Q3`, `IQR` and `MAD` come from a reservoir holding `numeric_sample_k` values; on a 60,000-row column that is a third of the data. They rendered to four significant figures in the same typography as `Min` and `Max`, which **are** exact — #118 made the extremes come from every value precisely so they would stop being sampled. On a standard normal column the report printed a median of `0.003684` where the true median is `-0.00252`: the right order of magnitude, the wrong sign, and four digits of implied precision.
+
+  The five sampled statistics now carry `(≈)`, the marker the distinct count has used since #41. `Min`, `Max` and `Mean` deliberately do not — they see every value, and the difference should be visible.
+
+- **The pin button's tooltip did not follow its state.** `setPinned` updated `aria-label` and not `title`, so the tooltip read *Unpin header* on a header that was already unpinned — a sighted user and a screen-reader user were told different things about the same control.
+
+### Changed
+- **Header controls reordered to pin → download → theme.** The pin governs the bar it sits in, so it leads; the theme toggle is set once and left, so it trails.
+
+### Added
+- `pysuricata/render/sampling.py` — one predicate, `quantiles_are_sampled()`, answering whether the reservoir saw the whole column. It returns `False` when the sample is absent or empty: those quantiles were not drawn from a reservoir at all, and marking them would attach a warning to the numbers that least need one.
+- `tests/test_sampled_quantiles.py` and `tests/test_header_actions.py` (34 tests).
+
+### Note on the justification
+The first write-up of #146 argued from run-to-run variance and was **wrong**. `profile()` defaults to seed 0, so unseeded runs are bit-identical; the variance came from driving `NumericAccumulator` directly with no seed, which is a configuration the public API never uses — the same error as measuring a kernel through a call site nothing calls. Corrected before it reached a decision. The argument that holds is accuracy, not stability: the estimate is perfectly reproducible **and** still an estimate, and changing the seed moves the median from `0.003684` to `0.01293`.
+
 ## [0.0.63] - 2026-08-16
 
 Documentation only. Roadmap re-audited at 0.0.62 (v10), superseding v8.

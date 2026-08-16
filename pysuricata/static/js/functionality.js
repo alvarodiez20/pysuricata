@@ -143,13 +143,16 @@
     if (pinned) {
       root.classList.remove('unpinned');
       try { localStorage.setItem(STORAGE_KEY, 'true'); } catch (e) { }
-      if (btn) btn.setAttribute('aria-label', 'Unpin header');
+      // title as well as aria-label: updating only the latter left the
+      // tooltip saying "Unpin header" on a header that was already unpinned,
+      // so the accessible name and the visible one disagreed.
+      if (btn) { btn.setAttribute('aria-label', 'Unpin header'); btn.title = 'Unpin header'; }
       if (iconOn) iconOn.style.display = '';
       if (iconOff) iconOff.style.display = 'none';
     } else {
       root.classList.add('unpinned');
       try { localStorage.setItem(STORAGE_KEY, 'false'); } catch (e) { }
-      if (btn) btn.setAttribute('aria-label', 'Pin header');
+      if (btn) { btn.setAttribute('aria-label', 'Pin header'); btn.title = 'Pin header'; }
       if (iconOn) iconOn.style.display = 'none';
       if (iconOff) iconOff.style.display = '';
     }
