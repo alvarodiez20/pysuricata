@@ -19,6 +19,25 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.73] - 2026-08-16
+
+### Fixed
+- **Label length printed as `NaN` for every categorical column (#155).** `_right_stats` read `avg_len` and `len_p90` out of `cat_stats` — the dict `_compute_categorical_stats` builds — and that dict has never carried either key, so `.get(..., float("nan"))` and `.get(..., "—")` returned their defaults every time.
+
+  | column | was | is |
+  |---|---|---:|
+  | `Embarked` | `NaN` | 1 |
+  | `Name` | `NaN` | **26.97** |
+  | `Ticket` | `NaN` | 6.75 |
+  | `Sex` | `NaN` | 4.71 |
+
+  The design handoff reported this as an `Embarked` quirk about one-character labels. It was neither: `Name`, whose labels average 27 characters, printed `NaN` just the same. The accumulator had the right answers throughout — same shape as #139, a field read off an object that does not carry it, failing quietly because the call site supplied a plausible default.
+
+- The em dash now means *absent*. It was standing in for *read from the wrong place*, which is a different thing and is what hid this.
+
+### Added
+- `tests/test_label_length.py` (18 tests), including a guard aimed at the cause rather than the symptom: it asserts the derived dict still does **not** carry those keys, so reintroducing the old read fails even on a day the dict happens to have them.
+
 ## [0.0.72] - 2026-08-16
 
 ### Changed
