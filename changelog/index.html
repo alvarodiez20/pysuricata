@@ -1792,6 +1792,48 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#0060-2026-08-16" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.0.60 - 2026-08-16
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.0.60 - 2026-08-16">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#changed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Changed
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#found-while-doing-this-139" class="md-nav__link">
+    <span class="md-ellipsis">
+      Found while doing this — #139
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#note-on-the-fingerprint" class="md-nav__link">
+    <span class="md-ellipsis">
+      Note on the fingerprint
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#0059-2026-08-16" class="md-nav__link">
     <span class="md-ellipsis">
       0.0.59 - 2026-08-16
@@ -1802,7 +1844,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#changed" class="md-nav__link">
+  <a href="#changed_1" class="md-nav__link">
     <span class="md-ellipsis">
       Changed
     </span>
@@ -1882,15 +1924,34 @@ treated as a contract.</p>
 <p>Each entry states what changed and, where it matters, <strong>what was measured</strong>.
 Numbers here come from the benchmark harness in <code>benchmarks/</code>; ratios are only
 quoted when both sides were measured in the same round-robin run.</p>
-<h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.59...HEAD">Unreleased</a></h2>
+<h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.60...HEAD">Unreleased</a></h2>
 <p>Nothing yet. Planned work is tracked in
 <a href="https://github.com/alvarodiez20/pysuricata/blob/main/docs/roadmap.md"><code>docs/roadmap.md</code></a>,
 <a href="https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md"><code>docs/UX_ISSUES.md</code></a> and
 <a href="https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md"><code>docs/integration.md</code></a>.</p>
+<h2 id="0060-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.59...0.0.60">0.0.60</a> - 2026-08-16</h2>
+<p>Phase 7 of the report redesign (#120): missing values, routed on chunk count
+rather than on tabs.</p>
+<h3 id="changed">Changed</h3>
+<ul>
+<li><strong>The tabs are gone.</strong> <code>Data Completeness</code> and <code>Missing per Chunk</code> over three rows was two clicks for one screen of content — and with a single chunk the second tab held one full-width block per column, a tab that hid nothing. The view is chosen by chunk count instead, the same shape of conditional the correlations section uses.</li>
+<li><strong>One row per column</strong>: name, a bar on the warm severity scale, count and percent in the matching severity colour, with the bands stated in a legend. Same row shape as the summary's missing list, so a reader learns it once, and it fits a phone unchanged.</li>
+<li><strong>Nothing missing says so in one line</strong> rather than rendering an empty grid, and complete columns are <strong>summarised</strong>, not listed — sixty column names is not a summary.</li>
+</ul>
+<h3 id="found-while-doing-this-139">Found while doing this — #139</h3>
+<p>The by-chunk half of #120 <strong>cannot be built</strong>, and the tab it replaces has been empty since it was written. Three things, each verified:</p>
+<ul>
+<li>The section read <code>chunk_metadata</code> off the <em>accumulator</em>. No accumulator has that attribute; it lives on the <strong>summary</strong> <code>finalize()</code> returns. It was always <code>None</code>.</li>
+<li>Only the numeric accumulator tracks per-chunk missing counts at all — categorical, datetime and boolean keep none.</li>
+<li>Even the numeric one records a single boundary: <code>mark_chunk_boundary()</code> is called only from its own <code>finalize()</code>, never per chunk. On 900 rows at <code>chunk_size=150</code> — six chunks — it reports <code>boundaries=[900]</code>.</li>
+</ul>
+<p>The route degrades to the single-column view automatically, which is what #120's own edge case asks for when the metadata is unavailable. The strip renderer is written, tested directly, and will draw as soon as there is something to draw. A test asserts the gap still exists, so whoever fixes #139 is told the view can be switched on.</p>
+<h3 id="note-on-the-fingerprint">Note on the fingerprint</h3>
+<p>One fact was removed: <code>data-chunk="1"</code>. That is the chunk <em>index</em> from the single full-width block the old tab drew, not a statistic — the figure it accompanied, <code>683 (76.7%)</code>, is still on the page in the new row.</p>
 <h2 id="0059-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.58...0.0.59">0.0.59</a> - 2026-08-16</h2>
 <p>Phase 6 of the report redesign (#119): correlations. Nothing removed or changed
 in the fact fingerprint.</p>
-<h3 id="changed">Changed</h3>
+<h3 id="changed_1">Changed</h3>
 <ul>
 <li><strong>"No significant correlations found" now reports what was found.</strong> This is the common case — both example reports hit it — and nothing was actually missing: the pairs <em>were</em> computed, and every one came back weak. That is a finding, not an absence.</li>
 </ul>
@@ -1913,7 +1974,7 @@ in the fact fingerprint.</p>
 <p>Phase 5.7 of the report redesign (#118): three defects found while designing,
 and easy to lose in a long plan. Nothing removed or changed in the fact
 fingerprint.</p>
-<h3 id="changed_1">Changed</h3>
+<h3 id="changed_2">Changed</h3>
 <ul>
 <li><strong>The quality chips show the number they already had.</strong> Every chip carried <code>data-threshold</code> and <code>data-value</code> in the DOM and displayed neither, so a card said <code>Missing</code> where it could have said <code>19.9% missing</code> — and a reader had to open the details pane, or the inspector, to learn whether that meant two rows or two hundred. The value now leads (it is the fact; the label says what the fact is about) and the threshold moves into a <code>title</code>, because it answers a different question.</li>
 </ul>
@@ -1963,7 +2024,7 @@ so. Nothing removed or changed in the fact fingerprint.</p>
 <h2 id="0055-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.54...0.0.55">0.0.55</a> - 2026-08-16</h2>
 <p>Phase 5.2 of the report redesign (#115): the histogram says what its axes mean.
 Nothing removed or changed in the fact fingerprint.</p>
-<h3 id="changed_2">Changed</h3>
+<h3 id="changed_3">Changed</h3>
 <ul>
 <li><strong>The column name is no longer printed inside the chart.</strong> The card header carries it, so the plot was spending a line on a word the reader had just read — while still leaving nothing to say which axis was years and which was rows.</li>
 <li><strong>The axes are labelled</strong>: <code>ROWS</code> above the y column, and the x unit at the right end of its axis. Both mono 10px in <code>--axis</code>.</li>
@@ -1981,7 +2042,7 @@ Nothing removed or changed in the fact fingerprint.</p>
 <h2 id="0054-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.53...0.0.54">0.0.54</a> - 2026-08-16</h2>
 <p>Phase 5.1 of the report redesign (#114): the numeric card restacked. No number
 on the page changes — nothing removed, nothing changed in the fact fingerprint.</p>
-<h3 id="changed_3">Changed</h3>
+<h3 id="changed_4">Changed</h3>
 <ul>
 <li><strong>The histogram takes the card's full width</strong>, above the stats rather than squeezed beside them. It was one third of a <code>240px 240px 1fr</code> row; full width it gains about 550px, which is what makes 50 bins legible and the log toggle worth using.</li>
 <li><strong>The two key/value tables became one stat row.</strong> <code>minmax(0, 1fr)</code>, not <code>1fr</code>: a grid track's default minimum is its content, so one long value — <code>-1.2345678e+18</code> is the case that does it — widens its own column and pushes the others out of alignment.</li>
@@ -2001,7 +2062,7 @@ on the page changes — nothing removed, nothing changed in the fact fingerprint
 <h2 id="0053-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.52...0.0.53">0.0.53</a> - 2026-08-16</h2>
 <p>Phase 4 of the report redesign (#113), and it closes #103. The fact fingerprint
 is byte-identical, 598 facts, across six consecutive commits now.</p>
-<h3 id="changed_4">Changed</h3>
+<h3 id="changed_5">Changed</h3>
 <ul>
 <li><strong>A missing value renders as an em dash, not the string <code>nan</code>.</strong> The literal is what pandas prints, and it reads as a value: a column of <code>nan</code> looks like text data rather than absence. The real value is kept in a <code>title</code>, and the glyph takes a text-grade colour because it <em>is</em> data.</li>
 </ul>
@@ -2023,7 +2084,7 @@ is byte-identical, 598 facts, across six consecutive commits now.</p>
 599px tall on a phone, from 1,330</strong> — measured at 390px, before and after, on
 the same frame. No number on the page changes; the fact fingerprint is
 byte-identical, 598 facts, now across five consecutive commits of the migration.</p>
-<h3 id="changed_5">Changed</h3>
+<h3 id="changed_6">Changed</h3>
 <ul>
 <li><strong>The donut is now a 100% stacked bar.</strong> A donut cannot be read to exact proportion — comparing two arcs is a harder perceptual task than comparing two lengths against a shared baseline — and it stops working below about 200px wide, which is every phone. The bar reads at any width, reflows for free, and prints each count inside its own segment, so nothing has to be estimated.</li>
 </ul>
@@ -2045,7 +2106,7 @@ byte-identical, 598 facts, now across five consecutive commits of the migration.
 what it is. <strong>No number on the page changes</strong> — the fact fingerprint is
 byte-identical, 598 facts, and has now stayed so across four consecutive
 commits of the migration.</p>
-<h3 id="changed_6">Changed</h3>
+<h3 id="changed_7">Changed</h3>
 <ul>
 <li><strong>The header is one 52px bar</strong>, down from about 96px. It was a two-row grid with a 78px logo column holding a vertical lockup — and a vertical lockup inside a horizontal bar is exactly what forces a tall header. The mark and the name now sit side by side at 30px. Mobile is 48px.</li>
 <li><strong>The sections are plain text.</strong> The active one is marked by colour and a 2px rule beneath it rather than a filled pill: there is nothing here to press.</li>
@@ -2070,7 +2131,7 @@ commits of the migration.</p>
 <p>Phase 1 of the report redesign (#110): the token layer, the typography, and the
 structural motif every later phase builds on. <strong>No number on the page changes</strong> —
 the fact fingerprint is byte-identical across it, 598 facts.</p>
-<h3 id="changed_7">Changed</h3>
+<h3 id="changed_8">Changed</h3>
 <ul>
 <li><strong>Type is no longer a colour.</strong> The old palette gave each column type a hue and the per-column cards inherited it. Inside a card the badge already names the type, so the hue carried nothing — and it collided: olive meant both <em>categorical</em> and <em>passes</em>, rust meant both <em>boolean</em> and <em>fails</em>, so a rust bar and a rust warning chip could sit in the same card meaning unrelated things.</li>
 </ul>
@@ -2099,7 +2160,7 @@ the fact fingerprint is byte-identical across it, 598 facts.</p>
 <h2 id="0049-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.48...0.0.49">0.0.49</a> - 2026-08-16</h2>
 <p><strong>The report is now half the size it was.</strong> 1,110,756 bytes → 543,577 bytes on an
 891 × 8 frame, measured before and after in the same run.</p>
-<h3 id="changed_8">Changed</h3>
+<h3 id="changed_9">Changed</h3>
 <ul>
 <li><strong>The logo is inline SVG instead of two base64 PNGs.</strong> They were <strong>592 KB of a
   1.11 MB report</strong> — more bytes than the data, the CSS, the JavaScript and the
@@ -2139,7 +2200,7 @@ namespace and all three paths intact, which was worth checking because that
 button finds its content by regex and fails silently.</p>
 <h2 id="0048-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.47...0.0.48">0.0.48</a> - 2026-08-16</h2>
 <p>Repository housekeeping ahead of the report redesign. No library code changed.</p>
-<h3 id="changed_9">Changed</h3>
+<h3 id="changed_10">Changed</h3>
 <ul>
 <li><strong>The changelog moved to <code>CHANGELOG.md</code> at the repository root</strong>, which is where GitHub, PyPI and release tooling look for it. <code>docs/changelog.md</code> now includes that file verbatim through <code>pymdownx.snippets</code>, so the two cannot drift apart, and the CI freshness check follows the file. The root copy had been left behind at 0.0.42 while the docs copy carried five more releases; they are merged, and there is now one place to edit.</li>
 </ul>
@@ -2202,7 +2263,7 @@ every baseline the migration measures against is taken from correct output.</p>
 </ul>
 <p>The tests are written against a fake accumulator that implements the protocol and <strong>inherits nothing</strong>, which is as close as a Python test gets to proving the boundary would hold for a type from another language.
 - <strong><code>ComputeOptions.checkpoint</code></strong> groups the five checkpointing settings under shorter names — <code>options.checkpoint.every_n_chunks</code> — as a lens on the same fields rather than a copy, so nothing that sets them directly breaks and the two cannot disagree.</p>
-<h3 id="changed_10">Changed</h3>
+<h3 id="changed_11">Changed</h3>
 <ul>
 <li><strong>An unknown keyword now points at the one that works.</strong> Someone who read <code>ComputeOptions</code> and typed the field name they found there was told it was unknown, which is true and useless: <code>numeric_sample_size=5000</code> now answers <em>"the keyword for it is <code>sample=</code>"</em>, and a field with no keyword form says to set it through <code>config=</code>.</li>
 </ul>
@@ -2277,7 +2338,7 @@ where the claim matters most.</p>
 <li><strong><a href="https://alvarodiez20.github.io/pysuricata/data-sources/">Arrow, Parquet and DuckDB read without being materialised</a>.</strong> <code>profile()</code> and <code>summarize()</code> now accept a <code>pyarrow</code> Table, RecordBatch, RecordBatchReader or Dataset, a DuckDB relation, and anything exporting the Arrow PyCapsule interface. A DuckDB relation is a query that has not run yet, so a filtered join across several Parquet files can be profiled without any of it ever existing as a frame.</li>
 <li><strong><code>pysuricata.sources</code></strong> with <code>stream_parquet()</code>, <code>stream_arrow()</code> and <code>stream_duckdb()</code>, for when you want the batches rather than a profile. <code>stream_parquet(..., columns=[...])</code> never decodes the columns it does not read.</li>
 </ul>
-<h3 id="changed_11">Changed</h3>
+<h3 id="changed_12">Changed</h3>
 <ul>
 <li><strong>A Parquet path is read a batch at a time</strong> rather than loaded whole, by both <code>profile()</code> and the CLI. Measured on a 4,000,000 × 6 frame in a 180 MB file, peak RSS above the import floor drops from <strong>581 MB to 307 MB</strong>, and stops rising with file size the way loading does.</li>
 </ul>
@@ -2295,7 +2356,7 @@ where the claim matters most.</p>
 <li><strong>A test that keeps it that way.</strong> It walks the accumulators' own summary dataclasses and fails if a computed statistic is neither published nor listed in <code>SUMMARY_FIELDS_WITHHELD</code> <strong>with a reason</strong>. Adding a statistic now forces a decision about the contract.</li>
 <li><strong>Freshness gating</strong> (#91) — <code>--require-fresh</code> fails when a datetime column's newest timestamp did not advance past the baseline's, and <code>--max-age 26h</code> fails when it is older than a duration, needing no baseline at all. This catches the most common failure of a scheduled pipeline: the job produced <em>yesterday's data again</em>, where every distribution matches and every other check passes because the data is literally the same. Both are off by default — a datetime column can be a birth date rather than an event time. Comparison is in UTC, so the gate does not depend on where CI runs.</li>
 </ul>
-<h3 id="changed_12">Changed</h3>
+<h3 id="changed_13">Changed</h3>
 <ul>
 <li><strong>The payload is JSON-serialisable without a custom encoder.</strong> Numpy scalars were leaking into <code>mean</code>, <code>missing</code> and <code>outliers_iqr_est</code>; a payload every consumer has to re-encode is not a contract.</li>
 </ul>
@@ -2316,7 +2377,7 @@ fails.</p>
 - <strong>Forced and reclassified columns fell back to library defaults</strong> (#61). The twelve sites that replace an accumulator constructed it with no config, so <code>numeric_sample_k</code>, <code>uniques_k</code> and <code>topk_k</code> were silently discarded for exactly those columns — a user asking for <code>uniques_k=8192</code> got 2,048, with nothing in the report saying this column was measured to a different accuracy than its neighbours. They now go through one <code>build_accumulator()</code> in the factory.
 - <strong>A config value that failed validation was discarded rather than reported</strong> (#89). <code>_to_engine_config</code> wrapped <code>from_options</code> in a bare <code>except Exception</code> with a fallback that mapped a subset of the fields by hand, so a bad value produced not an error but a <strong>different configuration</strong> — one that never set <code>columns</code>, the correlation options, <code>progress</code>, <code>engine</code> or any boolean-detection option. A caller asking for one column got the whole frame and a successful-looking run. The fallback is gone; the failure now reaches the caller as <code>ConfigurationError</code>.
 - <strong><code>outlier_methods</code> did nothing</strong> (#60). It was read by a detector that was never called, while <code>finalize()</code> always computed both IQR and MAD. It is now honoured.</p>
-<h3 id="changed_13">Changed</h3>
+<h3 id="changed_14">Changed</h3>
 <ul>
 <li><strong>Missing cells come from the accumulators</strong> (#36) rather than from an <code>isnull().sum().sum()</code> over every chunk — a second pass over every cell for a number the accumulators had just counted. The first chunk paid for it twice. Totals are unchanged, and asserted equal to a full pass at three chunk sizes.</li>
 </ul>
@@ -2375,7 +2436,7 @@ the report had the answer and did not use it.</p>
 <li><strong>Identifier columns are recognised and presented as keys.</strong> A monotonic, fully distinct, integral column with no nulls now gets an <strong>Identifier</strong> badge and a card answering what a key raises — rows, distinct, duplicates, gaps in the sequence, order — instead of a mean, a standard deviation, a flat uniform histogram and <code>Zeros: 1 (0.0%)</code>, which is true and meaningless. <code>summarize()</code> reports <code>"type": "identifier"</code> and carries <code>mono_inc</code>, <code>mono_dec</code> and <code>int_like</code>, so the payload is not poorer than the HTML.</li>
 <li><strong>A "needs attention" block opens the Variables section</strong>, naming the columns with real defects and linking to each card. Clicking one of its chips filters the list to those columns; clicking it again, or the All tab, restores source order in one click.</li>
 </ul>
-<h3 id="changed_14">Changed</h3>
+<h3 id="changed_15">Changed</h3>
 <ul>
 <li><strong>Monotonicity detection is on by default.</strong> It was off "for performance" when the detector looped over every value at 89 ns/value. As a sign test on <code>np.diff</code> it is 0.6 ns/value, and it is what lets the report recognise a key. The detector no longer re-filters an array the caller has already filtered — that redundant <code>isfinite</code> pass and copy, per numeric column per chunk, was the entire cost of turning it on (636 ms → 570 ms on mixed 200,000 × 14, against 573 ms with it off).</li>
 </ul>
@@ -2390,7 +2451,7 @@ the report had the answer and did not use it.</p>
 <ul>
 <li><strong><code>benchmarks/versions.py</code></strong> — version-over-version timing in one interleaved round-robin. Each version is installed into its own throwaway virtualenv and timed in its own subprocess, so import cost, allocator state and garbage from one version cannot leak into the next.</li>
 </ul>
-<h3 id="changed_15">Changed</h3>
+<h3 id="changed_16">Changed</h3>
 <ul>
 <li><strong><code>benchmarks/end_to_end.py</code> schedules a round-robin by default</strong> (<code>--rounds 5</code>). Every tool is measured in every round and each one's best is reported, so a slow patch of machine time penalises everything in that round and cancels in the ratio. Running one tool to completion and then the next compares them across two different stretches of machine time, which on a shared runner is not the same machine.</li>
 <li><strong>Both harnesses refuse to imply a quotable ratio below three rounds</strong>, in the terminal and in the generated markdown. The generated tables also carry the round count and the per-tool spread, and state that ratios are only comparable within the table they appear in.</li>
@@ -2415,7 +2476,7 @@ regression reported as an improvement — and a <em>3.56x</em> headline is reall
 <li><strong><code>__all__</code></strong>, so <code>dir(pysuricata)</code> is the public API rather than a list of internal submodules.</li>
 <li><strong><code>PySuricataError</code></strong>, one base for everything the library raises deliberately. <code>UnsupportedDataError</code> and <code>ConfigurationError</code> subclass it <em>and</em> the builtin they used to raise, so existing <code>except TypeError</code> / <code>except ValueError</code> handlers keep working.</li>
 </ul>
-<h3 id="changed_16">Changed</h3>
+<h3 id="changed_17">Changed</h3>
 <ul>
 <li>A string argument is now read as a path, so passing an unusable one reports <code>File not found</code> rather than an unsupported-type error.</li>
 </ul>
@@ -2456,7 +2517,7 @@ down from 1,278.</p>
 <ul>
 <li><strong>The reported minimum and maximum were sampled, not measured.</strong> They came from the reservoir, which holds 20,000 values, while the exact extremes sat in the tracker right beside them — so a numeric card could print a "Maximum" that disagreed with the first row of its own extreme-values table, and whether it did came down to whether the true extreme happened to be sampled. Both now come from the tracker. (0.0.26 made the extremes exact and their indices global; it did not connect them to these two fields.)</li>
 </ul>
-<h3 id="changed_17">Changed</h3>
+<h3 id="changed_18">Changed</h3>
 <ul>
 <li><strong>Monotonicity detection is a sign test on <code>np.diff</code></strong> rather than a Python loop over every value: 45.2 -&gt; 0.6 ns/value in situ, 64x on the isolated kernel. The pair straddling a chunk boundary is compared against the carried last value, so chunked and unchunked results still agree.</li>
 <li><strong>The extreme-value heaps are the right way round.</strong> Keeping the k smallest values means evicting the largest, which is a max-heap's job; the code used a min-heap and made up the difference with an O(k) <code>max()</code> scan, a linear search for the matching entry and a full <code>heapify</code> on every insert — O(k log k) per value on a structure whose purpose is O(log k) inserts. Now <code>heappushpop</code>. Measured flat at the default k=5, where the scan was over five items; the point is that it no longer degrades as <code>max_extremes</code> rises.</li>
@@ -2469,7 +2530,7 @@ down from 1,278.</p>
 <p><strong>The datetime accumulator is 9.3x faster</strong> (308 ms -&gt; 33 ms per 200,000-row
 column), which takes mixed 200,000 x 14 from 1,175 ms to <strong>656 ms</strong>. Cumulative
 since 0.0.26 on the same machine: <strong>2.31x</strong>.</p>
-<h3 id="changed_18">Changed</h3>
+<h3 id="changed_19">Changed</h3>
 <ul>
 <li><strong><code>DatetimeAccumulator.update</code> is vectorised.</strong> It was the most expensive column kind by a factor of two and the only accumulator never touched. Four per-row Python loops are gone: the validity mask, the <code>int()</code> conversion, the sketch/reservoir feed, and — the expensive one — a <code>datetime.fromtimestamp</code> object constructed per row to read four calendar fields off it. Calendar fields now come from integer division and <code>np.bincount</code>. The consume layer also stops building a <code>list[int | None]</code> per column: it hands over the int64 array it already had, since NaT's sentinel is outside the validity window anyway and needed no translation.</li>
 </ul>
@@ -2488,7 +2549,7 @@ cards now say nothing where they used to say something untrue.</p>
 <li><strong>The "Common values" table no longer appears on high-cardinality numeric columns.</strong> Misra-Gries ran on every numeric column unconditionally, so a column of 200,923 distinct floats rendered a ranked table of values that had occurred <em>once</em>. Top-k is now gated on the distinct estimate and fed only while its answer could carry information; the gate latches off and discards its partial counts, so the table a column gets does not depend on how it was chunked. Columns with fewer distinct values than counters, and columns the counters can meaningfully cover, are unaffected. This is also 34% of the numeric accumulator.</li>
 <li><strong>A fallback in <code>NumericAccumulator.finalize()</code> that invented common values.</strong> When the sketch returned fewer than five entries it recomputed them from the reservoir sample and multiplied the counts by the sampling ratio "to represent the full dataset" — reporting a value that occurred once as having occurred <code>sample_scale</code> times, formatted in the report exactly like a measured count. It also overrode the <em>exact</em> counters on any column with fewer than five distinct values, replacing a correct answer with an estimate. An absent table is the honest output when nothing is common.</li>
 </ul>
-<h3 id="changed_19">Changed</h3>
+<h3 id="changed_20">Changed</h3>
 <ul>
 <li><strong><code>chunk_size</code> now defaults to 50,000 rows, down from 200,000.</strong> The old value was never exercised: until 0.0.25 the option was blended away, so nothing depended on it being right. Bigger is not faster — the sketch merges are superlinear in batch size, so one 200,000-row batch costs more than four 50,000-row ones. Measured optimum is 50,000, worth 1.13x on its own once the KMV pre-filter is in. A test now pins the chosen size to a band so the default cannot drift back.</li>
 <li><strong>KMV rejects hashes against its admission threshold before sorting them.</strong> Once the sketch is full, the kth smallest hash it holds is a hard bound — nothing at or above it can enter, now or later. Testing that first with one vectorised compare discards over 99.9% of a batch from a high-cardinality column, leaving <code>np.unique</code> and <code>np.union1d</code> to sort the survivors instead of the whole chunk. 51 -&gt; 17 ns/value; the retained set, and therefore every estimate, is identical by construction.</li>
@@ -2498,7 +2559,7 @@ cards now say nothing where they used to say something untrue.</p>
 <li><strong>Pre-1906 timestamps were still dropped on the fallback path.</strong> The window widened in 0.0.26 missed <code>_update_fallback</code>, which kept the old <code>-2e18</code> bound. Same symptom as before — historical dates counted as missing — on the path taken when a timestamp resists array conversion.</li>
 </ul>
 <h2 id="0027-2026-08-15"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.26...0.0.27">0.0.27</a> - 2026-08-15</h2>
-<h3 id="changed_20">Changed</h3>
+<h3 id="changed_21">Changed</h3>
 <ul>
 <li><strong>Sampling draws from per-column generators instead of the process-global RNG.</strong> <code>random_seed</code> used to be applied by calling <code>np.random.seed()</code> and <code>random.seed()</code>, which meant profiling reset the caller's generators; 0.0.18 papered over that by snapshotting and restoring them around each run. The sketches now each own a <code>numpy.random.Generator</code>, seeded per column as <code>blake2b(f"{run_seed}:{column}")</code>, and the snapshot/restore wrapper is gone — <code>profile()</code> neither reads nor writes global RNG state, seeded or not. Two consequences worth knowing: the same seed gives a <em>different</em> sample than it did in 0.0.26 (PCG64 rather than the legacy Mersenne Twister, and a per-column seed rather than one shared stream), and a column's sample no longer depends on which other columns are present, so profiling a subset now reproduces the numbers from profiling the whole frame. This is what per-column threading needs to be reproducible.</li>
 <li><strong>The sample-preview table is reproducible.</strong> It called <code>df.sample()</code> with no <code>random_state</code>, so the preview rows were drawn from the global RNG and ignored <code>random_seed</code> entirely. Both backends now take an explicit seed derived the same way.</li>
@@ -2539,7 +2600,7 @@ cards now say nothing where they used to say something untrue.</p>
 <h2 id="0023-2026-08-14"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.22...0.0.23">0.0.23</a> - 2026-08-14</h2>
 <p><strong>2.30x faster than 0.0.20</strong> on the mixed benchmark suite (200,000 x 14: 3.190s
 -&gt; 1.384s), with the sampling guarantees from 0.0.18 intact.</p>
-<h3 id="changed_21">Changed</h3>
+<h3 id="changed_22">Changed</h3>
 <ul>
 <li><strong>Reservoir acceptances are scheduled in bulk</strong> — Algorithm L's schedule depends only on the random generator and the reservoir size, never on the data, so there is no reason to derive it one acceptance at a time in Python. Writing the recurrence as a cumulative sum makes every term a vectorised array operation: <code>log W = cumsum(log u)/k</code>, <code>skip = floor(log v / log(1-W))</code>, <code>index = base + cumsum(skip) + i</code>. Accumulation drops from 59.1% to 49.9% of self time. The schedule is still generated from the draw sequence alone, so the sample remains identical however the stream is chunked.</li>
 </ul>
@@ -2552,7 +2613,7 @@ cards now say nothing where they used to say something untrue.</p>
 0.0.20</strong> on the mixed benchmark suite (200,000 x 14: 3.190s -&gt; 1.601s), with no
 new dependencies and no API change. The phase's exit criterion was hashing and
 date parsing each under 5% of self time; they are now 0.7% and 0.3%.</p>
-<h3 id="changed_22">Changed</h3>
+<h3 id="changed_23">Changed</h3>
 <ul>
 <li><strong>Date sniffing no longer parses columns row by row</strong> — deciding whether an object column holds dates ran up to 10,000 rows through <code>pd.to_datetime(format="mixed")</code>, which disables pandas' vectorised parser and falls back to <code>dateutil</code> one row at a time: 166,302 <code>get_token</code> calls in a single 50,000-row profile, 20.7% of total runtime. It now probes 200 rows against a list of explicit formats, each of which takes the fast path, and only reaches for <code>mixed</code> when every fixed format has failed. Classification is unchanged, including for formats outside the fixed list.</li>
 </ul>
@@ -2568,7 +2629,7 @@ date parsing each under 5% of self time; they are now 0.7% and 0.3%.</p>
 <p>Phase 1 of <code>docs/roadmap.md</code> — pure-Python performance, no new dependencies and
 no API change. <strong>Report generation is 1.83x faster</strong> on the mixed benchmark
 suite (200,000 x 14: 3.190s -&gt; 1.739s).</p>
-<h3 id="changed_23">Changed</h3>
+<h3 id="changed_24">Changed</h3>
 <ul>
 <li><strong>The distinct-count sketch no longer uses SHA-1</strong> — a cryptographic hash resisting preimage attacks was doing a job that needs uniformity and avalanche and nothing else, at roughly a third of total runtime. Numeric columns are now hashed by bit pattern with a vectorised splitmix64 finaliser, costing no Python object per row; byte input uses blake2b with an 8-byte digest, so there is no wider digest to slice. An avalanche test asserts a single input bit flip changes about half the output bits.</li>
 <li><strong>Reservoir sampling draws its uniforms in blocks</strong> — Algorithm L needs two draws per acceptance, and a scalar <code>np.random</code> call is dominated by interpreter overhead. Slot selection reuses the same buffer instead of a separate <code>randint</code> call.</li>
@@ -2600,7 +2661,7 @@ suite (200,000 x 14: 3.190s -&gt; 1.739s).</p>
 <li><strong>The accuracy oracle now runs in CI</strong> — a new <code>Accuracy</code> workflow runs <code>benchmarks/accuracy.py</code> on every pull request. The six statistical bugs fixed in 0.0.18 were only findable because that suite exists; nothing ran it automatically, so they could have regressed silently. This is the Phase 0 exit criterion from <code>docs/roadmap.md</code>.</li>
 <li><strong>Slow end-to-end invariants run on every push to <code>main</code></strong> — the chunked-vs-unchunked checks take tens of seconds per case, so they stay off the pull-request path but gate the branch.</li>
 </ul>
-<h3 id="changed_24">Changed</h3>
+<h3 id="changed_25">Changed</h3>
 <ul>
 <li><strong><code>xfail_strict</code> is enabled</strong> — an <code>xfail</code>-marked test that starts passing (XPASS) now fails the build instead of passing quietly, so a fixed bug cannot leave a stale marker behind claiming it is still broken.</li>
 </ul>
@@ -2623,7 +2684,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong><code>benchmarks/</code> accuracy oracle and performance harness</strong>, plus <code>docs/roadmap.md</code>.</li>
 <li><strong><code>no-commit-to-branch</code> pre-commit hook</strong> — work reaches <code>main</code> only through a pull request.</li>
 </ul>
-<h3 id="changed_25">Changed</h3>
+<h3 id="changed_26">Changed</h3>
 <ul>
 <li>The pre-commit <code>ruff</code> pin and the dev-group <code>ruff</code> had drifted either side of the <code>UP038</code> rule's removal, so pre-commit rejected code that CI accepted. Both now pin the same version.</li>
 </ul>
@@ -2659,7 +2720,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Extended dtype inference</strong> — pyarrow-backed columns (<code>pd.ArrowDtype</code>) are now classified by their underlying Arrow type instead of falling through to categorical; pandas <code>timedelta64</code> and polars <code>Duration</code>/<code>Time</code> are treated as numeric; polars <code>String</code> is recognized alongside the legacy <code>Utf8</code> alias</li>
 <li><strong>Vendored Titanic dataset</strong> — <code>docs/assets/titanic.csv</code> is now committed, so <code>scripts/regenerate_example_report.py</code> and the docs CI jobs no longer depend on network access</li>
 </ul>
-<h3 id="changed_26">Changed</h3>
+<h3 id="changed_27">Changed</h3>
 <ul>
 <li><strong>CSS modularization</strong> — Replaced monolithic <code>style.css</code> (8,742 lines) with 14 scoped partials (<code>_00-tokens.css</code> through <code>_13-utilities.css</code>), loaded via <code>load_css_dir()</code> with caching</li>
 <li><strong>Inline event handler removal</strong> — Replaced all inline <code>onclick</code>/<code>onchange</code> handlers with <code>data-action</code> attributes and delegated event listeners</li>
@@ -2688,7 +2749,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <ul>
 <li><strong>Polars nested type support</strong> — Structs and Lists are now gracefully handled as categorical variables (with debug warnings) instead of causing inference errors</li>
 </ul>
-<h3 id="changed_27">Changed</h3>
+<h3 id="changed_28">Changed</h3>
 <ul>
 <li><strong>Performance optimization</strong> — optimized <code>_safe_compute</code> to use NumPy arrays for type checks, reducing overhead in large datasets</li>
 </ul>
@@ -2705,7 +2766,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Code/equation styling</strong> — Changed code and math colors from green to standard gray</li>
 <li><strong>Memory stress test</strong> — Bumped threshold from 200→250 MB for Python 3.14 compatibility</li>
 </ul>
-<h3 id="changed_28">Changed</h3>
+<h3 id="changed_29">Changed</h3>
 <ul>
 <li><strong>Dropped Python 3.9</strong> — Minimum version is now Python 3.10</li>
 <li><strong>CI runs on PR only</strong> — Tests no longer run on push to main (CD handles releases)</li>
@@ -2729,7 +2790,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <ul>
 <li><strong>Self-contained HTML reports</strong> — HTML reports no longer depend on external CDN (Chart.js is now inlined)</li>
 </ul>
-<h3 id="changed_29">Changed</h3>
+<h3 id="changed_30">Changed</h3>
 <ul>
 <li><strong>Lighter dependencies</strong> — Removed unused dependencies: <code>matplotlib</code>, <code>seaborn</code>, <code>ipywidgets</code></li>
 </ul>
@@ -2744,7 +2805,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <ul>
 <li><strong>Memory leak fixes</strong> — Resolved memory leaks in KMV sketch, ExtremeTracker, and chunk metadata</li>
 </ul>
-<h3 id="changed_30">Changed</h3>
+<h3 id="changed_31">Changed</h3>
 <ul>
 <li><strong>Realistic benchmarks</strong> — Updated README and docs with measured performance figures</li>
 </ul>
@@ -2766,7 +2827,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Missing-values display</strong> — a dedicated section summarising missing data per column (<a href="https://github.com/alvarodiez20/pysuricata/pull/13">#13</a>).</li>
 </ul>
 <h2 id="009-2025-09-11"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.8...0.0.9">0.0.9</a> - 2025-09-11</h2>
-<h3 id="changed_31">Changed</h3>
+<h3 id="changed_32">Changed</h3>
 <ul>
 <li>Stabilisation pass across the code base (<a href="https://github.com/alvarodiez20/pysuricata/pull/11">#11</a>).</li>
 </ul>
@@ -2784,7 +2845,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <ul>
 <li><strong>Chunked processing</strong> — the first streaming pass over a file, and the point at which the library became a streaming profiler rather than a whole-frame one (<a href="https://github.com/alvarodiez20/pysuricata/pull/8">#8</a>).</li>
 </ul>
-<h3 id="changed_32">Changed</h3>
+<h3 id="changed_33">Changed</h3>
 <ul>
 <li>Report layout reformatted.</li>
 </ul>

@@ -5595,6 +5595,177 @@ body.suricata-standalone:not(.light) {
     padding: 6px;
   }
 }
+/* =============================================================
+   MISSING VALUES — routed on chunk count, not on tabs (#120)
+
+   `Data Completeness` and `Missing per Chunk` over three rows was two clicks
+   for one screen of content -- and with a single chunk the second tab held one
+   full-width block per column, a tab that hid nothing.
+
+   The row shape is the same as the summary's missing list, so a reader learns
+   it once, and it fits a phone unchanged.
+   ============================================================= */
+#pysuricata-report .miss-rows {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+#pysuricata-report .miss-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 110px;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .miss-rows.has-strip .miss-row {
+  grid-template-columns: 92px 1fr 110px 1fr;
+}
+
+#pysuricata-report .miss-row__name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: none;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pysuricata-report .miss-row__bar {
+  display: block;
+  height: 14px;
+  background: var(--track);
+  min-width: 0;
+}
+
+#pysuricata-report .miss-row__fill {
+  display: block;
+  height: 100%;
+}
+
+/* The warm scale, and the one place data is allowed to use it: here the
+   encoding IS severity, so 77% missing has to look worse than 0.2%. */
+#pysuricata-report .miss-row__fill.good {
+  background: var(--q-good);
+}
+
+#pysuricata-report .miss-row__fill.warn {
+  background: var(--q-warn-fill);
+}
+
+#pysuricata-report .miss-row__fill.bad {
+  background: var(--q-bad);
+}
+
+#pysuricata-report .miss-row__value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: right;
+}
+
+/* --q-warn-text on a figure, not --q-warn-fill: the fill step sits below the
+   text minimum on purpose so a bar can be lighter than a word. */
+#pysuricata-report .miss-row__value.good {
+  color: var(--muted);
+}
+
+#pysuricata-report .miss-row__value.warn {
+  color: var(--q-warn-text);
+}
+
+#pysuricata-report .miss-row__value.bad {
+  color: var(--q-bad);
+}
+
+/* ---- the by-chunk strip ---------------------------------------- */
+#pysuricata-report .miss-strip {
+  display: flex;
+  gap: 1px;
+  height: 14px;
+  min-width: 0;
+}
+
+#pysuricata-report .miss-seg {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#pysuricata-report .miss-seg.good {
+  background: var(--q-good);
+}
+
+#pysuricata-report .miss-seg.warn {
+  background: var(--q-warn-fill);
+}
+
+#pysuricata-report .miss-seg.bad {
+  background: var(--q-bad);
+}
+
+/* No rail at all when the counts are not kept for this column kind. A blank
+   rail would read as "no missing values in any chunk". */
+#pysuricata-report .miss-strip.is-untracked {
+  background: transparent;
+}
+
+#pysuricata-report .miss-strip-note,
+#pysuricata-report .miss-none {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+
+#pysuricata-report .miss-legend {
+  display: flex;
+  gap: 16px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+#pysuricata-report .miss-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+#pysuricata-report .miss-legend .sw {
+  width: 9px;
+  height: 9px;
+}
+
+#pysuricata-report .miss-legend .sw.good {
+  background: var(--q-good);
+}
+
+#pysuricata-report .miss-legend .sw.warn {
+  background: var(--q-warn-fill);
+}
+
+#pysuricata-report .miss-legend .sw.bad {
+  background: var(--q-bad);
+}
+
+@media (max-width: 768px) {
+  #pysuricata-report .miss-row,
+  #pysuricata-report .miss-rows.has-strip .miss-row {
+    grid-template-columns: 1fr 110px;
+  }
+
+  /* The strip stacks under its row rather than shrinking to nothing. */
+  #pysuricata-report .miss-row__bar,
+  #pysuricata-report .miss-strip {
+    grid-column: 1 / -1;
+  }
+}
+
 /* =============================
    Summary → Top missing columns: fixed vertical height (5 rows)
    ============================= */
@@ -10827,13 +10998,13 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-16 05:00:18</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-16 05:17:08</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <span><span class="k">Profiled in</span> <span class="v">0.13 s</span></span>
+            <span><span class="k">Profiled in</span> <span class="v">0.12 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Shape</span> <span class="v">891 rows × 12 columns</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.59</a>
+            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.60</a>
           </div>
         </div>
 
@@ -10871,7 +11042,7 @@ body.suricata-standalone:not(.light) {
             </div>
             <div class="stat stat--elapsed">
               <div class="stat__cap">Elapsed</div>
-              <div class="stat__val">0.13 s</div>
+              <div class="stat__val">0.12 s</div>
               <div class="stat__sub">wall clock</div>
             </div>
           </div>
@@ -10921,7 +11092,7 @@ body.suricata-standalone:not(.light) {
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260816-050018-2164" data-original-markdown=""
+            data-report-id="20260816-051708-7298" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>
@@ -13135,122 +13306,10 @@ body.suricata-standalone:not(.light) {
           <h2 class="section-title">Missing Values</h2>
           
         <div class="missing-values-section-redesign">
-            <div class="missing-tabs-header">
-                <div class="missing-tabs">
-                    <button class="active" data-tab="completeness">Data Completeness</button>
-                    <button data-tab="chunks">Missing per Chunk</button>
-                </div>
-                <span class="missing-count-badge">3 columns with missing values</span>
-            </div>
-
-            <div class="missing-tab-content active" data-tab="completeness">
-                
-        <div class="scrollable-list">
-            
-            <div class="compact-row">
-                <code class="col-name missing-col" title="Cabin">Cabin</code>
-                
-        <div class="completeness-bar-dual" title="Total: 891 values">
-            <div class="bar-fill present" style="width: 22.9%"
-                 title="Present: 204 (22.9%)"></div>
-            <div class="bar-fill missing" style="width: 77.1%"
-                 title="Missing: 687 (77.1%)"></div>
-        </div>
-        
-            </div>
-            
-            <div class="compact-row">
-                <code class="col-name missing-col" title="Age">Age</code>
-                
-        <div class="completeness-bar-dual" title="Total: 891 values">
-            <div class="bar-fill present" style="width: 80.1%"
-                 title="Present: 714 (80.1%)"></div>
-            <div class="bar-fill missing" style="width: 19.9%"
-                 title="Missing: 177 (19.9%)"></div>
-        </div>
-        
-            </div>
-            
-            <div class="compact-row">
-                <code class="col-name missing-col" title="Embarked">Embarked</code>
-                
-        <div class="completeness-bar-dual" title="Total: 890 values">
-            <div class="bar-fill present" style="width: 99.8%"
-                 title="Present: 888 (99.8%)"></div>
-            <div class="bar-fill missing" style="width: 0.2%"
-                 title="Missing: 2 (0.2%)"></div>
-        </div>
-        
-            </div>
-            
-        </div>
-        
-            </div>
-
-            <div class="missing-tab-content" data-tab="chunks">
-                
-        <div class="chunk-legend">
-            <span class="legend-label">Missing per chunk:</span>
-            <div class="legend-item">
-                <span class="legend-color low"></span>
-                <span class="legend-text">≤5%</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color medium"></span>
-                <span class="legend-text">5-20%</span>
-            </div>
-            <div class="legend-item">
-                <span class="legend-color high"></span>
-                <span class="legend-text">&gt;20%</span>
-            </div>
-        </div>
-        <div class="scrollable-list">
-            
-            <div class="compact-row">
-                <code class="col-name missing-col" title="Cabin">Cabin</code>
-                <div class="chunk-spectrum">
-                <div class="chunk-segment high"
-                     style="width: 100.00%"
-                     title="Chunk 1 (rows 0-890): 687 missing (77.1%)"
-                     data-chunk="1"
-                     data-start="0"
-                     data-end="890"
-                     data-missing="687"
-                     data-pct="77.1"></div>
-                </div>
-            </div>
-            
-            <div class="compact-row">
-                <code class="col-name missing-col" title="Age">Age</code>
-                <div class="chunk-spectrum">
-                <div class="chunk-segment medium"
-                     style="width: 100.00%"
-                     title="Chunk 1 (rows 0-890): 177 missing (19.9%)"
-                     data-chunk="1"
-                     data-start="0"
-                     data-end="890"
-                     data-missing="177"
-                     data-pct="19.9"></div>
-                </div>
-            </div>
-            
-            <div class="compact-row">
-                <code class="col-name missing-col" title="Embarked">Embarked</code>
-                <div class="chunk-spectrum">
-                <div class="chunk-segment low"
-                     style="width: 100.00%"
-                     title="Chunk 1 (rows 0-889): 2 missing (0.2%)"
-                     data-chunk="1"
-                     data-start="0"
-                     data-end="889"
-                     data-missing="2"
-                     data-pct="0.2"></div>
-                </div>
-            </div>
-            
-        </div>
-        
-            </div>
+            <p class="micro-label">3 of 12 columns carry missing values</p>
+            <ul class="miss-rows"><li class="miss-row"><code class="miss-row__name" title="Cabin">Cabin</code><span class="miss-row__bar"><span class="miss-row__fill bad" style="width:77.1%"></span></span><span class="miss-row__value bad">687 (77.1%)</span></li><li class="miss-row"><code class="miss-row__name" title="Age">Age</code><span class="miss-row__bar"><span class="miss-row__fill warn" style="width:19.9%"></span></span><span class="miss-row__value warn">177 (19.9%)</span></li><li class="miss-row"><code class="miss-row__name" title="Embarked">Embarked</code><span class="miss-row__bar"><span class="miss-row__fill good" style="width:0.2%"></span></span><span class="miss-row__value good">2 (0.2%)</span></li></ul>
+            <ul class="miss-legend"><li><span class="sw good"></span>≤5%</li><li><span class="sw warn"></span>5–20%</li><li><span class="sw bad"></span>&gt;20%</li></ul>
+            <p class="miss-complete">9 of 12 columns are complete</p>
         </div>
         
         </section>
