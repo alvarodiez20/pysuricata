@@ -585,59 +585,14 @@
    Description Editor
    ============================= */
 
-/* Description section styling - compact dropdown */
-#pysuricata-report .description-value {
-  font-family: var(--font-sans);
-  font-size: 0.9rem;
-  line-height: 1.4;
-  color: var(--text-primary);
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  min-height: 1.2rem;
-  /* Removed: max-height, overflow constraints for dynamic sizing */
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  display: flex;
-  align-items: flex-start;
-}
-
-#pysuricata-report .description-value:hover:not(.editing) {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-#pysuricata-report:not(.light) .description-value:hover:not(.editing) {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-#pysuricata-report .description-value:empty::before {
-  content: "Click to add description...";
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-/* Edit mode */
-#pysuricata-report .description-value.editing {
-  border-color: var(--bar);
-  background: var(--bg-secondary);
-  cursor: text;
-}
+/* `.description-value` styling lived here until the block was renamed to
+   `.description-block` (styled in _03-summary.css, next to the layout it
+   belongs to). The rules were dead -- no element has carried that class since
+   -- and are removed rather than renamed: the block is a margin note now, not
+   a compact dropdown, and the two rulesets disagreed about nearly everything. */
 
 #pysuricata-report .description-content {
   margin: 0;
-}
-
-
-#pysuricata-report .description-content .placeholder {
-  color: var(--text-muted);
-  font-style: italic;
-  font-size: 0.85rem;
 }
 
 /* Textarea editor */
