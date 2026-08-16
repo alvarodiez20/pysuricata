@@ -19,6 +19,33 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.72] - 2026-08-16
+
+### Changed
+- **The categorical, datetime and boolean cards are restacked (#158).** #114 did this for the numeric card and left the other three on `.triple-row`, so a report mixing column types showed two different card architectures side by side — which is more jarring than either alone.
+
+  All four now emit a full-width chart above a single `vstat-row`. Measured at 390 × 844 on `docs/assets/titanic.csv`, details collapsed:
+
+  | card kind | before | after |
+  |---|---:|---:|
+  | categorical (`SibSp`) | 923px | **648px** (−30%) |
+  | boolean (`Survived`) | 475px | **395px** |
+  | numeric (`Fare`) | 820px | **820px** — unchanged, as intended |
+
+  `_build_stat_row` moves to `CardRenderer`; four copies would drift.
+
+- **170 lines of dead CSS removed** — the `.triple-row` grid and the `.stats-left` / `.stats-right` table rules, which styled boxes nothing emits any more.
+
+### Fixed
+- The boolean split bar was `height: 100%` inside a box that set a height. `.var-chart` does not, so it resolved against nothing and collapsed the bar to 29px. The height is now stated rather than inherited from a parent that stopped providing one.
+
+### Note
+Three mistakes were made getting here and are worth recording, because each was caught by measurement rather than by review.
+
+1. Rescoping `.triple-row .chart` → `.var-chart` in `_06-cards.css` made the *old* layout's rules apply on top of the ones #114 wrote for the new one. The numeric card grew 40px. That file keeps #114's rules and simply drops the dead blocks.
+2. A comment three lines above `.card-controls` contained the words `.triple-row`, and the block-remover's `[^{}]*` crossed newlines — so it deleted the comment **and the rule below it**. Comments are masked before matching now.
+3. Type-specific chart rules were stripped before being rescoped, so datetime lost its chart sizing. Order matters: rescope, then strip.
+
 ## [0.0.71] - 2026-08-16
 
 ### Fixed
@@ -34,7 +61,6 @@ Nothing yet. Planned work is tracked in
 
 ### Note on the original report
 The issue title said *CI has never run on main*. That was imprecise: `accuracy.yml` and `docs.yml` already carried `push: branches: [main]`. What had never run on `main` was `ci.yml` — which is where `lint` and `test` live, so the substance of the finding holds and its scope was smaller than stated.
-
 ## [0.0.70] - 2026-08-16
 ## [0.0.68] - 2026-08-16
 

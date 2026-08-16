@@ -126,8 +126,10 @@ class CategoricalCardRenderer(CardRenderer):
 
         # Build components
         approx_badge = self._build_approx_badge(stats.approx)
-        left_table = self._build_left_table(stats, miss_cls, miss_pct, cat_stats)
-        right_table = self._build_right_table(cat_stats)
+        stat_row = self._build_stat_row(
+            self._left_stats(stats, miss_cls, miss_pct, cat_stats)
+            + self._right_stats(cat_stats)
+        )
 
         # Chart and details
         items = stats.top_items or []
@@ -158,8 +160,7 @@ class CategoricalCardRenderer(CardRenderer):
             stats,
             approx_badge,
             quality_flags_html,
-            left_table,
-            right_table,
+            stat_row,
             chart_html,
             details_html,
             controls_html,
@@ -262,10 +263,10 @@ class CategoricalCardRenderer(CardRenderer):
             else ""
         )
 
-    def _build_left_table(
+    def _left_stats(
         self, stats: CategoricalStats, miss_cls: str, miss_pct: float, cat_stats: dict
-    ) -> str:
-        """Build left statistics table."""
+    ) -> list[tuple[str, str, str | None]]:
+        """The counting half of the stat row: how many, and how many of each."""
         self.format_bytes(int(getattr(stats, "mem_bytes", 0)))
 
         data = [
@@ -289,10 +290,10 @@ class CategoricalCardRenderer(CardRenderer):
             ),
         ]
 
-        return self.table_builder.build_key_value_table(data)
+        return data
 
-    def _build_right_table(self, cat_stats: dict) -> str:
-        """Build right statistics table."""
+    def _right_stats(self, cat_stats: dict) -> list[tuple[str, str, str | None]]:
+        """The shape half: how the levels are distributed."""
         data = [
             ("Entropy", self.format_number(cat_stats["entropy"]), "num"),
             (
@@ -318,7 +319,7 @@ class CategoricalCardRenderer(CardRenderer):
             ),
         ]
 
-        return self.table_builder.build_key_value_table(data)
+        return data
 
     def _get_topn_candidates(
         self, items: Sequence[tuple[str, int]]
@@ -642,8 +643,7 @@ class CategoricalCardRenderer(CardRenderer):
         stats: CategoricalStats,
         approx_badge: str,
         quality_flags_html: str,
-        left_table: str,
-        right_table: str,
+        stat_row: str,
         chart_html: str,
         details_html: str,
         controls_html: str,
@@ -669,12 +669,9 @@ class CategoricalCardRenderer(CardRenderer):
                 {info_button}
             </header>
             <div class="var-card__body">
-                <div class="triple-row">
-                    <div class="box stats-left">{left_table}</div>
-                    <div class="box stats-right">{right_table}</div>
-                    <div class="box chart">{chart_html}</div>
-                </div>
+                <div class="var-chart">{chart_html}</div>
                 {controls_html}
+                {stat_row}
                 {details_html}
             </div>
         </article>

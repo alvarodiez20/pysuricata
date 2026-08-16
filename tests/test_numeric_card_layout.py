@@ -18,6 +18,7 @@ the one inside the sample table's own scroll pane.
 
 from __future__ import annotations
 
+import pathlib
 import re
 from pathlib import Path
 
@@ -99,21 +100,57 @@ class TestTheCardIsRestacked:
             assert f">{label}</div>" in card, label
 
 
-class TestTheOtherCardsStillHaveTheirLayout:
-    """#114 is the numeric card only. The categorical, boolean and datetime
-    cards are phases 5.3 and 5.4 and still emit `.triple-row` -- deleting the
-    generic grid with the numeric restack flattened all three at once."""
+class TestEveryCardKindIsRestacked:
+    """#114 restacked the numeric card only, and this class used to assert the
+    opposite of what it asserts now -- that categorical, boolean and datetime
+    *still* emitted `.triple-row`, because deleting the generic grid alongside
+    the numeric restack flattened all three at once.
 
-    @pytest.mark.parametrize("kind", ["categorical", "boolean", "datetime"])
-    def test_it_still_emits_the_three_column_body(self, html, kind):
-        assert 'class="triple-row"' in _card(html, kind)
+    That was a holding position, not the destination: a report mixing column
+    types showed two different card architectures side by side, which is more
+    jarring than either alone. #158 finished the job, so the guard now points
+    at where the cards were going rather than where they were left.
+    """
 
-    def test_the_grid_that_lays_it_out_still_exists(self):
-        block = CARDS_CSS.split("#pysuricata-report .var-card__body .triple-row {", 1)[
-            1
-        ].split("}", 1)[0]
-        assert "display: grid" in block
-        assert "grid-template-columns" in block
+    @pytest.mark.parametrize("kind", ["numeric", "categorical", "boolean", "datetime"])
+    def test_it_emits_a_full_width_stat_row(self, html, kind):
+        assert 'class="vstat-row"' in _card(html, kind)
+
+    @pytest.mark.parametrize("kind", ["numeric", "categorical", "boolean", "datetime"])
+    def test_the_three_column_body_is_gone(self, html, kind):
+        assert "triple-row" not in _card(html, kind)
+
+    @pytest.mark.parametrize("kind", ["numeric", "categorical", "boolean", "datetime"])
+    def test_the_row_is_not_empty(self, html, kind):
+        """A card that restacked into nothing would pass both assertions
+        above."""
+        assert _card(html, kind).count('class="vstat"') >= 4
+
+    def test_no_renderer_emits_the_old_grid(self):
+        root = pathlib.Path(__file__).resolve().parents[1] / "pysuricata" / "render"
+        offenders = [
+            path.name
+            for path in sorted(root.glob("*_card.py"))
+            if "triple-row" in path.read_text(encoding="utf-8")
+        ]
+        assert not offenders, offenders
+
+    def test_the_stat_row_is_built_once_for_every_kind(self):
+        """It lives on `CardRenderer`. Four copies would drift."""
+        base = (
+            pathlib.Path(__file__).resolve().parents[1]
+            / "pysuricata"
+            / "render"
+            / "card_base.py"
+        )
+        assert "def _build_stat_row(" in base.read_text(encoding="utf-8")
+        root = base.parent
+        copies = [
+            path.name
+            for path in sorted(root.glob("*_card.py"))
+            if "def _build_stat_row(" in path.read_text(encoding="utf-8")
+        ]
+        assert not copies, copies
 
 
 # --------------------------------------------------------------------------- #

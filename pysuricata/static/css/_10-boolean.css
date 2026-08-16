@@ -60,30 +60,15 @@
 }
 
 /* When boolean chart sits in the chart cell, make sure it aligns vertically like others */
-#pysuricata-report .var-card__body .triple-row .chart .bool-svg {
+#pysuricata-report .var-card__body .var-chart .bool-svg {
   width: 100%;
   height: 100%;
 }
 
-/* Optional: compact labels in boolean tables (inherits your kv table look) */
-#pysuricata-report .var-card__body .triple-row .stats-left table.kv,
-#pysuricata-report .var-card__body .triple-row .stats-right table.kv {
-  table-layout: fixed;
-}
 
-#pysuricata-report .var-card__body .triple-row .stats-left table.kv th,
-#pysuricata-report .var-card__body .triple-row .stats-left table.kv td,
-#pysuricata-report .var-card__body .triple-row .stats-right table.kv th,
-#pysuricata-report .var-card__body .triple-row .stats-right table.kv td {
-  white-space: nowrap;
-}
 
 /* Only apply ellipsis to td (values), not th (labels) */
-#pysuricata-report .var-card__body .triple-row .stats-left table.kv td,
-#pysuricata-report .var-card__body .triple-row .stats-right table.kv td {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+
 
 /* Theme-aware Boolean Chart Styling */
 .boolean-chart.enhanced {
@@ -241,5 +226,21 @@
   .legend-color {
     width: 10px;
     height: 10px;
+  }
+}
+
+/* The split bar, in the restacked card (#158).
+   It was `width: 100%; height: 100%` inside a `.triple-row .chart` box that
+   set a height of its own. `.var-chart` does not, so `height: 100%` resolved
+   against nothing and collapsed the bar to 29px. Stated here rather than
+   inherited from a parent that no longer sets one. */
+#pysuricata-report .var-card__body .var-chart .bool-svg {
+  width: 100%;
+  height: 120px;
+}
+
+@media (max-width: 768px) {
+  #pysuricata-report .var-card__body .var-chart .bool-svg {
+    height: 96px;
   }
 }

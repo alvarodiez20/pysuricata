@@ -764,35 +764,11 @@
   }
 }
 
-/* === Numeric card triple layout: two tables + histogram in one row === */
-/* The three-column card body, still used by the categorical, boolean and
-   datetime cards. The numeric card no longer emits `.triple-row` -- it is
-   restacked below -- but those three are phases 5.3 and 5.4, so this layout
-   has to keep working until they follow. Removing it with the numeric restack
-   silently flattened all three. */
-#pysuricata-report .var-card__body .triple-row {
-  display: grid;
-  grid-template-columns: var(--triple-left) var(--triple-right) 1fr;
-  gap: 12px;
-  align-items: end;
-}
 
-#pysuricata-report .var-card__body .triple-row .box {
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  padding: 0;
-}
 
-#pysuricata-report .var-card__body .triple-row .chart .hist-variants .hist.variant {
-  height: 100%;
-}
 
-#pysuricata-report .var-card__body .triple-row .chart .hist-variants .hist.variant>svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
+
+
 
 /* ---- the scale and bins toggles ------------------------------- */
 /* Two problems at once. They were inline links, so the target was just the
@@ -962,165 +938,57 @@
   display: block;
 }
 
-#pysuricata-report .var-card__body .triple-row .chart .hist-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
 
-#pysuricata-report .var-card__body .triple-row .chart .hist-controls {
-  margin-top: 6px;
-}
 
-#pysuricata-report .var-card__body .triple-row .chart .hist-status {
-  margin-top: 2px;
-  font-size: .85rem;
-  opacity: .85;
-}
+
 
 /* Make the histogram fill the same height as the tables */
-#pysuricata-report .var-card__body .triple-row {
-  align-items: end;
-  /* Align bottoms: ensure consistent alignment across all three columns */
-}
 
-#pysuricata-report .var-card__body .triple-row .chart {
-  display: flex;
-  flex-direction: column;
-  justify-content: stretch;
-  align-self: stretch;
-  min-height: 0;
-  padding-bottom: 0;
-  /* Remove extra padding to let histogram's margin_bottom (40px) control spacing */
-}
 
-#pysuricata-report .var-card__body .triple-row .chart .hist-variants {
-  flex: 1 1 auto;
-  min-height: 200px;
-}
+
+
+
 
 /* Override any generic SVG sizing (e.g., .viz svg { height:80px }) so the hist grows */
-#pysuricata-report .var-card__body .triple-row .chart .hist-variants svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
+
 
 /* Stack on narrow screens */
 @media (max-width: 768px) {
-  #pysuricata-report .var-card__body .triple-row .chart .hist-variants {
-    min-height: 220px;
-  }
+
 }
-
-@media (max-width: 1024px) {
-  #pysuricata-report .var-card__body .triple-row {
-    grid-template-columns: 1fr;
-  }
-}
-
-
-
-/* === Formatting: stats tables (left/right) inside triple layout === */
-#pysuricata-report .var-card__body .triple-row .stats-left table,
-#pysuricata-report .var-card__body .triple-row .stats-right table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-variant-numeric: tabular-nums;
-  font-size: .92rem;
-  /* slightly smaller, modern */
-  line-height: 1.35;
 }
 
 /* Ensure tables have bottom margin to align with histogram tick labels */
-#pysuricata-report .var-card__body .triple-row .stats-left,
-#pysuricata-report .var-card__body .triple-row .stats-right {
-  padding-bottom: 0;
-  margin-bottom: 20px;
-  /* Aligns bottom row with x-axis tick labels (~20px below x-axis line) */
-}
 
-#pysuricata-report .var-card__body .triple-row .stats-left th,
-#pysuricata-report .var-card__body .triple-row .stats-left td,
-#pysuricata-report .var-card__body .triple-row .stats-right th,
-#pysuricata-report .var-card__body .triple-row .stats-right td {
-  padding: 6px 8px;
-  /* slightly tighter */
-  border: 0;
-  vertical-align: middle;
-}
 
-#pysuricata-report .var-card__body .triple-row .stats-left thead th,
-#pysuricata-report .var-card__body .triple-row .stats-right thead th {
-  background: transparent;
-  /* modern, flat header */
-  color: inherit;
-  border: 0;
-  font-weight: 600;
-  font-size: .9rem;
-  letter-spacing: .01em;
-  text-transform: none;
-}
+
+
+
 
 /* modern header–body divider */
-#pysuricata-report .var-card__body .triple-row .stats-left thead tr,
-#pysuricata-report .var-card__body .triple-row .stats-right thead tr {
-  border-bottom: 1px solid var(--border-color);
-}
 
-#pysuricata-report .var-card__body .triple-row .stats-left tbody tr:nth-child(even),
-#pysuricata-report .var-card__body .triple-row .stats-right tbody tr:nth-child(even) {
-  background: rgba(0, 0, 0, 0.015);
-}
 
-#pysuricata-report:not(.light) .var-card__body .triple-row .stats-left tbody tr:nth-child(even),
-#pysuricata-report:not(.light) .var-card__body .triple-row .stats-right tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.03);
-}
 
-#pysuricata-report .var-card__body .triple-row .stats-left th[scope="row"],
-#pysuricata-report .var-card__body .triple-row .stats-right th[scope="row"] {
-  background: transparent;
-  font-weight: 600;
-}
+
+
+
+
 
 /* Row separators only (no cell borders) */
-#pysuricata-report .var-card__body .triple-row .stats-left tbody tr+tr>th,
-#pysuricata-report .var-card__body .triple-row .stats-left tbody tr+tr>td,
-#pysuricata-report .var-card__body .triple-row .stats-right tbody tr+tr>th,
-#pysuricata-report .var-card__body .triple-row .stats-right tbody tr+tr>td {
-  border-top: 1px solid var(--divider);
-}
+
 
 /* Subtle hover for modern feel */
-#pysuricata-report .var-card__body .triple-row .stats-left tbody tr:hover,
-#pysuricata-report .var-card__body .triple-row .stats-right tbody tr:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
 
-#pysuricata-report:not(.light) .var-card__body .triple-row .stats-left tbody tr:hover,
-#pysuricata-report:not(.light) .var-card__body .triple-row .stats-right tbody tr:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
+
+
 
 /* Clean, modern alignment */
-#pysuricata-report .var-card__body .triple-row .stats-left tbody td:first-child,
-#pysuricata-report .var-card__body .triple-row .stats-right tbody td:first-child {
-  color: var(--axis-text);
-}
 
-#pysuricata-report .var-card__body .triple-row .stats-left tbody td:last-child,
-#pysuricata-report .var-card__body .triple-row .stats-right tbody td:last-child {
-  text-align: right;
-  font-weight: normal;
-}
+
+
 
 /* Make left column labels bold in general var analysis tables */
-#pysuricata-report .var-card__body .triple-row .stats-left tbody th,
-#pysuricata-report .var-card__body .triple-row .stats-right tbody th {
-  font-weight: 600;
-}
+
 
 /* === Formatting: histogram SVG & axes inside cards === */
 

@@ -33,8 +33,10 @@ class BooleanCardRenderer(CardRenderer):
         )
 
         # Build components
-        left_table = self._build_left_table(stats, cnt, miss_cls, miss_pct)
-        right_table = self._build_right_table(stats, true_pct_total, false_pct_total)
+        stat_row = self._build_stat_row(
+            self._left_stats(stats, cnt, miss_cls, miss_pct)
+            + self._right_stats(stats, true_pct_total, false_pct_total)
+        )
 
         # Chart (without card container)
         chart_html = self._build_boolean_chart(stats)
@@ -49,8 +51,7 @@ class BooleanCardRenderer(CardRenderer):
             safe_name,
             stats,
             quality_flags_html,
-            left_table,
-            right_table,
+            stat_row,
             chart_html,
             details_html,
         )
@@ -90,7 +91,7 @@ class BooleanCardRenderer(CardRenderer):
             else ""
         )
 
-    def _build_left_table(
+    def _left_stats(
         self, stats: BooleanStats, cnt: int, miss_cls: str, miss_pct: float
     ) -> str:
         """Build left statistics table."""
@@ -102,9 +103,9 @@ class BooleanCardRenderer(CardRenderer):
             ("Unique", f"{unique_vals}", "num"),
         ]
 
-        return self.table_builder.build_key_value_table(data)
+        return data
 
-    def _build_right_table(
+    def _right_stats(
         self, stats: BooleanStats, true_pct_total: float, false_pct_total: float
     ) -> str:
         """Build right statistics table."""
@@ -116,7 +117,7 @@ class BooleanCardRenderer(CardRenderer):
             ("Processed bytes (≈)", mem_display, "num"),
         ]
 
-        return self.table_builder.build_key_value_table(data)
+        return data
 
     def _build_boolean_chart(self, stats: BooleanStats) -> str:
         """Build boolean chart without card container."""
@@ -503,8 +504,7 @@ class BooleanCardRenderer(CardRenderer):
         safe_name: str,
         stats: BooleanStats,
         quality_flags_html: str,
-        left_table: str,
-        right_table: str,
+        stat_row: str,
         chart_html: str,
         details_html: str,
     ) -> str:
@@ -528,11 +528,8 @@ class BooleanCardRenderer(CardRenderer):
                 {info_button}
             </header>
             <div class="var-card__body">
-                <div class="triple-row">
-                    <div class="box stats-left">{left_table}</div>
-                    <div class="box stats-right">{right_table}</div>
-                    <div class="box chart">{chart_html}</div>
-                </div>
+                <div class="var-chart">{chart_html}</div>
+                {stat_row}
                 <div class="card-controls" role="group" aria-label="Column controls">
                     <div class="details-slot">
                         <button type="button" class="details-toggle btn-soft" aria-controls="{col_id}-details" aria-expanded="false">Details</button>
