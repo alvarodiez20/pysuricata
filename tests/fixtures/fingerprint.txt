@@ -965,7 +965,6 @@ kv::col_age::q3 (p75)	61
 kv::col_age::range	78
 kv::col_age::skew	-0.07823
 kv::col_age::std dev	23.01
-kv::col_age::std dev	23.01
 kv::col_age::std error	0.7708
 kv::col_age::unique	79
 kv::col_age::variance	529.3
@@ -1014,7 +1013,6 @@ kv::col_fare::q3 (p75)	54.23
 kv::col_fare::q3 (p75)	54.23
 kv::col_fare::range	175.9
 kv::col_fare::skew	1.307
-kv::col_fare::std dev	28.4
 kv::col_fare::std dev	28.4
 kv::col_fare::std error	0.9513
 kv::col_fare::unique	891

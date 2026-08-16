@@ -93,6 +93,12 @@ def _stats(**overrides) -> NumericStats:
     return NumericStats(**base)
 
 
+def _quantiles(p1, p5, p10, p90, p95, p99):
+    from pysuricata.render.card_types import QuantileData
+
+    return QuantileData(p1=p1, p5=p5, p10=p10, p90=p90, p95=p95, p99=p99)
+
+
 def _fmt(value: float) -> str:
     return f"{value:,.3g}"
 
@@ -617,3 +623,153 @@ class TestEveryPartnerIsShown:
         section = CorrelationsSectionRenderer()._diverging_bar(-0.42, "var(--data-2)")
         pane = self._renderer()._diverging_bar(-0.42)
         assert section == pane
+
+
+class TestTheQuantileStripIsAShape:
+    """5b.1. The nine percentiles were a column of numbers printed directly
+    under a histogram that draws the very shape they describe, so the two
+    could not be read against each other. Every number in the strip was
+    already in the two tables below it — what changes is that they are on an
+    axis."""
+
+    def _fence(self, **overrides):
+        stats = _stats(
+            sample_vals=[float(v) for v in range(0, 101)],
+            min=0.0,
+            max=100.0,
+            **overrides,
+        )
+        return build_fence(stats, _quantiles(1.0, 5.0, 10.0, 90.0, 95.0, 99.0)), stats
+
+    def test_the_whiskers_terminate_at_the_band_edges(self):
+        """One span running P1 to P99 paints *across* the box, which reads as
+        a range that contains it — a different and weaker claim than the two
+        the box actually makes."""
+        from pysuricata.render.outlier_fence import render_quantile_strip
+
+        fence, _ = self._fence()
+        html = render_quantile_strip(
+            fence, _quantiles(1.0, 5.0, 10.0, 90.0, 95.0, 99.0), _fmt
+        )
+        spans = re.findall(
+            r'qstrip__whisker" style="left:([\d.]+)%;width:([\d.]+)%', html
+        )
+        assert len(spans) == 2, "two spans, not one across the box"
+
+        box = re.search(r'qstrip__box" style="left:([\d.]+)%;width:([\d.]+)%', html)
+        box_left, box_width = float(box.group(1)), float(box.group(2))
+        box_right = box_left + box_width
+
+        (lo_left, lo_width), (hi_left, hi_width) = (
+            (float(a), float(b)) for a, b in spans
+        )
+        assert abs((float(lo_left) + float(lo_width)) - box_left) < 0.01
+        assert abs(float(hi_left) - box_right) < 0.01
+
+    def test_the_mean_and_median_are_different_shapes(self):
+        """They land ~24px apart inside a dark fill, so they are told apart by
+        shape rather than colour — rule 2 of the token system."""
+        from pysuricata.render.outlier_fence import render_quantile_strip
+
+        fence, _ = self._fence()
+        html = render_quantile_strip(
+            fence, _quantiles(1.0, 5.0, 10.0, 90.0, 95.0, 99.0), _fmt
+        )
+        assert "qstrip__median" in html and "qstrip__mean" in html
+
+    def test_the_median_is_never_dropped_from_the_ladder(self):
+        """The first version walked left to right dropping whichever point
+        crowded its neighbour. On `Fare`, where P1 through Q3 all land in the
+        first fifth of the axis, that kept `Q3` and dropped **`P50`** purely by
+        arrival order — the one figure a reader looks for first."""
+        from pysuricata.render.outlier_fence import render_quantile_strip
+
+        # A hard right skew: every low percentile piles into the first
+        # few percent of the axis.
+        stats = _stats(
+            sample_vals=[1.0] * 90 + [500.0] * 10,
+            min=1.0,
+            max=500.0,
+            q1=1.0,
+            q3=2.0,
+            median=1.0,
+            mean=51.0,
+        )
+        fence = build_fence(stats, _quantiles(1.0, 1.0, 1.0, 400.0, 450.0, 490.0))
+        assert fence is not None
+        html = render_quantile_strip(
+            fence, _quantiles(1.0, 1.0, 1.0, 400.0, 450.0, 490.0), _fmt
+        )
+        names = re.findall(r'qstrip__name">([^<]+)<', html)
+        assert "P50" in names, names
+        assert "P1" in names and "P99" in names, names
+
+    def test_crowded_ticks_are_dropped(self):
+        from pysuricata.render.outlier_fence import render_quantile_strip
+
+        stats = _stats(
+            sample_vals=[1.0] * 90 + [500.0] * 10,
+            min=1.0,
+            max=500.0,
+            q1=1.0,
+            q3=2.0,
+            median=1.0,
+        )
+        fence = build_fence(stats, _quantiles(1.0, 1.0, 1.0, 400.0, 450.0, 490.0))
+        html = render_quantile_strip(
+            fence, _quantiles(1.0, 1.0, 1.0, 400.0, 450.0, 490.0), _fmt
+        )
+        names = re.findall(r'qstrip__name">([^<]+)<', html)
+        assert len(names) < 9, f"nothing was dropped on a hard skew: {names}"
+
+    def test_labels_alternate_between_two_rows(self):
+        """A pair that clears the 4% drop rule can still be adjacent, and two
+        labels on one line at 4% apart touch."""
+        from pysuricata.render.outlier_fence import render_quantile_strip
+
+        fence, _ = self._fence()
+        html = render_quantile_strip(
+            fence, _quantiles(1.0, 5.0, 10.0, 90.0, 95.0, 99.0), _fmt
+        )
+        rows = [int(r) for r in re.findall(r'qstrip__label" data-row="(\d+)"', html)]
+        assert rows == sorted(rows)
+        assert any(r % 2 for r in rows), "no label ever reaches the second row"
+
+
+class TestTheThresholdsAreSpent:
+    """`data-threshold="JB χ² < 5.99"` has been in the DOM all along and never
+    rendered, so a reader was handed 18.63 with no way to judge it."""
+
+    def _renderer(self):
+        from pysuricata.render.numeric_card import NumericCardRenderer
+
+        return NumericCardRenderer()
+
+    def test_jarque_bera_is_judged_against_its_critical_value(self):
+        html = self._renderer()._shape_prose(_stats(jb_chi2=18.79))
+        assert "5.99" in html
+        assert "reject" in html
+
+    def test_a_normal_looking_column_says_so(self):
+        html = self._renderer()._shape_prose(_stats(jb_chi2=1.2))
+        assert "consistent with a normal distribution" in html
+
+    def test_the_interval_is_a_width_not_two_endpoints(self):
+        html = self._renderer()._shape_prose(
+            _stats(mean=29.7, ci_lo=28.634, ci_hi=30.766)
+        )
+        assert "±1.066" in html
+
+    def test_std_dev_is_printed_once(self):
+        """It was in both tables — a moment and an order statistic at the same
+        weight, which is exactly what this phase is about."""
+        renderer = self._renderer()
+        stats = _stats(std=23.01)
+        quantiles = _quantiles(1.0, 5.0, 10.0, 90.0, 95.0, 99.0)
+        pane = renderer._build_statistics_pane(
+            stats,
+            quantiles,
+            renderer._build_stats_table(stats),
+            renderer._build_quant_stats_table(stats, quantiles),
+        )
+        assert pane.count("Std Dev") == 1

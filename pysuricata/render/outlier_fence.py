@@ -92,6 +92,10 @@ class Fence:
     q1: float
     q3: float
     median: float
+    #: Read only by the quantile strip, where it is the caret sitting above the
+    #: band. It lands ~24px from the median inside a dark fill, so the two are
+    #: told apart by shape rather than colour -- rule 2 of the token system.
+    mean: float
     whisker_lo: float
     whisker_hi: float
     #: The axis: the column's own range, and nothing wider.
@@ -292,6 +296,7 @@ def build_fence(stats, quantiles=None) -> Fence | None:
         q1=float(q1),
         q3=float(q3),
         median=float(median),
+        mean=float(stats.mean) if _finite(stats.mean) else float("nan"),
         whisker_lo=_whisker(quantiles, "p1", value_lo),
         whisker_hi=_whisker(quantiles, "p99", value_hi),
         value_lo=value_lo,
@@ -653,3 +658,146 @@ def render_table(fence: Fence, fmt, col_id: str = "") -> str:
     )
 
     return f'<div class="fence-table">{head}{rows}</div>{note}'
+
+
+# --------------------------------------------------------------------------- #
+# the quantile strip (5b.1)
+# --------------------------------------------------------------------------- #
+
+#: Two ladder ticks closer than this, as a percentage of the axis, print only
+#: the outer one. On `Fare`, P1 through Q3 all land in the first fifth of the
+#: axis and every label in that fifth overprints its neighbour. The values stay
+#: in the table below, which is where a reader looks for a figure anyway.
+_LADDER_MIN_GAP_PCT = 4.0
+
+
+def render_quantile_strip(fence: Fence, quantiles, fmt) -> str:
+    """The nine percentiles as a shape, on the axis the other panes use.
+
+    Phase 5b.1 (#154). They were a column of numbers printed directly under a
+    histogram that draws the very shape they describe, and the two could not be
+    read against each other. On one axis they become one picture -- and what a
+    reader learns from it is not in the table at all: that the middle half of
+    `Age` sits in a narrow band well left of centre.
+
+    Three details are requirements rather than choices:
+
+    **The whiskers are two spans terminating at the band edges.** One span
+    running P1 to P99 paints *across* the IQR band, which reads as a range that
+    contains the box -- a different and weaker claim than the two the box
+    actually makes.
+
+    **The median protrudes past both band edges** and the mean sits entirely
+    *above* the band as a caret. They land about 24px apart inside a dark fill,
+    so they are told apart by shape rather than by colour -- rule 2 of the
+    token system, and the reason neither is a coloured line.
+
+    **The ladder drops crowded labels.** See `_LADDER_MIN_GAP_PCT`.
+    """
+    q1_pct, q3_pct = fence.pct(fence.q1), fence.pct(fence.q3)
+    lo_pct = fence.pct(fence.whisker_lo)
+    hi_pct = fence.pct(fence.whisker_hi)
+    median_pct = fence.pct(fence.median)
+
+    parts = [
+        f'<span class="qstrip__whisker" style="left:{lo_pct:.3f}%;'
+        f'width:{max(0.0, q1_pct - lo_pct):.3f}%"></span>',
+        f'<span class="qstrip__whisker" style="left:{q3_pct:.3f}%;'
+        f'width:{max(0.0, hi_pct - q3_pct):.3f}%"></span>',
+        f'<span class="qstrip__box" style="left:{q1_pct:.3f}%;'
+        f'width:{max(0.0, q3_pct - q1_pct):.3f}%" '
+        f'title="Interquartile range {escape(fmt(fence.q1))} to '
+        f'{escape(fmt(fence.q3))} — the middle half of the data"></span>',
+        f'<span class="qstrip__median" style="left:{median_pct:.3f}%" '
+        f'title="Median {escape(fmt(fence.median))}"></span>',
+    ]
+
+    mean = fence.mean
+    if _finite(mean):
+        parts.append(
+            f'<span class="qstrip__mean" style="left:{fence.pct(mean):.3f}%" '
+            f'title="Mean {escape(fmt(mean))}"></span>'
+        )
+
+    ladder = _ladder(fence, quantiles)
+    ticks = "".join(
+        f'<span class="qstrip__tick" style="left:{pct:.3f}%"></span>'
+        f'<span class="qstrip__label" data-row="{row}"{_anchor(pct)} '
+        f'style="left:{pct:.3f}%">'
+        f'<span class="qstrip__name">{escape(name)}</span>'
+        f'<span class="qstrip__figure">{escape(fmt(value))}</span></span>'
+        for row, (name, value, pct) in enumerate(ladder)
+    )
+
+    keys = [
+        f'<li><span class="key key--qbox"></span>IQR {escape(fmt(fence.q1))} – '
+        f"{escape(fmt(fence.q3))}</li>",
+        '<li><span class="key key--qwhisker"></span>P1 – P99</li>',
+        f'<li><span class="key key--qmedian"></span>median '
+        f"{escape(fmt(fence.median))}</li>",
+    ]
+    if _finite(mean):
+        keys.append(
+            f'<li><span class="key key--qmean"></span>mean {escape(fmt(mean))}</li>'
+        )
+
+    return (
+        '<div class="qstrip" role="img" aria-label="Distribution shape: '
+        f"interquartile range {escape(fmt(fence.q1))} to {escape(fmt(fence.q3))}, "
+        f'median {escape(fmt(fence.median))}">'
+        f'<div class="qstrip__track">{"".join(parts)}</div>'
+        f'<div class="qstrip__axis"></div>'
+        f'<div class="qstrip__ladder">{ticks}</div>'
+        "</div>"
+        f'<ul class="fence__legend">{"".join(keys)}</ul>'
+    )
+
+
+#: Percentiles that never drop, however crowded the axis: the two ends and the
+#: middle. The same tiering the histogram's x ticks use, and for the same
+#: reason -- a range with no middle says nothing about whether the distribution
+#: is centred, and the median is the one figure a reader looks for first.
+_LADDER_ANCHORS = frozenset({"P1", "P50", "P99"})
+
+
+def _ladder(fence: Fence, quantiles) -> list[tuple[str, float, float]]:
+    """The percentile ticks that fit, anchors first.
+
+    The first version dropped whichever point crowded its left-hand neighbour,
+    walking left to right. On `Fare` -- where P1 through Q3 all land in the
+    first fifth of the axis -- that kept `Q3` and dropped **`P50`**, purely by
+    arrival order. The median is the one figure a reader looks for first, and
+    it was being spent on whichever tick happened to come after it.
+
+    So the anchors are placed first and the rest fill in around them.
+    """
+    points = [
+        ("P1", getattr(quantiles, "p1", None)),
+        ("P5", getattr(quantiles, "p5", None)),
+        ("P10", getattr(quantiles, "p10", None)),
+        ("Q1", fence.q1),
+        ("P50", fence.median),
+        ("Q3", fence.q3),
+        ("P90", getattr(quantiles, "p90", None)),
+        ("P95", getattr(quantiles, "p95", None)),
+        ("P99", getattr(quantiles, "p99", None)),
+    ]
+    placed = [
+        (name, float(value), fence.pct(float(value)))
+        for name, value in points
+        if _finite(value)
+    ]
+    if not placed:
+        return []
+
+    kept = [point for point in placed if point[0] in _LADDER_ANCHORS]
+    for candidate in placed:
+        if candidate in kept:
+            continue
+        if all(abs(candidate[2] - other[2]) >= _LADDER_MIN_GAP_PCT for other in kept):
+            kept.append(candidate)
+
+    # Back into axis order, so the alternating rows alternate along the axis
+    # rather than in the order the anchors happened to be added.
+    kept.sort(key=lambda point: point[2])
+    return kept

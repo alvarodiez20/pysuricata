@@ -1761,6 +1761,175 @@
   color: var(--muted);
 }
 
+/* ---- the quantile strip (5b.1) --------------------------------
+   The nine percentiles were a column of numbers printed under a
+   histogram that draws the very shape they describe, so the two could
+   not be read against each other.
+
+   Three details here are requirements rather than choices:
+
+   - The whiskers are *two* spans terminating at the band edges. One
+     span running P1 to P99 paints across the box, which reads as a
+     range containing it -- a weaker and different claim.
+   - The median protrudes past both band edges and the mean sits
+     entirely above the band. They land ~24px apart inside a dark
+     fill, so they are told apart by shape, not colour (rule 2).
+   - Labels alternate between two rows, so a pair that survives the
+     drop rule still cannot overprint. */
+#pysuricata-report .qstrip {
+  display: flex;
+  flex-direction: column;
+  padding: 0 5px;
+}
+
+#pysuricata-report .qstrip__track {
+  position: relative;
+  height: 40px;
+}
+
+#pysuricata-report .qstrip__whisker {
+  position: absolute;
+  top: 23px;
+  height: 2px;
+  background: var(--data-2);
+}
+
+#pysuricata-report .qstrip__box {
+  position: absolute;
+  top: 13px;
+  height: 22px;
+  background: var(--data-1);
+}
+
+#pysuricata-report .qstrip__median {
+  position: absolute;
+  top: 9px;
+  height: 30px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--ink);
+}
+
+/* Drawn, not typed. A screen reader announces CSS generated content,
+   so a caret made of borders stays out of the accessible name while a
+   typed glyph would be read aloud. */
+#pysuricata-report .qstrip__mean {
+  position: absolute;
+  top: 0;
+  width: 0;
+  height: 0;
+  transform: translateX(-50%);
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--q-bad);
+}
+
+#pysuricata-report .qstrip__axis {
+  height: 1px;
+  background: var(--axis);
+}
+
+#pysuricata-report .qstrip__ladder {
+  position: relative;
+  height: 52px;
+  margin-top: 2px;
+}
+
+#pysuricata-report .qstrip__tick {
+  position: absolute;
+  top: 0;
+  height: 5px;
+  width: 1px;
+  background: var(--rule-strong);
+}
+
+#pysuricata-report .qstrip__label {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(-50%);
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+/* The alternating rows. `P1` and `P5` can clear the 4% drop rule and
+   still be adjacent, and two labels on one line at 4% apart touch. */
+#pysuricata-report .qstrip__label[data-row="0"],
+#pysuricata-report .qstrip__label[data-row="2"],
+#pysuricata-report .qstrip__label[data-row="4"],
+#pysuricata-report .qstrip__label[data-row="6"],
+#pysuricata-report .qstrip__label[data-row="8"] {
+  top: 8px;
+}
+
+#pysuricata-report .qstrip__label[data-row="1"],
+#pysuricata-report .qstrip__label[data-row="3"],
+#pysuricata-report .qstrip__label[data-row="5"],
+#pysuricata-report .qstrip__label[data-row="7"] {
+  top: 30px;
+}
+
+#pysuricata-report .qstrip__label[data-anchor="start"] {
+  transform: none;
+}
+
+#pysuricata-report .qstrip__label[data-anchor="end"] {
+  transform: translateX(-100%);
+}
+
+#pysuricata-report .qstrip__name {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+#pysuricata-report .qstrip__figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--ink);
+}
+
+/* The two lines that spend thresholds the report already holds.
+   `data-threshold="JB chi-squared < 5.99"` has been in the DOM all
+   along and never shown, so a reader was handed 18.63 with no way to
+   judge it. */
+#pysuricata-report .qstrip__prose {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 76ch;
+  text-wrap: pretty;
+}
+
+#pysuricata-report .fence__legend .key--qbox {
+  width: 14px;
+  height: 10px;
+  background: var(--data-1);
+}
+
+#pysuricata-report .fence__legend .key--qwhisker {
+  width: 14px;
+  height: 2px;
+  background: var(--data-2);
+}
+
+#pysuricata-report .fence__legend .key--qmedian {
+  width: 2px;
+  height: 12px;
+  background: var(--ink);
+}
+
+#pysuricata-report .fence__legend .key--qmean {
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--q-bad);
+}
+
 /* ---- correlations, per column (5b.6) --------------------------
    The pane repeated the section-level empty state inside a card:
    `No significant correlations found`, on a column that has

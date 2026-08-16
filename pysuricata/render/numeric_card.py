@@ -20,6 +20,7 @@ from .outlier_fence import (
     fence_verdict,
     method_note,
     render_figure,
+    render_quantile_strip,
     render_table,
 )
 from .sampling import quantiles_are_sampled
@@ -68,8 +69,8 @@ class NumericCardRenderer(CardRenderer):
         corr_table = self._build_correlation_table(stats)
         missing_table = self._build_missing_values_table(stats)
 
-        stats_quantiles = (
-            f"<div class='stats-quant'>{stats_table}{quant_stats_table}</div>"
+        stats_quantiles = self._build_statistics_pane(
+            stats, quantiles, stats_table, quant_stats_table
         )
 
         details_html, pane_summary = self._build_details_section(
@@ -418,7 +419,9 @@ class NumericCardRenderer(CardRenderer):
             ("P95 (≈)", self.format_number(quantiles.p95), "num"),
             ("P99 (≈)", self.format_number(quantiles.p99), "num"),
             ("Range", self.format_number(range_val), "num"),
-            ("Std Dev", self.format_number(stats.std), "num"),
+            # `Std Dev` used to be printed here *and* in the statistics table.
+            # It is a moment, not an order statistic, so it stays with the
+            # moments and this table stops repeating it (#154, 5b.1).
         ]
 
         return self.table_builder.build_key_value_table(data)
@@ -477,6 +480,93 @@ class NumericCardRenderer(CardRenderer):
             </div>
         </div>
         '''
+
+    def _build_statistics_pane(
+        self,
+        stats: NumericStats,
+        quantiles: QuantileData,
+        stats_table: str,
+        quant_stats_table: str,
+    ) -> str:
+        """The percentiles as a shape, then the tables that hold the figures.
+
+        Phase 5b.1 (#154). Twenty-six key-value rows across two tables, with
+        nothing in the layout saying which to read: `Jarque-Bera chi-squared`
+        carried the same weight as `Median`, and `Std Dev` was printed twice.
+
+        The strip costs no new statistics. Every number in it was already in
+        the two tables below it -- what changes is that they are on an axis, so
+        a reader can see the middle half of `Age` sitting in a narrow band well
+        left of centre, which no arrangement of a table can show.
+
+        The prose lines spend thresholds the report already holds and never
+        showed: `data-threshold="JB chi-squared < 5.99"` has been in the DOM
+        all along, so a reader was handed 18.63 with no way to judge it.
+        """
+        try:
+            fence = build_fence(stats, quantiles)
+        except Exception:
+            fence = None
+
+        tables = f"<div class='stats-quant'>{stats_table}{quant_stats_table}</div>"
+        if fence is None:
+            return tables
+
+        name = self.safe_html_escape(stats.name)
+        header = (
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · statistics</span>'
+            '<span class="fence-head__rule"></span>'
+            f'<span class="fence-head__count">{fence.n_total:,} values · '
+            f"{self.format_number(fence.value_lo)} to "
+            f"{self.format_number(fence.value_hi)}</span>"
+            "</div>"
+        )
+        strip = render_quantile_strip(fence, quantiles, self.format_number)
+        prose = self._shape_prose(stats)
+
+        return f'<div class="fence-pane">{header}{strip}{prose}</div>{tables}'
+
+    def _shape_prose(self, stats: NumericStats) -> str:
+        """Two sentences spending thresholds the report already carries.
+
+        Both numbers are on the card today with nothing to judge them against:
+        the Jarque-Bera statistic is printed bare, and the confidence interval
+        is printed as two endpoints rather than as a width.
+        """
+        lines: list[str] = []
+
+        jb = getattr(stats, "jb_chi2", None)
+        if isinstance(jb, (int, float)) and math.isfinite(jb):
+            # 5.99 is the 95% critical value of chi-squared with 2 d.f., which
+            # is the test's own threshold and is already in the DOM as a
+            # `data-threshold` nobody renders.
+            verdict = (
+                "consistent with a normal distribution"
+                if jb < 5.99
+                else "far enough from normal to reject it"
+            )
+            lines.append(
+                f"Jarque–Bera is {self.format_number(jb)} against a 5.99 "
+                f"critical value — {verdict}."
+            )
+
+        ci_lo, ci_hi = getattr(stats, "ci_lo", None), getattr(stats, "ci_hi", None)
+        mean = getattr(stats, "mean", None)
+        if all(
+            isinstance(v, (int, float)) and math.isfinite(v)
+            for v in (ci_lo, ci_hi, mean)
+        ):
+            half = (float(ci_hi) - float(ci_lo)) / 2.0
+            lines.append(
+                f"The mean carries a ±{self.format_number(half)} 95% interval, "
+                f"so {self.format_number(mean)} is well determined at this "
+                "sample size."
+            )
+
+        if not lines:
+            return ""
+        return "".join(f'<p class="qstrip__prose">{line}</p>' for line in lines)
 
     def _build_stats_table(self, stats: NumericStats) -> str:
         """Build detailed statistics table."""

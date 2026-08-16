@@ -33,6 +33,17 @@ quoted when both sides were measured in the same round-robin run.
   field changed: every differing key in the golden payload is `corr_top`, and
   every one goes from `[]` to a populated list.
 
+- **The statistics pane opens with the distribution's shape** ([#154], 5b.1).
+  Twenty-six key–value rows across two tables, with nothing in the layout
+  saying which to read — `Jarque–Bera χ²` carried the same weight as `Median`,
+  and **`Std Dev` was printed twice**, once in each table. The nine percentiles
+  now sit on the axis the Outliers and Min/Max panes use, as a box with the IQR
+  band, whiskers terminating at the band edges, the median protruding past both
+  and the mean as a caret above it. Two prose lines spend thresholds the report
+  already held and never showed: `Jarque–Bera is 18.79 against a 5.99 critical
+  value — far enough from normal to reject it`, and the confidence interval as
+  a width (`±1.066`) rather than two endpoints. `Std Dev` is printed once, with
+  the moments where it belongs.
 - **The per-column correlations pane shows every partner** ([#154], 5b.6).
   It repeated the section-level empty state inside a card — `No significant
   correlations found`, on a column that has partners and simply has no strong
