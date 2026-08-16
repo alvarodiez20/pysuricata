@@ -42,6 +42,8 @@ Nothing yet. Planned work is tracked in
 ### Added
 - A repo-wide emoji guard covering the rendered report *and* the render sources, plus a separate assertion that **no numeric character reference above U+2000** appears anywhere in `pysuricata/` — the check that would have caught the boolean card.
 
+- **`tests/test_missing_spectrum_severity.py`** (252 tests) drives the per-chunk missing spectrum in all four card renderers directly, across all four severity bands. Those blocks return early without `chunk_metadata`, which #139 shows is never produced — so in a real report they never draw, and that is precisely why four emoji survived a sweep that believed it was complete. Covering them proves the removal held on branches no fixture reaches, and asserts the severity still lands in the markup now that the glyph does not carry it.
+
 ### Changed
 - `_KNOWN_DEAD` in `tests/test_description_editor.py` is down to one entry. `compact-row` stays: it is not stale but ahead of its data (#139). An exemption is a promise to come back, not a place to leave things.
 
