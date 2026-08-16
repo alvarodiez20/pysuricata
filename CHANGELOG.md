@@ -24,6 +24,17 @@ quoted when both sides were measured in the same round-robin run.
   report's own cards wrap one per row. Nothing that worked was dropped — the
   log, the streamed 5M-row demo, the JSON download, the version line and the
   sandboxed report frame all survive, restyled.
+- **Common values rank visibly** ([#154], 5b.3). Five columns become three —
+  the ordinals `1ˢᵗ 2ⁿᵈ 3ʳᵈ` were decoration on a list that is already ordered,
+  and count and percent are one fact about one value rather than two. **The bar
+  is scaled to the most common value, not to 100%**: at 3.2% of 714 rows every
+  bar was 3% of its track and all ten looked identical, so the ranking could
+  not be seen. Relative scaling hides absolute rarity in exchange, which the
+  caption now carries. The pane also says the finding out loud — *All 10 are
+  whole numbers, though the column stores 3 decimals. 22.3% of values end in a
+  0 or a 5* — two numbers the report already computed and never put next to
+  each other. A column where nothing repeats loses the tab entirely rather than
+  drawing ten full-width bars over ten equally-common values.
 - **Min/Max plots both tails on the fence's axis** ([#154], 5b.5). It was two
   tables headed `Min values` and `Max values`, five rows each of index and
   value — ten numbers, no context. A reader could not tell that **every one of

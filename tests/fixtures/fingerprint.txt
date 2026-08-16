@@ -205,6 +205,12 @@ attr::col_age::count	10
 attr::col_age::count	10
 attr::col_age::count	10
 attr::col_age::count	10
+attr::col_age::count	10
+attr::col_age::count	10
+attr::col_age::count	10
+attr::col_age::count	10
+attr::col_age::count	11
+attr::col_age::count	11
 attr::col_age::count	11
 attr::col_age::count	11
 attr::col_age::count	11
@@ -214,7 +220,9 @@ attr::col_age::count	111
 attr::col_age::count	12
 attr::col_age::count	12
 attr::col_age::count	12
+attr::col_age::count	12
 attr::col_age::count	124
+attr::col_age::count	13
 attr::col_age::count	13
 attr::col_age::count	13
 attr::col_age::count	130
@@ -223,6 +231,8 @@ attr::col_age::count	14
 attr::col_age::count	14
 attr::col_age::count	14
 attr::col_age::count	14
+attr::col_age::count	14
+attr::col_age::count	15
 attr::col_age::count	15
 attr::col_age::count	15
 attr::col_age::count	15
@@ -411,20 +421,30 @@ attr::col_age::pct	1.1
 attr::col_age::pct	1.1
 attr::col_age::pct	1.1
 attr::col_age::pct	1.1
+attr::col_age::pct	1.1
+attr::col_age::pct	1.1
+attr::col_age::pct	1.1
+attr::col_age::pct	1.1
 attr::col_age::pct	1.2
 attr::col_age::pct	1.2
 attr::col_age::pct	1.2
 attr::col_age::pct	1.2
+attr::col_age::pct	1.2
+attr::col_age::pct	1.2
+attr::col_age::pct	1.3
 attr::col_age::pct	1.3
 attr::col_age::pct	1.3
 attr::col_age::pct	1.3
 attr::col_age::pct	1.5
 attr::col_age::pct	1.5
+attr::col_age::pct	1.5
 attr::col_age::pct	1.6
 attr::col_age::pct	1.6
 attr::col_age::pct	1.6
 attr::col_age::pct	1.6
 attr::col_age::pct	1.6
+attr::col_age::pct	1.6
+attr::col_age::pct	1.7
 attr::col_age::pct	1.7
 attr::col_age::pct	1.7
 attr::col_age::pct	1.7
@@ -547,6 +567,16 @@ attr::col_age::value	1
 attr::col_age::value	1
 attr::col_age::value	1
 attr::col_age::value	1
+attr::col_age::value	15
+attr::col_age::value	16
+attr::col_age::value	26
+attr::col_age::value	33
+attr::col_age::value	47
+attr::col_age::value	59
+attr::col_age::value	60
+attr::col_age::value	62
+attr::col_age::value	63
+attr::col_age::value	66
 attr::col_age::value	79
 attr::col_age::value	79
 attr::col_age::value	79
@@ -907,18 +937,8 @@ kv::::columns	8
 kv::::duplicates	0
 kv::::missing	21.9%
 kv::::rows	891
-kv::col_age::10ᵗʰ	66
-kv::col_age::2ⁿᵈ	16
-kv::col_age::3ʳᵈ	47
-kv::col_age::4ᵗʰ	60
-kv::col_age::5ᵗʰ	26
-kv::col_age::6ᵗʰ	63
-kv::col_age::7ᵗʰ	15
-kv::col_age::8ᵗʰ	59
-kv::col_age::9ᵗʰ	62
 kv::col_age::coeff. of var	0.5569
 kv::col_age::count	891
-kv::col_age::distribution 1ˢᵗ	33
 kv::col_age::geometric mean	31.34
 kv::col_age::heaping %	17.85
 kv::col_age::iqr	39
@@ -967,18 +987,8 @@ kv::col_cabin::unique	2
 kv::col_empty::count	0
 kv::col_empty::empty or zero	0
 kv::col_empty::unique	0
-kv::col_fare::10ᵗʰ	24.93
-kv::col_fare::2ⁿᵈ	116.6
-kv::col_fare::3ʳᵈ	12.02
-kv::col_fare::4ᵗʰ	126.2
-kv::col_fare::5ᵗʰ	14.37
-kv::col_fare::6ᵗʰ	15.02
-kv::col_fare::7ᵗʰ	18.88
-kv::col_fare::8ᵗʰ	21.04
-kv::col_fare::9ᵗʰ	24.1
 kv::col_fare::coeff. of var	0.7096
 kv::col_fare::count	891
-kv::col_fare::distribution 1ˢᵗ	11.79
 kv::col_fare::geometric mean	30.26
 kv::col_fare::heaping %	12.46
 kv::col_fare::iqr	35.15

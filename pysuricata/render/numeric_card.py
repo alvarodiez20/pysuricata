@@ -63,7 +63,7 @@ class NumericCardRenderer(CardRenderer):
         chart_html = self._build_histogram_variants(col_id, safe_name, stats)
 
         stats_table = self._build_stats_table(stats)
-        common_table = self._build_common_values_table(stats)
+        common_table = self._build_common_values_table(stats, col_id)
         extremes_table = self._build_extremes_table(stats, quantiles, col_id)
         outliers_pane = self._build_outliers_pane(stats, quantiles, col_id)
         corr_table = self._build_correlation_table(stats)
@@ -512,61 +512,121 @@ class NumericCardRenderer(CardRenderer):
 
         return self.table_builder.build_key_value_table(data)
 
-    def _build_common_values_table(self, stats: NumericStats) -> str:
-        """Build common values table with enhanced formatting and functionality.
+    def _build_common_values_table(self, stats: NumericStats, col_id: str = "") -> str:
+        """Ten rows, three columns, and the finding said out loud.
 
-        This method creates a professional, feature-rich table that provides
-        comprehensive insights into the most frequent values in the dataset.
+        Phase 5b.3 (#154). Five columns become three: the ordinals
+        `1st 2nd 3rd` are decoration on a list that is already ordered, and
+        count and percent are one fact about one value rather than two.
 
-        Args:
-            stats: NumericStats object containing the data
-
-        Returns:
-            HTML string for the enhanced common values table
+        **The bar is scaled to the most common value, not to 100%.** At 3.2%
+        of 714 rows every bar was 3% of its track and all ten looked
+        identical, which is a ranking drawn so that the ranking cannot be
+        seen. Relative scaling hides absolute rarity in exchange, so the
+        caption says which scale it is on.
         """
         try:
-            top_values = list(getattr(stats, "top_values", []) or [])
+            top_values = list(getattr(stats, "top_values", None) or [])[:10]
         except Exception:
             top_values = []
 
         if not top_values:
-            return '<div class="muted">No common values to display</div>'
-
-        rows = []
-        total_nonnull = max(1, int(getattr(stats, "count", 0)))
-
-        # Take only top 10 values for better display and performance
-        top_values = top_values[:10]
-
-        for i, (v, c) in enumerate(top_values):
-            pct = (int(c) / total_nonnull) * 100.0 if total_nonnull else 0.0
-
-            # Add ranking indicator for top values
-            rank_icon = ordinal_number(i + 1)
-
-            # Format value with appropriate precision and scientific notation for large numbers
-            if isinstance(v, float) and v.is_integer():
-                formatted_value = f"{int(v):,}"
-            else:
-                formatted_value = _fmt_compact_scientific(v)
-
-            rows.append(
-                f"<tr class='common-row rank-{i + 1}'>"
-                f"<td class='rank'>{rank_icon}</td>"
-                f"<td class='num common-value'>{formatted_value}</td>"
-                f"<td class='num common-count'>{int(c):,}</td>"
-                f"<td class='num common-pct'>{pct:.1f}%</td>"
-                f"<td class='progress-bar'><div class='bar-fill' style='width:{pct:.1f}%'></div></td>"
-                f"</tr>"
+            return (
+                '<p class="fence-none">No value repeats often enough to be '
+                "counted among the most common.</p>"
             )
 
-        body = "".join(rows)
-        return (
-            '<table class="common-values-table enhanced">'
-            "<thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead>"
-            f"<tbody>{body}</tbody>"
-            "</table>"
+        name = self.safe_html_escape(stats.name)
+        total = max(1, int(getattr(stats, "count", 0) or 0))
+        top_count = max(int(count) for _, count in top_values) or 1
+
+        header = (
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · common values</span>'
+            '<span class="fence-head__rule"></span>'
+            "</div>"
         )
+
+        # Nothing repeats, so there is nothing to rank and no tab to render.
+        #
+        # Drawing it would scale every bar to the top count of 1 and produce
+        # ten identical full-width bars -- a ranking drawn over ten values
+        # that are all equally common, which is the relative scale at its
+        # worst. `PassengerId` is exactly this column. Saying "no value
+        # repeats" instead would only restate the card face, where `Unique`
+        # already equals the row count, so 5b.4's rule applies: an empty
+        # string here removes the tab.
+        if top_count == 1:
+            return ""
+
+        rows = []
+        for value, count in top_values:
+            count = int(count)
+            pct = count / total * 100.0
+            width = count / top_count * 100.0
+            if isinstance(value, float) and value.is_integer():
+                shown = f"{int(value):,}"
+            else:
+                shown = _fmt_compact_scientific(value)
+            rows.append(
+                f'<div class="common__row">'
+                # `data-value` is how the invariance fingerprint sees this.
+                # The five-column table it replaces was extracted by pairing
+                # the ordinal against the value -- so removing the ordinals,
+                # which are decoration on an already-ordered list, would have
+                # taken the values with them.
+                f'<span class="common__value" data-col="{col_id}" '
+                f'data-value="{value:.12g}">{self.safe_html_escape(shown)}</span>'
+                f'<span class="common__track">'
+                f'<span class="common__bar" style="width:{width:.1f}%"></span></span>'
+                f'<span class="common__stat" data-col="{col_id}" '
+                f'data-count="{count}" data-pct="{pct:.1f}">'
+                f"{count:,} · {pct:.1f}%</span>"
+                f"</div>"
+            )
+
+        finding = self._heaping_finding(stats, top_values)
+        lede = f'<p class="fence-lede">{finding}</p>' if finding else ""
+
+        return (
+            f'<div class="fence-pane common">{header}{lede}'
+            f'<div class="common__rows">{"".join(rows)}</div>'
+            '<p class="common__caption">bar is scaled to the most common '
+            "value, not to 100%</p>"
+            "</div>"
+        )
+
+    def _heaping_finding(self, stats: NumericStats, top_values: list) -> str:
+        """Two numbers the report already computes and never puts together.
+
+        `Age` stores three decimals, all ten of its most common values are
+        whole numbers, and `Heaping %` is 22.27 — each of those was on the
+        card somewhere and the reader had to notice the connection unaided.
+
+        `heap_pct` counts values whose last significant digit is 0 or 5, so
+        that is what the sentence says. "Heaped on round numbers" is a gloss
+        and this is a report.
+        """
+        parts: list[str] = []
+
+        decimals = getattr(stats, "gran_decimals", None)
+        whole = [
+            value
+            for value, _ in top_values
+            if isinstance(value, (int, float)) and float(value).is_integer()
+        ]
+        if decimals and len(whole) == len(top_values) and len(top_values) > 1:
+            plural = "decimal" if decimals == 1 else "decimals"
+            parts.append(
+                f"All {len(top_values)} are whole numbers, though the column "
+                f"stores {decimals} {plural}."
+            )
+
+        heap = getattr(stats, "heap_pct", None)
+        if isinstance(heap, (int, float)) and math.isfinite(heap) and heap > 0:
+            parts.append(f"{heap:.1f}% of values end in a 0 or a 5.")
+
+        return " ".join(parts)
 
     def _build_extremes_table(
         self,
@@ -1511,9 +1571,11 @@ class NumericCardRenderer(CardRenderer):
         """
         counts: dict[str, str] = {}
 
-        common = len(getattr(stats, "top_values", None) or [])
-        if common:
-            counts["common"] = f"{common:,}"
+        top_values = list(getattr(stats, "top_values", None) or [])
+        # A column where nothing repeats has no common values, whatever the
+        # length of the top-k list -- every entry in it was seen once.
+        if top_values and max(int(count) for _, count in top_values) > 1:
+            counts["common"] = f"{len(top_values):,}"
 
         lows = len(getattr(stats, "min_items", None) or [])
         highs = len(getattr(stats, "max_items", None) or [])

@@ -1761,6 +1761,73 @@
   color: var(--muted);
 }
 
+/* ---- common values (5b.3) ------------------------------------
+   Five columns become three. The ordinals `1st 2nd 3rd` were
+   decoration on a list that is already ordered, and count and percent
+   are one fact about one value rather than two.
+
+   The bar is scaled to the *most common value*, not to 100%. At 3.2%
+   of 714 rows every bar was 3% of its track and all ten looked
+   identical -- a ranking drawn so the ranking cannot be seen. The
+   trade is that relative scaling hides absolute rarity, which the
+   caption has to carry. */
+#pysuricata-report .common__rows {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ink);
+}
+
+#pysuricata-report .common__row {
+  display: grid;
+  grid-template-columns: minmax(0, 92px) minmax(0, 1fr) minmax(0, 116px);
+  align-items: center;
+  gap: 14px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .common__value,
+#pysuricata-report .common__stat {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#pysuricata-report .common__value {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+#pysuricata-report .common__stat {
+  font-size: 12px;
+  text-align: right;
+  color: var(--muted);
+}
+
+/* The track is the same neutral the report uses behind every
+   proportional fill, so a bar's length is the only thing encoding a
+   quantity. */
+#pysuricata-report .common__track {
+  display: block;
+  height: 10px;
+  min-width: 0;
+  background: var(--track);
+}
+
+#pysuricata-report .common__bar {
+  display: block;
+  height: 10px;
+  background: var(--data-2);
+}
+
+#pysuricata-report .common__caption {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
 /* ---- the two tails (5b.5) ------------------------------------
    The same axis as the Outliers pane, because the design requires a
    reader who has opened one to be able to read the other. What this
@@ -1919,6 +1986,11 @@
 
   #pysuricata-report .tails__row {
     grid-template-columns: 56px minmax(0, 72px) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  #pysuricata-report .common__row {
+    grid-template-columns: minmax(0, 72px) minmax(0, 1fr) minmax(0, 92px);
     gap: 8px;
   }
 }

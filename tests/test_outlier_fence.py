@@ -441,3 +441,90 @@ class TestTheTwoTailsShareTheAxis:
         sentence = NumericCardRenderer()._tails_verdict(rows, list(rows))
         assert sentence.count("inside the fence") == 1
         assert "Neither tail" in sentence
+
+
+class TestCommonValuesRankVisibly:
+    """5b.3. Five columns become three, and the bar is scaled to the most
+    common value rather than to 100% — at 3.2% of 714 rows every bar was 3%
+    of its track and all ten looked identical, which is a ranking drawn so
+    that the ranking cannot be seen."""
+
+    def _renderer(self):
+        from pysuricata.render.numeric_card import NumericCardRenderer
+
+        return NumericCardRenderer()
+
+    def test_the_bar_is_scaled_to_the_top_value(self):
+        stats = _stats(
+            count=1000,
+            top_values=[(1.0, 32), (2.0, 16), (3.0, 8)],
+            sample_vals=[1.0, 2.0, 3.0],
+        )
+        html = self._renderer()._build_common_values_table(stats)
+        widths = [
+            float(w) for w in re.findall(r'common__bar" style="width:([\d.]+)%', html)
+        ]
+        assert widths == [100.0, 50.0, 25.0]
+
+    def test_the_caption_says_which_scale_it_is_on(self):
+        """Relative scaling hides absolute rarity — ten values at 3% and ten
+        at 30% draw the same picture — so the caption has to carry it."""
+        stats = _stats(count=1000, top_values=[(1.0, 32), (2.0, 16)])
+        html = self._renderer()._build_common_values_table(stats)
+        assert "scaled to the most common value" in html
+
+    def test_count_and_percent_are_one_column(self):
+        stats = _stats(count=1000, top_values=[(1.0, 32)])
+        html = self._renderer()._build_common_values_table(stats)
+        assert "32 · 3.2%" in html
+
+    def test_the_ordinals_are_gone(self):
+        stats = _stats(count=1000, top_values=[(1.0, 32), (2.0, 16)])
+        html = self._renderer()._build_common_values_table(stats)
+        for ordinal in ("1ˢᵗ", "2ⁿᵈ", "3ʳᵈ"):
+            assert ordinal not in html
+
+    def test_a_column_where_nothing_repeats_gets_no_pane(self):
+        """Scaling to a top count of 1 gives every row a full bar — a ranking
+        drawn over ten values that are all equally common. `PassengerId` is
+        exactly this column, and saying "no value repeats" would only restate
+        the card face, where `Unique` already equals the row count."""
+        stats = _stats(count=10, top_values=[(float(v), 1) for v in range(10)])
+        assert self._renderer()._build_common_values_table(stats) == ""
+
+    def test_that_column_loses_the_tab_and_the_badge(self):
+        stats = _stats(count=10, top_values=[(float(v), 1) for v in range(10)])
+        assert "common" not in self._renderer()._pane_counts(stats)
+
+    def test_the_heaping_finding_is_said_out_loud(self):
+        """Two numbers the report computes and never puts next to each other:
+        `Age` stores three decimals, all ten of its most common values are
+        whole, and `Heaping %` is 22.27."""
+        stats = _stats(
+            count=714,
+            gran_decimals=3,
+            heap_pct=22.27,
+            top_values=[(float(v), 20 - v) for v in range(1, 11)],
+        )
+        html = self._renderer()._build_common_values_table(stats)
+        assert "whole numbers" in html and "3 decimals" in html
+        assert "22.3% of values end in a 0 or a 5" in html
+
+    def test_the_heaping_sentence_says_what_it_measures(self):
+        """`heap_pct` counts values whose last significant digit is 0 or 5.
+        "Heaped on round numbers" is a gloss, and this is a report."""
+        stats = _stats(count=100, heap_pct=54.0, top_values=[(1.5, 9), (2.5, 4)])
+        html = self._renderer()._build_common_values_table(stats)
+        assert "end in a 0 or a 5" in html
+        assert "whole numbers" not in html
+
+    def test_the_values_stay_visible_to_the_fingerprint(self):
+        """The five-column table was extracted by pairing the ordinal against
+        the value, so dropping the ordinals would have taken the values with
+        them."""
+        stats = _stats(count=1000, top_values=[(7.0, 32), (9.0, 16)])
+        html = self._renderer()._build_common_values_table(stats, "col_x")
+        tagged = re.findall(
+            r'class="common__value" data-col="col_x" data-value="([^"]+)"', html
+        )
+        assert tagged == ["7", "9"]
