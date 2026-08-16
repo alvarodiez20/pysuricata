@@ -6,13 +6,17 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Exploratory data analysis reports for pandas DataFrames">
+        <meta name="description" content="What a pysuricata version number promises, and what it does not">
       
       
       
-        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/DOCS_PLAN/">
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/versioning/">
       
       
+        <link rel="prev" href="../adr/memory-budget/">
+      
+      
+        <link rel="next" href="../changelog/">
       
       
       <link rel="icon" href="../assets/favicon.ico">
@@ -20,7 +24,7 @@
     
     
       
-        <title>Documentation audit and visual plan - PySuricata</title>
+        <title>Versioning - PySuricata</title>
       
     
     
@@ -76,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#documentation-audit-and-visual-plan" class="md-skip">
+        <a href="#versioning" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Documentation audit and visual plan
+              Versioning
             
           </span>
         </div>
@@ -361,10 +365,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../about-suricatas/" class="md-tabs__link">
           
   
@@ -1599,8 +1605,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -1618,19 +1626,22 @@
     
     
       
+        
+        
+      
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" checked>
         
           
-          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
             
   
   
@@ -1643,7 +1654,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_8">
             <span class="md-nav__icon md-icon"></span>
             About
@@ -1723,10 +1734,32 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../versioning/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Versioning
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -1737,6 +1770,71 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-contract-at-0x" class="md-nav__link">
+    <span class="md-ellipsis">
+      The contract, at 0.x
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-covered" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is covered
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-is-not-covered" class="md-nav__link">
+    <span class="md-ellipsis">
+      What is not covered
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-a-release-happens" class="md-nav__link">
+    <span class="md-ellipsis">
+      How a release happens
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-gates-for-100" class="md-nav__link">
+    <span class="md-ellipsis">
+      The gates for 1.0.0
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1791,406 +1889,128 @@
   
 
 
-<h1 id="documentation-audit-and-visual-plan">Documentation audit and visual plan</h1>
-<p>Generated from a mechanical pass over all 31 pages at 0.0.26 (<code>52e13cd</code>), plus a
-read of the pages a checker cannot judge. Re-run the audit with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.check_docs<span class="w"> </span>--quiet-info<span class="w">      </span><span class="c1"># report</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.check_docs<span class="w"> </span>--strict<span class="w">          </span><span class="c1"># exit 1 on any ERROR (for CI)</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.check_docs<span class="w"> </span>--json<span class="w"> </span>out.json<span class="w">   </span><span class="c1"># every finding with a line number</span>
+<h1 id="versioning">Versioning</h1>
+<p>A version number means nothing until the surface it describes is written down.
+This page is that surface.</p>
+<h2 id="the-contract-at-0x">The contract, at 0.x</h2>
+<p>pysuricata follows <a href="https://semver.org/">Semantic Versioning</a>, with the
+convention Cargo uses for pre-1.0 crates:</p>
+<div class="admonition note">
+<p class="admonition-title">At 0.x, a <strong>minor</strong> bump is what a major bump becomes at 1.0</p>
+<p><code>0.1.0 → 0.2.0</code> is the release allowed to break you.
+<code>0.1.0 → 0.1.1</code> never is.</p>
+</div>
+<p>That makes <code>pysuricata~=0.1.0</code> a real guarantee: you will get fixes, and you
+will not get a breaking change without changing that line yourself.</p>
+<p>Semver's own text says <code>0.y.z</code> means "anything may change" and that <code>1.0.0</code> is
+what defines a public API — so "a stable release at 0.1.0" is, read strictly, a
+contradiction. It is resolved by writing the contract down rather than by
+picking a bigger number. <strong>A 0.x with a written contract beats a 1.0 you have to
+walk back.</strong></p>
+<h2 id="what-is-covered">What is covered</h2>
+<p>A breaking change to anything in this list requires a minor bump at 0.x, and a
+major bump at 1.0 and after.</p>
+<table>
+<thead>
+<tr>
+<th>Surface</th>
+<th>Covered</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>The public API</strong></td>
+<td>The names exported from <code>pysuricata</code> — <code>profile</code>, <code>summarize</code>, <code>compare</code>, <code>check</code>, <code>ProfileConfig</code>, <code>ComputeOptions</code>, <code>RenderOptions</code>, and the result types they return</td>
+</tr>
+<tr>
+<td><strong>The CLI</strong></td>
+<td>The three subcommands, their documented flags, and the exit codes <code>0</code> (pass), <code>1</code> (findings), <code>2</code> (usage or input error)</td>
+</tr>
+<tr>
+<td><strong>The <code>summarize()</code> payload</strong></td>
+<td>Its shape, gated by <code>schema_version</code>. A field is never removed or repurposed without a bump</td>
+</tr>
+<tr>
+<td><strong>The baseline file</strong></td>
+<td>The format <code>check</code> reads and writes</td>
+</tr>
+<tr>
+<td><strong>Documented defaults</strong></td>
+<td>Changing a default that alters results — <code>uniques_k</code>, <code>numeric_sample_size</code>, <code>chunk_size</code> — is a behavioural break</td>
+</tr>
+</tbody>
+</table>
+<h2 id="what-is-not-covered">What is not covered</h2>
+<p>Depending on any of these is depending on an implementation detail. They change
+in patch releases without notice.</p>
+<ul>
+<li><strong>Anything <code>_private</code></strong>, and anything reachable only through a module path
+  rather than the top-level package.</li>
+<li><strong>The HTML structure of the report</strong> — class names, element order, the markup
+  of any card. The redesign rewrote all of it across fourteen releases, and
+  will again.</li>
+<li><strong>The exact value of any approximate figure.</strong> Distinct counts, quantiles,
+  duplicate counts and the bounds printed beside them are sketch estimates.
+  Improving one is a fix, not a break: <code>0.0.73</code> changed how quantiles are
+  <em>presented</em> and what error bound the duplicate count carries, and neither
+  should have forced a minor bump.</li>
+<li><strong>Log output, progress reporting and timing figures.</strong></li>
+<li><strong>The wheel's dependency floors</strong>, except where raising one drops a Python
+  version — that is covered.</li>
+</ul>
+<p>Python version support is covered: dropping a Python is a minor bump at 0.x.</p>
+<h2 id="how-a-release-happens">How a release happens</h2>
+<p>Publishing is triggered by <strong>pushing a tag</strong>, not by merging.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># after the version bump and changelog section have merged to main</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>git<span class="w"> </span>tag<span class="w"> </span>v0.1.0
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>v0.1.0
 </span></code></pre></div>
-<hr />
-<h2 id="where-things-stand">Where things stand</h2>
-<table>
-<thead>
-<tr>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Pages</td>
-<td>31, ~8,500 lines</td>
-</tr>
-<tr>
-<td>Mechanical errors</td>
-<td><strong>87</strong> across 21 pages</td>
-</tr>
-<tr>
-<td>Broken examples</td>
-<td>33 fences raise when pasted</td>
-</tr>
-<tr>
-<td>Conceptual pages with a diagram</td>
-<td><strong>0 of 17</strong></td>
-</tr>
-<tr>
-<td>Pages stamped "Last updated: 2025-10-12"</td>
-<td>8</td>
-</tr>
-</tbody>
-</table>
-<p><code>performance.md</code> has 16 errors — the most of any page, and it is the page that
-carries the positioning claim you are about to link from a blog post. Every
-configuration example on it is broken and every timing predates three rounds of
-optimisation. Fix it before publishing anything.</p>
-<hr />
-<h2 id="five-failure-classes">Five failure classes</h2>
-<h3 id="1-config-options-that-do-not-exist-17-occurrences-real-api-drift">1. Config options that do not exist — 17 occurrences, real API drift</h3>
-<p>Seven pages document <code>config.compute.uniques_sketch_size</code> and
-<code>config.compute.top_k_size</code>. <strong>Neither exists.</strong> The real names are <code>uniques_k</code>
-and <code>topk_k</code> on the config object (<code>max_uniques</code> / <code>top_k</code> on <code>ComputeOptions</code>).
-A reader following the docs gets a silently ignored setting rather than an error,
-which is worse.</p>
-<p>Affected: <code>configuration.md</code>, <code>api.md</code>, <code>performance.md</code>, <code>stats/numeric.md</code>,
-<code>stats/categorical.md</code>, <code>why-pysuricata.md</code>.</p>
-<h3 id="2-renamed-summary-keys-10-occurrences-real-api-drift">2. Renamed summary keys — 10 occurrences, real API drift</h3>
-<p><code>summarize()["dataset"]["rows"]</code> is now <code>rows_est</code>. Nine pages show the old key
-and the example raises <code>KeyError</code>. The accuracy oracle caught this rename; the
-tests were updated and the docs were not.</p>
-<h3 id="3-fences-missing-their-imports-25-occurrences">3. Fences missing their imports — 25 occurrences</h3>
-<p>Blocks calling <code>profile()</code>, <code>summarize()</code> or <code>ReportConfig(...)</code> with no import
-line. <strong>The names are correct</strong> — <code>ReportConfig</code> is a live alias for
-<code>ProfileConfig</code> — but a reader who copies the block gets a <code>NameError</code>. Every
-fence should stand alone or be explicitly marked as a fragment.</p>
-<h3 id="4-output-tagged-as-python-9-occurrences">4. Output tagged as <code>python</code> — 9 occurrences</h3>
-<p>Console output and shell transcripts inside <code>```python</code> fences.
-<code>quickstart.md</code>, <code>usage.md</code> and <code>why-pysuricata.md</code> have three each. Re-tag as
-<code>text</code> or <code>console</code>.</p>
-<h3 id="5-prose-describing-behaviour-you-removed">5. Prose describing behaviour you removed</h3>
-<p>Needs reading, not a checker. Confirmed:</p>
-<ul>
-<li><code>architecture-diagrams.md:109</code> — "ExtremeTracker … Every 5th chunk only". That
-  throttle was removed in 0.0.26; extremes are exact now.</li>
-<li><code>architecture-diagrams.md:190</code> — "Type inference … first chunk only". Now gated
-  on <code>first_chunk_is_whole</code>.</li>
-<li><code>algorithms/sampling.md</code> — documents <strong>Algorithm R</strong> in full, with a proof. The
-  library implements <strong>Algorithm L</strong> with a bulk scheduler. 68 lines teaching the
-  wrong algorithm.</li>
-<li><code>algorithms/sketches.md:63</code> — teaches KMV using <code>hashlib.md5</code>. The library uses
-  blake2b for bytes and a vectorised splitmix64 for numeric arrays.</li>
-</ul>
-<h3 id="also-nothing-documents-the-last-three-months">Also: nothing documents the last three months</h3>
-<p>No page mentions the accuracy oracle, the chunked-equals-unchunked invariant, the
-vendored native crate, or the CI gate. <code>changelog.md</code> is excellent and current and
-is the only place any of it exists. "We assert chunked == unchunked in CI" is a
-selling point, and it is invisible.</p>
-<hr />
-<h2 id="per-page-triage">Per-page triage</h2>
-<table>
-<thead>
-<tr>
-<th>Page</th>
-<th style="text-align: right;">errors</th>
-<th>Dominant problem</th>
-<th>Action</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>performance.md</code></td>
-<td style="text-align: right;">16</td>
-<td>10 broken examples, 6 bad config names, 5 stale timings</td>
-<td>rewrite</td>
-</tr>
-<tr>
-<td><code>configuration.md</code></td>
-<td style="text-align: right;">10</td>
-<td>7 config names that do not exist</td>
-<td>rewrite</td>
-</tr>
-<tr>
-<td><code>quickstart.md</code></td>
-<td style="text-align: right;">8</td>
-<td>4 broken examples, 3 mis-tagged fences</td>
-<td>rewrite</td>
-</tr>
-<tr>
-<td><code>why-pysuricata.md</code></td>
-<td style="text-align: right;">8</td>
-<td>mis-tagged fences, bad config, stale keys</td>
-<td>rewrite</td>
-</tr>
-<tr>
-<td><code>stats/categorical.md</code></td>
-<td style="text-align: right;">7</td>
-<td>4 bad config names</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>api.md</code></td>
-<td style="text-align: right;">6</td>
-<td>examples + config + <code>rows</code> key</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>examples.md</code></td>
-<td style="text-align: right;">6</td>
-<td>examples needing files; <code>rows</code> key</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>usage.md</code></td>
-<td style="text-align: right;">6</td>
-<td>mis-tagged fences, missing imports</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>faq.md</code>, <code>stats/numeric.md</code></td>
-<td style="text-align: right;">4</td>
-<td>examples, config names</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>analytics/correlations.md</code>, <code>stats/boolean.md</code></td>
-<td style="text-align: right;">3</td>
-<td>examples, <code>rows</code> key</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>advanced.md</code>, <code>stats/datetime.md</code></td>
-<td style="text-align: right;">2</td>
-<td>examples</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>changelog.md</code>, <code>install.md</code></td>
-<td style="text-align: right;">1</td>
-<td>one mis-tagged fence each</td>
-<td>trivial</td>
-</tr>
-<tr>
-<td><code>architecture-diagrams.md</code></td>
-<td style="text-align: right;">0</td>
-<td>mechanically clean, <strong>semantically stale</strong></td>
-<td>merge &amp; redraw</td>
-</tr>
-<tr>
-<td><code>algorithms/*.md</code></td>
-<td style="text-align: right;">0</td>
-<td>clean; wrong algorithm, no visuals</td>
-<td>rewrite + illustrate</td>
-</tr>
-</tbody>
-</table>
-<p>A page can be mechanically clean and still be the most wrong page in the set:
-<code>algorithms/sampling.md</code> has zero errors and documents an algorithm you do not
-use. The checker buys you the boring half so your attention goes to this half.</p>
-<p>Also: <code>docs/roadmap.md</code> is on disk but not in the mkdocs nav, so it is never
-rendered. Add it or move it out of <code>docs/</code>.</p>
-<hr />
-<h2 id="the-plan">The plan</h2>
-<h3 id="phase-0-make-drift-impossible-to-reintroduce-1-hour">Phase 0 — Make drift impossible to reintroduce (1 hour)</h3>
-<p>Land <code>benchmarks/check_docs.py</code> in CI with <code>--strict</code>. From then on a renamed
-config option or a moved summary key fails a PR instead of rotting for ten
-months. Fix the nav orphan.</p>
-<p><strong>Exit:</strong> CI red on the current tree, which is the point.</p>
-<h3 id="phase-1-mechanical-sweep-23-hours">Phase 1 — Mechanical sweep (2–3 hours)</h3>
-<p>Three global replacements are most of the count:</p>
-<ul>
-<li><code>uniques_sketch_size</code> → <code>uniques_k</code></li>
-<li><code>top_k_size</code> → <code>topk_k</code></li>
-<li><code>["dataset"]["rows"]</code> → <code>["dataset"]["rows_est"]</code></li>
-</ul>
-<p>Then re-tag the nine output-as-python fences and add imports to the 25 orphan
-fences. Re-run until only INFO remains.</p>
-<p><strong>Exit:</strong> <code>check_docs --strict</code> green.</p>
-<h3 id="phase-2-the-four-pages-that-carry-the-story-1-weekend">Phase 2 — The four pages that carry the story (1 weekend)</h3>
-<p><code>index.md</code>, <code>why-pysuricata.md</code>, <code>quickstart.md</code>, <code>performance.md</code>. Rewrite with
-current numbers (13.3× vs ydata-profiling, 12× less marginal memory), the
-bounded-memory claim stated plainly, and the chunked-equals-unchunked invariant
-named. Delete every hardcoded timing you cannot regenerate.</p>
-<p><strong>Exit:</strong> a stranger reads <code>index.md</code> and can say what the library is for.</p>
-<h3 id="phase-3-rewrite-the-algorithms-trilogy-with-visuals-1-weekend">Phase 3 — Rewrite the algorithms trilogy, with visuals (1 weekend)</h3>
-<p><code>sampling.md</code> to Algorithm L (and say why: bit-identical across chunk sizes).
-<code>sketches.md</code> to the real hashing plus the threshold idea. <code>streaming.md</code> to
-Pébay's merge and the reason it exists. This is where the animations go. It is
-also the most defensible content you have — nobody else's docs explain this.</p>
-<h3 id="phase-4-collapse-three-architecture-pages-into-one-half-weekend">Phase 4 — Collapse three architecture pages into one (half weekend)</h3>
-<p><code>architecture.md</code>, <code>architecture-diagrams.md</code> and
-<code>sequence-diagrams-complexity.md</code> overlap heavily and two carry removed claims.
-One page, one chunk-lifecycle diagram, one complexity table.</p>
-<p><strong>Exit:</strong> no diagram asserts anything the code does not do.</p>
-<h3 id="phase-5-reference-pages-ongoing">Phase 5 — Reference pages (ongoing)</h3>
-<p><code>stats/*</code> and <code>analytics/*</code> — 2,900 lines, mechanically patched in phase 1,
-illustrated with annotated card screenshots as you go. Drop the "Last updated"
-footers on eight pages: generate them from git or remove them, because a wrong
-date is worse than no date.</p>
-<hr />
-<h2 id="what-would-benefit-most-from-diagrams-and-animations">What would benefit most from diagrams and animations</h2>
-<p>The distribution today is exactly inverted. Pages that describe <em>processes</em> have
-no visuals; the only pages with diagrams describe module layout, which a
-directory listing already conveys.</p>
-<table>
-<thead>
-<tr>
-<th>Section</th>
-<th style="text-align: right;">Pages</th>
-<th style="text-align: right;">Lines</th>
-<th style="text-align: right;">Diagrams</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>algorithms/</code></td>
-<td style="text-align: right;">3</td>
-<td style="text-align: right;">857</td>
-<td style="text-align: right;"><strong>0</strong></td>
-</tr>
-<tr>
-<td><code>stats/</code></td>
-<td style="text-align: right;">5</td>
-<td style="text-align: right;">2,184</td>
-<td style="text-align: right;"><strong>0</strong></td>
-</tr>
-<tr>
-<td><code>analytics/</code></td>
-<td style="text-align: right;">4</td>
-<td style="text-align: right;">910</td>
-<td style="text-align: right;"><strong>0</strong></td>
-</tr>
-<tr>
-<td><code>sequence-diagrams-complexity.md</code></td>
-<td style="text-align: right;">1</td>
-<td style="text-align: right;">297</td>
-<td style="text-align: right;">6</td>
-</tr>
-<tr>
-<td><code>architecture.md</code></td>
-<td style="text-align: right;">1</td>
-<td style="text-align: right;">219</td>
-<td style="text-align: right;">5</td>
-</tr>
-<tr>
-<td><code>architecture-diagrams.md</code></td>
-<td style="text-align: right;">1</td>
-<td style="text-align: right;">197</td>
-<td style="text-align: right;">4 (2 stale)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>The test for "does this need an animation?" is: does the idea have a time
-axis?</strong> A streaming algorithm is a state machine walking a sequence — a moving
-picture by nature, and prose is the wrong medium. A formula is not.</p>
-<h3 id="ranked">Ranked</h3>
-<p><strong>1. Reservoir sampling — <code>algorithms/sampling.md</code> — animate.</strong>
-The best candidate in the set, and you are rewriting the page anyway. Two panels,
-same stream. Left, Algorithm R: every element tested, the reservoir flickering
-constantly early then almost never. Right, Algorithm L: a pointer leaping over
-the elements it will never select, landing only on acceptances. The viewer <em>sees</em>
-the work disappear — which is the whole point of Algorithm L and something the
-current proof sketch cannot convey. Plus a static chart: retention probability vs
-stream position, a flat line at k/n. That is what the proof is trying to say.</p>
-<p><strong>2. KMV on the unit interval — <code>algorithms/sketches.md</code> — animate.</strong>
-Possibly the most elegant animation in streaming statistics, currently two pages
-of prose. Hashes land on <code>[0,1)</code>; the k smallest stay lit; the k-th smallest <em>t</em>
-creeps toward zero; the estimate <code>(k-1)/t</code> converges. Duplicates land on existing
-marks and change nothing — the intuition for why a distinct-count sketch works.
-Draw the admission threshold as a gate and everything beyond it as excluded: that
-<em>is</em> the pre-filter optimisation on the roadmap, so the diagram documents the code
-and motivates it at once. <strong>A working version of this ships in
-<code>scripts/build_docs_assets.py</code> — 18 KB, generated from a real <code>KMV</code> run.</strong>
-Second animation on the same page: Misra-Gries eviction — counters fill, a new key
-arrives, everything decrements, the zeros drop out. Hard to follow in text,
-trivial as a picture.</p>
-<p><strong>3. The memory curve — <code>index.md</code> and <code>why-pysuricata.md</code> — static chart.</strong>
-Not a diagram, an <em>asset</em>. Two lines, rows on x, peak RSS on y: yours flat, the
-incumbent's linear until it stops at a MemoryError. The single picture that makes
-"bounded memory" concrete, the one that travels on social media, and your front
-page currently has no chart at all. Generate it from <code>benchmarks/end_to_end.py</code> so
-it is a measurement rather than an illustration.</p>
-<p><strong>4. Annotated report cards — <code>stats/*.md</code> — screenshots.</strong>
-2,184 lines explaining what the numbers on a card mean, with no picture of the
-card. A reader of these pages has the report open in another tab. One annotated
-screenshot per column type replaces several screens of prose. Cheapest high-value
-item here — you already generate the report; script the capture with Playwright.</p>
-<p><strong>5. The chunk lifecycle — merged architecture page — mermaid.</strong>
-One sequence diagram: source → adapter → chunk → consume → per-column accumulators
-→ merge → finalize → render, with the bounded-memory boundary drawn explicitly
-(what is O(1), what is O(n)). Replaces three overlapping pages, two of which
-currently lie.</p>
-<p><strong>6. Welford → Pébay merge — <code>algorithms/streaming.md</code> — static.</strong>
-Two partitions with their own means and moments combining into one, with the
-<code>δ²·n_a·n_b/n</code> correction drawn as the thing accounting for the gap between the
-means. Static is right; there is no time axis, just a decomposition. This is also
-the diagram that explains <em>why</em> chunked equals unchunked.</p>
-<p><strong>7. Missingness matrix — <code>analytics/missing-values.md</code> — screenshot.</strong>
-309 lines describing a visualisation without showing it.</p>
-<h3 id="what-not-to-animate">What not to animate</h3>
-<p>Formulas, config tables, the FAQ, the API reference. Motion on a static idea is
-decoration, costs bytes, and fights the reader. <code>stats/overview.md</code> already uses
-MathJax for ten formulas and is better for it.</p>
-<hr />
-<h2 id="how-to-build-them-without-creating-new-drift">How to build them without creating new drift</h2>
-<p><strong>The trap:</strong> you have just spent three rounds fixing documentation that went
-stale because nothing checked it. Twenty hand-drawn diagrams would recreate that
-problem in a medium nobody can diff. <strong>Generate the visuals, do not draw them.</strong></p>
-<table>
-<thead>
-<tr>
-<th>Need</th>
-<th>Use</th>
-<th>Not</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Flow, sequence, state</td>
-<td><strong>Mermaid</strong> — already enabled, stays text in git, diffable in review</td>
-<td>an exported image</td>
-</tr>
-<tr>
-<td>Algorithm animation</td>
-<td><strong>Inline SVG with CSS/SMIL</strong> — a few KB, scales, inherits theme through CSS variables so dark mode works free, honours <code>prefers-reduced-motion</code></td>
-<td><strong>GIF</strong> — megabytes, fixed palette, wrong on dark backgrounds, invisible to screen readers, unreviewable in a PR</td>
-</tr>
-<tr>
-<td>Charts from measurements</td>
-<td><strong>SVG emitted by a script</strong> reading <code>benchmarks/*.json</code></td>
-<td>a screenshot of a notebook</td>
-</tr>
-<tr>
-<td>Report cards</td>
-<td><strong>Playwright screenshots</strong> of a freshly generated report, cropped and annotated by the same script</td>
-<td>a manual screen grab</td>
-</tr>
-</tbody>
-</table>
-<h3 id="the-shape-of-it">The shape of it</h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>scripts/build_docs_assets.py          # one entry point, regenerates everything
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>docs/assets/generated/
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    kmv-unit-interval.svg             # SHIPPED — animated, from the real KMV
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    reservoir-r-vs-l.svg              # next
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    misra-gries-eviction.svg
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    memory-curve.svg                  # from end_to_end.py results
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    card-numeric.png                  # Playwright, annotated
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    MANIFEST.json                     # digest per asset
-</span></code></pre></div>
-<p><code>python scripts/build_docs_assets.py --check</code> fails if any committed asset no
-longer matches what the code generates — the same trick as a snapshot test. A
-change to <code>ReservoirSampler</code> that invalidates the animation shows up as a red
-build, not as a diagram that quietly starts lying.</p>
-<h3 id="two-details-worth-getting-right">Two details worth getting right</h3>
-<ul>
-<li><strong>Animate from the real thing.</strong> The KMV asset replays an actual <code>KMV</code> run with
-  a fixed seed, using the library's own hash. The picture is evidence, and it
-  changes when the algorithm changes.</li>
-<li><strong>Give every animation a still first frame and a caption that stands alone.</strong>
-  Print, screen readers, <code>prefers-reduced-motion</code> and the skimming reader all need
-  the static version to carry the point.</li>
-</ul>
-<h3 id="order">Order</h3>
-<p>Checker into CI → mechanical sweep → the four story pages with the memory curve →
-the algorithms trilogy with the two animations → everything else. The first two
-are hours, not weekends, and they stop the bleeding. The memory curve and the KMV
-animation are the two assets that will do work for you outside the docs — in the
-README, in post #3, and in the Show HN thumbnail.</p>
+<p>That is the whole reform, and everything else follows from it. Until 0.0.72,
+<code>cd.yml</code> triggered on <code>push: branches: [main]</code> while <code>version-check</code> required a
+bump on every pull request — so <strong>one merged pull request was exactly one PyPI
+release, unconditionally.</strong> A rewritten kernel and a fixed typo were the same
+size of event, and the version could not describe a change because it was
+incremented by the act of merging rather than by a judgement about what merged.</p>
+<p>The pipeline runs <code>guard → build → smoke → publish → release</code>, in that order:</p>
+<ol>
+<li><strong>guard</strong> — the tag matches <code>pyproject.toml</code>, and the changelog has notes.</li>
+<li><strong>build</strong> — one set of artifacts, reused by everything downstream.</li>
+<li><strong>smoke</strong> — the <strong>wheel</strong> is installed into an empty virtualenv on 3.10 and
+   3.14, asked for its version, then made to profile a frame and check
+   <code>schema_version</code>. CI tests the repository; this tests the artifact, which is
+   not the same object.</li>
+<li><strong>publish</strong> — Trusted Publishing over OIDC, gated on a <code>pypi</code> environment
+   with a required reviewer. No long-lived credential, and one human
+   confirmation before the only step that cannot be undone.</li>
+<li><strong>release</strong> — GitHub release created <strong>after</strong> PyPI has the package, with
+   notes lifted from <code>CHANGELOG.md</code>.</li>
+</ol>
+<p>A pull request does <strong>not</strong> have to bump the version. If it does,
+<code>scripts/check_version.py</code> asserts the step is legal — one component raised, the
+ones below it reset, nothing skipped, no downgrade — and that a matching
+changelog section exists.</p>
+<h2 id="the-gates-for-100">The gates for 1.0.0</h2>
+<p>Deliberately about evidence rather than dates.</p>
+<ol>
+<li><strong>Two consecutive minor releases with no breaking change, unforced.</strong> A
+   settled shape, not a freeze.</li>
+<li><strong>The deprecation queue is empty.</strong> <code>ReportConfig</code> is currently aliased to
+   <code>ProfileConfig</code> with no warning; that has to be resolved, not carried.</li>
+<li><strong>Every approximate value carries its error bound.</strong> The quantiles (#146) and
+   the duplicate count (#161) are done; the distinct count already was.</li>
+<li><strong>No known correctness bug in a covered path.</strong></li>
+<li><strong>The covered surface above has not changed for a full minor cycle</strong> — if the
+   list is still moving, the contract is not ready to be permanent.</li>
+</ol>
 
 
 
 
 
 
+
+  
+  
 
 
 
