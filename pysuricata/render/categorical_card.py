@@ -179,12 +179,26 @@ class CategoricalCardRenderer(CardRenderer):
         safe_mode_label = self.safe_html_escape(str(mode_label))
         mode_pct = (mode_n / max(1, total)) * 100.0 if total else 0.0
 
-        # Entropy calculation
-        if total > 0 and items:
+        # Every figure below is computed from the top-k sketch, and the sketch
+        # can legitimately come back **empty**. Misra-Gries only guarantees a
+        # value survives if it appears more than n/(k+1) times; `Cabin` has 204
+        # values over 147 distinct levels and its most frequent appears 4
+        # times, against a threshold of exactly 4. Nothing qualifies, so the
+        # sketch is empty -- and it is *right* to be empty.
+        #
+        # What was wrong is what the card did with that. `entropy` became
+        # `float("nan")` and rendered as the literal `NaN`, while `Rare levels`
+        # and `Top 5 coverage` fell through to their zero initialisers and
+        # printed `0 (0.0%)` and `0.0%` -- three statistics stating a fact
+        # about the column, when the truth is that this column has no heavy
+        # hitters to compute them from. Unknown is not zero.
+        tracked = bool(items) and total > 0
+
+        if tracked:
             probs = [c / total for _, c in items]
             entropy = float(-sum(p * math.log2(max(p, 1e-12)) for p in probs))
         else:
-            entropy = float("nan")
+            entropy = None
 
         # Rare levels analysis
         rare_count = 0
@@ -210,11 +224,12 @@ class CategoricalCardRenderer(CardRenderer):
         empty_cls = "warn" if empty_zero > 0 else ""
 
         return {
+            "tracked": tracked,
             "mode_label": mode_label,
             "safe_mode_label": safe_mode_label,
             "mode_n": int(mode_n),
             "mode_pct": float(mode_pct),
-            "entropy": float(entropy),
+            "entropy": entropy,
             "rare_count": int(rare_count),
             "rare_cov": float(rare_cov),
             "rare_cls": rare_cls,
@@ -286,8 +301,19 @@ class CategoricalCardRenderer(CardRenderer):
                 f"{int(getattr(stats, 'missing', 0)):,} ({miss_pct:.1f}%)",
                 f"num {miss_cls}",
             ),
+            # Same reasoning as Entropy below: with an empty top-k sketch there
+            # is no mode to report, and `0.0%` claims there is one and that it
+            # covers nothing.
             ("Mode", f"<code>{cat_stats['safe_mode_label']}</code>", None),
-            ("Mode %", f"{cat_stats['mode_pct']:.1f}%", "num"),
+            (
+                "Mode %",
+                self._unknown_cell(
+                    "no value repeats often enough to be tracked in the top-k sketch"
+                )
+                if not cat_stats.get("tracked", True)
+                else f"{cat_stats['mode_pct']:.1f}%",
+                "num",
+            ),
             (
                 "Empty strings",
                 f"{int(cat_stats['empty_zero']):,}",
@@ -296,6 +322,16 @@ class CategoricalCardRenderer(CardRenderer):
         ]
 
         return data
+
+    def _unknown_cell(self, reason: str) -> str:
+        """An em dash that says why, rather than a number that is not true.
+
+        The `title` matters more than the dash. A reader who sees `—` where
+        they expected a percentage will want to know whether the report failed
+        or the column has nothing to report, and those are opposite
+        conclusions about their data.
+        """
+        return f'<span title="{self.safe_html_escape(reason)}">—</span>'
 
     def _length_display(self, value) -> str:
         """A length, or an em dash when there is genuinely nothing to show.
@@ -326,16 +362,35 @@ class CategoricalCardRenderer(CardRenderer):
         `Embarked` quirk about one-character labels; `Name`, whose labels
         average 26.97 characters, printed `NaN` just the same.
         """
+        # An em dash where the top-k sketch found nothing to summarise. See
+        # `_compute_categorical_stats`: an empty sketch is a real answer about
+        # a column with no repeated values, and `0.0%` is a different, false
+        # answer that looks equally confident.
+        unknown = not cat_stats.get("tracked", True)
+        no_heavy_hitters = (
+            "no value repeats often enough to be tracked in the top-k sketch"
+        )
+
         data = [
-            ("Entropy", self.format_number(cat_stats["entropy"]), "num"),
+            (
+                "Entropy",
+                self._unknown_cell(no_heavy_hitters)
+                if unknown
+                else self.format_number(cat_stats["entropy"]),
+                "num",
+            ),
             (
                 "Rare levels",
-                f"{int(cat_stats['rare_count']):,} ({cat_stats['rare_cov']:.1f}%)",
+                self._unknown_cell(no_heavy_hitters)
+                if unknown
+                else f"{int(cat_stats['rare_count']):,} ({cat_stats['rare_cov']:.1f}%)",
                 f"num {cat_stats['rare_cls']}",
             ),
             (
                 "Top 5 coverage",
-                f"{cat_stats['top5_cov']:.1f}%",
+                self._unknown_cell(no_heavy_hitters)
+                if unknown
+                else f"{cat_stats['top5_cov']:.1f}%",
                 f"num {cat_stats['top5_cls']}",
             ),
             (
