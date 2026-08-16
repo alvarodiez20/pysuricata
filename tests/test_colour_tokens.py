@@ -56,7 +56,6 @@ BASELINE: set[str] = {
     "_03-summary.css #e15e4e",
     "_03-summary.css #e1b54e",
     "_05-sample.css #1a1a1a",
-    "_06-cards.css #0366d6",
     "_06-cards.css #111",
     "_06-cards.css #16a34a",
     "_06-cards.css #1e3a8a",
@@ -165,7 +164,7 @@ class TestTheRatchetOnlyTurnsOneWay:
 
     def test_the_count_is_what_the_roadmap_says(self):
         """So the number in the audit cannot drift from the number in the code."""
-        assert len(BASELINE) == 66
+        assert len(BASELINE) == 65
 
 
 class TestTheAssertionIsWorthHaving:
