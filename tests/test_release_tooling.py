@@ -27,7 +27,12 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from check_version import VersionError, changelog_has, check_step  # noqa: E402
+from check_version import (  # noqa: E402
+    VersionError,
+    changelog_has,
+    check_step,
+    read_version,
+)
 from release_notes import extract  # noqa: E402
 
 
@@ -108,11 +113,7 @@ class TestTheChangelogGate:
     def test_the_repo_changelog_has_the_current_version(self):
         """A live check, so this cannot pass on a fixture while the real file
         drifts."""
-        import tomllib
-
-        version = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"][
-            "version"
-        ]
+        version = read_version((ROOT / "pyproject.toml").read_text())
         assert changelog_has(version, ROOT / "CHANGELOG.md")
 
 
@@ -144,11 +145,7 @@ class TestReleaseNotes:
             extract("## [0.3.0] - 2026-03-01\n\n## [0.2.0] - x\n\n- real\n", "0.3.0")
 
     def test_the_real_changelog_yields_notes_for_the_current_version(self):
-        import tomllib
-
-        version = tomllib.loads((ROOT / "pyproject.toml").read_text())["project"][
-            "version"
-        ]
+        version = read_version((ROOT / "pyproject.toml").read_text())
         body = extract((ROOT / "CHANGELOG.md").read_text(), version)
         assert len(body) > 20
 
@@ -177,3 +174,57 @@ class TestTheScriptsRunAsCommands:
         got = self._run("release_notes.py", "99.99.99")
         assert got.returncode == 1
         assert "Refusing to publish" in got.stderr
+
+
+class TestTheScriptsRunOnEveryPythonWeClaim:
+    """`check_version.py` imported `tomllib`, which is standard library only
+    from 3.11. This project's floor is 3.10.
+
+    Nothing local caught it -- every interpreter here is newer -- and it did not
+    fail the script, it failed the whole *test module*, because importing it
+    imports the script. CI on 3.10 was the only thing that saw it, and only
+    because #166 had just made the matrix run on this branch at all.
+
+    Reading one string is not worth a `tomli` dependency, so the version is
+    parsed with a regex scoped to the `[project]` table.
+    """
+
+    #: Standard library only from 3.11 or later.
+    _TOO_NEW = {"tomllib", "asyncio.taskgroups"}
+
+    @pytest.mark.parametrize("script", ["check_version.py", "release_notes.py"])
+    def test_it_imports_nothing_newer_than_the_floor(self, script):
+        import ast
+
+        tree = ast.parse((ROOT / "scripts" / script).read_text(encoding="utf-8"))
+        imported: set[str] = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                imported |= {alias.name.split(".")[0] for alias in node.names}
+            elif isinstance(node, ast.ImportFrom) and node.module:
+                imported.add(node.module.split(".")[0])
+        assert not (imported & self._TOO_NEW), sorted(imported & self._TOO_NEW)
+
+    def test_the_floor_this_guards_is_the_declared_one(self):
+        """So the set above cannot quietly stop matching the promise."""
+        declared = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        assert 'requires-python = ">=3.10"' in declared
+
+
+class TestVersionParsingWithoutATomlParser:
+    def test_it_reads_the_project_version(self):
+        assert read_version((ROOT / "pyproject.toml").read_text()) is not None
+
+    def test_a_version_under_another_table_does_not_win(self):
+        """`[tool.poetry] version` and friends must not be mistaken for it."""
+        text = (
+            '[tool.x]\nversion = "9.9.9"\n\n[project]\nname = "p"\nversion = "1.2.3"\n'
+        )
+        assert read_version(text) == "1.2.3"
+
+    def test_single_quotes_are_accepted(self):
+        assert read_version("[project]\nversion = '2.3.4'\n") == "2.3.4"
+
+    def test_a_file_with_no_project_version_raises(self):
+        with pytest.raises(VersionError, match="no `version` under"):
+            read_version("[tool.x]\nversion = '1.0.0'\n")

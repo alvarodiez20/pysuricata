@@ -41,6 +41,9 @@ quoted when both sides were measured in the same round-robin run.
 
   The styling was also split across `_03-summary.css` and `_13-utilities.css` at different specificities, so the focus rule in the second file silently lost to the base rule in the first. It lives in one place now.
 
+### Note on the Python floor
+`check_version.py` first used `tomllib`, which is standard library only from **3.11**, while this project's floor is **3.10**. It did not break the script — it broke the whole *test module*, because importing the tests imports the script. Nothing local caught it (every interpreter here is newer); **CI on 3.10 did**, and only because #166 had just made the matrix run on this branch at all. The version is now parsed with a regex scoped to the `[project]` table, and a test asserts neither script imports anything newer than the declared floor.
+
 ### Note
 `check_step` shipped its central rule wrong in the first draft: it asked that only one component *change*, which **rejects `0.0.72 → 0.1.0`** — the exact release this reform exists to enable — because bumping minor forces patch from 72 to 0. A reset is part of the bump, not a second decision. Caught by running the rule over real cases before trusting it, and kept as a test.
 

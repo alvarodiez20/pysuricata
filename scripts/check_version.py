@@ -35,8 +35,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-import tomllib
-
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
 #: `1.2.3`. Pre-release and build metadata are deliberately unsupported: this
@@ -56,8 +54,27 @@ def parse(version: str) -> tuple[int, int, int]:
     return tuple(int(part) for part in match.groups())  # type: ignore[return-value]
 
 
+#: `version = "1.2.3"` inside the `[project]` table. Scoped to that table so a
+#: `version` key under `[tool.something]` cannot be picked up by accident.
+_PROJECT_VERSION = re.compile(
+    r"^\[project\]\s*$.*?^version\s*=\s*[\"']([^\"']+)[\"']",
+    re.M | re.S,
+)
+
+
 def read_version(text: str) -> str:
-    return tomllib.loads(text)["project"]["version"]
+    """The `[project] version` from a `pyproject.toml`, without a TOML parser.
+
+    `tomllib` is standard library from 3.11 and this project supports 3.10, so
+    importing it made the whole test module unimportable on the oldest Python
+    the package claims to run on -- caught by CI on 3.10 and nowhere else,
+    because every local run is on a newer interpreter. Adding `tomli` for one
+    string is a dependency this does not need.
+    """
+    match = _PROJECT_VERSION.search(text)
+    if not match:
+        raise VersionError("no `version` under `[project]` in pyproject.toml")
+    return match.group(1)
 
 
 def version_at(ref: str) -> str:
