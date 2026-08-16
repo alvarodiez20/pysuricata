@@ -15,6 +15,23 @@ quoted when both sides were measured in the same round-robin run.
 ## [Unreleased]
 
 ### Fixed
+- **`--data-3` could not legally carry a standalone mark (#156).** At `#7FA0B5` it was **2.63:1** on the paper — below the 3:1 non-text minimum (WCAG 1.4.11), which is the entire job a third step exists for. It is now `#5C7F99`.
+
+  | | paper | track |
+  |---|---:|---:|
+  | old `#7FA0B5` | **2.63** ✗ | 2.24 ✗ |
+  | new `#5C7F99` light | 4.03 ✓ | 3.42 ✓ |
+  | new `#5C7F99` dark | 4.09 ✓ | 3.51 ✓ |
+
+- **`--data-3` now carries no text.** At 4.03:1 against the paper and 3.83:1 against the ink it reaches neither text minimum, so it is a fill and never a label background. `--on-data-3` is removed, and a composition-bar segment on that step sends its count to the legend — the mechanism a too-narrow segment already uses.
+
+### Added
+- `test_data_3_carries_no_text` asserts a **failure** on purpose: raising `--data-3` far enough to carry text breaks the build and forces the conversation, rather than quietly reintroducing a label nobody measured. Paired with `test_data_3_can_stand_alone`, which asserts the property the old value failed.
+
+### Note
+The handoff also proposed `#4A6E8A` for the **dark** `--data-4`. **Not taken.** It separates from `--data-2` by only **1.95:1**, and those two carry the two-dataset comparison, which needs 2:1; it is also 1.27:1 from `--data-3`, so two adjacent steps would be indistinguishable. The repo's `#2C4A62` gives 3.36 and 2.19 and is kept. The handoff labels its dark section *"PROPOSED, NOT YET VERIFIED as a whole"* — it measured each step against the surfaces, not the steps against each other. Every ratio above was recomputed here rather than copied.
+
+### Fixed
 - **Per-column per-chunk missing counts are now produced (#139).** `mark_chunk_boundary()` was only ever called from `finalize()`, so the recorded boundaries counted **renders**, not chunks — one for an uninterrupted run, two for a checkpointed one, never the chunk count. The engine now marks a boundary after every chunk it consumes.
 
   This is the root cause of the impossible figure found in #154: a segment reading `data-missing="1563"` on an 891-row frame — 175.4% — because a single boundary accumulated every chunk's counter while being sized as one chunk.
