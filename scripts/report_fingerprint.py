@@ -1,0 +1,230 @@
+"""Reduce a rendered report to the set of facts it asserts.
+
+The UI migration rewrites every template, stylesheet and card renderer across
+seventeen commits. An HTML snapshot test is worthless against that: the diff is
+100% churn on every commit, so nobody reads it, so a real regression rides in
+unnoticed. This module extracts the *numbers* instead, discarding every trace of
+how they are presented, and produces a stable, sorted, diffable fingerprint.
+
+The contract this enforces:
+
+    Presentation may change on every commit of the migration.
+    The facts may not, except at the two commits that deliberately change them.
+
+Those two are the KMV clamp (``unique`` may only ever decrease, and only to the
+row count) and the correlations change (below-threshold pairs become visible).
+Everything else in a seventeen-commit rewrite of the render layer must leave
+this file byte-identical.
+
+Usage
+-----
+    # once, before the migration starts, on a report built from correct numbers
+    python scripts/report_fingerprint.py --write tests/fixtures/fingerprint.txt
+
+    # in CI on every commit
+    pytest tests/test_report_data_invariance.py
+
+Deliberately *not* captured: colours, class names, element order, tag names,
+whitespace, SVG geometry, ids, ARIA text. If a change to any of those alters
+this fingerprint, the extractor is over-fitted to the old markup and should be
+loosened -- that judgement call is the price of the technique and it is much
+cheaper than reviewing seventeen full-document diffs.
+"""
+
+from __future__ import annotations
+
+import argparse
+import html as htmllib
+import re
+from pathlib import Path
+
+# --------------------------------------------------------------------------- #
+# normalisation
+# --------------------------------------------------------------------------- #
+
+_TAG = re.compile(r"<[^>]+>")
+_WS = re.compile(r"\s+")
+# 1,234  |  1234.5  |  -0.004  |  1.2e+04  |  77.1%  |  121 KB
+_NUMBER = re.compile(
+    r"-?\d[\d,]*\.?\d*(?:[eE][+-]?\d+)?\s*(?:%|KB|MB|GB|B|s|ms)?",
+)
+
+
+def _text(fragment: str) -> str:
+    return _WS.sub(" ", htmllib.unescape(_TAG.sub(" ", fragment))).strip()
+
+
+def _canon_number(raw: str) -> str:
+    """Canonicalise a rendered figure so formatting changes do not register.
+
+    ``1,234`` / ``1234`` / ``1.234e+03`` all reduce to the same token, because
+    the migration explicitly reformats figures (thousands separators replace
+    scientific notation) and that must not read as a data change.
+    """
+    s = raw.strip()
+    unit = ""
+    m = re.search(r"(%|KB|MB|GB|B|ms|s)$", s)
+    if m:
+        unit = m.group(1)
+        s = s[: m.start()].strip()
+    s = s.replace(",", "").replace("−", "-").replace("–", "-")
+    try:
+        v = float(s)
+    except ValueError:
+        return f"{raw.strip()}"
+    # Twelve significant figures: enough that a real change shows, loose enough
+    # that a float repr difference between Python versions does not.
+    return f"{v:.12g}{unit}"
+
+
+# --------------------------------------------------------------------------- #
+# extraction
+# --------------------------------------------------------------------------- #
+
+
+def _pairs_from_attrs(doc: str) -> list[tuple[str, str]]:
+    """Facts the renderer already tags in the DOM.
+
+    ``data-count`` / ``data-pct`` / ``data-value`` / ``data-threshold`` are
+    emitted next to the element they describe and survive any restyling, which
+    makes them the most durable hooks in the document. ``data-col`` scopes them.
+    """
+    out: list[tuple[str, str]] = []
+    for el in re.finditer(r"<[a-zA-Z][^>]*\sdata-[a-z-]+=[^>]*>", doc):
+        tag = el.group(0)
+        attrs = dict(re.findall(r'(data-[a-z-]+)="([^"]*)"', tag))
+        scope = (
+            attrs.get("data-col")
+            or attrs.get("data-name")
+            or attrs.get("data-label")
+            or ""
+        )
+        for key in (
+            "count",
+            "pct",
+            "value",
+            "threshold",
+            "percentage",
+            "missing",
+            "chunk",
+        ):
+            k = f"data-{key}"
+            if k in attrs:
+                out.append((f"attr::{scope}::{key}", _canon_number(attrs[k])))
+    return out
+
+
+def _pairs_from_kv(doc: str) -> list[tuple[str, str]]:
+    """Label/value pairs from the per-column statistics tables.
+
+    Matched on adjacency rather than on class names, because the migration
+    replaces ``.kv`` tables with a four-cell stat row and the pairing is the
+    only thing common to both shapes.
+    """
+    out: list[tuple[str, str]] = []
+    # <th>Label</th><td>Value</td>  and  <td>Label</td><td>Value</td>
+    for m in re.finditer(
+        r"<t[dh][^>]*>(.*?)</t[dh]>\s*<t[dh][^>]*>(.*?)</t[dh]>", doc, re.S
+    ):
+        label, value = _text(m.group(1)), _text(m.group(2))
+        if not label or not value or len(label) > 40:
+            continue
+        if not _NUMBER.fullmatch(value):
+            continue
+        out.append((f"kv::{label.lower()}", _canon_number(value)))
+    return out
+
+
+def _pairs_from_columns(doc: str) -> list[tuple[str, str]]:
+    """Per-column type and dtype, which must survive every layout change."""
+    out: list[tuple[str, str]] = []
+    for m in re.finditer(r'data-col="([^"]+)"[^>]*data-type="([^"]+)"', doc):
+        out.append((f"type::{m.group(1)}", m.group(2)))
+    for m in re.finditer(r'data-type="([^"]+)"[^>]*data-col="([^"]+)"', doc):
+        out.append((f"type::{m.group(2)}", m.group(1)))
+    return out
+
+
+def _pairs_from_flags(doc: str) -> list[tuple[str, str]]:
+    """Quality flags, sorted, per column.
+
+    Order is presentation; membership is a fact. Phase 5.7 changes how a flag is
+    *displayed* (value against threshold instead of a bare word) but must not
+    change which flags fire.
+    """
+    out: list[tuple[str, str]] = []
+    for m in re.finditer(r'data-col="([^"]+)"[^>]*data-flags="([^"]*)"', doc):
+        flags = sorted(f.strip().lower() for f in m.group(2).split(",") if f.strip())
+        out.append((f"flags::{m.group(1)}", "|".join(flags)))
+    return out
+
+
+def fingerprint(doc: str) -> str:
+    """Return the sorted, deduplicated fact set of a rendered report."""
+    facts: set[tuple[str, str]] = set()
+    for extractor in (
+        _pairs_from_attrs,
+        _pairs_from_kv,
+        _pairs_from_columns,
+        _pairs_from_flags,
+    ):
+        facts.update(extractor(doc))
+    return "\n".join(f"{k}\t{v}" for k, v in sorted(facts))
+
+
+# --------------------------------------------------------------------------- #
+# diffing
+# --------------------------------------------------------------------------- #
+
+
+def diff(before: str, after: str) -> tuple[list[str], list[str], list[str]]:
+    """Return (removed, added, changed) between two fingerprints."""
+    b = dict(line.split("\t", 1) for line in before.splitlines() if "\t" in line)
+    a = dict(line.split("\t", 1) for line in after.splitlines() if "\t" in line)
+    removed = sorted(f"{k}\t{b[k]}" for k in b.keys() - a.keys())
+    added = sorted(f"{k}\t{a[k]}" for k in a.keys() - b.keys())
+    changed = sorted(
+        f"{k}\t{b[k]} -> {a[k]}" for k in b.keys() & a.keys() if b[k] != a[k]
+    )
+    return removed, added, changed
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("report", nargs="?", help="rendered report HTML")
+    ap.add_argument("--write", metavar="PATH", help="write the fingerprint here")
+    ap.add_argument("--compare", metavar="PATH", help="diff against this fingerprint")
+    args = ap.parse_args()
+
+    if not args.report:
+        ap.error("a report path is required")
+    fp = fingerprint(Path(args.report).read_text(encoding="utf-8"))
+
+    if args.write:
+        Path(args.write).write_text(fp + "\n", encoding="utf-8")
+        print(f"wrote {args.write} — {len(fp.splitlines())} facts")
+
+    if args.compare:
+        removed, added, changed = diff(
+            Path(args.compare).read_text(encoding="utf-8"), fp
+        )
+        for title, rows in (
+            ("REMOVED", removed),
+            ("ADDED", added),
+            ("CHANGED", changed),
+        ):
+            if rows:
+                print(f"\n{title} ({len(rows)})")
+                for r in rows[:40]:
+                    print("  " + r)
+                if len(rows) > 40:
+                    print(f"  … and {len(rows) - 40} more")
+        return 1 if (removed or changed) else 0
+
+    if not args.write:
+        print(fp)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

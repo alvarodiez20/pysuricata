@@ -1,0 +1,45 @@
+# Codecov behaviour for this repository.
+#
+# The upload itself is already authenticated (`CODECOV_TOKEN` in ci.yml), so
+# coverage data arrives fine. What this file controls is how much of it comes
+# back as PR noise.
+#
+# Note on the "please install the Codecov app" banner that has been appearing on
+# every pull request: it is not something this file can turn off. Codecov
+# prepends it when the GitHub App is not installed on the repository, because
+# without it Codecov posts through a legacy integration it is retiring. The fix
+# is a one-time install at https://github.com/apps/codecov — a repository
+# settings change, so it needs the repository owner.
+
+coverage:
+  status:
+    project:
+      default:
+        # Coverage should not fall, but a run-to-run wobble is not a fall.
+        target: auto
+        threshold: 0.5%
+    patch:
+      default:
+        # New code carries tests. This is the check that has earned its keep --
+        # it is what surfaced the unreachable DuckDB branch in #96.
+        target: 80%
+        threshold: 0%
+
+comment:
+  layout: "condensed_header, diff, files"
+  # Only comment when the numbers actually moved. A docs-only or config-only
+  # pull request has nothing to say about coverage and should not say it.
+  require_changes: true
+  # One comment per pull request, edited in place, rather than a new one on
+  # every push.
+  behavior: default
+
+# Nothing here is a merge gate; these report, they do not block.
+github_checks:
+  annotations: true
+
+ignore:
+  - "benchmarks/**"
+  - "scripts/**"
+  - "examples/**"
+  - "native/**"

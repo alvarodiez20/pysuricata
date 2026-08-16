@@ -42,11 +42,12 @@ jobs:
       - name: Check changelog was updated
         run: |
           git fetch origin main
-          if git diff origin/main -- docs/changelog.md | grep -q '^+'; then
+          if git diff origin/main -- CHANGELOG.md | grep -q '^+'; then
             echo "✓ Changelog has been updated"
           else
-            echo "⚠️  Warning: docs/changelog.md has not been updated"
+            echo "⚠️  Warning: CHANGELOG.md has not been updated"
             echo "Please add a changelog entry for your changes"
+            echo "(docs/changelog.md includes this file; edit the root one)"
             exit 1
           fi
 
