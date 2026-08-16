@@ -31,6 +31,10 @@ Repository housekeeping ahead of the report redesign. No library code changed.
 - **`scripts/report_fingerprint.py`** — reduces a rendered report to the set of *facts* it asserts, discarding colours, class names, element order and geometry. The redesign rewrites the render layer across seventeen commits, which makes an HTML snapshot test worthless: the diff is 100% churn on every commit, so nobody reads it, so a real regression rides in unnoticed. This holds the line that presentation may change on every commit while the numbers may not.
 - **`codecov.yml`**, so a docs-only or config-only pull request stops drawing a coverage comment that has nothing to report.
 
+### Fixed
+- **`check_docs` read filenames out of YAML comments.** `check_nav` regex-scans `mkdocs.yml` as raw text, so a comment mentioning `CHANGELOG.md` was taken for a nav entry and reported as a page missing from disk. Comments are stripped first now.
+- **`docs/integration.md` and `docs/MIGRATION_TESTING.md` are marked as planning documents**, alongside `DOCS_PLAN.md`. They live in `docs/` for convenience but are not published, and their code fences illustrate test scaffolding rather than the public API — so the checker was executing `pytest` and `polars` snippets and reporting the resulting `NameError`s as documentation defects.
+
 ## [0.0.47] - 2026-08-16
 
 The first of three things to fix before the redesign takes a screenshot of

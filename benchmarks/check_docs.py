@@ -78,7 +78,15 @@ class Finding:
 # Planning documents, not documentation. They quote broken names on purpose
 # (DOCS_PLAN) and propose APIs that do not exist yet (DIAGRAM_PROMPTS), so
 # checking them against the current API reports the plan as the defect.
-_NOT_DOCUMENTATION = {"DOCS_PLAN.md", "DIAGRAM_PROMPTS.md"}
+# Planning documents that live in docs/ for convenience but are not part of
+# the published documentation: not in the nav, and their code fences
+# illustrate test scaffolding rather than the public API.
+_NOT_DOCUMENTATION = {
+    "DOCS_PLAN.md",
+    "DIAGRAM_PROMPTS.md",
+    "MIGRATION_TESTING.md",
+    "integration.md",
+}
 
 
 def _pages() -> list[Path]:
@@ -382,6 +390,10 @@ def check_stale_markers(page: Path, text: str, out: list[Finding]) -> None:
 
 def check_nav(out: list[Finding]) -> None:
     nav_text = (REPO / "mkdocs.yml").read_text(encoding="utf-8")
+    # Strip comments first. The regex scans raw text, so a filename mentioned in
+    # a YAML comment -- "# docs/changelog.md includes the root CHANGELOG.md" --
+    # was read as a nav entry and reported as a missing page.
+    nav_text = re.sub(r"(?m)#.*$", "", nav_text)
     referenced = set(re.findall(r"([\w./-]+\.md)", nav_text))
     on_disk = {str(p.relative_to(DOCS)) for p in _pages()}
     for orphan in sorted(on_disk - referenced):
