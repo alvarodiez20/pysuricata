@@ -139,8 +139,20 @@ jobs:
 
   # -------------------------------------------------------------- publish ---
   # Trusted Publishing over OIDC: no long-lived credential in the repository.
-  # The `pypi` environment is where a required reviewer is configured, so one
-  # human confirms the single step in this pipeline that cannot be undone.
+  #
+  # The `pypi` environment carries NO protection rules. It used to require a
+  # reviewer, and this comment used to say so; that rule was removed, so there
+  # is no human confirmation between a pushed tag and a published package.
+  #
+  # The consequence is worth stating where it will be read: `git push origin
+  # vX.Y.Z` is the point of no return. A version on PyPI cannot be replaced,
+  # only yanked, and a yanked version keeps its number forever. `guard` and
+  # `smoke` are what stand in for the reviewer now -- they check the tag
+  # against pyproject.toml, require changelog notes, and install the built
+  # wheel on 3.10 and 3.14 before this job runs.
+  #
+  # To restore the gate: repository Settings -> Environments -> pypi ->
+  # Required reviewers.
   publish:
     needs: [guard, build, smoke]
     if: github.event_name == 'push'

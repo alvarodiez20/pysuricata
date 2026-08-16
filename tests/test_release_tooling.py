@@ -228,3 +228,39 @@ class TestVersionParsingWithoutATomlParser:
     def test_a_file_with_no_project_version_raises(self):
         with pytest.raises(VersionError, match="no `version` under"):
             read_version("[tool.x]\nversion = '1.0.0'\n")
+
+
+class TestThePipelineDescribesItself:
+    """The workflow and the versioning page both described a required reviewer
+    on the `pypi` environment. That protection rule was removed, and a comment
+    asserting a safety property that no longer holds is worse than no comment:
+    it is the thing someone reads to decide whether pushing a tag is
+    reversible.
+
+    This cannot check GitHub's environment settings from a test, so it checks
+    the weaker property that keeps the two in step -- neither file may claim a
+    reviewer without the other, and both must say what pushing a tag does.
+    """
+
+    WORKFLOW = ROOT / ".github" / "workflows" / "cd.yml"
+    PAGE = ROOT / "docs" / "versioning.md"
+
+    def test_neither_file_promises_a_reviewer_alone(self):
+        workflow = self.WORKFLOW.read_text(encoding="utf-8").lower()
+        page = self.PAGE.read_text(encoding="utf-8").lower()
+        claims = [
+            "required reviewer" in text and "no protection rules" not in text
+            for text in (workflow, page)
+        ]
+        assert claims[0] == claims[1], (
+            "cd.yml and docs/versioning.md disagree about whether a human "
+            "confirms the publish. Whichever is right, they have to match."
+        )
+
+    def test_the_page_says_a_tag_publishes(self):
+        """The single fact a reader most needs before typing `git push origin
+        v1.2.3`."""
+        page = self.PAGE.read_text(encoding="utf-8").lower()
+        assert "cannot be replaced" in page or "only yanked" in page, (
+            "the versioning page does not say that publishing is irreversible"
+        )
