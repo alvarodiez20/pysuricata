@@ -2378,6 +2378,34 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD">Unreleased</a></h2>
 <h3 id="fixed">Fixed</h3>
 <ul>
+<li><strong>The histogram fills its card</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/147">#147</a>). At a 1240px viewport the <code>&lt;svg&gt;</code>
+  element was already 1,099px wide and the bars occupied <strong>356px</strong> of it — 68%
+  blank — because <code>preserveAspectRatio</code> defaults to <code>xMidYMid meet</code> and the
+  container's fixed height was the limiting dimension. Bars now cover 100% of
+  the plot at 1240px <strong>and</strong> at 390px.</li>
+</ul>
+<p>The fix is a split: bars, gridlines and axis rules go in an SVG stretched
+  with <code>preserveAspectRatio="none"</code> and <code>vector-effect="non-scaling-stroke"</code>,
+  and every label is HTML at a percentage offset. That is the only arrangement
+  that gives a full-width chart <em>and</em> 11px labels at every viewport — uniform
+  scaling makes them 28.8px on a desktop and 3.5px on a phone.
+- <strong>Bars no longer merge on a narrow screen.</strong> The gap was <code>bar_width - 1</code>, a
+  1-unit gap in viewBox space that scales with x: 1.1px at a 1,100px plot and
+  <strong>0.28px at 284px</strong>. Bars are drawn edge to edge with a non-scaling <code>--paper</code>
+  stroke, which is 1px by construction.
+- The y gutter is fixed at 44px, so the plot's left edge is identical on every
+  numeric card and bars line up down the page.
+- Nine x tick labels are written and tiered by importance; CSS drops them to
+  five and then three. Tier 1 is the two ends <strong>and the midpoint</strong> — a range
+  with no middle says nothing about whether a distribution is centred.
+- The x unit moved from the right end of the axis into a caption line carrying
+  the bin count and the exact peak (<code>years · 25 bins · peak 83 rows at
+  25.9–29.1</code>). At 1,100px the unit and <code>ROWS</code> were a hand-span apart and had
+  stopped reading as a pair; the peak matters more now that the y labels
+  abbreviate to four glyphs.
+- The empty state is a sentence rather than <code>No data</code> centred in a blank
+  420×200 canvas, which read as a chart that had failed.</p>
+<ul>
 <li><strong>The top-missing list says what it counted</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/182">#182</a>). It showed five
   columns and stopped, with no indication there were more — <code>total_significant</code>
   was computed, stored on the result object and printed nowhere. A frame with
