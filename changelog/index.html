@@ -2378,6 +2378,24 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD">Unreleased</a></h2>
 <h3 id="fixed">Fixed</h3>
 <ul>
+<li><strong>The top-missing list says what it counted</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/182">#182</a>). It showed five
+  columns and stopped, with no indication there were more — <code>total_significant</code>
+  was computed, stored on the result object and printed nowhere. A frame with
+  23 partially-missing columns now ends the list with <code>+ 18 more columns with
+  missing values</code>. A list that truncates in silence is worse than a shorter
+  list, because the reader cannot tell they are seeing part of the answer.</li>
+<li><strong>The missing threshold is defined once.</strong> It was in three places —
+  <code>MissingColumnsAnalyzer.MIN_THRESHOLD_PCT</code> at 0.0, the factory at 0.5, and
+  <code>ProfileConfig</code> at 0.0 — and since the render path reads the config, the
+  factory's 0.5 had never applied to a report. The value stays <strong>0.0</strong>, which
+  is what every shipped report has used; raising it would quietly drop columns
+  from people's summaries.</li>
+<li>
+<p><strong>The no-missing state is a sentence, not a fake row.</strong> It rendered a list
+  item with a <code>&lt;code&gt;</code> reading <code>No missing data</code>, a <code>0 (0.0%)</code> figure and a
+  zero-width bar — a table row impersonating data, with an element drawn to
+  represent nothing.</p>
+</li>
 <li>
 <p><strong>A histogram y-axis count label is now guaranteed at most four glyphs</strong>
   (<a href="https://github.com/alvarodiez20/pysuricata/issues/183">#183</a>). It used to <em>prefer</em> short and not guarantee it: <code>12,500</code> came out
