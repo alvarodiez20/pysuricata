@@ -19,6 +19,29 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.54] - 2026-08-16
+
+Phase 5.1 of the report redesign (#114): the numeric card restacked. No number
+on the page changes — nothing removed, nothing changed in the fact fingerprint.
+
+### Changed
+- **The histogram takes the card's full width**, above the stats rather than squeezed beside them. It was one third of a `240px 240px 1fr` row; full width it gains about 550px, which is what makes 50 bins legible and the log toggle worth using.
+- **The two key/value tables became one stat row.** `minmax(0, 1fr)`, not `1fr`: a grid track's default minimum is its content, so one long value — `-1.2345678e+18` is the case that does it — widens its own column and pushes the others out of alignment.
+
+### Fixed
+- **The page no longer scrolls sideways at 390px.** `.card-controls` was a grid sized `var(--triple-left) var(--triple-right) 1fr` "to match `.triple-row`" — a layout the card no longer uses — so its centre track measured 361px inside 358px. A page that scrolls sideways makes every horizontal gesture ambiguous, including the one inside the sample table's own scroll pane.
+- **Every control is a 44×44 target.** The scale and bins toggles were inline links, so the target was the line box — about 20px, under even the 24px minimum of WCAG 2.5.8, on the controls a reader touches most. The Details toggle came along at 27px.
+- **The mobile stat grid actually applies.** Its rule sat *before* the desktop rule it overrides, and with equal specificity the later one wins — so the four-column desktop grid was in force at 390px. It measured shorter that way, which would have read as the height target being met.
+
+### Note
+The generic `.triple-row` grid is deliberately retained. The categorical, boolean and datetime cards still emit it — they are phases 5.3 and 5.4 — and removing it with the numeric restack flattened all three at once. There is now a test per card type.
+
+### Not met
+The acceptance target was a card ≤600px at 390px; the numeric card is **775px**. The parts are a 180px chart, 148px of controls and a 306px stat row, under a 73px header. Two acceptance criteria are in direct tension here: six controls at the required 44×44 wrap to 148px at 390px, and fourteen statistics in the specified two-column mobile grid are seven rows. Meeting the height means dropping controls, dropping statistics, or abandoning the 44px target — each a design decision rather than a tightening.
+
+### On the fingerprint
+This is the first commit of the migration where the fingerprint moved, and it was **the extractor at fault, not the report**: it read label/value pairs only out of table cells, so statistics that moved into the stat row read as *removed* from a report that still displayed them. `scripts/report_fingerprint.py` now matches both shapes under one key — which is the loosening its own docstring prescribes for exactly this — and picks up six summary facts it had never covered.
+
 ## [0.0.53] - 2026-08-16
 
 Phase 4 of the report redesign (#113), and it closes #103. The fact fingerprint
@@ -838,7 +861,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.53...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.54...HEAD
+[0.0.54]: https://github.com/alvarodiez20/pysuricata/compare/0.0.53...0.0.54
 [0.0.53]: https://github.com/alvarodiez20/pysuricata/compare/0.0.52...0.0.53
 [0.0.52]: https://github.com/alvarodiez20/pysuricata/compare/0.0.51...0.0.52
 [0.0.51]: https://github.com/alvarodiez20/pysuricata/compare/0.0.50...0.0.51

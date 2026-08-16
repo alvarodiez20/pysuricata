@@ -114,24 +114,43 @@ def _pairs_from_attrs(doc: str) -> list[tuple[str, str]]:
     return out
 
 
+# Adjacent label/value pairs, in either shape the report uses. Both reduce to
+# the same key, so a statistic that moves from a table cell to a stat row keeps
+# its identity in the fingerprint.
+#
+# The second pattern was added when #114 restacked the numeric card: the two
+# `.kv` tables became a `<div class="vstat">` row, and the extractor -- which
+# only knew about table cells -- reported `max` and `median` as *removed* from
+# a report that still displayed both. That is the over-fitting this module's
+# docstring warns about, and the fix is here rather than in the card.
+_PAIR_PATTERNS = (
+    # <th>Label</th><td>Value</td>  and  <td>Label</td><td>Value</td>
+    re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>\s*<t[dh][^>]*>(.*?)</t[dh]>", re.S),
+    # <div class="…__cap">Label</div><div class="…__val">Value</div>
+    re.compile(
+        r'<div class="[^"]*__cap"[^>]*>(.*?)</div>\s*'
+        r'<div class="[^"]*__val"[^>]*>(.*?)</div>',
+        re.S,
+    ),
+)
+
+
 def _pairs_from_kv(doc: str) -> list[tuple[str, str]]:
-    """Label/value pairs from the per-column statistics tables.
+    """Label/value pairs from the per-column statistics.
 
     Matched on adjacency rather than on class names, because the migration
-    replaces ``.kv`` tables with a four-cell stat row and the pairing is the
-    only thing common to both shapes.
+    replaces ``.kv`` tables with a stat row and the pairing is the only thing
+    common to both shapes.
     """
     out: list[tuple[str, str]] = []
-    # <th>Label</th><td>Value</td>  and  <td>Label</td><td>Value</td>
-    for m in re.finditer(
-        r"<t[dh][^>]*>(.*?)</t[dh]>\s*<t[dh][^>]*>(.*?)</t[dh]>", doc, re.S
-    ):
-        label, value = _text(m.group(1)), _text(m.group(2))
-        if not label or not value or len(label) > 40:
-            continue
-        if not _NUMBER.fullmatch(value):
-            continue
-        out.append((f"kv::{label.lower()}", _canon_number(value)))
+    for pattern in _PAIR_PATTERNS:
+        for m in pattern.finditer(doc):
+            label, value = _text(m.group(1)), _text(m.group(2))
+            if not label or not value or len(label) > 40:
+                continue
+            if not _NUMBER.fullmatch(value):
+                continue
+            out.append((f"kv::{label.lower()}", _canon_number(value)))
     return out
 
 
