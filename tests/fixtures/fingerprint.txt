@@ -170,11 +170,13 @@ attr::23:00::count	37
 attr::23:00::pct	4.2
 attr::::count	0
 attr::::count	1
+attr::::count	1
 attr::::count	2
 attr::::count	4
 attr::::count	434
 attr::::count	457
 attr::::percentage	0%
+attr::::percentage	12.5
 attr::::percentage	12.5
 attr::::percentage	25
 attr::::percentage	48.7%
@@ -199,46 +201,140 @@ attr::Tue::pct	13.5
 attr::Wed::count	120
 attr::Wed::pct	13.5
 attr::col_age::count	10
+attr::col_age::count	10
+attr::col_age::count	10
+attr::col_age::count	10
+attr::col_age::count	11
+attr::col_age::count	11
+attr::col_age::count	11
 attr::col_age::count	11
 attr::col_age::count	110
 attr::col_age::count	111
 attr::col_age::count	12
+attr::col_age::count	12
+attr::col_age::count	12
 attr::col_age::count	124
+attr::col_age::count	13
 attr::col_age::count	13
 attr::col_age::count	130
 attr::col_age::count	14
+attr::col_age::count	14
+attr::col_age::count	14
+attr::col_age::count	14
+attr::col_age::count	14
+attr::col_age::count	15
+attr::col_age::count	15
+attr::col_age::count	15
+attr::col_age::count	15
+attr::col_age::count	15
+attr::col_age::count	15
+attr::col_age::count	15
+attr::col_age::count	15
 attr::col_age::count	15
 attr::col_age::count	158
 attr::col_age::count	16
+attr::col_age::count	16
+attr::col_age::count	16
+attr::col_age::count	16
+attr::col_age::count	16
+attr::col_age::count	16
+attr::col_age::count	16
+attr::col_age::count	16
+attr::col_age::count	17
+attr::col_age::count	17
+attr::col_age::count	17
 attr::col_age::count	17
 attr::col_age::count	18
+attr::col_age::count	18
+attr::col_age::count	18
+attr::col_age::count	18
+attr::col_age::count	18
+attr::col_age::count	18
+attr::col_age::count	18
+attr::col_age::count	18
+attr::col_age::count	19
+attr::col_age::count	19
+attr::col_age::count	19
+attr::col_age::count	19
+attr::col_age::count	19
+attr::col_age::count	19
 attr::col_age::count	19
 attr::col_age::count	198
 attr::col_age::count	20
+attr::col_age::count	20
+attr::col_age::count	20
+attr::col_age::count	20
+attr::col_age::count	20
+attr::col_age::count	21
+attr::col_age::count	21
 attr::col_age::count	21
 attr::col_age::count	22
+attr::col_age::count	22
+attr::col_age::count	22
+attr::col_age::count	22
+attr::col_age::count	23
+attr::col_age::count	23
 attr::col_age::count	23
 attr::col_age::count	24
+attr::col_age::count	24
+attr::col_age::count	25
 attr::col_age::count	25
 attr::col_age::count	28
+attr::col_age::count	28
+attr::col_age::count	28
+attr::col_age::count	29
+attr::col_age::count	29
 attr::col_age::count	29
 attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	3
+attr::col_age::count	30
+attr::col_age::count	30
+attr::col_age::count	30
 attr::col_age::count	30
 attr::col_age::count	31
+attr::col_age::count	31
+attr::col_age::count	31
+attr::col_age::count	32
 attr::col_age::count	32
 attr::col_age::count	33
 attr::col_age::count	34
 attr::col_age::count	346
 attr::col_age::count	35
 attr::col_age::count	36
+attr::col_age::count	36
+attr::col_age::count	36
 attr::col_age::count	37
 attr::col_age::count	38
+attr::col_age::count	38
 attr::col_age::count	39
+attr::col_age::count	39
+attr::col_age::count	41
 attr::col_age::count	41
 attr::col_age::count	42
 attr::col_age::count	44
 attr::col_age::count	45
 attr::col_age::count	46
+attr::col_age::count	46
+attr::col_age::count	46
+attr::col_age::count	5
+attr::col_age::count	5
+attr::col_age::count	5
+attr::col_age::count	5
+attr::col_age::count	5
 attr::col_age::count	5
 attr::col_age::count	51
 attr::col_age::count	53
@@ -247,9 +343,19 @@ attr::col_age::count	55
 attr::col_age::count	57
 attr::col_age::count	59
 attr::col_age::count	6
+attr::col_age::count	6
+attr::col_age::count	6
+attr::col_age::count	6
+attr::col_age::count	6
+attr::col_age::count	6
+attr::col_age::count	6
+attr::col_age::count	6
+attr::col_age::count	6
 attr::col_age::count	61
 attr::col_age::count	64
 attr::col_age::count	67
+attr::col_age::count	7
+attr::col_age::count	7
 attr::col_age::count	7
 attr::col_age::count	72
 attr::col_age::count	74
@@ -261,22 +367,87 @@ attr::col_age::count	87
 attr::col_age::count	88
 attr::col_age::count	92
 attr::col_age::count	95
+attr::col_age::count	95
+attr::col_age::count	98
 attr::col_age::count	98
 attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.3
+attr::col_age::pct	0.6
+attr::col_age::pct	0.6
+attr::col_age::pct	0.6
+attr::col_age::pct	0.6
+attr::col_age::pct	0.6
 attr::col_age::pct	0.6
 attr::col_age::pct	0.7
+attr::col_age::pct	0.7
+attr::col_age::pct	0.7
+attr::col_age::pct	0.7
+attr::col_age::pct	0.7
+attr::col_age::pct	0.7
+attr::col_age::pct	0.7
+attr::col_age::pct	0.7
+attr::col_age::pct	0.7
+attr::col_age::pct	0.8
+attr::col_age::pct	0.8
 attr::col_age::pct	0.8
 attr::col_age::pct	0.9
 attr::col_age::pct	1.1
+attr::col_age::pct	1.1
+attr::col_age::pct	1.1
+attr::col_age::pct	1.1
+attr::col_age::pct	1.2
+attr::col_age::pct	1.2
+attr::col_age::pct	1.2
 attr::col_age::pct	1.2
 attr::col_age::pct	1.3
+attr::col_age::pct	1.3
+attr::col_age::pct	1.3
+attr::col_age::pct	1.5
 attr::col_age::pct	1.5
 attr::col_age::pct	1.6
+attr::col_age::pct	1.6
+attr::col_age::pct	1.6
+attr::col_age::pct	1.6
+attr::col_age::pct	1.6
+attr::col_age::pct	1.7
+attr::col_age::pct	1.7
+attr::col_age::pct	1.7
+attr::col_age::pct	1.7
+attr::col_age::pct	1.7
+attr::col_age::pct	1.7
+attr::col_age::pct	1.7
+attr::col_age::pct	1.7
 attr::col_age::pct	1.7
 attr::col_age::pct	1.8
+attr::col_age::pct	1.8
+attr::col_age::pct	1.8
+attr::col_age::pct	1.8
+attr::col_age::pct	1.8
+attr::col_age::pct	1.8
+attr::col_age::pct	1.8
+attr::col_age::pct	1.8
+attr::col_age::pct	1.9
+attr::col_age::pct	1.9
+attr::col_age::pct	1.9
 attr::col_age::pct	1.9
 attr::col_age::pct	10.3
 attr::col_age::pct	10.7
+attr::col_age::pct	10.7
+attr::col_age::pct	11
 attr::col_age::pct	11
 attr::col_age::pct	12.3
 attr::col_age::pct	12.5
@@ -284,31 +455,74 @@ attr::col_age::pct	13.9
 attr::col_age::pct	14.6
 attr::col_age::pct	17.7
 attr::col_age::pct	2
+attr::col_age::pct	2
+attr::col_age::pct	2
+attr::col_age::pct	2
+attr::col_age::pct	2
+attr::col_age::pct	2
+attr::col_age::pct	2
+attr::col_age::pct	2
+attr::col_age::pct	2.1
+attr::col_age::pct	2.1
+attr::col_age::pct	2.1
+attr::col_age::pct	2.1
+attr::col_age::pct	2.1
+attr::col_age::pct	2.1
 attr::col_age::pct	2.1
 attr::col_age::pct	2.2
+attr::col_age::pct	2.2
+attr::col_age::pct	2.2
+attr::col_age::pct	2.2
+attr::col_age::pct	2.2
+attr::col_age::pct	2.4
+attr::col_age::pct	2.4
 attr::col_age::pct	2.4
 attr::col_age::pct	2.5
+attr::col_age::pct	2.5
+attr::col_age::pct	2.5
+attr::col_age::pct	2.5
+attr::col_age::pct	2.6
+attr::col_age::pct	2.6
 attr::col_age::pct	2.6
 attr::col_age::pct	2.7
+attr::col_age::pct	2.7
+attr::col_age::pct	2.8
 attr::col_age::pct	2.8
 attr::col_age::pct	22.2
 attr::col_age::pct	3.1
+attr::col_age::pct	3.1
+attr::col_age::pct	3.1
+attr::col_age::pct	3.3
+attr::col_age::pct	3.3
 attr::col_age::pct	3.3
 attr::col_age::pct	3.4
+attr::col_age::pct	3.4
+attr::col_age::pct	3.4
+attr::col_age::pct	3.4
 attr::col_age::pct	3.5
+attr::col_age::pct	3.5
+attr::col_age::pct	3.5
+attr::col_age::pct	3.6
 attr::col_age::pct	3.6
 attr::col_age::pct	3.7
 attr::col_age::pct	3.8
 attr::col_age::pct	3.9
 attr::col_age::pct	38.8
 attr::col_age::pct	4
+attr::col_age::pct	4
+attr::col_age::pct	4
 attr::col_age::pct	4.2
 attr::col_age::pct	4.3
+attr::col_age::pct	4.3
 attr::col_age::pct	4.4
+attr::col_age::pct	4.4
+attr::col_age::pct	4.6
 attr::col_age::pct	4.6
 attr::col_age::pct	4.7
 attr::col_age::pct	4.9
 attr::col_age::pct	5.1
+attr::col_age::pct	5.2
+attr::col_age::pct	5.2
 attr::col_age::pct	5.2
 attr::col_age::pct	5.7
 attr::col_age::pct	5.9
@@ -327,90 +541,276 @@ attr::col_age::pct	9.7
 attr::col_age::pct	9.8
 attr::col_age::pct	9.9
 attr::col_fare::count	1
+attr::col_fare::count	1
+attr::col_fare::count	1
+attr::col_fare::count	1
+attr::col_fare::count	1
+attr::col_fare::count	1
+attr::col_fare::count	1
+attr::col_fare::count	1
+attr::col_fare::count	1
+attr::col_fare::count	10
+attr::col_fare::count	10
+attr::col_fare::count	10
+attr::col_fare::count	10
+attr::col_fare::count	10
 attr::col_fare::count	10
 attr::col_fare::count	101
 attr::col_fare::count	103
+attr::col_fare::count	103
 attr::col_fare::count	104
 attr::col_fare::count	11
+attr::col_fare::count	11
+attr::col_fare::count	11
+attr::col_fare::count	11
 attr::col_fare::count	110
+attr::col_fare::count	110
+attr::col_fare::count	115
 attr::col_fare::count	115
 attr::col_fare::count	12
 attr::col_fare::count	13
+attr::col_fare::count	13
 attr::col_fare::count	14
 attr::col_fare::count	17
+attr::col_fare::count	17
 attr::col_fare::count	18
+attr::col_fare::count	18
+attr::col_fare::count	19
+attr::col_fare::count	19
+attr::col_fare::count	19
+attr::col_fare::count	19
+attr::col_fare::count	19
 attr::col_fare::count	19
 attr::col_fare::count	190
 attr::col_fare::count	194
 attr::col_fare::count	198
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
+attr::col_fare::count	2
 attr::col_fare::count	2
 attr::col_fare::count	20
 attr::col_fare::count	212
 attr::col_fare::count	25
 attr::col_fare::count	256
 attr::col_fare::count	26
+attr::col_fare::count	26
+attr::col_fare::count	27
+attr::col_fare::count	27
+attr::col_fare::count	27
 attr::col_fare::count	27
 attr::col_fare::count	28
+attr::col_fare::count	28
 attr::col_fare::count	283
+attr::col_fare::count	3
+attr::col_fare::count	3
+attr::col_fare::count	3
+attr::col_fare::count	3
+attr::col_fare::count	3
 attr::col_fare::count	3
 attr::col_fare::count	32
 attr::col_fare::count	33
 attr::col_fare::count	34
+attr::col_fare::count	34
 attr::col_fare::count	35
+attr::col_fare::count	36
+attr::col_fare::count	36
+attr::col_fare::count	36
+attr::col_fare::count	36
 attr::col_fare::count	36
 attr::col_fare::count	37
 attr::col_fare::count	38
 attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
+attr::col_fare::count	4
 attr::col_fare::count	44
+attr::col_fare::count	44
+attr::col_fare::count	44
+attr::col_fare::count	45
+attr::col_fare::count	45
+attr::col_fare::count	45
 attr::col_fare::count	45
 attr::col_fare::count	48
 attr::col_fare::count	49
 attr::col_fare::count	5
+attr::col_fare::count	5
 attr::col_fare::count	50
 attr::col_fare::count	51
 attr::col_fare::count	52
+attr::col_fare::count	52
+attr::col_fare::count	52
+attr::col_fare::count	53
 attr::col_fare::count	53
 attr::col_fare::count	54
+attr::col_fare::count	54
+attr::col_fare::count	54
+attr::col_fare::count	55
+attr::col_fare::count	55
 attr::col_fare::count	55
 attr::col_fare::count	57
 attr::col_fare::count	59
 attr::col_fare::count	61
+attr::col_fare::count	61
 attr::col_fare::count	68
+attr::col_fare::count	7
+attr::col_fare::count	7
 attr::col_fare::count	7
 attr::col_fare::count	70
 attr::col_fare::count	73
 attr::col_fare::count	8
+attr::col_fare::count	8
 attr::col_fare::count	81
+attr::col_fare::count	9
 attr::col_fare::count	9
 attr::col_fare::count	90
 attr::col_fare::count	97
 attr::col_fare::count	98
 attr::col_fare::pct	0.1
+attr::col_fare::pct	0.1
+attr::col_fare::pct	0.1
+attr::col_fare::pct	0.1
+attr::col_fare::pct	0.1
+attr::col_fare::pct	0.1
+attr::col_fare::pct	0.1
+attr::col_fare::pct	0.1
+attr::col_fare::pct	0.1
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.2
 attr::col_fare::pct	0.2
 attr::col_fare::pct	0.3
+attr::col_fare::pct	0.3
+attr::col_fare::pct	0.3
+attr::col_fare::pct	0.3
+attr::col_fare::pct	0.3
+attr::col_fare::pct	0.3
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.4
 attr::col_fare::pct	0.4
 attr::col_fare::pct	0.6
+attr::col_fare::pct	0.6
+attr::col_fare::pct	0.8
+attr::col_fare::pct	0.8
 attr::col_fare::pct	0.8
 attr::col_fare::pct	0.9
+attr::col_fare::pct	0.9
+attr::col_fare::pct	1
 attr::col_fare::pct	1
 attr::col_fare::pct	1.1
+attr::col_fare::pct	1.1
+attr::col_fare::pct	1.1
+attr::col_fare::pct	1.1
+attr::col_fare::pct	1.1
+attr::col_fare::pct	1.1
+attr::col_fare::pct	1.2
+attr::col_fare::pct	1.2
+attr::col_fare::pct	1.2
 attr::col_fare::pct	1.2
 attr::col_fare::pct	1.3
 attr::col_fare::pct	1.5
+attr::col_fare::pct	1.5
 attr::col_fare::pct	1.6
+attr::col_fare::pct	1.9
 attr::col_fare::pct	1.9
 attr::col_fare::pct	10.1
 attr::col_fare::pct	10.9
 attr::col_fare::pct	11
 attr::col_fare::pct	11.3
 attr::col_fare::pct	11.6
+attr::col_fare::pct	11.6
 attr::col_fare::pct	11.7
 attr::col_fare::pct	12.3
+attr::col_fare::pct	12.3
+attr::col_fare::pct	12.9
 attr::col_fare::pct	12.9
 attr::col_fare::pct	2
+attr::col_fare::pct	2
+attr::col_fare::pct	2.1
+attr::col_fare::pct	2.1
+attr::col_fare::pct	2.1
+attr::col_fare::pct	2.1
+attr::col_fare::pct	2.1
 attr::col_fare::pct	2.1
 attr::col_fare::pct	2.2
 attr::col_fare::pct	2.8
+attr::col_fare::pct	2.9
 attr::col_fare::pct	2.9
 attr::col_fare::pct	21.3
 attr::col_fare::pct	21.8
@@ -418,142 +818,183 @@ attr::col_fare::pct	22.2
 attr::col_fare::pct	23.8
 attr::col_fare::pct	28.7
 attr::col_fare::pct	3
+attr::col_fare::pct	3
+attr::col_fare::pct	3
+attr::col_fare::pct	3
+attr::col_fare::pct	3.1
 attr::col_fare::pct	3.1
 attr::col_fare::pct	3.6
 attr::col_fare::pct	3.7
 attr::col_fare::pct	3.8
+attr::col_fare::pct	3.8
 attr::col_fare::pct	3.9
 attr::col_fare::pct	31.8
+attr::col_fare::pct	4
+attr::col_fare::pct	4
+attr::col_fare::pct	4
+attr::col_fare::pct	4
 attr::col_fare::pct	4
 attr::col_fare::pct	4.2
 attr::col_fare::pct	4.3
 attr::col_fare::pct	4.9
+attr::col_fare::pct	4.9
+attr::col_fare::pct	4.9
+attr::col_fare::pct	5.1
+attr::col_fare::pct	5.1
+attr::col_fare::pct	5.1
 attr::col_fare::pct	5.1
 attr::col_fare::pct	5.4
 attr::col_fare::pct	5.5
 attr::col_fare::pct	5.6
 attr::col_fare::pct	5.7
 attr::col_fare::pct	5.8
+attr::col_fare::pct	5.8
+attr::col_fare::pct	5.8
+attr::col_fare::pct	5.9
 attr::col_fare::pct	5.9
 attr::col_fare::pct	6.1
+attr::col_fare::pct	6.1
+attr::col_fare::pct	6.1
+attr::col_fare::pct	6.2
+attr::col_fare::pct	6.2
 attr::col_fare::pct	6.2
 attr::col_fare::pct	6.4
 attr::col_fare::pct	6.6
+attr::col_fare::pct	6.8
 attr::col_fare::pct	6.8
 attr::col_fare::pct	7.6
 attr::col_fare::pct	7.9
 attr::col_fare::pct	8.2
 attr::col_fare::pct	9.1
-kv::10ᵗʰ	24.93
-kv::10ᵗʰ	66
-kv::2ⁿᵈ	116.6
-kv::2ⁿᵈ	16
-kv::2ⁿᵈ	406
-kv::3ʳᵈ	12.02
-kv::3ʳᵈ	47
-kv::3ʳᵈ	659
-kv::4ᵗʰ	126.2
-kv::4ᵗʰ	60
-kv::4ᵗʰ	679
-kv::5ᵗʰ	14.37
-kv::5ᵗʰ	248
-kv::5ᵗʰ	26
-kv::6ᵗʰ	15.02
-kv::6ᵗʰ	63
-kv::7ᵗʰ	15
-kv::7ᵗʰ	18.88
-kv::8ᵗʰ	21.04
-kv::8ᵗʰ	59
-kv::9ᵗʰ	24.1
-kv::9ᵗʰ	62
-kv::booked 311	56
-kv::business hours	24.2%
-kv::business hrs %	24.2%
-kv::coeff. of var	0.5569
-kv::coeff. of var	0.7096
-kv::columns	8
-kv::count	0
-kv::count	219
-kv::count	891
-kv::distribution 1ˢᵗ	11.79
-kv::distribution 1ˢᵗ	33
-kv::duplicates	0
-kv::empty or zero	0
-kv::entropy	0.9855
-kv::entropy	0.9999
-kv::entropy	1.045
-kv::false	434
-kv::geometric mean	30.26
-kv::geometric mean	31.34
-kv::heaping %	12.46
-kv::heaping %	17.85
-kv::iqr	35.15
-kv::iqr	39
-kv::jarque–bera χ²	424.1
-kv::jarque–bera χ²	53.75
-kv::kurtosis	-1.193
-kv::kurtosis	2.143
-kv::label length (avg)	11.18
-kv::label length (avg)	3
-kv::label length (avg)	4.988
-kv::length p90	13
-kv::length p90	3
-kv::length p90	6
-kv::mad	16.41
-kv::mad	20
-kv::max	176.3
-kv::max	79
-kv::mean	40.02
-kv::mean	41.31
-kv::median	33.46
-kv::median	42
-kv::median (p50)	33.46
-kv::median (p50)	42
-kv::min	0.3883
-kv::min	1
-kv::missing	21.9%
-kv::mode %	0%
-kv::mode %	5.2%
-kv::mode %	50.6%
-kv::mode %	57.1%
-kv::p1 (≈)	1
-kv::p1 (≈)	3.399
-kv::p10 (≈)	10.19
-kv::p10 (≈)	9
-kv::p5 (≈)	4
-kv::p5 (≈)	6.94
-kv::p90 (≈)	73
-kv::p90 (≈)	77.04
-kv::p95 (≈)	76
-kv::p95 (≈)	95.21
-kv::p99 (≈)	134.1
-kv::p99 (≈)	79
-kv::q1 (p25)	19.08
-kv::q1 (p25)	22
-kv::q3 (p75)	54.23
-kv::q3 (p75)	61
-kv::range	175.9
-kv::range	78
-kv::rows	891
-kv::severity 1ˢᵗ	307
-kv::skew	-0.07823
-kv::skew	1.307
-kv::std dev	23.01
-kv::std dev	28.4
-kv::std error	0.7708
-kv::std error	0.9513
-kv::top 5 coverage	0%
-kv::top 5 coverage	100%
-kv::top 5 coverage	16.8%
-kv::true	457
-kv::unique	0
-kv::unique	2
-kv::unique	599
-kv::unique	79
-kv::unique	891
-kv::unique (≈)	891
-kv::unique timestamps (≈)	891
-kv::variance	529.3
-kv::variance	806.3
-kv::weekend %	27.3%
-kv::weekend ratio	27.3%
+kv::::booked 311	56
+kv::::columns	8
+kv::::duplicates	0
+kv::::missing	21.9%
+kv::::rows	891
+kv::col_age::10ᵗʰ	66
+kv::col_age::2ⁿᵈ	16
+kv::col_age::3ʳᵈ	47
+kv::col_age::4ᵗʰ	60
+kv::col_age::5ᵗʰ	26
+kv::col_age::6ᵗʰ	63
+kv::col_age::7ᵗʰ	15
+kv::col_age::8ᵗʰ	59
+kv::col_age::9ᵗʰ	62
+kv::col_age::coeff. of var	0.5569
+kv::col_age::count	891
+kv::col_age::distribution 1ˢᵗ	33
+kv::col_age::geometric mean	31.34
+kv::col_age::heaping %	17.85
+kv::col_age::iqr	39
+kv::col_age::jarque–bera χ²	53.75
+kv::col_age::kurtosis	-1.193
+kv::col_age::mad	20
+kv::col_age::max	79
+kv::col_age::mean	41.31
+kv::col_age::mean	41.31
+kv::col_age::median	42
+kv::col_age::median (p50)	42
+kv::col_age::min	1
+kv::col_age::min	1
+kv::col_age::p1 (≈)	1
+kv::col_age::p10 (≈)	9
+kv::col_age::p5 (≈)	4
+kv::col_age::p90 (≈)	73
+kv::col_age::p95 (≈)	76
+kv::col_age::p99 (≈)	79
+kv::col_age::q1 (p25)	22
+kv::col_age::q1 (p25)	22
+kv::col_age::q3 (p75)	61
+kv::col_age::q3 (p75)	61
+kv::col_age::range	78
+kv::col_age::skew	-0.07823
+kv::col_age::std dev	23.01
+kv::col_age::std dev	23.01
+kv::col_age::std error	0.7708
+kv::col_age::unique	79
+kv::col_age::variance	529.3
+kv::col_booked::business hours	24.2%
+kv::col_booked::business hrs %	24.2%
+kv::col_booked::count	891
+kv::col_booked::unique (≈)	891
+kv::col_booked::unique timestamps (≈)	891
+kv::col_booked::weekend %	27.3%
+kv::col_booked::weekend ratio	27.3%
+kv::col_cabin::count	219
+kv::col_cabin::empty or zero	0
+kv::col_cabin::entropy	0.9855
+kv::col_cabin::label length (avg)	3
+kv::col_cabin::length p90	3
+kv::col_cabin::mode %	57.1%
+kv::col_cabin::top 5 coverage	100%
+kv::col_cabin::unique	2
+kv::col_empty::count	0
+kv::col_empty::empty or zero	0
+kv::col_empty::unique	0
+kv::col_fare::10ᵗʰ	24.93
+kv::col_fare::2ⁿᵈ	116.6
+kv::col_fare::2ⁿᵈ	406
+kv::col_fare::3ʳᵈ	12.02
+kv::col_fare::3ʳᵈ	659
+kv::col_fare::4ᵗʰ	126.2
+kv::col_fare::4ᵗʰ	679
+kv::col_fare::5ᵗʰ	14.37
+kv::col_fare::5ᵗʰ	248
+kv::col_fare::6ᵗʰ	15.02
+kv::col_fare::7ᵗʰ	18.88
+kv::col_fare::8ᵗʰ	21.04
+kv::col_fare::9ᵗʰ	24.1
+kv::col_fare::coeff. of var	0.7096
+kv::col_fare::count	891
+kv::col_fare::distribution 1ˢᵗ	11.79
+kv::col_fare::geometric mean	30.26
+kv::col_fare::heaping %	12.46
+kv::col_fare::iqr	35.15
+kv::col_fare::jarque–bera χ²	424.1
+kv::col_fare::kurtosis	2.143
+kv::col_fare::mad	16.41
+kv::col_fare::max	176.3
+kv::col_fare::mean	40.02
+kv::col_fare::mean	40.02
+kv::col_fare::median	33.46
+kv::col_fare::median (p50)	33.46
+kv::col_fare::min	0.3883
+kv::col_fare::min	0.3883
+kv::col_fare::p1 (≈)	3.399
+kv::col_fare::p10 (≈)	10.19
+kv::col_fare::p5 (≈)	6.94
+kv::col_fare::p90 (≈)	77.04
+kv::col_fare::p95 (≈)	95.21
+kv::col_fare::p99 (≈)	134.1
+kv::col_fare::q1 (p25)	19.08
+kv::col_fare::q1 (p25)	19.08
+kv::col_fare::q3 (p75)	54.23
+kv::col_fare::q3 (p75)	54.23
+kv::col_fare::range	175.9
+kv::col_fare::severity 1ˢᵗ	307
+kv::col_fare::skew	1.307
+kv::col_fare::std dev	28.4
+kv::col_fare::std dev	28.4
+kv::col_fare::std error	0.9513
+kv::col_fare::unique	891
+kv::col_fare::variance	806.3
+kv::col_name::count	891
+kv::col_name::empty or zero	0
+kv::col_name::entropy	1.045
+kv::col_name::label length (avg)	11.18
+kv::col_name::length p90	13
+kv::col_name::mode %	5.2%
+kv::col_name::top 5 coverage	16.8%
+kv::col_name::unique	599
+kv::col_sex::count	891
+kv::col_sex::empty or zero	0
+kv::col_sex::entropy	0.9999
+kv::col_sex::label length (avg)	4.988
+kv::col_sex::length p90	6
+kv::col_sex::mode %	50.6%
+kv::col_sex::top 5 coverage	100%
+kv::col_sex::unique	2
+kv::col_survived::count	891
+kv::col_survived::false	434
+kv::col_survived::true	457
+kv::col_survived::unique	2
