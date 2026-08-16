@@ -240,197 +240,203 @@ body.suricata-standalone:not(.light) {
   margin: 0 auto;
   padding: 0.75rem 1rem;
 }
-/* =============================
-   HEADER / APP BAR
-   ============================= */
+/* =============================================================
+   HEADER / APP BAR — one bar, 52px
+
+   Phase 2 of the redesign. What this replaces was a two-row grid with a
+   78px logo column holding a vertical lockup: about 96px of chrome, most of
+   it artwork, before any data. A vertical lockup inside a horizontal bar is
+   what forced that height, which is why the mark and the name are now set
+   side by side.
+
+   The bar is a single row: brand, what was profiled, the sections, the two
+   actions. The report's own title and metadata moved out of the bar and into
+   the page, because they belong to the report rather than to the chrome --
+   and because a bare timestamp in a bar tells nobody what it is a timestamp
+   of.
+
+   The indigo/amber toggle icon and the calendar and clock chip icons that
+   used to live at the end of this file are gone. The chips no longer exist,
+   and their colours were on neither of the two scales -- indigo-500 and
+   amber-500 were simply picked. Header icons take --ink-2 and draw with
+   currentColor.
+   ============================================================= */
 #pysuricata-report .appbar {
   background: var(--appbar-bg);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--divider);
+  border-bottom: 1px solid var(--rule);
   position: sticky;
   top: 0;
   z-index: 50;
-  transition: background .2s ease, border-color .2s ease;
 }
 
 #pysuricata-report.unpinned .appbar {
   position: static;
 }
 
-/* 2-row grid, logo spans both rows */
-#pysuricata-report .header-grid {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  /* The mark plus the typeset name; sized by content rather than a fixed
-     column, because the name is text and text is not a fixed width. */
-  grid-template-rows: auto auto;
-  grid-template-areas:
-    "logo title"
-    "logo meta";
-  column-gap: 0.5rem;
-  row-gap: 0.2rem;
-  /* a touch more breathing room between lines */
-  align-items: center;
-}
-
-/* Logo */
-#pysuricata-report .header-grid .logo {
-  grid-area: logo;
+#pysuricata-report .appbar .bar {
+  height: var(--appbar-h);
   display: flex;
   align-items: center;
-  justify-content: center;
-  height: 60px;
-  /* ensure visible area */
-  width: 100%;
-  background: none;
+  gap: 14px;
+  padding-top: 0;
+  padding-bottom: 0;
+  position: relative;
 }
 
-/* The lockup: drawn mark, typeset name.
-   There is deliberately no light/dark variant here. The mark is inline SVG with
-   its own two colours, which read on either background, and the name is text,
-   so it follows currentColor. The pair of PNGs this replaced existed only
-   because the wordmark was baked into the artwork and had to be recoloured. */
+/* ---- brand -------------------------------------------------- */
+#pysuricata-report .brand {
+  display: flex;
+  align-items: center;
+  flex: none;
+  color: inherit;
+  text-decoration: none;
+}
+
+#pysuricata-report .brand:hover {
+  text-decoration: none;
+  opacity: 0.75;
+}
+
 #pysuricata-report #logo {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
+/* 30px, against the 44px the stacked lockup needed. The mark is the only
+   part of the artwork used here; the name is set as type beside it, which is
+   what removed the light/dark image swap -- text follows currentColor. */
 #pysuricata-report #logo .logo-mark {
-  height: 44px;
+  height: 30px;
   width: auto;
   display: block;
   flex: none;
 }
 
 #pysuricata-report #logo .wordmark {
-  font-weight: 700;
-  font-size: 1.05rem;
-  letter-spacing: 0.01em;
-  color: inherit;
+  font-weight: 650;
+  font-size: 15px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
   white-space: nowrap;
 }
 
-/* Top row: title (left), nav + toggle (right) */
-#pysuricata-report .title-nav {
-  grid-area: title;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
+/* ---- what was profiled -------------------------------------- */
+/* Emitted with its separator or not at all, so an in-memory frame -- which
+   has no name, and is most inputs -- leaves no rule dangling in the bar. */
+#pysuricata-report .bar-sep {
+  width: 1px;
+  height: 20px;
+  background: var(--rule-strong);
+  flex: none;
 }
 
-#pysuricata-report .title-nav h1 {
-  font-size: 1.5rem;
-  font-weight: 700;
-  margin: 0;
+#pysuricata-report .dataset-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* Shrinks before the nav and the actions do, so a long filename ellipses
+     rather than pushing the buttons off the end of the bar. */
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
-#pysuricata-report .nav-and-toggle {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-/* Quick links - minimal clean design with no default background */
+/* ---- sections ------------------------------------------------ */
 #pysuricata-report .quick {
   display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
   align-items: center;
+  gap: 22px;
+  margin-left: auto;
+  flex: none;
 }
 
-#pysuricata-report .header-grid .quick a,
-#pysuricata-report .header-grid .quick a:visited {
-  color: inherit;
+/* Plain text, no pills. The active section is marked by colour and a rule
+   under it rather than a filled shape -- there is nothing here to press. */
+#pysuricata-report .quick a,
+#pysuricata-report .quick a:visited {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--muted);
+  text-decoration: none;
+  padding-bottom: 3px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+  /* A 13.5px line box is about 21px tall, which is under the 24px minimum in
+     WCAG 2.5.8. The box is grown rather than the type, so the label still
+     reads at the design's size and the bar still measures 52px. The rule that
+     marks the active section sits on the bottom edge, so the text is aligned
+     there rather than centred -- otherwise the rule drifts away from it. */
+  display: inline-flex;
+  align-items: flex-end;
+  min-height: 26px;
+}
+
+#pysuricata-report .quick a:hover {
+  color: var(--ink);
   text-decoration: none;
 }
 
-#pysuricata-report .quick a {
-  font-weight: 600;
-  font-size: 0.9rem;
-  padding: 0.35rem 0.75rem;
-  /* A hover affordance, so it keeps a radius -- but 6px, not a pill. The pill
-     shape goes entirely in phase 2, where the nav becomes plain text. */
-  border-radius: 6px;
+#pysuricata-report .quick a.active {
+  color: var(--ink);
+  border-bottom-color: var(--q-good);
+}
+
+#pysuricata-report .quick a:focus-visible {
+  outline: 2px solid var(--data-1);
+  outline-offset: 3px;
+}
+
+/* The long label wherever it fits; the short one only on the mobile rail,
+   where five of them have to fit 390px without scrolling. */
+#pysuricata-report .quick .nav-short {
+  display: none;
+}
+
+/* ---- actions ------------------------------------------------- */
+#pysuricata-report .bar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: none;
+}
+
+#pysuricata-report .icon-btn {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
   background: transparent;
-  transition: all 0.2s ease;
+  border-radius: 3px;
+  color: var(--ink-2);
+  cursor: pointer;
+  padding: 0;
   position: relative;
 }
 
-/* Hover state - subtle background only, no border, no underline */
-#pysuricata-report .quick a:hover {
-  background: rgba(0, 0, 0, 0.06);
-  transform: translateY(-1px);
-  text-decoration: none;
-}
-
-#pysuricata-report:not(.light) .quick a:hover {
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* Active state - shows current section */
-#pysuricata-report .quick a.active {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--data-1);
-  text-decoration: none;
-}
-
-#pysuricata-report:not(.light) .quick a.active {
-  background: rgba(59, 130, 246, 0.12);
-  color: var(--data-1);
-}
-
-/* Focus state - accessibility */
-#pysuricata-report .quick a:focus-visible {
-  outline: 2px solid var(--data-1);
-  outline-offset: 2px;
-}
-
-/* Toggle button (monochrome) */
-#pysuricata-report .appbar .toggle-button {
-  position: static;
-  border: none;
-  background: transparent;
-  font-size: 1.3rem;
-  cursor: pointer;
-  padding: 0.3rem;
-  border-radius: 50%;
-  color: inherit;
-  transition: background-color 0.2s, transform 0.2s;
-}
-
-#pysuricata-report .appbar .toggle-button:hover {
-  background-color: rgba(0, 0, 0, 0.08);
-  transform: scale(1.1);
-}
-
-#pysuricata-report:not(.light) .appbar .toggle-button:hover {
-  background-color: rgba(255, 255, 255, 0.12);
-}
-
-/* Bottom row: metadata left-aligned under title */
-#pysuricata-report .meta {
-  grid-area: meta;
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  font-size: 0.85rem;
-  opacity: 0.9;
-}
-
-
-/* Pin button placement and hover styling */
-#pysuricata-report .meta #pin-button {
-  margin-left: auto;
+/* The visual box is 30px, which is what a 52px bar has room for. The
+   *target* is 44px, which is what a finger needs. Growing the box would blow
+   the bar height, so the hit area is extended past the paint instead: the
+   two are not the same rectangle, and only one of them is visible. */
+#pysuricata-report .icon-btn::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--tap-min);
+  height: var(--tap-min);
+  transform: translate(-50%, -50%);
 }
 
 #pysuricata-report .icon-btn:hover {
-  background: var(--chip-bg);
-  filter: brightness(1.05);
+  color: var(--ink);
+  background: var(--track);
 }
 
 #pysuricata-report .icon-btn:focus-visible {
@@ -438,96 +444,163 @@ body.suricata-standalone:not(.light) {
   outline-offset: 2px;
 }
 
-#pysuricata-report #pin-button {
-  border: none;
+#pysuricata-report .icon-btn svg {
+  display: block;
 }
 
+/* ---- the report's own title and metadata --------------------- */
+#pysuricata-report .report-head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
 
+#pysuricata-report .report-head h1 {
+  margin: 0;
+  font-size: 27px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+/* Labelled, because the bar used to carry a bare timestamp, a bare duration
+   and a bare "891 × 12" whose meaning lived in a `title` attribute -- and a
+   tooltip survives neither printing nor a screenshot nor PDF export. */
+#pysuricata-report .report-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+}
+
+#pysuricata-report .report-meta .k {
+  color: var(--muted);
+}
+
+#pysuricata-report .report-meta .v {
+  color: var(--ink);
+}
+
+#pysuricata-report .report-meta .meta-sep {
+  width: 1px;
+  height: 11px;
+  background: var(--rule-strong);
+}
+
+/* ---- mobile --------------------------------------------------- */
+@media (max-width: 768px) {
+  /* The rail anchors to the bar itself rather than to the centred container,
+     so it runs edge to edge. Inside the container it was boxed by the page
+     gutter and lost 40px, which is the difference between five labels fitting
+     at 390px and the rail scrolling. */
+  #pysuricata-report .appbar {
+    position: sticky;
+  }
+
+  #pysuricata-report .appbar .bar {
+    position: static;
+    height: var(--appbar-h-sm);
+    gap: 10px;
+  }
+
+  #pysuricata-report #logo .logo-mark {
+    height: 26px;
+  }
+
+  #pysuricata-report #logo .wordmark {
+    font-size: 14px;
+  }
+
+  #pysuricata-report .icon-btn {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* The sections drop to their own rail under the bar. */
+  #pysuricata-report .appbar .quick {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 100%;
+    margin: 0;
+    /* Sized so all five labels fit at 390px without swiping, which is the
+       criterion. The rail spans the report, and the report carries a 20px
+       margin, so there are 350px to work with -- not 390. At the desktop
+       13.5px with a 16px gap the labels need 359 and it scrolls. At 13px with
+       a 10px gap and an 8px inset they need 340, which leaves 10px of
+       headroom for the font metrics to differ by platform.
+       overflow-x stays as the safety net for narrower phones. */
+    gap: 10px;
+    padding: 0 8px;
+    font-size: 13px;
+    background: var(--appbar-bg);
+    border-bottom: 1px solid var(--rule);
+    overflow-x: auto;
+    /* min-height, never height: with overflow-x a fixed height has the
+       scrollbar subtracted from it, which silently leaves a 29px rail that
+       fails the 44px target while measuring as though it passed. */
+    min-height: var(--tap-min);
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  #pysuricata-report .appbar .quick::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* On the rail there is room, and a finger needs it: the links fill the
+     full 44px rather than sitting as 26px text inside it. */
+  #pysuricata-report .appbar .quick a {
+    font-size: 13px;
+    min-height: var(--tap-min);
+    align-items: center;
+    padding-bottom: 0;
+    border-bottom: 0;
+    border-top: 2px solid transparent;
+  }
+
+  #pysuricata-report .appbar .quick a.active {
+    border-top-color: var(--q-good);
+  }
+
+  /* The brand is a link too, and 30px is short of a thumb. */
+  #pysuricata-report .brand {
+    min-height: var(--tap-min);
+  }
+
+  #pysuricata-report .quick .nav-long {
+    display: none;
+  }
+
+  #pysuricata-report .quick .nav-short {
+    display: inline;
+  }
+
+  /* Room for the rail, so the first section does not sit under it. */
+  #pysuricata-report .appbar {
+    margin-bottom: var(--tap-min);
+  }
+
+  #pysuricata-report .report-head h1 {
+    font-size: 22px;
+  }
+
+  #pysuricata-report .report-meta {
+    gap: 10px;
+  }
+}
+
+/* ---- chips, still used outside the header --------------------- */
 #pysuricata-report .chip {
   padding: 0.35rem 0.6rem;
   border-radius: 6px;
   font-size: 0.85rem;
   line-height: 1;
-  background: var(--chip-bg-light);
-  border: 1px solid var(--chip-br-light);
-}
-
-#pysuricata-report:not(.light) .chip {
-  background: var(--chip-bg-dark);
-  border-color: var(--chip-br-dark);
-}
-
-/* Responsive header tweaks */
-@media (max-width: 768px) {
-  #pysuricata-report .title-nav {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.4rem;
-  }
-}
-
-@media (max-width: 560px) {
-  #pysuricata-report #logo .logo-mark {
-    height: 34px;
-  }
-
-  #pysuricata-report #logo .wordmark {
-    font-size: 0.95rem;
-  }
-}
-
-#pysuricata-report .icon-btn {
-  border: 1px solid var(--chip-br-light);
-  background: transparent;
-  border-radius: 6px;
-  width: 32px;
-  height: 24px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: inherit;
-  /* SVGs use currentColor */
-  transition: color .25s ease, background-color .2s ease, transform .12s ease;
-}
-
-#pysuricata-report:not(.light) .icon-btn {
-  border-color: var(--chip-br-dark);
-}
-
-/* ── Colored header icons ─────────────────────────────── */
-/* Moon icon (shown in light mode → click to go dark) */
-#pysuricata-report.light #toggle-icon svg {
-  stroke: #6366f1;
-  /* indigo-500 */
-}
-
-/* Sun icon (shown in dark mode → click to go light) */
-#pysuricata-report:not(.light) #toggle-icon svg {
-  stroke: #f59e0b;
-  /* amber-500 */
-}
-
-/* Calendar chip icon */
-#pysuricata-report .chip[data-tooltip-type="date"] svg {
-  stroke: #0ea5e9;
-  /* sky-500 */
-}
-
-#pysuricata-report:not(.light) .chip[data-tooltip-type="date"] svg {
-  stroke: #38bdf8;
-  /* sky-400 */
-}
-
-/* Clock chip icon */
-#pysuricata-report .chip[data-tooltip-type="duration"] svg {
-  stroke: #10b981;
-  /* emerald-500 */
-}
-
-#pysuricata-report:not(.light) .chip[data-tooltip-type="duration"] svg {
-  stroke: #34d399;
-  /* emerald-400 */
+  background: var(--chip-bg);
+  border: 1px solid var(--chip-br);
 }
 /* =============================
    SUMMARY SECTION (cards & lists)
@@ -2063,36 +2136,13 @@ body.suricata-standalone:not(.light) {
 /*# =============================
 #   COMPACT MODE: header height & vertical rhythm
 # ============================= */
-/* Make header shorter without touching other containers */
-#pysuricata-report .appbar .container {
-  padding-top: 0.2rem;
-  padding-bottom: 0.2rem;
-}
-
-#pysuricata-report .header-grid {
-  row-gap: 0.2rem;
-  grid-template-columns: auto 1fr;
-}
-
-#pysuricata-report .header-grid .logo .logo-mark {
-  height: 40px;
-}
-
-#pysuricata-report .title-nav h1 {
-  font-size: 1.4rem;
-}
-
-#pysuricata-report .nav-and-toggle {
-  gap: 0.5rem;
-}
-
-#pysuricata-report .quick a {
-  padding: 0.25rem 0.6rem;
-}
-
-#pysuricata-report .meta {
-  gap: 0.4rem;
-}
+/* The compact-mode block that used to sit here shrank a 96px two-row header
+   by trimming its padding, its row gap and its font sizes. The bar it was
+   compensating for is gone: _02-header.css now sets the height directly from
+   --appbar-h, and every selector here -- .header-grid, .title-nav,
+   .nav-and-toggle, .meta -- referred to elements the template no longer
+   emits. The one live rule, the .quick a padding, fought the new nav's
+   padding-bottom, which is what draws the active-section rule. */
 
 /* Reduce space between rows/sections a bit */
 
@@ -8750,7 +8800,11 @@ body.suricata-standalone:not(.light) {
   // Insert a pin link into the quick nav if one isn't present
   function ensurePinButton() {
     if (document.getElementById(PIN_BTN_ID)) return;
-    const quickNav = document.querySelector('#pysuricata-report .quick');
+    // The icon group, not the nav. A pin dropped into .quick lands among the
+    // text section links, and on mobile into the rail that has to fit five
+    // labels at 390px without scrolling.
+    const quickNav = document.querySelector('#pysuricata-report .bar-actions')
+      || document.querySelector('#pysuricata-report .quick');
     if (!quickNav) return;
     const a = document.createElement('a');
     a.href = '#';
@@ -10529,90 +10583,56 @@ body.suricata-standalone:not(.light) {
   <div id="pysuricata-report" class="light">
     <!-- Sticky / modern header -->
     <header class="appbar">
-      <div class="container header-grid">
-        <div class="logo" id="logo-container">
-          <a href="#" data-action="scroll-to-top" title="Click to scroll to top"
-            style="text-decoration: none; color: inherit; cursor: pointer;">
-            <span id="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410 620" class="logo-mark" aria-hidden="true" focusable="false"><path fill="#0B0906" fill-rule="evenodd" d="M175 1L212 2L229 7L242 13L243 15L251 19L256 26L262 29L263 33L268 36L271 42L275 44L280 51L282 51L288 63L289 80L287 89L284 92L283 96L280 97L279 101L273 104L273 106L270 109L266 110L265 113L257 121L253 133L253 145L257 166L265 181L271 188L272 193L274 193L285 216L288 229L290 232L295 259L296 492L291 521L297 519L302 514L304 514L308 509L310 509L310 507L315 503L315 501L320 496L326 484L332 460L332 417L334 400L336 395L335 393L337 391L338 384L348 363L350 362L350 360L352 360L356 352L360 348L362 348L362 346L365 343L379 335L390 334L397 339L396 349L393 350L393 352L383 362L379 364L378 368L370 377L365 389L362 404L362 471L355 500L346 519L344 520L340 528L337 530L337 532L333 534L316 552L314 552L307 558L303 559L302 561L274 574L276 576L306 579L310 581L317 581L349 588L354 593L354 598L352 598L352 600L349 602L319 605L274 606L79 606L25 603L16 600L13 596L13 593L18 588L41 583L49 583L54 581L70 579L84 570L93 567L98 567L101 565L89 545L88 539L83 528L78 506L76 474L76 272L77 251L79 246L80 235L86 217L100 189L102 188L103 184L105 183L106 179L108 178L109 174L111 173L115 165L119 146L119 130L118 125L116 124L113 117L109 113L107 113L103 108L101 108L98 105L98 103L94 101L90 96L88 89L86 87L87 85L85 84L86 65L90 54L93 53L97 49L97 47L101 45L111 35L111 33L123 23L123 21L126 18L144 8Z"/><path fill="#412E17" fill-rule="evenodd" d="M178 5L196 5L201 7L209 6L212 8L226 11L228 13L233 14L234 16L237 16L242 21L249 24L249 26L251 26L252 29L257 31L258 35L262 37L262 39L265 41L268 47L272 48L273 51L275 51L276 54L280 57L280 60L284 66L283 71L285 71L285 76L282 88L280 89L278 94L275 95L273 99L271 99L270 102L264 105L263 108L261 108L261 110L255 114L255 117L252 119L249 129L249 152L251 156L250 161L252 162L253 169L256 174L255 176L258 177L258 180L260 181L261 185L265 188L265 191L267 191L267 194L273 203L272 206L275 207L277 213L279 214L278 217L280 217L281 219L287 240L286 242L288 244L287 249L289 250L290 255L289 262L291 262L292 489L289 503L290 506L287 513L288 515L286 526L290 527L297 525L301 521L304 521L309 515L311 515L311 513L314 513L314 511L319 507L319 505L324 500L326 493L329 490L336 463L336 420L337 410L339 409L338 403L339 398L341 397L340 394L342 392L345 380L347 379L347 376L350 373L352 366L356 366L354 364L355 362L357 362L358 358L360 358L360 355L363 354L371 345L374 345L374 343L377 343L378 341L381 341L383 339L391 339L393 341L392 345L388 348L388 350L386 350L386 352L384 352L380 356L380 358L377 359L377 361L375 360L373 366L371 366L369 371L366 373L364 381L362 382L358 401L358 467L353 490L350 499L347 503L347 506L343 511L343 514L341 515L339 520L336 521L337 523L335 524L335 526L332 527L328 534L325 537L323 537L321 541L319 541L319 543L314 545L310 550L307 550L307 552L301 554L297 558L294 558L293 560L290 560L282 564L281 566L278 566L275 569L270 570L270 572L266 576L267 578L273 580L303 583L306 585L313 585L323 588L340 590L341 592L343 591L349 594L349 596L346 595L345 598L315 601L283 600L271 602L82 602L72 600L38 600L28 599L19 596L19 593L22 593L24 591L31 591L34 589L39 590L39 588L45 587L51 588L57 585L66 586L65 584L76 582L78 579L86 576L87 574L91 574L96 571L101 571L103 569L108 568L105 568L105 566L107 567L107 565L105 565L105 561L103 560L103 557L101 555L102 553L100 554L100 552L97 550L97 547L95 546L95 543L93 542L93 538L91 536L91 533L89 532L89 527L87 525L85 511L82 503L80 470L80 331L82 327L82 322L80 323L80 275L82 260L81 255L83 253L82 250L84 238L85 236L87 237L87 228L90 225L92 216L96 211L102 196L108 189L108 186L112 182L112 179L115 177L115 174L117 173L121 163L121 156L123 150L123 127L119 119L119 116L116 114L117 111L114 112L112 109L110 109L109 106L106 105L106 103L104 103L101 99L99 99L99 97L96 96L96 93L94 93L90 81L90 69L94 57L98 55L98 53L101 52L101 50L106 48L106 46L108 46L108 44L110 44L110 42L115 39L115 36L117 36L118 33L122 31L122 29L124 29L127 24L129 24L129 22L133 20L135 21L134 19L139 17L140 15L147 15L147 12L151 12L165 7L175 7ZM191 23L163 26L153 29L150 32L154 30L156 31L157 29L159 30L160 28L171 26L207 25L228 34L230 37L234 39L235 42L239 44L239 46L242 47L242 49L247 54L246 56L248 56L252 64L254 71L254 89L256 78L255 70L249 55L242 47L242 45L230 34L217 27L203 23ZM218 52L218 54L225 56L229 60L231 67L229 73L230 76L232 71L232 65L230 62L231 60L229 60L229 58L226 57L224 54ZM157 53L153 56L161 54L168 55L173 60L174 74L176 67L176 62L174 61L174 59L168 54ZM128 54L126 55L123 61L123 65L127 56L129 56ZM208 55L204 58L201 67L205 77L209 81L218 84L227 81L227 79L229 79L229 76L224 81L214 82L205 75L203 64L205 59L207 60L206 58L209 56ZM147 64L145 69L146 76L152 83L164 83L173 76L172 74L170 78L163 82L152 82L150 79L151 77L149 78L147 75ZM122 67L119 75L120 91L126 104L131 108L132 111L134 111L137 114L142 129L142 154L139 166L139 170L141 170L140 167L143 156L142 122L140 120L139 115L128 105L122 94L123 91L121 90L120 85ZM188 90L182 92L180 91L180 93L195 92L200 94L204 99L204 106L202 110L199 112L201 113L203 109L205 109L205 97L203 97L200 93L196 91ZM176 94L172 101L172 105L175 109L175 112L179 113L184 117L193 117L199 114L198 113L192 116L185 116L180 114L174 107L174 99L178 95ZM243 106L239 110L237 110L236 114L233 116L230 123L229 157L231 158L233 173L237 183L236 185L238 185L238 188L241 194L243 195L244 199L246 200L246 203L248 203L248 206L250 206L253 213L255 214L255 218L257 218L260 228L262 230L261 233L263 233L267 249L266 254L268 257L268 275L265 281L266 283L269 276L269 255L266 239L261 224L255 212L253 211L251 205L243 195L243 190L241 191L237 183L231 157L231 124L234 117L243 108ZM117 211L113 217L113 220L117 214ZM108 233L105 239L102 252L102 272L104 274L105 280L107 281L111 289L116 294L118 294L134 310L134 312L141 320L153 355L159 361L167 365L173 366L174 364L163 362L162 360L156 357L150 344L148 338L149 336L146 333L144 324L139 315L137 314L137 311L135 311L132 308L131 304L127 302L125 299L123 299L111 287L111 285L107 281L108 279L106 279L105 277L103 270L103 254ZM242 236L237 238L236 240L242 238L245 241L245 257L247 244ZM134 238L129 239L127 242L127 254L130 262L132 263L132 266L134 266L148 281L148 283L153 288L154 292L156 293L155 295L157 295L162 305L170 330L172 341L172 363L174 363L173 340L166 312L156 291L154 290L151 283L147 280L148 277L146 278L132 263L128 253L129 241L134 240L135 242L139 243L164 267L164 269L173 279L174 283L176 284L178 290L180 291L185 301L189 303L188 301L195 287L197 286L198 282L200 281L206 270L236 240L233 240L233 242L230 245L228 245L228 247L226 247L207 267L207 269L199 278L195 287L193 287L194 289L192 290L189 299L186 301L185 297L180 291L181 289L179 289L178 285L176 284L175 279L173 279L173 277L170 275L170 272L167 271L167 269L149 250L147 250L141 243L136 241L136 239L134 240ZM234 271L228 276L228 278L231 275L233 275ZM224 283L221 285L218 292L220 291L222 286L224 286ZM265 283L258 291L258 293L262 290ZM218 292L216 293L213 301L215 300ZM210 308L208 310L202 332L200 348L200 365L202 368L208 367L212 364L214 365L215 363L213 363L216 362L218 358L221 356L227 342L227 337L231 324L235 320L236 316L242 310L244 310L242 308L234 317L234 319L232 319L233 321L229 326L224 348L222 348L223 350L219 357L213 363L202 367L201 358L203 334L206 320L209 316L208 314ZM102 314L99 323L99 339L101 345L100 496L102 500L105 517L108 522L109 529L111 530L112 536L115 538L116 543L119 545L122 551L124 551L125 555L129 557L131 562L144 571L154 572L158 570L175 567L195 568L195 546L197 541L196 537L199 528L199 522L201 522L201 516L210 494L212 494L212 491L214 491L216 485L219 484L215 499L213 515L213 542L215 555L219 563L219 566L221 567L221 569L223 569L224 572L235 573L236 571L238 571L239 568L241 568L241 566L244 563L246 563L247 559L250 558L251 554L254 552L254 549L258 545L262 532L263 530L265 530L264 527L267 520L268 511L270 508L269 506L271 505L271 317L269 318L269 316L267 316L266 318L263 318L263 320L261 320L257 324L255 329L252 331L248 342L244 342L247 343L244 355L241 358L240 364L238 365L238 367L236 367L237 369L235 370L234 374L232 373L232 376L229 377L227 381L223 382L223 384L220 384L217 387L213 387L207 390L180 391L181 389L174 390L171 389L171 387L167 388L167 386L164 387L162 385L159 385L155 381L150 380L148 377L146 377L146 375L139 370L139 367L137 366L138 364L136 365L136 362L133 359L130 348L128 346L130 344L128 344L126 336L122 329L119 327L117 322L115 322L115 320L112 320L113 318L110 318L110 316L106 315L104 316L105 314ZM104 320L108 320L119 332L127 356L135 371L146 382L157 387L158 389L179 395L209 394L229 385L236 378L236 376L242 369L245 360L249 354L252 341L257 331L265 322L267 322L268 473L266 505L262 522L254 543L252 544L250 550L243 558L243 560L233 569L227 569L223 564L223 561L219 553L217 541L218 507L221 493L223 490L224 476L227 472L226 470L228 466L226 467L226 470L221 474L221 476L212 484L200 506L193 530L190 564L174 563L161 565L153 568L145 567L133 558L133 556L128 552L128 550L124 547L119 537L117 536L112 521L110 519L105 499ZM333 533L334 534L322 545Z"/><path fill="#F5E2C1" fill-rule="evenodd" d="M186 25L205 25L218 29L224 32L225 34L229 35L231 38L234 39L235 42L239 44L239 46L241 46L241 48L246 53L246 56L248 57L252 65L254 73L253 87L245 103L241 106L239 110L237 110L237 112L231 119L228 133L228 146L230 154L229 157L236 185L238 186L240 193L242 194L243 198L245 199L248 206L251 208L252 212L255 215L255 218L258 221L266 246L268 264L267 277L263 286L232 319L220 355L216 358L215 361L206 366L202 366L202 346L206 321L208 319L209 312L212 308L213 302L216 296L218 295L219 291L224 286L225 282L227 282L227 280L230 278L230 276L233 275L233 273L241 265L246 256L247 242L245 238L241 236L233 240L233 242L231 242L209 264L209 266L205 269L205 271L193 287L193 290L188 300L186 300L186 298L184 297L183 293L181 292L181 289L177 285L175 279L171 276L170 272L168 272L165 266L144 245L142 245L134 238L130 238L127 241L127 255L132 266L134 266L134 268L146 279L146 281L152 287L166 316L171 337L172 364L162 361L155 355L142 319L140 318L137 311L135 311L135 309L131 306L131 304L127 302L120 294L118 294L113 289L113 287L110 285L108 279L105 276L103 267L104 251L111 226L113 224L113 221L116 217L118 210L120 209L122 202L124 201L126 195L129 193L129 190L131 189L132 185L135 183L139 171L141 170L144 150L144 133L141 118L138 115L138 113L127 103L123 95L123 91L121 89L121 73L124 67L124 63L127 57L129 56L129 53L134 48L134 46L149 33L159 30L161 28ZM217 52L208 54L203 59L201 68L204 76L210 82L219 84L229 79L232 72L232 63L231 60L225 54ZM157 53L149 57L145 65L145 74L149 81L153 84L161 84L167 82L169 79L172 78L176 70L176 62L169 54ZM186 90L180 91L179 93L175 94L172 100L172 106L175 112L177 112L179 115L183 117L197 116L205 109L205 97L197 91ZM105 320L112 324L113 327L119 333L127 357L135 372L145 382L156 387L157 389L178 395L210 394L230 385L242 370L245 361L249 355L252 342L257 332L265 323L267 323L268 472L266 504L262 521L254 542L252 543L250 549L243 557L243 559L232 569L228 569L223 563L223 560L219 552L217 540L218 508L221 494L223 491L224 477L227 472L228 466L220 475L220 477L218 477L212 483L200 505L193 529L191 544L191 562L189 564L173 563L160 565L152 568L146 567L133 557L133 555L128 551L128 549L124 546L119 536L117 535L112 520L110 518L105 498Z"/></svg><span class="wordmark">pysuricata</span></span>
-          </a>
-        </div>
+      <div class="container bar">
+        <a class="brand" href="#" data-action="scroll-to-top" title="Back to top">
+          <span id="logo"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 410 620" class="logo-mark" aria-hidden="true" focusable="false"><path fill="#0B0906" fill-rule="evenodd" d="M175 1L212 2L229 7L242 13L243 15L251 19L256 26L262 29L263 33L268 36L271 42L275 44L280 51L282 51L288 63L289 80L287 89L284 92L283 96L280 97L279 101L273 104L273 106L270 109L266 110L265 113L257 121L253 133L253 145L257 166L265 181L271 188L272 193L274 193L285 216L288 229L290 232L295 259L296 492L291 521L297 519L302 514L304 514L308 509L310 509L310 507L315 503L315 501L320 496L326 484L332 460L332 417L334 400L336 395L335 393L337 391L338 384L348 363L350 362L350 360L352 360L356 352L360 348L362 348L362 346L365 343L379 335L390 334L397 339L396 349L393 350L393 352L383 362L379 364L378 368L370 377L365 389L362 404L362 471L355 500L346 519L344 520L340 528L337 530L337 532L333 534L316 552L314 552L307 558L303 559L302 561L274 574L276 576L306 579L310 581L317 581L349 588L354 593L354 598L352 598L352 600L349 602L319 605L274 606L79 606L25 603L16 600L13 596L13 593L18 588L41 583L49 583L54 581L70 579L84 570L93 567L98 567L101 565L89 545L88 539L83 528L78 506L76 474L76 272L77 251L79 246L80 235L86 217L100 189L102 188L103 184L105 183L106 179L108 178L109 174L111 173L115 165L119 146L119 130L118 125L116 124L113 117L109 113L107 113L103 108L101 108L98 105L98 103L94 101L90 96L88 89L86 87L87 85L85 84L86 65L90 54L93 53L97 49L97 47L101 45L111 35L111 33L123 23L123 21L126 18L144 8Z"/><path fill="#412E17" fill-rule="evenodd" d="M178 5L196 5L201 7L209 6L212 8L226 11L228 13L233 14L234 16L237 16L242 21L249 24L249 26L251 26L252 29L257 31L258 35L262 37L262 39L265 41L268 47L272 48L273 51L275 51L276 54L280 57L280 60L284 66L283 71L285 71L285 76L282 88L280 89L278 94L275 95L273 99L271 99L270 102L264 105L263 108L261 108L261 110L255 114L255 117L252 119L249 129L249 152L251 156L250 161L252 162L253 169L256 174L255 176L258 177L258 180L260 181L261 185L265 188L265 191L267 191L267 194L273 203L272 206L275 207L277 213L279 214L278 217L280 217L281 219L287 240L286 242L288 244L287 249L289 250L290 255L289 262L291 262L292 489L289 503L290 506L287 513L288 515L286 526L290 527L297 525L301 521L304 521L309 515L311 515L311 513L314 513L314 511L319 507L319 505L324 500L326 493L329 490L336 463L336 420L337 410L339 409L338 403L339 398L341 397L340 394L342 392L345 380L347 379L347 376L350 373L352 366L356 366L354 364L355 362L357 362L358 358L360 358L360 355L363 354L371 345L374 345L374 343L377 343L378 341L381 341L383 339L391 339L393 341L392 345L388 348L388 350L386 350L386 352L384 352L380 356L380 358L377 359L377 361L375 360L373 366L371 366L369 371L366 373L364 381L362 382L358 401L358 467L353 490L350 499L347 503L347 506L343 511L343 514L341 515L339 520L336 521L337 523L335 524L335 526L332 527L328 534L325 537L323 537L321 541L319 541L319 543L314 545L310 550L307 550L307 552L301 554L297 558L294 558L293 560L290 560L282 564L281 566L278 566L275 569L270 570L270 572L266 576L267 578L273 580L303 583L306 585L313 585L323 588L340 590L341 592L343 591L349 594L349 596L346 595L345 598L315 601L283 600L271 602L82 602L72 600L38 600L28 599L19 596L19 593L22 593L24 591L31 591L34 589L39 590L39 588L45 587L51 588L57 585L66 586L65 584L76 582L78 579L86 576L87 574L91 574L96 571L101 571L103 569L108 568L105 568L105 566L107 567L107 565L105 565L105 561L103 560L103 557L101 555L102 553L100 554L100 552L97 550L97 547L95 546L95 543L93 542L93 538L91 536L91 533L89 532L89 527L87 525L85 511L82 503L80 470L80 331L82 327L82 322L80 323L80 275L82 260L81 255L83 253L82 250L84 238L85 236L87 237L87 228L90 225L92 216L96 211L102 196L108 189L108 186L112 182L112 179L115 177L115 174L117 173L121 163L121 156L123 150L123 127L119 119L119 116L116 114L117 111L114 112L112 109L110 109L109 106L106 105L106 103L104 103L101 99L99 99L99 97L96 96L96 93L94 93L90 81L90 69L94 57L98 55L98 53L101 52L101 50L106 48L106 46L108 46L108 44L110 44L110 42L115 39L115 36L117 36L118 33L122 31L122 29L124 29L127 24L129 24L129 22L133 20L135 21L134 19L139 17L140 15L147 15L147 12L151 12L165 7L175 7ZM191 23L163 26L153 29L150 32L154 30L156 31L157 29L159 30L160 28L171 26L207 25L228 34L230 37L234 39L235 42L239 44L239 46L242 47L242 49L247 54L246 56L248 56L252 64L254 71L254 89L256 78L255 70L249 55L242 47L242 45L230 34L217 27L203 23ZM218 52L218 54L225 56L229 60L231 67L229 73L230 76L232 71L232 65L230 62L231 60L229 60L229 58L226 57L224 54ZM157 53L153 56L161 54L168 55L173 60L174 74L176 67L176 62L174 61L174 59L168 54ZM128 54L126 55L123 61L123 65L127 56L129 56ZM208 55L204 58L201 67L205 77L209 81L218 84L227 81L227 79L229 79L229 76L224 81L214 82L205 75L203 64L205 59L207 60L206 58L209 56ZM147 64L145 69L146 76L152 83L164 83L173 76L172 74L170 78L163 82L152 82L150 79L151 77L149 78L147 75ZM122 67L119 75L120 91L126 104L131 108L132 111L134 111L137 114L142 129L142 154L139 166L139 170L141 170L140 167L143 156L142 122L140 120L139 115L128 105L122 94L123 91L121 90L120 85ZM188 90L182 92L180 91L180 93L195 92L200 94L204 99L204 106L202 110L199 112L201 113L203 109L205 109L205 97L203 97L200 93L196 91ZM176 94L172 101L172 105L175 109L175 112L179 113L184 117L193 117L199 114L198 113L192 116L185 116L180 114L174 107L174 99L178 95ZM243 106L239 110L237 110L236 114L233 116L230 123L229 157L231 158L233 173L237 183L236 185L238 185L238 188L241 194L243 195L244 199L246 200L246 203L248 203L248 206L250 206L253 213L255 214L255 218L257 218L260 228L262 230L261 233L263 233L267 249L266 254L268 257L268 275L265 281L266 283L269 276L269 255L266 239L261 224L255 212L253 211L251 205L243 195L243 190L241 191L237 183L231 157L231 124L234 117L243 108ZM117 211L113 217L113 220L117 214ZM108 233L105 239L102 252L102 272L104 274L105 280L107 281L111 289L116 294L118 294L134 310L134 312L141 320L153 355L159 361L167 365L173 366L174 364L163 362L162 360L156 357L150 344L148 338L149 336L146 333L144 324L139 315L137 314L137 311L135 311L132 308L131 304L127 302L125 299L123 299L111 287L111 285L107 281L108 279L106 279L105 277L103 270L103 254ZM242 236L237 238L236 240L242 238L245 241L245 257L247 244ZM134 238L129 239L127 242L127 254L130 262L132 263L132 266L134 266L148 281L148 283L153 288L154 292L156 293L155 295L157 295L162 305L170 330L172 341L172 363L174 363L173 340L166 312L156 291L154 290L151 283L147 280L148 277L146 278L132 263L128 253L129 241L134 240L135 242L139 243L164 267L164 269L173 279L174 283L176 284L178 290L180 291L185 301L189 303L188 301L195 287L197 286L198 282L200 281L206 270L236 240L233 240L233 242L230 245L228 245L228 247L226 247L207 267L207 269L199 278L195 287L193 287L194 289L192 290L189 299L186 301L185 297L180 291L181 289L179 289L178 285L176 284L175 279L173 279L173 277L170 275L170 272L167 271L167 269L149 250L147 250L141 243L136 241L136 239L134 240ZM234 271L228 276L228 278L231 275L233 275ZM224 283L221 285L218 292L220 291L222 286L224 286ZM265 283L258 291L258 293L262 290ZM218 292L216 293L213 301L215 300ZM210 308L208 310L202 332L200 348L200 365L202 368L208 367L212 364L214 365L215 363L213 363L216 362L218 358L221 356L227 342L227 337L231 324L235 320L236 316L242 310L244 310L242 308L234 317L234 319L232 319L233 321L229 326L224 348L222 348L223 350L219 357L213 363L202 367L201 358L203 334L206 320L209 316L208 314ZM102 314L99 323L99 339L101 345L100 496L102 500L105 517L108 522L109 529L111 530L112 536L115 538L116 543L119 545L122 551L124 551L125 555L129 557L131 562L144 571L154 572L158 570L175 567L195 568L195 546L197 541L196 537L199 528L199 522L201 522L201 516L210 494L212 494L212 491L214 491L216 485L219 484L215 499L213 515L213 542L215 555L219 563L219 566L221 567L221 569L223 569L224 572L235 573L236 571L238 571L239 568L241 568L241 566L244 563L246 563L247 559L250 558L251 554L254 552L254 549L258 545L262 532L263 530L265 530L264 527L267 520L268 511L270 508L269 506L271 505L271 317L269 318L269 316L267 316L266 318L263 318L263 320L261 320L257 324L255 329L252 331L248 342L244 342L247 343L244 355L241 358L240 364L238 365L238 367L236 367L237 369L235 370L234 374L232 373L232 376L229 377L227 381L223 382L223 384L220 384L217 387L213 387L207 390L180 391L181 389L174 390L171 389L171 387L167 388L167 386L164 387L162 385L159 385L155 381L150 380L148 377L146 377L146 375L139 370L139 367L137 366L138 364L136 365L136 362L133 359L130 348L128 346L130 344L128 344L126 336L122 329L119 327L117 322L115 322L115 320L112 320L113 318L110 318L110 316L106 315L104 316L105 314ZM104 320L108 320L119 332L127 356L135 371L146 382L157 387L158 389L179 395L209 394L229 385L236 378L236 376L242 369L245 360L249 354L252 341L257 331L265 322L267 322L268 473L266 505L262 522L254 543L252 544L250 550L243 558L243 560L233 569L227 569L223 564L223 561L219 553L217 541L218 507L221 493L223 490L224 476L227 472L226 470L228 466L226 467L226 470L221 474L221 476L212 484L200 506L193 530L190 564L174 563L161 565L153 568L145 567L133 558L133 556L128 552L128 550L124 547L119 537L117 536L112 521L110 519L105 499ZM333 533L334 534L322 545Z"/><path fill="#F5E2C1" fill-rule="evenodd" d="M186 25L205 25L218 29L224 32L225 34L229 35L231 38L234 39L235 42L239 44L239 46L241 46L241 48L246 53L246 56L248 57L252 65L254 73L253 87L245 103L241 106L239 110L237 110L237 112L231 119L228 133L228 146L230 154L229 157L236 185L238 186L240 193L242 194L243 198L245 199L248 206L251 208L252 212L255 215L255 218L258 221L266 246L268 264L267 277L263 286L232 319L220 355L216 358L215 361L206 366L202 366L202 346L206 321L208 319L209 312L212 308L213 302L216 296L218 295L219 291L224 286L225 282L227 282L227 280L230 278L230 276L233 275L233 273L241 265L246 256L247 242L245 238L241 236L233 240L233 242L231 242L209 264L209 266L205 269L205 271L193 287L193 290L188 300L186 300L186 298L184 297L183 293L181 292L181 289L177 285L175 279L171 276L170 272L168 272L165 266L144 245L142 245L134 238L130 238L127 241L127 255L132 266L134 266L134 268L146 279L146 281L152 287L166 316L171 337L172 364L162 361L155 355L142 319L140 318L137 311L135 311L135 309L131 306L131 304L127 302L120 294L118 294L113 289L113 287L110 285L108 279L105 276L103 267L104 251L111 226L113 224L113 221L116 217L118 210L120 209L122 202L124 201L126 195L129 193L129 190L131 189L132 185L135 183L139 171L141 170L144 150L144 133L141 118L138 115L138 113L127 103L123 95L123 91L121 89L121 73L124 67L124 63L127 57L129 56L129 53L134 48L134 46L149 33L159 30L161 28ZM217 52L208 54L203 59L201 68L204 76L210 82L219 84L229 79L232 72L232 63L231 60L225 54ZM157 53L149 57L145 65L145 74L149 81L153 84L161 84L167 82L169 79L172 78L176 70L176 62L169 54ZM186 90L180 91L179 93L175 94L172 100L172 106L175 112L177 112L179 115L183 117L197 116L205 109L205 97L197 91ZM105 320L112 324L113 327L119 333L127 357L135 372L145 382L156 387L157 389L178 395L210 394L230 385L242 370L245 361L249 355L252 342L257 332L265 323L267 323L268 472L266 504L262 521L254 542L252 543L250 549L243 557L243 559L232 569L228 569L223 563L223 560L219 552L217 540L218 508L221 494L223 491L224 477L227 472L228 466L220 475L220 477L218 477L212 483L200 505L193 529L191 544L191 562L189 564L173 563L160 565L152 568L146 567L133 557L133 555L128 551L128 549L124 546L119 536L117 535L112 520L110 518L105 498Z"/></svg><span class="wordmark">pysuricata</span></span>
+        </a>
+        
 
-        <div class="title-nav">
-          <h1>PySuricata EDA Report — Titanic Dataset</h1>
-          <div class="nav-and-toggle">
-            <nav class="quick" aria-label="Quick navigation">
-              <a href="#summary">Summary</a>
-              <a href="#sample">Sample</a>
-              <a href="#vars">Variables</a>
-              <a href="#correlations">Correlations</a>
-              <a href="#missing-values">Missing Values</a>
-              <a href="#" title="Download this report as HTML" aria-label="Download report"
-                data-action="download-report">
-                <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
-                  <path fill="currentColor"
-                    d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z" />
-                  <path fill="currentColor"
-                    d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z" />
-                </svg>
-              </a>
-            </nav>
-            <button id="toggle-button" class="toggle-button" data-action="toggle-dark-mode"
-              aria-label="Toggle dark mode">
-              <span id="toggle-icon">
-                <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-                </svg>
-              </span>
-            </button>
-          </div>
-        </div>
+        <nav class="quick" aria-label="Report sections">
+          <a href="#summary">Summary</a>
+          <a href="#sample">Sample</a>
+          <a href="#vars">Variables</a>
+          <a href="#correlations">Correlations</a>
+          <a href="#missing-values"><span class="nav-long">Missing Values</span><span class="nav-short">Missing</span></a>
+        </nav>
 
-        <div class="meta">
-          <span class="chip header-tooltip" data-tooltip-type="date" data-tooltip-value="2026-08-16 01:14:41"><svg
-              aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;">
-              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-              <line x1="16" y1="2" x2="16" y2="6" />
-              <line x1="8" y1="2" x2="8" y2="6" />
-              <line x1="3" y1="10" x2="21" y2="10" />
-            </svg> 2026-08-16 01:14:41</span>
-          <span class="chip header-tooltip" data-tooltip-type="duration" data-tooltip-value="0.13 s"><svg
-              aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: text-bottom;">
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg> 0.13 s</span>
-          <a class="chip header-tooltip" data-tooltip-type="version" data-tooltip-value="0.0.50"
-            href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer" aria-label="Open pysuricata repository on GitHub">
-            <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="vertical-align: text-bottom;">
-              <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38
-0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01
-1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95
-0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09
-2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15
-0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2
-0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
-            </svg>
-            pysuricata v0.0.50
-          </a>
-          <button id="pin-button" class="icon-btn" title="Unpin header" aria-label="Unpin header"
-            data-action="toggle-pin" style="margin-left:auto">
+        <div class="bar-actions">
+          <span class="bar-sep" aria-hidden="true"></span>
+          <a class="icon-btn" href="#" title="Download this report as HTML" aria-label="Download report"
+            data-action="download-report">
             <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
-              <!-- Pinned (upright) -->
+              <path fill="currentColor"
+                d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z" />
+              <path fill="currentColor"
+                d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z" />
+            </svg>
+          </a>
+          <button id="toggle-button" class="icon-btn" data-action="toggle-dark-mode" aria-label="Toggle dark mode"
+            title="Toggle dark mode">
+            <span id="toggle-icon">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
+          </button>
+          <!-- The pin joins the icon group rather than going. It used to sit
+               alone at margin-left:auto in a meta row that no longer exists,
+               and functionality.js injects one into .quick when it finds none
+               -- which would drop an icon into the text nav and into the
+               mobile rail that has to fit five labels at 390px. -->
+          <button id="pin-button" class="icon-btn" title="Unpin header" aria-label="Unpin header"
+            data-action="toggle-pin">
+            <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
               <g id="pinIconOn" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
                 stroke-linejoin="round">
-                <!-- top handle -->
                 <rect x="4.2" y="1.2" width="7.6" height="2.2" rx="1.1" />
-                <!-- cap/neck lines -->
                 <path d="M6.0 3.8 L6.6 8.8" />
                 <path d="M10.0 3.8 L9.4 8.8" />
-                <!-- base (rounded capsule) -->
                 <rect x="2.0" y="8.6" width="12.0" height="4.6" rx="2.3" />
-                <!-- needle -->
                 <path d="M8 13.2 V 15.2" />
               </g>
-              <!-- Unpinned (slanted) -->
               <g id="pinIconOff" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
                 stroke-linejoin="round" transform="rotate(-18 8 8)" style="display:none">
                 <rect x="4.2" y="1.2" width="7.6" height="2.2" rx="1.1" />
@@ -10629,6 +10649,19 @@ body.suricata-standalone:not(.light) {
 
     <main class="container">
       <div class="stack">
+
+        <div class="report-head">
+          <h1>PySuricata EDA Report — Titanic Dataset</h1>
+          <div class="report-meta">
+            <span><span class="k">Generated</span> <span class="v">2026-08-16 01:56:04</span></span>
+            <span class="meta-sep" aria-hidden="true"></span>
+            <span><span class="k">Profiled in</span> <span class="v">0.09 s</span></span>
+            <span class="meta-sep" aria-hidden="true"></span>
+            <span><span class="k">Shape</span> <span class="v">891 rows × 12 columns</span></span>
+            <span class="meta-sep" aria-hidden="true"></span>
+            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.51</a>
+          </div>
+        </div>
 
         <!-- Dataset Summary -->
         <section id="summary">
@@ -10768,7 +10801,7 @@ body.suricata-standalone:not(.light) {
                 <span class="chev" aria-hidden="true">▸</span>
               </summary>
               <div class="card-content">
-                <div class="description-value" id="summary-description" data-report-id="20260816-011441-3463"
+                <div class="description-value" id="summary-description" data-report-id="20260816-015604-9803"
                   data-original-markdown="" data-action="edit-description">
                   <div class="description-content">
                     <span class="placeholder">Click to add description...</span>
@@ -11478,40 +11511,40 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">891</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>Andersson, Mr. Anders Johan</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">891</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">0.264</td></tr><tr><th>Rare levels</th><td class="num ">24 (2.7%)</td></tr><tr><th>Top 5 coverage</th><td class="num warn">0.6%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
-            <div class="hist-variants"><div class="cat variant" id="col_Name-cat-top-5" data-topn="5"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="11.40" height="24.00" rx="2" ry="2"><title>Andersson, Mr. Anders Johan
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="23.00" text-anchor="end">Andersson, Mr. Anders Jo…</text><text class="bar-value" x="195.40" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="11.40" height="24.00" rx="2" ry="2"><title>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="53.00" text-anchor="end">Asplund, Mrs. Carl Oscar…</text><text class="bar-value" x="195.40" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="11.40" height="24.00" rx="2" ry="2"><title>Beesley, Mr. Lawrence
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="83.00" text-anchor="end">Beesley, Mr. Lawrence</text><text class="bar-value" x="195.40" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="11.40" height="24.00" rx="2" ry="2"><title>Bonnell, Miss. Elizabeth
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="113.00" text-anchor="end">Bonnell, Miss. Elizabeth</text><text class="bar-value" x="195.40" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="228.00" height="24.00" rx="2" ry="2"><title>Other
-20 rows (2.2%)</title></rect><text class="bar-label" x="174" y="143.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="143.00" text-anchor="end">20 (2.2%)</text></g></svg></div><div class="cat variant active" id="col_Name-cat-top-10" data-topn="10"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="15.20" height="9.00" rx="2" ry="2"><title>Andersson, Mr. Anders Johan
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="15.50" text-anchor="end">Andersson, Mr. Anders Jo…</text><text class="bar-value" x="199.20" y="15.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="23.00" width="15.20" height="9.00" rx="2" ry="2"><title>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="30.50" text-anchor="end">Asplund, Mrs. Carl Oscar…</text><text class="bar-value" x="199.20" y="30.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="15.20" height="9.00" rx="2" ry="2"><title>Beesley, Mr. Lawrence
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="45.50" text-anchor="end">Beesley, Mr. Lawrence</text><text class="bar-value" x="199.20" y="45.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="53.00" width="15.20" height="9.00" rx="2" ry="2"><title>Bonnell, Miss. Elizabeth
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="60.50" text-anchor="end">Bonnell, Miss. Elizabeth</text><text class="bar-value" x="199.20" y="60.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="15.20" height="9.00" rx="2" ry="2"><title>Dahlberg, Miss. Gerda Ulrika
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="75.50" text-anchor="end">Dahlberg, Miss. Gerda Ul…</text><text class="bar-value" x="199.20" y="75.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="83.00" width="15.20" height="9.00" rx="2" ry="2"><title>Emir, Mr. Farred Chehab
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="90.50" text-anchor="end">Emir, Mr. Farred Chehab</text><text class="bar-value" x="199.20" y="90.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="15.20" height="9.00" rx="2" ry="2"><title>Fynney, Mr. Joseph J
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="105.50" text-anchor="end">Fynney, Mr. Joseph J</text><text class="bar-value" x="199.20" y="105.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="113.00" width="15.20" height="9.00" rx="2" ry="2"><title>Gustafsson, Mr. Alfred Ossian
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="120.50" text-anchor="end">Gustafsson, Mr. Alfred O…</text><text class="bar-value" x="199.20" y="120.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="15.20" height="9.00" rx="2" ry="2"><title>Hewlett, Mrs. (Mary D Kingcome) 
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="135.50" text-anchor="end">Hewlett, Mrs. (Mary D Ki…</text><text class="bar-value" x="199.20" y="135.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="143.00" width="228.00" height="9.00" rx="2" ry="2"><title>Other
-15 rows (1.7%)</title></rect><text class="bar-label" x="174" y="150.50" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="150.50" text-anchor="end">15 (1.7%)</text></g></svg></div><div class="cat variant" id="col_Name-cat-top-15" data-topn="15"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="22.80" height="4.00" rx="2" ry="2"><title>Andersson, Mr. Anders Johan
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="13.00" text-anchor="end">Andersson, Mr. Anders Jo…</text><text class="bar-value" x="206.80" y="13.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="18.00" width="22.80" height="4.00" rx="2" ry="2"><title>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="23.00" text-anchor="end">Asplund, Mrs. Carl Oscar…</text><text class="bar-value" x="206.80" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="28.00" width="22.80" height="4.00" rx="2" ry="2"><title>Beesley, Mr. Lawrence
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="33.00" text-anchor="end">Beesley, Mr. Lawrence</text><text class="bar-value" x="206.80" y="33.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="22.80" height="4.00" rx="2" ry="2"><title>Bonnell, Miss. Elizabeth
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="43.00" text-anchor="end">Bonnell, Miss. Elizabeth</text><text class="bar-value" x="206.80" y="43.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="48.00" width="22.80" height="4.00" rx="2" ry="2"><title>Dahlberg, Miss. Gerda Ulrika
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="53.00" text-anchor="end">Dahlberg, Miss. Gerda Ul…</text><text class="bar-value" x="206.80" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="58.00" width="22.80" height="4.00" rx="2" ry="2"><title>Emir, Mr. Farred Chehab
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="63.00" text-anchor="end">Emir, Mr. Farred Chehab</text><text class="bar-value" x="206.80" y="63.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="22.80" height="4.00" rx="2" ry="2"><title>Fynney, Mr. Joseph J
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="73.00" text-anchor="end">Fynney, Mr. Joseph J</text><text class="bar-value" x="206.80" y="73.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="78.00" width="22.80" height="4.00" rx="2" ry="2"><title>Gustafsson, Mr. Alfred Ossian
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="83.00" text-anchor="end">Gustafsson, Mr. Alfred O…</text><text class="bar-value" x="206.80" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="88.00" width="22.80" height="4.00" rx="2" ry="2"><title>Hewlett, Mrs. (Mary D Kingcome) 
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="93.00" text-anchor="end">Hewlett, Mrs. (Mary D Ki…</text><text class="bar-value" x="206.80" y="93.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="22.80" height="4.00" rx="2" ry="2"><title>Laleff, Mr. Kristo
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="103.00" text-anchor="end">Laleff, Mr. Kristo</text><text class="bar-value" x="206.80" y="103.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="108.00" width="22.80" height="4.00" rx="2" ry="2"><title>Markun, Mr. Johann
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="113.00" text-anchor="end">Markun, Mr. Johann</text><text class="bar-value" x="206.80" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="118.00" width="22.80" height="4.00" rx="2" ry="2"><title>Masselmani, Mrs. Fatima
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="123.00" text-anchor="end">Masselmani, Mrs. Fatima</text><text class="bar-value" x="206.80" y="123.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="22.80" height="4.00" rx="2" ry="2"><title>McGowan, Miss. Anna &quot;Annie&quot;
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="133.00" text-anchor="end">McGowan, Miss. Anna &quo…</text><text class="bar-value" x="206.80" y="133.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="138.00" width="22.80" height="4.00" rx="2" ry="2"><title>Najib, Miss. Adele Kiamie &quot;Jane&quot;
-1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="143.00" text-anchor="end">Najib, Miss. Adele Kiami…</text><text class="bar-value" x="206.80" y="143.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="148.00" width="228.00" height="4.00" rx="2" ry="2"><title>Other
+            <div class="hist-variants"><div class="cat variant" id="col_Name-cat-top-5" data-topn="5"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="11.40" height="24.00" rx="2" ry="2"><title>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="23.00" text-anchor="end">Ahlin, Mrs. Johan (Johan…</text><text class="bar-value" x="195.40" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="11.40" height="24.00" rx="2" ry="2"><title>Arnold-Franchi, Mrs. Josef (Josefine Franchi)
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="53.00" text-anchor="end">Arnold-Franchi, Mrs. Jos…</text><text class="bar-value" x="195.40" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="11.40" height="24.00" rx="2" ry="2"><title>Cann, Mr. Ernest Charles
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="83.00" text-anchor="end">Cann, Mr. Ernest Charles</text><text class="bar-value" x="195.40" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="11.40" height="24.00" rx="2" ry="2"><title>Devaney, Miss. Margaret Delia
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="113.00" text-anchor="end">Devaney, Miss. Margaret …</text><text class="bar-value" x="195.40" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="228.00" height="24.00" rx="2" ry="2"><title>Other
+20 rows (2.2%)</title></rect><text class="bar-label" x="174" y="143.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="143.00" text-anchor="end">20 (2.2%)</text></g></svg></div><div class="cat variant active" id="col_Name-cat-top-10" data-topn="10"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="15.20" height="9.00" rx="2" ry="2"><title>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="15.50" text-anchor="end">Ahlin, Mrs. Johan (Johan…</text><text class="bar-value" x="199.20" y="15.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="23.00" width="15.20" height="9.00" rx="2" ry="2"><title>Arnold-Franchi, Mrs. Josef (Josefine Franchi)
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="30.50" text-anchor="end">Arnold-Franchi, Mrs. Jos…</text><text class="bar-value" x="199.20" y="30.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="15.20" height="9.00" rx="2" ry="2"><title>Cann, Mr. Ernest Charles
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="45.50" text-anchor="end">Cann, Mr. Ernest Charles</text><text class="bar-value" x="199.20" y="45.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="53.00" width="15.20" height="9.00" rx="2" ry="2"><title>Devaney, Miss. Margaret Delia
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="60.50" text-anchor="end">Devaney, Miss. Margaret …</text><text class="bar-value" x="199.20" y="60.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="15.20" height="9.00" rx="2" ry="2"><title>Fortune, Mr. Charles Alexander
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="75.50" text-anchor="end">Fortune, Mr. Charles Ale…</text><text class="bar-value" x="199.20" y="75.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="83.00" width="15.20" height="9.00" rx="2" ry="2"><title>Glynn, Miss. Mary Agatha
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="90.50" text-anchor="end">Glynn, Miss. Mary Agatha</text><text class="bar-value" x="199.20" y="90.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="15.20" height="9.00" rx="2" ry="2"><title>Holverson, Mr. Alexander Oskar
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="105.50" text-anchor="end">Holverson, Mr. Alexander…</text><text class="bar-value" x="199.20" y="105.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="113.00" width="15.20" height="9.00" rx="2" ry="2"><title>Kraeff, Mr. Theodor
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="120.50" text-anchor="end">Kraeff, Mr. Theodor</text><text class="bar-value" x="199.20" y="120.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="15.20" height="9.00" rx="2" ry="2"><title>Laroche, Miss. Simonne Marie Anne Andree
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="135.50" text-anchor="end">Laroche, Miss. Simonne M…</text><text class="bar-value" x="199.20" y="135.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="143.00" width="228.00" height="9.00" rx="2" ry="2"><title>Other
+15 rows (1.7%)</title></rect><text class="bar-label" x="174" y="150.50" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="150.50" text-anchor="end">15 (1.7%)</text></g></svg></div><div class="cat variant" id="col_Name-cat-top-15" data-topn="15"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="180.00" y="8.00" width="22.80" height="4.00" rx="2" ry="2"><title>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="13.00" text-anchor="end">Ahlin, Mrs. Johan (Johan…</text><text class="bar-value" x="206.80" y="13.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="18.00" width="22.80" height="4.00" rx="2" ry="2"><title>Arnold-Franchi, Mrs. Josef (Josefine Franchi)
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="23.00" text-anchor="end">Arnold-Franchi, Mrs. Jos…</text><text class="bar-value" x="206.80" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="28.00" width="22.80" height="4.00" rx="2" ry="2"><title>Cann, Mr. Ernest Charles
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="33.00" text-anchor="end">Cann, Mr. Ernest Charles</text><text class="bar-value" x="206.80" y="33.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="38.00" width="22.80" height="4.00" rx="2" ry="2"><title>Devaney, Miss. Margaret Delia
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="43.00" text-anchor="end">Devaney, Miss. Margaret …</text><text class="bar-value" x="206.80" y="43.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="48.00" width="22.80" height="4.00" rx="2" ry="2"><title>Fortune, Mr. Charles Alexander
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="53.00" text-anchor="end">Fortune, Mr. Charles Ale…</text><text class="bar-value" x="206.80" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="58.00" width="22.80" height="4.00" rx="2" ry="2"><title>Glynn, Miss. Mary Agatha
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="63.00" text-anchor="end">Glynn, Miss. Mary Agatha</text><text class="bar-value" x="206.80" y="63.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="68.00" width="22.80" height="4.00" rx="2" ry="2"><title>Holverson, Mr. Alexander Oskar
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="73.00" text-anchor="end">Holverson, Mr. Alexander…</text><text class="bar-value" x="206.80" y="73.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="78.00" width="22.80" height="4.00" rx="2" ry="2"><title>Kraeff, Mr. Theodor
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="83.00" text-anchor="end">Kraeff, Mr. Theodor</text><text class="bar-value" x="206.80" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="88.00" width="22.80" height="4.00" rx="2" ry="2"><title>Laroche, Miss. Simonne Marie Anne Andree
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="93.00" text-anchor="end">Laroche, Miss. Simonne M…</text><text class="bar-value" x="206.80" y="93.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="98.00" width="22.80" height="4.00" rx="2" ry="2"><title>Lennon, Mr. Denis
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="103.00" text-anchor="end">Lennon, Mr. Denis</text><text class="bar-value" x="206.80" y="103.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="108.00" width="22.80" height="4.00" rx="2" ry="2"><title>Mamee, Mr. Hanna
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="113.00" text-anchor="end">Mamee, Mr. Hanna</text><text class="bar-value" x="206.80" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="118.00" width="22.80" height="4.00" rx="2" ry="2"><title>Meyer, Mr. Edgar Joseph
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="123.00" text-anchor="end">Meyer, Mr. Edgar Joseph</text><text class="bar-value" x="206.80" y="123.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="128.00" width="22.80" height="4.00" rx="2" ry="2"><title>Nicola-Yarred, Miss. Jamila
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="133.00" text-anchor="end">Nicola-Yarred, Miss. Jam…</text><text class="bar-value" x="206.80" y="133.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="138.00" width="22.80" height="4.00" rx="2" ry="2"><title>O&#x27;Driscoll, Miss. Bridget
+1 rows (0.1%)</title></rect><text class="bar-label" x="174" y="143.00" text-anchor="end">O&#x27;Driscoll, Miss. B…</text><text class="bar-value" x="206.80" y="143.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="180.00" y="148.00" width="228.00" height="4.00" rx="2" ry="2"><title>Other
 10 rows (1.1%)</title></rect><text class="bar-label" x="174" y="153.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="153.00" text-anchor="end">10 (1.1%)</text></g></svg></div></div>
         </div>
         </div>
@@ -11539,8 +11572,8 @@ body.suricata-standalone:not(.light) {
                 <button role="tab" data-tab="missing">Missing Values</button>
             </nav>
             <div class="tab-panes">
-                <section class="tab-pane active" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='cat common-value'>Andersson, Mr. Anders Johan</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='cat common-value'>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='cat common-value'>Beesley, Mr. Lawrence</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='cat common-value'>Bonnell, Miss. Elizabeth</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='cat common-value'>Dahlberg, Miss. Gerda Ulrika</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='cat common-value'>Emir, Mr. Farred Chehab</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='cat common-value'>Fynney, Mr. Joseph J</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='cat common-value'>Gustafsson, Mr. Alfred Ossian</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='cat common-value'>Hewlett, Mrs. (Mary D Kingcome) </td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='cat common-value'>Laleff, Mr. Kristo</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr></tbody></table></section>
-                <section class="tab-pane" data-tab="normalize"><table class="kv"><thead><tr><th>Original</th><th>lower()</th><th>strip()</th></tr></thead><tbody><tr><td><code>Andersson, Mr. Anders Johan</code></td><td><code>andersson, mr. anders johan</code></td><td><code>Andersson, Mr. Anders Johan</code></td></tr><tr><td><code>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)</code></td><td><code>asplund, mrs. carl oscar (selma augusta emilia johansson)</code></td><td><code>Asplund, Mrs. Carl Oscar (Selma Augusta Emilia Johansson)</code></td></tr><tr><td><code>Beesley, Mr. Lawrence</code></td><td><code>beesley, mr. lawrence</code></td><td><code>Beesley, Mr. Lawrence</code></td></tr><tr><td><code>Bonnell, Miss. Elizabeth</code></td><td><code>bonnell, miss. elizabeth</code></td><td><code>Bonnell, Miss. Elizabeth</code></td></tr><tr><td><code>Dahlberg, Miss. Gerda Ulrika</code></td><td><code>dahlberg, miss. gerda ulrika</code></td><td><code>Dahlberg, Miss. Gerda Ulrika</code></td></tr><tr><td><code>Emir, Mr. Farred Chehab</code></td><td><code>emir, mr. farred chehab</code></td><td><code>Emir, Mr. Farred Chehab</code></td></tr></tbody></table></section>
+                <section class="tab-pane active" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='cat common-value'>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='cat common-value'>Arnold-Franchi, Mrs. Josef (Josefine Franchi)</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='cat common-value'>Cann, Mr. Ernest Charles</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='cat common-value'>Devaney, Miss. Margaret Delia</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='cat common-value'>Fortune, Mr. Charles Alexander</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='cat common-value'>Glynn, Miss. Mary Agatha</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='cat common-value'>Holverson, Mr. Alexander Oskar</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='cat common-value'>Kraeff, Mr. Theodor</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='cat common-value'>Laroche, Miss. Simonne Marie Anne Andree</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='cat common-value'>Lennon, Mr. Denis</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr></tbody></table></section>
+                <section class="tab-pane" data-tab="normalize"><table class="kv"><thead><tr><th>Original</th><th>lower()</th><th>strip()</th></tr></thead><tbody><tr><td><code>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)</code></td><td><code>ahlin, mrs. johan (johanna persdotter larsson)</code></td><td><code>Ahlin, Mrs. Johan (Johanna Persdotter Larsson)</code></td></tr><tr><td><code>Arnold-Franchi, Mrs. Josef (Josefine Franchi)</code></td><td><code>arnold-franchi, mrs. josef (josefine franchi)</code></td><td><code>Arnold-Franchi, Mrs. Josef (Josefine Franchi)</code></td></tr><tr><td><code>Cann, Mr. Ernest Charles</code></td><td><code>cann, mr. ernest charles</code></td><td><code>Cann, Mr. Ernest Charles</code></td></tr><tr><td><code>Devaney, Miss. Margaret Delia</code></td><td><code>devaney, miss. margaret delia</code></td><td><code>Devaney, Miss. Margaret Delia</code></td></tr><tr><td><code>Fortune, Mr. Charles Alexander</code></td><td><code>fortune, mr. charles alexander</code></td><td><code>Fortune, Mr. Charles Alexander</code></td></tr><tr><td><code>Glynn, Miss. Mary Agatha</code></td><td><code>glynn, miss. mary agatha</code></td><td><code>Glynn, Miss. Mary Agatha</code></td></tr></tbody></table></section>
                 <section class="tab-pane" data-tab="missing">
                     <div class="sub"><div class="hdr">Missing Values</div>
         <div class="missing-analysis-header">
@@ -12337,40 +12370,40 @@ body.suricata-standalone:not(.light) {
             </header>
             <div class="var-card__body">
                 <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">681</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>112050</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
+                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">681</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Mode</th><td><code>113043</code></td></tr><tr><th>Mode %</th><td class="num">0.1%</td></tr><tr><th>Empty strings</th><td class="num ">0</td></tr></tbody></table></div>
                     <div class="box stats-right"><table class="kv"><tbody><tr><th>Entropy</th><td class="num">0.5169</td></tr><tr><th>Rare levels</th><td class="num ">47 (5.3%)</td></tr><tr><th>Top 5 coverage</th><td class="num warn">0.6%</td></tr><tr><th>Label length (avg)</th><td class="num">NaN</td></tr><tr><th>Length p90</th><td>—</td></tr><tr><th>Processed bytes (≈)</th><td class="num">0.0 B</td></tr></tbody></table></div>
                     <div class="box chart">
         <div class="topn-chart">
-            <div class="hist-variants"><div class="cat variant" id="col_Ticket-cat-top-5" data-topn="5"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="6.70" height="24.00" rx="2" ry="2"><title>112050
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="23.00" text-anchor="end">112050</text><text class="bar-value" x="130.70" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="6.70" height="24.00" rx="2" ry="2"><title>112058
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="53.00" text-anchor="end">112058</text><text class="bar-value" x="130.70" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="6.70" height="24.00" rx="2" ry="2"><title>113055
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="83.00" text-anchor="end">113055</text><text class="bar-value" x="130.70" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="6.70" height="24.00" rx="2" ry="2"><title>113783
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="113.00" text-anchor="end">113783</text><text class="bar-value" x="130.70" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="288.00" height="24.00" rx="2" ry="2"><title>Other
-43 rows (4.8%)</title></rect><text class="bar-label" x="114" y="143.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="143.00" text-anchor="end">43 (4.8%)</text></g></svg></div><div class="cat variant active" id="col_Ticket-cat-top-10" data-topn="10"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="7.58" height="9.00" rx="2" ry="2"><title>112050
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="15.50" text-anchor="end">112050</text><text class="bar-value" x="131.58" y="15.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="23.00" width="7.58" height="9.00" rx="2" ry="2"><title>112058
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="30.50" text-anchor="end">112058</text><text class="bar-value" x="131.58" y="30.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="7.58" height="9.00" rx="2" ry="2"><title>113055
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="45.50" text-anchor="end">113055</text><text class="bar-value" x="131.58" y="45.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="53.00" width="7.58" height="9.00" rx="2" ry="2"><title>113783
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="60.50" text-anchor="end">113783</text><text class="bar-value" x="131.58" y="60.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="7.58" height="9.00" rx="2" ry="2"><title>11774
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="75.50" text-anchor="end">11774</text><text class="bar-value" x="131.58" y="75.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="83.00" width="7.58" height="9.00" rx="2" ry="2"><title>17463
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="90.50" text-anchor="end">17463</text><text class="bar-value" x="131.58" y="90.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="7.58" height="9.00" rx="2" ry="2"><title>17466
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="105.50" text-anchor="end">17466</text><text class="bar-value" x="131.58" y="105.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="113.00" width="7.58" height="9.00" rx="2" ry="2"><title>19972
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="120.50" text-anchor="end">19972</text><text class="bar-value" x="131.58" y="120.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="7.58" height="9.00" rx="2" ry="2"><title>233866
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="135.50" text-anchor="end">233866</text><text class="bar-value" x="131.58" y="135.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="143.00" width="288.00" height="9.00" rx="2" ry="2"><title>Other
-38 rows (4.3%)</title></rect><text class="bar-label" x="114" y="150.50" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="150.50" text-anchor="end">38 (4.3%)</text></g></svg></div><div class="cat variant" id="col_Ticket-cat-top-15" data-topn="15"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="8.73" height="4.00" rx="2" ry="2"><title>112050
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="13.00" text-anchor="end">112050</text><text class="bar-value" x="132.73" y="13.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="18.00" width="8.73" height="4.00" rx="2" ry="2"><title>112058
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="23.00" text-anchor="end">112058</text><text class="bar-value" x="132.73" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="28.00" width="8.73" height="4.00" rx="2" ry="2"><title>113055
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="33.00" text-anchor="end">113055</text><text class="bar-value" x="132.73" y="33.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="8.73" height="4.00" rx="2" ry="2"><title>113783
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="43.00" text-anchor="end">113783</text><text class="bar-value" x="132.73" y="43.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="48.00" width="8.73" height="4.00" rx="2" ry="2"><title>11774
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="53.00" text-anchor="end">11774</text><text class="bar-value" x="132.73" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="58.00" width="8.73" height="4.00" rx="2" ry="2"><title>17463
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="63.00" text-anchor="end">17463</text><text class="bar-value" x="132.73" y="63.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="8.73" height="4.00" rx="2" ry="2"><title>17466
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="73.00" text-anchor="end">17466</text><text class="bar-value" x="132.73" y="73.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="78.00" width="8.73" height="4.00" rx="2" ry="2"><title>19972
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="83.00" text-anchor="end">19972</text><text class="bar-value" x="132.73" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="88.00" width="8.73" height="4.00" rx="2" ry="2"><title>233866
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="93.00" text-anchor="end">233866</text><text class="bar-value" x="132.73" y="93.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="8.73" height="4.00" rx="2" ry="2"><title>236852
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="103.00" text-anchor="end">236852</text><text class="bar-value" x="132.73" y="103.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="108.00" width="8.73" height="4.00" rx="2" ry="2"><title>244373
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="113.00" text-anchor="end">244373</text><text class="bar-value" x="132.73" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="118.00" width="8.73" height="4.00" rx="2" ry="2"><title>248698
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="123.00" text-anchor="end">248698</text><text class="bar-value" x="132.73" y="123.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="8.73" height="4.00" rx="2" ry="2"><title>248706
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="133.00" text-anchor="end">248706</text><text class="bar-value" x="132.73" y="133.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="138.00" width="8.73" height="4.00" rx="2" ry="2"><title>248723
-1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="143.00" text-anchor="end">248723</text><text class="bar-value" x="132.73" y="143.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="148.00" width="288.00" height="4.00" rx="2" ry="2"><title>Other
+            <div class="hist-variants"><div class="cat variant" id="col_Ticket-cat-top-5" data-topn="5"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="6.70" height="24.00" rx="2" ry="2"><title>113043
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="23.00" text-anchor="end">113043</text><text class="bar-value" x="130.70" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="6.70" height="24.00" rx="2" ry="2"><title>113510
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="53.00" text-anchor="end">113510</text><text class="bar-value" x="130.70" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="6.70" height="24.00" rx="2" ry="2"><title>113514
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="83.00" text-anchor="end">113514</text><text class="bar-value" x="130.70" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="6.70" height="24.00" rx="2" ry="2"><title>113784
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="113.00" text-anchor="end">113784</text><text class="bar-value" x="130.70" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="288.00" height="24.00" rx="2" ry="2"><title>Other
+43 rows (4.8%)</title></rect><text class="bar-label" x="114" y="143.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="143.00" text-anchor="end">43 (4.8%)</text></g></svg></div><div class="cat variant active" id="col_Ticket-cat-top-10" data-topn="10"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="7.58" height="9.00" rx="2" ry="2"><title>113043
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="15.50" text-anchor="end">113043</text><text class="bar-value" x="131.58" y="15.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="23.00" width="7.58" height="9.00" rx="2" ry="2"><title>113510
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="30.50" text-anchor="end">113510</text><text class="bar-value" x="131.58" y="30.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="7.58" height="9.00" rx="2" ry="2"><title>113514
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="45.50" text-anchor="end">113514</text><text class="bar-value" x="131.58" y="45.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="53.00" width="7.58" height="9.00" rx="2" ry="2"><title>113784
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="60.50" text-anchor="end">113784</text><text class="bar-value" x="131.58" y="60.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="7.58" height="9.00" rx="2" ry="2"><title>19988
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="75.50" text-anchor="end">19988</text><text class="bar-value" x="131.58" y="75.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="83.00" width="7.58" height="9.00" rx="2" ry="2"><title>226593
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="90.50" text-anchor="end">226593</text><text class="bar-value" x="131.58" y="90.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="7.58" height="9.00" rx="2" ry="2"><title>229236
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="105.50" text-anchor="end">229236</text><text class="bar-value" x="131.58" y="105.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="113.00" width="7.58" height="9.00" rx="2" ry="2"><title>234818
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="120.50" text-anchor="end">234818</text><text class="bar-value" x="131.58" y="120.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="7.58" height="9.00" rx="2" ry="2"><title>237671
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="135.50" text-anchor="end">237671</text><text class="bar-value" x="131.58" y="135.50" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="143.00" width="288.00" height="9.00" rx="2" ry="2"><title>Other
+38 rows (4.3%)</title></rect><text class="bar-label" x="114" y="150.50" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="150.50" text-anchor="end">38 (4.3%)</text></g></svg></div><div class="cat variant" id="col_Ticket-cat-top-15" data-topn="15"><svg class="cat-svg" width="420" height="160" viewBox="0 0 420 160" role="img" aria-label="Top categories"><g class="bar-row"><rect class="bar" x="120.00" y="8.00" width="8.73" height="4.00" rx="2" ry="2"><title>113043
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="13.00" text-anchor="end">113043</text><text class="bar-value" x="132.73" y="13.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="18.00" width="8.73" height="4.00" rx="2" ry="2"><title>113510
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="23.00" text-anchor="end">113510</text><text class="bar-value" x="132.73" y="23.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="28.00" width="8.73" height="4.00" rx="2" ry="2"><title>113514
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="33.00" text-anchor="end">113514</text><text class="bar-value" x="132.73" y="33.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="38.00" width="8.73" height="4.00" rx="2" ry="2"><title>113784
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="43.00" text-anchor="end">113784</text><text class="bar-value" x="132.73" y="43.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="48.00" width="8.73" height="4.00" rx="2" ry="2"><title>19988
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="53.00" text-anchor="end">19988</text><text class="bar-value" x="132.73" y="53.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="58.00" width="8.73" height="4.00" rx="2" ry="2"><title>226593
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="63.00" text-anchor="end">226593</text><text class="bar-value" x="132.73" y="63.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="68.00" width="8.73" height="4.00" rx="2" ry="2"><title>229236
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="73.00" text-anchor="end">229236</text><text class="bar-value" x="132.73" y="73.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="78.00" width="8.73" height="4.00" rx="2" ry="2"><title>234818
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="83.00" text-anchor="end">234818</text><text class="bar-value" x="132.73" y="83.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="88.00" width="8.73" height="4.00" rx="2" ry="2"><title>237671
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="93.00" text-anchor="end">237671</text><text class="bar-value" x="132.73" y="93.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="98.00" width="8.73" height="4.00" rx="2" ry="2"><title>244361
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="103.00" text-anchor="end">244361</text><text class="bar-value" x="132.73" y="103.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="108.00" width="8.73" height="4.00" rx="2" ry="2"><title>248733
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="113.00" text-anchor="end">248733</text><text class="bar-value" x="132.73" y="113.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="118.00" width="8.73" height="4.00" rx="2" ry="2"><title>248740
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="123.00" text-anchor="end">248740</text><text class="bar-value" x="132.73" y="123.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="128.00" width="8.73" height="4.00" rx="2" ry="2"><title>250651
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="133.00" text-anchor="end">250651</text><text class="bar-value" x="132.73" y="133.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="138.00" width="8.73" height="4.00" rx="2" ry="2"><title>2647
+1 rows (0.1%)</title></rect><text class="bar-label" x="114" y="143.00" text-anchor="end">2647</text><text class="bar-value" x="132.73" y="143.00" text-anchor="start">1 (0.1%)</text></g><g class="bar-row"><rect class="bar" x="120.00" y="148.00" width="288.00" height="4.00" rx="2" ry="2"><title>Other
 33 rows (3.7%)</title></rect><text class="bar-label" x="114" y="153.00" text-anchor="end">Other</text><text class="bar-value" x="402.00" y="153.00" text-anchor="end">33 (3.7%)</text></g></svg></div></div>
         </div>
         </div>
@@ -12398,7 +12431,7 @@ body.suricata-standalone:not(.light) {
                 <button role="tab" data-tab="missing">Missing Values</button>
             </nav>
             <div class="tab-panes">
-                <section class="tab-pane active" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='cat common-value'>112050</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='cat common-value'>112058</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='cat common-value'>113055</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='cat common-value'>113783</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='cat common-value'>11774</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='cat common-value'>17463</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='cat common-value'>17466</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='cat common-value'>19972</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='cat common-value'>233866</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='cat common-value'>236852</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr></tbody></table></section>
+                <section class="tab-pane active" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='cat common-value'>113043</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='cat common-value'>113510</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='cat common-value'>113514</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='cat common-value'>113784</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='cat common-value'>19988</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='cat common-value'>226593</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='cat common-value'>229236</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='cat common-value'>234818</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='cat common-value'>237671</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='cat common-value'>244361</td><td class='num common-count'>1</td><td class='num common-pct'>0.1%</td><td class='progress-bar'><div class='bar-fill' style='width:0.1%'></div></td></tr></tbody></table></section>
                 <section class="tab-pane" data-tab="normalize"><table class="kv"><thead><tr><th>Original</th><th>lower()</th><th>strip()</th></tr></thead><tbody><tr><td colspan=3>—</td></tr></tbody></table></section>
                 <section class="tab-pane" data-tab="missing">
                     <div class="sub"><div class="hdr">Missing Values</div>
@@ -12739,7 +12772,7 @@ body.suricata-standalone:not(.light) {
             <div class="tab-panes">
                 <section class="tab-pane active" data-tab="stats"><div class='stats-quant'><table class="kv"><tbody><tr><th>Mean</th><td class="num">32.2</td></tr><tr><th>Std Dev</th><td class="num">49.69</td></tr><tr><th>Variance</th><td class="num">2,469</td></tr><tr><th>Std Error</th><td class="num">1.665</td></tr><tr><th>Coeff. of Var</th><td class="num">1.543</td></tr><tr><th>Geometric mean</th><td class="num">18.98</td></tr><tr><th>IQR</th><td class="num">23.09</td></tr><tr><th>MAD</th><td class="num">6.904</td></tr><tr><th>Skew</th><td class="num">4.779</td></tr><tr><th>Kurtosis</th><td class="num">33.2</td></tr><tr><th>Jarque–Bera χ²</th><td class="num">4.432e+04</td></tr><tr><th>95% CI (mean)</th><td class="num">[28.94 – 35.47]</td></tr><tr><th>Granularity</th><td>2.4973509999999997 (decimals: 10)</td></tr><tr><th>Heaping %</th><td class="num">53.98</td></tr></tbody></table><table class="kv"><tbody><tr><th>Min</th><td class="num">0</td></tr><tr><th>P1 (≈)</th><td class="num">0</td></tr><tr><th>P5 (≈)</th><td class="num">7.225</td></tr><tr><th>P10 (≈)</th><td class="num">7.55</td></tr><tr><th>Q1 (P25)</th><td class="num">7.91</td></tr><tr><th>Median (P50)</th><td class="num">14.45</td></tr><tr><th>Q3 (P75)</th><td class="num">31</td></tr><tr><th>P90 (≈)</th><td class="num">77.96</td></tr><tr><th>P95 (≈)</th><td class="num">112.1</td></tr><tr><th>P99 (≈)</th><td class="num">249</td></tr><tr><th>Range</th><td class="num">512.3</td></tr><tr><th>Std Dev</th><td class="num">49.69</td></tr></tbody></table></div></section>
                 <section class="tab-pane" data-tab="common"><table class="common-values-table enhanced"><thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead><tbody><tr class='common-row rank-1'><td class='rank'>1ˢᵗ</td><td class='num common-value'>8.05</td><td class='num common-count'>29</td><td class='num common-pct'>3.3%</td><td class='progress-bar'><div class='bar-fill' style='width:3.3%'></div></td></tr><tr class='common-row rank-2'><td class='rank'>2ⁿᵈ</td><td class='num common-value'>13</td><td class='num common-count'>28</td><td class='num common-pct'>3.1%</td><td class='progress-bar'><div class='bar-fill' style='width:3.1%'></div></td></tr><tr class='common-row rank-3'><td class='rank'>3ʳᵈ</td><td class='num common-value'>7.896</td><td class='num common-count'>24</td><td class='num common-pct'>2.7%</td><td class='progress-bar'><div class='bar-fill' style='width:2.7%'></div></td></tr><tr class='common-row rank-4'><td class='rank'>4ᵗʰ</td><td class='num common-value'>7.75</td><td class='num common-count'>20</td><td class='num common-pct'>2.2%</td><td class='progress-bar'><div class='bar-fill' style='width:2.2%'></div></td></tr><tr class='common-row rank-5'><td class='rank'>5ᵗʰ</td><td class='num common-value'>26</td><td class='num common-count'>17</td><td class='num common-pct'>1.9%</td><td class='progress-bar'><div class='bar-fill' style='width:1.9%'></div></td></tr><tr class='common-row rank-6'><td class='rank'>6ᵗʰ</td><td class='num common-value'>10.5</td><td class='num common-count'>10</td><td class='num common-pct'>1.1%</td><td class='progress-bar'><div class='bar-fill' style='width:1.1%'></div></td></tr><tr class='common-row rank-7'><td class='rank'>7ᵗʰ</td><td class='num common-value'>0</td><td class='num common-count'>7</td><td class='num common-pct'>0.8%</td><td class='progress-bar'><div class='bar-fill' style='width:0.8%'></div></td></tr><tr class='common-row rank-8'><td class='rank'>8ᵗʰ</td><td class='num common-value'>7.775</td><td class='num common-count'>5</td><td class='num common-pct'>0.6%</td><td class='progress-bar'><div class='bar-fill' style='width:0.6%'></div></td></tr><tr class='common-row rank-9'><td class='rank'>9ᵗʰ</td><td class='num common-value'>30</td><td class='num common-count'>4</td><td class='num common-pct'>0.4%</td><td class='progress-bar'><div class='bar-fill' style='width:0.4%'></div></td></tr><tr class='common-row rank-10'><td class='rank'>10ᵗʰ</td><td class='num common-value'>7.925</td><td class='num common-count'>4</td><td class='num common-pct'>0.4%</td><td class='progress-bar'><div class='bar-fill' style='width:0.4%'></div></td></tr></tbody></table></section>
-                <section class="tab-pane" data-tab="extremes"><div class='extremes stats-quant'><div class='sub'><div class='hdr'>Min values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>302</td><td class='num'>0</td></tr><tr><td>413</td><td class='num'>0</td></tr><tr><td>806</td><td class='num'>0</td></tr><tr><td>815</td><td class='num'>0</td></tr><tr><td>481</td><td class='num'>0</td></tr></tbody></table></div><div class='sub'><div class='hdr'>Max values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>737</td><td class='num'>512.3</td></tr><tr><td>679</td><td class='num'>512.3</td></tr><tr><td>258</td><td class='num'>512.3</td></tr><tr><td>341</td><td class='num'>263</td></tr><tr><td>438</td><td class='num'>263</td></tr></tbody></table></div></div></section>
+                <section class="tab-pane" data-tab="extremes"><div class='extremes stats-quant'><div class='sub'><div class='hdr'>Min values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>179</td><td class='num'>0</td></tr><tr><td>413</td><td class='num'>0</td></tr><tr><td>481</td><td class='num'>0</td></tr><tr><td>806</td><td class='num'>0</td></tr><tr><td>466</td><td class='num'>0</td></tr></tbody></table></div><div class='sub'><div class='hdr'>Max values</div><table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody><tr><td>679</td><td class='num'>512.3</td></tr><tr><td>258</td><td class='num'>512.3</td></tr><tr><td>737</td><td class='num'>512.3</td></tr><tr><td>341</td><td class='num'>263</td></tr><tr><td>438</td><td class='num'>263</td></tr></tbody></table></div></div></section>
                 <section class="tab-pane" data-tab="outliers">
                     <div class="stats-quant">
                         <div class="sub">
@@ -12781,7 +12814,7 @@ body.suricata-standalone:not(.light) {
             
             <div class="context-note"><small>💡 This shows the most extreme outliers from a representative sample. The general statistics show all 116 outliers (13.0%) in the full dataset.</small></div>
         </div>
-        <table class="outliers-table enhanced"><thead><tr><th>Rank</th><th>Index</th><th>Value</th><th>Method</th><th>Severity</th></tr></thead><tbody><tr class='outlier-row rank-1'><td class='rank' rowspan='2'>1ˢᵗ</td><td class='index' rowspan='2'>737</td><td class='num outlier-value' rowspan='2'>512.3</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (20.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-1'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (72.1× MAD)</span></td></tr><tr class='outlier-row rank-2'><td class='rank' rowspan='2'>2ⁿᵈ</td><td class='index' rowspan='2'>341</td><td class='num outlier-value' rowspan='2'>263</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (10.0× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-2'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (36.0× MAD)</span></td></tr><tr class='outlier-row rank-3'><td class='rank' rowspan='2'>3ʳᵈ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>262.4</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (10.0× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-3'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (35.9× MAD)</span></td></tr><tr class='outlier-row rank-4'><td class='rank' rowspan='2'>4ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>247.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (9.4× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-4'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (33.8× MAD)</span></td></tr><tr class='outlier-row rank-5'><td class='rank' rowspan='2'>5ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>227.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (8.5× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-5'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (30.9× MAD)</span></td></tr><tr class='outlier-row rank-6'><td class='rank' rowspan='2'>6ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>221.8</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (8.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-6'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (30.0× MAD)</span></td></tr><tr class='outlier-row rank-7'><td class='rank' rowspan='2'>7ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>211.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (7.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-7'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (28.5× MAD)</span></td></tr><tr class='outlier-row rank-8'><td class='rank' rowspan='2'>8ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>211.3</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (7.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-8'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (28.5× MAD)</span></td></tr><tr class='outlier-row rank-9'><td class='rank' rowspan='2'>9ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>164.9</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-9'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (21.8× MAD)</span></td></tr><tr class='outlier-row rank-10'><td class='rank' rowspan='2'>10ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>153.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-10'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (20.1× MAD)</span></td></tr></tbody></table><div class="outlier-note"><small>ℹ️ Index shown only for top/bottom extreme values tracked during profiling. Sample-based outliers may not have row indices.</small></div></div>
+        <table class="outliers-table enhanced"><thead><tr><th>Rank</th><th>Index</th><th>Value</th><th>Method</th><th>Severity</th></tr></thead><tbody><tr class='outlier-row rank-1'><td class='rank' rowspan='2'>1ˢᵗ</td><td class='index' rowspan='2'>679</td><td class='num outlier-value' rowspan='2'>512.3</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (20.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-1'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (72.1× MAD)</span></td></tr><tr class='outlier-row rank-2'><td class='rank' rowspan='2'>2ⁿᵈ</td><td class='index' rowspan='2'>341</td><td class='num outlier-value' rowspan='2'>263</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (10.0× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-2'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (36.0× MAD)</span></td></tr><tr class='outlier-row rank-3'><td class='rank' rowspan='2'>3ʳᵈ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>262.4</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (10.0× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-3'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (35.9× MAD)</span></td></tr><tr class='outlier-row rank-4'><td class='rank' rowspan='2'>4ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>247.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (9.4× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-4'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (33.8× MAD)</span></td></tr><tr class='outlier-row rank-5'><td class='rank' rowspan='2'>5ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>227.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (8.5× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-5'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (30.9× MAD)</span></td></tr><tr class='outlier-row rank-6'><td class='rank' rowspan='2'>6ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>221.8</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (8.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-6'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (30.0× MAD)</span></td></tr><tr class='outlier-row rank-7'><td class='rank' rowspan='2'>7ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>211.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (7.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-7'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (28.5× MAD)</span></td></tr><tr class='outlier-row rank-8'><td class='rank' rowspan='2'>8ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>211.3</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (7.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-8'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (28.5× MAD)</span></td></tr><tr class='outlier-row rank-9'><td class='rank' rowspan='2'>9ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>164.9</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.8× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-9'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (21.8× MAD)</span></td></tr><tr class='outlier-row rank-10'><td class='rank' rowspan='2'>10ᵗʰ</td><td class='index' rowspan='2'>—</td><td class='num outlier-value' rowspan='2'>153.5</td><td class='method'>IQR Method</td><td class='severity'><span class='severity-item extreme'>Extreme (5.3× IQR)</span></td></tr><tr class='outlier-row outlier-row-sub rank-10'><td class='method'>MAD Method</td><td class='severity'><span class='severity-item extreme'>Extreme (20.1× MAD)</span></td></tr></tbody></table><div class="outlier-note"><small>ℹ️ Index shown only for top/bottom extreme values tracked during profiling. Sample-based outliers may not have row indices.</small></div></div>
                     </div>
                 </section>
                 <section class="tab-pane" data-tab="corr">
