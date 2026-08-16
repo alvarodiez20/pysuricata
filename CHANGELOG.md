@@ -43,6 +43,9 @@ Three things found by inspecting a rendered report rather than the stylesheet, e
 - **The column-type key was on the data-quality scale.** The four swatches sat on `--q-good`, `--q-warn-fill` and `--q-bad`, because the palette swap had replaced each legacy hue with whichever new token looked closest. The old hexes were gone, so every literal check passed — while the report still said olive for both *categorical* and *passes*. That is the exact collision this palette exists to remove, reintroduced by the change meant to remove it.
 - **Chart axis labels were unreachable by the token.** `font-family: inherit` on the SVG text pulled in the body sans and beat the presentation attribute on the element.
 
+### Documentation
+- **`docs/roadmap.md` is re-audited at v7.** v6 was written at 0.0.38, twelve releases ago, and predates the redesign entirely. Two things changed shape: the **correctness backlog is empty** — every item v6 listed as open is closed — and the report's presentation, which v6 tracked in one line as out of scope, is now the largest open item. A fourth measurement rule is added, from the token bug found in this release: *a guard is worth only as much as the guarantee that what it reads is what runs*.
+
 ### Note
 `--rule-strong` was specified as "container edge, axis line", and the contrast test failed on it immediately: those two want different things. A container edge is decorative structure with no minimum — a hairline at 3:1 is a heavy black line, which is the boxed look this palette removes. A chart axis is part of a graphic required to understand the content, so WCAG 1.4.11 applies. They are now two tokens: `--rule-strong` stays a hairline, `--axis` clears 3:1 in both themes.
 
