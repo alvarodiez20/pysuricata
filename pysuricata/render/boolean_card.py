@@ -123,9 +123,16 @@ class BooleanCardRenderer(CardRenderer):
         miss: int,
         *,
         width: int = 420,
-        height: int = 60,
+        height: int | None = None,
     ) -> str:
-        """Build enhanced boolean stack SVG with improved styling and hover effects."""
+        """One split bar for a two-valued column.
+
+        The height comes from the config rather than a literal, which is what
+        made the 48 there ineffective -- the default argument won and the bar
+        stayed a 52px band, chart-sized, for a column with two values.
+        """
+        if height is None:
+            height = self.bool_config.chart_height
         total = max(1, int(true_n + false_n + miss))
         margin = self.bool_config.margin
         inner_w = width - 2 * margin
@@ -162,13 +169,18 @@ class BooleanCardRenderer(CardRenderer):
                 f"</rect>"
             )
 
-            # Add label if segment is wide enough
+            # Each label takes the ink paired with the step beneath it. They were
+            # all `fill="white"`, which is fine on --data-2 and close to illegible
+            # on --data-4: white on #A8BECD is about 1.8:1, against the 4.5:1 a
+            # label needs. --on-data-* exists for exactly this pairing, and the
+            # token file already states which ink goes with which step.
             if w_false >= self.bool_config.min_segment_width:
                 cx = x + w_false / 2
                 parts.append(
                     f'<text class="label enhanced" x="{cx:.1f}" y="{margin + seg_h / 2 + 2:.1f}" '
-                    f'text-anchor="middle" fill="white" font-weight="600" font-size="12">'
-                    f"False {false_pct:.1f}%"
+                    f'text-anchor="middle" fill="var(--on-data-4, #22201C)" '
+                    f'font-family="var(--font-mono)" font-size="12">'
+                    f"false {false_pct:.1f}%"
                     f"</text>"
                 )
 
@@ -191,8 +203,9 @@ class BooleanCardRenderer(CardRenderer):
                 cx = x + w_true / 2
                 parts.append(
                     f'<text class="label enhanced" x="{cx:.1f}" y="{margin + seg_h / 2 + 2:.1f}" '
-                    f'text-anchor="middle" fill="white" font-weight="600" font-size="12">'
-                    f"True {true_pct:.1f}%"
+                    f'text-anchor="middle" fill="var(--on-data-2, #FBF9F5)" '
+                    f'font-family="var(--font-mono)" font-size="12">'
+                    f"true {true_pct:.1f}%"
                     f"</text>"
                 )
 
@@ -215,8 +228,9 @@ class BooleanCardRenderer(CardRenderer):
                 cx = x + w_miss / 2
                 parts.append(
                     f'<text class="label enhanced" x="{cx:.1f}" y="{margin + seg_h / 2 + 2:.1f}" '
-                    f'text-anchor="middle" fill="white" font-weight="600" font-size="12">'
-                    f"Missing {miss_pct:.1f}%"
+                    f'text-anchor="middle" fill="var(--ink, #22201C)" '
+                    f'font-family="var(--font-mono)" font-size="12">'
+                    f"missing {miss_pct:.1f}%"
                     f"</text>"
                 )
 

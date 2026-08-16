@@ -19,6 +19,25 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.57] - 2026-08-16
+
+Phases 5.5 and 5.6 of the report redesign (#117). Nothing removed or changed in
+the fact fingerprint.
+
+### Fixed
+- **The boolean bar's labels were illegible on the pale segment.** Every one was `fill="white"`, which is fine on `--data-2` and about **1.8:1** on `--data-4` — against the 4.5:1 a label needs. `--on-data-*` exists to state which ink goes with which step, and it has to be used, not merely defined.
+- **The bar was a 52px band** for a column with two values. It is 38px now, in the 36–40 the design asks for. The height was a default argument in the renderer, so the 48 in the chart config had never taken effect.
+
+### Added
+- **The temporal charts name their unit**: `RECORDS`, once, above the y axis. Nothing said these counted records per bucket — a reader could as easily have taken the axis for a share, or for the column's own values.
+
+### Verified rather than assumed
+Most of what this issue asks for was already true by the time it was reached, and checking that was the work:
+
+- The boolean segments are already two steps of one hue, with no red-and-green. `Survived` reads as two values of one column, not as good versus bad.
+- `temporal_charts.py` already allocates a **fixed** slot per bucket — 24 hours, 7 days, 12 months — rather than only the populated ones. Confirmed on a column spanning six months: the month chart still draws twelve slots and leaves six empty. Two populated months as two half-width slabs would read as *spread evenly across the timeline* instead of *2 of 12*.
+- The tick labels survive on all four small multiples, and `temporal_charts.py` carries no legacy hex.
+
 ## [0.0.56] - 2026-08-16
 
 Phase 5.3 of the report redesign (#116): a chart with nothing to say now says
@@ -900,7 +919,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.56...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.57...HEAD
+[0.0.57]: https://github.com/alvarodiez20/pysuricata/compare/0.0.56...0.0.57
 [0.0.56]: https://github.com/alvarodiez20/pysuricata/compare/0.0.55...0.0.56
 [0.0.55]: https://github.com/alvarodiez20/pysuricata/compare/0.0.54...0.0.55
 [0.0.54]: https://github.com/alvarodiez20/pysuricata/compare/0.0.53...0.0.54

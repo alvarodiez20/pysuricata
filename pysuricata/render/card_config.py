@@ -54,7 +54,10 @@ class DateTimeConfig:
 class BooleanConfig:
     """Boolean chart configuration."""
 
-    chart_height: int = 48
+    # 38 + 2x4 margin = 46 drawn, so the bar itself lands in the 36-40px the
+    # design asks for. It was 48 with a 52px segment, which is a chart-sized
+    # band for a two-valued column.
+    chart_height: int = 46
     margin: int = 4
     min_segment_width: int = 44
 
