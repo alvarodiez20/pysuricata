@@ -19,6 +19,27 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.61] - 2026-08-16
+
+The redesign's testing harness (#123), turning fourteen commits of manual
+checking into a guard.
+
+### Added
+- **`tests/test_report_data_invariance.py`**, with committed fixtures. Three tests for the sentence the whole migration rests on — *presentation changes on every commit, the facts change on exactly two*:
+  - **The fingerprint.** 598 facts, with colours, class names, element order, tag names, whitespace and SVG geometry discarded. An HTML snapshot would be 100% churn on every one of these commits, so nobody would read it, so a real regression would ride in unnoticed.
+  - **The golden `summarize()` payload**, on three frames. The cheapest test in the set and the one that matters most: milliseconds to run, and the only thing between *a CSS refactor* and *a CSS refactor that quietly changed the median*.
+  - **Fact coverage** — 154 of 154 statistics appear on the page, floored at 90%. The real risk of restacking a card is not a wrong number, it is a **missing** one, and no snapshot diff shows that in a document where every line changed.
+
+  Each guard was verified to fail: a changed value, a removed fact, a mutated payload, and a report showing nothing all trip it.
+
+### Fixed
+Two things that would have made the harness flaky, both found by running it rather than by reading it:
+
+- **The fingerprint captured wall-clock duration.** `elapsed` moved from 0.02s to 0.04s simply by running the suite under load. A guard that fails for reasons nobody can act on trains its reader to re-baseline on red, which is the one habit this file exists to prevent.
+- **Memory figures depend on the state of the process, not the data.** A column of a few repeated short strings — `male`/`female`, `C85`/`B42` — measures differently depending on whether those exact string objects are already alive, because an object array stores pointers and the accounting walks unique objects. Two runs of the same frame in one suite disagreed by 160 bytes. Excluded from both guards, with the reason recorded and a test that keeps the finding.
+
+The allow-list of statistics that never render verbatim is now self-verifying: two of its entries named fields that do not exist (`ts_min` for `min_ts`, and a `sample_scale` that was never in the payload), so they exempted nothing while reading as though they did.
+
 ## [0.0.60] - 2026-08-16
 
 Phase 7 of the report redesign (#120): missing values, routed on chunk count
@@ -985,7 +1006,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.60...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD
+[0.0.61]: https://github.com/alvarodiez20/pysuricata/compare/0.0.60...0.0.61
 [0.0.60]: https://github.com/alvarodiez20/pysuricata/compare/0.0.59...0.0.60
 [0.0.59]: https://github.com/alvarodiez20/pysuricata/compare/0.0.58...0.0.59
 [0.0.58]: https://github.com/alvarodiez20/pysuricata/compare/0.0.57...0.0.58

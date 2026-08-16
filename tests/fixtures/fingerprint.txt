@@ -1,0 +1,555 @@
+attr::00:00::count	38
+attr::00:00::pct	4.3
+attr::01:00::count	38
+attr::01:00::pct	4.3
+attr::02:00::count	38
+attr::02:00::pct	4.3
+attr::03:00::count	37
+attr::03:00::pct	4.2
+attr::04:00::count	37
+attr::04:00::pct	4.2
+attr::05:00::count	37
+attr::05:00::pct	4.2
+attr::06:00::count	37
+attr::06:00::pct	4.2
+attr::07:00::count	37
+attr::07:00::pct	4.2
+attr::08:00::count	37
+attr::08:00::pct	4.2
+attr::09:00::count	37
+attr::09:00::pct	4.2
+attr::10:00::count	37
+attr::10:00::pct	4.2
+attr::11:00::count	37
+attr::11:00::pct	4.2
+attr::12:00::count	37
+attr::12:00::pct	4.2
+attr::13:00::count	37
+attr::13:00::pct	4.2
+attr::14:00::count	37
+attr::14:00::pct	4.2
+attr::15:00::count	37
+attr::15:00::pct	4.2
+attr::16:00::count	37
+attr::16:00::pct	4.2
+attr::17:00::count	37
+attr::17:00::pct	4.2
+attr::18:00::count	37
+attr::18:00::pct	4.2
+attr::19:00::count	37
+attr::19:00::pct	4.2
+attr::2026-01-01 – 2026-01-02::count	15
+attr::2026-01-01 – 2026-01-02::pct	1.7
+attr::2026-01-01::count	15
+attr::2026-01-01::pct	1.7
+attr::2026-01-02 – 2026-01-03::count	15
+attr::2026-01-02 – 2026-01-03::pct	1.7
+attr::2026-01-02::count	15
+attr::2026-01-02::pct	1.7
+attr::2026-01-03 – 2026-01-04::count	15
+attr::2026-01-03 – 2026-01-04::pct	1.7
+attr::2026-01-04 – 2026-01-05::count	15
+attr::2026-01-04 – 2026-01-05::pct	1.7
+attr::2026-01-04::count	14
+attr::2026-01-04::pct	1.6
+attr::2026-01-05 – 2026-01-06::count	15
+attr::2026-01-05 – 2026-01-06::pct	1.7
+attr::2026-01-05::count	15
+attr::2026-01-05::pct	1.7
+attr::2026-01-06 – 2026-01-07::count	15
+attr::2026-01-06 – 2026-01-07::pct	1.7
+attr::2026-01-07 – 2026-01-08::count	14
+attr::2026-01-07 – 2026-01-08::pct	1.6
+attr::2026-01-07::count	15
+attr::2026-01-07::pct	1.7
+attr::2026-01-08 – 2026-01-09::count	15
+attr::2026-01-08 – 2026-01-09::pct	1.7
+attr::2026-01-09 – 2026-01-10::count	15
+attr::2026-01-09 – 2026-01-10::pct	1.7
+attr::2026-01-09::count	15
+attr::2026-01-09::pct	1.7
+attr::2026-01-10 – 2026-01-11::count	15
+attr::2026-01-10 – 2026-01-11::pct	1.7
+attr::2026-01-10::count	15
+attr::2026-01-10::pct	1.7
+attr::2026-01-11 – 2026-01-12::count	14
+attr::2026-01-11 – 2026-01-12::pct	1.6
+attr::2026-01-12 – 2026-01-13::count	15
+attr::2026-01-12 – 2026-01-13::pct	1.7
+attr::2026-01-12::count	15
+attr::2026-01-12::pct	1.7
+attr::2026-01-13 – 2026-01-14::count	15
+attr::2026-01-13 – 2026-01-14::pct	1.7
+attr::2026-01-13::count	15
+attr::2026-01-13::pct	1.7
+attr::2026-01-14 – 2026-01-15::count	15
+attr::2026-01-14 – 2026-01-15::pct	1.7
+attr::2026-01-15 – 2026-01-16::count	15
+attr::2026-01-15 – 2026-01-16::pct	1.7
+attr::2026-01-15::count	14
+attr::2026-01-15::pct	1.6
+attr::2026-01-16 – 2026-01-17::count	15
+attr::2026-01-16 – 2026-01-17::pct	1.7
+attr::2026-01-17 – 2026-01-18::count	15
+attr::2026-01-17 – 2026-01-18::pct	1.7
+attr::2026-01-17::count	15
+attr::2026-01-17::pct	1.7
+attr::2026-01-18 – 2026-01-19::count	14
+attr::2026-01-18 – 2026-01-19::pct	1.6
+attr::2026-01-18::count	15
+attr::2026-01-18::pct	1.7
+attr::2026-01-19 – 2026-01-20::count	15
+attr::2026-01-19 – 2026-01-20::pct	1.7
+attr::2026-01-20 – 2026-01-21::count	15
+attr::2026-01-20 – 2026-01-21::pct	1.7
+attr::2026-01-20::count	15
+attr::2026-01-20::pct	1.7
+attr::2026-01-21 – 2026-01-22::count	15
+attr::2026-01-21 – 2026-01-22::pct	1.7
+attr::2026-01-22 – 2026-01-23::count	14
+attr::2026-01-22 – 2026-01-23::pct	1.6
+attr::2026-01-22::count	15
+attr::2026-01-22::pct	1.7
+attr::2026-01-23 – 2026-01-24::count	15
+attr::2026-01-23 – 2026-01-24::pct	1.7
+attr::2026-01-23::count	15
+attr::2026-01-23::pct	1.7
+attr::2026-01-24 – 2026-01-25::count	15
+attr::2026-01-24 – 2026-01-25::pct	1.7
+attr::2026-01-25 – 2026-01-26::count	15
+attr::2026-01-25 – 2026-01-26::pct	1.7
+attr::2026-01-25::count	15
+attr::2026-01-25::pct	1.7
+attr::2026-01-26 – 2026-01-27::count	15
+attr::2026-01-26 – 2026-01-27::pct	1.7
+attr::2026-01-26::count	14
+attr::2026-01-26::pct	1.6
+attr::2026-01-27 – 2026-01-28::count	15
+attr::2026-01-27 – 2026-01-28::pct	1.7
+attr::2026-01-28 – 2026-01-29::count	15
+attr::2026-01-28 – 2026-01-29::pct	1.7
+attr::2026-01-28::count	15
+attr::2026-01-28::pct	1.7
+attr::2026-01-29 – 2026-01-30::count	15
+attr::2026-01-29 – 2026-01-30::pct	1.7
+attr::2026-01-30 – 2026-01-31::count	15
+attr::2026-01-30 – 2026-01-31::pct	1.7
+attr::2026-01-30::count	14
+attr::2026-01-30::pct	1.6
+attr::2026-01-31 – 2026-02-01::count	15
+attr::2026-01-31 – 2026-02-01::pct	1.7
+attr::2026-01-31::count	15
+attr::2026-01-31::pct	1.7
+attr::2026-02-01 – 2026-02-02::count	15
+attr::2026-02-01 – 2026-02-02::pct	1.7
+attr::2026-02-02 – 2026-02-03::count	14
+attr::2026-02-02 – 2026-02-03::pct	1.6
+attr::2026-02-02::count	15
+attr::2026-02-02::pct	1.7
+attr::2026-02-03 – 2026-02-04::count	15
+attr::2026-02-03 – 2026-02-04::pct	1.7
+attr::2026-02-03::count	15
+attr::2026-02-03::pct	1.7
+attr::2026-02-04 – 2026-02-05::count	15
+attr::2026-02-04 – 2026-02-05::pct	1.7
+attr::2026-02-05 – 2026-02-06::count	15
+attr::2026-02-05 – 2026-02-06::pct	1.7
+attr::2026-02-05::count	15
+attr::2026-02-05::pct	1.7
+attr::2026-02-06 – 2026-02-07::count	15
+attr::2026-02-06 – 2026-02-07::pct	1.7
+attr::2026::count	891
+attr::2026::pct	100
+attr::20:00::count	37
+attr::20:00::pct	4.2
+attr::21:00::count	37
+attr::21:00::pct	4.2
+attr::22:00::count	37
+attr::22:00::pct	4.2
+attr::23:00::count	37
+attr::23:00::pct	4.2
+attr::::count	0
+attr::::count	1
+attr::::count	2
+attr::::count	4
+attr::::count	434
+attr::::count	457
+attr::::missing	0
+attr::::missing	1563
+attr::::pct	0
+attr::::pct	175.4
+attr::::percentage	0%
+attr::::percentage	12.5
+attr::::percentage	25
+attr::::percentage	48.7%
+attr::::percentage	50
+attr::::percentage	51.3%
+attr::Feb::count	147
+attr::Feb::pct	16.5
+attr::Fri::count	144
+attr::Fri::pct	16.2
+attr::Jan::count	744
+attr::Jan::pct	83.5
+attr::Mon::count	120
+attr::Mon::pct	13.5
+attr::Sat::count	123
+attr::Sat::pct	13.8
+attr::Sun::count	120
+attr::Sun::pct	13.5
+attr::Thu::count	144
+attr::Thu::pct	16.2
+attr::Tue::count	120
+attr::Tue::pct	13.5
+attr::Wed::count	120
+attr::Wed::pct	13.5
+attr::col_age::count	10
+attr::col_age::count	11
+attr::col_age::count	110
+attr::col_age::count	111
+attr::col_age::count	12
+attr::col_age::count	124
+attr::col_age::count	13
+attr::col_age::count	130
+attr::col_age::count	14
+attr::col_age::count	15
+attr::col_age::count	158
+attr::col_age::count	16
+attr::col_age::count	17
+attr::col_age::count	18
+attr::col_age::count	19
+attr::col_age::count	198
+attr::col_age::count	20
+attr::col_age::count	21
+attr::col_age::count	22
+attr::col_age::count	23
+attr::col_age::count	24
+attr::col_age::count	25
+attr::col_age::count	28
+attr::col_age::count	29
+attr::col_age::count	3
+attr::col_age::count	30
+attr::col_age::count	31
+attr::col_age::count	32
+attr::col_age::count	33
+attr::col_age::count	34
+attr::col_age::count	346
+attr::col_age::count	35
+attr::col_age::count	36
+attr::col_age::count	37
+attr::col_age::count	38
+attr::col_age::count	39
+attr::col_age::count	41
+attr::col_age::count	42
+attr::col_age::count	44
+attr::col_age::count	45
+attr::col_age::count	46
+attr::col_age::count	5
+attr::col_age::count	51
+attr::col_age::count	53
+attr::col_age::count	54
+attr::col_age::count	55
+attr::col_age::count	57
+attr::col_age::count	59
+attr::col_age::count	6
+attr::col_age::count	61
+attr::col_age::count	64
+attr::col_age::count	67
+attr::col_age::count	7
+attr::col_age::count	72
+attr::col_age::count	74
+attr::col_age::count	78
+attr::col_age::count	8
+attr::col_age::count	82
+attr::col_age::count	86
+attr::col_age::count	87
+attr::col_age::count	88
+attr::col_age::count	92
+attr::col_age::count	95
+attr::col_age::count	98
+attr::col_age::pct	0.3
+attr::col_age::pct	0.6
+attr::col_age::pct	0.7
+attr::col_age::pct	0.8
+attr::col_age::pct	0.9
+attr::col_age::pct	1.1
+attr::col_age::pct	1.2
+attr::col_age::pct	1.3
+attr::col_age::pct	1.5
+attr::col_age::pct	1.6
+attr::col_age::pct	1.7
+attr::col_age::pct	1.8
+attr::col_age::pct	1.9
+attr::col_age::pct	10.3
+attr::col_age::pct	10.7
+attr::col_age::pct	11
+attr::col_age::pct	12.3
+attr::col_age::pct	12.5
+attr::col_age::pct	13.9
+attr::col_age::pct	14.6
+attr::col_age::pct	17.7
+attr::col_age::pct	2
+attr::col_age::pct	2.1
+attr::col_age::pct	2.2
+attr::col_age::pct	2.4
+attr::col_age::pct	2.5
+attr::col_age::pct	2.6
+attr::col_age::pct	2.7
+attr::col_age::pct	2.8
+attr::col_age::pct	22.2
+attr::col_age::pct	3.1
+attr::col_age::pct	3.3
+attr::col_age::pct	3.4
+attr::col_age::pct	3.5
+attr::col_age::pct	3.6
+attr::col_age::pct	3.7
+attr::col_age::pct	3.8
+attr::col_age::pct	3.9
+attr::col_age::pct	38.8
+attr::col_age::pct	4
+attr::col_age::pct	4.2
+attr::col_age::pct	4.3
+attr::col_age::pct	4.4
+attr::col_age::pct	4.6
+attr::col_age::pct	4.7
+attr::col_age::pct	4.9
+attr::col_age::pct	5.1
+attr::col_age::pct	5.2
+attr::col_age::pct	5.7
+attr::col_age::pct	5.9
+attr::col_age::pct	6.1
+attr::col_age::pct	6.2
+attr::col_age::pct	6.4
+attr::col_age::pct	6.6
+attr::col_age::pct	6.8
+attr::col_age::pct	7.2
+attr::col_age::pct	7.5
+attr::col_age::pct	8.1
+attr::col_age::pct	8.3
+attr::col_age::pct	8.8
+attr::col_age::pct	9.2
+attr::col_age::pct	9.7
+attr::col_age::pct	9.8
+attr::col_age::pct	9.9
+attr::col_fare::count	1
+attr::col_fare::count	10
+attr::col_fare::count	101
+attr::col_fare::count	103
+attr::col_fare::count	104
+attr::col_fare::count	11
+attr::col_fare::count	110
+attr::col_fare::count	115
+attr::col_fare::count	12
+attr::col_fare::count	13
+attr::col_fare::count	14
+attr::col_fare::count	17
+attr::col_fare::count	18
+attr::col_fare::count	19
+attr::col_fare::count	190
+attr::col_fare::count	194
+attr::col_fare::count	198
+attr::col_fare::count	2
+attr::col_fare::count	20
+attr::col_fare::count	212
+attr::col_fare::count	25
+attr::col_fare::count	256
+attr::col_fare::count	26
+attr::col_fare::count	27
+attr::col_fare::count	28
+attr::col_fare::count	283
+attr::col_fare::count	3
+attr::col_fare::count	32
+attr::col_fare::count	33
+attr::col_fare::count	34
+attr::col_fare::count	35
+attr::col_fare::count	36
+attr::col_fare::count	37
+attr::col_fare::count	38
+attr::col_fare::count	4
+attr::col_fare::count	44
+attr::col_fare::count	45
+attr::col_fare::count	48
+attr::col_fare::count	49
+attr::col_fare::count	5
+attr::col_fare::count	50
+attr::col_fare::count	51
+attr::col_fare::count	52
+attr::col_fare::count	53
+attr::col_fare::count	54
+attr::col_fare::count	55
+attr::col_fare::count	57
+attr::col_fare::count	59
+attr::col_fare::count	61
+attr::col_fare::count	68
+attr::col_fare::count	7
+attr::col_fare::count	70
+attr::col_fare::count	73
+attr::col_fare::count	8
+attr::col_fare::count	81
+attr::col_fare::count	9
+attr::col_fare::count	90
+attr::col_fare::count	97
+attr::col_fare::count	98
+attr::col_fare::pct	0.1
+attr::col_fare::pct	0.2
+attr::col_fare::pct	0.3
+attr::col_fare::pct	0.4
+attr::col_fare::pct	0.6
+attr::col_fare::pct	0.8
+attr::col_fare::pct	0.9
+attr::col_fare::pct	1
+attr::col_fare::pct	1.1
+attr::col_fare::pct	1.2
+attr::col_fare::pct	1.3
+attr::col_fare::pct	1.5
+attr::col_fare::pct	1.6
+attr::col_fare::pct	1.9
+attr::col_fare::pct	10.1
+attr::col_fare::pct	10.9
+attr::col_fare::pct	11
+attr::col_fare::pct	11.3
+attr::col_fare::pct	11.6
+attr::col_fare::pct	11.7
+attr::col_fare::pct	12.3
+attr::col_fare::pct	12.9
+attr::col_fare::pct	2
+attr::col_fare::pct	2.1
+attr::col_fare::pct	2.2
+attr::col_fare::pct	2.8
+attr::col_fare::pct	2.9
+attr::col_fare::pct	21.3
+attr::col_fare::pct	21.8
+attr::col_fare::pct	22.2
+attr::col_fare::pct	23.8
+attr::col_fare::pct	28.7
+attr::col_fare::pct	3
+attr::col_fare::pct	3.1
+attr::col_fare::pct	3.6
+attr::col_fare::pct	3.7
+attr::col_fare::pct	3.8
+attr::col_fare::pct	3.9
+attr::col_fare::pct	31.8
+attr::col_fare::pct	4
+attr::col_fare::pct	4.2
+attr::col_fare::pct	4.3
+attr::col_fare::pct	4.9
+attr::col_fare::pct	5.1
+attr::col_fare::pct	5.4
+attr::col_fare::pct	5.5
+attr::col_fare::pct	5.6
+attr::col_fare::pct	5.7
+attr::col_fare::pct	5.8
+attr::col_fare::pct	5.9
+attr::col_fare::pct	6.1
+attr::col_fare::pct	6.2
+attr::col_fare::pct	6.4
+attr::col_fare::pct	6.6
+attr::col_fare::pct	6.8
+attr::col_fare::pct	7.6
+attr::col_fare::pct	7.9
+attr::col_fare::pct	8.2
+attr::col_fare::pct	9.1
+kv::10ᵗʰ	24.93
+kv::10ᵗʰ	66
+kv::2ⁿᵈ	116.6
+kv::2ⁿᵈ	16
+kv::2ⁿᵈ	406
+kv::3ʳᵈ	12.02
+kv::3ʳᵈ	47
+kv::3ʳᵈ	659
+kv::4ᵗʰ	126.2
+kv::4ᵗʰ	60
+kv::4ᵗʰ	679
+kv::5ᵗʰ	14.37
+kv::5ᵗʰ	248
+kv::5ᵗʰ	26
+kv::6ᵗʰ	15.02
+kv::6ᵗʰ	63
+kv::7ᵗʰ	15
+kv::7ᵗʰ	18.88
+kv::8ᵗʰ	21.04
+kv::8ᵗʰ	59
+kv::9ᵗʰ	24.1
+kv::9ᵗʰ	62
+kv::booked 311	56
+kv::business hours	24.2%
+kv::business hrs %	24.2%
+kv::coeff. of var	0.5569
+kv::coeff. of var	0.7096
+kv::columns	8
+kv::count	891
+kv::distribution 1ˢᵗ	11.79
+kv::distribution 1ˢᵗ	33
+kv::duplicates	0
+kv::empty strings	0
+kv::entropy	0.9855
+kv::entropy	0.9999
+kv::entropy	1.045
+kv::false	434
+kv::geometric mean	30.26
+kv::geometric mean	31.34
+kv::heaping %	12.46
+kv::heaping %	17.85
+kv::iqr	35.15
+kv::iqr	39
+kv::jarque–bera χ²	424.1
+kv::jarque–bera χ²	53.75
+kv::kurtosis	-1.193
+kv::kurtosis	2.143
+kv::mad	16.41
+kv::mad	20
+kv::max	176.3
+kv::max	79
+kv::mean	40.02
+kv::mean	41.31
+kv::median	33.46
+kv::median	42
+kv::median (p50)	33.46
+kv::median (p50)	42
+kv::min	0.3883
+kv::min	1
+kv::missing	21.9%
+kv::mode %	0%
+kv::mode %	5.2%
+kv::mode %	50.6%
+kv::mode %	57.1%
+kv::p1 (≈)	1
+kv::p1 (≈)	3.399
+kv::p10 (≈)	10.19
+kv::p10 (≈)	9
+kv::p5 (≈)	4
+kv::p5 (≈)	6.94
+kv::p90 (≈)	73
+kv::p90 (≈)	77.04
+kv::p95 (≈)	76
+kv::p95 (≈)	95.21
+kv::p99 (≈)	134.1
+kv::p99 (≈)	79
+kv::q1 (p25)	19.08
+kv::q1 (p25)	22
+kv::q3 (p75)	54.23
+kv::q3 (p75)	61
+kv::range	175.9
+kv::range	78
+kv::rows	891
+kv::severity 1ˢᵗ	307
+kv::skew	-0.07823
+kv::skew	1.307
+kv::std dev	23.01
+kv::std dev	28.4
+kv::std error	0.7708
+kv::std error	0.9513
+kv::top 5 coverage	0%
+kv::top 5 coverage	100%
+kv::top 5 coverage	16.8%
+kv::true	457
+kv::unique	0
+kv::unique	2
+kv::unique	599
+kv::unique	79
+kv::unique	891
+kv::unique (≈)	891
+kv::unique timestamps (≈)	891
+kv::variance	529.3
+kv::variance	806.3
+kv::weekend %	27.3%
+kv::weekend ratio	27.3%
