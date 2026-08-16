@@ -14,6 +14,17 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A histogram y-axis count label is now guaranteed at most four glyphs**
+  ([#183]). It used to *prefer* short and not guarantee it: `12,500` came out
+  as six characters and `12.5M` as five. That matters because the redesigned
+  chart fixes the y gutter at 44px so the plot's left edge does not move
+  between columns — a wider label either overflows it or forces the gutter to
+  breathe, and a breathing gutter loses the alignment the fixed one buys.
+
+[#183]: https://github.com/alvarodiez20/pysuricata/issues/183
+
 ### Changed
 
 - The `pypi` environment no longer requires a reviewer, so **pushing a version
