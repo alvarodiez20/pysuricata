@@ -8,14 +8,19 @@ from .card_config import (
     DEFAULT_CHART_DIMS,
     DEFAULT_HIST_CONFIG,
     DEFAULT_TICK_CONFIG,
-    MAD_OUTLIER_THRESHOLD,
-    MAD_SCALE_FACTOR,
 )
 from .card_types import NumericStats, QualityFlags, QuantileData
 from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
 from .format_utils import ordinal_number
 from .histogram_svg import SVGHistogramRenderer
 from .identifier import identifier_facts, looks_like_identifier
+from .outlier_fence import (
+    build_fence,
+    fence_verdict,
+    method_note,
+    render_figure,
+    render_table,
+)
 from .sampling import quantiles_are_sampled
 from .triage import annotate_flags
 
@@ -58,7 +63,7 @@ class NumericCardRenderer(CardRenderer):
         stats_table = self._build_stats_table(stats)
         common_table = self._build_common_values_table(stats)
         extremes_table = self._build_extremes_table(stats)
-        outliers_low, outliers_high = self._build_outliers_tables(stats)
+        outliers_pane = self._build_outliers_pane(stats, quantiles)
         corr_table = self._build_correlation_table(stats)
         missing_table = self._build_missing_values_table(stats)
 
@@ -72,8 +77,7 @@ class NumericCardRenderer(CardRenderer):
             stats_quantiles,
             common_table,
             extremes_table,
-            outliers_low,
-            outliers_high,
+            outliers_pane,
             corr_table,
             missing_table,
         )
@@ -584,369 +588,69 @@ class NumericCardRenderer(CardRenderer):
             + "</div>"
         )
 
-    def _build_outliers_tables(self, stats: NumericStats) -> tuple[str, str]:
-        """Build outliers tables."""
-        try:
-            sample_vals = list(getattr(stats, "sample_vals", []) or [])
-        except Exception:
-            sample_vals = []
-
-        out_tbl_low = out_tbl_high = "<div class='muted'>—</div>"
-
-        try:
-            low_list, high_list = self._identify_outliers(stats, sample_vals)
-            idx_map = self._build_index_map(stats)
-
-            low_list = sorted(self._deduplicate_outliers(low_list), key=lambda x: x[0])[
-                :10
-            ]
-            high_list = sorted(
-                self._deduplicate_outliers(high_list), key=lambda x: -x[0]
-            )[:10]
-
-            # Use enhanced outliers table with summary statistics and visual improvements
-            out_tbl_low = self._format_enhanced_outliers_table(
-                low_list, idx_map, stats, "low"
-            )
-            out_tbl_high = self._format_enhanced_outliers_table(
-                high_list, idx_map, stats, "high"
-            )
-        except Exception:
-            pass
-
-        return out_tbl_low, out_tbl_high
-
-    def _identify_outliers(
-        self, stats: NumericStats, sample_vals: list
-    ) -> tuple[list, list]:
-        """Identify outliers using IQR and MAD methods."""
-        low_list = []
-        high_list = []
-
-        # IQR method
-        if isinstance(stats.q1, (int, float)) and isinstance(stats.q3, (int, float)):
-            iqr = stats.q3 - stats.q1
-            if iqr and not math.isnan(iqr):
-                lo_f, hi_f = stats.q1 - 1.5 * iqr, stats.q3 + 1.5 * iqr
-                for v in sample_vals:
-                    if not isinstance(v, (int, float)) or not math.isfinite(v):
-                        continue
-                    if v < lo_f:
-                        low_list.append((v, "IQR"))
-                    elif v > hi_f:
-                        high_list.append((v, "IQR"))
-
-        # MAD method
-        if (
-            isinstance(stats.mad, (int, float))
-            and isinstance(stats.median, (int, float))
-            and stats.mad
-            and not math.isnan(stats.mad)
-            and not math.isnan(stats.median)
-        ):
-            for v in sample_vals:
-                if not isinstance(v, (int, float)) or not math.isfinite(v):
-                    continue
-                mz = abs(MAD_SCALE_FACTOR * (v - stats.median) / stats.mad)
-                if mz > MAD_OUTLIER_THRESHOLD:
-                    if v < stats.median:
-                        low_list.append((v, "MAD"))
-                    else:
-                        high_list.append((v, "MAD"))
-
-        return low_list, high_list
-
-    def _build_index_map(self, stats: NumericStats) -> dict:
-        """Build index mapping for outliers."""
-        idx_map = {}
-        try:
-            for idx, val in list(getattr(stats, "min_items", []) or []) + list(
-                getattr(stats, "max_items", []) or []
-            ):
-                key = round(float(val), 12)
-                idx_map.setdefault(key, []).append(idx)
-        except Exception:
-            pass
-        return idx_map
-
-    def _deduplicate_outliers(self, outliers: list) -> list:
-        """Group outliers by value, keeping track of all detection methods."""
-        value_map = {}
-        for v, t in outliers:
-            key = round(float(v), 12)
-            if key in value_map:
-                # Value already seen - add method if different
-                existing_val, existing_methods = value_map[key]
-                if t not in existing_methods:
-                    existing_methods.append(t)
-            else:
-                value_map[key] = (v, [t])
-
-        # Return list with combined methods
-        return [(v, methods) for v, methods in value_map.values()]
-
-    def _get_outlier_severity(
-        self, value: float, method: str, stats: NumericStats
-    ) -> tuple[str, str]:
-        """Calculate and format outlier severity indicator with statistical context.
-
-        Returns:
-            Tuple of (severity_text, css_class)
-        """
-        try:
-            if (
-                method == "IQR"
-                and hasattr(stats, "q1")
-                and hasattr(stats, "q3")
-                and hasattr(stats, "iqr")
-            ):
-                # Calculate how many IQRs away from the nearest quartile
-                if value < stats.q1:
-                    distance = (stats.q1 - value) / stats.iqr if stats.iqr > 0 else 0
-                else:
-                    distance = (value - stats.q3) / stats.iqr if stats.iqr > 0 else 0
-
-                if distance >= 3.0:
-                    return f"Extreme ({distance:.1f}× IQR)", "extreme"
-                elif distance >= 2.0:
-                    return f"High ({distance:.1f}× IQR)", "high"
-                else:
-                    return f"Moderate ({distance:.1f}× IQR)", "moderate"
-
-            elif method == "MAD" and hasattr(stats, "median") and hasattr(stats, "mad"):
-                # Calculate how many MADs away from median
-                distance = abs(value - stats.median) / stats.mad if stats.mad > 0 else 0
-
-                if distance >= 3.5:
-                    return f"Extreme ({distance:.1f}× MAD)", "extreme"
-                elif distance >= 2.5:
-                    return f"High ({distance:.1f}× MAD)", "high"
-                else:
-                    return f"Moderate ({distance:.1f}× MAD)", "moderate"
-            else:
-                return "Detected", "moderate"
-        except Exception:
-            return "Detected", "moderate"
-
-    def _format_outliers_table(
-        self, outliers: list, idx_map: dict, stats: NumericStats
+    def _build_outliers_pane(
+        self, stats: NumericStats, quantiles: QuantileData | None = None
     ) -> str:
-        """Format outliers into HTML table with enhanced context and severity indicators."""
-        if not outliers:
-            return "<tr><td colspan=4>—</td></tr>"
+        """The fence, the marks that crossed it, and one row per value.
 
-        parts = []
-        for v, t in outliers:
-            key = round(float(v), 12)
-            idxs = idx_map.get(key) or []
-            idx_disp = self.safe_html_escape(str(idxs[0])) if idxs else "—"
+        Phase 5b.2 (#154). What this replaces opened with roughly 60px
+        announcing `Low Outliers — 0 outliers (0.0%)` over three severity chips
+        all reading zero, said it again for the high side, then listed the
+        values in a `rowspan` table with no picture of what they crossed.
 
-            # Enhanced method labels
-            method_label = "Extreme (IQR)" if t == "IQR" else "Extreme (MAD)"
+        An outlier is *defined* by a threshold, so the threshold is the one
+        graphic that explains the number, and it is drawn. The empty low side
+        becomes a sentence: `Age`'s lower fence sits below the column's own
+        minimum, which is the reason it has no low outliers and is worth more
+        than a block of zeroes.
 
-            # Add severity indicator based on method
-            severity, severity_class = self._get_outlier_severity(v, t, stats)
+        The arithmetic lives in `render/outlier_fence.py`, because the Min/Max
+        pane (5b.5) has to read the same axis and the same severity words -- a
+        value that is `high` in one pane cannot be `moderate` in the other, and
+        the only way to guarantee that is one implementation.
+        """
+        try:
+            fence = build_fence(stats, quantiles)
+        except Exception:
+            fence = None
 
-            parts.append(
-                f"<tr><td>{idx_disp}</td><td class='num'>{self.format_number(v)}</td>"
-                f"<td class='method'>{method_label}</td><td class='severity' data-severity='{severity_class}'>{severity}</td></tr>"
+        if fence is None:
+            return (
+                '<p class="fence-none">No fence can be placed on this column: '
+                "the middle half of its values are identical, so the IQR is "
+                "zero and the rule has no width to work with.</p>"
             )
 
-        return (
-            '<table class="kv"><thead><tr><th>Index</th><th>Value</th><th>Method</th><th>Severity</th></tr></thead><tbody>'
-            + "".join(parts)
-            + "</tbody></table>"
+        name = self.safe_html_escape(stats.name)
+        pct = (fence.n_outliers / fence.n_total * 100.0) if fence.n_total else 0.0
+
+        header = (
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · outliers</span>'
+            '<span class="fence-head__rule"></span>'
+            f'<span class="fence-head__count">{fence.n_outliers:,} of '
+            f"{fence.n_total:,} values · {pct:.1f}%</span>"
+            "</div>"
+        )
+        lede = f'<p class="fence-lede">{fence_verdict(fence, self.format_number)}</p>'
+
+        if not fence.rows:
+            # Nothing crossed either fence. The sentence above already names
+            # both, so a figure with no marks on it would be decoration.
+            return f'<div class="fence-pane">{header}{lede}</div>'
+
+        body = (
+            '<div class="fence-body">'
+            f"{render_table(fence, self.format_number)}"
+            '<div class="fence-methods">'
+            '<span class="fence-methods__title">The two methods</span>'
+            f'<p class="fence-methods__note">{method_note(fence)}</p>'
+            "</div>"
+            "</div>"
         )
 
-    def _format_enhanced_outliers_table(
-        self, outliers: list, idx_map: dict, stats: NumericStats, direction: str
-    ) -> str:
-        """Format outliers into enhanced HTML table with visual improvements and summary statistics.
-
-        This method creates a professional, feature-rich table that provides comprehensive
-        insights into outliers with summary statistics, severity breakdown, and visual indicators.
-
-        Args:
-            outliers: List of (value, method) tuples for outliers
-            idx_map: Dictionary mapping values to indices
-            stats: NumericStats object containing statistical data
-            direction: Direction of outliers ('low' or 'high')
-
-        Returns:
-            HTML string for the enhanced outliers table with summary
-        """
-        if not outliers:
-            # Still show summary box even with 0 outliers
-            direction_icon = "↓" if direction == "low" else "↑"
-            direction_label = "Low Outliers" if direction == "low" else "High Outliers"
-
-            summary_html = f"""
-            <div class="outlier-summary">
-                <div class="summary-header">
-                    <span class="direction-icon">{direction_icon}</span>
-                    <span class="direction-label">{direction_label}</span>
-                    <span class="outlier-count">0 outliers (0.0%)</span>
-                </div>
-                <div class="severity-breakdown">
-                    <span class="severity-item extreme">Extreme: 0</span>
-                    <span class="severity-item high">High: 0</span>
-                    <span class="severity-item moderate">Moderate: 0</span>
-                </div>
-            </div>
-            """
-            return summary_html
-
-        # Calculate summary statistics
-        total_count = getattr(stats, "count", 0)
-        outlier_count = len(outliers)
-        outlier_pct = (outlier_count / max(1, total_count)) * 100.0
-
-        # Get total outliers from general statistics for context
-        total_outliers_iqr = getattr(stats, "outliers_iqr", 0)
-        total_outliers_pct = (
-            (total_outliers_iqr / max(1, total_count)) * 100.0
-            if total_outliers_iqr
-            else 0.0
-        )
-
-        # Check if we're showing a sample vs full dataset
-        is_sample = (
-            len(outliers) < total_outliers_iqr if total_outliers_iqr > 0 else False
-        )
-        sample_note = (
-            f" (showing top {outlier_count} of {total_outliers_iqr} total)"
-            if is_sample
-            else ""
-        )
-
-        # Get severity distribution per method
-        severity_counts_iqr = {"extreme": 0, "high": 0, "moderate": 0}
-        severity_counts_mad = {"extreme": 0, "high": 0, "moderate": 0}
-        has_iqr = False
-        has_mad = False
-
-        for v, methods in outliers:
-            for method in methods:
-                _, severity_class = self._get_outlier_severity(v, method, stats)
-                if method == "IQR":
-                    severity_counts_iqr[severity_class] += 1
-                    has_iqr = True
-                elif method == "MAD":
-                    severity_counts_mad[severity_class] += 1
-                    has_mad = True
-
-        # Build summary header
-        direction_icon = "↓" if direction == "low" else "↑"
-        direction_label = "Low Outliers" if direction == "low" else "High Outliers"
-
-        # Build severity breakdown - show both methods if both are present
-        severity_breakdown_html = ""
-        if has_iqr and has_mad:
-            severity_breakdown_html = f"""
-            <div class="severity-breakdown">
-                <div class="method-severity-group">
-                    <span class="method-label">IQR:</span>
-                    <span class="severity-item extreme">Extreme: {severity_counts_iqr["extreme"]}</span>
-                    <span class="severity-item high">High: {severity_counts_iqr["high"]}</span>
-                    <span class="severity-item moderate">Moderate: {severity_counts_iqr["moderate"]}</span>
-                </div>
-                <div class="method-severity-group">
-                    <span class="method-label">MAD:</span>
-                    <span class="severity-item extreme">Extreme: {severity_counts_mad["extreme"]}</span>
-                    <span class="severity-item high">High: {severity_counts_mad["high"]}</span>
-                    <span class="severity-item moderate">Moderate: {severity_counts_mad["moderate"]}</span>
-                </div>
-            </div>
-            """
-        elif has_iqr:
-            severity_breakdown_html = f"""
-            <div class="severity-breakdown">
-                <span class="severity-item extreme">Extreme: {severity_counts_iqr["extreme"]}</span>
-                <span class="severity-item high">High: {severity_counts_iqr["high"]}</span>
-                <span class="severity-item moderate">Moderate: {severity_counts_iqr["moderate"]}</span>
-            </div>
-            """
-        else:  # has_mad
-            severity_breakdown_html = f"""
-            <div class="severity-breakdown">
-                <span class="severity-item extreme">Extreme: {severity_counts_mad["extreme"]}</span>
-                <span class="severity-item high">High: {severity_counts_mad["high"]}</span>
-                <span class="severity-item moderate">Moderate: {severity_counts_mad["moderate"]}</span>
-            </div>
-            """
-
-        summary_html = f"""
-        <div class="outlier-summary">
-            <div class="summary-header">
-                <span class="direction-icon">{direction_icon}</span>
-                <span class="direction-label">{direction_label}</span>
-                <span class="outlier-count">{outlier_count} outliers ({outlier_pct:.1f}%){sample_note}</span>
-            </div>
-            {severity_breakdown_html}
-            {f'<div class="context-note"><small>This shows the most extreme outliers from a representative sample. The general statistics show all {total_outliers_iqr} outliers ({total_outliers_pct:.1f}%) in the full dataset.</small></div>' if is_sample else ""}
-        </div>
-        """
-
-        # Build enhanced table rows
-        parts = []
-        has_missing_indices = False
-        for i, (v, methods) in enumerate(outliers):
-            key = round(float(v), 12)
-            idxs = idx_map.get(key) or []
-            idx_disp = self.safe_html_escape(str(idxs[0])) if idxs else "—"
-            if not idxs:
-                has_missing_indices = True
-
-            # Add ranking for top outliers
-            rank_icon = ordinal_number(i + 1)
-
-            # If detected by multiple methods, show each method on a separate row
-            for method_idx, method in enumerate(methods):
-                # Enhanced method labels
-                if method == "IQR":
-                    method_label = "IQR Method"
-                else:
-                    method_label = "MAD Method"
-
-                # Add severity indicator based on method
-                severity, severity_class = self._get_outlier_severity(v, method, stats)
-
-                # First method row shows rank, index, value with rowspan
-                # Subsequent method rows only show method and severity
-                if method_idx == 0:
-                    # First row: show all columns with rowspan for rank/index/value
-                    rowspan = len(methods)
-                    parts.append(
-                        f"<tr class='outlier-row rank-{i + 1}'>"
-                        f"<td class='rank' rowspan='{rowspan}'>{rank_icon}</td>"
-                        f"<td class='index' rowspan='{rowspan}'>{idx_disp}</td>"
-                        f"<td class='num outlier-value' rowspan='{rowspan}'>{self.format_number(v)}</td>"
-                        f"<td class='method'>{method_label}</td>"
-                        f"<td class='severity'><span class='severity-item {severity_class}'>{severity}</span></td>"
-                        f"</tr>"
-                    )
-                else:
-                    # Additional method rows: only method and severity
-                    parts.append(
-                        f"<tr class='outlier-row outlier-row-sub rank-{i + 1}'>"
-                        f"<td class='method'>{method_label}</td>"
-                        f"<td class='severity'><span class='severity-item {severity_class}'>{severity}</span></td>"
-                        f"</tr>"
-                    )
-
-        table_html = (
-            '<table class="outliers-table enhanced">'
-            "<thead><tr><th>Rank</th><th>Index</th><th>Value</th><th>Method</th><th>Severity</th></tr></thead>"
-            f"<tbody>{''.join(parts)}</tbody>"
-            "</table>"
-        )
-
-        # Add note about missing indices if applicable
-        index_note = ""
-        if has_missing_indices:
-            index_note = '<div class="outlier-note"><small>Index shown only for top/bottom extreme values tracked during profiling. Sample-based outliers may not have row indices.</small></div>'
-
-        return summary_html + table_html + index_note
+        figure = render_figure(fence, name, self.format_number)
+        return f'<div class="fence-pane">{header}{lede}{figure}{body}</div>'
 
     def _build_correlation_table(self, stats: NumericStats) -> str:
         """Build enhanced correlation table with visual improvements and summary statistics.
@@ -1666,8 +1370,7 @@ class NumericCardRenderer(CardRenderer):
         stats_quantiles: str,
         common_table: str,
         extremes_table: str,
-        outliers_low: str,
-        outliers_high: str,
+        outliers_pane: str,
         corr_table: str,
         missing_table: str,
     ) -> tuple[str, str]:
@@ -1689,12 +1392,6 @@ class NumericCardRenderer(CardRenderer):
         over. On a single-chunk frame every numeric card loses a tab and
         nothing goes with it.
         """
-        outliers = (
-            '<div class="stats-quant">'
-            f'<div class="sub">{outliers_low}</div>'
-            f'<div class="sub">{outliers_high}</div>'
-            "</div>"
-        )
         chunks = len(getattr(stats, "chunk_metadata", None) or [])
         has_missing = int(getattr(stats, "missing", 0) or 0) > 0
 
@@ -1707,7 +1404,7 @@ class NumericCardRenderer(CardRenderer):
                 extremes_table,
                 bool(extremes_table.strip()),
             ),
-            ("outliers", "Outliers", outliers, True),
+            ("outliers", "Outliers", outliers_pane, True),
             (
                 "corr",
                 "Correlations",

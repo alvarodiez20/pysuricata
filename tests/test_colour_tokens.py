@@ -56,7 +56,6 @@ BASELINE: set[str] = {
     "_03-summary.css #e15e4e",
     "_03-summary.css #e1b54e",
     "_05-sample.css #1a1a1a",
-    "_06-cards.css #0366d6",
     "_06-cards.css #111",
     "_06-cards.css #16a34a",
     "_06-cards.css #1e3a8a",
