@@ -2387,6 +2387,14 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD">Unreleased</a></h2>
 <h3 id="changed">Changed</h3>
 <ul>
+<li><strong>The browser demo adopts the minimal redesign</strong> ([#196]). One 600px reading
+  column, the report's own paper/ink and blue tokens from
+  <code>docs/design/tokens.css</code> in place of the demo's separate green palette, mono
+  micro-labels, and figures as a label/value ledger rather than boxed tiles. The
+  report frame breaks out of the reading column to 1120px, since at 600px the
+  report's own cards wrap one per row. Nothing that worked was dropped — the
+  log, the streamed 5M-row demo, the JSON download, the version line and the
+  sandboxed report frame all survive, restyled.</li>
 <li><strong>The Outliers pane draws the fence</strong> ([#154], 5b.2). It opened with roughly
   60px announcing <code>Low Outliers — 0 outliers (0.0%)</code> over three severity chips
   all reading zero, said the same again for the high side, then listed the
@@ -2428,6 +2436,27 @@ quoted when both sides were measured in the same round-robin run.</p>
 </ul>
 <h3 id="fixed">Fixed</h3>
 <ul>
+<li><strong>A second file in the same session profiles again</strong> ([#196]). WORKERFS leaves
+  the mount point's child nodes behind on unmount, so mounting the second file
+  onto <code>/data</code> failed with an opaque <code>ErrnoError</code>. Every run now mounts under
+  its own directory and releases the previous one.</li>
+<li><strong>A failed run no longer inflates the next run's heap figure.</strong> The previous
+  report stayed pinned in the Python heap because cleanup ran only on the
+  success path, so the next run's "peak heap" was partly measuring the last one.
+  Cleanup now runs on the error path too.</li>
+<li><strong>The page no longer shows one run's figures while the next is still going</strong>,
+  and a late message from a superseded run can no longer repaint a panel a newer
+  run already owns. Runs carry an id, and every run begins by clearing what the
+  last one left.</li>
+<li><strong>Picking the same file twice works.</strong> Re-selecting an identical file fires no
+  <code>change</code> event, which read as a dead button; the input is reset before the
+  file is handled.</li>
+<li><strong>A worker that cannot be constructed says so.</strong> It previously threw past the
+  rest of the script, leaving three disabled buttons and no explanation.</li>
+<li><strong>The report reaches the frame through a blob URL rather than <code>srcdoc</code>.</strong>
+  Chrome silently drops a <code>srcdoc</code> document past roughly 700 KB — no error, no
+  console warning, just a blank frame. Measured: 684 KB renders, 721 KB does
+  not, which any wide or high-cardinality frame clears.</li>
 <li><strong>The invariance harness was comparing 45% of the facts it collected.</strong>
   <code>report_fingerprint.diff()</code> read both fingerprints into a <code>dict</code>, and the
   keys were not unique — <code>age</code> and <code>fare</code> both emit a <code>Median</code> row, one
