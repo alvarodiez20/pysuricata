@@ -35,6 +35,12 @@ quoted when both sides were measured in the same round-robin run.
 - **`docs/versioning.md` (#160)** — the contract. At 0.x a minor bump is what a major becomes at 1.0, with an enumerated covered surface and an explicit not-covered list. The exclusion for *the exact value of any approximate figure* is already load-bearing: recent releases changed how quantiles are presented and what bound the duplicate count carries, and neither should force a minor bump.
 - `tests/test_release_tooling.py` (33 tests).
 
+- **The note editor was styled before the redesign and never revisited.** It asked for `--text-primary` on `--bg-secondary` — **neither of which is defined anywhere in the stylesheets** — so the textarea had no colour and no background of its own and fell back to the browser's. Around that: a 2px border, a 4px radius, and a `rgba(59, 130, 246, .1)` focus glow, which is Tailwind's blue-500 and appears nowhere else in the report. A `padding: 0` override then set the text flush against the border.
+
+  It now looks like the note it is about to become — same type, same measure, the same `--q-good` left rule, in the same column — so committing an edit changes the text and nothing else. Previously the text jumped ~100px right on save, because the empty block is a two-track grid and the filled one is three. Focus changes the weight of the rule that is already there instead of drawing a glow around a box that is not.
+
+  The styling was also split across `_03-summary.css` and `_13-utilities.css` at different specificities, so the focus rule in the second file silently lost to the base rule in the first. It lives in one place now.
+
 ### Note
 `check_step` shipped its central rule wrong in the first draft: it asked that only one component *change*, which **rejects `0.0.72 → 0.1.0`** — the exact release this reform exists to enable — because bumping minor forces patch from 72 to 0. A reset is part of the bump, not a second decision. Caught by running the rule over real cases before trusting it, and kept as a test.
 

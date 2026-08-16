@@ -290,12 +290,20 @@ class TestSavingMovesTheWholeState:
 
 
 class TestTheEditorHasRoomToType:
-    def test_the_textarea_spans_the_whole_row(self):
-        """It is appended as a child of a three-column grid; without an explicit
-        span it lands in an 88px or `auto` track."""
+    def test_the_textarea_lands_in_a_real_column(self):
+        """It is appended as a child of a grid; without an explicit column it
+        lands in whichever 88px or `auto` track comes next and the reader types
+        into a sliver.
+
+        #142 gave it `1 / -1`, the whole row. That stopped the sliver and left a
+        second problem: the note occupies column 2, so the text jumped about
+        100px right the moment it was saved. It now sits in column 2 from the
+        start, and only spans the row on mobile where the note does too.
+        """
         css = (CSS_DIR / "_03-summary.css").read_text(encoding="utf-8")
         block = css.split(".description-block .description-editor")[1].split("}")[0]
-        assert "grid-column: 1 / -1" in block
+        assert "grid-column: 2" in block
+        assert "grid-column: 1 / -1" in css.split("@media (max-width: 768px)")[-1]
 
     def test_the_invitation_meets_the_minimum_target(self):
         """WCAG 2.5.8. The row is clickable as a whole, but the words are what a
@@ -310,3 +318,91 @@ class TestTheEditorHasRoomToType:
 def _block(html: str) -> str:
     start = html.index('id="summary-description"')
     return html[html.rindex("<div", 0, start) : html.index("</div>", start) + 400]
+
+
+class TestTheEditorLooksLikeTheNote:
+    """The editor was styled before the redesign and never revisited.
+
+    It asked for `--text-primary` on `--bg-secondary` -- **neither of which is
+    defined anywhere in the stylesheets** -- so it had no colour and no
+    background of its own and fell back to the browser's. Around that: a 2px
+    border, a 4px radius, and a `rgba(59, 130, 246, .1)` focus glow, which is
+    Tailwind's blue-500 and appears nowhere else in this report. A `padding: 0`
+    override then set the text flush against the border.
+
+    It should look like the note it is about to become, so that committing an
+    edit changes the text and nothing else.
+    """
+
+    @pytest.fixture(scope="class")
+    def rules(self) -> str:
+        return (CSS_DIR / "_03-summary.css").read_text(encoding="utf-8")
+
+    @pytest.fixture(scope="class")
+    def editor(self, rules) -> str:
+        start = rules.index(
+            "#pysuricata-report .description-block .description-editor {"
+        )
+        return rules[start : rules.index("}", start)]
+
+    def test_it_carries_the_same_rule_as_the_note(self, rules, editor):
+        """`--q-good`, the token `.description-content` already uses. They were
+        different tokens at one point, so the mark moved when you saved."""
+        content_start = rules.index(
+            "#pysuricata-report .description-block .description-content {"
+        )
+        content = rules[content_start : rules.index("}", content_start)]
+        assert "border-left: 2px solid var(--q-good)" in content
+        assert "border-left: 2px solid var(--q-good)" in editor
+
+    def test_it_sits_in_the_column_the_note_occupies(self, editor):
+        """Otherwise the text jumps about 100px right when the note is saved --
+        the empty block is a two-track grid and the filled one is three."""
+        assert "grid-column: 2" in editor
+
+    def test_it_has_no_box(self, editor):
+        assert "border: 0" in editor
+        assert "border-radius: 0" in editor
+        assert "background: transparent" in editor
+
+    def test_the_type_matches_the_note(self, rules, editor):
+        assert "font-size: 14.5px" in editor
+        assert "line-height: 1.6" in editor
+
+    def test_focus_changes_the_rule_rather_than_drawing_a_glow(self, rules):
+        assert ".description-editor:focus" in rules
+        assert "border-left-color: var(--ink)" in rules
+
+    @pytest.mark.parametrize(
+        "gone",
+        [
+            "rgba(59, 130, 246",  # Tailwind blue-500, from before the palette
+            "--text-primary",
+            "--bg-secondary",
+        ],
+    )
+    def test_the_undefined_tokens_and_stray_blue_are_gone(self, gone, rules):
+        """Scoped to the file that owns the editor. `_13-utilities.css` still
+        carries plenty of the same debt -- 29 undefined-token and stray-hex
+        references at last count -- but that is #148's ratchet and #122's shim
+        removal, not this.
+
+        Comments are stripped first. The note recording *why* these were
+        removed names all three, and this is the third check today to be
+        tripped by prose it was reading as code -- the first deleted a CSS rule
+        whose comment mentioned `.triple-row`.
+        """
+        code = re.sub(r"/\*.*?\*/", "", rules, flags=re.S)
+        assert gone not in code
+
+    def test_the_editor_is_styled_in_one_place(self):
+        """It was split between `_03-summary.css` and `_13-utilities.css` at
+        different specificities, so the focus rule in the second file lost to
+        the base rule in the first -- silently, since both looked correct on
+        their own."""
+        owners = [
+            path.name
+            for path in sorted(CSS_DIR.glob("*.css"))
+            if ".description-editor {" in path.read_text(encoding="utf-8")
+        ]
+        assert owners == ["_03-summary.css"], owners
