@@ -14,6 +14,17 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+- **A ratchet on colour (#148).** #110's acceptance was that four retired column-type hues do not appear in `static/css/`. All four are clear — and there are **94 distinct hex values** in the stylesheets, including Tailwind's blue-600, green-500 and amber-500 and Material's red-700. The ban list named the accents being replaced and missed everything that walked in behind them.
+
+  A ban list can always be outgrown by a colour nobody thought to ban, so the assertion runs the other way: **every hex outside `_00-tokens.css` must equal a value the token file defines.** That cannot be satisfied today — 88 file/value pairs do not — so it ships as a ratchet against a recorded baseline. A new literal fails immediately; tokenising one also fails, loudly, telling you to shrink the baseline. The number only goes down.
+
+  Two exclusions, both narrow: `var(--paper, #FBF9F5)` is a fallback *for a token that exists*, not an untokenised colour; and `body.suricata-standalone` sits outside `#pysuricata-report` and so cannot read tokens scoped there — the only place in the stylesheets that has to repeat a palette value, and the file already said so.
+
+  The first draft of this test asserted that "the nine named colours" from #110 are clear. **There is no such list** — `test_design_system.py` carries four. The invented list went red on `#93c5fd`, which is how I found out it was mine rather than the project's. It now reads the real list from the test that owns it.
+
+  Deleting the 88 is deliberately not in this change. `_12-missing.css` alone holds 27, and 212 of its 405 rules reference no class in a rendered report — but `.miss-strip` is the by-chunk view blocked by #139 and `.corr-scale` is the ranked-list correlation route, so both are *ahead of their data* rather than dead. Mass-deleting on one fixture is the mistake #158 made with the chart rules, twice. That needs the multi-route fixture corpus #124 is meant to establish.
+
 ### Changed
 - **Publishing is triggered by pushing a version tag, not by merging (#159).**
 
