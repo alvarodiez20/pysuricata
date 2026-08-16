@@ -163,7 +163,6 @@ _PROCESS_DEPENDENT = (
     # iteration order -- and Python randomises string hashing per process. CI
     # kept `passenger 867` where this machine kept `passenger 281`. That is not
     # a change in the data, and pinning it would fail on every machine but one.
-    "top_values",
 )
 
 #: Fields holding `(row_index, value)` pairs. The value is the fact; the row it
@@ -172,6 +171,38 @@ _PROCESS_DEPENDENT = (
 #: The indices are dropped and the values kept, so a changed maximum is still
 #: caught while an arbitrary choice among equals is not.
 _INDEXED_VALUES = ("min_items", "max_items")
+
+
+#: Fields holding `(value, count)` rankings.
+_RANKINGS = ("top_items", "top_values")
+
+
+def _unambiguously_ranked(pairs: object) -> object:
+    """Only the entries the data actually identifies.
+
+    A top-k list is `(value, count)` ordered by count. Where two entries share
+    a count, which one is listed -- and which survives eviction at all -- is
+    decided by arrival and hashing order rather than by the data. The fixture's
+    `name` column has ten ranked names and then forty singletons, and the forty
+    differed between CI and this machine on every run.
+
+    Dropping every entry whose count is shared with another keeps each real
+    fact -- `('male', 451)`, `('C85', 125)` -- and drops exactly the part no
+    frame determines. Stated as a rule: a value tied for its rank is not
+    identified by the data, so it is not something to pin.
+    """
+    if not isinstance(pairs, list):
+        return pairs
+    counts: dict[object, int] = {}
+    for pair in pairs:
+        if isinstance(pair, (list, tuple)) and len(pair) == 2:
+            counts[pair[1]] = counts.get(pair[1], 0) + 1
+    return [
+        pair
+        for pair in pairs
+        if not (isinstance(pair, (list, tuple)) and len(pair) == 2)
+        or counts.get(pair[1], 0) == 1
+    ]
 
 
 def _values_only(pairs: object) -> object:
@@ -197,11 +228,16 @@ def _stable(payload: object) -> object:
     far looser than the noise -- the same compromise the fingerprint makes.
     """
     if isinstance(payload, dict):
-        return {
-            key: _stable(_values_only(value) if key in _INDEXED_VALUES else value)
-            for key, value in payload.items()
-            if key not in _PROCESS_DEPENDENT
-        }
+        out = {}
+        for key, value in payload.items():
+            if key in _PROCESS_DEPENDENT:
+                continue
+            if key in _INDEXED_VALUES:
+                value = _values_only(value)
+            elif key in _RANKINGS:
+                value = _unambiguously_ranked(value)
+            out[key] = _stable(value)
+        return out
     if isinstance(payload, list):
         return [_stable(item) for item in payload]
     if isinstance(payload, float):
@@ -219,6 +255,32 @@ def test_the_summarize_payload_is_unchanged(name):
         json.loads(json.dumps(summarize(FRAMES[name](), seed=0), default=str))
     )
     assert actual == expected
+
+
+def test_nothing_tied_survives_into_the_comparison():
+    """A self-check on `_stable`, added after four CI rounds spent discovering
+    ties one field at a time.
+
+    If any ranking still holds two entries with the same count, that comparison
+    is pinning an order the data does not determine, and it will fail somewhere
+    else. Checking the *shape* of what is compared catches the next such field
+    without waiting for a machine that disagrees.
+    """
+    for name in FRAMES:
+        payload = _stable(
+            json.loads(json.dumps(summarize(FRAMES[name](), seed=0), default=str))
+        )
+        for column, stats in payload["columns"].items():
+            for key in _RANKINGS:
+                entries = stats.get(key) or []
+                counts = [
+                    entry[1]
+                    for entry in entries
+                    if isinstance(entry, (list, tuple)) and len(entry) == 2
+                ]
+                assert len(counts) == len(set(counts)), (
+                    f"{name}/{column}.{key} still compares tied ranks: {entries}"
+                )
 
 
 def test_memory_really_is_process_dependent():
