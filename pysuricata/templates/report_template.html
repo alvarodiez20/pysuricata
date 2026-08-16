@@ -30,29 +30,13 @@
 
         <div class="bar-actions">
           <span class="bar-sep" aria-hidden="true"></span>
-          <a class="icon-btn" href="#" title="Download this report as HTML" aria-label="Download report"
-            data-action="download-report">
-            <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
-              <path fill="currentColor"
-                d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z" />
-              <path fill="currentColor"
-                d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z" />
-            </svg>
-          </a>
-          <button id="toggle-button" class="icon-btn" data-action="toggle-dark-mode" aria-label="Toggle dark mode"
-            title="Toggle dark mode">
-            <span id="toggle-icon">
-              <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
-              </svg>
-            </span>
-          </button>
-          <!-- The pin joins the icon group rather than going. It used to sit
-               alone at margin-left:auto in a meta row that no longer exists,
-               and functionality.js injects one into .quick when it finds none
-               -- which would drop an icon into the text nav and into the
-               mobile rail that has to fit five labels at 390px. -->
+          <!-- Order: pin, download, theme. The pin governs the bar it sits in,
+               so it leads; the theme toggle is the one you set once and leave,
+               so it trails. It used to sit alone at margin-left:auto in a meta
+               row that no longer exists, and functionality.js injects one into
+               .quick when it finds none -- which would drop an icon into the
+               text nav and into the mobile rail that has to fit five labels at
+               390px. So it stays inside this group, first. -->
           <button id="pin-button" class="icon-btn" title="Unpin header" aria-label="Unpin header"
             data-action="toggle-pin">
             <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
@@ -73,6 +57,24 @@
                 <path d="M8 13.2 V 15.2" />
               </g>
             </svg>
+          </button>
+          <a class="icon-btn" href="#" title="Download this report as HTML" aria-label="Download report"
+            data-action="download-report">
+            <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
+              <path fill="currentColor"
+                d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z" />
+              <path fill="currentColor"
+                d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z" />
+            </svg>
+          </a>
+          <button id="toggle-button" class="icon-btn" data-action="toggle-dark-mode" aria-label="Toggle dark mode"
+            title="Toggle dark mode">
+            <span id="toggle-icon">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            </span>
           </button>
         </div>
       </div>
