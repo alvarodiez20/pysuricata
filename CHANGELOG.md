@@ -14,6 +14,45 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.1.0] - 2026-08-16
+
+**The first release that promises anything.**
+
+The sixty-one releases before this one were not decisions. `version-check`
+required a bump on every pull request and `cd.yml` published on every push to
+`main`, so one merged PR was exactly one PyPI release, unconditionally — a
+rewritten kernel and a fixed typo the same size of event. `0.0.71 → 0.0.72`
+could not describe a change, because the version was incremented by the *act of
+merging* rather than by a judgement about what merged.
+
+That is fixed, and this is the first version to arrive on purpose:
+
+- **Publishing happens on a pushed tag**, through an ordered pipeline that
+  smoke-tests the built wheel in a clean virtualenv before anything reaches
+  PyPI, and creates the GitHub release only after PyPI has the package.
+- **`docs/versioning.md` states the contract.** At 0.x, a minor bump is what a
+  major bump becomes at 1.0 — it is the one allowed to break you, and a patch
+  never is. With an enumerated covered surface and an explicit not-covered list.
+- **`pysuricata~=0.1.0` is now a real guarantee.**
+
+Why 0.1.0 and not 1.0.0: the API is demonstrably still moving. `ReportConfig`
+is waiting to be deprecated, `numeric_sample_size` is not a passthrough keyword,
+the five checkpoint options are due to collapse into `progress_report=`, and the
+triage block is about to be reshaped. `1.0.0` is a promise you cannot withdraw.
+The five gates for it are listed in `docs/versioning.md`.
+
+### Honesty about approximation
+Three figures stopped claiming more precision than they have. The quantiles are
+reservoir estimates and now say so; the duplicate count carries the bound that
+actually applies to it rather than the sketch's own, which understated the error
+by up to two orders of magnitude; and the label-length statistics, which had
+been reading from a dict that never carried them and printing `NaN` for every
+categorical column in every report, now print the values the accumulator had all
+along.
+
+
 ### Fixed
 - **`--data-3` could not legally carry a standalone mark (#156).** At `#7FA0B5` it was **2.63:1** on the paper — below the 3:1 non-text minimum (WCAG 1.4.11), which is the entire job a third step exists for. It is now `#5C7F99`.
 
