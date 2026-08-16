@@ -482,7 +482,7 @@
           </div>
           <div class="tooltip-description">${content.description}</div>
           <div class="tooltip-footer">
-            <span class="tooltip-category">📋 ${this.escapeHtml(content.category)}</span>
+            <span class="tooltip-category">${this.escapeHtml(content.category)}</span>
           </div>
         `;
       } else if (isDtypeTooltip) {
@@ -493,7 +493,7 @@
           </div>
           <div class="tooltip-description">${this.escapeHtml(content.description)}</div>
           <div class="tooltip-footer">
-            <span class="tooltip-category">📋 dtype</span>
+            <span class="tooltip-category">dtype</span>
           </div>
         `;
       } else if (isBarFillTooltip) {

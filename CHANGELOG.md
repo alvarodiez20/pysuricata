@@ -27,6 +27,22 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **No emoji anywhere in the report** ([#180]). Eight went: a `🔗` before a
+  heading reading *Correlations*, a `📋` on every header tooltip, three `✓`
+  in empty states whose sentence already said it, and `❓ 0️⃣ ➖` on the
+  quality indicators. `∞` stays — it names the thing it counts and is
+  mathematical notation, not an emoji.
+
+  Two reasons. They render at a different weight and baseline on every
+  platform, which shows in a report that otherwise sets every figure in one
+  mono face; and inline glyphs are **announced by screen readers**, so `✓` in
+  front of "No missing values detected" was read out as "check mark no missing
+  values detected".
+
+[#180]: https://github.com/alvarodiez20/pysuricata/issues/180
+
+### Changed
+
 - The `pypi` environment no longer requires a reviewer, so **pushing a version
   tag publishes to PyPI with no confirmation step**. `cd.yml` and
   `docs/versioning.md` said otherwise and now say this; a comment asserting a
