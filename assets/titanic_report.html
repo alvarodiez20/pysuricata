@@ -2018,13 +2018,16 @@ body.suricata-standalone:not(.light) {
 }
 
 /* === Numeric card triple layout: two tables + histogram in one row === */
+/* The three-column card body, still used by the categorical, boolean and
+   datetime cards. The numeric card no longer emits `.triple-row` -- it is
+   restacked below -- but those three are phases 5.3 and 5.4, so this layout
+   has to keep working until they follow. Removing it with the numeric restack
+   silently flattened all three. */
 #pysuricata-report .var-card__body .triple-row {
   display: grid;
   grid-template-columns: var(--triple-left) var(--triple-right) 1fr;
-  /* left stats, right stats, histogram */
   gap: 12px;
   align-items: end;
-  /* Align bottoms: table bottom rows align with histogram x-axis tick labels */
 }
 
 #pysuricata-report .var-card__body .triple-row .box {
@@ -2032,21 +2035,6 @@ body.suricata-standalone:not(.light) {
   border: none;
   border-radius: 0;
   padding: 0;
-}
-
-/* Make the histogram column stretch and the SVG fill it */
-#pysuricata-report .var-card__body .triple-row .chart {
-  display: flex;
-  flex-direction: column;
-}
-
-#pysuricata-report .var-card__body .triple-row .chart .hist-variants {
-  flex: 1 1 auto;
-  /* fills the available height so the SVG can match tables */
-}
-
-#pysuricata-report .var-card__body .triple-row .chart .hist-variants {
-  min-height: 260px;
 }
 
 #pysuricata-report .var-card__body .triple-row .chart .hist-variants .hist.variant {
@@ -2058,6 +2046,165 @@ body.suricata-standalone:not(.light) {
   height: 100%;
   display: block;
 }
+
+/* ---- the scale and bins toggles ------------------------------- */
+/* Two problems at once. They were inline links, so the target was just the
+   line box -- around 20px tall, well under the 44px a finger needs and under
+   even the 24px of WCAG 2.5.8. And the row did not wrap: `.hist-controls` was
+   a `1fr auto 1fr` grid whose centre column held every control on one line, so
+   at 390px it measured 361px inside 358px and pushed the whole *page* into
+   horizontal scroll -- which makes every sideways gesture ambiguous, including
+   the one inside the sample table's own scroll pane. */
+#pysuricata-report .card-controls .hist-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 8px;
+  min-width: 0;
+}
+
+#pysuricata-report .card-controls .hist-controls .center-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+#pysuricata-report .card-controls .hist-controls .scale-group,
+#pysuricata-report .card-controls .hist-controls .bin-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+#pysuricata-report .card-controls .details-toggle,
+#pysuricata-report .card-controls .hist-controls button.btn-soft {
+  min-height: var(--tap-min);
+  min-width: var(--tap-min);
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  border: 1px solid var(--rule-strong);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+  cursor: pointer;
+}
+
+#pysuricata-report .card-controls .hist-controls button.btn-soft:hover {
+  color: var(--ink);
+  background: var(--track);
+  transform: none;
+  box-shadow: none;
+}
+
+#pysuricata-report .card-controls .hist-controls button.btn-soft.active {
+  color: var(--ink);
+  border-color: var(--ink);
+}
+
+#pysuricata-report .card-controls .hist-controls span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* =============================================================
+   NUMERIC CARD — restacked (#114)
+
+   The chart used to be one third of a row beside two 240px stat tables:
+   `grid-template-columns: var(--triple-left) var(--triple-right) 1fr`. Full
+   width it gains about 550px, which is what makes 50 bins legible and the log
+   toggle worth having. The stats follow it as one row rather than two columns
+   beside it.
+   ============================================================= */
+#pysuricata-report .var-card__body .var-chart {
+  /* The SVG carries an intrinsic height="200"; the container owns the height
+     now so the mobile rule below can shorten it. */
+  line-height: 0;
+}
+
+#pysuricata-report .var-card__body .var-chart .hist-variants {
+  height: 210px;
+}
+
+#pysuricata-report .var-card__body .var-chart .hist-variants .hist.variant {
+  height: 100%;
+}
+
+#pysuricata-report .var-card__body .var-chart .hist-variants .hist.variant>svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* ---- the stat row ------------------------------------------- */
+/* minmax(0, 1fr), not 1fr: a grid track's default minimum is its content, so
+   one long value -- `-1.2345678e+18` is the case that does it -- widens its
+   own column and pushes the rest out of alignment instead of wrapping. */
+#pysuricata-report .vstat-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+#pysuricata-report .vstat {
+  padding: 6px 10px 7px;
+  border-bottom: 1px solid var(--rule);
+  min-width: 0;
+}
+
+#pysuricata-report .vstat__cap {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+#pysuricata-report .vstat__val {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: anywhere;
+}
+
+#pysuricata-report .vstat.is-warn .vstat__val {
+  color: var(--q-warn-text);
+}
+
+#pysuricata-report .vstat.is-crit .vstat__val {
+  color: var(--q-bad);
+}
+
+/* ---- mobile ----------------------------------------------------
+   Placed after the desktop rules on purpose: these have the same
+   specificity, so the later declaration wins. Sitting before them, the
+   180px chart never applied. */
+@media (max-width: 768px) {
+  #pysuricata-report .var-card__body .var-chart .hist-variants {
+    height: 180px;
+  }
+
+  #pysuricata-report .vstat-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 
 /* Hide all variants by default; show only the one marked active */
 #pysuricata-report .hist-variants .variant {
@@ -2742,13 +2889,22 @@ body.suricata-standalone:not(.light) {
 }
 
 /* Align Details button row with the triple layout */
+/* One wrapping row. This was a `var(--triple-left) var(--triple-right) 1fr`
+   grid "to match .triple-row" -- a layout the numeric card no longer uses, so
+   the Details button sat alone in a 240px track and the toggles in a third
+   one, stacking into 141px of chrome at 390px. */
 #pysuricata-report .card-controls {
-  display: grid;
-  grid-template-columns: var(--triple-left) var(--triple-right) 1fr;
-  /* match .triple-row */
-  gap: 12px;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  margin-top: 0px;
+  gap: 8px 12px;
+  margin-top: 8px;
+  min-width: 0;
+}
+
+#pysuricata-report .card-controls .details-slot,
+#pysuricata-report .card-controls .controls-slot {
+  display: contents;
 }
 
 #pysuricata-report .card-controls .details-slot {
@@ -10473,13 +10629,13 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-16 02:14:55</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-16 02:39:12</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <span><span class="k">Profiled in</span> <span class="v">0.12 s</span></span>
+            <span><span class="k">Profiled in</span> <span class="v">0.13 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Shape</span> <span class="v">891 rows × 12 columns</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.53</a>
+            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.54</a>
           </div>
         </div>
 
@@ -10517,7 +10673,7 @@ body.suricata-standalone:not(.light) {
             </div>
             <div class="stat stat--elapsed">
               <div class="stat__cap">Elapsed</div>
-              <div class="stat__val">0.12 s</div>
+              <div class="stat__val">0.13 s</div>
               <div class="stat__sub">wall clock</div>
             </div>
           </div>
@@ -10567,7 +10723,7 @@ body.suricata-standalone:not(.light) {
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260816-021455-5022" data-original-markdown=""
+            data-report-id="20260816-023912-3495" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>
@@ -10647,10 +10803,12 @@ body.suricata-standalone:not(.light) {
         </a>
             </header>
             <div class="var-card__body">
-                <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Missing</th><td class="num">0 (0.0%)</td></tr><tr><th>Type</th><td>identifier (key-like)</td></tr></tbody></table></div>
-                    <div class="box stats-right"><table class="kv"><tbody><tr><th>Rows</th><td class="num">891</td></tr><tr><th>Distinct (≈)</th><td class="num">891</td></tr><tr><th>Duplicates (≈)</th><td class="num">0</td></tr><tr><th>Missing</th><td class="num">0</td></tr><tr><th>Range</th><td class="num">1 – 891</td></tr><tr><th>Gaps in range</th><td class="num">0</td></tr><tr><th>Order</th><td class="num">ascending</td></tr><tr><th>Processed bytes (≈)</th><td class="num">7.0 KB</td></tr></tbody></table></div>
-                    <div class="box chart">
+                <!-- Restacked (#114). The chart was one third of a row beside
+                     two 240px stat tables; full width it gains about 550px,
+                     which is what makes 50 bins legible and the log toggle
+                     worth having. The stats follow it as one row rather than
+                     two columns beside it. -->
+                <div class="var-chart">
         <div class="hist-chart">
             <div class="hist-variants" data-col="col_PassengerId">
                 <div class="hist variant" id="col_PassengerId-lin-bins-10" data-scale="lin" data-bin="10"><svg class="hist-svg" width="420" height="200" viewBox="0 0 420 200" role="img" aria-labelledby="hist-title-col_PassengerId">
@@ -10975,7 +11133,6 @@ body.suricata-standalone:not(.light) {
             </div>
         </div>
         </div>
-                </div>
                 
         <div class="card-controls" role="group" aria-label="Numeric controls">
             <div class="details-slot">
@@ -10996,6 +11153,7 @@ body.suricata-standalone:not(.light) {
             </div>
         </div>
         
+                <div class="vstat-row"><div class="vstat"><div class="vstat__cap">Count</div><div class="vstat__val">891</div></div><div class="vstat"><div class="vstat__cap">Missing</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Type</div><div class="vstat__val">identifier (key-like)</div></div><div class="vstat"><div class="vstat__cap">Rows</div><div class="vstat__val">891</div></div><div class="vstat"><div class="vstat__cap">Distinct (≈)</div><div class="vstat__val">891</div></div><div class="vstat"><div class="vstat__cap">Duplicates (≈)</div><div class="vstat__val">0</div></div><div class="vstat"><div class="vstat__cap">Missing</div><div class="vstat__val">0</div></div><div class="vstat"><div class="vstat__cap">Range</div><div class="vstat__val">1 – 891</div></div><div class="vstat"><div class="vstat__cap">Gaps in range</div><div class="vstat__val">0</div></div><div class="vstat"><div class="vstat__cap">Order</div><div class="vstat__val">ascending</div></div><div class="vstat"><div class="vstat__cap">Processed bytes (≈)</div><div class="vstat__val">7.0 KB</div></div></div>
                 
         <section id="col_PassengerId-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
@@ -11468,10 +11626,12 @@ body.suricata-standalone:not(.light) {
         </a>
             </header>
             <div class="var-card__body">
-                <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">714</td></tr><tr><th>Unique</th><td class="num">88</td></tr><tr><th>Missing</th><td class="num warn">177 (19.9%)</td></tr><tr><th>Outliers</th><td class="num crit">11 (1.5%)</td></tr><tr><th>Zeros</th><td class="num ">0 (0.0%)</td></tr><tr><th>Infinites</th><td class="num ">0 (0.0%)</td></tr><tr><th>Negatives</th><td class="num ">0 (0.0%)</td></tr></tbody></table></div>
-                    <div class="box stats-right"><table class="kv"><tbody><tr><th>Min</th><td class="num">0.42</td></tr><tr><th>Q1 (P25)</th><td class="num">20.12</td></tr><tr><th>Median</th><td class="num">28</td></tr><tr><th>Mean</th><td class="num">29.7</td></tr><tr><th>Q3 (P75)</th><td class="num">38</td></tr><tr><th>Max</th><td class="num">80</td></tr><tr><th>Processed bytes (≈)</th><td class="num">7.0 KB</td></tr></tbody></table></div>
-                    <div class="box chart">
+                <!-- Restacked (#114). The chart was one third of a row beside
+                     two 240px stat tables; full width it gains about 550px,
+                     which is what makes 50 bins legible and the log toggle
+                     worth having. The stats follow it as one row rather than
+                     two columns beside it. -->
+                <div class="var-chart">
         <div class="hist-chart">
             <div class="hist-variants" data-col="col_Age">
                 <div class="hist variant" id="col_Age-lin-bins-10" data-scale="lin" data-bin="10"><svg class="hist-svg" width="420" height="200" viewBox="0 0 420 200" role="img" aria-labelledby="hist-title-col_Age">
@@ -11791,7 +11951,6 @@ body.suricata-standalone:not(.light) {
             </div>
         </div>
         </div>
-                </div>
                 
         <div class="card-controls" role="group" aria-label="Numeric controls">
             <div class="details-slot">
@@ -11812,6 +11971,7 @@ body.suricata-standalone:not(.light) {
             </div>
         </div>
         
+                <div class="vstat-row"><div class="vstat"><div class="vstat__cap">Count</div><div class="vstat__val">714</div></div><div class="vstat"><div class="vstat__cap">Unique</div><div class="vstat__val">88</div></div><div class="vstat is-warn"><div class="vstat__cap">Missing</div><div class="vstat__val">177 (19.9%)</div></div><div class="vstat is-crit"><div class="vstat__cap">Outliers</div><div class="vstat__val">11 (1.5%)</div></div><div class="vstat"><div class="vstat__cap">Zeros</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Infinites</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Negatives</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Min</div><div class="vstat__val">0.42</div></div><div class="vstat"><div class="vstat__cap">Q1 (P25)</div><div class="vstat__val">20.12</div></div><div class="vstat"><div class="vstat__cap">Median</div><div class="vstat__val">28</div></div><div class="vstat"><div class="vstat__cap">Mean</div><div class="vstat__val">29.7</div></div><div class="vstat"><div class="vstat__cap">Q3 (P75)</div><div class="vstat__val">38</div></div><div class="vstat"><div class="vstat__cap">Max</div><div class="vstat__val">80</div></div><div class="vstat"><div class="vstat__cap">Processed bytes (≈)</div><div class="vstat__val">7.0 KB</div></div></div>
                 
         <section id="col_Age-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
@@ -12245,10 +12405,12 @@ body.suricata-standalone:not(.light) {
         </a>
             </header>
             <div class="var-card__body">
-                <div class="triple-row">
-                    <div class="box stats-left"><table class="kv"><tbody><tr><th>Count</th><td class="num">891</td></tr><tr><th>Unique</th><td class="num">248</td></tr><tr><th>Missing</th><td class="num ">0 (0.0%)</td></tr><tr><th>Outliers</th><td class="num crit">116 (13.0%)</td></tr><tr><th>Zeros</th><td class="num ">15 (1.7%)</td></tr><tr><th>Infinites</th><td class="num ">0 (0.0%)</td></tr><tr><th>Negatives</th><td class="num ">0 (0.0%)</td></tr></tbody></table></div>
-                    <div class="box stats-right"><table class="kv"><tbody><tr><th>Min</th><td class="num">0</td></tr><tr><th>Q1 (P25)</th><td class="num">7.91</td></tr><tr><th>Median</th><td class="num">14.45</td></tr><tr><th>Mean</th><td class="num">32.2</td></tr><tr><th>Q3 (P75)</th><td class="num">31</td></tr><tr><th>Max</th><td class="num">512.3</td></tr><tr><th>Processed bytes (≈)</th><td class="num">7.0 KB</td></tr></tbody></table></div>
-                    <div class="box chart">
+                <!-- Restacked (#114). The chart was one third of a row beside
+                     two 240px stat tables; full width it gains about 550px,
+                     which is what makes 50 bins legible and the log toggle
+                     worth having. The stats follow it as one row rather than
+                     two columns beside it. -->
+                <div class="var-chart">
         <div class="hist-chart">
             <div class="hist-variants" data-col="col_Fare">
                 <div class="hist variant" id="col_Fare-lin-bins-10" data-scale="lin" data-bin="10"><svg class="hist-svg" width="420" height="200" viewBox="0 0 420 200" role="img" aria-labelledby="hist-title-col_Fare">
@@ -12504,7 +12666,6 @@ body.suricata-standalone:not(.light) {
             </div>
         </div>
         </div>
-                </div>
                 
         <div class="card-controls" role="group" aria-label="Numeric controls">
             <div class="details-slot">
@@ -12525,6 +12686,7 @@ body.suricata-standalone:not(.light) {
             </div>
         </div>
         
+                <div class="vstat-row"><div class="vstat"><div class="vstat__cap">Count</div><div class="vstat__val">891</div></div><div class="vstat"><div class="vstat__cap">Unique</div><div class="vstat__val">248</div></div><div class="vstat"><div class="vstat__cap">Missing</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat is-crit"><div class="vstat__cap">Outliers</div><div class="vstat__val">116 (13.0%)</div></div><div class="vstat"><div class="vstat__cap">Zeros</div><div class="vstat__val">15 (1.7%)</div></div><div class="vstat"><div class="vstat__cap">Infinites</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Negatives</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Min</div><div class="vstat__val">0</div></div><div class="vstat"><div class="vstat__cap">Q1 (P25)</div><div class="vstat__val">7.91</div></div><div class="vstat"><div class="vstat__cap">Median</div><div class="vstat__val">14.45</div></div><div class="vstat"><div class="vstat__cap">Mean</div><div class="vstat__val">32.2</div></div><div class="vstat"><div class="vstat__cap">Q3 (P75)</div><div class="vstat__val">31</div></div><div class="vstat"><div class="vstat__cap">Max</div><div class="vstat__val">512.3</div></div><div class="vstat"><div class="vstat__cap">Processed bytes (≈)</div><div class="vstat__val">7.0 KB</div></div></div>
                 
         <section id="col_Fare-details" class="details-section" hidden>
             <nav class="tabs" role="tablist" aria-label="More details">
