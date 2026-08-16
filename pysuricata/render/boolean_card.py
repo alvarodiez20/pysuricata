@@ -270,22 +270,27 @@ class BooleanCardRenderer(CardRenderer):
         # Build missing values table with distribution
         missing_table = self._build_missing_values_table(stats, miss_pct)
 
-        return f"""
-        <section id="{col_id}-details" class="details-section" hidden>
-            <nav class="tabs" role="tablist" aria-label="More details">
-                <button role="tab" class="active" data-tab="breakdown">Breakdown</button>
-                <button role="tab" data-tab="missing">Missing Values</button>
-            </nav>
-            <div class="tab-panes">
-                <section class="tab-pane active" data-tab="breakdown">
-                    <div class="sub"><div class="hdr">Value Distribution</div>{breakdown_table}</div>
-                </section>
-                <section class="tab-pane" data-tab="missing">
-                    <div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>
-                </section>
-            </div>
-        </section>
-        """
+        # The Breakdown pane is a two-row table under a card already showing
+        # the same split, so it only earns a tab when the card cannot show it --
+        # which is never. Kept for now because dropping it is 5c.6, a separate
+        # decision; Missing Values is the one this change fixes.
+        return self._build_tabbed_details(
+            col_id,
+            [
+                (
+                    "breakdown",
+                    "Breakdown",
+                    f'<div class="sub"><div class="hdr">Value Distribution</div>{breakdown_table}</div>',
+                    True,
+                ),
+                (
+                    "missing",
+                    "Missing Values",
+                    f'<div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>',
+                    int(getattr(stats, "missing", 0) or 0) > 0,
+                ),
+            ],
+        )
 
     def _build_common_values_style_table(
         self,

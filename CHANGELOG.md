@@ -14,6 +14,21 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+- **A details tab renders only when it has something to say (#154, 5b.4).** The Missing Values pane rendered on **every** column, including ones with no missing values, where it drew a 100%-present bar and a one-segment chunk strip reading `0.0%`. A click to learn nothing. All four card types now drop it when the column is complete; the order of the remaining tabs is unchanged, so a tab appears or does not but never moves.
+- The **Correlations** pane no longer repeats the section-level empty state inside a card. It renders only when the column has a correlation above the threshold.
+
+### Fixed
+- **The report was rendering 175.4% missing.** Dropping the empty panes made the invariance fingerprint lose four facts, which is what sent me to look at them:
+
+  ```
+  attr::::missing  0        a pane reporting nothing
+  attr::::missing  1563     on an 891-row frame
+  attr::::pct      175.4    ...that is 175.4% missing
+  ```
+
+  The second pair is #139's chunk metadata — which counts *renders* rather than chunks — drawn as a severity-coloured segment inside a pane on a column that had **no missing values at all**. The harness flagged that facts had disappeared; the facts turned out to be impossible. A test now asserts no segment claims more missing rows than the frame has, and no percentage exceeds 100.
+
 ### Added
 - **A ratchet on colour (#148).** #110's acceptance was that four retired column-type hues do not appear in `static/css/`. All four are clear — and there are **94 distinct hex values** in the stylesheets, including Tailwind's blue-600, green-500 and amber-500 and Material's red-700. The ban list named the accents being replaced and missed everything that walked in behind them.
 

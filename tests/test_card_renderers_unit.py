@@ -188,9 +188,19 @@ class TestNumericCardRenderer:
         assert "100" in html
 
     def test_with_chunk_metadata_shows_distribution(self):
+        """The strip lives in the Missing Values pane, which #154 stopped
+        rendering on columns that have no missing values -- so the fixture now
+        has some. A per-chunk missing chart on a complete column was the thing
+        being removed."""
         chunks = [(0, 49, 0), (50, 99, 5)]
-        html = self.renderer.render_card(make_numeric(chunk_metadata=chunks))
+        html = self.renderer.render_card(make_numeric(missing=5, chunk_metadata=chunks))
         assert "chunk-distribution" in html
+
+    def test_no_missing_means_no_missing_pane_at_all(self):
+        chunks = [(0, 49, 0), (50, 99, 0)]
+        html = self.renderer.render_card(make_numeric(missing=0, chunk_metadata=chunks))
+        assert "chunk-distribution" not in html
+        assert 'data-tab="missing"' not in html
 
     def test_no_chunk_metadata_no_distribution_section(self):
         html = self.renderer.render_card(make_numeric(chunk_metadata=None))
@@ -449,8 +459,12 @@ class TestDateTimeCardRenderer:
         assert "var-card" in html
 
     def test_with_chunk_metadata_shows_distribution(self):
+        """Same as the numeric case: the strip lives in the Missing Values pane,
+        which now renders only when the column has missing values (#154)."""
         chunks = [(0, 49, 2), (50, 99, 0)]
-        html = self.renderer.render_card(make_datetime(chunk_metadata=chunks))
+        html = self.renderer.render_card(
+            make_datetime(missing=2, chunk_metadata=chunks)
+        )
         assert "chunk-distribution" in html
 
     def test_without_chunk_metadata_no_distribution(self):

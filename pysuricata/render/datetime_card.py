@@ -771,36 +771,39 @@ class DateTimeCardRenderer(CardRenderer):
         """
 
     def _build_details_section(self, col_id: str, stats: DateTimeStats) -> str:
-        """Build details section with multiple tabs."""
-        # Build content for each tab
+        """Details tabs, minus the ones with nothing to say (#154, 5b.4).
+
+        Missing Values rendered on every datetime column, including ones with no
+        gaps, where it drew a 100%-present bar and a one-segment strip reading
+        0.0%.
+        """
         stats_table = self._build_temporal_statistics_table(stats)
         missing_table = self._build_missing_values_table(stats)
         temporal_charts = self._build_temporal_distributions(stats)
 
-        return f"""
-        <section id="{col_id}-details" class="details-section" hidden>
-            <nav class="tabs" role="tablist" aria-label="More details">
-                <button role="tab" class="active" data-tab="stats">Statistics</button>
-                <button role="tab" data-tab="temporal">Temporal Distribution</button>
-                <button role="tab" data-tab="missing">Missing Values</button>
-            </nav>
-            <div class="tab-panes">
-                <section class="tab-pane active" data-tab="stats">
-                    <div class="sub">
-                        {stats_table}
-                    </div>
-                </section>
-                <section class="tab-pane" data-tab="temporal">
-                    <div class="sub">
-                        {temporal_charts}
-                    </div>
-                </section>
-                <section class="tab-pane" data-tab="missing">
-                    <div class="sub">{missing_table}</div>
-                </section>
-            </div>
-        </section>
-        """
+        return self._build_tabbed_details(
+            col_id,
+            [
+                (
+                    "stats",
+                    "Statistics",
+                    f'<div class="sub">{stats_table}</div>',
+                    bool(stats_table.strip()),
+                ),
+                (
+                    "temporal",
+                    "Temporal Distribution",
+                    f'<div class="sub">{temporal_charts}</div>',
+                    bool(temporal_charts.strip()),
+                ),
+                (
+                    "missing",
+                    "Missing Values",
+                    f'<div class="sub">{missing_table}</div>',
+                    int(getattr(stats, "missing", 0) or 0) > 0,
+                ),
+            ],
+        )
 
     def _assemble_card(
         self,
