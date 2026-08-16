@@ -2378,12 +2378,25 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD">Unreleased</a></h2>
 <h3 id="fixed">Fixed</h3>
 <ul>
-<li><strong>A histogram y-axis count label is now guaranteed at most four glyphs</strong>
+<li>
+<p><strong>A histogram y-axis count label is now guaranteed at most four glyphs</strong>
   (<a href="https://github.com/alvarodiez20/pysuricata/issues/183">#183</a>). It used to <em>prefer</em> short and not guarantee it: <code>12,500</code> came out
   as six characters and <code>12.5M</code> as five. That matters because the redesigned
   chart fixes the y gutter at 44px so the plot's left edge does not move
   between columns — a wider label either overflows it or forces the gutter to
-  breathe, and a breathing gutter loses the alignment the fixed one buys.</li>
+  breathe, and a breathing gutter loses the alignment the fixed one buys.</p>
+</li>
+<li>
+<p><strong>A column whose values never repeat no longer reports zeros it cannot
+  know</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/181">#181</a>). <code>Cabin</code> printed <code>Entropy NaN</code> — the only <code>NaN</code> in the whole
+  report — alongside <code>Rare levels 0 (0.0%)</code>, <code>Top 5 coverage 0.0%</code> and
+  <code>Mode % 0.0%</code>. All four come from the top-k sketch, which was empty and
+  correctly so: Misra-Gries only guarantees a survivor above <code>n/(k+1)</code>, and
+  <code>Cabin</code>'s most frequent value appears 4 times in 204 against a threshold of
+  exactly 4. The four cells now render an em dash carrying the reason. <code>NaN</code>
+  announced itself; <code>0.0%</code> did not, which is why it is the more dangerous of
+  the two.</p>
+</li>
 </ul>
 <h3 id="changed">Changed</h3>
 <ul>
