@@ -41,6 +41,29 @@ from scripts.report_fingerprint import diff, fingerprint  # noqa: E402
 FIXTURES = Path(__file__).resolve().parent / "fixtures"
 
 
+#: Counts for the ten most common names. Deliberately distinct and well clear
+#: of the singleton tail: Misra-Gries evicts a lightly-repeated head, so a head
+#: that is merely *slightly* more common than the tail does not survive to
+#: `top_items` at all -- which is how the first attempt at this fixture still
+#: came back all-singleton.
+_HEAD_COUNTS = (60, 50, 45, 35, 30, 25, 20, 15, 12, 10)
+
+
+def _names(n: int) -> list[str]:
+    """High-cardinality, with a ranked head so the top-k has no ties to break.
+
+    When every value is seen exactly once every counter ties, and which values
+    survive is decided by iteration order -- CI kept `passenger 11` where this
+    machine kept `passenger 281`. A ranked head keeps the high-cardinality
+    branch exercised while making the retained set the same everywhere.
+    """
+    out: list[str] = []
+    for rank, count in enumerate(_HEAD_COUNTS):
+        out.extend([f"common {rank}"] * count)
+    out.extend(f"passenger {i}" for i in range(n - len(out)))
+    return out[:n]
+
+
 def _frame() -> pd.DataFrame:
     """The four shapes the later phases branch on, plus an ordinary one.
 
@@ -54,7 +77,14 @@ def _frame() -> pd.DataFrame:
         {
             "age": rng.integers(1, 80, n).astype(float),
             "fare": rng.gamma(2, 20, n),
-            "name": [f"passenger {i}" for i in range(n)],
+            # High-cardinality, but deliberately *not* all-singleton. When
+            # every value is seen exactly once every top-k counter ties, and
+            # which values survive is decided by iteration order -- CI kept
+            # `passenger 11` where this machine kept `passenger 281`. Giving
+            # the head of the distribution distinct counts keeps the
+            # high-cardinality branch exercised (612 distinct in 891) and makes
+            # the retained set the same everywhere.
+            "name": _names(n),
             "sex": rng.choice(["male", "female"], n),
             "cabin": rng.choice([None, "C85", "B42"], n, p=[0.77, 0.12, 0.11]),
             "empty": pd.Series([None] * n, dtype="object"),

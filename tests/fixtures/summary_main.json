@@ -676,119 +676,91 @@
     },
     "name": {
       "approx": false,
-      "avg_len": 12.876543209876543,
-      "case_variants_est": 891,
+      "avg_len": 11.181818181818182,
+      "case_variants_est": 599,
       "count": 891,
-      "diversity_ratio": 1.0,
+      "diversity_ratio": 0.6722783389450057,
       "dtype": "object",
       "empty_zero": 0,
-      "entropy": 4.584962500721156,
-      "gini_impurity": 0.9583333333333321,
+      "entropy": 2.9275862035280227,
+      "gini_impurity": 0.8328385840594975,
       "len_p90": 13,
-      "mem_bytes": 17730,
+      "mem_bytes": 14256,
       "missing": 0,
-      "most_common_ratio": 0.041666666666666664,
+      "most_common_ratio": 0.2598870056497175,
       "top_items": [
         [
-          "passenger 281",
+          "common 0",
+          46
+        ],
+        [
+          "common 1",
+          36
+        ],
+        [
+          "common 2",
+          31
+        ],
+        [
+          "common 3",
+          21
+        ],
+        [
+          "common 4",
+          16
+        ],
+        [
+          "common 5",
+          11
+        ],
+        [
+          "common 6",
+          6
+        ],
+        [
+          "common 7",
           1
         ],
         [
-          "passenger 282",
+          "passenger 192",
           1
         ],
         [
-          "passenger 283",
+          "passenger 193",
           1
         ],
         [
-          "passenger 284",
+          "passenger 194",
           1
         ],
         [
-          "passenger 285",
+          "passenger 195",
           1
         ],
         [
-          "passenger 286",
+          "passenger 196",
           1
         ],
         [
-          "passenger 287",
+          "passenger 197",
           1
         ],
         [
-          "passenger 288",
+          "passenger 198",
           1
         ],
         [
-          "passenger 289",
+          "passenger 199",
           1
         ],
         [
-          "passenger 290",
-          1
-        ],
-        [
-          "passenger 291",
-          1
-        ],
-        [
-          "passenger 292",
-          1
-        ],
-        [
-          "passenger 293",
-          1
-        ],
-        [
-          "passenger 294",
-          1
-        ],
-        [
-          "passenger 295",
-          1
-        ],
-        [
-          "passenger 296",
-          1
-        ],
-        [
-          "passenger 297",
-          1
-        ],
-        [
-          "passenger 298",
-          1
-        ],
-        [
-          "passenger 299",
-          1
-        ],
-        [
-          "passenger 300",
-          1
-        ],
-        [
-          "passenger 301",
-          1
-        ],
-        [
-          "passenger 302",
-          1
-        ],
-        [
-          "passenger 303",
-          1
-        ],
-        [
-          "passenger 890",
+          "passenger 588",
           1
         ]
       ],
-      "trim_variants_est": 891,
+      "trim_variants_est": 599,
       "type": "categorical",
-      "unique_est": 891
+      "unique_est": 599
     },
     "sex": {
       "approx": false,
@@ -835,7 +807,7 @@
     "cols": 8,
     "duplicate_rows_est": 0,
     "duplicate_rows_pct_est": 0.0,
-    "memory_bytes": 72828,
+    "memory_bytes": 69354,
     "missing_cells": 1563,
     "missing_cells_pct": 21.927609427609426,
     "rows_est": 891,

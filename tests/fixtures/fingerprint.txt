@@ -481,9 +481,9 @@ kv::distribution 1ˢᵗ	11.79
 kv::distribution 1ˢᵗ	33
 kv::duplicates	0
 kv::empty strings	0
-kv::entropy	0.264
 kv::entropy	0.9855
 kv::entropy	0.9999
+kv::entropy	1.045
 kv::false	434
 kv::geometric mean	30.26
 kv::geometric mean	31.34
@@ -509,7 +509,7 @@ kv::min	0.3883
 kv::min	1
 kv::missing	21.9%
 kv::mode %	0%
-kv::mode %	0.1%
+kv::mode %	5.2%
 kv::mode %	50.6%
 kv::mode %	57.1%
 kv::p1 (≈)	1
@@ -539,11 +539,12 @@ kv::std dev	28.4
 kv::std error	0.7708
 kv::std error	0.9513
 kv::top 5 coverage	0%
-kv::top 5 coverage	0.6%
 kv::top 5 coverage	100%
+kv::top 5 coverage	16.8%
 kv::true	457
 kv::unique	0
 kv::unique	2
+kv::unique	599
 kv::unique	79
 kv::unique	891
 kv::unique (≈)	891
