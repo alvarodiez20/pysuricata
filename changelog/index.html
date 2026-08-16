@@ -2397,6 +2397,23 @@ quoted when both sides were measured in the same round-robin run.</p>
   represent nothing.</p>
 </li>
 <li>
+<p><strong>Quality chips print the number they already carry</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/184">#184</a>). Every chip
+  emitted <code>data-value</code> and <code>data-threshold</code> and displayed neither on the
+  categorical, boolean and datetime cards, so a card said <code>Missing</code> where it
+  could say <code>19.9% missing</code>. <code>Dominant category</code> and <code>Empty or zero</code> gained
+  theirs too. <code>High cardinality</code>, <code>Monotonic ↑</code> and <code>Positive-only</code> stay bare
+  on purpose — those need a phrase rather than a numeric prefix, and inventing
+  one would read worse than the word.</p>
+</li>
+<li>
+<p><strong><code>Empty strings</code> was the wrong name and is now <code>Empty or zero</code>.</strong> The
+  accumulator counts <code>value == "" or value == "0"</code>. Putting the number on the
+  chip is what made that visible: titanic's <code>SibSp</code> and <code>Parch</code> profile as
+  categorical and rendered <code>608 empty strings</code> and <code>678 empty strings</code>, when
+  they have 608 and 678 <em>zeros</em> and not one empty string between them. The
+  vague label had been hiding a false one.</p>
+</li>
+<li>
 <p><strong>A histogram y-axis count label is now guaranteed at most four glyphs</strong>
   (<a href="https://github.com/alvarodiez20/pysuricata/issues/183">#183</a>). It used to <em>prefer</em> short and not guarantee it: <code>12,500</code> came out
   as six characters and <code>12.5M</code> as five. That matters because the redesigned
