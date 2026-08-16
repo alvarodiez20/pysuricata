@@ -150,7 +150,12 @@ class CategoricalCardRenderer(CardRenderer):
         missing_table = self._build_missing_values_table(stats, miss_pct)
 
         details_html = self._build_details_section(
-            col_id, common_table, norm_tab_btn, norm_tab_pane, missing_table
+            col_id,
+            common_table,
+            norm_tab_btn,
+            norm_tab_pane,
+            missing_table,
+            has_missing=int(getattr(stats, "missing", 0) or 0) > 0,
         )
         controls_html = self._build_controls_section(col_id, topn_list, default_topn)
 
@@ -623,24 +628,35 @@ class CategoricalCardRenderer(CardRenderer):
         norm_tab_btn: str,
         norm_tab_pane: str,
         missing_table: str,
+        *,
+        has_missing: bool = True,
     ) -> str:
-        """Build details section with tabs."""
-        return f"""
-        <section id="{col_id}-details" class="details-section" hidden>
-            <nav class="tabs" role="tablist" aria-label="More details">
-                <button role="tab" class="active" data-tab="common">Common values</button>
-                {norm_tab_btn}
-                <button role="tab" data-tab="missing">Missing Values</button>
-            </nav>
-            <div class="tab-panes">
-                <section class="tab-pane active" data-tab="common">{common_table}</section>
-                {norm_tab_pane}
-                <section class="tab-pane" data-tab="missing">
-                    <div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>
-                </section>
-            </div>
-        </section>
+        """Details tabs, minus the ones with nothing to say (#154, 5b.4).
+
+        `norm_tab_btn` and `norm_tab_pane` were already conditional -- the
+        normalization tab is emitted as a pair of strings that are empty when
+        there is nothing to normalise. Missing Values was not, so it rendered a
+        100%-present bar on every complete column.
         """
+        normalization = norm_tab_pane.strip()
+        return self._build_tabbed_details(
+            col_id,
+            [
+                ("common", "Common values", common_table, bool(common_table.strip())),
+                (
+                    "normalize",
+                    "Normalization",
+                    normalization,
+                    bool(normalization) and bool(norm_tab_btn.strip()),
+                ),
+                (
+                    "missing",
+                    "Missing Values",
+                    f'<div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>',
+                    has_missing,
+                ),
+            ],
+        )
 
     def _build_controls_section(
         self, col_id: str, topn_list: list[int], default_topn: int

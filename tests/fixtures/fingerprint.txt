@@ -174,10 +174,6 @@ attr::::count	2
 attr::::count	4
 attr::::count	434
 attr::::count	457
-attr::::missing	0
-attr::::missing	1563
-attr::::pct	0
-attr::::pct	175.4
 attr::::percentage	0%
 attr::::percentage	12.5
 attr::::percentage	25
@@ -476,6 +472,8 @@ kv::business hrs %	24.2%
 kv::coeff. of var	0.5569
 kv::coeff. of var	0.7096
 kv::columns	8
+kv::count	0
+kv::count	219
 kv::count	891
 kv::distribution 1ˢᵗ	11.79
 kv::distribution 1ˢᵗ	33
@@ -495,6 +493,12 @@ kv::jarque–bera χ²	424.1
 kv::jarque–bera χ²	53.75
 kv::kurtosis	-1.193
 kv::kurtosis	2.143
+kv::label length (avg)	11.18
+kv::label length (avg)	3
+kv::label length (avg)	4.988
+kv::length p90	13
+kv::length p90	3
+kv::length p90	6
 kv::mad	16.41
 kv::mad	20
 kv::max	176.3

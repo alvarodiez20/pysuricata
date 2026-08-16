@@ -75,6 +75,8 @@ class NumericCardRenderer(CardRenderer):
             outliers_high,
             corr_table,
             missing_table,
+            has_missing=int(getattr(stats, "missing", 0) or 0) > 0,
+            has_correlations=bool(getattr(stats, "corr_top", None)),
         )
 
         controls_html = self._build_controls_section(
@@ -1626,37 +1628,50 @@ class NumericCardRenderer(CardRenderer):
         outliers_high: str,
         corr_table: str,
         missing_table: str,
+        *,
+        has_missing: bool = True,
+        has_correlations: bool = True,
     ) -> str:
-        """Build details section with tabs."""
-        return f"""
-        <section id="{col_id}-details" class="details-section" hidden>
-            <nav class="tabs" role="tablist" aria-label="More details">
-                <button role="tab" class="active" data-tab="stats">Statistics</button>
-                <button role="tab" data-tab="common">Common values</button>
-                <button role="tab" data-tab="extremes">Min/Max Values</button>
-                <button role="tab" data-tab="outliers">Outliers</button>
-                <button role="tab" data-tab="corr">Correlations</button>
-                <button role="tab" data-tab="missing">Missing Values</button>
-            </nav>
-            <div class="tab-panes">
-                <section class="tab-pane active" data-tab="stats">{stats_quantiles}</section>
-                <section class="tab-pane" data-tab="common">{common_table}</section>
-                <section class="tab-pane" data-tab="extremes">{extremes_table}</section>
-                <section class="tab-pane" data-tab="outliers">
-                    <div class="stats-quant">
-                        <div class="sub">{outliers_low}</div>
-                        <div class="sub">{outliers_high}</div>
-                    </div>
-                </section>
-                <section class="tab-pane" data-tab="corr">
-                    <div class="sub">{corr_table}</div>
-                </section>
-                <section class="tab-pane" data-tab="missing">
-                    <div class="sub">{missing_table}</div>
-                </section>
-            </div>
-        </section>
+        """Details tabs, in a fixed order, minus the ones with nothing to say.
+
+        The Missing Values pane used to render on every column -- including ones
+        with no missing values, where it drew a 100%-present bar and a
+        one-segment chunk strip reading 0.0%. The Correlations pane repeated the
+        section-level empty state inside a card. Both cost a click to learn
+        nothing (#154, 5b.4).
         """
+        outliers = (
+            '<div class="stats-quant">'
+            f'<div class="sub">{outliers_low}</div>'
+            f'<div class="sub">{outliers_high}</div>'
+            "</div>"
+        )
+        return self._build_tabbed_details(
+            col_id,
+            [
+                ("stats", "Statistics", stats_quantiles, bool(stats_quantiles.strip())),
+                ("common", "Common values", common_table, bool(common_table.strip())),
+                (
+                    "extremes",
+                    "Min/Max Values",
+                    extremes_table,
+                    bool(extremes_table.strip()),
+                ),
+                ("outliers", "Outliers", outliers, True),
+                (
+                    "corr",
+                    "Correlations",
+                    f'<div class="sub">{corr_table}</div>',
+                    has_correlations,
+                ),
+                (
+                    "missing",
+                    "Missing Values",
+                    f'<div class="sub">{missing_table}</div>',
+                    has_missing,
+                ),
+            ],
+        )
 
     def _build_controls_section(self, col_id: str, log_default: bool = False) -> str:
         """Build controls section.

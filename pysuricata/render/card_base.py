@@ -58,6 +58,51 @@ class CardRenderer:
         """Return an 'approx' badge if values are approximate, else empty string."""
         return '<span class="badge">approx</span>' if approx else ""
 
+    def _build_tabbed_details(
+        self, col_id: str, panes: "list[tuple[str, str, str, bool]]"
+    ) -> str:
+        """A tabbed details section, rendering only the tabs that have something.
+
+        Args:
+            col_id: Sanitised column id.
+            panes: ordered ``(key, label, html, worth_showing)``. Order is fixed
+                so a tab never moves; it only appears or does not.
+
+        A tab that repeats the card face, or reports a zero, costs a click to
+        learn nothing. The Missing Values pane rendered on every column,
+        including ones with no missing values, as a 100%-present bar and a
+        one-segment strip reading 0.0%.
+
+        The first surviving pane is the active one, so a card whose Statistics
+        tab is dropped still opens on something.
+        """
+        kept = [(key, label, html) for key, label, html, worth in panes if worth]
+        if not kept:
+            return ""
+
+        # The active marker is built outside the f-string. Nesting the same
+        # quote character, or a backslash escape, inside one is Python 3.12+
+        # syntax and this package supports 3.10 -- ruff's py310 target caught it
+        # where the local interpreter, being newer, ran it happily. Second 3.10
+        # slip of the day; the first reached CI.
+        active_tab = ' class="active"'
+        tabs = "".join(
+            f'<button role="tab"{active_tab if i == 0 else ""} '
+            f'data-tab="{key}">{label}</button>'
+            for i, (key, label, _) in enumerate(kept)
+        )
+        bodies = "".join(
+            f'<section class="tab-pane{" active" if i == 0 else ""}" '
+            f'data-tab="{key}">{html}</section>'
+            for i, (key, _, html) in enumerate(kept)
+        )
+        return (
+            f'<section id="{col_id}-details" class="details-section" hidden>'
+            f'<nav class="tabs" role="tablist" aria-label="More details">{tabs}</nav>'
+            f'<div class="tab-panes">{bodies}</div>'
+            "</section>"
+        )
+
     def _build_stat_row(self, rows: list[tuple[str, str, str | None]]) -> str:
         """One full-width stat row in place of two narrow tables.
 
