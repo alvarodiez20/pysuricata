@@ -907,7 +907,7 @@ class NumericCardRenderer(CardRenderer):
                 <span class="outlier-count">{outlier_count} outliers ({outlier_pct:.1f}%){sample_note}</span>
             </div>
             {severity_breakdown_html}
-            {f'<div class="context-note"><small>💡 This shows the most extreme outliers from a representative sample. The general statistics show all {total_outliers_iqr} outliers ({total_outliers_pct:.1f}%) in the full dataset.</small></div>' if is_sample else ""}
+            {f'<div class="context-note"><small>This shows the most extreme outliers from a representative sample. The general statistics show all {total_outliers_iqr} outliers ({total_outliers_pct:.1f}%) in the full dataset.</small></div>' if is_sample else ""}
         </div>
         """
 
@@ -968,7 +968,7 @@ class NumericCardRenderer(CardRenderer):
         # Add note about missing indices if applicable
         index_note = ""
         if has_missing_indices:
-            index_note = '<div class="outlier-note"><small>ℹ️ Index shown only for top/bottom extreme values tracked during profiling. Sample-based outliers may not have row indices.</small></div>'
+            index_note = '<div class="outlier-note"><small>Index shown only for top/bottom extreme values tracked during profiling. Sample-based outliers may not have row indices.</small></div>'
 
         return summary_html + table_html + index_note
 
@@ -1178,16 +1178,12 @@ class NumericCardRenderer(CardRenderer):
         # Determine overall severity
         if max_missing_pct >= 50:
             severity = "critical"
-            severity_icon = "🚨"
         elif max_missing_pct >= 20:
             severity = "high"
-            severity_icon = "⚠️"
         elif max_missing_pct >= 5:
             severity = "medium"
-            severity_icon = "⚡"
         else:
             severity = "low"
-            severity_icon = "✅"
 
         return f"""
         <div class="dataprep-spectrum">
@@ -1204,7 +1200,7 @@ class NumericCardRenderer(CardRenderer):
 
             <div class="spectrum-summary">
                 <span class="severity-indicator {severity}">
-                    {severity_icon} {severity.title()} Missing Data
+                    {severity.title()} Missing Data
                 </span>
                 <span class="spectrum-note">
                     Hover over segments to see chunk details
@@ -1266,16 +1262,12 @@ class NumericCardRenderer(CardRenderer):
         # Severity assessment
         if max_missing_pct > 50:
             severity = "critical"
-            severity_icon = "🚨"
         elif max_missing_pct > 20:
             severity = "high"
-            severity_icon = "⚠️"
         elif max_missing_pct > 5:
             severity = "medium"
-            severity_icon = "⚡"
         else:
             severity = "low"
-            severity_icon = "✅"
 
         return {
             "overall_missing_pct": overall_missing_pct,
@@ -1286,7 +1278,6 @@ class NumericCardRenderer(CardRenderer):
             "low_missing_chunks": len(low_missing_chunks),
             "patterns": patterns,
             "severity": severity,
-            "severity_icon": severity_icon,
             "total_chunks": len(chunk_data),
         }
 
@@ -1370,7 +1361,7 @@ class NumericCardRenderer(CardRenderer):
                 </span>
                 <span class="stat-item severity-{insights.get("severity", "low")}">
                     <span class="stat-label">Severity:</span>
-                    <span class="stat-value">{insights.get("severity_icon", "✅")} {insights.get("severity", "low").title()}</span>
+                    <span class="stat-value">{insights.get("severity", "low").title()}</span>
                 </span>
             </div>
         </div>"""
@@ -1420,13 +1411,13 @@ class NumericCardRenderer(CardRenderer):
             Tuple of (severity_class, label, icon)
         """
         if missing_pct >= 50:
-            return "critical", "Critical", "🚨"
+            return "critical", "Critical", ""
         elif missing_pct >= 20:
-            return "high", "High", "⚠️"
+            return "high", "High", ""
         elif missing_pct >= 5:
-            return "medium", "Medium", "⚡"
+            return "medium", "Medium", ""
         else:
-            return "low", "Low", "✅"
+            return "low", "Low", ""
 
     def _build_quality_indicators(
         self,
@@ -1517,7 +1508,6 @@ class NumericCardRenderer(CardRenderer):
         indicators_html = """
         <div class="quality-indicators">
             <div class="indicators-header">
-                <span class="icon">🔍</span>
                 <span class="title">Data Quality Indicators</span>
             </div>
             <div class="indicators-grid">
@@ -1629,7 +1619,6 @@ class NumericCardRenderer(CardRenderer):
         recommendations_html = """
         <div class="recommendations">
             <div class="recommendations-header">
-                <span class="icon">💡</span>
                 <span class="title">Recommendations</span>
             </div>
             <div class="recommendations-list">

@@ -618,13 +618,13 @@ class DateTimeCardRenderer(CardRenderer):
     def _get_missing_data_severity(self, missing_pct: float) -> tuple[str, str, str]:
         """Get missing data severity classification."""
         if missing_pct >= 50:
-            return "critical", "Critical", "🚨"
+            return "critical", "Critical", ""
         elif missing_pct >= 20:
-            return "high", "High", "⚠️"
+            return "high", "High", ""
         elif missing_pct >= 5:
-            return "medium", "Medium", "⚡"
+            return "medium", "Medium", ""
         else:
-            return "low", "Low", "✅"
+            return "low", "Low", ""
 
     def _build_dataprep_spectrum_visualization(self, stats: DateTimeStats) -> str:
         """Build DataPrep-style spectrum visualization for missing values per chunk."""
@@ -684,16 +684,12 @@ class DateTimeCardRenderer(CardRenderer):
         # Determine overall severity
         if max_missing_pct >= 50:
             severity = "critical"
-            severity_icon = "🚨"
         elif max_missing_pct >= 20:
             severity = "high"
-            severity_icon = "⚠️"
         elif max_missing_pct >= 5:
             severity = "medium"
-            severity_icon = "⚡"
         else:
             severity = "low"
-            severity_icon = "✅"
 
         return f"""
         <div class="dataprep-spectrum">
@@ -710,7 +706,7 @@ class DateTimeCardRenderer(CardRenderer):
 
             <div class="spectrum-summary">
                 <span class="severity-indicator {severity}">
-                    {severity_icon} {severity.title()} Missing Data
+                    {severity.title()} Missing Data
                 </span>
                 <span class="spectrum-note">
                     Hover over segments to see chunk details

@@ -129,21 +129,16 @@ def _runtime_created(source: str) -> set[str]:
     )
 
 
-#: Selectors that resolve against no report on any route: JavaScript left
-#: pointing at markup the redesign removed. Dead code rather than a dead
-#: control -- nothing renders a button that reaches them -- but each is a
-#: latent trap, and this list is the record that they were checked rather than
-#: missed. Tracked as its own issue; delete entries as the JS goes.
+#: Selectors that resolve against no report on any route.
+#:
+#: Three entries left this set when the code behind them was deleted: the
+#: missing-values tab switcher (#120 replaced the tabs with a chunk-count
+#: route) and a `.details-panel` fallback for a pre-refactor layout. An
+#: exemption is a promise to come back, not a place to leave things.
 _KNOWN_DEAD = {
-    # #120 replaced the missing-values tabs with a chunk-count route, and
-    # `test_missing_section_views.py` asserts the markup is gone.
-    "missing-tabs",
-    "missing-tab-content",
-    # A fallback for a pre-refactor layout; the variable holding it is named
-    # `legacy` at the call site.
-    "details-panel",
     # Emitted only by the by-chunk missing view, which cannot render until the
-    # engine produces per-column per-chunk counts (#139).
+    # engine produces per-column per-chunk counts (#139). Not stale -- ahead of
+    # the data. Deleting it would mean writing it again.
     "compact-row",
 }
 

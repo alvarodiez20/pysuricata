@@ -96,3 +96,79 @@ class TestTheAccessibleNameAndTheTooltipAgree:
 
     def test_neither_state_sets_only_one_of_them(self, pin_block):
         assert pin_block.count("btn.title =") == pin_block.count("'aria-label',")
+
+
+class TestNoEmojiReachesTheReport:
+    """#119 removed three glyphs from the correlations section and guarded them
+    there. Four more survived in the numeric card's outlier and context notes,
+    for eleven versions, because the guard only ever looked at one section.
+
+    This one looks at the whole document. The objection is unchanged: they are
+    not part of this brand, and they render inconsistently -- `ℹ️` in particular
+    takes a coloured emoji presentation on some platforms, so a note styled as
+    quiet grey text acquires a blue box.
+    """
+
+    #: Everything the render layer has reached for at some point, plus the
+    #: obvious neighbours, so a newly added one is caught rather than merely
+    #: the ones already removed.
+    _GLYPHS = ["💡", "ℹ️", "📊", "📈", "📉", "⚠️", "✅", "❌", "🔍", "🚨", "📌", "🎯"]
+
+    @pytest.fixture(scope="class")
+    def rich_report(self) -> str:
+        """Wide enough to reach the panes the glyphs lived in: an outlier-heavy
+        column, a dominant category, a datetime and a boolean."""
+        import numpy as np
+
+        rng = np.random.default_rng(0)
+        n = 900
+        gappy = rng.normal(0, 1, n)
+        gappy[rng.choice(n, 300, replace=False)] = np.nan
+        frame = pd.DataFrame(
+            {
+                "gappy": gappy,
+                "skewed": rng.lognormal(0, 1.5, n),
+                "cat": rng.choice(["a", "b", "c"], n, p=[0.9, 0.05, 0.05]),
+                "when": pd.date_range("2026-01-01", periods=n, freq="h"),
+                "flag": rng.integers(0, 2, n).astype(bool),
+            }
+        )
+        return profile(frame, seed=0).html
+
+    @pytest.mark.parametrize("glyph", _GLYPHS)
+    def test_none_reach_the_report(self, rich_report, glyph):
+        assert glyph not in rich_report
+
+    @pytest.mark.parametrize("glyph", _GLYPHS)
+    def test_none_remain_in_the_render_sources(self, glyph):
+        """Belt and braces: a glyph on a branch this fixture does not take would
+        pass the test above and still ship."""
+        root = JS.parent.parent / "render"
+        for path in sorted(root.glob("*.py")):
+            assert glyph not in path.read_text(encoding="utf-8"), (
+                f"{path.name}: {glyph}"
+            )
+
+    def test_no_pictograph_is_smuggled_in_as_an_html_entity(self):
+        """`boolean_card.py` wrote them as `&#128680;` rather than as `🚨`.
+
+        A literal-glyph search cannot see that, and neither could the first
+        version of this guard -- so the boolean card kept four of them through
+        a sweep that believed it had removed every one. Any numeric character
+        reference above U+2000 is a symbol or a pictograph; the report's real
+        typography is `·`, `—`, `→`, `≈` and `±`, all of which are written as
+        the character itself.
+        """
+        root = JS.parent.parent
+        pattern = re.compile(r"&#(\d+);")
+        offenders: list[str] = []
+        for path in (
+            sorted(root.rglob("*.py"))
+            + sorted(root.rglob("*.html"))
+            + sorted(root.rglob("*.css"))
+            + sorted(root.rglob("*.js"))
+        ):
+            for match in pattern.finditer(path.read_text(encoding="utf-8")):
+                if int(match.group(1)) >= 0x2000:
+                    offenders.append(f"{path.name}: {match.group(0)}")
+        assert not offenders, offenders

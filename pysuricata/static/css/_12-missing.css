@@ -833,7 +833,7 @@
 }
 
 #pysuricata-report .missing-per-chunk-enhanced .insights-list li::before {
-  content: '💡';
+  content: '';
   position: absolute;
   left: 0;
   top: 0.5rem;
