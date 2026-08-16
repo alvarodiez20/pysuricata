@@ -1,0 +1,2746 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Exploratory data analysis reports for pandas DataFrames">
+      
+      
+      
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/integration/">
+      
+      
+      
+      
+      <link rel="icon" href="../assets/favicon.ico">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.21">
+    
+    
+      
+        <title>pysuricata report UI — integration plan - PySuricata</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.2a3383ac.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="light-green">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pysuricata-report-ui-integration-plan" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="PySuricata" class="md-header__button md-logo" aria-label="PySuricata" data-md-component="logo">
+      
+  <img src="../assets/favicon.ico" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            PySuricata
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              pysuricata report UI — integration plan
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="green" data-md-color-accent="light-green"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="green" data-md-color-accent="light-green"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/alvarodiez20/pysuricata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    alvarodiez20/pysuricata
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+      
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href=".." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../why-pysuricata/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Getting Started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../usage/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../api/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Technical Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../architecture/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  Architecture
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../contributing/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Contributing
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../faq/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  FAQ
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../about-suricatas/" class="md-tabs__link">
+          
+  
+  
+    
+  
+  About
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+  
+
+<nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="PySuricata" class="md-nav__button md-logo" aria-label="PySuricata" data-md-component="logo">
+      
+  <img src="../assets/favicon.ico" alt="logo">
+
+    </a>
+    PySuricata
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/alvarodiez20/pysuricata" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+  </div>
+  <div class="md-source__repository">
+    alvarodiez20/pysuricata
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Getting Started
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Getting Started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../why-pysuricata/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Why PySuricata?
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Installation
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Quick Start
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Examples Gallery
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    User Guide
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../usage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Basic Usage
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Configuration
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Advanced Features
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-sources/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Arrow, Parquet and DuckDB
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Gating CI on drift
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../comparing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Comparing two datasets
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../performance/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Performance Tips
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Technical Reference
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Technical Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../api/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../summary-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    summarize() schema
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../complexity-analysis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Complexity Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Statistical Methods
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Statistical Methods
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/numeric/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Numeric Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/categorical/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Categorical Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/datetime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    DateTime Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../stats/boolean/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Boolean Analysis
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Advanced Analytics
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            Advanced Analytics
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../analytics/correlations/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Correlations
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../analytics/missing-values/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Missing Values
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../analytics/duplicates/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Duplicate Detection
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../analytics/quality/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Data Quality
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Algorithms
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
+            <span class="md-nav__icon md-icon"></span>
+            Algorithms
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../algorithms/streaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Streaming Statistics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../algorithms/sketches/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sketch Algorithms
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../algorithms/sampling/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Reservoir Sampling
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    Architecture
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Architecture
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Overview
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture-diagrams/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Architecture Diagrams
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sequence-diagrams-complexity/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Sequence Diagrams
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Contributing
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    FAQ
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    About
+    
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            About
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../about-suricatas/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    About Suricatas
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adr/memory-budget/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    ADR: memory budget
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../changelog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Changelog
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="pysuricata-report-ui-integration-plan">pysuricata report UI — integration plan</h1>
+<p>Design decisions settled with the designer, written for implementation in the
+<code>pysuricata</code> repo. Each phase is independently shippable and independently
+reviewable. Work them in order — phase 1 establishes tokens every later phase
+depends on.</p>
+<blockquote>
+<p><strong>Amended 2026-08-16.</strong> Three additions to the plan as handed over, marked
+<em>(amendment)</em> throughout: a <strong>commit 0</strong> carrying the data fixes that were at
+commit 12, a <strong>phase 5b</strong> for the partial report, and a <strong>phase 10</strong> for resume.
+The rationale for each is at the point of insertion. Testing for the whole
+migration is in <a href="../MIGRATION_TESTING/"><code>docs/MIGRATION_TESTING.md</code></a>, which
+replaces the "Tests to update" list at the end of this file.</p>
+</blockquote>
+<p><strong>Constraints that hold throughout</strong></p>
+<ul>
+<li>Reports stay <strong>single-file</strong>: inline CSS, inline JS, inline SVG. No external assets, no web fonts.</li>
+<li>Dark mode keeps working (<code>#pysuricata-report:not(.light)</code>).</li>
+<li>No new JS dependencies. CSS-only toggles stay CSS-only where they already are.</li>
+<li>Charts stay hand-rolled SVG (<code>render/histogram_svg.py</code>, <code>temporal_charts.py</code>, <code>donut_chart.py</code>).</li>
+</ul>
+<h2 id="whats-in-this-package">What's in this package</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Use</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>integration.md</code></td>
+<td>this plan</td>
+</tr>
+<tr>
+<td><code>assets/tokens.css</code></td>
+<td>drop-in replacement for the token layer of <code>_00-tokens.css</code>, with a compatibility shim so the existing CSS keeps working while phases land</td>
+</tr>
+<tr>
+<td><code>assets/test_contrast.py</code></td>
+<td>drop into <code>tests/</code>. Parses the tokens and asserts every pair the design uses clears its WCAG minimum, in both themes</td>
+</tr>
+<tr>
+<td><code>assets/logo_mark.png</code></td>
+<td>the meerkat alone, cropped from <code>logo_suricata_transparent.png</code>. <strong>Re-export from the original vector before shipping</strong> — ideally as inline SVG, which removes the dark-mode duplicate</td>
+</tr>
+<tr>
+<td><code>assets/logo_wordmark.png</code></td>
+<td>the wordmark alone, for reference</td>
+</tr>
+<tr>
+<td><code>*.dc.html</code></td>
+<td>the design files. Open directly in a browser</td>
+</tr>
+<tr>
+<td><code>source/</code></td>
+<td>the two generated reports every number in the designs was taken from</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Design files, and what each decides</strong></p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Report Baseline.dc.html</code></td>
+<td>faithful recreation of today's header / summary / sample, for before-and-after</td>
+</tr>
+<tr>
+<td><code>Report Screen.dc.html</code></td>
+<td>chosen header + summary + sample assembled, 1240px and 390px</td>
+</tr>
+<tr>
+<td><code>Variables 4b.dc.html</code></td>
+<td>variables layout for all five column types, plus the axis treatment</td>
+</tr>
+<tr>
+<td><code>Palette.dc.html</code></td>
+<td>the colour system, and the two-dataset comparison</td>
+</tr>
+<tr>
+<td><code>Correlations and Missing.dc.html</code></td>
+<td>correlations (three states) and missing values (two options)</td>
+</tr>
+<tr>
+<td><code>Variables.dc.html</code></td>
+<td>superseded exploration of three variables layouts. Kept for the reasoning; 4b won</td>
+</tr>
+</tbody>
+</table>
+<p>Every figure in the designs comes from your own output: the Titanic report for
+everything except the datetime card, which uses <code>daily_2026-08-16</code>. Two
+exceptions are labelled in the files themselves — the correlation values above
+0.5 (Titanic has none) and the second series in the comparison charts.</p>
+<hr />
+<h2 id="phase-0-correct-the-numbers-first-amendment">Phase 0 — Correct the numbers first <em>(amendment)</em></h2>
+<p>Files: <code>accumulators/</code>, <code>render/card_base.py</code>, <code>compute/</code></p>
+<p>Nothing in this phase is design work, and all of it must land <strong>before</strong> phase 1.
+The reason is baselines: every golden payload, fact list and screenshot taken
+during this migration becomes the reference the next sixteen commits are checked
+against, and three of the numbers in today's output are wrong. A baseline taken
+from a wrong report certifies the wrongness.</p>
+<h3 id="01-clamp-the-distinct-estimate">0.1 Clamp the distinct estimate</h3>
+<p>Phase 5.7 already carries this: <code>Name</code> reports <strong>892 distinct against 891 rows</strong>.
+It is here instead because it touches <code>accumulators/</code>, so it needs the accuracy
+oracle rather than a snapshot review — a different kind of review from every
+other commit in the sequence, and one that should not be buried at position 12.</p>
+<p>Clamp to <code>min(estimate, count)</code>, set <code>approx: True</code> for any value that came from
+the sketch rather than the exact counter, and keep the <code>(≈)</code> marker.</p>
+<h3 id="02-the-quasi-constant-rule-not-in-the-plan-as-handed-over">0.2 The quasi-constant rule <em>(not in the plan as handed over)</em></h3>
+<p><code>age</code> — 67 distinct integers over 18–85 in 20,000 rows — is flagged
+<strong>Quasi-Constant</strong>, severity <code>bad</code>, from <code>data-value="0.3%"</code>: a unique <em>ratio</em>.
+The type classifier was fixed for this case; the same reasoning survives in the
+quality-flag layer.</p>
+<p>This matters here because <strong>phase 5.7 makes it worse</strong>. Showing a flag's value
+against its threshold, outlined in its severity colour, renders this false alarm
+more legibly — and phase 3's triage block puts it at the top of the page. On a
+two-column frame the report currently opens with <em>"1 of 2 columns need a look"</em>
+and names the healthy column.</p>
+<p>Replace the ratio test with the cardinality ceiling used by the classifier, and
+add the test that profiles the same column at 1k / 100k / 10M rows and asserts
+the flag set does not change.</p>
+<h3 id="03-finalize-must-not-consume-randomness">0.3 <code>finalize()</code> must not consume randomness</h3>
+<p><code>finalize()</code> advances <code>ReservoirSampler._rng</code>. Every call therefore changes every
+subsequent sampling decision, so <strong><code>checkpoint_write_html=True</code> silently changes
+the report's quantiles, median, IQR, MAD and histogram</strong>. Verified: finalising at
+chunk 3 of 6 and continuing diverges from an uninterrupted run on <code>sample_vals</code>
+and four dependent fields.</p>
+<p>It is a correctness bug on its own, and it is also the precondition for phase 5b
+— a partial report is a mid-stream <code>finalize()</code>, so until this is fixed, any
+progressive rendering corrupts the run it is reporting on.</p>
+<p><strong>Acceptance:</strong> <code>unique &lt;= count</code> for every column; <code>age</code> raises no flag at 1k,
+100k and 10M rows; <code>finalize()</code> mutates nothing, and a mid-stream <code>finalize()</code>
+followed by more chunks equals an uninterrupted run field for field; the accuracy
+oracle gains a case for <strong>profiling with partial renders on equals profiling with
+them off</strong>; all 51 existing oracle tests still pass.</p>
+<hr />
+<h2 id="phase-1-tokens-and-typography">Phase 1 — Tokens and typography</h2>
+<p>Files: <code>static/css/_00-tokens.css</code>, <code>_01-base.css</code></p>
+<p>Replace the token layer with <code>assets/tokens.css</code>. It carries the full palette,
+the measured contrast ratios, the dark-mode proposal, and a compatibility shim
+mapping the legacy variable names onto the new scale so nothing breaks mid-way.
+<strong>Delete the shim once phase 12 lands</strong> — it is scaffolding.</p>
+<p>Two scales, and they never mix: <strong>blue means data, warm means data quality.</strong></p>
+<p>Two rules worth a comment in the CSS, because they are why the palette looks like this:</p>
+<ol>
+<li><strong>Type is not a colour.</strong> The donut assigned numeric/categorical/datetime/boolean
+   their own hue and the per-column cards inherited it. Inside a card the badge already
+   names the type, so the hue carried nothing — and it collided: olive meant both
+   "categorical" and "passes", rust meant both "boolean" and "fails". A rust bar and a
+   rust warning chip in the same card meant unrelated things.</li>
+<li><strong><code>Survived</code> must not be red-and-green.</strong> Colouring <code>false</code> rust and <code>true</code> olive
+   reads as bad-versus-good, which is the report passing judgement on someone's data.
+   Two values of one column get two steps of one hue.</li>
+</ol>
+<p>One exception: <strong>missing-value bars keep the warm scale</strong>, because their encoding <em>is</em>
+severity. <code>Cabin</code> at 77% should look worse than <code>Embarked</code> at 0.2%. Thresholds are in
+<code>tokens.css</code>.</p>
+<h3 id="typography">Typography</h3>
+<p>Replace <code>font-family: Arial, sans-serif</code>.</p>
+<ul>
+<li>Prose, headings, UI labels: <code>var(--font-sans)</code></li>
+<li><strong>Every figure, column name, dtype, axis label and code token</strong>: <code>var(--font-mono)</code></li>
+</ul>
+<p>Monospace-for-all-numbers does real work: columns of figures align without
+<code>font-variant-numeric</code> hacks, and it is the single biggest reason the report stops
+reading like a generic dashboard.</p>
+<p>Micro-label convention for every section header and stat caption: mono, 10–11px,
+<code>letter-spacing: 0.13em</code>, uppercase, <code>--muted</code>. There is a <code>.micro-label</code> class in
+<code>tokens.css</code>.</p>
+<h3 id="structural-motif">Structural motif</h3>
+<p>Today the summary is eight bordered boxes inside a bordered page. That stacking is the
+strongest "template" signal in the report. Replace with hairline rules and whitespace:</p>
+<ul>
+<li>Section and card edges: one <code>1px solid var(--rule-strong)</code>.</li>
+<li>Group headers: <code>1px solid var(--ink)</code> above the group.</li>
+<li>Row separators: <code>1px solid var(--rule)</code>.</li>
+<li>Drop <code>border-radius</code> on data containers; keep it only on chips and buttons, ≤6px.</li>
+<li>Delete the decorative shadows and gradients in <code>_00-tokens.css</code>: <code>--chart-shadow-*</code>,
+  <code>--segment-shadow-*</code>, <code>--label-shadow-*</code>, <code>--legend-shadow-*</code>, and the
+  <code>--chart-bg-*</code> / <code>--svg-bg-*</code> gradient pair.</li>
+</ul>
+<h3 id="two-contrast-failures-to-settle-before-this-lands-amendment">Two contrast failures to settle before this lands <em>(amendment)</em></h3>
+<p><code>test_contrast.py</code> run against <code>tokens.css</code> as shipped gives <strong>36 pass, 2 fail</strong>,
+the same pair in both themes:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>[light] --rule-strong (#CFC7B8) on --paper (#FBF9F5) is 1.60:1, needs 3.0:1
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>[dark]  --rule-strong (#46413A) on --paper (#1C1A17) is 1.72:1, needs 3.0:1
+</span></code></pre></div>
+<p>Resolve it by <strong>splitting the token</strong>, not by relaxing the assertion — the test is
+only worth having while it is non-negotiable. <code>--rule-strong</code> is doing two jobs
+with different requirements: a decorative row divider, which WCAG 1.4.11 does not
+cover, and a <strong>chart axis line</strong>, which it does, as "part of a graphic required to
+understand the content". Keep <code>--rule-strong</code> as the hairline and add <code>--axis</code> at
+≥3:1 for axes and gridlines.</p>
+<p>Four more pairs the design uses and the test does not check:</p>
+<table>
+<thead>
+<tr>
+<th>Pair</th>
+<th>Used by</th>
+<th style="text-align: right;">Light</th>
+<th style="text-align: right;">Dark</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data-4</code> on <code>paper</code></td>
+<td>below-threshold correlation bars (6.1)</td>
+<td style="text-align: right;"><strong>1.83</strong></td>
+<td style="text-align: right;"><strong>1.87</strong></td>
+</tr>
+<tr>
+<td><code>data-4</code> on <code>track</code></td>
+<td>palest step inside its own track</td>
+<td style="text-align: right;"><strong>1.55</strong></td>
+<td style="text-align: right;"><strong>1.60</strong></td>
+</tr>
+<tr>
+<td><code>data-3</code> on <code>paper</code></td>
+<td>second series</td>
+<td style="text-align: right;"><strong>2.63</strong></td>
+<td style="text-align: right;">3.21</td>
+</tr>
+<tr>
+<td>adjacent <code>data-*</code> segments</td>
+<td>stacked composition bar (3.2)</td>
+<td style="text-align: right;"><strong>1.44–2.33</strong></td>
+<td style="text-align: right;"><strong>1.44–1.95</strong></td>
+</tr>
+</tbody>
+</table>
+<p>The adjacency has a fix already written elsewhere in this document: the matrix in
+6.3 calls for "a 2px <code>--paper</code> gutter, so the grid reads as tiles rather than a
+table". <strong>Apply the same gutter between segments of the composition bar</strong> and the
+requirement is met without touching the palette. <code>--data-4</code> at 1.83:1 on the paper
+needs a palette decision, since as a below-threshold bar fill it is a graphic
+carrying information: darken it, or outline those bars in <code>--axis</code>.</p>
+<p><strong>Acceptance:</strong> <code>test_css_integrity.py</code> and the new <code>test_contrast.py</code> pass —
+including the added pairs, in <strong>both</strong> themes, from this commit rather than from
+commit 16; none of
+<code>#3b82f6 #8ac926 #ffca3a #ff595e #4ea3f1 #f15e4e #f1c54e #60a5fa #1d4ed8</code> appears
+anywhere in <code>static/css/</code> or <code>render/</code>.</p>
+<hr />
+<h2 id="phase-2-header">Phase 2 — Header</h2>
+<p>Files: <code>templates/report_template.html</code>, <code>static/css/_02-header.css</code>, <code>render/html.py</code>, <code>static/images/</code></p>
+<p>Target: one <strong>52px</strong> bar, down from ~96px with a 78px logo column.</p>
+<h3 id="21-logo-two-lockups">2.1 Logo — two lockups</h3>
+<p>Use the <strong>mark alone</strong> in the bar at <code>height: 30px</code>, and set the product name in
+<strong>type</strong> beside it. Keep the stacked lockup for the docs site, README and any PDF cover.</p>
+<p>Reasons: a vertical lockup inside a horizontal bar is what forces today's tall header;
+the wordmark is a hand-drawn display face whose letters land ~8px tall at bar size and
+go soft as a raster; and type follows <code>currentColor</code> into dark mode, so the
+<code>#logo-light</code> / <code>#logo-dark</code> swap in <code>_02-header.css</code> disappears with it.</p>
+<h3 id="22-bar-contents">2.2 Bar contents</h3>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>[mark 30px] pysuricata │ &lt;dataset name, mono 13px, --muted, ellipsis&gt;
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>… &lt;nav links 13.5px&gt; │ [download] [dark]
+</span></code></pre></div>
+<ul>
+<li>Nav: plain text, no pills, no background. Active = <code>--ink</code> with a <code>2px solid
+  var(--q-good)</code> bottom border. Hover = <code>--ink</code> only.</li>
+<li>Download and dark-mode are <strong>icon-only</strong>, 30×30 desktop / 32×32 mobile, reusing the
+  two SVGs already in <code>report_template.html</code> verbatim.</li>
+<li>The pin button either joins the icon group or goes. It currently sits alone at
+  <code>margin-left: auto</code> in the meta row, and that row no longer exists.</li>
+</ul>
+<h3 id="23-metadata-gets-labels">2.3 Metadata gets labels</h3>
+<p>Today: a bare timestamp, a bare duration, a bare version, context only in a <code>title</code>.
+Nobody can tell what <code>891 × 12</code> means, and a tooltip does not survive PDF export.
+Move metadata <strong>out of the bar</strong>, into a hairline line under the report title:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>Generated 2026-03-01 00:15:48 │ Profiled in 0.06 s │ Shape 891 rows × 12 columns │ pysuricata 0.0.43
+</span></code></pre></div>
+<p>Mono 12px, labels <code>--muted</code>, values <code>--ink</code>, 1px vertical rules between. Spelling out
+"891 rows × 12 columns" retires the tooltip. On mobile, wrap to three lines.</p>
+<h3 id="24-mobile">2.4 Mobile</h3>
+<ul>
+<li>Bar 48px: mark, name, two icons.</li>
+<li>Nav becomes a second row at <code>min-height: var(--tap-min)</code>, horizontally scrollable.
+  <strong><code>min-height</code>, not <code>height</code></strong> — with <code>overflow-x: auto</code> a fixed height has the
+  scrollbar subtracted from it, silently giving a 29px rail. Hide the scrollbar
+  (<code>scrollbar-width: none</code> plus <code>::-webkit-scrollbar { display: none }</code>).</li>
+<li>Either fit all five labels at 390px or add a right-edge fade, so a clip reads as
+  intentional rather than as a truncation bug.</li>
+</ul>
+<p><strong>Acceptance:</strong> header ≤52px desktop, ≤48px mobile; version from <code>_version.py</code>; every
+target ≥44×44; nav rail <code>clientHeight ≥ 44</code> and <code>scrollWidth == clientWidth</code> at 390px.</p>
+<hr />
+<h2 id="phase-3-summary">Phase 3 — Summary</h2>
+<p>Files: <code>render/sections.py</code>, <code>render/donut_chart.py</code>, <code>templates/report_template.html</code>, <code>_03-summary.css</code>, <code>_04-donut.css</code></p>
+<h3 id="31-stat-row-replaces-five-cards">3.1 Stat row replaces five cards</h3>
+<p><code>1px solid var(--ink)</code> above, <code>--rule</code> below and between cells. Per cell: mono uppercase
+caption 10px <code>--muted</code>; value mono 29px <code>letter-spacing: -0.02em</code>; sub-line mono 11.5px.</p>
+<table>
+<thead>
+<tr>
+<th>Caption</th>
+<th>Value</th>
+<th>Sub</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ROWS</td>
+<td><code>891</code></td>
+<td><code>single pass</code></td>
+</tr>
+<tr>
+<td>COLUMNS</td>
+<td><code>12</code></td>
+<td><code>3 num · 8 cat · 1 bool</code></td>
+</tr>
+<tr>
+<td>MISSING</td>
+<td><code>8.1%</code></td>
+<td><code>866 cells</code> — <code>--q-warn-text</code> past threshold</td>
+</tr>
+<tr>
+<td>DUPLICATES</td>
+<td><code>0</code></td>
+<td><code>≈ KMV sketch</code></td>
+</tr>
+<tr>
+<td>PROCESSED</td>
+<td><code>121 KB</code></td>
+<td><code>0.06 s</code></td>
+</tr>
+</tbody>
+</table>
+<p>Mobile: <code>1fr 1fr</code>, six cells (add ELAPSED), value 23px. <strong>Delete <code>min-height: 280px</code></strong>
+on <code>.second-row .summary-card</code> — it forces three 280px boxes on a phone for content
+needing a fraction of that.</p>
+<h3 id="32-the-donut-becomes-a-100-stacked-bar">3.2 The donut becomes a 100% stacked bar</h3>
+<p>Replace the 135px pie with one horizontal 100% bar, 32–34px tall, segments descending by
+size, count printed inside each, inline legend below.</p>
+<p>Why: a donut cannot be read to exact proportion and stops working below ~200px wide —
+which is every phone. A stacked bar reads at any width and reflows for free.</p>
+<p>Fills from the data scale by size (<code>--data-1</code>, <code>--data-3</code>, <code>--data-4</code>); segment text uses
+<code>--on-data-*</code>. A type with <strong>zero</strong> columns gets <strong>no segment</strong> — render it as a muted
+legend entry (<code>datetime 0</code>), because the palest blue is close to <code>--track</code> and a
+zero-width segment is an artifact, not information. Keep the accessible <code>&lt;desc&gt;</code> text
+from <code>donut_chart.py</code>; it is good.</p>
+<h3 id="33-missing-and-quick-facts">3.3 Missing, and quick facts</h3>
+<ul>
+<li>Top-missing rows: <code>grid-template-columns: 104px 1fr 100px</code> — name (mono), 6px bar on
+  <code>--track</code> using the warm scale, count and percent right-aligned. Below: a link stating
+  how many columns are complete.</li>
+<li>"Quick insights" five pills become one mono run:
+  <code>12 unique · 0 constant · 2 high-cardinality · 8 text (avg len 5.8) · no date range</code>.
+  Five bordered pills is five borders to say five short facts.</li>
+</ul>
+<h3 id="34-description-a-margin-note">3.4 Description — a margin note</h3>
+<ul>
+<li><strong>Empty:</strong> one 44px hairline row: <code>DESCRIPTION</code> left, <code>+ add a note</code> right. That is
+  the whole cost. Reports generated in a loop never have a description and must not be
+  disfigured by an invitation nobody will accept.</li>
+<li><strong>Filled:</strong> renders inline with a <code>2px solid var(--q-good)</code> left rule, a <code>NOTE</code>
+  micro-label in the margin, prose at 14.5px / 1.6, and a small <code>edit</code> link. The olive
+  rule marks the one human voice on the page without a card around it.</li>
+</ul>
+<p><code>description-editor.js</code> and the <code>data-report-id</code> / <code>data-original-markdown</code> contract
+are unchanged; only the container moves.</p>
+<p><strong>Acceptance:</strong> summary height at 390px drops from ~1,100px to ≤560px; segment widths sum
+to 100 and match <code>numeric_cols</code>/<code>categorical_cols</code>/<code>datetime_cols</code>/<code>bool_cols</code>; an empty
+description costs exactly one row.</p>
+<hr />
+<h2 id="phase-4-sample">Phase 4 — Sample</h2>
+<p>Files: <code>render/sections.py</code> (<code>dataset_sample_section</code>), <code>_05-sample.css</code></p>
+<p>Keep the table. Remove the decoration.</p>
+<ul>
+<li>Delete every cell border — the current table draws ~300 of them for 10×13 cells. Keep
+  <code>1px solid var(--ink)</code> above the header, <code>--rule-strong</code> under the header, <code>--rule</code>
+  under each row.</li>
+<li>Remove zebra striping; the row rule does that job. Keep the hover tint.</li>
+<li>Mono 12.5px; numeric columns right-aligned; header captions mono 10.5px uppercase <code>--muted</code>.</li>
+<li><strong><code>nan</code> renders as an em dash in <code>--muted</code></strong>, not the literal string. Keep the real
+  value in a <code>title</code>. That glyph is data, so it must clear 4.5:1.</li>
+<li>Cells clamp with <code>max-width: 260px; overflow: hidden; text-overflow: ellipsis</code>, full
+  value in a <code>title</code>.</li>
+<li>State the overflow instead of hiding it: <code>12 cols · scroll →</code> above the table, plus
+  <code>10 rows drawn at random from the first chunk</code>.</li>
+</ul>
+<h3 id="mobile">Mobile</h3>
+<p>Freeze the row-index column: two tables in a flex row, index table <code>flex-shrink: 0</code>,
+wrapper <code>align-items: flex-start</code> (otherwise the index table stretches past the scroll
+pane), remainder in an <code>overflow-x: auto</code> pane that bleeds to the card edges with a
+right-edge fade.</p>
+<p>Frozen index is what makes sideways scrolling survivable on a phone: you never lose your
+place in the row.</p>
+<p><strong>Acceptance:</strong> frozen index rows align with scroll-pane rows to 0px; no cell borders in
+the output; <code>nan</code> never appears as a literal in a rendered cell.</p>
+<hr />
+<h2 id="phase-5-variables">Phase 5 — Variables</h2>
+<p>Files: <code>render/card_base.py</code>, <code>numeric_card.py</code>, <code>categorical_card.py</code>, <code>boolean_card.py</code>,
+<code>datetime_card.py</code>, <code>histogram_svg.py</code>, <code>temporal_charts.py</code>, <code>_06-cards.css</code> … <code>_10-boolean.css</code></p>
+<p>Chosen: <strong>keep one card per column, restack the triple row.</strong> Nothing collapses; every
+distribution stays visible while scrolling.</p>
+<h3 id="51-numeric-card">5.1 Numeric card</h3>
+<p>Today <code>grid-template-columns: 240px 240px 1fr</code> — two narrow stat tables and a squeezed
+histogram, collapsing to one column under 1024px. New order:</p>
+<ol>
+<li>Header: column name (mono 16px), type word, dtype chip, quality flags.</li>
+<li><strong>Histogram, full card width</strong>, 200–240px tall. It gains ~550px of width, which is
+   what finally makes 50 bins legible and the log toggle worth using.</li>
+<li>Controls: <code>Scale linear|log</code>, <code>Bins 10|25|50</code>.</li>
+<li>Stat row: <code>repeat(4, 1fr)</code>, one label/value pair per cell, <code>--rule</code> under each.
+   Replaces both <code>.kv</code> tables.</li>
+<li>Detail tabs, same content, restyled as text links with an olive underline on active.</li>
+</ol>
+<p>Mobile: histogram full width at 180px, stat row <code>1fr 1fr</code>, tabs a 44px scrollable rail.</p>
+<h3 id="52-axis-ruled-with-units">5.2 Axis — ruled, with units</h3>
+<p><code>histogram_svg.py</code> prints the column name inside the chart and bare numbers on both axes.
+The name is redundant once the header carries it; the <strong>units are what's missing</strong> —
+nothing says which axis is years and which is rows.</p>
+<ul>
+<li>Drop the in-chart title.</li>
+<li>Y: gridlines at quarters of the rounded max, labels at each, mono 11px <code>--muted</code>.</li>
+<li>X: ticks at round values across the range.</li>
+<li>Unit labels <strong>inside the chart</strong>: <code>ROWS</code> above the y column, the x unit at the right
+  end of the axis. Mono 10px, <code>letter-spacing: 0.12em</code>, <code>--muted</code>.</li>
+<li>The x unit comes from the column name and dtype. <strong>Add the unitless branch</strong> — omit
+  the label rather than invent one.</li>
+<li>Clamp the first and last x label inside the plot instead of letting them overhang.</li>
+</ul>
+<p>Bars <code>--data-2</code>: no stroke, no <code>fill-opacity</code>, no rounded corners.</p>
+<h3 id="53-categorical">5.3 Categorical</h3>
+<p>Horizontal bars, one row per level: 96px name / bar / 120px count and percent, <code>--data-2</code>
+on <code>--track</code>. Below, state coverage honestly:
+<code>3 of 3 levels shown · covers 100% of non-missing rows</code>.</p>
+<h3 id="54-high-cardinality-columns-new-branch">5.4 High-cardinality columns — new branch</h3>
+<p><code>Name</code>, <code>Ticket</code> and <code>Cabin</code> currently render ten bars of one row each, 0.1% apiece. That
+chart says nothing. When top-5 coverage is under ~2%, or distinct approaches the row
+count, <strong>replace the chart with a sentence</strong>:</p>
+<blockquote>
+<p>Every value is different. A top-values chart would be ten bars of one row each, so
+there is nothing to plot.</p>
+</blockquote>
+<p>plus longest and shortest value, and an <code>identifier-like</code> flag. In any overview this
+becomes a short note (<code>892 distinct, no repeats</code>) where other columns show a chart — and
+<strong>do not reserve the chart box</strong> when there is no chart, or the row reads as a failed render.</p>
+<h3 id="55-boolean">5.5 Boolean</h3>
+<p>One split bar, 36–40px, labelled in place (<code>false 61.6%</code> / <code>true 38.4%</code>) with counts
+below. <strong>Two steps of one hue</strong> — phase 1, rule 2.</p>
+<h3 id="56-datetime">5.6 Datetime</h3>
+<ul>
+<li>Main chart: records-per-bucket timeline in <code>--data-2</code>, same as every other chart.
+  Y unit <code>RECORDS</code>, x labelled with real dates.</li>
+<li>The four temporal small multiples keep their <strong>fixed categorical axis</strong> — 24 hours,
+  7 days, <strong>12</strong> months — which <code>temporal_charts.py</code> already does correctly. Do not
+  switch to "populated buckets only": two populated months drawn as two half-width slabs
+  reads as "spread evenly across the timeline" instead of "2 of 12". Keep the tick
+  labels; <code>Mon…Sun</code> is what tells a reader whether the week starts Monday.</li>
+</ul>
+<h3 id="57-fixes-found-while-designing">5.7 Fixes found while designing</h3>
+<ul>
+<li><strong><code>Name</code> reports 892 distinct against 891 rows.</strong> KMV carries ~2.2% error. Clamp the
+  estimate to the row count and keep the <code>(≈)</code> marker.</li>
+<li>Quality flags already carry <code>data-threshold</code> and <code>data-value</code> in the DOM but display
+  only the word <code>Missing</code>. Show the value against its threshold — <code>19.9% missing</code> — put
+  the threshold in the <code>title</code>, and outline the chip in its severity colour rather than
+  filling it.</li>
+<li><code>.stat-badges</code> is <code>display: none</code> in <code>_06-cards.css</code> while still being rendered.
+  Delete the renderer, not just the rule.</li>
+</ul>
+<p><strong>Acceptance:</strong> one card per column at every breakpoint; card height at 390px ≤600px; no
+chart element emitted for high-cardinality columns; month chart has 12 slots;
+<code>unique &lt;= count</code> for every column.</p>
+<hr />
+<h2 id="phase-5b-the-partial-report-amendment">Phase 5b — The partial report <em>(amendment)</em></h2>
+<p>Files: <code>checkpoint.py</code>, <code>compute/orchestration/engine.py</code>, <code>config.py</code>, <code>render/html.py</code></p>
+<p>Belongs here because it is a rendering concern and the renderer is already open.
+It depends on <strong>0.3</strong>.</p>
+<h3 id="what-exists-today">What exists today</h3>
+<p><code>pysuricata/checkpoint.py</code> writes gzipped pickles of the accumulator state every N
+chunks, optionally with an HTML snapshot, and rotates them. Five configuration
+options drive it. <strong>Nothing can read them</strong>: there is no <code>load</code>, <code>resume</code> or
+<code>restore</code> anywhere in the package, and all ten tests in <code>test_checkpoint.py</code> test
+the writer. Measured on 300,000 × 4 with <code>checkpoint_every_n_chunks=2</code>: three
+pickles at ~335 KB and three HTML snapshots at ~1,008 KB — about <strong>4 MB of disk
+for a 1.2-second profile</strong>, of which 57% is the logo, written again per snapshot.</p>
+<h3 id="what-to-build-instead">What to build instead</h3>
+<p>A partial report is worth more than the ability to resume, and costs far less. A
+crash at 90% that leaves a 90% report gives value without re-running anything, and
+it survives an OOM kill, a CI timeout and a Ctrl-C — none of which resume handles
+gracefully. It needs no source-identity check, no offset tracking and no format
+stability.</p>
+<ul>
+<li><strong>One file, atomically replaced.</strong> Write to a temporary path, <code>fsync</code>, rename
+  over the target. One <code>report.html</code> that keeps getting better, not one file per
+  chunk. Delete the rotation logic with the per-chunk files.</li>
+<li><strong>Label it in the report itself</strong>, in the metadata line from 2.3:
+  <code>Partial · 6 of 40 chunks · 15% of rows</code>. A partial report that does not say so
+  is a correctness hazard, not a feature.</li>
+<li><strong>Collapse the five options into one.</strong> <code>progress_report="path.html"</code> plus an
+  interval. <code>checkpoint_write_html</code>, <code>checkpoint_max_to_keep</code> and
+  <code>checkpoint_prefix</code> all disappear; the interval should be <strong>time-based</strong>, since
+  chunk duration varies by two orders of magnitude between a narrow numeric frame
+  and a wide text one.</li>
+<li><strong>Reuse the logo decision from 2.1.</strong> Once the mark is inline SVG, a snapshot
+  costs kilobytes rather than a megabyte, which is what makes frequent snapshots
+  reasonable at all.</li>
+</ul>
+<p>This is also what makes the Arrow/Parquet/DuckDB work pay off: a DuckDB relation
+over a directory of Parquet files is exactly the run long enough to want watching.</p>
+<p><strong>Acceptance:</strong> a long run writes a readable report from the first interval
+onward; killing the process at any point leaves that file valid HTML; the partial
+banner states chunk and row coverage; <strong>a run with progressive reporting on
+produces byte-identical output to the same run with it off</strong> (this is the 0.3
+oracle case, and it is the one that matters).</p>
+<hr />
+<h2 id="phase-6-correlations">Phase 6 — Correlations</h2>
+<p>Files: <code>render/correlations_section.py</code>, <code>_11-correlations.css</code></p>
+<p>Your renderer already branches on column count: matrix at ≤15 numeric columns, ranked
+list above. Keep the branch, change the thresholds and add a third state.</p>
+<p><strong>Routing</strong></p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>View</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>fewer than 2 numeric columns</td>
+<td>6.1 empty state, reason: "needs at least 2 numeric columns"</td>
+</tr>
+<tr>
+<td>no pair above threshold</td>
+<td><strong>6.1 empty state</strong></td>
+</tr>
+<tr>
+<td>≤10 numeric columns <strong>and</strong> viewport ≥640px</td>
+<td>6.3 matrix</td>
+</tr>
+<tr>
+<td>otherwise</td>
+<td>6.2 ranked list</td>
+</tr>
+</tbody>
+</table>
+<p>Two changes to the existing thresholds: the matrix ceiling drops from 15 to <strong>10</strong> (at 15
+the cells are 30px and the labels stop fitting), and the matrix is <strong>width-gated</strong> —
+under 640px it falls back to the list.</p>
+<h3 id="61-empty-state-the-common-case">6.1 Empty state — the common case</h3>
+<p>Both of your example reports hit this, and today it is <code>📊</code> plus
+"No significant correlations found (threshold: 0.50)". But nothing was missing: three
+pairs were computed and all three came back weak. That is a finding, not an absence.</p>
+<p>Report the result:</p>
+<blockquote>
+<p>All <strong>3</strong> numeric pairs are weakly related. The strongest is <strong>0.096</strong>, well under the
+<strong>0.50</strong> reporting threshold.</p>
+</blockquote>
+<p>then list the pairs below threshold with their real values, using the same diverging bar
+as 6.2 in <code>--data-4</code>. It costs about 80px, and the numbers were computed anyway.</p>
+<p><strong>Cap it.</strong> With 40 numeric columns there are 780 pairs. Show the top 10 below threshold
+and state how many were checked. <code>_collect_correlations</code> currently filters by threshold
+before returning, so this needs a second call — or return everything and filter at the
+render site.</p>
+<h3 id="62-ranked-list">6.2 Ranked list</h3>
+<p>Structure as today, with three substantive changes:</p>
+<ul>
+<li><strong>Sign is position, not colour.</strong> One diverging bar per row: zero at 50%, negative runs
+  left, positive runs right. Header reads <code>− 1.0 ← 0 → + 1.0</code>. This survives greyscale,
+  needs no legend, and stops the report using red for "negative" — which reads as "bad"
+  when a negative correlation is often the interesting one.</li>
+<li><strong>Three strength bands become three steps of one blue</strong>, not three hues:
+  <code>|r| ≥ 0.9 → --data-1</code>, <code>≥ 0.7 → --data-2</code>, <code>≥ 0.5 → --data-3</code>.</li>
+<li><strong>Drop the rank badges.</strong> The list is ordered; <code>#1</code> next to the first row is noise.</li>
+</ul>
+<p>Row grid <code>340px 1fr 84px</code>: pair (mono, both names with <code>↔</code>, ellipsis plus <code>title</code>),
+diverging bar 14px, value <code>±0.000</code> mono 13px right-aligned. Count in the header:
+<code>7 pairs above 0.50, of 190 checked</code>. Mobile stacks pair over bar.</p>
+<h3 id="63-matrix">6.3 Matrix</h3>
+<p><strong>Lower triangle only.</strong> The full square repeats every pair twice and spends a diagonal
+saying 1.00 six times — half the ink for none of the information. Row labels on the left,
+column labels along the bottom.</p>
+<p>Cell tint is <code>|r|</code> in steps of the data scale; the <strong>sign is the printed number</strong>, not a
+colour. Cell text switches to <code>--ink</code> on the two pale steps. Cells 74px × 42px with a 2px
+<code>--paper</code> gutter, so the grid reads as tiles rather than a table. Legend: the four steps
+under <code>|r| 0 → 1.0</code>, with <code>sign printed in the cell</code>.</p>
+<p>Keep <code>weak</code> cells visible but faded (<code>--track</code>) — an all-weak row is information.</p>
+<h3 id="64-remove-the-emoji">6.4 Remove the emoji</h3>
+<p><code>📊</code> in the empty state, <code>📈</code>/<code>📉</code> per row. Not part of this brand, and they render
+inconsistently across platforms.</p>
+<p><strong>Acceptance:</strong> empty state names the pair count and the strongest value; no emoji in
+<code>correlations_section.py</code>; matrix emits <code>n*(n-1)/2</code> cells, not <code>n²</code>; sign never encoded
+by colour; every band colour comes from <code>--data-*</code>.</p>
+<hr />
+<h2 id="phase-7-missing-values">Phase 7 — Missing values</h2>
+<p>Files: <code>render/missing_section.py</code>, <code>missing_columns.py</code>, <code>missing_values_heatmap.py</code>, <code>_12-missing.css</code></p>
+<p><strong>Drop the tabs.</strong> <code>Data Completeness</code> and <code>Missing per Chunk</code> over three rows is two
+clicks for one screen of content, and with a single chunk the second tab is one
+full-width block per column — a tab that hides nothing.</p>
+<p>Route on chunk count instead:</p>
+<table>
+<thead>
+<tr>
+<th>Condition</th>
+<th>View</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1 chunk</td>
+<td>7.1</td>
+</tr>
+<tr>
+<td>more than 1 chunk</td>
+<td>7.2</td>
+</tr>
+</tbody>
+</table>
+<p>Same shape of conditional you already have for correlations, and it keeps each layout out
+of the case that makes it look broken.</p>
+<h3 id="71-one-chunk-one-row-per-column">7.1 One chunk — one row per column</h3>
+<p><code>grid-template-columns: 92px 1fr 110px</code>: column name (mono), a 14px bar on <code>--track</code>
+using the warm severity scale, count and percent right-aligned in the matching severity
+text colour. Legend <code>≤5% / 5–20% / &gt;20%</code> below, and a link to the complete columns.</p>
+<p>Same row shape as the Summary missing list, so the reader learns it once. Fits a phone
+unchanged.</p>
+<h3 id="72-more-than-one-chunk-split-the-two-questions">7.2 More than one chunk — split the two questions</h3>
+<p><code>grid-template-columns: 92px 1fr 110px 1fr</code>: name, <strong>share missing</strong> bar, count, then a
+<strong>by-chunk strip</strong> of equal-width segments coloured by that chunk's severity.</p>
+<p>One bar cannot carry both meanings at forty chunks — a reader will read length as a total
+when it is a sequence. Splitting them keeps each encoding answering one question.</p>
+<p>The chunk strip is where streaming earns its keep: a column that is fine early and empty
+later is a pipeline problem, and this is the only place in the report that shows it. Keep
+the <code>data-chunk</code> / <code>data-start</code> / <code>data-end</code> / <code>data-missing</code> / <code>data-pct</code> attributes —
+they are already right, and they drive the <code>title</code>.</p>
+<p>Mobile stacks the strip under its row (four columns will not fit 390px).</p>
+<p><strong>Acceptance:</strong> no tab markup in the output; view chosen by chunk count; severity colours
+come from <code>--q-*</code>; complete columns are summarised, not listed.</p>
+<hr />
+<h2 id="phase-8-comparison-of-two-datasets">Phase 8 — Comparison of two datasets</h2>
+<p>Not built yet; the colour decision is settled and should be honoured when it is.</p>
+<p>Both datasets stay <strong>inside the blue scale</strong>: <code>--data-2</code> for one, <code>--data-4</code> for the
+other, side-by-side bars within each bin so neither hides the other. No second hue enters
+the report — the warm range stays entirely with data quality. <code>test_contrast.py</code> asserts
+those two steps stay far enough apart to separate.</p>
+<p><strong>Deltas are not verdicts.</strong> Do not colour increases green and decreases red. More rows
+is neutral; more missing values is not. Direction goes in a glyph, colour is reserved for
+crossing a threshold:</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>ROWS       1,047    ↑ 156 · 17.5%        --ink-2
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>COLUMNS    12       no change            --muted
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>MISSING    11.3%    ↑ 3.2pp · over 10%   --q-warn-text
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>DUPLICATES 0        no change            --muted
+</span></code></pre></div>
+<p>Otherwise the page shouts about the row count and whispers about the only number that
+matters.</p>
+<hr />
+<h2 id="phase-9-mobile-and-accessibility-pass">Phase 9 — Mobile and accessibility pass</h2>
+<p>Once phases 2–7 land:</p>
+<ol>
+<li><strong>Every interactive target ≥44×44.</strong> The scale/bins toggles are the easy miss — they
+   are inline links whose box is just the line box. <code>display: inline-flex; align-items:
+   center; min-height: var(--tap-min); min-width: var(--tap-min); padding: 0 8px</code>. Where a
+   whole row is tappable, make the row the link and leave the marker <code>aria-hidden</code>.</li>
+<li><strong>Every scrollable rail</strong> uses <code>min-height</code>, not <code>height</code>, and either fits its labels or
+   shows an edge fade.</li>
+<li><strong>Contrast</strong> in both themes: text ≥4.5:1, fills and borders ≥3:1. Check against the
+   actual ancestor background, not the page background — a token that passes on <code>--paper</code>
+   can fail on a tinted surface. <code>test_contrast.py</code> covers the token pairs; spot-check
+   anything rendered on a coloured segment.</li>
+<li><strong>Greyscale check.</strong> Print one report to greyscale. Because type is a word and the data
+   scale is one hue in steps, it should survive. Anything that becomes ambiguous is a
+   colour-carrying-meaning bug.</li>
+<li>No horizontal scroll anywhere except the sample scroll pane and the nav rails.</li>
+</ol>
+<hr />
+<h2 id="phase-10-resume-amendment-and-not-before-launch">Phase 10 — Resume <em>(amendment, and not before launch)</em></h2>
+<p>Files: <code>accumulators/*</code>, <code>checkpoint.py</code>, <code>compute/orchestration/engine.py</code>, <code>benchmarks/accuracy.py</code></p>
+<p>Separated from 5b deliberately. The difficulty here is the project's strongest
+claim: the accuracy oracle proves <code>chunked == unchunked</code> across 51 tests, and
+resume introduces a <strong>third path</strong> that must produce identical results across a
+process restart. A resume that is <em>nearly</em> right quietly breaks that claim, which
+is worse than not having resume.</p>
+<p>The good news is that the hard half is already solved in principle: <code>_rng</code> and
+<code>_seed</code> live on the accumulator, so the sampling path can be reproduced.</p>
+<ul>
+<li><strong>Do not pickle.</strong> Give each accumulator an explicit <code>to_state()</code> /
+  <code>from_state()</code> returning plain dicts and typed arrays. Today the snapshot
+  pickles live instances — <code>NumericAccumulator</code> has 30 attributes and no
+  <code>__slots__</code> — so any refactor invalidates every checkpoint on disk and fails at
+  <em>unpickling</em> with an <code>AttributeError</code> rather than a version error. A
+  <code>"version": 1</code> field is written and never checked. It is also arbitrary code
+  execution on a file that may sit in a CI cache.</li>
+<li><strong>Check identity before resuming.</strong> Source fingerprint (path, size, mtime,
+  schema hash) plus row offset. Refuse to resume against different data rather
+  than emitting a plausible, wrong profile — that is the worst failure available
+  here and the one to design against first.</li>
+<li><strong>Route it through <code>merge()</code>.</strong> Resume is state plus more chunks, which is
+  nearly what merge already does, and merge was fixed with 392 lines of tests.</li>
+<li><strong>Write atomically</strong>, for the same reason as 5b: <code>save()</code> currently writes
+  straight to the final path, and crashes are likeliest under memory pressure,
+  which is exactly when checkpointing runs.</li>
+</ul>
+<p><strong>Acceptance:</strong> the oracle gains a third path and
+<code>resumed == chunked == unchunked</code> holds across every fixture; a checkpoint from a
+different source is refused with a clear message; the format carries a version
+that is checked on load; <code>test_checkpoint.py</code> tests a round trip rather than only
+the writer.</p>
+<p><strong>Until this ships</strong>, the five checkpoint options should either be wired to 5b or
+removed. Options that appear to work, produce artifacts nothing can consume, and
+change your results are the worst available API surface — and they are five of the
+twenty-two fields that make <code>ComputeOptions</code> a cognitive-load problem.</p>
+<hr />
+<h2 id="commit-sequence">Commit sequence</h2>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Commit</th>
+<th>Touches</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>0a</strong></td>
+<td><strong>clamp the distinct estimate; <code>approx: True</code> for sketch values</strong></td>
+<td><code>accumulators/</code>, <code>render/card_base.py</code></td>
+</tr>
+<tr>
+<td><strong>0b</strong></td>
+<td><strong>replace the quasi-constant ratio rule with the cardinality ceiling</strong></td>
+<td><code>compute/</code>, <code>render/card_base.py</code></td>
+</tr>
+<tr>
+<td><strong>0c</strong></td>
+<td><strong>stop <code>finalize()</code> consuming the sampler's RNG</strong>, + the oracle case</td>
+<td><code>accumulators/</code>, <code>benchmarks/accuracy.py</code></td>
+</tr>
+<tr>
+<td><strong>0d</strong></td>
+<td><strong>take every baseline</strong> — golden payload, rendered-fact list, screenshots</td>
+<td><code>tests/fixtures/</code></td>
+</tr>
+<tr>
+<td>1</td>
+<td>tokens, typography, drop decorative shadows and gradients; <strong>split <code>--rule-strong</code> from <code>--axis</code></strong></td>
+<td><code>_00-tokens.css</code>, <code>_01-base.css</code></td>
+</tr>
+<tr>
+<td>2</td>
+<td>contrast test, <strong>extended pairs, both themes</strong></td>
+<td><code>tests/test_contrast.py</code></td>
+</tr>
+<tr>
+<td>3</td>
+<td>header: mark asset, 52px bar, icon buttons, labelled metadata</td>
+<td><code>report_template.html</code>, <code>_02-header.css</code>, <code>render/html.py</code>, <code>static/images/</code></td>
+</tr>
+<tr>
+<td>4</td>
+<td>summary: stat row, stacked composition bar (<strong>2px gutter</strong>), missing rows, quick facts</td>
+<td><code>render/sections.py</code>, <code>render/donut_chart.py</code>, <code>_03-summary.css</code>, <code>_04-donut.css</code></td>
+</tr>
+<tr>
+<td>5</td>
+<td>summary: description as margin note</td>
+<td><code>report_template.html</code>, <code>_03-summary.css</code></td>
+</tr>
+<tr>
+<td>6</td>
+<td>sample: borderless table, <code>nan</code> as dash, overflow notice</td>
+<td><code>render/sections.py</code>, <code>_05-sample.css</code></td>
+</tr>
+<tr>
+<td>7</td>
+<td>sample: frozen index on mobile</td>
+<td><code>render/sections.py</code>, <code>_05-sample.css</code></td>
+</tr>
+<tr>
+<td>8</td>
+<td>numeric card: restacked layout</td>
+<td><code>numeric_card.py</code>, <code>card_base.py</code>, <code>_06-cards.css</code></td>
+</tr>
+<tr>
+<td>9</td>
+<td>histogram: units on axes, drop in-chart title, unitless branch</td>
+<td><code>histogram_svg.py</code>, <code>_07-histogram.css</code></td>
+</tr>
+<tr>
+<td>10</td>
+<td>categorical + high-cardinality branch</td>
+<td><code>categorical_card.py</code>, <code>_08-categorical.css</code></td>
+</tr>
+<tr>
+<td>11</td>
+<td>boolean + datetime cards</td>
+<td><code>boolean_card.py</code>, <code>datetime_card.py</code>, <code>temporal_charts.py</code>, <code>_09-datetime.css</code>, <code>_10-boolean.css</code></td>
+</tr>
+<tr>
+<td><strong>11b</strong></td>
+<td><strong>partial report: one atomic file, partial banner, drop rotation</strong></td>
+<td><code>checkpoint.py</code>, <code>engine.py</code>, <code>config.py</code></td>
+</tr>
+<tr>
+<td></td>
+<td>▲ <strong>cut line for launch</strong> — everything above is what a visitor sees</td>
+<td></td>
+</tr>
+<tr>
+<td>~~12~~</td>
+<td>~~data fixes~~ — <em>moved to 0a–0c</em>; delete the dead <code>.stat-badges</code> renderer here</td>
+<td><code>card_base.py</code>, <code>_06-cards.css</code></td>
+</tr>
+<tr>
+<td>13</td>
+<td>correlations: routing, empty state, diverging list, triangle matrix, no emoji</td>
+<td><code>correlations_section.py</code>, <code>_11-correlations.css</code></td>
+</tr>
+<tr>
+<td>14</td>
+<td>missing values: drop tabs, route on chunk count</td>
+<td><code>missing_section.py</code>, <code>missing_columns.py</code>, <code>_12-missing.css</code></td>
+</tr>
+<tr>
+<td>15</td>
+<td>remove the compatibility shim — <strong>shrink it per phase, not all here</strong></td>
+<td><code>_00-tokens.css</code></td>
+</tr>
+<tr>
+<td>16</td>
+<td>dark mode contrast pass — <strong>confirmation, since commit 2 already covers dark</strong></td>
+<td><code>_00-tokens.css</code></td>
+</tr>
+<tr>
+<td>17</td>
+<td>accessibility pass: targets, rails, contrast, greyscale</td>
+<td>across</td>
+</tr>
+<tr>
+<td><strong>18+</strong></td>
+<td><strong>resume</strong> (phase 10) — after launch, with the oracle's third path</td>
+<td><code>accumulators/*</code>, <code>checkpoint.py</code>, <code>benchmarks/accuracy.py</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>The cut line matters.</strong> Commits 0–11b are the header, summary, sample and the
+five card types: everything a visitor sees in a screenshot. Correlations, missing
+values and the comparison view sit below the fold and can land after publishing.</p>
+<h2 id="tests-to-update">Tests to update</h2>
+<p>The full strategy — what this migration can break, and the harness that catches
+it — is in <a href="../MIGRATION_TESTING/"><code>docs/MIGRATION_TESTING.md</code></a>. Two pieces of it
+carry most of the weight and are worth naming here, because they are what make a
+seventeen-commit diff reviewable at all:</p>
+<ul>
+<li><strong>A golden <code>summarize()</code> payload.</strong> Sixteen of the eighteen commits must leave it
+  byte-identical. The two that may not are 0a and 13.</li>
+<li><strong>A rendered-fact list.</strong> 117 of the 125 numeric statistics in <code>summarize()</code>
+  appear somewhere in today's HTML; that set must not shrink. Commit 8 — two
+  fourteen-row tables becoming a four-cell stat row — is where one gets dropped,
+  and no snapshot diff would show it.</li>
+</ul>
+<p>Beyond those:</p>
+<ul>
+<li><strong><code>tests/test_contrast.py</code></strong> — new, provided. Add it early (commit 2); it is what
+  catches a palette regression before review does.</li>
+<li><code>test_css_integrity.py</code> — token names change. Add an assertion that no legacy hex
+  appears in <code>static/css/</code>.</li>
+<li><code>test_html_templating.py</code> — metadata chips become a metadata line; the description
+  container changes.</li>
+<li><code>test_profile_html_snapshot.py</code> — regenerate <strong>once per phase</strong>, not once at the end,
+  so each diff stays reviewable.</li>
+<li><code>test_donut_chart.py</code> — the donut becomes a stacked bar. Rename and rewrite for widths
+  summing to 100 and zero-count types emitting no segment.</li>
+<li><code>test_correlation.py</code> — add cases for the empty state text, the below-threshold cap,
+  and triangle cell count.</li>
+<li><code>test_missing_columns.py</code>, <code>test_missing_context.py</code>, <code>test_sections.py</code> — markup
+  assertions.</li>
+</ul>
+<h2 id="still-open">Still open</h2>
+<ol>
+<li>
+<p><strong><code>--data-4</code> at 1.83:1 on the paper</strong> needs a palette decision before commit 13,
+   since it is the fill for below-threshold correlation bars <em>(amendment)</em>.</p>
+</li>
+<li>
+<p><strong>Dark mode values are proposed, not verified</strong> (<code>tokens.css</code>, and phase 16).</p>
+</li>
+<li><strong>Correlation values above 0.5 have never been seen in a real report here</strong> — both
+   example reports return none, so 6.2 and 6.3 have been designed against illustrative
+   numbers. Generate a report from a dataset with genuine correlations and check the two
+   views against it before commit 13.</li>
+<li>Whether the comparison is asymmetric (baseline vs current) or symmetric (train vs
+   test). It no longer changes the colour, but it changes whether one series should be
+   visually subordinate.</li>
+<li>Whether <code>Age</code> should carry units in the sample table, or only in the variable card.</li>
+</ol>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/alvarodiez20" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.0.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "..", "features": ["navigation.sections", "navigation.tracking", "navigation.top", "navigation.tabs", "navigation.tabs.sticky", "navigation.indexes", "toc.integrate", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.973d3a69.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.f55a23d4.min.js"></script>
+      
+        <script src="../javascripts/figures.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
