@@ -2409,6 +2409,16 @@ quoted when both sides were measured in the same round-robin run.</p>
 </ul>
 <h3 id="fixed">Fixed</h3>
 <ul>
+<li><strong>The invariance harness was comparing 45% of the facts it collected.</strong>
+  <code>report_fingerprint.diff()</code> read both fingerprints into a <code>dict</code>, and the
+  keys were not unique — <code>age</code> and <code>fare</code> both emit a <code>Median</code> row, one
+  histogram emits 64 <code>data-count</code> attributes under one key. Of 559 facts
+  collected, <strong>308 were never compared</strong>, and two dead entries had been sitting
+  in the fixture because no run could see them. <code>kv::</code> keys are now scoped to
+  their column card, and <code>diff()</code> compares the multiset under each key. The
+  fixture grows to 1,000 lines of previously-uncompared facts; no value
+  changed. This is the check that guards the whole redesign, so it is worth
+  saying plainly that it was half blind.</li>
 <li><strong>The histogram fills its card</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/147">#147</a>). At a 1240px viewport the <code>&lt;svg&gt;</code>
   element was already 1,099px wide and the bars occupied <strong>356px</strong> of it — 68%
   blank — because <code>preserveAspectRatio</code> defaults to <code>xMidYMid meet</code> and the
