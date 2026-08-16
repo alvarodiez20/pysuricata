@@ -12,6 +12,7 @@ from .card_config import DEFAULT_CHART_DIMS, DEFAULT_DT_CONFIG
 from .card_types import DateTimeStats, QualityFlags
 from .svg_utils import nice_ticks as _nice_ticks
 from .temporal_charts import TemporalChartRenderer
+from .triage import annotate_flags
 
 
 class DateTimeCardRenderer(CardRenderer):
@@ -64,6 +65,19 @@ class DateTimeCardRenderer(CardRenderer):
         )
 
     def _build_quality_flags_html(
+        self, flags: QualityFlags, stats: DateTimeStats, miss_pct: float
+    ) -> str:
+        """The chips, with the number each one already knows on its face.
+
+        `_quality_flags_markup` builds them; this puts the value on the
+        chip and the threshold in a title. Splitting it this way means the
+        forty-two places that emit a chip carry on emitting the same
+        markup, and the annotation lives in one place rather than being
+        repeated at every one of them.
+        """
+        return annotate_flags(self._quality_flags_markup(flags, stats, miss_pct))
+
+    def _quality_flags_markup(
         self, flags: QualityFlags, stats: DateTimeStats, miss_pct: float
     ) -> str:
         """Build quality flags HTML for datetime data with enhanced insights."""

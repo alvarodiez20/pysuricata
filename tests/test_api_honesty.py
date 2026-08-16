@@ -13,7 +13,6 @@ from __future__ import annotations
 import contextlib
 import io
 import logging
-import re
 
 import numpy as np
 import pandas as pd
@@ -27,11 +26,27 @@ from pysuricata import (
     UnsupportedDataError,
     profile,
 )
+from pysuricata.render.triage import extract_chips
 
 
 def _flags(html: str) -> list[str]:
-    """The quality chips, by label."""
-    return re.findall(r'<li class="flag[^"]*"[^>]*>([^<]+)</li>', html)
+    """The quality chips, by label.
+
+    Uses the render layer's own parser rather than a second regex here. The
+    one that used to live in this file was `[^>]*>`, which ends the tag early
+    on `data-threshold="|kurtosis| > 3"` and silently returned a fragment of
+    the attribute as a chip label -- a latent bug that only became visible when
+    the chips started carrying their values (#118).
+
+    Labels now lead with the value: `99.5% quasi-constant`, not
+    `Quasi-constant`. `_has` matches on the name.
+    """
+    return [label for _, label in extract_chips(html)]
+
+
+def _has(html: str, name: str) -> bool:
+    """Whether a flag of this name is present, whatever value it carries."""
+    return any(name.lower() in label.lower() for label in _flags(html))
 
 
 class TestQualityFlagsDoNotDependOnTheRowCount:
@@ -44,7 +59,7 @@ class TestQualityFlagsDoNotDependOnTheRowCount:
     def test_age_is_never_flagged_quasi_constant(self, rows):
         rng = np.random.default_rng(0)
         frame = pd.DataFrame({"age": rng.integers(18, 86, rows)})
-        assert "Quasi‑constant" not in _flags(profile(frame, seed=0).html)
+        assert not _has(profile(frame, seed=0).html, "quasi‑constant")
 
     @pytest.mark.parametrize("rows", [1_000, 20_000, 200_000])
     def test_age_gets_the_same_verdict_at_every_size(self, rows):
@@ -59,7 +74,7 @@ class TestQualityFlagsDoNotDependOnTheRowCount:
         rng = np.random.default_rng(0)
         values = np.concatenate([np.ones(19_900), rng.standard_normal(100)])
         frame = pd.DataFrame({"stuck": values})
-        assert "Quasi‑constant" in _flags(profile(frame, seed=0).html)
+        assert _has(profile(frame, seed=0).html, "quasi‑constant")
 
     def test_a_constant_column_is_flagged_constant(self):
         """Streamed, so it stays numeric: a single-valued column in a whole
@@ -69,14 +84,14 @@ class TestQualityFlagsDoNotDependOnTheRowCount:
             for _ in range(4):
                 yield pd.DataFrame({"one": np.ones(2_500)})
 
-        assert "Constant" in _flags(profile(chunks(), seed=0).html)
+        assert _has(profile(chunks(), seed=0).html, "constant")
 
     def test_a_continuous_column_is_neither(self):
         rng = np.random.default_rng(0)
         frame = pd.DataFrame({"z": rng.standard_normal(20_000)})
-        flags = _flags(profile(frame, seed=0).html)
-        assert "Quasi‑constant" not in flags
-        assert "Discrete" not in flags
+        html = profile(frame, seed=0).html
+        assert not _has(html, "quasi‑constant")
+        assert not _has(html, "discrete")
 
     @pytest.mark.parametrize("rows", [5_000, 50_000])
     def test_discrete_uses_the_classifier_ceiling(self, rows):
@@ -89,7 +104,7 @@ class TestQualityFlagsDoNotDependOnTheRowCount:
             for _ in range(4):
                 yield pd.DataFrame({"grade": rng.integers(0, 12, rows // 4)})
 
-        assert "Discrete" in _flags(profile(chunks(), seed=0).html)
+        assert _has(profile(chunks(), seed=0).html, "discrete")
 
     def test_discrete_does_not_fire_above_the_ceiling(self):
         rng = np.random.default_rng(0)
@@ -98,7 +113,7 @@ class TestQualityFlagsDoNotDependOnTheRowCount:
             for _ in range(4):
                 yield pd.DataFrame({"age": rng.integers(18, 86, 12_500)})
 
-        assert "Discrete" not in _flags(profile(chunks(), seed=0).html)
+        assert not _has(profile(chunks(), seed=0).html, "discrete")
 
     def test_no_cardinality_ratio_survives_in_the_flag_layer(self):
         """The acceptance criterion from #98, as a test: one cardinality rule."""

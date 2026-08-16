@@ -237,11 +237,11 @@ class TestNumericCardRenderer:
 
     def test_skewed_right_flag_when_high_skew(self):
         html = self.renderer.render_card(make_numeric(skew=5.0))
-        assert "Skewed" in html
+        assert "skewed" in html
 
     def test_constant_flag_when_one_unique(self):
         html = self.renderer.render_card(make_numeric(unique_est=1))
-        assert "Constant" in html
+        assert "constant" in html
 
     def test_empty_name_renders(self):
         html = self.renderer.render_card(make_numeric(name=""))

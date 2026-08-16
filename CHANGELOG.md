@@ -19,6 +19,27 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.58] - 2026-08-16
+
+Phase 5.7 of the report redesign (#118): three defects found while designing,
+and easy to lose in a long plan. Nothing removed or changed in the fact
+fingerprint.
+
+### Changed
+- **The quality chips show the number they already had.** Every chip carried `data-threshold` and `data-value` in the DOM and displayed neither, so a card said `Missing` where it could have said `19.9% missing` — and a reader had to open the details pane, or the inspector, to learn whether that meant two rows or two hundred. The value now leads (it is the fact; the label says what the fact is about) and the threshold moves into a `title`, because it answers a different question.
+
+  Done as one transform over the markup contract rather than at each of the **forty-two** places a chip is emitted. Those attributes are a contract every one of them already satisfied — which is exactly why the information was there and unused.
+- **The chips are outlined, not filled.** Each severity carried a tinted background in a colour left over from the old palette — `rgba(241, 94, 78)` and friends, on neither scale — so a row of chips read as a row of coloured blocks with the severity competing against the text inside it. The border states the severity; the text states the fact. The warning chip takes `--q-warn-text`, not `--q-warn-fill`: the fill step sits deliberately below the text minimum so a bar can be lighter than a word, and a chip label is a word.
+
+### Removed
+- **The `.stat-badges` CSS.** The renderer that emitted it had already gone; what remained was a block of rules plus one more rule to hide the markup they styled. Both are still bytes in a single-file report (#39).
+
+### Already fixed
+The distinct count no longer exceeds the row count — that was closed in 0.0.47, before any of the redesign was screenshotted, so the baselines this migration measures against were taken from correct output. It is asserted again here because the acceptance list belongs to this issue, and because the clamp has to hold for every kind that publishes `unique_est`. A boolean column does not publish one, and should not: its distinct count is 2 by definition, so an estimate of it would be an approximation of something exactly known.
+
+### Fixed along the way
+`tests/test_api_honesty.py` extracted chips with `<li class="flag[^"]*"[^>]*>`, which ends the tag early on `data-threshold="|kurtosis| > 3"` and silently returned a fragment of the attribute as a chip label. It now uses the render layer's own parser, which has handled that case since #86.
+
 ## [0.0.57] - 2026-08-16
 
 Phases 5.5 and 5.6 of the report redesign (#117). Nothing removed or changed in
@@ -919,7 +940,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.57...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.58...HEAD
+[0.0.58]: https://github.com/alvarodiez20/pysuricata/compare/0.0.57...0.0.58
 [0.0.57]: https://github.com/alvarodiez20/pysuricata/compare/0.0.56...0.0.57
 [0.0.56]: https://github.com/alvarodiez20/pysuricata/compare/0.0.55...0.0.56
 [0.0.55]: https://github.com/alvarodiez20/pysuricata/compare/0.0.54...0.0.55

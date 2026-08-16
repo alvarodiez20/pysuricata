@@ -7,6 +7,7 @@ from .card_base import CardRenderer
 from .card_config import DEFAULT_CAT_CONFIG, DEFAULT_CHART_DIMS
 from .card_types import BarData, CategoricalStats, QualityFlags
 from .format_utils import ordinal_number
+from .triage import annotate_flags
 
 # Top-5 coverage below this means a bar chart of the top values would be a row
 # of near-identical slivers -- ten bars of one row each on Titanic's `Name`.
@@ -219,6 +220,17 @@ class CategoricalCardRenderer(CardRenderer):
         }
 
     def _build_quality_flags_html(self, flags: QualityFlags, miss_pct: float) -> str:
+        """The chips, with the number each one already knows on its face.
+
+        `_quality_flags_markup` builds them; this puts the value on the
+        chip and the threshold in a title. Splitting it this way means the
+        forty-two places that emit a chip carry on emitting the same
+        markup, and the annotation lives in one place rather than being
+        repeated at every one of them.
+        """
+        return annotate_flags(self._quality_flags_markup(flags, miss_pct))
+
+    def _quality_flags_markup(self, flags: QualityFlags, miss_pct: float) -> str:
         """Build quality flags HTML for categorical data."""
         flag_items = []
 

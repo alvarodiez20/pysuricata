@@ -3,6 +3,7 @@
 from .card_base import CardRenderer
 from .card_config import DEFAULT_BOOL_CONFIG
 from .card_types import BooleanStats, QualityFlags
+from .triage import annotate_flags
 
 
 class BooleanCardRenderer(CardRenderer):
@@ -55,6 +56,19 @@ class BooleanCardRenderer(CardRenderer):
         )
 
     def _build_quality_flags_html(
+        self, flags: QualityFlags, cnt: int, miss_pct: float
+    ) -> str:
+        """The chips, with the number each one already knows on its face.
+
+        `_quality_flags_markup` builds them; this puts the value on the
+        chip and the threshold in a title. Splitting it this way means the
+        forty-two places that emit a chip carry on emitting the same
+        markup, and the annotation lives in one place rather than being
+        repeated at every one of them.
+        """
+        return annotate_flags(self._quality_flags_markup(flags, cnt, miss_pct))
+
+    def _quality_flags_markup(
         self, flags: QualityFlags, cnt: int, miss_pct: float
     ) -> str:
         """Build quality flags HTML for boolean data."""
