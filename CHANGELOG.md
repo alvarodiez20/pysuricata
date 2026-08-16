@@ -14,6 +14,15 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- The `pypi` environment no longer requires a reviewer, so **pushing a version
+  tag publishes to PyPI with no confirmation step**. `cd.yml` and
+  `docs/versioning.md` said otherwise and now say this; a comment asserting a
+  safety property that has been removed is worse than no comment, because it is
+  what someone reads to decide whether a push is reversible. The `guard` and
+  `smoke` jobs stand in for the reviewer.
+
 ### Fixed
 
 - **Every interactive target in the report is now at least 44×44** at 390px
