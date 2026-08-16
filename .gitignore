@@ -136,3 +136,8 @@ _snap*.tar.gz
 # 0.0.17 until it was 1,180,196 bytes against 600,028 of real output.
 # `mkdocs build --strict` does not need it present.
 docs/assets/titanic_report.html
+
+# Local scratch. Ignored so a `git add -A` during a conflict resolution cannot
+# sweep it into a commit -- which it did once.
+_to_delete/
+README.draft.md

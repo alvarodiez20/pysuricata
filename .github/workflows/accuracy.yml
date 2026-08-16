@@ -5,8 +5,8 @@ name: Accuracy
 # NumPy, so a kernel rewrite can be shown to have stayed correct rather than
 # merely to have got faster.
 on:
+  # Unfiltered, so a stacked PR is covered too.
   pull_request:
-    branches: [ main ]
   push:
     branches: [ main ]
 

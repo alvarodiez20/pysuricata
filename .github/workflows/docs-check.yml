@@ -1,8 +1,8 @@
 name: Docs Check
 
 on:
+  # Unfiltered by branch, so a stacked PR is covered too.
   pull_request:
-    branches: [ main ]
     paths:
       - 'docs/**'
       - 'mkdocs.yml'

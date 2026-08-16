@@ -1,11 +1,24 @@
 name: CI
 
 on:
+  # No `branches:` filter. Keyed on `main` only, a PR stacked on another PR
+  # matched nothing and ran zero checks -- which is what happened to sixteen
+  # of the redesign PRs until they were retargeted at `main` before merge.
   pull_request:
+  # Every check this project relies on had only ever run against a *proposed*
+  # merge, never against the result. A PR is tested against `main` as it was
+  # when the branch was opened, so two PRs that are individually green can be
+  # red together, and nothing would have noticed.
+  #
+  # `version-check` and `changelog-check` are deliberately not run here: both
+  # diff against `origin/main`, so on a push to `main` they compare a commit
+  # with itself and fail by construction. They are pre-merge gates by nature.
+  push:
     branches: [ main ]
 
 jobs:
   version-check:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +46,7 @@ jobs:
           fi
 
   changelog-check:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
