@@ -68,7 +68,16 @@ quoted when both sides were measured in the same round-robin run.
   Chrome silently drops a `srcdoc` document past roughly 700 KB — no error, no
   console warning, just a blank frame. Measured: 684 KB renders, 721 KB does
   not, which any wide or high-cardinality frame clears.
-
+- **The invariance harness was comparing 45% of the facts it collected.**
+  `report_fingerprint.diff()` read both fingerprints into a `dict`, and the
+  keys were not unique — `age` and `fare` both emit a `Median` row, one
+  histogram emits 64 `data-count` attributes under one key. Of 559 facts
+  collected, **308 were never compared**, and two dead entries had been sitting
+  in the fixture because no run could see them. `kv::` keys are now scoped to
+  their column card, and `diff()` compares the multiset under each key. The
+  fixture grows to 1,000 lines of previously-uncompared facts; no value
+  changed. This is the check that guards the whole redesign, so it is worth
+  saying plainly that it was half blind.
 - **The histogram fills its card** ([#147]). At a 1240px viewport the `<svg>`
   element was already 1,099px wide and the bars occupied **356px** of it — 68%
   blank — because `preserveAspectRatio` defaults to `xMidYMid meet` and the

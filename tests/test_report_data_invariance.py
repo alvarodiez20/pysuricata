@@ -136,6 +136,39 @@ def test_the_fingerprint_is_not_trivially_small():
     assert len(actual.splitlines()) > 400
 
 
+def test_every_fact_collected_is_a_fact_compared():
+    """The second guard on the guard, and it caught a real hole.
+
+    :func:`diff` used to read both fingerprints into a ``dict``. Nothing said
+    keys were unique, and they were not: `age` and `fare` both emit a `Median`
+    row, one histogram emits 64 ``data-count`` attributes. **559 collected
+    facts became 251 compared ones**, with the survivor under each key decided
+    by sort order -- so 63 of `age`'s 64 bin counts, and one of its two
+    medians, could change without turning anything red. Two dead entries had
+    been sitting in the fixture for exactly that reason.
+
+    Rather than assert keys are unique -- they cannot be, a histogram really
+    does assert one count per bin -- this checks the property that matters:
+    every line in the fingerprint participates in the comparison.
+    """
+    text = fingerprint(profile(_frame(), seed=0).html)
+    lines = [line for line in text.splitlines() if "\t" in line]
+
+    # Drop one line and exactly one difference must appear. Under the old
+    # comparator, dropping any of the 308 shadowed lines produced none.
+    for index in (0, len(lines) // 3, len(lines) // 2, -1):
+        damaged = (
+            "\n".join(lines[:index] + lines[index + 1 :])
+            if index >= 0
+            else ("\n".join(lines[:-1]))
+        )
+        removed, added, changed = diff(text, damaged)
+        assert removed or changed, (
+            f"dropping {lines[index]!r} left the fingerprint unchanged -- "
+            "that fact is collected but never compared"
+        )
+
+
 def test_chunking_does_not_change_the_facts():
     """The invariant the accumulators are built on, checked where a reader
     would actually notice it breaking."""

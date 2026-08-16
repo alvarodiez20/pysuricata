@@ -162,31 +162,57 @@ def _is_run_dependent(label: str) -> bool:
     return any(marker in lowered for marker in _RUN_DEPENDENT)
 
 
+#: Where one column's card starts. Everything until the next one belongs to it.
+_CARD = re.compile(r'<article class="var-card"[^>]*\sid="([^"]+)"')
+
+
+def _regions(doc: str) -> list[tuple[str, str]]:
+    """Split the document into ``(scope, html)``, one region per column card.
+
+    Without this every card's statistics land on the same key: `age` and `fare`
+    both emit a `Median` row, so `kv::median` held two different values, and
+    :func:`diff` -- reading the fingerprint as a dict -- compared one of them
+    and dropped the other. 559 collected facts collapsed to 251 checked ones,
+    and `age`'s median could have changed without turning this red.
+    """
+    starts = [(m.start(), m.group(1)) for m in _CARD.finditer(doc)]
+    if not starts:
+        return [("", doc)]
+
+    out = [("", doc[: starts[0][0]])]
+    for index, (offset, scope) in enumerate(starts):
+        end = starts[index + 1][0] if index + 1 < len(starts) else len(doc)
+        out.append((scope, doc[offset:end]))
+    return out
+
+
 def _pairs_from_kv(doc: str) -> list[tuple[str, str]]:
-    """Label/value pairs from the per-column statistics.
+    """Label/value pairs from the per-column statistics, scoped to their card.
 
     Matched on adjacency rather than on class names, because the migration
     replaces ``.kv`` tables with a stat row and the pairing is the only thing
     common to both shapes.
     """
     out: list[tuple[str, str]] = []
-    for pattern in _PAIR_PATTERNS:
-        for m in pattern.finditer(doc):
-            label, value = _text(m.group(1)), _text(m.group(2))
-            if not label or not value or len(label) > 40:
-                continue
-            # A label is a word. Two adjacent numbers are a row of the sample
-            # table, not a statistic and its name -- `<td>0</td><td>79</td>`
-            # was being recorded as the fact `kv::0 = 79`. Those rows are a
-            # random draw, so they made the fingerprint differ between machines
-            # while looking like data had changed.
-            if not any(character.isalpha() for character in label):
-                continue
-            if not _NUMBER.fullmatch(value):
-                continue
-            if _is_run_dependent(label):
-                continue
-            out.append((f"kv::{label.lower()}", _canon_number(value)))
+    for scope, region in _regions(doc):
+        for pattern in _PAIR_PATTERNS:
+            for m in pattern.finditer(region):
+                label, value = _text(m.group(1)), _text(m.group(2))
+                if not label or not value or len(label) > 40:
+                    continue
+                # A label is a word. Two adjacent numbers are a row of the
+                # sample table, not a statistic and its name --
+                # `<td>0</td><td>79</td>` was being recorded as the fact
+                # `kv::0 = 79`. Those rows are a random draw, so they made the
+                # fingerprint differ between machines while looking like data
+                # had changed.
+                if not any(character.isalpha() for character in label):
+                    continue
+                if not _NUMBER.fullmatch(value):
+                    continue
+                if _is_run_dependent(label):
+                    continue
+                out.append((f"kv::{scope}::{label.lower()}", _canon_number(value)))
     return out
 
 
@@ -215,15 +241,22 @@ def _pairs_from_flags(doc: str) -> list[tuple[str, str]]:
 
 
 def fingerprint(doc: str) -> str:
-    """Return the sorted, deduplicated fact set of a rendered report."""
-    facts: set[tuple[str, str]] = set()
+    """Return the sorted fact list of a rendered report.
+
+    Sorted, so it is diffable; **not** deduplicated, so multiplicity survives.
+    A histogram asserts one count per bin and several bins legitimately hold
+    the same number: collapsing those to a set made `[12, 12, 15]` and
+    `[12, 15, 15]` the same fingerprint. Repetition is part of what the report
+    claims, so it is part of what is compared.
+    """
+    facts: list[tuple[str, str]] = []
     for extractor in (
         _pairs_from_attrs,
         _pairs_from_kv,
         _pairs_from_columns,
         _pairs_from_flags,
     ):
-        facts.update(extractor(doc))
+        facts.extend(extractor(doc))
     return "\n".join(f"{k}\t{v}" for k, v in sorted(facts))
 
 
@@ -232,16 +265,62 @@ def fingerprint(doc: str) -> str:
 # --------------------------------------------------------------------------- #
 
 
+def _index(fingerprint_text: str) -> dict[str, list[str]]:
+    """key -> every value recorded under it, in file order."""
+    out: dict[str, list[str]] = {}
+    for line in fingerprint_text.splitlines():
+        if "\t" not in line:
+            continue
+        key, value = line.split("\t", 1)
+        out.setdefault(key, []).append(value)
+    return out
+
+
 def diff(before: str, after: str) -> tuple[list[str], list[str], list[str]]:
-    """Return (removed, added, changed) between two fingerprints."""
-    b = dict(line.split("\t", 1) for line in before.splitlines() if "\t" in line)
-    a = dict(line.split("\t", 1) for line in after.splitlines() if "\t" in line)
-    removed = sorted(f"{k}\t{b[k]}" for k in b.keys() - a.keys())
-    added = sorted(f"{k}\t{a[k]}" for k in a.keys() - b.keys())
-    changed = sorted(
-        f"{k}\t{b[k]} -> {a[k]}" for k in b.keys() & a.keys() if b[k] != a[k]
-    )
-    return removed, added, changed
+    """Return (removed, added, changed) between two fingerprints.
+
+    A key may legitimately carry several values -- one bar's ``data-count`` per
+    bin, 64 of them on a single histogram -- so this compares the **multiset**
+    under each key rather than reading the file into a dict.
+
+    Reading it into a dict is what it used to do, and it silently discarded
+    every duplicate: 559 collected facts became 251 compared ones, with the
+    survivor picked by sort order. Under that comparator 63 of `age`'s 64 bin
+    counts could change without a red test. The per-column scoping above
+    removes most of the duplication; this removes the consequence of the rest.
+    """
+    b, a = _index(before), _index(after)
+
+    removed: list[str] = []
+    added: list[str] = []
+    changed: list[str] = []
+
+    for key in sorted(b.keys() | a.keys()):
+        before_values = sorted(b.get(key, []))
+        after_values = sorted(a.get(key, []))
+        lost = _multiset_difference(before_values, after_values)
+        gained = _multiset_difference(after_values, before_values)
+
+        # A value that left paired with one that arrived under the same key is
+        # a figure that changed; an unpaired remainder is a fact that vanished
+        # or appeared.
+        for old, new in zip(lost, gained, strict=False):
+            changed.append(f"{key}\t{old} -> {new}")
+        removed.extend(f"{key}\t{v}" for v in lost[len(gained) :])
+        added.extend(f"{key}\t{v}" for v in gained[len(lost) :])
+
+    return sorted(removed), sorted(added), sorted(changed)
+
+
+def _multiset_difference(left: list[str], right: list[str]) -> list[str]:
+    remaining = list(right)
+    out = []
+    for value in left:
+        if value in remaining:
+            remaining.remove(value)
+        else:
+            out.append(value)
+    return out
 
 
 def main() -> int:
