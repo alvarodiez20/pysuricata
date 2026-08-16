@@ -47,16 +47,37 @@
   --axis:         #8F8474;  /* chart axis and ticks. on paper 3.5:1 */
   --track:        #EDE6DA;  /* empty portion of a bar */
 
-  /* ---- data: one hue, four steps ------------------------ */
-  --data-1:       #2C4A62;  /* largest share / emphasis. paper on it 8.8:1 */
-  --data-2:       #3E6280;  /* DEFAULT for every chart. paper on it 6.1:1 */
-  --data-3:       #7FA0B5;  /* second series. ink on it 5.7:1 */
-  --data-4:       #A8BECD;  /* third series. ink on it 8.5:1 */
+  /* ---- data: one hue, four steps ------------------------
+     Measured against the two surfaces a mark can land on. 3:1 is the
+     non-text minimum (WCAG 1.4.11); 4.5:1 is the text minimum.
 
-  /* Text colour to use ON each data step. */
+       token     hex      paper  track  may sit alone on     text on it
+       --------  -------  -----  -----  -------------------  ----------
+       --data-1  #2C4A62   8.82   7.48  paper, track, stack  paper
+       --data-2  #3E6280   6.12   5.19  paper, track, stack  paper
+       --data-3  #5C7F99   4.03   3.54  paper, track, stack  NONE
+       --data-4  #A8BECD   1.83   1.61  stack only           ink
+
+     --data-3 was #7FA0B5. At 2.63:1 on the paper it could not legally
+     carry a standalone mark, which is the entire job a third step
+     exists for. #5C7F99 clears 3:1 on both surfaces in both themes,
+     and is too mid-tone for text either way (paper 4.03, ink 3.83) --
+     so it is a fill, never a label background.
+
+     --data-4 is stack-internal only, and the track figure is why: it
+     clears 3:1 on the dark paper (3.21) and fails on the track (2.75),
+     so "legal on the background" is not the test that governs it. It
+     reads as a reasonable quiet choice for a subordinate chart and at
+     1.83:1 on light paper it is a ghost.
+     -------------------------------------------------------- */
+  --data-1:       #2C4A62;
+  --data-2:       #3E6280;  /* DEFAULT for every chart */
+  --data-3:       #5C7F99;
+  --data-4:       #A8BECD;  /* stack-internal only */
+
+  /* Text colour to use ON each data step. --data-3 carries none. */
   --on-data-1:    var(--paper);
   --on-data-2:    var(--paper);
-  --on-data-3:    var(--ink);
   --on-data-4:    var(--ink);
 
   /* ---- data quality: never used for data ---------------- */
@@ -91,14 +112,29 @@
   --axis:         #7A7165;  /* on the dark paper 3.6:1 */
   --track:        #2A2721;
 
+  /* The scale reverses: bars sit on a dark ground, so the default fill
+     becomes a light step.
+
+       token     hex      paper  track  may sit alone on
+       --data-1  #A8BECD   9.02   7.74  paper, track, stack
+       --data-2  #7FA0B5   6.28   5.39  paper, track, stack
+       --data-3  #5C7F99   4.09   3.51  paper, track, stack
+       --data-4  #2C4A62   1.87   1.60  stack only
+
+     The handoff proposed #4A6E8A for the dark --data-4. It is not taken:
+     it separates from --data-2 by only 1.95:1, and those two carry the
+     two-dataset comparison, which needs 2:1. It is also 1.27:1 from
+     --data-3, so the two adjacent steps would be indistinguishable.
+     #2C4A62 gives 3.36 and 2.19. The handoff labels its dark section
+     "PROPOSED, NOT YET VERIFIED as a whole" -- it measured each step
+     against the surfaces and not the steps against each other. */
   --data-1:       #A8BECD;
   --data-2:       #7FA0B5;  /* default chart fill in dark mode */
-  --data-3:       #4A6E8A;
+  --data-3:       #5C7F99;
   --data-4:       #2C4A62;
 
   --on-data-1:    var(--paper);
   --on-data-2:    var(--paper);
-  --on-data-3:    var(--ink);
   --on-data-4:    var(--ink);
 
   --q-good:       #A9C46C;
@@ -10798,9 +10834,9 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-16 14:05:30</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-16 14:28:27</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <span><span class="k">Profiled in</span> <span class="v">0.13 s</span></span>
+            <span><span class="k">Profiled in</span> <span class="v">0.12 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Shape</span> <span class="v">891 rows × 12 columns</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
@@ -10842,7 +10878,7 @@ body.suricata-standalone:not(.light) {
             </div>
             <div class="stat stat--elapsed">
               <div class="stat__cap">Elapsed</div>
-              <div class="stat__val">0.13 s</div>
+              <div class="stat__val">0.12 s</div>
               <div class="stat__sub">wall clock</div>
             </div>
           </div>
@@ -10850,7 +10886,7 @@ body.suricata-standalone:not(.light) {
           <div class="summary-panels">
             <div class="panel">
               <div class="micro-label">Column types</div>
-              <div class="composition" role="img" aria-label="Column types: categorical 8 (66.7%), numeric 3 (25%), boolean 1 (8.3%)"><div class="composition__bar"><div class="composition__seg" style="width:66.7%;background:var(--data-1, #2C4A62);color:var(--on-data-1, #FBF9F5)" data-type="categorical" data-count="8" data-percentage="66.7"><span class="composition__count">8</span></div><div class="composition__seg" style="width:25%;background:var(--data-2, #3E6280);color:var(--on-data-2, #FBF9F5)" data-type="numeric" data-count="3" data-percentage="25"><span class="composition__count">3</span></div><div class="composition__seg" style="width:8.3%;background:var(--data-3, #7FA0B5);color:var(--on-data-3, #22201C)" data-type="boolean" data-count="1" data-percentage="8.3"><span class="composition__count">1</span></div></div><ul class="composition__legend"><li class="composition__item"><span class="composition__swatch" style="background:var(--data-1, #2C4A62)"></span><span class="composition__label">categorical</span><span class="composition__value">8</span></li><li class="composition__item"><span class="composition__swatch" style="background:var(--data-2, #3E6280)"></span><span class="composition__label">numeric</span><span class="composition__value">3</span></li><li class="composition__item"><span class="composition__swatch" style="background:var(--data-3, #7FA0B5)"></span><span class="composition__label">boolean</span><span class="composition__value">1</span></li><li class="composition__item is-zero"><span class="composition__swatch is-zero"></span><span class="composition__label">datetime</span><span class="composition__value">0</span></li></ul></div>
+              <div class="composition" role="img" aria-label="Column types: categorical 8 (66.7%), numeric 3 (25%), boolean 1 (8.3%)"><div class="composition__bar"><div class="composition__seg" style="width:66.7%;background:var(--data-1, #2C4A62);color:var(--on-data-1, #FBF9F5)" data-type="categorical" data-count="8" data-percentage="66.7"><span class="composition__count">8</span></div><div class="composition__seg" style="width:25%;background:var(--data-2, #3E6280);color:var(--on-data-2, #FBF9F5)" data-type="numeric" data-count="3" data-percentage="25"><span class="composition__count">3</span></div><div class="composition__seg" style="width:8.3%;background:var(--data-3, #5C7F99)" data-type="boolean" data-count="1" data-percentage="8.3"></div></div><ul class="composition__legend"><li class="composition__item"><span class="composition__swatch" style="background:var(--data-1, #2C4A62)"></span><span class="composition__label">categorical</span><span class="composition__value">8</span></li><li class="composition__item"><span class="composition__swatch" style="background:var(--data-2, #3E6280)"></span><span class="composition__label">numeric</span><span class="composition__value">3</span></li><li class="composition__item"><span class="composition__swatch" style="background:var(--data-3, #5C7F99)"></span><span class="composition__label">boolean</span><span class="composition__value">1</span></li><li class="composition__item is-zero"><span class="composition__swatch is-zero"></span><span class="composition__label">datetime</span><span class="composition__value">0</span></li></ul></div>
             </div>
             <div class="panel">
               <div class="micro-label">Top missing columns</div>
@@ -10892,7 +10928,7 @@ body.suricata-standalone:not(.light) {
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260816-140530-4972" data-original-markdown=""
+            data-report-id="20260816-142827-6144" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>
