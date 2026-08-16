@@ -86,6 +86,12 @@ class TestTypeIsNotAColour:
         assert all("--data-" in fill for fill in fills), fills
         assert len(set(fills)) == 4, f"each rank needs its own step: {fills}"
         for fill, ink in _STEPS:
+            if ink is None:
+                # `--data-3` carries no text: it reaches the 3:1 non-text
+                # minimum and neither text minimum, so it is a fill and never a
+                # label background. None is the honest pairing.
+                assert "--data-3" in fill, (fill, ink)
+                continue
             assert "--on-data-" in ink, (fill, ink)
 
     def test_no_quality_token_is_used_for_a_column_type(self):

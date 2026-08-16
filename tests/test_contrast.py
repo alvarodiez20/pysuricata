@@ -102,7 +102,11 @@ TEXT_PAIRS: list[tuple[str, str, str]] = [
     ("q-bad", "paper", "fail flag text"),
     ("paper", "data-1", "count printed inside the darkest segment"),
     ("paper", "data-2", "count printed inside a default bar"),
-    ("ink", "data-3", "count printed inside a mid segment"),
+    # `--data-3` is deliberately absent. Nothing is printed on it: at 4.03:1
+    # against the paper and 3.83:1 against the ink it reaches the 3:1 non-text
+    # minimum and neither text minimum, so it is a fill and never a label
+    # background. A segment on it sends its count to the legend, the way a
+    # too-narrow segment already does. See `test_data_3_carries_no_text`.
     ("ink", "data-4", "count printed inside the palest segment"),
 ]
 
@@ -183,4 +187,44 @@ def test_data_scale_steps_are_distinguishable(themes) -> None:
         assert ratio >= 2.0, (
             f"[{theme}] --data-2 and --data-4 are only {ratio:.2f}:1 apart. "
             f"They carry the two-dataset comparison and must separate."
+        )
+
+
+# --------------------------------------------------------------------------- #
+# roles a contrast pair cannot express
+# --------------------------------------------------------------------------- #
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_data_3_carries_no_text(themes, theme):
+    """The third step exists to carry a *standalone mark*, not a label.
+
+    It was `#7FA0B5`, which is **2.63:1** on the paper -- below the 3:1 non-text
+    minimum, so it could not legally carry the one thing it exists for. `#5C7F99`
+    clears 3:1 on both surfaces in both themes and reaches neither text minimum
+    (paper 4.03, ink 3.83), which is the trade: a fill, never a label
+    background.
+
+    So this asserts a *failure* on purpose. Raising `--data-3` until text passes
+    on it would break this test and force the conversation, rather than quietly
+    reintroducing a label nobody measured.
+    """
+    tokens = themes[theme]
+    for other in ("ink", "paper"):
+        ratio = contrast(tokens["data-3"], tokens[other])
+        assert ratio < AA_TEXT, (
+            f"[{theme}] --{other} on --data-3 is now {ratio:.2f}:1. "
+            "If --data-3 has been raised far enough to carry text, decide that "
+            "deliberately: update this test and the composition bar, which "
+            "currently sends the count to the legend instead."
+        )
+
+
+@pytest.mark.parametrize("theme", ["light", "dark"])
+def test_data_3_can_stand_alone(themes, theme):
+    """The property the old value failed, and the reason for the change."""
+    tokens = themes[theme]
+    for surface in ("paper", "track"):
+        ratio = contrast(tokens["data-3"], tokens[surface])
+        assert ratio >= AA_NON_TEXT, (
+            f"[{theme}] --data-3 on --{surface} is {ratio:.2f}:1, needs "
+            f"{AA_NON_TEXT}:1 to carry a standalone mark"
         )
