@@ -291,6 +291,11 @@ class BooleanCardRenderer(CardRenderer):
                     "missing",
                     "Missing Values",
                     f'<div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>',
+                    # NOT gated on chunk count, unlike the numeric and
+                    # datetime cards. `html.py` calls `finalize()` without
+                    # chunk metadata for this kind, so the accumulator has none
+                    # to give -- gating on it would hide the pane permanently
+                    # rather than tighten the rule. See #193.
                     int(getattr(stats, "missing", 0) or 0) > 0,
                 ),
             ],

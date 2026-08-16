@@ -20,6 +20,7 @@ out to be impossible.
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -62,13 +63,56 @@ def report() -> str:
 
 
 class TestMissingValuesEarnsItsTab:
-    @pytest.mark.parametrize("column", ["num_gap", "cat_gap", "when_gap"])
-    def test_a_column_with_gaps_keeps_the_pane(self, report, column):
+    """The rule tightened in #154 (5b.7): missing > 0 **and** more than one
+    chunk.
+
+    Gaps alone were not enough. With a single chunk the pane states one fact
+    four times -- a Present stat, a Missing stat, a two-segment bar, and a
+    one-segment chunk strip -- under a header already flagging the percentage.
+    The only thing it knows that the card face does not is *where in the read*
+    the gaps fall, and that needs more than one chunk to exist.
+
+    The fixture below is a single chunk, so a gappy column correctly has no
+    pane; `TestTheChunkGate` covers the other side.
+    """
+
+    @pytest.mark.parametrize("column", ["num_gap", "when_gap", "num_full", "flag"])
+    def test_one_chunk_never_renders_it(self, report, column):
+        assert "missing" not in _tabs(report, column)
+
+    @pytest.mark.parametrize("column", ["cat_gap"])
+    def test_categorical_is_not_gated_yet(self, report, column):
+        """Recorded, not endorsed.
+
+        `html.py` calls `finalize()` **without** chunk metadata for categorical
+        and boolean columns, so those accumulators have none to give. Applying
+        the gate there would not tighten the rule, it would hide the pane
+        permanently -- which is what the first version of this change did, and
+        what the test above caught. Plumbing chunk metadata into two more
+        accumulators is #139's remaining half. See #193.
+        """
         assert "missing" in _tabs(report, column)
 
-    @pytest.mark.parametrize("column", ["num_full", "cat_full", "when_full", "flag"])
-    def test_a_complete_column_does_not_render_it(self, report, column):
-        assert "missing" not in _tabs(report, column)
+
+class TestTheChunkGate:
+    """Otherwise the rule above is satisfied by never rendering the pane."""
+
+    @pytest.fixture(scope="class")
+    def chunked(self) -> str:
+        rng = np.random.default_rng(0)
+        n = 12_000
+        values = rng.normal(0, 1, n)
+        values[rng.choice(n, n // 5, replace=False)] = np.nan
+        labels = rng.choice(["a", "b", None], n, p=[0.5, 0.4, 0.1])
+        return profile(
+            pd.DataFrame({"num_gap": values, "cat_gap": labels}),
+            seed=0,
+            chunk_size=1000,
+        ).html
+
+    @pytest.mark.parametrize("column", ["num_gap"])
+    def test_more_than_one_chunk_brings_it_back(self, chunked, column):
+        assert "missing" in _tabs(chunked, column)
 
     def test_every_card_kind_is_covered(self, report):
         """Not just the numeric card. The pane is built by four renderers and
@@ -146,3 +190,85 @@ class TestTheImpossibleNumberIsGone:
         markup = re.sub(r"<(script|style)\b.*?</\1>", "", report, flags=re.S | re.I)
         for value in re.findall(r'data-pct="([\d.]+)"', markup):
             assert float(value) <= 100.0, f"data-pct={value}"
+
+
+class TestTheClosedStripNamesItsPanes:
+    """5b.8. A `Details` button toggles a section containing up to six tabs.
+
+    The tab set is known at render time and was not printed, so the word
+    "Details" promised nothing -- and a reader had to open every card to learn
+    whether opening was worth it. `11 outliers` beside the button is the reason
+    to open it; `no outliers` is the reason not to.
+    """
+
+    @pytest.fixture(scope="class")
+    def summary(self, report) -> str:
+        found = re.search(r'class="details-panes">([^<]*)<', report)
+        assert found, "no pane summary on any card"
+        return found.group(1)
+
+    def test_it_lists_the_panes(self, summary):
+        assert "statistics" in summary
+        assert "·" in summary
+
+    def test_it_carries_the_figure_each_pane_is_worth_opening_for(self, report):
+        strips = re.findall(r'class="details-panes">([^<]*)<', report)
+        assert any(re.search(r"\d+ outliers", s) for s in strips), strips
+
+    def test_zero_outliers_reads_as_a_phrase(self):
+        """The reason *not* to open the pane, which is half the point.
+
+        Needs its own frame: every numeric column in the shared fixture has
+        outliers, so the zero case would never be reached. A linear ramp has
+        none by the IQR rule, by construction.
+
+        As a tab badge the phrasing would be nonsense -- `Outliers no` was the
+        first attempt -- so it lives in the strip only.
+        """
+        ramp = profile(pd.DataFrame({"ramp": np.arange(500, dtype=float)}), seed=0).html
+        strips = re.findall(r'class="details-panes">([^<]*)<', ramp)
+        assert any("no outliers" in s for s in strips), strips
+        assert not re.search(r'class="tab__count">no<', ramp)
+
+    def test_a_dropped_pane_is_not_named(self, report):
+        """The strip and the tab set have to agree, or the strip advertises a
+        tab that is not there."""
+        for card in re.split(r'(?=<article class="var-card")', report):
+            strip = re.search(r'class="details-panes">([^<]*)<', card)
+            if not strip:
+                continue
+            tabs = set(re.findall(r'data-tab="(\w+)"', card))
+            if "missing" not in tabs:
+                assert "missing" not in strip.group(1)
+            if "corr" not in tabs:
+                assert "correlations" not in strip.group(1)
+
+
+class TestTheActiveMarkerIsOnTheLabel:
+    """The tab button is 44px tall because it is a tap target (#122). A
+    `border-bottom` on the button paints the rule ~29px below the word, where
+    it reads as a second hairline floating under the strip rather than as an
+    underline belonging to the text."""
+
+    def test_the_label_has_its_own_element(self, report):
+        assert 'class="tab__label"' in report
+
+    def test_the_stylesheet_underlines_the_label_not_the_button(self):
+        css = (
+            Path(__file__).resolve().parents[1]
+            / "pysuricata"
+            / "static"
+            / "css"
+            / "_06-cards.css"
+        ).read_text(encoding="utf-8")
+        active = re.search(
+            r'\.tabs \[role="tab"\]\.active \.tab__label \{(.*?)\}', css, re.S
+        )
+        assert active, "the active label rule is gone"
+        assert "border-bottom-color: var(--data-1)" in active.group(1)
+
+        button = re.search(r'\.tabs \[role="tab"\]\.active \{(.*?)\}', css, re.S)
+        assert button, "the active button rule is gone"
+        assert "border-bottom: 2px" not in button.group(1), (
+            "the underline is back on the 44px tap box"
+        )

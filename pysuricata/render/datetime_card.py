@@ -804,7 +804,11 @@ class DateTimeCardRenderer(CardRenderer):
                     "missing",
                     "Missing Values",
                     f'<div class="sub">{missing_table}</div>',
-                    int(getattr(stats, "missing", 0) or 0) > 0,
+                    # Same rule as every other card kind: the pane only knows
+                    # something the card face does not when there is more than
+                    # one chunk -- where in the read the gaps fall.
+                    int(getattr(stats, "missing", 0) or 0) > 0
+                    and len(getattr(stats, "chunk_metadata", None) or []) > 1,
                 ),
             ],
         )
