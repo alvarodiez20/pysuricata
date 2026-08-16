@@ -16,6 +16,25 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The top-missing list says what it counted** ([#182]). It showed five
+  columns and stopped, with no indication there were more — `total_significant`
+  was computed, stored on the result object and printed nowhere. A frame with
+  23 partially-missing columns now ends the list with `+ 18 more columns with
+  missing values`. A list that truncates in silence is worse than a shorter
+  list, because the reader cannot tell they are seeing part of the answer.
+- **The missing threshold is defined once.** It was in three places —
+  `MissingColumnsAnalyzer.MIN_THRESHOLD_PCT` at 0.0, the factory at 0.5, and
+  `ProfileConfig` at 0.0 — and since the render path reads the config, the
+  factory's 0.5 had never applied to a report. The value stays **0.0**, which
+  is what every shipped report has used; raising it would quietly drop columns
+  from people's summaries.
+- **The no-missing state is a sentence, not a fake row.** It rendered a list
+  item with a `<code>` reading `No missing data`, a `0 (0.0%)` figure and a
+  zero-width bar — a table row impersonating data, with an element drawn to
+  represent nothing.
+
+[#182]: https://github.com/alvarodiez20/pysuricata/issues/182
+
 - **A histogram y-axis count label is now guaranteed at most four glyphs**
   ([#183]). It used to *prefer* short and not guarantee it: `12,500` came out
   as six characters and `12.5M` as five. That matters because the redesigned

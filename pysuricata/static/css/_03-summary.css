@@ -175,6 +175,26 @@
    `display: contents` dissolves the wrapper so all three become cells of the
    same grid, and `order` puts the bar between them without touching the
    markup that `missing_columns.py` produces. */
+/* The two states that are a sentence rather than a row.
+
+   `.miss-none` used to be a full `.missing-item`: a `<code>` reading "No
+   missing data", a `0 (0.0%)` figure and a zero-width bar -- a table row
+   impersonating data, with an element drawn to represent nothing.
+
+   `.miss-more` is the count the list used to swallow. It is set apart from
+   the rows above it because it is a statement about the list, not a member
+   of it. */
+#pysuricata-report .miss-list .miss-none,
+#pysuricata-report .miss-list .miss-more {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+#pysuricata-report .miss-list .miss-more {
+  padding-top: 3px;
+}
+
 #pysuricata-report .miss-list .missing-item {
   display: grid;
   grid-template-columns: 104px 1fr 100px;
