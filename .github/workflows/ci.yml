@@ -18,6 +18,13 @@ on:
 
 jobs:
   version-check:
+    # Validate a bump; do not demand one. The old rule -- every pull request
+    # must bump or it cannot merge -- combined with publishing on every push to
+    # main to make one merged PR exactly one PyPI release, unconditionally. The
+    # version could not describe a change because it was incremented by the act
+    # of merging. Publishing now happens on a tag, so this is free to be a
+    # weaker rule that catches more: if you bump, the step has to be legal and
+    # the changelog has to have a section for it.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -25,25 +32,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Check version was updated
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check the version step is legal
         run: |
-          # Get current version from pyproject.toml
-          CURRENT_VERSION=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
-
-          # Get previous version from main branch
           git fetch origin main
-          PREV_VERSION=$(git show origin/main:pyproject.toml | python -c "import sys, tomllib; print(tomllib.load(sys.stdin.buffer)['project']['version'])")
-
-          echo "Current version: $CURRENT_VERSION"
-          echo "Previous version: $PREV_VERSION"
-
-          if [ "$CURRENT_VERSION" = "$PREV_VERSION" ]; then
-            echo "⚠️  Warning: Version not updated in pyproject.toml"
-            echo "Please update version from $PREV_VERSION to a new version"
-            exit 1
-          else
-            echo "✓ Version updated: $PREV_VERSION → $CURRENT_VERSION"
-          fi
+          python scripts/check_version.py --base origin/main
 
   changelog-check:
     if: github.event_name == 'pull_request'

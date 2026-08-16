@@ -596,36 +596,11 @@
 }
 
 /* Textarea editor */
-#pysuricata-report .description-editor {
-  width: 100%;
-  min-height: 60px;
-  /* Removed: max-height, overflow constraints for dynamic sizing */
-  padding: 0.5rem;
-  font-family: inherit;
-  font-size: inherit;
-  line-height: inherit;
-  color: var(--text-primary);
-  background: var(--bg-secondary);
-  border: 2px solid var(--bar);
-  border-radius: 4px;
-  outline: none;
-  resize: none;
-  /* Disable manual resize */
-  overflow: hidden;
-  /* Hide overflow instead of scrolling */
-  height: auto;
-  /* Let it grow with content */
-}
-
-#pysuricata-report .description-editor:focus {
-  border-color: var(--bar);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-/* Fix padding for summary description textarea only */
-#pysuricata-report #summary-description .description-editor {
-  padding: 0;
-}
+/* The note editor moved to _03-summary.css, next to `.description-content`
+   whose appearance it has to match. Split across two files it lost a
+   specificity race it could not be seen to be losing: `_03` carried
+   `#id .description-block .description-editor` and this file carried
+   `#id .description-editor`, so the focus rule here never took effect. */
 
 /* Scrollbar styling removed - no longer needed with dynamic sizing */
 

@@ -280,11 +280,68 @@
   display: none;
 }
 
-/* Editing. The textarea is appended as a grid child, so without this it lands
-   in whichever 88px or auto track comes next and the reader types into a
-   sliver. It gets its own row, full width. */
+/* The editor should look like the note it is about to become: same type, same
+   measure, same left rule, in the same column. Then committing an edit changes
+   the text and nothing else.
+
+   It used to be a 2px box with a 4px radius, `--text-primary` on
+   `--bg-secondary` -- **neither of which is defined anywhere**, so it had no
+   colour and no background of its own and fell back to the browser's -- with a
+   `rgba(59, 130, 246, .1)` focus glow, which is Tailwind blue-500 and appears
+   nowhere else in this report. A `padding: 0` override then set the text flush
+   against that border. */
 #pysuricata-report .description-block .description-editor {
-  grid-column: 1 / -1;
+  /* Column 2, the one `.description-content` occupies, so the text does not
+     jump 100px to the right when the note is saved. */
+  grid-column: 2;
+  width: 100%;
+  min-height: 60px;
+  height: auto;
+  padding: 0 0 0 14px;
+  border: 0;
+  border-left: 2px solid var(--q-good);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 14.5px;
+  line-height: 1.6;
+  outline: none;
+  resize: none;
+  overflow: hidden;
+}
+
+#pysuricata-report .description-block .description-editor::placeholder {
+  color: var(--muted);
+}
+
+/* Focus changes the weight of the rule that is already there, rather than
+   drawing a glow around a box that is not there. */
+#pysuricata-report .description-block .description-editor:focus,
+#pysuricata-report .description-block .description-editor:focus-visible {
+  border-left-color: var(--ink);
+  outline: none;
+}
+
+/* An empty block is a two-track grid, so there is no column 2 to sit in.
+   Editing gives it the filled block's three tracks, which is also what keeps
+   the label in place while typing. */
+#pysuricata-report .description-block.is-empty.editing {
+  grid-template-columns: 88px minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  /* The filled block drops to two tracks on mobile and the content spans
+     both, so the editor does the same. */
+  #pysuricata-report .description-block .description-editor,
+  #pysuricata-report .description-block.is-empty.editing .description-editor {
+    grid-column: 1 / -1;
+  }
+
+  #pysuricata-report .description-block.is-empty.editing {
+    grid-template-columns: 1fr auto;
+  }
 }
 
 /* The invitation is the affordance, so it must clear the 24px minimum target

@@ -1,0 +1,112 @@
+---
+title: Versioning
+description: What a pysuricata version number promises, and what it does not
+---
+
+# Versioning
+
+A version number means nothing until the surface it describes is written down.
+This page is that surface.
+
+## The contract, at 0.x
+
+pysuricata follows [Semantic Versioning](https://semver.org/), with the
+convention Cargo uses for pre-1.0 crates:
+
+!!! note "At 0.x, a **minor** bump is what a major bump becomes at 1.0"
+
+    `0.1.0 → 0.2.0` is the release allowed to break you.
+    `0.1.0 → 0.1.1` never is.
+
+That makes `pysuricata~=0.1.0` a real guarantee: you will get fixes, and you
+will not get a breaking change without changing that line yourself.
+
+Semver's own text says `0.y.z` means "anything may change" and that `1.0.0` is
+what defines a public API — so "a stable release at 0.1.0" is, read strictly, a
+contradiction. It is resolved by writing the contract down rather than by
+picking a bigger number. **A 0.x with a written contract beats a 1.0 you have to
+walk back.**
+
+## What is covered
+
+A breaking change to anything in this list requires a minor bump at 0.x, and a
+major bump at 1.0 and after.
+
+| Surface | Covered |
+|---|---|
+| **The public API** | The names exported from `pysuricata` — `profile`, `summarize`, `compare`, `check`, `ProfileConfig`, `ComputeOptions`, `RenderOptions`, and the result types they return |
+| **The CLI** | The three subcommands, their documented flags, and the exit codes `0` (pass), `1` (findings), `2` (usage or input error) |
+| **The `summarize()` payload** | Its shape, gated by `schema_version`. A field is never removed or repurposed without a bump |
+| **The baseline file** | The format `check` reads and writes |
+| **Documented defaults** | Changing a default that alters results — `uniques_k`, `numeric_sample_size`, `chunk_size` — is a behavioural break |
+
+## What is not covered
+
+Depending on any of these is depending on an implementation detail. They change
+in patch releases without notice.
+
+- **Anything `_private`**, and anything reachable only through a module path
+  rather than the top-level package.
+- **The HTML structure of the report** — class names, element order, the markup
+  of any card. The redesign rewrote all of it across fourteen releases, and
+  will again.
+- **The exact value of any approximate figure.** Distinct counts, quantiles,
+  duplicate counts and the bounds printed beside them are sketch estimates.
+  Improving one is a fix, not a break: `0.0.73` changed how quantiles are
+  *presented* and what error bound the duplicate count carries, and neither
+  should have forced a minor bump.
+- **Log output, progress reporting and timing figures.**
+- **The wheel's dependency floors**, except where raising one drops a Python
+  version — that is covered.
+
+Python version support is covered: dropping a Python is a minor bump at 0.x.
+
+## How a release happens
+
+Publishing is triggered by **pushing a tag**, not by merging.
+
+```bash
+# after the version bump and changelog section have merged to main
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+That is the whole reform, and everything else follows from it. Until 0.0.72,
+`cd.yml` triggered on `push: branches: [main]` while `version-check` required a
+bump on every pull request — so **one merged pull request was exactly one PyPI
+release, unconditionally.** A rewritten kernel and a fixed typo were the same
+size of event, and the version could not describe a change because it was
+incremented by the act of merging rather than by a judgement about what merged.
+
+The pipeline runs `guard → build → smoke → publish → release`, in that order:
+
+1. **guard** — the tag matches `pyproject.toml`, and the changelog has notes.
+2. **build** — one set of artifacts, reused by everything downstream.
+3. **smoke** — the **wheel** is installed into an empty virtualenv on 3.10 and
+   3.14, asked for its version, then made to profile a frame and check
+   `schema_version`. CI tests the repository; this tests the artifact, which is
+   not the same object.
+4. **publish** — Trusted Publishing over OIDC, gated on a `pypi` environment
+   with a required reviewer. No long-lived credential, and one human
+   confirmation before the only step that cannot be undone.
+5. **release** — GitHub release created **after** PyPI has the package, with
+   notes lifted from `CHANGELOG.md`.
+
+A pull request does **not** have to bump the version. If it does,
+`scripts/check_version.py` asserts the step is legal — one component raised, the
+ones below it reset, nothing skipped, no downgrade — and that a matching
+changelog section exists.
+
+## The gates for 1.0.0
+
+Deliberately about evidence rather than dates.
+
+1. **Two consecutive minor releases with no breaking change, unforced.** A
+   settled shape, not a freeze.
+2. **The deprecation queue is empty.** `ReportConfig` is currently aliased to
+   `ProfileConfig` with no warning; that has to be resolved, not carried.
+3. **Every approximate value carries its error bound.** The quantiles (#146) and
+   the duplicate count (#161) are done; the distinct count already was.
+4. **No known correctness bug in a covered path.**
+5. **The covered surface above has not changed for a full minor cycle** — if the
+   list is still moving, the contract is not ready to be permanent.
