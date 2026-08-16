@@ -25,8 +25,12 @@
   max-width: 100%;
 }
 
+/* Every figure and axis label is monospace: columns of digits then align
+   without font-variant-numeric hacks, and a tick label cannot drift to a
+   different face than the table beneath it. `inherit` pulled in the body
+   sans and beat the presentation attribute on the element. */
 #pysuricata-report .dt-svg text {
-  font-family: inherit;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report .dt-svg .axis,
@@ -396,7 +400,7 @@
 
 /* Dark mode adjustments */
 #pysuricata-report:not(.light) .temporal-chart .grid-line {
-  stroke: #4b5563;
+  stroke: var(--rule);
   stroke-opacity: 0.3;
 }
 

@@ -88,7 +88,7 @@
 /* Theme-aware Boolean Chart Styling */
 .boolean-chart.enhanced {
   padding: 16px;
-  border-radius: 12px;
+  border-radius: 0;
   transition: all 0.3s ease;
 }
 
@@ -101,7 +101,7 @@
 }
 
 .bool-svg.enhanced {
-  border-radius: 10px;
+  border-radius: 0;
 }
 
 /* Enhanced segment styling with hover effects */
@@ -120,7 +120,7 @@
 /* Enhanced label styling */
 .label.enhanced {
   transition: all 0.2s ease;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
 }
 
 .seg.enhanced:hover+.label.enhanced,

@@ -19,6 +19,35 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.50] - 2026-08-16
+
+Phase 1 of the report redesign (#110): the token layer, the typography, and the
+structural motif every later phase builds on. **No number on the page changes** —
+the fact fingerprint is byte-identical across it, 598 facts.
+
+### Changed
+- **Type is no longer a colour.** The old palette gave each column type a hue and the per-column cards inherited it. Inside a card the badge already names the type, so the hue carried nothing — and it collided: olive meant both *categorical* and *passes*, rust meant both *boolean* and *fails*, so a rust bar and a rust warning chip could sit in the same card meaning unrelated things.
+
+  There are now two scales that never mix: **`--data-*` blue for every chart, bar and segment**, and **`--q-*` warm for data quality alone**. Missing-value bars are the one deliberate exception, because there the encoding *is* severity — 77% missing should look worse than 0.2%.
+- **`Survived` is no longer red-and-green.** Colouring `false` rust and `true` olive read as bad-versus-good — the report passing judgement on someone's data. Two values of one column now get two steps of one hue.
+- **Typography.** `font-family: Arial, sans-serif` is gone. Prose and UI take `--font-sans`; **every figure, column name, dtype and axis label takes `--font-mono`**, so columns of digits align without `font-variant-numeric` hacks. The monospace stack had been spelled out as a literal in 30 places across 8 files, and one of them had already drifted from the others.
+- **The structural motif**: hairline rules and whitespace instead of bordered boxes inside a bordered page. Radius is gone from data containers and clamped to 6px on chips and buttons.
+
+### Removed
+- The decorative shadows and gradients — `--chart-shadow-*`, `--segment-shadow-*`, `--label-shadow-*`, `--legend-shadow-*` and the `--chart-bg-*` / `--svg-bg-*` gradient pairs. They were **45 of the 80 lines** of the old token file and none of them encoded anything.
+
+### Fixed
+Three things found by inspecting a rendered report rather than the stylesheet, each of which a colour-literal grep passes straight over:
+
+- **`_06-cards.css` was redefining `--axis` and `--axis-text`.** The stylesheets are concatenated in filename order, so it loaded after the token file and silently won: the report drew its axes in `rgba(0, 0, 0, 0.45)` while the token file — and the contrast test reading it — said `#8F8474`. A contrast guard that reads only token definitions is worth exactly as much as the guarantee that those definitions are the ones in force, so a test now fails if any other stylesheet reassigns a token.
+- **The column-type key was on the data-quality scale.** The four swatches sat on `--q-good`, `--q-warn-fill` and `--q-bad`, because the palette swap had replaced each legacy hue with whichever new token looked closest. The old hexes were gone, so every literal check passed — while the report still said olive for both *categorical* and *passes*. That is the exact collision this palette exists to remove, reintroduced by the change meant to remove it.
+- **Chart axis labels were unreachable by the token.** `font-family: inherit` on the SVG text pulled in the body sans and beat the presentation attribute on the element.
+
+### Note
+`--rule-strong` was specified as "container edge, axis line", and the contrast test failed on it immediately: those two want different things. A container edge is decorative structure with no minimum — a hairline at 3:1 is a heavy black line, which is the boxed look this palette removes. A chart axis is part of a graphic required to understand the content, so WCAG 1.4.11 applies. They are now two tokens: `--rule-strong` stays a hairline, `--axis` clears 3:1 in both themes.
+
+Dark-mode values ship as proposed and are covered by the contrast test, but the full dark pass belongs to the closing phase. The compatibility shim mapping legacy variable names onto the new scale is scaffolding and comes out then too.
+
 ## [0.0.49] - 2026-08-16
 
 **The report is now half the size it was.** 1,110,756 bytes → 543,577 bytes on an
@@ -733,7 +762,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.49...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.50...HEAD
+[0.0.50]: https://github.com/alvarodiez20/pysuricata/compare/0.0.49...0.0.50
 [0.0.49]: https://github.com/alvarodiez20/pysuricata/compare/0.0.48...0.0.49
 [0.0.48]: https://github.com/alvarodiez20/pysuricata/compare/0.0.47...0.0.48
 [0.0.47]: https://github.com/alvarodiez20/pysuricata/compare/0.0.46...0.0.47

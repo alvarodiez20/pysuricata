@@ -58,7 +58,7 @@ class DonutChartRenderer:
              role="img" aria-labelledby="donut-title-empty">
             <title id="donut-title-empty">Column type distribution: no data</title>
             <circle cx="{self.cx}" cy="{self.cy}" r="{self.outer_radius}"
-                    fill="#e0e0e0" opacity="0.3"/>
+                    fill="var(--track, #EDE6DA)"/>
             <circle cx="{self.cx}" cy="{self.cy}" r="{self.inner_radius}"
                     fill="var(--chip-bg-light)" class="donut-hole"/>
             <text x="{self.cx}" y="{self.cy}"
@@ -101,7 +101,7 @@ class DonutChartRenderer:
             <title id="donut-title">Column type distribution</title>
             <desc id="donut-desc">{desc_text}</desc>
             <circle cx="{self.cx}" cy="{self.cy}" r="{self.outer_radius}"
-                    fill="#f0f0f0" opacity="0.15" class="donut-background"/>
+                    fill="var(--track, #EDE6DA)" class="donut-background"/>
             <g class="donut-segments">
                 <g class="donut-segment" data-type="{segment["label"].lower()}">
                     <circle cx="{self.cx}" cy="{self.cy}" r="{self.outer_radius}"
@@ -121,7 +121,7 @@ class DonutChartRenderer:
         # Add background circle to ensure complete appearance even with zero segments
         background_circle = f"""
             <circle cx="{self.cx}" cy="{self.cy}" r="{self.outer_radius}"
-                    fill="#f0f0f0" opacity="0.15" class="donut-background"/>"""
+                    fill="var(--track, #EDE6DA)" class="donut-background"/>"""
 
         paths = []
         current_angle = -90  # Start at top (12 o'clock position)

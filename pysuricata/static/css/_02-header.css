@@ -109,7 +109,9 @@
   font-weight: 600;
   font-size: 0.9rem;
   padding: 0.35rem 0.75rem;
-  border-radius: 9999px;
+  /* A hover affordance, so it keeps a radius -- but 6px, not a pill. The pill
+     shape goes entirely in phase 2, where the nav becomes plain text. */
+  border-radius: 6px;
   background: transparent;
   transition: all 0.2s ease;
   position: relative;
@@ -201,7 +203,7 @@
 
 #pysuricata-report .chip {
   padding: 0.35rem 0.6rem;
-  border-radius: 9999px;
+  border-radius: 6px;
   font-size: 0.85rem;
   line-height: 1;
   background: var(--chip-bg-light);
@@ -235,7 +237,7 @@
 #pysuricata-report .icon-btn {
   border: 1px solid var(--chip-br-light);
   background: transparent;
-  border-radius: 9999px;
+  border-radius: 6px;
   width: 32px;
   height: 24px;
   display: inline-flex;

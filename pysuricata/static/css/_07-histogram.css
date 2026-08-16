@@ -73,8 +73,12 @@
   stroke-opacity: .6;
 }
 
+/* Every figure and axis label is monospace: columns of digits then align
+   without font-variant-numeric hacks, and a tick label cannot drift to a
+   different face than the table beneath it. `inherit` pulled in the body
+   sans and beat the presentation attribute on the element. */
 #pysuricata-report .hist-svg text {
-  font-family: inherit;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report .hist-svg .bar {

@@ -36,7 +36,7 @@
 
 #pysuricata-report #summary .summary-card {
   padding: 14px;
-  border-radius: 10px;
+  border-radius: 0;
   border: 1px solid var(--chip-br-light);
   background: rgba(0, 0, 0, 0.02);
 }
@@ -190,7 +190,7 @@
 
 /* Column name chip (code-like) */
 #pysuricata-report .missing-col {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.82rem;
   padding: 0.15rem 0.4rem;
   border-radius: 6px;
@@ -306,7 +306,7 @@
   justify-content: center;
   gap: 6px;
   padding: 16px 10px;
-  border-radius: 10px;
+  border-radius: 0;
   border: 1px solid var(--chip-br-light);
   background: rgba(0, 0, 0, 0.02);
   transition: transform 0.15s ease, background-color 0.2s ease, border-color 0.2s ease;
@@ -341,23 +341,33 @@
   border-color: var(--chip-br-dark);
 }
 
+/* The column-type key, in four steps of the data scale, matching the donut
+   segment each one labels.
+
+   These were on --q-good / --q-warn-fill / --q-bad: the data-QUALITY scale.
+   That is the exact collision this palette exists to remove -- olive meaning
+   both "categorical" and "passes", rust meaning both "boolean" and "fails" --
+   and it survived the palette swap because the legacy hues were replaced by
+   whichever new token looked closest rather than by what they mean. A grep for
+   the old hexes cannot catch that, which is why the swatches are asserted
+   against the data scale in test_design_system.py. */
 #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(1)::before {
   background: var(--data-1);
 }
 
 /* Numeric */
 #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(2)::before {
-  background: var(--q-good);
+  background: var(--data-2);
 }
 
 /* Categorical */
 #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(3)::before {
-  background: var(--q-warn-fill);
+  background: var(--data-3);
 }
 
 /* Datetime */
 #pysuricata-report #summary .summary-grid.second-row .summary-card:first-child .summary-list li:nth-child(4)::before {
-  background: var(--q-bad);
+  background: var(--data-4);
 }
 
 /* Boolean */
@@ -398,7 +408,7 @@
 
 #pysuricata-report .chip-wall li {
   padding: 0.3rem 0.6rem;
-  border-radius: 9999px;
+  border-radius: 6px;
   background: var(--chip-bg-light);
   border: 1px solid var(--chip-br-light);
 }

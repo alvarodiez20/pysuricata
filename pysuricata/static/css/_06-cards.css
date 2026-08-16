@@ -33,7 +33,7 @@
   appearance: none;
   -webkit-appearance: none;
   padding: 8px 10px;
-  border-radius: 10px;
+  border-radius: 0;
   border: 1px solid var(--chip-br-light);
   background: rgba(0, 0, 0, 0.02);
   color: inherit;
@@ -59,7 +59,7 @@
 /* Card */
 #pysuricata-report .var-card {
   border: 1px solid var(--chip-br-light);
-  border-radius: 10px;
+  border-radius: 0;
   background: rgba(0, 0, 0, 0.02);
   padding: 10px 12px;
   transition: background-color .2s ease, transform .12s ease;
@@ -115,7 +115,7 @@
 
 #pysuricata-report .stat-badges li {
   padding: 0.28rem 0.5rem;
-  border-radius: 9999px;
+  border-radius: 6px;
   background: var(--chip-bg-light);
   border: 1px solid var(--chip-br-light);
   font-size: .8rem;
@@ -184,7 +184,7 @@
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  border-radius: 9999px;
+  border-radius: 6px;
   cursor: pointer;
   border: 1px solid var(--chip-br-light);
   background: var(--chip-bg-light);
@@ -201,7 +201,7 @@
 }
 
 #pysuricata-report .pill .kbd {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: .75rem;
   opacity: .8;
 }
@@ -402,20 +402,14 @@
 /* (Removed sparkline sizing/styles; no longer used) */
 
 
-/* Map generic tokens used by the HTML to current theme vars */
-#pysuricata-report {
-  --border-color: var(--chip-br-light);
-  --axis: rgba(0, 0, 0, 0.45);
-  --axis-text: rgba(0, 0, 0, 0.65);
-  --bar: var(--data-1);
-}
-
-#pysuricata-report:not(.light) {
-  --border-color: var(--chip-br-dark);
-  --axis: rgba(255, 255, 255, 0.55);
-  --axis-text: rgba(255, 255, 255, 0.75);
-  --bar: #93c5fd;
-}
+/* The block that used to sit here redefined --axis, --axis-text,
+   --border-color and --bar. The stylesheets are concatenated in filename
+   order, so it loaded after _00-tokens.css and silently won: the report drew
+   its axes in rgba(0,0,0,0.45) while the token file -- and the contrast test
+   reading it -- said #8F8474. A token can only mean one thing if it is defined
+   in one place, so all four now come from the compatibility shim in
+   _00-tokens.css, and `test_design_system.py` fails if any stylesheet other
+   than that one defines a token again. */
 
 /* Section title used by numeric section */
 #pysuricata-report .section-title {
@@ -521,7 +515,7 @@
 
 /* Make the column name in the card header look like the top-missing chip */
 #pysuricata-report .var-card__header .colname {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.92rem;
   padding: 0.15rem 0.45rem;
   border-radius: 6px;
@@ -559,7 +553,7 @@
 
 #pysuricata-report .quality-flags .flag {
   padding: 0.28rem 0.55rem;
-  border-radius: 9999px;
+  border-radius: 6px;
   border: 1px solid var(--chip-br-light);
   background: var(--chip-bg-light);
   font-size: .8rem;
@@ -612,7 +606,7 @@
 
 /* Code-style tokens inside chips (e.g., correlated column names) */
 #pysuricata-report .quality-flags code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: .82em;
   background: transparent;
   padding: 0;
@@ -639,7 +633,7 @@
 #pysuricata-report .var-card__header .title .quality-flags .flag {
   padding: 0.18rem 0.45rem;
   font-size: .76rem;
-  border-radius: 9999px;
+  border-radius: 6px;
 }
 
 /* When chips must wrap, keep header tidy */
@@ -711,7 +705,7 @@
   line-height: 1;
   padding: 0.24rem 0.60rem;
   /* unified padding */
-  border-radius: 10px;
+  border-radius: 6px;
   /* unified shape */
 }
 
@@ -1067,7 +1061,7 @@
   pointer-events: none;
   display: none;
   padding: 6px 8px;
-  border-radius: 10px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(20, 20, 20, 0.92);
   color: #fff;
@@ -1192,7 +1186,7 @@
   margin: 6px -2px;
   background: rgba(59, 130, 246, 0.08);
   border-radius: 4px;
-  font-family: ui-monospace, SFMono-Regular, Monaco, Consolas, monospace;
+  font-family: var(--font-mono);
   border-left: 3px solid rgba(59, 130, 246, 0.4);
   color: inherit;
 }
@@ -1252,7 +1246,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 9999px;
+  border-radius: 6px;
   border: 1px solid rgba(59, 130, 246, .45);
   background: rgba(59, 130, 246, .12);
   color: #1e40af;
@@ -1301,7 +1295,7 @@
   margin-top: 10px;
   padding: 12px 14px;
   border: 1px solid var(--chip-br-light);
-  border-radius: 10px;
+  border-radius: 0;
   background: rgba(0, 0, 0, 0.02);
 }
 
@@ -1328,7 +1322,7 @@
   color: inherit;
   cursor: pointer;
   padding: 4px 10px;
-  border-radius: 9999px;
+  border-radius: 6px;
   font: inherit;
   font-size: .8rem;
   line-height: 1;
@@ -1453,7 +1447,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  border-radius: 9999px;
+  border-radius: 6px;
   font: inherit;
   font-size: .82rem;
   line-height: 1;
@@ -1591,7 +1585,7 @@
 /* Individual min/max subsections */
 #pysuricata-report .extremes .sub {
   background: white;
-  border-radius: 10px;
+  border-radius: 0;
   overflow: hidden;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   border: 1px solid var(--chip-br-light);
@@ -1612,7 +1606,7 @@
   font-size: 0.85rem;
   padding: 12px 16px;
   border-bottom: 1px solid var(--chip-br-light);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   text-align: center;
@@ -1638,7 +1632,7 @@
   padding: 8px 12px;
   text-align: center;
   border-bottom: 1px solid var(--chip-br-light);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report:not(.light) .extremes .sub table.kv thead th {
@@ -1650,7 +1644,7 @@
   padding: 8px 12px;
   border-bottom: 1px solid var(--chip-br-light);
   text-align: center;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report:not(.light) .extremes .sub table.kv tbody td {
@@ -1852,7 +1846,7 @@
 
 #pysuricata-report .outliers-table.enhanced .outlier-value {
   font-weight: 500;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report .outliers-table.enhanced tbody tr:hover {
@@ -1943,7 +1937,7 @@
   margin: 0 0 1.25rem;
   padding: 0.9rem 1rem;
   border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
-  border-radius: 10px;
+  border-radius: 0;
   background: var(--panel-bg, rgba(0, 0, 0, 0.02));
 }
 
@@ -1971,7 +1965,7 @@
 
 .attention-col {
   font-weight: 600;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 0.85rem;
   text-decoration: none;
 }
@@ -2008,7 +2002,7 @@
 .flag-filter-banner .clear-flag {
   margin-left: 0.4rem;
   padding: 0.1rem 0.5rem;
-  border-radius: 9999px;
+  border-radius: 6px;
   border: 1px solid var(--border, rgba(0, 0, 0, 0.15));
   background: transparent;
   color: inherit;

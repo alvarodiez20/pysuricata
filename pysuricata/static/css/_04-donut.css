@@ -10,15 +10,10 @@
   overflow: visible;
 }
 
-/* Background circle - ensures complete appearance */
+/* Background circle - the empty portion of the ring, which is exactly what
+   --track means everywhere else. One token, both themes, no opacity fudge. */
 #pysuricata-report .donut-background {
-  fill: #f0f0f0;
-  opacity: 0.15;
-}
-
-#pysuricata-report:not(.light) .donut-background {
-  fill: #555;
-  opacity: 0.2;
+  fill: var(--track);
 }
 
 /* Segment hover effects - highlight on hover */
@@ -66,7 +61,7 @@
   pointer-events: none;
   display: none;
   padding: 8px 12px;
-  border-radius: 10px;
+  border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.15);
   background: rgba(20, 20, 20, 0.92);
   color: #fff;

@@ -203,7 +203,7 @@ class TemporalChartRenderer:
             svg_parts.append(
                 f'<line class="grid-line" x1="{ml}" y1="{y:.1f}" '
                 f'x2="{ml + inner_w}" y2="{y:.1f}" '
-                f'stroke="#e5e7eb" stroke-opacity="0.5" />'
+                f'stroke="var(--rule, #E2DCD1)" stroke-opacity="0.5" />'
             )
 
         # Bars
@@ -231,11 +231,11 @@ class TemporalChartRenderer:
         axis_y = mt + inner_h
         svg_parts.append(
             f'<line class="axis" x1="{ml}" y1="{axis_y}" x2="{ml + inner_w}" y2="{axis_y}" '
-            f'stroke="#6b7280" stroke-width="1.5" />'
+            f'stroke="var(--axis, #8F8474)" stroke-width="1.5" />'
         )
         svg_parts.append(
             f'<line class="axis" x1="{ml}" y1="{mt}" x2="{ml}" y2="{axis_y}" '
-            f'stroke="#6b7280" stroke-width="1.5" />'
+            f'stroke="var(--axis, #8F8474)" stroke-width="1.5" />'
         )
 
         # Y-axis labels
@@ -243,12 +243,12 @@ class TemporalChartRenderer:
             y = mt + inner_h * (1 - tick / max_count)
             svg_parts.append(
                 f'<line class="tick" x1="{ml - 5}" y1="{y:.1f}" x2="{ml}" y2="{y:.1f}" '
-                f'stroke="#6b7280" stroke-width="1" />'
+                f'stroke="var(--axis, #8F8474)" stroke-width="1" />'
             )
             svg_parts.append(
                 f'<text class="tick-label" x="{ml - 8}" y="{y + 4:.1f}" '
-                f'text-anchor="end" font-family="system-ui, sans-serif" '
-                f'font-size="11px" fill="#6b7280">'
+                f'text-anchor="end" font-family="var(--font-mono)" '
+                f'font-size="11px" fill="var(--muted, #57524A)">'
                 f"{self._format_count(tick)}</text>"
             )
 
@@ -259,8 +259,8 @@ class TemporalChartRenderer:
             x = ml + (i + 0.5) * bar_width
             svg_parts.append(
                 f'<text class="x-label" x="{x:.1f}" y="{axis_y + 20}" '
-                f'text-anchor="middle" font-family="system-ui, sans-serif" '
-                f'font-size="11px" fill="#6b7280">'
+                f'text-anchor="middle" font-family="var(--font-mono)" '
+                f'font-size="11px" fill="var(--muted, #57524A)">'
                 f"{labels[i]}</text>"
             )
 
@@ -284,9 +284,9 @@ class TemporalChartRenderer:
             <title id="temp-empty-title">{title} (No Data)</title>
             <desc>No data available for this temporal distribution</desc>
             <text x="{w / 2}" y="{h / 2}" text-anchor="middle"
-                font-family="system-ui, sans-serif"
+                font-family="var(--font-mono)"
                 font-size="14px"
-                fill="#9ca3af">No data available</text>
+                fill="var(--muted, #57524A)">No data available</text>
         </svg>'''
 
     def _calculate_ticks(

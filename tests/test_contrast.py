@@ -124,7 +124,9 @@ NON_TEXT_PAIRS: list[tuple[str, str, str]] = [
 
 
 @pytest.mark.parametrize("theme", ["light", "dark"])
-@pytest.mark.parametrize("fg,bg,label", TEXT_PAIRS, ids=lambda v: v if isinstance(v, str) else "")
+@pytest.mark.parametrize(
+    "fg,bg,label", TEXT_PAIRS, ids=lambda v: v if isinstance(v, str) else ""
+)
 def test_text_contrast(themes, theme: str, fg: str, bg: str, label: str) -> None:
     tokens = themes[theme]
     if fg not in tokens or bg not in tokens:
@@ -137,7 +139,9 @@ def test_text_contrast(themes, theme: str, fg: str, bg: str, label: str) -> None
 
 
 @pytest.mark.parametrize("theme", ["light", "dark"])
-@pytest.mark.parametrize("fg,bg,label", NON_TEXT_PAIRS, ids=lambda v: v if isinstance(v, str) else "")
+@pytest.mark.parametrize(
+    "fg,bg,label", NON_TEXT_PAIRS, ids=lambda v: v if isinstance(v, str) else ""
+)
 def test_non_text_contrast(themes, theme: str, fg: str, bg: str, label: str) -> None:
     tokens = themes[theme]
     if fg not in tokens or bg not in tokens:
