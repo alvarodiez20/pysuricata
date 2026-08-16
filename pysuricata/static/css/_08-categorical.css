@@ -1,3 +1,61 @@
+/* =============================================================
+   HIGH-CARDINALITY COLUMNS — a sentence instead of a chart (#116)
+
+   `Name`, `Ticket` and `Cabin` rendered ten bars of one row each: a chart
+   drawn at full size that said nothing. There is deliberately no reserved
+   box here -- an empty container the height of a chart reads as a failed
+   render rather than as "there is nothing to draw".
+   ============================================================= */
+#pysuricata-report .nochart {
+  padding: 10px 0 2px;
+}
+
+#pysuricata-report .nochart__why {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+
+#pysuricata-report .nochart__facts {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+
+#pysuricata-report .nochart__facts li {
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+#pysuricata-report .nochart__facts .k {
+  color: var(--muted);
+}
+
+#pysuricata-report .nochart__facts .v {
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 30ch;
+}
+
+/* How much of the column the bars account for. Without it there is nothing to
+   say whether the bars are the whole column or a tenth of it. */
+#pysuricata-report .coverage-note {
+  margin: 8px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
 /*# =============================================
 #   Categorical mini‑bars (Top‑N) – sizing + typography
 #   ============================================= */
