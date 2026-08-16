@@ -710,6 +710,21 @@ def _read_path(path: str | os.PathLike) -> pd.DataFrame:
     return reader(resolved)
 
 
+def _source_name(data: DataLike) -> str:
+    """The display name of the input, or empty when it has none.
+
+    Only a path names itself. A DataFrame, an iterable of chunks and a
+    generator do not, and inventing something for them ("DataFrame") would be
+    worse than showing nothing -- it would look like a real filename.
+    """
+    if isinstance(data, (str, os.PathLike)):
+        try:
+            return Path(data).name
+        except (TypeError, ValueError):
+            return ""
+    return ""
+
+
 def _to_engine_config(cfg: ProfileConfig) -> _EngineConfig:
     """Convert public configuration to internal engine configuration.
 
@@ -932,6 +947,11 @@ def profile(
     cfg = _resolve_config(config, preset, options)
     inp = _coerce_input(data)  # No more polars-specific wrapping!
     cfg = _to_engine_config(cfg)
+    # The header names what was profiled. Only a path carries a name; an
+    # in-memory frame has none, and the header renders without one. Set after
+    # the conversion so an explicitly configured name is never overwritten.
+    if not cfg.dataset_name:
+        cfg.dataset_name = _source_name(data)
 
     # Always compute stats to return machine-readable mapping
     html, summary = report.build_report(inp, config=cfg, return_summary=True)  # type: ignore[misc]

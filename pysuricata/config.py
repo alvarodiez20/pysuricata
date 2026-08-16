@@ -50,6 +50,11 @@ class EngineConfig:
     """
 
     title: str = "PySuricata EDA Report"
+    # What was profiled, shown next to the product name in the header bar. Set
+    # automatically from the filename when the input is a path; empty for an
+    # in-memory frame, which has no name to report. The header must render
+    # cleanly either way -- an empty name leaves no dangling separator.
+    dataset_name: str = ""
     description: str | None = None
     chunk_size: int = 50_000
     numeric_sample_k: int = 20_000
