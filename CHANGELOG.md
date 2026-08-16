@@ -19,6 +19,31 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.52] - 2026-08-16
+
+Phase 3 of the report redesign (#112), and it closes #104. **The summary is
+599px tall on a phone, from 1,330** — measured at 390px, before and after, on
+the same frame. No number on the page changes; the fact fingerprint is
+byte-identical, 598 facts, now across five consecutive commits of the migration.
+
+### Changed
+- **The donut is now a 100% stacked bar.** A donut cannot be read to exact proportion — comparing two arcs is a harder perceptual task than comparing two lengths against a shared baseline — and it stops working below about 200px wide, which is every phone. The bar reads at any width, reflows for free, and prints each count inside its own segment, so nothing has to be estimated.
+
+  **The segment widths sum to exactly 100.** Rounding each share independently leaves a gap at the right edge — a third, three times, rounds to 99.9 — which reads as a rendering bug. The largest-remainder method fixes the total first and hands the leftover tenths to whichever shares lost most to the floor.
+
+  **A type with no columns gets no segment**, because a zero-width segment is an artifact rather than information, and the palest step of the data scale sits close enough to `--track` that a hairline of it reads as a seam. Those types keep a muted legend entry with their zero, which is the thing a reader actually wants to know.
+- **Five bordered cards became one stat row**: a rule above, hairlines between, six cells on mobile. The `min-height: 280px` on the second-row cards is gone — it held three boxes open at 280px each on a phone for content needing a fraction of it.
+- **Five "quick insight" pills became one mono run.** Five borders to state five short facts, and the borders were doing none of the work.
+- **The description is a margin note.** Empty, it costs exactly one 45px hairline row: a report generated in a loop never has a description and must not be disfigured by an invitation nobody will accept. Filled, it takes a `--q-good` left rule and a `NOTE` label. `description-editor.js` and the `data-report-id` / `data-original-markdown` contract are untouched.
+- **Top-missing rows are one line each** — name, bar, figure — instead of a stacked pair.
+
+### Removed
+- `render/donut_chart.py`, `static/css/_04-donut.css`, and the donut's hover tooltip. The tooltip existed because an arc cannot be read to a value; the bar prints every count on screen already, so it was a hover target that repeated what was visible.
+- The column-type key in `_03-summary.css`. It now comes from the renderer, so the swatch and the segment it labels take the same value from the same place and cannot disagree.
+
+### Not met
+The acceptance target was ≤560px and this lands at **599px**. The mobile stat row is 245px of that on its own — six cells in three rows at the specified 23px value — so closing the last 39px means either dropping a cell or shrinking the figure, both of which are departures from the design rather than tightening. Flagged rather than fudged.
+
 ## [0.0.51] - 2026-08-16
 
 Phase 2 of the report redesign (#111): one header bar, and metadata that says
@@ -791,7 +816,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.51...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.52...HEAD
+[0.0.52]: https://github.com/alvarodiez20/pysuricata/compare/0.0.51...0.0.52
 [0.0.51]: https://github.com/alvarodiez20/pysuricata/compare/0.0.50...0.0.51
 [0.0.50]: https://github.com/alvarodiez20/pysuricata/compare/0.0.49...0.0.50
 [0.0.49]: https://github.com/alvarodiez20/pysuricata/compare/0.0.48...0.0.49
