@@ -189,7 +189,7 @@
             noResults.id = 'no-results';
             noResults.className = 'no-results';
             noResults.innerHTML = `
-                <div class="icon">🔍</div>
+
                 <div class="message">No columns found</div>
                 <div class="suggestion">Try adjusting your search or filter</div>
             `;

@@ -759,13 +759,13 @@ class CategoricalCardRenderer(CardRenderer):
             Tuple of (severity_class, label, icon)
         """
         if missing_pct >= 50:
-            return "critical", "Critical", "🚨"
+            return "critical", "Critical", ""
         elif missing_pct >= 20:
-            return "high", "High", "⚠️"
+            return "high", "High", ""
         elif missing_pct >= 5:
-            return "medium", "Medium", "⚡"
+            return "medium", "Medium", ""
         else:
-            return "low", "Low", "✅"
+            return "low", "Low", ""
 
     def _build_dataprep_spectrum_visualization(self, stats: CategoricalStats) -> str:
         """Build DataPrep-style spectrum visualization for missing values per chunk.
@@ -837,16 +837,12 @@ class CategoricalCardRenderer(CardRenderer):
         # Determine overall severity
         if max_missing_pct >= 50:
             severity = "critical"
-            severity_icon = "🚨"
         elif max_missing_pct >= 20:
             severity = "high"
-            severity_icon = "⚠️"
         elif max_missing_pct >= 5:
             severity = "medium"
-            severity_icon = "⚡"
         else:
             severity = "low"
-            severity_icon = "✅"
 
         return f"""
         <div class="dataprep-spectrum">
@@ -856,7 +852,7 @@ class CategoricalCardRenderer(CardRenderer):
                     {total_chunks} chunks • {max_missing_pct:.1f}% max • {avg_missing_pct:.1f}% avg
                 </span>
                 <span class="spectrum-severity {severity}">
-                    {severity_icon} {severity.title()} Missing Data
+                    {severity.title()} Missing Data
                 </span>
             </div>
             <div class="spectrum-bar">

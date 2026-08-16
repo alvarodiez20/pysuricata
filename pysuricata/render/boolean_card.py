@@ -421,16 +421,12 @@ class BooleanCardRenderer(CardRenderer):
         # Determine overall severity
         if max_missing_pct >= 50:
             severity = "critical"
-            severity_icon = "&#128680;"
         elif max_missing_pct >= 20:
             severity = "high"
-            severity_icon = "&#9888;"
         elif max_missing_pct >= 5:
             severity = "medium"
-            severity_icon = "&#9889;"
         else:
             severity = "low"
-            severity_icon = "&#10004;"
 
         return f"""
         <div class="dataprep-spectrum">
@@ -450,7 +446,7 @@ class BooleanCardRenderer(CardRenderer):
             </div>
             <div class="spectrum-summary">
                 <span class="severity-indicator {severity}">
-                    {severity_icon} {severity.title()} missing data severity
+                    {severity.title()} missing data severity
                 </span>
             </div>
         </div>
@@ -467,16 +463,12 @@ class BooleanCardRenderer(CardRenderer):
         # Determine severity
         if missing_pct >= 50:
             severity = "critical"
-            severity_icon = "&#128680;"
         elif missing_pct >= 20:
             severity = "high"
-            severity_icon = "&#9888;"
         elif missing_pct >= 5:
             severity = "medium"
-            severity_icon = "&#9889;"
         else:
             severity = "low"
-            severity_icon = "&#10004;"
 
         return f"""
         <div class="dataprep-spectrum">
@@ -499,7 +491,7 @@ class BooleanCardRenderer(CardRenderer):
             </div>
             <div class="spectrum-summary">
                 <span class="severity-indicator {severity}">
-                    {severity_icon} {severity.title()} missing data severity
+                    {severity.title()} missing data severity
                 </span>
             </div>
         </div>

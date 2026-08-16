@@ -432,23 +432,11 @@
       return;
     }
 
-    // Legacy fallback: inline dropdown panel inside .details
-    const details = btn.closest('.details');
-    const legacy = details && details.querySelector('.details-panel');
-
-    if (!legacy) {
-      return;
-    }
-
-    const open = !legacy.hasAttribute('hidden');
-
-    if (open) {
-      legacy.setAttribute('hidden', '');
-      btn.setAttribute('aria-expanded', 'false');
-    } else {
-      legacy.removeAttribute('hidden');
-      btn.setAttribute('aria-expanded', 'true');
-    }
+    // A `.details-panel` fallback for a pre-refactor layout used to run here.
+    // No renderer has emitted that class since the details section landed, so
+    // it was a second code path nobody exercised, reachable only if the first
+    // branch above failed to find its target -- which is precisely when a
+    // silent `return` is the wrong behaviour.
   }, { passive: false });
 
   // Tab switching inside the details section (or legacy panel)
@@ -458,7 +446,7 @@
     const root = document.getElementById(ROOT_ID);
     if (!root || !root.contains(tabBtn)) return;
 
-    const container = tabBtn.closest('.details-section') || tabBtn.closest('.details-panel');
+    const container = tabBtn.closest('.details-section');
     if (!container) return;
 
     const name = tabBtn.getAttribute('data-tab');
@@ -529,58 +517,6 @@
   }, { passive: true });
 })();
 
-/* Missing Values Section Tab Switching - Redesigned Two-Tab Interface */
-(function () {
-  function initMissingValuesTabs() {
-    const tabButtons = document.querySelectorAll('.missing-tabs button');
-
-    if (tabButtons.length === 0) {
-      // Not loaded yet, try again
-      return;
-    }
-
-    tabButtons.forEach(button => {
-      // Remove existing listeners to prevent duplicates
-      button.replaceWith(button.cloneNode(true));
-    });
-
-    // Re-query after cloning
-    const freshTabButtons = document.querySelectorAll('.missing-tabs button');
-
-    freshTabButtons.forEach(button => {
-      button.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const targetTab = this.getAttribute('data-tab');
-
-        // Update button states
-        freshTabButtons.forEach(btn => btn.classList.remove('active'));
-        this.classList.add('active');
-
-        // Update content visibility within the same section
-        const container = this.closest('.missing-values-section-redesign');
-        if (container) {
-          container.querySelectorAll('.missing-tab-content').forEach(content => {
-            const contentTab = content.getAttribute('data-tab');
-            if (contentTab === targetTab) {
-              content.classList.add('active');
-            } else {
-              content.classList.remove('active');
-            }
-          });
-        }
-      });
-    });
-  }
-
-  // Try to initialize immediately
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMissingValuesTabs);
-  } else {
-    initMissingValuesTabs();
-  }
-
-  // Also try after a short delay to catch dynamically rendered content
-  setTimeout(initMissingValuesTabs, 100);
-})();
+/* The missing-values tab switcher lived here. #120 replaced the tabs with a
+   route on chunk count, and test_missing_section_views.py asserts the markup
+   stays gone -- so this listened for clicks on elements no report emits. */
