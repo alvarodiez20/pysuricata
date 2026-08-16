@@ -170,7 +170,35 @@ def render_html_snapshot(
     total_cells = n_rows * n_cols
     missing_overall = f"{total_missing_cells:,} ({(total_missing_cells / max(1, total_cells) * 100):.1f}%)"
     dup_rows, dup_pct = row_kmv.approx_duplicates()
-    duplicates_overall = f"{dup_rows:,} ({dup_pct:.1f}%)"
+    # The duplicate count is `rows - distinct`, so the whole absolute error of
+    # the distinct estimate lands on it -- a quantity that is usually far
+    # smaller. `≈ KMV sketch` alone read as the sketch's own ~1%, which is the
+    # error on a different number: at 200,000 rows with 2,000 true duplicates
+    # the figure came back 47% high while the distinct estimate was 0.48% off.
+    dup_sigma = (
+        row_kmv.duplicates_uncertainty()
+        if hasattr(row_kmv, "duplicates_uncertainty")
+        else 0
+    )
+    dup_resolvable = (
+        row_kmv.duplicates_are_resolvable()
+        if hasattr(row_kmv, "duplicates_are_resolvable")
+        else True
+    )
+    if dup_resolvable:
+        duplicates_value = f"{dup_rows:,}"
+        # No bound when the count is exact -- KMV counts exactly until it has
+        # seen k distinct values, so most frames have no estimation error here
+        # and "± 0" would be noise.
+        duplicates_note = f"± {dup_sigma:,} · KMV sketch" if dup_sigma else "exact"
+        duplicates_overall = f"{dup_rows:,} ({dup_pct:.1f}%)"
+    else:
+        # Below the resolution of the sketch. A figure here would invite a
+        # conclusion it cannot support, so state the ceiling instead.
+        ceiling_pct = (dup_sigma / n_rows * 100.0) if n_rows else 0.0
+        duplicates_value = f"&lt; {dup_sigma:,}"
+        duplicates_note = "below sketch resolution"
+        duplicates_overall = f"under {dup_sigma:,} ({ceiling_pct:.1f}%)"
 
     constant_cols = 0
     high_card_cols = 0
@@ -443,7 +471,8 @@ def render_html_snapshot(
         "missing_pct": f"{missing_pct_value:.1f}%",
         "missing_cells": f"{total_missing_cells:,} cells",
         "missing_tone": missing_tone,
-        "duplicates_value": f"{dup_rows:,}",
+        "duplicates_value": duplicates_value,
+        "duplicates_note": duplicates_note,
         "complete_columns_note": complete_note,
         "description_state": description_state,
         "description_label": description_label,

@@ -19,6 +19,32 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.66] - 2026-08-16
+
+### Fixed
+- **The duplicate-row figure carried the wrong error bound (#161).** `approx_duplicates()` returns `rows - distinct`. `rows` is exact and `distinct` is a sketch estimate, so the entire *absolute* error of the distinct estimate lands on a quantity that is usually far smaller — the relative error is multiplied by `distinct / duplicates`.
+
+  On 200,000 rows containing exactly 2,000 duplicates, the distinct estimate was **0.48% low** (well inside spec) and the reported duplicate count came back **2,942 — 47% high**. The amplification factor is 99×, and 0.48% × 99 is 47%, so the model and the observation agree to the digit. At a 0.1% duplicate rate the error on the reported figure is around 1,100%.
+
+  The card was not silent: it printed `≈ KMV sketch`, which reads as ±1–2%. That is the error on **distinct**, not on the number being shown. An approximation marker implying the wrong order of magnitude is worse than none, because it turns a naked estimate into a confident one.
+
+  The figure now carries the bound that actually applies to it:
+
+  | case | shown |
+  |---|---|
+  | distinct count exact (any frame under `k` distinct rows) | `100` · **exact** |
+  | estimated, count above its uncertainty | `2,942` · **± 2,178 · KMV sketch** |
+  | estimated, count below its uncertainty | `< 2,199` · **below sketch resolution** |
+
+- **Small frames were being told their exact count was approximate.** KMV counts exactly until it has seen `k` distinct values, so most frames have no estimation error here at all. `≈ KMV sketch` claimed otherwise on every one of them.
+
+### Added
+- `RowKMV.duplicates_uncertainty()`, `.duplicates_are_resolvable()` and `.kmv_is_exact()`.
+- `tests/test_duplicate_uncertainty.py` (17 tests), including the property that matters: across duplicate rates of 0.1%, 1%, 10% and 50%, the truth lies inside the stated interval.
+
+### Note
+The first version of this change reported `< 10 (below sketch resolution)` for an 891-row frame whose duplicate count was known **exactly** — understating what the sketch knew, which is the opposite of the intent. `tests/test_report_data_invariance.py` caught it by losing the `duplicates` fact. The fix restored the fact, so no fixture was regenerated.
+
 ## [0.0.65] - 2026-08-16
 
 Documentation only.
