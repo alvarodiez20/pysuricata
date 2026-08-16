@@ -1,3 +1,174 @@
+/* =============================================================
+   MISSING VALUES — routed on chunk count, not on tabs (#120)
+
+   `Data Completeness` and `Missing per Chunk` over three rows was two clicks
+   for one screen of content -- and with a single chunk the second tab held one
+   full-width block per column, a tab that hid nothing.
+
+   The row shape is the same as the summary's missing list, so a reader learns
+   it once, and it fits a phone unchanged.
+   ============================================================= */
+#pysuricata-report .miss-rows {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+}
+
+#pysuricata-report .miss-row {
+  display: grid;
+  grid-template-columns: 92px 1fr 110px;
+  gap: 12px;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .miss-rows.has-strip .miss-row {
+  grid-template-columns: 92px 1fr 110px 1fr;
+}
+
+#pysuricata-report .miss-row__name {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: none;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#pysuricata-report .miss-row__bar {
+  display: block;
+  height: 14px;
+  background: var(--track);
+  min-width: 0;
+}
+
+#pysuricata-report .miss-row__fill {
+  display: block;
+  height: 100%;
+}
+
+/* The warm scale, and the one place data is allowed to use it: here the
+   encoding IS severity, so 77% missing has to look worse than 0.2%. */
+#pysuricata-report .miss-row__fill.good {
+  background: var(--q-good);
+}
+
+#pysuricata-report .miss-row__fill.warn {
+  background: var(--q-warn-fill);
+}
+
+#pysuricata-report .miss-row__fill.bad {
+  background: var(--q-bad);
+}
+
+#pysuricata-report .miss-row__value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-align: right;
+}
+
+/* --q-warn-text on a figure, not --q-warn-fill: the fill step sits below the
+   text minimum on purpose so a bar can be lighter than a word. */
+#pysuricata-report .miss-row__value.good {
+  color: var(--muted);
+}
+
+#pysuricata-report .miss-row__value.warn {
+  color: var(--q-warn-text);
+}
+
+#pysuricata-report .miss-row__value.bad {
+  color: var(--q-bad);
+}
+
+/* ---- the by-chunk strip ---------------------------------------- */
+#pysuricata-report .miss-strip {
+  display: flex;
+  gap: 1px;
+  height: 14px;
+  min-width: 0;
+}
+
+#pysuricata-report .miss-seg {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+#pysuricata-report .miss-seg.good {
+  background: var(--q-good);
+}
+
+#pysuricata-report .miss-seg.warn {
+  background: var(--q-warn-fill);
+}
+
+#pysuricata-report .miss-seg.bad {
+  background: var(--q-bad);
+}
+
+/* No rail at all when the counts are not kept for this column kind. A blank
+   rail would read as "no missing values in any chunk". */
+#pysuricata-report .miss-strip.is-untracked {
+  background: transparent;
+}
+
+#pysuricata-report .miss-strip-note,
+#pysuricata-report .miss-none {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 10px 0 0;
+}
+
+#pysuricata-report .miss-legend {
+  display: flex;
+  gap: 16px;
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}
+
+#pysuricata-report .miss-legend li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+#pysuricata-report .miss-legend .sw {
+  width: 9px;
+  height: 9px;
+}
+
+#pysuricata-report .miss-legend .sw.good {
+  background: var(--q-good);
+}
+
+#pysuricata-report .miss-legend .sw.warn {
+  background: var(--q-warn-fill);
+}
+
+#pysuricata-report .miss-legend .sw.bad {
+  background: var(--q-bad);
+}
+
+@media (max-width: 768px) {
+  #pysuricata-report .miss-row,
+  #pysuricata-report .miss-rows.has-strip .miss-row {
+    grid-template-columns: 1fr 110px;
+  }
+
+  /* The strip stacks under its row rather than shrinking to nothing. */
+  #pysuricata-report .miss-row__bar,
+  #pysuricata-report .miss-strip {
+    grid-column: 1 / -1;
+  }
+}
+
 /* =============================
    Summary → Top missing columns: fixed vertical height (5 rows)
    ============================= */

@@ -19,6 +19,28 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.60] - 2026-08-16
+
+Phase 7 of the report redesign (#120): missing values, routed on chunk count
+rather than on tabs.
+
+### Changed
+- **The tabs are gone.** `Data Completeness` and `Missing per Chunk` over three rows was two clicks for one screen of content — and with a single chunk the second tab held one full-width block per column, a tab that hid nothing. The view is chosen by chunk count instead, the same shape of conditional the correlations section uses.
+- **One row per column**: name, a bar on the warm severity scale, count and percent in the matching severity colour, with the bands stated in a legend. Same row shape as the summary's missing list, so a reader learns it once, and it fits a phone unchanged.
+- **Nothing missing says so in one line** rather than rendering an empty grid, and complete columns are **summarised**, not listed — sixty column names is not a summary.
+
+### Found while doing this — #139
+The by-chunk half of #120 **cannot be built**, and the tab it replaces has been empty since it was written. Three things, each verified:
+
+- The section read `chunk_metadata` off the *accumulator*. No accumulator has that attribute; it lives on the **summary** `finalize()` returns. It was always `None`.
+- Only the numeric accumulator tracks per-chunk missing counts at all — categorical, datetime and boolean keep none.
+- Even the numeric one records a single boundary: `mark_chunk_boundary()` is called only from its own `finalize()`, never per chunk. On 900 rows at `chunk_size=150` — six chunks — it reports `boundaries=[900]`.
+
+The route degrades to the single-column view automatically, which is what #120's own edge case asks for when the metadata is unavailable. The strip renderer is written, tested directly, and will draw as soon as there is something to draw. A test asserts the gap still exists, so whoever fixes #139 is told the view can be switched on.
+
+### Note on the fingerprint
+One fact was removed: `data-chunk="1"`. That is the chunk *index* from the single full-width block the old tab drew, not a statistic — the figure it accompanied, `683 (76.7%)`, is still on the page in the new row.
+
 ## [0.0.59] - 2026-08-16
 
 Phase 6 of the report redesign (#119): correlations. Nothing removed or changed
@@ -963,7 +985,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.59...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.60...HEAD
+[0.0.60]: https://github.com/alvarodiez20/pysuricata/compare/0.0.59...0.0.60
 [0.0.59]: https://github.com/alvarodiez20/pysuricata/compare/0.0.58...0.0.59
 [0.0.58]: https://github.com/alvarodiez20/pysuricata/compare/0.0.57...0.0.58
 [0.0.57]: https://github.com/alvarodiez20/pysuricata/compare/0.0.56...0.0.57
