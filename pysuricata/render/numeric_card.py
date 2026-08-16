@@ -44,8 +44,9 @@ class NumericCardRenderer(CardRenderer):
             quality_flags, percentages, stats
         )
 
-        left_table = self._build_left_table(stats, percentages)
-        right_table = self._build_right_table(stats)
+        stat_row = self._build_stat_row(
+            self._left_stats(stats, percentages) + self._right_stats(stats)
+        )
 
         quantiles = self._compute_quantiles_from_sample(stats.sample_vals or [])
         quant_stats_table = self._build_quant_stats_table(stats, quantiles)
@@ -85,8 +86,7 @@ class NumericCardRenderer(CardRenderer):
             stats,
             approx_badge,
             quality_flags_html,
-            left_table,
-            right_table,
+            stat_row,
             chart_html,
             details_html,
             controls_html,
@@ -239,24 +239,25 @@ class NumericCardRenderer(CardRenderer):
             else ""
         )
 
-    def _build_left_table(self, stats: NumericStats, percentages: dict) -> str:
+    def _left_stats(
+        self, stats: NumericStats, percentages: dict
+    ) -> list[tuple[str, str, str]]:
+        """The counting half of the stat row: how many, how many missing, how
+        many of the kinds of value that need watching."""
         if looks_like_identifier(stats):
             # "Zeros: 1 (0.0%)" on a key is the line UX-2 names as actively
             # misleading: it is true, and it means nothing. Outliers, infinities
             # and negatives are the same. The identifier facts go on the right.
-            return self.table_builder.build_key_value_table(
-                [
-                    ("Count", f"{stats.count:,}", "num"),
-                    (
-                        "Missing",
-                        f"{stats.missing:,} ({percentages['miss_pct']:.1f}%)",
-                        "num",
-                    ),
-                    ("Type", "identifier (key-like)", ""),
-                ]
-            )
+            return [
+                ("Count", f"{stats.count:,}", "num"),
+                (
+                    "Missing",
+                    f"{stats.missing:,} ({percentages['miss_pct']:.1f}%)",
+                    "num",
+                ),
+                ("Type", "identifier (key-like)", ""),
+            ]
 
-        """Build left statistics table."""
         miss_cls = (
             "crit"
             if percentages["miss_pct"] > 20
@@ -305,10 +306,10 @@ class NumericCardRenderer(CardRenderer):
             ),
         ]
 
-        return self.table_builder.build_key_value_table(data)
+        return data
 
-    def _build_right_table(self, stats: NumericStats) -> str:
-        """Build right statistics table."""
+    def _right_stats(self, stats: NumericStats) -> list[tuple[str, str, str]]:
+        """The distribution half: where the values sit."""
         mem_display = self.format_bytes(int(getattr(stats, "mem_bytes", 0)))
 
         if looks_like_identifier(stats):
@@ -317,7 +318,7 @@ class NumericCardRenderer(CardRenderer):
             # whether the sequence has gaps.
             data = [(label, value, "num") for label, value in identifier_facts(stats)]
             data.append(("Processed bytes (≈)", mem_display, "num"))
-            return self.table_builder.build_key_value_table(data)
+            return data
 
         data = [
             ("Min", self.format_number(stats.min), "num"),
@@ -329,7 +330,33 @@ class NumericCardRenderer(CardRenderer):
             ("Processed bytes (≈)", mem_display, "num"),
         ]
 
-        return self.table_builder.build_key_value_table(data)
+        return data
+
+    def _build_stat_row(self, rows: list[tuple[str, str, str]]) -> str:
+        """One four-column stat row in place of two narrow tables.
+
+        The tables were 240px each beside a squeezed chart. As a row they take
+        the card's full width, which is what lets the histogram have the rest.
+
+        `minmax(0, 1fr)` rather than `1fr`: a grid track's default minimum is
+        its content, so one long value -- `-1.2345678e+18` is the case that
+        does it -- widens its column and pushes the others out of alignment
+        instead of wrapping inside its own cell.
+        """
+        cells = []
+        for label, value, cls in rows:
+            tone = ""
+            for level in ("crit", "warn"):
+                if level in (cls or ""):
+                    tone = f" is-{level}"
+                    break
+            cells.append(
+                f'<div class="vstat{tone}">'
+                f'<div class="vstat__cap">{label}</div>'
+                f'<div class="vstat__val">{value}</div>'
+                "</div>"
+            )
+        return f'<div class="vstat-row">{"".join(cells)}</div>'
 
     def _compute_quantiles_from_sample(
         self, sample_vals: Sequence[float]
@@ -1694,8 +1721,7 @@ class NumericCardRenderer(CardRenderer):
         stats: NumericStats,
         approx_badge: str,
         quality_flags_html: str,
-        left_table: str,
-        right_table: str,
+        stat_row: str,
         chart_html: str,
         details_html: str,
         controls_html: str,
@@ -1725,12 +1751,14 @@ class NumericCardRenderer(CardRenderer):
                 {info_button}
             </header>
             <div class="var-card__body">
-                <div class="triple-row">
-                    <div class="box stats-left">{left_table}</div>
-                    <div class="box stats-right">{right_table}</div>
-                    <div class="box chart">{chart_html}</div>
-                </div>
+                <!-- Restacked (#114). The chart was one third of a row beside
+                     two 240px stat tables; full width it gains about 550px,
+                     which is what makes 50 bins legible and the log toggle
+                     worth having. The stats follow it as one row rather than
+                     two columns beside it. -->
+                <div class="var-chart">{chart_html}</div>
                 {controls_html}
+                {stat_row}
                 {details_html}
             </div>
         </article>

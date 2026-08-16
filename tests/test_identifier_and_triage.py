@@ -119,21 +119,36 @@ class TestIdentifierEndToEnd:
         assert column["int_like"] is True
 
     def _summary_tables(self, html: str) -> str:
-        """The two key/value tables at the top of the `id` card.
+        """The stat row at the top of the `id` card.
 
         Scoped deliberately: the expandable details pane still renders
         quantiles for an identifier. That is a separate surface from the
         summary UX-2 is about, and narrowing here keeps the test honest about
         what was fixed.
+
+        The anchor is the stat row rather than the old `<div class="box
+        chart">`: #114 restacked the card, so the two 240px key/value tables
+        beside the chart became one row beneath it.
         """
-        card = re.search(
-            r'<article class="var-card" id="[^"]*" data-type="numeric" '
-            r'data-name="id".*?<div class="box chart">',
-            html,
-            re.S,
+        return self._stat_row(html, "id")
+
+    @staticmethod
+    def _stat_row(html: str, column: str) -> str:
+        """The stat row of one column's card.
+
+        Split on the article boundary rather than matching across it: a single
+        regex spanning from the card header to the stat row has to describe
+        every element in between, so it breaks on any layout change -- which is
+        exactly what it did here.
+        """
+        cards = html.split('<article class="var-card"')
+        card = next((c for c in cards if f'data-name="{column}"' in c), None)
+        assert card, f"{column} card not found"
+        row = re.search(
+            r'<div class="vstat-row">.*?</div>\s*</div>\s*</div>', card, re.S
         )
-        assert card, "identifier card not found"
-        return card.group(0)
+        assert row, f"{column} stat row not found"
+        return row.group(0)
 
     def test_the_summary_answers_the_questions_a_key_raises(self, frame):
         tables = self._summary_tables(profile(frame).html)
@@ -147,16 +162,9 @@ class TestIdentifierEndToEnd:
             assert unwanted not in tables, unwanted
 
     def test_an_ordinary_numeric_column_keeps_them(self, frame):
-        html = profile(frame).html
-        card = re.search(
-            r'<article class="var-card" id="[^"]*" data-type="numeric" '
-            r'data-name="measure".*?<div class="box chart">',
-            html,
-            re.S,
-        )
-        assert card
-        assert "Mean" in card.group(0)
-        assert "Q1 (P25)" in card.group(0)
+        row = self._stat_row(profile(frame).html, "measure")
+        assert "Mean" in row
+        assert "Q1 (P25)" in row
 
 
 class TestChipExtraction:
