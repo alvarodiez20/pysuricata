@@ -46,7 +46,20 @@ def _card(html: str, name: str) -> str:
 
 
 def _units(card: str) -> set[str]:
-    return set(re.findall(r'class="unit-label"[^>]*>([^<]+)<', card))
+    """The two axis captions, wherever they now live.
+
+    They used to be `<text class="unit-label">` inside the SVG. #147 took every
+    glyph out of the SVG, so `ROWS` is an HTML span in the gutter and the x
+    unit moved into the caption line -- at 1,100px the two were a hand-span
+    apart and had stopped reading as a pair.
+    """
+    units = set(re.findall(r'class="hist__unit"[^>]*>([^<]+)<', card))
+    for caption in re.findall(r'class="hist__caption"[^>]*>([^<]+)<', card):
+        # `years · 25 bins · peak 83 rows at 25.9-29.1`
+        head = caption.split("\u00b7")[0].strip()
+        if head and "bins" not in head:
+            units.add(head.upper())
+    return units
 
 
 # --------------------------------------------------------------------------- #
@@ -120,11 +133,15 @@ class TestTheChart:
 
     def test_the_end_labels_sit_inside_the_plot(self, html):
         """Centred on their tick, the first ran under the y-axis labels and the
-        last ran off the SVG. They anchor to the plot edge instead."""
-        svg = re.search(r'<svg class="hist-svg".*?</svg>', html, re.S).group(0)
-        anchors = re.findall(r'class="tick-label"[^>]*text-anchor="(\w+)"', svg)
-        anchors += re.findall(r'text-anchor="(\w+)"[^>]*class="tick-label"', svg)
-        assert {"start", "end"} & set(anchors), anchors
+        last ran off the chart. They anchor to the plot edge instead.
+
+        The mechanism changed with #147 -- `text-anchor` on an SVG `<text>`
+        became `data-anchor` on an HTML span, since the labels are no longer in
+        the SVG at all -- but the rule is the same one.
+        """
+        figure = re.search(r'<figure class="hist".*?</figure>', html, re.S).group(0)
+        anchors = re.findall(r'data-anchor="(\w+)"', figure)
+        assert {"start", "end"} <= set(anchors), anchors
 
     def test_it_carries_no_legacy_hue(self):
         source = (

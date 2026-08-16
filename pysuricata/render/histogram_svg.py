@@ -16,7 +16,7 @@ from dataclasses import dataclass
 import numpy as np
 
 from .format_utils import fmt_compact_scientific
-from .svg_utils import nice_log_ticks_from_log10, nice_ticks
+from .svg_utils import nice_ticks
 
 # Units the column name states outright. Deliberately short, and deliberately
 # not clever: this maps a name to a unit only where the name *is* the unit.
@@ -275,174 +275,276 @@ class SVGHistogramRenderer:
             y_max=nice_y_max,
         )
 
-        # Calculate dimensions
-        inner_width = (
-            self.config.width - self.config.margin_left - self.config.margin_right
-        )
-        inner_height = (
-            self.config.height - self.config.margin_top - self.config.margin_bottom
-        )
+        return self._render_figure(hist_data, title, col_id, bins)
 
-        # Generate SVG
+    # ------------------------------------------------------------------ #
+    # Output: two coordinate systems, deliberately separated
+    #
+    # Rule 4 of the design system, and the thing every other fix in this
+    # phase depends on:
+    #
+    #   Uniform scale  =>  text size tracks the viewport.
+    #   Fixed text     =>  the canvas has to be ~1:1 with its display size.
+    #   One static SVG cannot be 1:1 at both 1,099px and 284px.
+    #
+    # So the SVG holds only what *should* stretch -- bars, gridlines, the two
+    # axis rules -- under `preserveAspectRatio="none"`, with every stroke
+    # marked `vector-effect="non-scaling-stroke"` so a hairline stays a
+    # hairline at any width. Everything with a glyph in it is HTML positioned
+    # at percentage offsets, which are scale-independent by construction and
+    # render at 11px whatever the chart is doing.
+    #
+    # The viewBox is 0..100 on both axes, so the numbers inside it *are*
+    # percentages: the SVG and the HTML layer are written in the same units,
+    # and a bar cannot drift away from its label.
+    #
+    # It also takes every `<text>` out of the SVG, which is most of what made
+    # the histograms 23% of report bytes.
+    # ------------------------------------------------------------------ #
+
+    #: The plot's own coordinate space. Not pixels -- see above.
+    _SPAN = 100.0
+
+    #: Which x ticks survive which breakpoint, nine of them.
+    #:
+    #: Tiering by *importance* rather than by index is the point. Tier 1 is
+    #: the two ends -- the range -- plus the midpoint, and never drops however
+    #: narrow the card gets. Dropping tier 3 leaves five; dropping tier 2 as
+    #: well leaves three.
+    #:
+    #: The first version made the ends tier 1 and everything else 2 or 3,
+    #: which collapsed to *two* labels on a phone: a range with no middle, so
+    #: nothing tells you whether the distribution is centred.
+    _TICK_TIERS = (1, 3, 2, 3, 1, 3, 2, 3, 1)
+
+    def _render_figure(
+        self, hist_data: HistogramData, title: str, col_id: str, bins: int
+    ) -> str:
+        """The whole chart: a gutter, a stretchable plot, and a caption."""
         safe_title = self.safe_html_escape(title) if title else "data"
-        svg_parts = [
-            f'<svg class="hist-svg" width="{self.config.width}" height="{self.config.height}" '
-            f'viewBox="0 0 {self.config.width} {self.config.height}" '
-            f'role="img" aria-labelledby="hist-title-{col_id}">',
+        y_ticks: list[float] = []
+        if hist_data.y_max:
+            y_ticks, _ = nice_ticks(0, hist_data.y_max, 5)
+
+        marks = [
+            f'<svg class="hist-svg" viewBox="0 0 {self._SPAN:g} {self._SPAN:g}" '
+            f'preserveAspectRatio="none" role="img" '
+            f'aria-labelledby="hist-title-{col_id}">',
             f'<title id="hist-title-{col_id}">Histogram for {safe_title}</title>',
-            f"<desc>Distribution chart with {len(hist_data.edges) - 1 if len(hist_data.edges) > 0 else 0} bins</desc>",
+            f"<desc>Distribution chart with {max(len(hist_data.edges) - 1, 0)} bins</desc>",
         ]
+        marks.extend(self._render_gridlines(hist_data, y_ticks))
+        marks.extend(self._render_bars(hist_data, col_id))
+        marks.append("</svg>")
 
-        # Add grid
-        svg_parts.extend(self._render_grid(hist_data, inner_width, inner_height))
-
-        # Add bars
-        svg_parts.extend(
-            self._render_bars(hist_data, inner_width, inner_height, col_id)
+        return (
+            f'<figure class="hist" data-bins="{bins}">'
+            f'<div class="hist__plot">'
+            f'<div class="hist__gutter">{self._render_y_labels(hist_data, y_ticks)}'
+            f'<span class="hist__unit">ROWS</span></div>'
+            f'<div class="hist__area">{"".join(marks)}'
+            f"{self._render_x_labels(hist_data)}</div>"
+            f"</div>"
+            f"{self._render_caption(title, hist_data, bins)}"
+            f"</figure>"
         )
 
-        # Add axes
-        svg_parts.extend(self._render_axes(hist_data, inner_width, inner_height))
-
-        # No in-chart title. The card header already carries the column name,
-        # so printing it again inside the plot spent a line of the chart on a
-        # word the reader had just read. The <title> element above stays --
-        # that is the accessible name, not a caption.
-        svg_parts.extend(self._render_unit_labels(title, inner_width))
-
-        svg_parts.append("</svg>")
-        return "\n".join(svg_parts)
-
-    def _render_unit_labels(self, column_name: str, inner_width: int) -> list[str]:
-        """`ROWS` over the y axis, and the x unit at the right end of it.
-
-        Nothing on the old chart said which axis was years and which was rows,
-        which is the actual gap -- the column name was printed instead, and the
-        header already had that.
-        """
-        parts = [
-            f'<text x="{self.config.margin_left}" y="{self.config.margin_top - 7}" '
-            f'text-anchor="start" class="unit-label" '
-            f'font-family="{self.config.font_family}" font-size="10" '
-            f'letter-spacing="0.12em" fill="{self.config.axis_color}">ROWS</text>'
-        ]
-        unit = derive_x_unit(column_name)
-        if unit:
-            y = self.config.margin_top + self._inner_height() + 32
-            parts.append(
-                f'<text x="{self.config.margin_left + inner_width}" y="{y}" '
-                f'text-anchor="end" class="unit-label" '
-                f'font-family="{self.config.font_family}" font-size="10" '
-                f'letter-spacing="0.12em" fill="{self.config.axis_color}">'
-                f"{self.safe_html_escape(unit)}</text>"
-            )
-        return parts
-
-    def _inner_height(self) -> int:
-        return self.config.height - self.config.margin_top - self.config.margin_bottom
-
-    def _render_empty_histogram(self, title: str) -> str:
-        """Render an empty histogram when no data is available."""
-        safe_title = self.safe_html_escape(title) if title else "data"
-        svg_parts = [
-            f'<svg class="hist-svg" width="{self.config.width}" height="{self.config.height}" '
-            f'viewBox="0 0 {self.config.width} {self.config.height}" '
-            f'role="img" aria-labelledby="hist-empty-title">',
-            f'<title id="hist-empty-title">Empty histogram for {safe_title}</title>',
-            "<desc>No data available for visualization</desc>",
-        ]
-
-        # Add "No data" message
-        svg_parts.append(
-            f'<text x="{self.config.width // 2}" y="{self.config.height // 2}" '
-            f'text-anchor="middle" class="hist-empty" '
-            f'font-family="{self.config.font_family}" '
-            f'font-size="{self.config.font_size}" fill="#999">No data</text>'
-        )
-
-        if title:
-            svg_parts.append(
-                f'<text x="{self.config.width // 2}" y="15" '
-                f'text-anchor="middle" class="hist-title" '
-                f'font-family="{self.config.font_family}" '
-                f'font-size="{self.config.title_font_size}">'
-                f"{self.safe_html_escape(title)}</text>"
-            )
-
-        svg_parts.append("</svg>")
-        return "\n".join(svg_parts)
-
-    def _render_grid(
-        self, hist_data: HistogramData, inner_width: int, inner_height: int
+    def _render_gridlines(
+        self, hist_data: HistogramData, y_ticks: list[float]
     ) -> list[str]:
-        """Render grid lines."""
-        if hist_data.y_max == 0:
+        """Horizontal rules at each y tick, plus the two axes.
+
+        `vector-effect="non-scaling-stroke"` is what makes this possible. The
+        SVG is stretched by a different factor on each axis, so without it a
+        1-unit rule would render 11px thick horizontally and 0.28px vertically.
+        """
+        if not hist_data.y_max:
             return []
 
         parts = []
-
-        # Y-axis grid lines
-        y_ticks, _ = nice_ticks(0, hist_data.y_max, 5)
-        for y_tick in y_ticks[1:-1]:  # Skip first and last
-            y_pos = (
-                self.config.margin_top + (1 - y_tick / hist_data.y_max) * inner_height
-            )
+        for tick in y_ticks:
+            y = (1 - tick / hist_data.y_max) * self._SPAN
             parts.append(
-                f'<line class="grid" x1="{self.config.margin_left}" y1="{y_pos}" '
-                f'x2="{self.config.margin_left + inner_width}" y2="{y_pos}"/>'
+                f'<line class="grid" x1="0" y1="{y:.3f}" x2="{self._SPAN:g}" '
+                f'y2="{y:.3f}" vector-effect="non-scaling-stroke"/>'
             )
-
+        parts.append(
+            f'<line class="axis" x1="0" y1="{self._SPAN:g}" x2="{self._SPAN:g}" '
+            f'y2="{self._SPAN:g}" vector-effect="non-scaling-stroke"/>'
+        )
+        parts.append(
+            f'<line class="axis" x1="0" y1="0" x2="0" y2="{self._SPAN:g}" '
+            f'vector-effect="non-scaling-stroke"/>'
+        )
         return parts
 
-    def _render_bars(
-        self, hist_data: HistogramData, inner_width: int, inner_height: int, col_id: str
-    ) -> list[str]:
-        """Render histogram bars."""
+    def _render_bars(self, hist_data: HistogramData, col_id: str) -> list[str]:
+        """Bars, edge to edge, separated by a stroke that does not scale.
+
+        The gap used to be geometry: `bar_w = max(1, bar_width - 1)`, a 1-unit
+        gap in viewBox space. Under `preserveAspectRatio="none"` that scales
+        with x -- 1.1px at a 1,100px plot, 0.56px at 560px, and **0.28px at
+        284px**, where the bars merge into one block. A gap drawn in data units
+        is not a gap; it is a gap-shaped fraction of the data.
+
+        So the bars touch, and the separator is a `--paper` stroke marked
+        non-scaling, which is 1px at every width by construction.
+        """
         if len(hist_data.counts) == 0 or hist_data.y_max == 0:
             return []
 
         parts = []
-        bar_width = inner_width / len(hist_data.counts)
+        width = self._SPAN / len(hist_data.counts)
 
-        for i, (count, center) in enumerate(
+        for index, (count, center) in enumerate(
             zip(hist_data.counts, hist_data.bin_centers, strict=False)
         ):
+            # Rule 3: a zero count draws nothing. A 1px floor is right for a
+            # small non-zero value and wrong for zero -- ten empty months drawn
+            # as ten 1px bars assert data that is not there.
             if count == 0:
                 continue
 
-            # Calculate bar dimensions
-            x = self.config.margin_left + i * bar_width
-            bar_w = max(1, bar_width - 1)  # Small gap between bars
-            bar_h = (count / hist_data.y_max) * inner_height
+            x = index * width
+            height = (count / hist_data.y_max) * self._SPAN
+            y = self._SPAN - height
 
-            # Calculate y position (SVG coordinates are top-down)
-            y = self.config.margin_top + inner_height - bar_h
-
-            # Calculate bin range for tooltip
-            if i < len(hist_data.edges) - 1:
-                x0, x1 = hist_data.edges[i], hist_data.edges[i + 1]
-                x0_label = self._format_tick_label_standardized(x0)
-                x1_label = self._format_tick_label_standardized(x1)
+            if index < len(hist_data.edges) - 1:
+                x0_label = self._format_tick_label_standardized(hist_data.edges[index])
+                x1_label = self._format_tick_label_standardized(
+                    hist_data.edges[index + 1]
+                )
             else:
                 x0_label = x1_label = self._format_tick_label_standardized(center)
 
-            # Calculate percentage
-            pct = (count / hist_data.total_count) * 100.0
+            pct = (
+                (count / hist_data.total_count) * 100.0
+                if hist_data.total_count
+                else 0.0
+            )
 
-            # Create bar with tooltip data
             parts.append(
-                f'<rect class="bar" x="{x:.1f}" y="{y:.1f}" '
-                f'width="{bar_w:.1f}" height="{bar_h:.1f}" '
-                # No stroke, no fill-opacity, no rounded corners: each of
-                # those changes the apparent length of a bar, which is the one
-                # thing the bar encodes.
-                f'fill="{self.config.bar_color}" '
+                f'<rect class="bar" x="{x:.3f}" y="{y:.3f}" '
+                f'width="{width:.3f}" height="{height:.3f}" '
+                # No fill-opacity and no rounded corners: both change the
+                # apparent length of a bar, which is the one thing it encodes.
+                f'vector-effect="non-scaling-stroke" '
                 f'data-count="{int(count)}" data-pct="{pct:.1f}" '
                 f'data-x0="{x0_label}" data-x1="{x1_label}" '
                 f'data-col="{col_id}"/>'
             )
 
         return parts
+
+    def _render_y_labels(self, hist_data: HistogramData, y_ticks: list[float]) -> str:
+        """Count labels in the gutter, at percentage offsets.
+
+        Four glyphs guaranteed (#183), which is what lets the gutter be a fixed
+        44px -- so the plot's left edge does not move between columns and bars
+        line up down the page.
+        """
+        if not hist_data.y_max:
+            return ""
+
+        out = []
+        for tick in y_ticks:
+            top = (1 - tick / hist_data.y_max) * 100.0
+            label = self._format_tick_label_standardized(tick, is_count=True)
+            out.append(
+                f'<span class="hist__y" style="top:{top:.3f}%">'
+                f"{self.safe_html_escape(label)}</span>"
+            )
+        return "".join(out)
+
+    def _render_x_labels(self, hist_data: HistogramData) -> str:
+        """Nine value labels across the axis, each tagged by importance.
+
+        The renderer cannot know the viewport, so it writes every label it
+        would ever want and lets CSS drop tiers at breakpoints: nine become
+        five under 760px and three under 440px, with no variants and no JS.
+        """
+        if len(hist_data.bin_centers) == 0 or len(hist_data.edges) < 2:
+            return ""
+
+        low = float(hist_data.edges[0])
+        high = float(hist_data.edges[-1])
+        if not (math.isfinite(low) and math.isfinite(high)):
+            return ""
+
+        count = len(self._TICK_TIERS)
+        out = []
+        for index, tier in enumerate(self._TICK_TIERS):
+            fraction = index / (count - 1)
+            value = low + (high - low) * fraction
+            if hist_data.scale == "log":
+                value = 10**value
+            label = self._format_tick_label_standardized(value)
+            # The end labels anchor to the plot edge rather than centring on
+            # their tick, so a wide value at either end sits inside the chart
+            # instead of overhanging it.
+            if index == 0:
+                anchor = ' data-anchor="start"'
+            elif index == count - 1:
+                anchor = ' data-anchor="end"'
+            else:
+                anchor = ""
+            out.append(
+                f'<span class="hist__tick" data-tier="{tier}"{anchor} '
+                f'style="left:{fraction * 100:.3f}%">'
+                f"{self.safe_html_escape(label)}</span>"
+            )
+        return f'<div class="hist__x">{"".join(out)}</div>'
+
+    def _render_caption(self, title: str, hist_data: HistogramData, bins: int) -> str:
+        """`years · 25 bins · peak 83 rows at 26–29`.
+
+        The x unit used to sit at the right end of the axis, opposite `ROWS` on
+        the left. At 1,100px those two are a hand-span apart and stop reading
+        as a pair, so the unit joins the caption -- where it can also carry the
+        bin count and the peak. The peak matters more now that the y labels
+        abbreviate to four glyphs: this is where the exact figure lives.
+
+        `derive_x_unit` returning None has to read gracefully, so the unit
+        clause is omitted rather than replaced by a guess.
+        """
+        pieces = []
+        unit = derive_x_unit(title)
+        if unit:
+            pieces.append(unit.lower())
+        pieces.append(f"{bins} bins")
+
+        if len(hist_data.counts) and int(hist_data.counts.max()) > 0:
+            index = int(np.argmax(hist_data.counts))
+            peak = int(hist_data.counts[index])
+            noun = "row" if peak == 1 else "rows"
+            if index < len(hist_data.edges) - 1:
+                low = self._format_tick_label_standardized(hist_data.edges[index])
+                high = self._format_tick_label_standardized(hist_data.edges[index + 1])
+                pieces.append(f"peak {peak:,} {noun} at {low}–{high}")
+            else:
+                pieces.append(f"peak {peak:,} {noun}")
+
+        text = " · ".join(pieces)
+        return (
+            f'<figcaption class="hist__caption">'
+            f"{self.safe_html_escape(text)}</figcaption>"
+        )
+
+    def _render_empty_histogram(self, title: str) -> str:
+        """A sentence, in the same figure shape as a real chart.
+
+        It used to be an SVG with `No data` set in the middle of an otherwise
+        blank 420x200 canvas, which reads as a chart that failed rather than as
+        a column with nothing to draw. Keeping the `<figure>` wrapper means the
+        card's layout does not shift between the two cases.
+        """
+        safe_title = self.safe_html_escape(title) if title else "data"
+        return (
+            f'<figure class="hist hist--empty">'
+            f'<p class="hist__nodata">No values to plot</p>'
+            f'<figcaption class="hist__caption">{safe_title}</figcaption>'
+            f"</figure>"
+        )
 
     def _format_tick_label_standardized(
         self, value: float, is_count: bool = False
@@ -553,165 +655,6 @@ class SVGHistogramRenderer:
         # Unreachable for any finite count: 10,000 is already above the
         # smallest band. Kept so the function is total.
         return f"{sign}{int(round(magnitude))}"
-
-    def _render_axes(
-        self, hist_data: HistogramData, inner_width: int, inner_height: int
-    ) -> list[str]:
-        """Render axes and tick labels."""
-        parts = []
-
-        # X-axis line
-        parts.append(
-            f'<line x1="{self.config.margin_left}" y1="{self.config.margin_top + inner_height}" '
-            f'x2="{self.config.margin_left + inner_width}" y2="{self.config.margin_top + inner_height}" '
-            f'stroke="{self.config.axis_color}" stroke-width="{self.config.axis_stroke_width}"/>'
-        )
-
-        # Y-axis line
-        parts.append(
-            f'<line x1="{self.config.margin_left}" y1="{self.config.margin_top}" '
-            f'x2="{self.config.margin_left}" y2="{self.config.margin_top + inner_height}" '
-            f'stroke="{self.config.axis_color}" stroke-width="{self.config.axis_stroke_width}"/>'
-        )
-
-        # X-axis ticks and labels
-        parts.extend(self._render_x_axis_ticks(hist_data, inner_width, inner_height))
-
-        # Y-axis ticks and labels
-        parts.extend(self._render_y_axis_ticks(hist_data, inner_height))
-
-        return parts
-
-    def _render_x_axis_ticks(
-        self, hist_data: HistogramData, inner_width: int, inner_height: int
-    ) -> list[str]:
-        """Render X-axis ticks and labels."""
-        if len(hist_data.bin_centers) == 0:
-            return []
-
-        parts = []
-
-        # Calculate tick positions
-        if hist_data.scale == "log":
-            # For log scale, use original_range if available for better tick generation
-            if hist_data.original_range and hist_data.original_range[0] > 0:
-                data_min, data_max = hist_data.original_range
-                log_min = math.log10(data_min)
-                log_max = math.log10(data_max)
-                tick_positions, tick_labels = nice_log_ticks_from_log10(
-                    log_min, log_max, 5
-                )
-                tick_values = [10**pos for pos in tick_positions]
-            else:
-                # Fallback to bin centers
-                positive_centers = hist_data.bin_centers[hist_data.bin_centers > 0]
-                if len(positive_centers) > 0:
-                    log_min = math.log10(max(1e-10, positive_centers.min()))
-                    log_max = math.log10(positive_centers.max())
-                    tick_positions, tick_labels = nice_log_ticks_from_log10(
-                        log_min, log_max, 5
-                    )
-                    tick_values = [10**pos for pos in tick_positions]
-                else:
-                    return []  # No valid data for ticks
-        else:
-            # For linear scale, use regular ticks
-            tick_values, _ = nice_ticks(
-                hist_data.bin_centers.min(), hist_data.bin_centers.max(), 5
-            )
-            tick_labels = [self._format_tick_label_standardized(v) for v in tick_values]
-
-        # Render ticks and labels
-        for tick_val, tick_label in zip(tick_values, tick_labels, strict=False):
-            # Calculate position - bin_centers are always in linear space
-            # (for log scale, they were converted back in _prepare_histogram_data)
-            val_min = hist_data.bin_centers.min()
-            val_max = hist_data.bin_centers.max()
-
-            # Handle case where all values are the same (constant data)
-            if val_max == val_min:
-                x_pos = self.config.margin_left + inner_width / 2
-            else:
-                x_pos = (
-                    self.config.margin_left
-                    + (tick_val - val_min) / (val_max - val_min) * inner_width
-                )
-
-            # Only render if within bounds
-            if (
-                self.config.margin_left
-                <= x_pos
-                <= self.config.margin_left + inner_width
-            ):
-                # Tick line
-                parts.append(
-                    f'<line x1="{x_pos:.1f}" y1="{self.config.margin_top + inner_height}" '
-                    f'x2="{x_pos:.1f}" y2="{self.config.margin_top + inner_height + self.config.tick_length}" '
-                    f'stroke="{self.config.axis_color}" stroke-width="{self.config.axis_stroke_width}"/>'
-                )
-
-                # The first and last labels are anchored to the plot edge
-                # rather than centred on their tick, so a wide value at either
-                # end sits inside the chart instead of overhanging it -- which
-                # on the left ran under the y-axis labels and on the right ran
-                # off the SVG entirely.
-                left_edge = self.config.margin_left
-                right_edge = self.config.margin_left + inner_width
-                if x_pos - left_edge < 18:
-                    anchor = "start"
-                    label_x = left_edge
-                elif right_edge - x_pos < 18:
-                    anchor = "end"
-                    label_x = right_edge
-                else:
-                    anchor = "middle"
-                    label_x = x_pos
-
-                parts.append(
-                    f'<text x="{label_x:.1f}" y="{self.config.margin_top + inner_height + self.config.tick_length + 15}" '
-                    f'text-anchor="{anchor}" class="tick-label" '
-                    f'font-family="{self.config.font_family}" '
-                    f'font-size="{self.config.label_font_size}" '
-                    f'fill="{self.config.axis_color}">'
-                    f"{self.safe_html_escape(tick_label)}</text>"
-                )
-
-        return parts
-
-    def _render_y_axis_ticks(
-        self, hist_data: HistogramData, inner_height: int
-    ) -> list[str]:
-        """Render Y-axis ticks and labels."""
-        if hist_data.y_max == 0:
-            return []
-
-        parts = []
-        y_ticks, _ = nice_ticks(0, hist_data.y_max, 5)
-
-        for y_tick in y_ticks:
-            y_pos = (
-                self.config.margin_top + (1 - y_tick / hist_data.y_max) * inner_height
-            )
-
-            # Tick line
-            parts.append(
-                f'<line x1="{self.config.margin_left - self.config.tick_length}" y1="{y_pos:.1f}" '
-                f'x2="{self.config.margin_left}" y2="{y_pos:.1f}" '
-                f'stroke="{self.config.axis_color}" stroke-width="{self.config.axis_stroke_width}"/>'
-            )
-
-            # Label
-            label = self._format_tick_label_standardized(y_tick, is_count=True)
-            parts.append(
-                f'<text x="{self.config.margin_left - self.config.tick_length - 5}" y="{y_pos + 4:.1f}" '
-                f'text-anchor="end" class="tick-label" '
-                f'font-family="{self.config.font_family}" '
-                f'font-size="{self.config.label_font_size}" '
-                f'fill="{self.config.axis_color}">'
-                f"{self.safe_html_escape(label)}</text>"
-            )
-
-        return parts
 
     def safe_html_escape(self, text: str) -> str:
         """Escape HTML special characters."""

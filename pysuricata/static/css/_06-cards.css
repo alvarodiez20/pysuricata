@@ -640,23 +640,12 @@
    toggle worth having. The stats follow it as one row rather than two columns
    beside it.
    ============================================================= */
-#pysuricata-report .var-card__body .var-chart {
-  /* The SVG carries an intrinsic height="200"; the container owns the height
-     now so the mobile rule below can shorten it. */
-  line-height: 0;
-}
-
-#pysuricata-report .var-card__body .var-chart .hist-variants {
-  height: 210px;
-}
-
+/* The chart owns its own height now (`--hist-height` in _07-histogram.css),
+   because the figure is a stack -- plot, x labels, caption -- rather than one
+   SVG. These rules used to force `height: 100%` down onto a child `<svg>`
+   that no longer exists, and forcing a height on the figure would collapse
+   the caption. */
 #pysuricata-report .var-card__body .var-chart .hist-variants .hist.variant {
-  height: 100%;
-}
-
-#pysuricata-report .var-card__body .var-chart .hist-variants .hist.variant>svg {
-  width: 100%;
-  height: 100%;
   display: block;
 }
 
