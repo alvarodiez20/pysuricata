@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PySuricata — profile a CSV in your browser</title>
+<meta name="description" content="Profile a 500 MB CSV in a browser tab. PySuricata runs entirely client-side via WebAssembly — your data never leaves your machine.">
+<link rel="icon" href="assets/favicon.ico">
+<meta property="og:title" content="PySuricata — profile a CSV in your browser">
+<meta property="og:description" content="Drop a CSV. Get a full profiling report. Nothing is uploaded — the whole engine runs in your browser.">
+<meta property="og:type" content="website">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f5f8f6;
+    --surface-2: #eef3f0;
+    --text: #14201a;
+    --muted: #5d6d63;
+    --accent: #2e7d32;
+    --accent-soft: #e6f2e7;
+    --border: #dbe4dd;
+    --warn: #9a6700;
+    --warn-soft: #fff6e0;
+    --danger: #b3261e;
+    --shadow: 0 1px 2px rgba(20, 32, 26, .06), 0 8px 24px rgba(20, 32, 26, .06);
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d1411;
+      --surface: #151f1a;
+      --surface-2: #1c2822;
+      --text: #e7efe9;
+      --muted: #97a89d;
+      --accent: #6fbf73;
+      --accent-soft: #1b2c1f;
+      --border: #24322b;
+      --warn: #e0b252;
+      --warn-soft: #2a2313;
+      --danger: #f2857c;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 16px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 20;
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: saturate(180%) blur(12px);
+  }
+  .bar { display: flex; align-items: center; gap: 14px; height: 62px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -.01em; text-decoration: none; color: var(--text); }
+  .brand img { width: 30px; height: 30px; object-fit: contain; }
+  nav { margin-left: auto; display: flex; gap: 20px; font-size: 14px; }
+  nav a { color: var(--muted); text-decoration: none; }
+  nav a:hover { color: var(--accent); }
+  @media (max-width: 620px) { nav a.hide-sm { display: none; } }
+
+  .hero { padding: 64px 0 34px; }
+  h1 {
+    font-size: clamp(30px, 5.2vw, 47px);
+    line-height: 1.08; letter-spacing: -.028em;
+    margin: 0 0 18px; max-width: 17ch; font-weight: 660;
+  }
+  h1 .em { color: var(--accent); }
+  .lede { font-size: 18px; color: var(--muted); max-width: 62ch; margin: 0; }
+  .lede code { font-family: var(--mono); font-size: .88em; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 0; }
+  .chip {
+    font-size: 13px; color: var(--muted); background: var(--surface);
+    border: 1px solid var(--border); border-radius: 999px; padding: 5px 12px;
+  }
+  .chip b { color: var(--text); font-weight: 600; }
+
+  main { padding-bottom: 72px; }
+
+  .drop {
+    margin-top: 34px; border: 1.5px dashed var(--border); border-radius: 16px;
+    background: var(--surface); padding: 40px 28px; text-align: center;
+    transition: border-color .15s, background .15s;
+  }
+  .drop.over { border-color: var(--accent); background: var(--accent-soft); }
+  .drop h2 { margin: 0 0 6px; font-size: 19px; font-weight: 620; letter-spacing: -.01em; }
+  .drop p { margin: 0 0 22px; color: var(--muted); font-size: 14.5px; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+  button {
+    font: inherit; font-size: 14.5px; font-weight: 550; cursor: pointer;
+    border-radius: 10px; padding: 10px 18px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); transition: .13s;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  @media (prefers-color-scheme: dark) { button.primary { color: #0d1411; } }
+  button.primary:hover:not(:disabled) { filter: brightness(1.08); color: #fff; }
+  @media (prefers-color-scheme: dark) { button.primary:hover:not(:disabled) { color: #0d1411; } }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+
+  .panel {
+    margin-top: 22px; border: 1px solid var(--border); border-radius: 14px;
+    background: var(--surface); overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; gap: 12px; padding: 14px 18px;
+    border-bottom: 1px solid var(--border); font-size: 14.5px;
+  }
+  .spinner {
+    width: 15px; height: 15px; border-radius: 50%; flex: 0 0 auto;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; }
+  .panel-head .detail { color: var(--muted); font-size: 13px; margin-left: auto; text-align: right; }
+  .log {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.75; color: var(--muted);
+    padding: 12px 18px; max-height: 190px; overflow: auto; white-space: pre-wrap;
+    background: var(--surface-2); margin: 0;
+  }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; background: var(--border); }
+  .tile { background: var(--surface); padding: 16px 18px; }
+  .tile .k { font-size: 11.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .tile .v { font-size: 23px; font-weight: 620; letter-spacing: -.02em; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .tile .v small { font-size: 13px; font-weight: 450; color: var(--muted); letter-spacing: 0; }
+
+  .report-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .report-head strong { font-size: 14.5px; font-weight: 600; }
+  .report-head .grow { margin-left: auto; display: flex; gap: 8px; }
+  iframe#report { width: 100%; height: 78vh; min-height: 520px; border: 0; display: block; background: var(--bg); }
+
+  .note { border-radius: 12px; padding: 14px 16px; font-size: 14px; margin-top: 18px; border: 1px solid; }
+  .note.warn { background: var(--warn-soft); border-color: color-mix(in srgb, var(--warn) 35%, transparent); color: var(--text); }
+  .note.err { background: color-mix(in srgb, var(--danger) 9%, transparent); border-color: color-mix(in srgb, var(--danger) 35%, transparent); }
+  .note b { display: block; margin-bottom: 4px; }
+
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 28px; margin-top: 64px; padding-top: 34px; border-top: 1px solid var(--border); }
+  .cols h3 { font-size: 14px; margin: 0 0 8px; letter-spacing: -.005em; }
+  .cols p { margin: 0; font-size: 14px; color: var(--muted); }
+  .cols code { font-family: var(--mono); font-size: .87em; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+
+  footer { border-top: 1px solid var(--border); padding: 26px 0 44px; font-size: 13.5px; color: var(--muted); }
+  footer a { color: var(--muted); }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap bar">
+    <a class="brand" href="https://alvarodiez20.github.io/pysuricata/">
+      <img src="assets/logo.png" alt="">
+      PySuricata
+    </a>
+    <nav>
+      <a class="hide-sm" href="https://alvarodiez20.github.io/pysuricata/">Docs</a>
+      <a class="hide-sm" href="https://pypi.org/project/pysuricata/">PyPI</a>
+      <a href="https://github.com/alvarodiez20/pysuricata">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section class="hero">
+    <h1>Profile a big CSV <span class="em">in a browser tab</span>.</h1>
+    <p class="lede">
+      Drop a file below and PySuricata generates a full exploratory-data-analysis
+      report — per-column distributions, missing-value analysis, quality alerts.
+      There is no server. The profiler itself is compiled to WebAssembly and runs
+      inside this page, so <strong>your data never leaves your machine</strong>.
+    </p>
+    <div class="chips">
+      <span class="chip"><b>No upload</b> — check your network tab</span>
+      <span class="chip"><b>Streaming</b> — read in chunks, never held whole</span>
+      <span class="chip"><b>MIT</b> — <code>pip install pysuricata</code></span>
+    </div>
+  </section>
+
+  <div class="drop" id="drop">
+    <h2>Drop a CSV or Parquet file</h2>
+    <p>Nothing is uploaded. Files stay in this tab and disappear when you close it.</p>
+    <div class="actions">
+      <button class="primary" id="pick" disabled>Choose a file</button>
+      <button id="sample" disabled>Try the sample dataset</button>
+      <button id="bigdemo" disabled>Stream 5M rows &amp; profile</button>
+    </div>
+    <input type="file" id="file" accept=".csv,.tsv,.txt,.parquet,.pq" class="hidden">
+  </div>
+
+  <div class="panel hidden" id="statusPanel">
+    <div class="panel-head">
+      <span class="spinner" id="spin"></span>
+      <span id="statusText">Starting…</span>
+      <span class="detail" id="statusDetail"></span>
+    </div>
+    <pre class="log" id="log"></pre>
+  </div>
+
+  <div id="notes"></div>
+
+  <div class="panel hidden" id="resultPanel">
+    <div class="tiles" id="tiles"></div>
+    <div class="report-head">
+      <strong id="reportTitle">Report</strong>
+      <span class="grow">
+        <button id="download">Download HTML</button>
+        <button id="downloadStats">Download JSON</button>
+        <button id="reset">Profile another file</button>
+      </span>
+    </div>
+    <!-- No allow-same-origin: the report embeds the user's own values, so it runs
+         in an opaque origin and cannot reach this page's storage or DOM. -->
+    <iframe id="report" title="PySuricata report" sandbox="allow-scripts allow-downloads"></iframe>
+  </div>
+
+  <section class="cols">
+    <div>
+      <h3>How this works</h3>
+      <p>Pyodide compiles CPython, pandas and numpy to WebAssembly. Your file is
+      mounted straight from disk into the sandbox filesystem, so pandas reads it
+      lazily and hands PySuricata a chunk generator.</p>
+    </div>
+    <div>
+      <h3>Why it stays small</h3>
+      <p>Statistics come from streaming sketches — Welford/Pébay for moments, KMV
+      for distinct counts, Misra–Gries for top values, reservoir sampling for
+      quantiles. Memory tracks column count, not row count.</p>
+    </div>
+    <div>
+      <h3>Where it is approximate</h3>
+      <p>Moments, extrema and missing counts are exact. Quantiles, high-cardinality
+      distinct counts and duplicate rows are estimated; the report marks those with
+      an <code>approx</code> chip.</p>
+    </div>
+    <div>
+      <h3>Limits of the demo</h3>
+      <p>A browser tab has a hard memory ceiling and one core. Very wide frames are
+      refused here — memory scales with columns. For those, run it locally.</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    PySuricata is MIT-licensed · <span id="versions">runtime loading…</span> ·
+    <a href="https://github.com/alvarodiez20/pysuricata">Source</a> ·
+    <a href="https://alvarodiez20.github.io/pysuricata/">Documentation</a>
+  </div>
+</footer>
+
+<script>
+(() => {
+  "use strict";
+
+  const params = new URLSearchParams(location.search);
+  const LOCAL = params.has("local");
+  const CONFIG = {
+    // Pyodide is pulled from jsDelivr rather than self-hosted: ~19 MB of runtime
+    // that a public CDN serves for free, keeping this origin's egress at ~1 MB
+    // per cold visitor. ?local=1 points at a mirror for offline testing.
+    pyodideBase: LOCAL ? "/pyodide/" : "https://cdn.jsdelivr.net/pyodide/v0.29.0/full/",
+    indexUrls: LOCAL ? ["http://127.0.0.1:8765/pypi/{package_name}/json"] : null,
+  };
+  const MAX_COLUMNS = 250;
+  const MAX_BYTES = 600 * 1024 * 1024;
+  const CHUNK_SIZE = 200000;
+  // Overridable so the row count can be dialled down when testing the page.
+  const BIG_DEMO_ROWS = Number(params.get("rows")) || 5000000;
+
+  const $ = (id) => document.getElementById(id);
+  const els = {
+    drop: $("drop"), pick: $("pick"), file: $("file"), sample: $("sample"), big: $("bigdemo"),
+    statusPanel: $("statusPanel"), statusText: $("statusText"), statusDetail: $("statusDetail"),
+    spin: $("spin"), log: $("log"), notes: $("notes"),
+    resultPanel: $("resultPanel"), tiles: $("tiles"), report: $("report"), reportTitle: $("reportTitle"),
+    download: $("download"), downloadStats: $("downloadStats"), reset: $("reset"), versions: $("versions"),
+  };
+
+  let ready = false, busy = false, last = null;
+  const t0 = performance.now();
+  const stamp = () => `${((performance.now() - t0) / 1000).toFixed(1)}s`;
+  const fmtBytes = (b) => b >= 1073741824 ? (b / 1073741824).toFixed(2) + " GB"
+    : b >= 1048576 ? (b / 1048576).toFixed(1) + " MB"
+    : (b / 1024).toFixed(0) + " KB";
+  const fmtNum = (n) => (n === null || n === undefined) ? "—" : Number(n).toLocaleString();
+
+  function logLine(text) {
+    els.log.textContent += `${stamp().padStart(6)}  ${text}\n`;
+    els.log.scrollTop = els.log.scrollHeight;
+  }
+  function setStatus(text, detail) {
+    els.statusPanel.classList.remove("hidden");
+    els.statusText.textContent = text;
+    els.statusDetail.textContent = detail || "";
+    logLine(text);
+  }
+  function settle(text, detail) {
+    els.spin.className = "dot";
+    els.statusText.textContent = text;
+    els.statusDetail.textContent = detail || "";
+  }
+  function note(kind, title, body) {
+    const d = document.createElement("div");
+    d.className = `note ${kind}`;
+    d.innerHTML = `<b></b><span></span>`;
+    d.querySelector("b").textContent = title;
+    d.querySelector("span").textContent = body;
+    els.notes.appendChild(d);
+  }
+  function clearNotes() { els.notes.textContent = ""; }
+  function setBusy(v) {
+    busy = v;
+    for (const b of [els.pick, els.sample, els.big]) b.disabled = v || !ready;
+    els.spin.className = v ? "spinner" : "dot";
+  }
+
+  const worker = new Worker("worker.js");
+  worker.postMessage({ type: "boot", config: CONFIG });
+  setStatus("Booting the WebAssembly runtime…", "one-time, then cached");
+  setBusy(true);
+
+  worker.onmessage = (e) => {
+    const m = e.data;
+    if (m.type === "status") { setStatus(m.text, m.detail); return; }
+    if (m.type === "log") { if (m.text && m.text.trim()) logLine(m.text.trim()); return; }
+
+    if (m.type === "ready") {
+      ready = true;
+      setBusy(false);
+      settle("Runtime ready — drop a file to profile it",
+        `booted in ${m.bootSecs.toFixed(1)}s · ${m.heapMB} MB heap`);
+      els.versions.textContent =
+        `pysuricata ${m.versions.pysuricata} · pandas ${m.versions.pandas} · Python ${m.versions.python} on WebAssembly`;
+      logLine(`ready — pysuricata ${m.versions.pysuricata}, pandas ${m.versions.pandas}, python ${m.versions.python}`);
+      return;
+    }
+
+    if (m.type === "preflight") {
+      logLine(`schema: ${m.n_cols} columns${m.n_rows ? `, ${fmtNum(m.n_rows)} rows` : ""}, ${fmtBytes(m.bytes)} on disk`);
+      return;
+    }
+
+    if (m.type === "refused") {
+      setBusy(false);
+      settle("Refused — too wide for a browser tab");
+      note("warn", m.reason, m.detail);
+      return;
+    }
+
+    if (m.type === "error") {
+      setBusy(false);
+      settle("Failed");
+      logLine("error: " + m.message);
+      note("err", "That did not work.", m.message);
+      return;
+    }
+
+    if (m.type === "done") {
+      setBusy(false);
+      last = m;
+      settle("Done", `${m.profileSecs.toFixed(1)}s to profile · ${m.heapMB} MB peak heap`);
+      logLine(`profiled in ${m.profileSecs.toFixed(1)}s — ${fmtBytes(m.meta.html_bytes)} of HTML`);
+      renderResult(m);
+    }
+  };
+
+  function tile(k, v, sub) {
+    return `<div class="tile"><div class="k">${k}</div><div class="v">${v}${sub ? ` <small>${sub}</small>` : ""}</div></div>`;
+  }
+
+  function renderResult(m) {
+    const pct = (x) => (x === null || x === undefined) ? "—" : `${Number(x).toFixed(2)}<small>%</small>`;
+    const tiles = [
+      tile("Rows", fmtNum(m.meta.rows)),
+      tile("Columns", fmtNum(m.meta.cols)),
+      tile("Missing cells", pct(m.meta.missing_pct)),
+      tile("Duplicate rows", pct(m.meta.duplicate_pct), "approx"),
+      tile("Profiled in", m.profileSecs.toFixed(1), "s"),
+    ];
+    // For the streamed run the interesting number is how little the heap moved.
+    tiles.push(
+      m.streamed && m.heapBefore
+        ? tile("Heap", `${m.heapBefore} → ${m.heapMB}`, "MB")
+        : tile("Peak heap", m.heapMB, "MB"),
+    );
+    if (m.meta.bytes_seen) tiles.push(tile("Data seen", fmtBytes(m.meta.bytes_seen)));
+    els.tiles.innerHTML = tiles.join("");
+    els.report.srcdoc = m.html;
+    els.resultPanel.classList.remove("hidden");
+    els.resultPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function saveBlob(content, filename, mime) {
+    const url = URL.createObjectURL(new Blob([content], { type: mime }));
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  function start(file) {
+    if (busy || !ready) return;
+    if (file.size > MAX_BYTES) {
+      note("warn", `That file is ${fmtBytes(file.size)}.`,
+        `The demo caps at ${fmtBytes(MAX_BYTES)} so a browser tab does not run out of address space. PySuricata itself has no such limit — run it locally for bigger files.`);
+      return;
+    }
+    clearNotes();
+    els.resultPanel.classList.add("hidden");
+    els.log.textContent = "";
+    setBusy(true);
+    const isParquet = /\.(parquet|pq)$/i.test(file.name);
+    els.reportTitle.textContent = file.name;
+    logLine(`${file.name} — ${fmtBytes(file.size)}, staying local`);
+    worker.postMessage({
+      type: "profile", file, name: file.name, isParquet,
+      chunkSize: CHUNK_SIZE, maxColumns: MAX_COLUMNS,
+    });
+  }
+
+  els.pick.onclick = () => els.file.click();
+  els.file.onchange = () => { if (els.file.files[0]) start(els.file.files[0]); els.file.value = ""; };
+
+  els.sample.onclick = async () => {
+    if (busy || !ready) return;
+    clearNotes();
+    setStatus("Fetching the sample dataset…", "60 KB from this site");
+    const res = await fetch("sample/titanic.csv");
+    const blob = await res.blob();
+    start(new File([blob], "titanic.csv", { type: "text/csv" }));
+  };
+
+  els.big.onclick = () => {
+    if (busy || !ready) return;
+    clearNotes();
+    els.resultPanel.classList.add("hidden");
+    els.log.textContent = "";
+    setBusy(true);
+    els.reportTitle.textContent = `Streamed sensor readings (${BIG_DEMO_ROWS.toLocaleString()} rows)`;
+    logLine(`streaming ${BIG_DEMO_ROWS.toLocaleString()} rows × 10 columns — generated on demand, nothing downloaded`);
+    logLine(`one core, no threads: expect roughly ${Math.max(5, Math.round(BIG_DEMO_ROWS / 150000))}s — the heap figure is the point, not the clock`);
+    worker.postMessage({ type: "generate", rows: BIG_DEMO_ROWS, chunkSize: CHUNK_SIZE });
+  };
+
+  els.download.onclick = () => last && saveBlob(last.html, (els.reportTitle.textContent || "report").replace(/\.[^.]+$/, "") + "-pysuricata.html", "text/html");
+  els.downloadStats.onclick = () => last && saveBlob(last.stats, (els.reportTitle.textContent || "report").replace(/\.[^.]+$/, "") + "-pysuricata.json", "application/json");
+  els.reset.onclick = () => {
+    els.resultPanel.classList.add("hidden");
+    clearNotes();
+    els.report.srcdoc = "";
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  ["dragenter", "dragover"].forEach((ev) =>
+    els.drop.addEventListener(ev, (e) => { e.preventDefault(); els.drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((ev) =>
+    els.drop.addEventListener(ev, (e) => { e.preventDefault(); els.drop.classList.remove("over"); }));
+  els.drop.addEventListener("drop", (e) => {
+    const f = e.dataTransfer && e.dataTransfer.files[0];
+    if (f) start(f);
+  });
+  window.addEventListener("dragover", (e) => e.preventDefault());
+  window.addEventListener("drop", (e) => e.preventDefault());
+
+  // Test hook: lets the headless harness observe outcomes without scraping DOM.
+  window.__demo = { get ready() { return ready; }, get busy() { return busy; }, get last() { return last; } };
+})();
+</script>
+</body>
+</html>
