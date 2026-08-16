@@ -73,20 +73,20 @@ class TestTypeIsNotAColour:
 
         The legacy hexes were gone, so every colour-literal check passed, while
         the report still said olive for both *categorical* and *passes* and rust
-        for both *boolean* and *fails*. That collision is the entire reason this
-        palette exists, and it had been reintroduced by the change meant to
-        remove it.
+        for both *boolean* and *fails*.
+
+        The key now lives in `composition_bar.py` rather than in CSS, so the
+        swatch and the segment it labels take the same value from the same
+        place and can no longer disagree. This asserts it there.
         """
-        text = (CSS_DIR / "_03-summary.css").read_text()
-        key = text.split(".summary-card:first-child .summary-list li:nth-child(1)", 1)
-        assert len(key) == 2, "the column-type key selector moved"
-        block = key[1].split("/* Boolean */", 1)[0]
-        swatches = re.findall(r"background:\s*var\((--[\w-]+)\)", block)
-        assert len(swatches) == 4, swatches
-        assert all(s.startswith("--data-") for s in swatches), (
-            f"the column-type key must use the data scale, got {swatches}"
-        )
-        assert len(set(swatches)) == 4, f"each type needs its own step: {swatches}"
+        from pysuricata.render.composition_bar import _STEPS
+
+        assert len(_STEPS) == 4, _STEPS
+        fills = [fill for fill, _ in _STEPS]
+        assert all("--data-" in fill for fill in fills), fills
+        assert len(set(fills)) == 4, f"each rank needs its own step: {fills}"
+        for fill, ink in _STEPS:
+            assert "--on-data-" in ink, (fill, ink)
 
     def test_no_quality_token_is_used_for_a_column_type(self):
         """Stated as a rule rather than a location, so it still holds if the

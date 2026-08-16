@@ -283,9 +283,6 @@
     const root = document.getElementById(ROOT_ID);
     const tip = root && root.querySelector('.hist-tooltip');
     if (tip) tip.style.display = 'none';
-    // Also hide donut tooltip
-    const donutTip = root && root.querySelector('.donut-tooltip');
-    if (donutTip) donutTip.style.display = 'none';
   }
   function positionTip(e, tip, root) {
     const r = root.getBoundingClientRect();
@@ -337,30 +334,11 @@
       return;
     }
 
-    // Donut chart segment tooltips (Column types pie chart)
-    const donutSegment = e.target.closest('.segment-path');
-    if (donutSegment) {
-      const type = donutSegment.getAttribute('data-type') || 'Unknown';
-      const count = donutSegment.getAttribute('data-count') || '0';
-      const pct = donutSegment.getAttribute('data-percentage') || '0.0';
-
-      const html = `<div class="line"><strong>${type}</strong></div>` +
-        `<div class="line">${count} ${count === '1' ? 'column' : 'columns'} <span class="muted">(${pct}%)</span></div>`;
-
-      // Use donut-tooltip class instead of hist-tooltip
-      const root = document.getElementById(ROOT_ID);
-      if (!root) return;
-      let tip = root.querySelector('.donut-tooltip');
-      if (!tip) {
-        tip = document.createElement('div');
-        tip.className = 'donut-tooltip';
-        root.appendChild(tip);
-      }
-      tip.innerHTML = html;
-      tip.style.display = 'block';
-      positionTip(e, tip, root);
-      return;
-    }
+    // The donut's segment tooltip is gone with the donut. It existed because
+    // an arc cannot be read to a value, so the number had to be revealed on
+    // hover; the stacked bar prints each count inside its own segment and
+    // lists every count in the legend, including the zeros. A tooltip that
+    // repeats what is already on screen is a hover target that does nothing.
 
     // Missing values distribution tooltips (chunk and spectrum segments)
     const missingSegment = e.target.closest('.chunk-segment, .spectrum-segment');

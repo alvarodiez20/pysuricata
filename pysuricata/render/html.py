@@ -19,7 +19,7 @@ from .cards import render_bool_card as _render_bool_card
 from .cards import render_cat_card as _render_cat_card
 from .cards import render_dt_card as _render_dt_card
 from .cards import render_numeric_card as _render_numeric_card
-from .donut_chart import DonutChartRenderer
+from .composition_bar import CompositionBarRenderer
 from .format_utils import human_bytes as _human_bytes
 from .format_utils import human_time as _human_time
 from .markdown_utils import render_markdown_to_html
@@ -77,6 +77,54 @@ def _build_dataset_name(name: str | None) -> str:
         '<span class="bar-sep" aria-hidden="true"></span>'
         f'<span class="dataset-name" title="{_html.escape(text)}">{_html.escape(text)}</span>'
     )
+
+
+def _column_mix(numeric: int, categorical: int, datetime: int, boolean: int) -> str:
+    """`3 num · 8 cat · 1 bool`, naming only the types that are present.
+
+    Printing every type regardless gives `1 num · 0 cat · 0 date · 0 bool` for
+    a single-column frame, which is four facts to convey one. A type with no
+    columns is already stated by the composition legend below.
+    """
+    parts = [
+        (numeric, "num"),
+        (categorical, "cat"),
+        (datetime, "date"),
+        (boolean, "bool"),
+    ]
+    present = [f"{count:,} {name}" for count, name in parts if count]
+    return " · ".join(present) if present else "none"
+
+
+def _quick_facts(
+    *,
+    unique_cols: int,
+    constant_cols: int,
+    high_card_cols: int,
+    text_cols: int,
+    avg_text_len: str,
+    date_min: str,
+    date_max: str,
+) -> str:
+    """One mono run in place of five bordered pills.
+
+    Five pills is five borders to state five short facts, and the borders were
+    doing none of the work. The date range is dropped rather than shown empty
+    when there are no datetime columns.
+    """
+    facts = [
+        f"{unique_cols:,} unique",
+        f"{constant_cols:,} constant",
+        f"{high_card_cols:,} high-cardinality",
+    ]
+    if text_cols:
+        facts.append(f"{text_cols:,} text (avg len {avg_text_len})")
+    if date_min != "—" and date_max != "—":
+        span = f"{date_min} → {date_max}".replace("<br>", " ")
+        facts.append(f"range {span}")
+    else:
+        facts.append("no date range")
+    return " · ".join(facts)
 
 
 def render_html_snapshot(
@@ -328,13 +376,34 @@ def render_html_snapshot(
     # Escape the raw markdown for the data attribute
     description_attr = _html.escape(description_raw) if description_raw else ""
 
-    # Generate interactive SVG donut chart with tooltips
-    donut_renderer = DonutChartRenderer()
-    dtype_donut_svg = donut_renderer.render_dtype_donut(
+    composition_bar = CompositionBarRenderer().render(
         numeric=len(kinds.numeric),
         categorical=len(kinds.categorical),
         datetime=len(kinds.datetime),
         boolean=len(kinds.boolean),
+    )
+
+    # The description is a margin note. Empty, it is one hairline row offering
+    # to add one -- reports generated in a loop never carry a description, and
+    # must not be disfigured by an invitation nobody will accept.
+    has_description = bool(description_html)
+    description_state = "" if has_description else " is-empty"
+    description_label = "Note" if has_description else "Description"
+    description_action = "edit" if has_description else "+ add a note"
+
+    missing_pct_value = (
+        (total_missing_cells / total_cells * 100.0) if total_cells else 0.0
+    )
+    # Past the threshold the sub-line takes the warning colour. --q-warn-text,
+    # not --q-warn-fill: this is 11.5px type, and the fill step is deliberately
+    # below the text minimum so bars can be lighter than words.
+    missing_tone = "is-warn" if missing_pct_value >= 5.0 else ""
+    complete_columns = sum(1 for _, pct, _ in miss_list if pct <= 0.0)
+    complete_note = (
+        f'<p class="miss-complete">{complete_columns:,} of {n_cols:,} columns'
+        f" {'is' if complete_columns == 1 else 'are'} complete</p>"
+        if n_cols
+        else ""
     )
 
     # Substitution is done with a single regex pass rather than str.format()
@@ -364,7 +433,30 @@ def render_html_snapshot(
         "categorical_cols": str(len(kinds.categorical)),
         "datetime_cols": str(len(kinds.datetime)),
         "bool_cols": str(len(kinds.boolean)),
-        "dtype_donut_svg": dtype_donut_svg,
+        "composition_bar": composition_bar,
+        "col_mix": _column_mix(
+            len(kinds.numeric),
+            len(kinds.categorical),
+            len(kinds.datetime),
+            len(kinds.boolean),
+        ),
+        "missing_pct": f"{missing_pct_value:.1f}%",
+        "missing_cells": f"{total_missing_cells:,} cells",
+        "missing_tone": missing_tone,
+        "duplicates_value": f"{dup_rows:,}",
+        "complete_columns_note": complete_note,
+        "description_state": description_state,
+        "description_label": description_label,
+        "description_action": description_action,
+        "quick_facts": _quick_facts(
+            unique_cols=n_cols,
+            constant_cols=constant_cols,
+            high_card_cols=high_card_cols,
+            text_cols=text_cols,
+            avg_text_len=avg_text_len,
+            date_min=date_min,
+            date_max=date_max,
+        ),
         "top_missing_list": top_missing_list,
         "n_unique_cols": f"{n_cols:,}",
         "constant_cols": f"{constant_cols:,}",

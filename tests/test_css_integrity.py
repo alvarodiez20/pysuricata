@@ -142,7 +142,11 @@ def test_css_partials_present():
         "_01-base.css",
         "_02-header.css",
         "_03-summary.css",
-        "_04-donut.css",
+        # _04-donut.css is deliberately absent: the donut it styled was
+        # replaced by the composition bar (#104, #112), whose styles live with
+        # the rest of the summary in _03. The numbering is left with a gap
+        # rather than renumbering every later partial, which would make the
+        # diff of that change unreadable for no benefit.
         "_05-sample.css",
         "_06-cards.css",
         "_07-histogram.css",

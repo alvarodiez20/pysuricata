@@ -98,74 +98,67 @@
         <section id="summary">
           <h2>Summary</h2>
 
-          <div class="summary-grid">
-            <div class="summary-card">
-              <div class="label">Rows</div>
-              <div class="value">{n_rows}</div>
+          <!-- Stat row: one rule above, hairlines between. Five cards with
+               their own borders were five boxes to say five numbers. -->
+          <div class="stat-row">
+            <div class="stat">
+              <div class="stat__cap">Rows</div>
+              <div class="stat__val">{n_rows}</div>
+              <div class="stat__sub">single pass</div>
             </div>
-            <div class="summary-card">
-              <div class="label">Columns</div>
-              <div class="value">{n_cols}</div>
+            <div class="stat">
+              <div class="stat__cap">Columns</div>
+              <div class="stat__val">{n_cols}</div>
+              <div class="stat__sub">{col_mix}</div>
             </div>
-            <div class="summary-card">
-              <div class="label" title="Sum of memory used by all columns across all chunks">Processed bytes (≈)</div>
-              <div class="value">{memory_usage}</div>
+            <div class="stat">
+              <div class="stat__cap">Missing</div>
+              <div class="stat__val">{missing_pct}</div>
+              <div class="stat__sub {missing_tone}">{missing_cells}</div>
             </div>
-            <div class="summary-card">
-              <div class="label">Missing</div>
-              <div class="value">{missing_overall}</div>
+            <div class="stat">
+              <div class="stat__cap">Duplicates</div>
+              <div class="stat__val">{duplicates_value}</div>
+              <div class="stat__sub">≈ KMV sketch</div>
             </div>
-            <div class="summary-card">
-              <div class="label" title="Approximate count using probabilistic KMV sketch algorithm">Duplicates (≈)</div>
-              <div class="value">{duplicates_overall}</div>
+            <div class="stat">
+              <div class="stat__cap">Processed</div>
+              <div class="stat__val">{memory_usage}</div>
+              <div class="stat__sub">across all chunks</div>
+            </div>
+            <div class="stat stat--elapsed">
+              <div class="stat__cap">Elapsed</div>
+              <div class="stat__val">{report_duration}</div>
+              <div class="stat__sub">wall clock</div>
             </div>
           </div>
 
-          <div class="summary-grid second-row">
-            <div class="summary-card">
-              <div class="label">Column types</div>
-              {dtype_donut_svg}
-              <ul class="summary-list">
-                <li><span>Numeric</span><span>{numeric_cols}</span></li>
-                <li><span>Categorical</span><span>{categorical_cols}</span></li>
-                <li><span>Datetime</span><span>{datetime_cols}</span></li>
-                <li><span>Boolean</span><span>{bool_cols}</span></li>
-              </ul>
+          <div class="summary-panels">
+            <div class="panel">
+              <div class="micro-label">Column types</div>
+              {composition_bar}
             </div>
-            <div class="summary-card">
-              <div class="label">Top missing columns</div>
-              <ul class="summary-list top-missing">
+            <div class="panel">
+              <div class="micro-label">Top missing columns</div>
+              <ul class="miss-list">
                 {top_missing_list}
               </ul>
-            </div>
-            <div class="summary-card">
-              <div class="label">Quick insights</div>
-              <ul class="chip-wall">
-                <li>Unique cols: {n_unique_cols}</li>
-                <li>Constant cols: {constant_cols}</li>
-                <li>High-card categoricals: {high_card_cols}</li>
-                <li>Date range: {date_min} → {date_max}</li>
-                <li>Text cols: {text_cols} (avg len {avg_text_len})</li>
-              </ul>
+              {complete_columns_note}
             </div>
           </div>
 
-          <!-- Description Section -->
-          <div class="collapsible-card" style="margin-top: 12px;">
-            <details class="card">
-              <summary>
-                <span id="description-toggle-text">Description</span>
-                <span class="chev" aria-hidden="true">▸</span>
-              </summary>
-              <div class="card-content">
-                <div class="description-value" id="summary-description" data-report-id="{report_id}"
-                  data-original-markdown="{description_attr}" data-action="edit-description">
-                  <div class="description-content">
-                    {description_html}<span class="placeholder">Click to add description...</span>
-                  </div>
-                </div>
-              </div>
-            </details>
+          <!-- Five bordered pills were five borders to say five short facts. -->
+          <p class="quick-facts">{quick_facts}</p>
+
+          <!-- Description as a margin note. Empty costs one hairline row:
+               reports generated in a loop never have one and must not be
+               disfigured by an invitation nobody will accept. -->
+          <div class="description-block{description_state}" id="summary-description"
+            data-report-id="{report_id}" data-original-markdown="{description_attr}"
+            data-action="edit-description">
+            <span class="micro-label description-block__label">{description_label}</span>
+            <div class="description-content">{description_html}</div>
+            <span class="description-block__action">{description_action}</span>
           </div>
         </section>
         <hr class="section-divider">
