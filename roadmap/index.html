@@ -80,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#pysuricata-roadmap-v7-re-audit-at-0050" class="md-skip">
+        <a href="#pysuricata-roadmap-v8-re-audit-at-0062" class="md-skip">
           Skip to content
         </a>
       
@@ -1698,6 +1698,19 @@
         
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Roadmap
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -1709,6 +1722,52 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-landed-since-v7" class="md-nav__link">
+    <span class="md-ellipsis">
+      What landed since v7
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-measurement-rules" class="md-nav__link">
+    <span class="md-ellipsis">
+      The measurement rules
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-to-do-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      What to do next
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -1787,15 +1846,24 @@
   
 
 
-<h1 id="pysuricata-roadmap-v7-re-audit-at-0050">PySuricata roadmap v7 — re-audit at 0.0.50</h1>
-<p>Supersedes v6 (0.0.38). Two things changed shape since.</p>
-<p><strong>The correctness backlog is empty.</strong> Every item v6 listed as open — #67, #61,</p>
-<h1 id="60-36-41-89-is-closed-along-with-43-64-65-68-91-and-105">60, #36, #41, #89 — is closed, along with #43, #64, #65, #68, #91 and #105.</h1>
-<p>There is no longer a "none blocking" section, because there is nothing in it.</p>
-<p><strong>The report's presentation is now the main body of work</strong>, not a footnote. v6
-tracked it in one line at the end as out of scope. It is #110–#125: a
-fourteen-issue migration with its own testing strategy, and it is the largest
-open item by some distance.</p>
+<h1 id="pysuricata-roadmap-v8-re-audit-at-0062">PySuricata roadmap v8 — re-audit at 0.0.62</h1>
+<p>Supersedes v7 (0.0.50). Two things changed shape since.</p>
+<p><strong>The redesign is finished as a body of work.</strong> v7 called #110–#125 "the largest
+open item by some distance." Fifteen of its sixteen issues are closed. What is
+left is not more design: it is an accessibility close-out (#122), a <code>compare()</code>
+view (#121), and turning the acceptance criteria into tests (#124).</p>
+<p><strong>A new class of defect surfaced, and it is the interesting finding of this
+audit.</strong> <code>+ add a note</code> in the summary section did nothing for eleven versions.
+Not slowly, not partially — nothing, with a clean console. The redesign renamed
+the block from <code>.description-value</code> to <code>.description-block</code>; the JavaScript
+still looked for the old name; and every entry point in that file guards on a
+null container and returns quietly. <strong>A test suite of 1,735 tests did not
+notice, because not one of them asserted that a selector resolves.</strong></p>
+<p>That is not a bug in a control. It is a gap in what the suite was capable of
+seeing, and it was created by exactly the migration v7 was most confident
+about — the one with a fingerprint proving the <em>facts</em> never changed. The facts
+never did. Nothing in the fingerprint has an opinion about whether a button
+works.</p>
 <table>
 <thead>
 <tr>
@@ -1813,25 +1881,28 @@ open item by some distance.</p>
 <td><strong>152 ns/value</strong>, from 828 at 0.0.16</td>
 </tr>
 <tr>
-<td>Report size</td>
-<td><strong>543,577 B</strong>, from 1,110,756 — measured in one run at 0.0.49</td>
+<td>Report size, 891 × 12</td>
+<td><strong>600,028 B</strong>, from 629,117 at 0.0.50 — <strong>−4.6%</strong></td>
+</tr>
+<tr>
+<td>Report size, 891 × 8</td>
+<td><strong>538,660 B</strong>, from 551,198 at 0.0.50 — <strong>−2.3%</strong></td>
 </tr>
 <tr>
 <td>Tests</td>
-<td><strong>1,473</strong>, from 1,089 at 0.0.38</td>
+<td><strong>1,759</strong>, from 1,473 at 0.0.50</td>
 </tr>
 <tr>
 <td>Open correctness items</td>
-<td><strong>0</strong></td>
+<td><strong>1</strong> (#139, reopened — see below)</td>
 </tr>
 </tbody>
 </table>
-<p>The headline ratio is unchanged because it has <strong>still not been re-measured
-since 0.0.31</strong>. Nothing since then has touched a hot path — the work has been
-contracts, comparison, streaming readers and presentation — so the number is
-stale rather than wrong. Re-run it before anything is published, per the rules
-below.</p>
-<h2 id="what-landed-since-v6">What landed since v6</h2>
+<p>The headline ratio is <strong>still</strong> unchanged and <strong>still</strong> has not been re-measured
+since 0.0.31. v7 said re-run it before publishing anything; that remains true
+and is now two audits old. Nothing since has touched a hot path, so it is stale
+rather than wrong — but "stale rather than wrong" is a claim that decays.</p>
+<h2 id="what-landed-since-v7">What landed since v7</h2>
 <table>
 <thead>
 <tr>
@@ -1841,82 +1912,111 @@ below.</p>
 </thead>
 <tbody>
 <tr>
-<td><strong>#93, #94, #95</strong></td>
-<td><code>merge()</code> merges rather than discarding; the <code>summarize()</code> payload is a versioned contract that gates on stale data; text memory is flat in rows.</td>
+<td><strong>#111–#120</strong></td>
+<td>Header, summary, sample, all four card kinds, correlations, missing values. Every phase byte-identical under the fingerprint except the two that were meant to change facts.</td>
 </tr>
 <tr>
-<td><strong>#96</strong></td>
-<td><code>sources.py</code> — Arrow, Parquet and DuckDB read in batches without materialising. A Codecov report caught the DuckDB branch being unreachable because a relation also exports <code>__arrow_c_stream__</code>.</td>
+<td><strong>#123</strong></td>
+<td>The invariance harness: fingerprint (598 facts), golden <code>summarize()</code> payload on three frames, fact coverage (154 of 154 statistics reach the page). Each guard verified to <strong>fail</strong> on a real regression rather than assumed to work.</td>
 </tr>
 <tr>
-<td><strong>#105, #64</strong></td>
-<td><code>ComputeOptions.checkpoint</code> groups five settings behind one name. <code>accumulators/protocols.py</code> describes the surface the engine may use, tested against a fake accumulator that <strong>inherits nothing</strong> — as close as Python gets to proving the boundary would hold for a type from another language.</td>
-</tr>
-<tr>
-<td><strong>#65</strong></td>
-<td><code>compare(a, b)</code>, built <strong>on</strong> the gate rather than beside it, so a diff and a gate cannot disagree about what counts as a change.</td>
-</tr>
-<tr>
-<td><strong>#41</strong></td>
-<td>The distinct count no longer exceeds the row count, and no longer claims to be exact. This also fixed a second bug: the identifier check required 0.98 of the row count, <em>inside</em> the sketch's own 2.2% error, so a perfect key was profiled as a measurement with a mean.</td>
-</tr>
-<tr>
-<td><strong>#110</strong></td>
-<td>Phase 1 of the redesign — tokens, typography, structural motif.</td>
+<td><strong>#103, #104, #41</strong></td>
+<td>Sample open by default; the donut replaced by a stacked composition bar; the distinct count no longer exceeds the row count or claims to be exact.</td>
 </tr>
 <tr>
 <td><strong>logo</strong></td>
-<td>592 KB of base64 PNG replaced by a 10.8 KB inline SVG: <strong>51% of the report</strong>, for a mark drawn at 30 CSS pixels.</td>
+<td>592 KB of base64 PNG replaced by a 10.8 KB inline SVG — 51% of the report, for a mark drawn at 30 CSS pixels.</td>
+</tr>
+<tr>
+<td><strong>the note button</strong></td>
+<td>Fixed, and generalised: every <code>getElementById</code> and class selector in the bundled JS is now checked against real rendered markup.</td>
 </tr>
 </tbody>
 </table>
-<h2 id="the-measurement-rules-unchanged">The measurement rules, unchanged</h2>
-<p>Four now. Each cost a real retraction or a near miss.</p>
+<h2 id="the-measurement-rules">The measurement rules</h2>
+<p>Five now. Each cost a real retraction or a near miss.</p>
 <ol>
 <li><strong>A ratio is only quotable when both sides were measured in the same
-   round-robin</strong>, on the same machine, within the same run. <code>benchmarks/end_to_end.py</code>
-   and <code>benchmarks/versions.py</code> interleave every tool and version across rounds
-   and label anything under three rounds <em>Not quotable</em>.</li>
+   round-robin</strong>, on the same machine, within the same run.</li>
 <li><strong><code>cProfile</code> over-weights kernels that make many small calls.</strong> It ranked the
    reservoir at ~30% of self time when replacing it with a 5× faster one moved
    wall clock by 4%.</li>
-<li><strong>A kernel benchmark only measures the call sites it calls.</strong> Holding
-   <code>KMV._values</code> as an array won its own benchmark by 2.7× and lost 35% end to
-   end, because the benchmark never touched the scalar insert path.</li>
+<li><strong>A benchmark only measures the call sites it calls.</strong> Holding <code>KMV._values</code>
+   as an array won its own benchmark by 2.7× and lost 35% end to end.</li>
 <li><strong>A guard is worth only as much as the guarantee that what it reads is what
-   runs.</strong> New at 0.0.50. <code>test_contrast.py</code> asserted the axis colour cleared
-   3:1 and passed for as long as it existed, while a second stylesheet
-   redefined that token and the report drew a different colour entirely. The
-   test was reading the definition; the page was rendering the override. Found
-   by inspecting computed styles in a browser, not by reading CSS.</li>
+   runs.</strong> <code>test_contrast.py</code> asserted the axis colour cleared 3:1 and passed
+   for as long as it existed, while a second stylesheet redefined that token and
+   the page drew a different colour.</li>
+<li><strong>A check over rendered output is only as good as the markup the fixture
+   reaches.</strong> New at 0.0.62, and rule 3 restated for the render layer. Writing
+   the selector check produced two confident false positives:</li>
 </ol>
-<p>The incumbent comparison — 13.3× against ydata-profiling — has not been
-re-measured since 0.0.26 and is stale in the understated direction.</p>
+<table>
+<thead>
+<tr>
+<th>reported dead</th>
+<th>why it wasn't</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>the numeric Linear/Log toggle</td>
+<td><code>[1.0, 2, 3, 4, 5] * 40</code> has five distinct values, so it profiles as <strong>categorical</strong> — the fixture had no numeric card at all</td>
+</tr>
+<tr>
+<td>the flag filter</td>
+<td>a frame with no quality problems renders no <code>.needs-attention</code> block</td>
+</tr>
+</tbody>
+</table>
+<p>Both controls work; both were checked in a browser before anything was
+   changed. A fixture that misses a branch does not report "unknown", it reports
+   "absent", and absent reads as broken.</p>
+<p><strong>The report-size series is not reproducible, and that is a sixth rule waiting
+to be written.</strong> v7 quotes 543,577 B at 0.0.49 on "an 891 × 8 frame." The frame
+was never pinned, so the figure cannot be reproduced — the closest
+reconstruction gives 551,198 B at the adjacent commit. The numbers in this
+document's table were measured across three interleaved rounds on two pinned
+frames and are internally consistent; they are <strong>not</strong> comparable to v7's. Pin
+the frames the way <code>tests/fixtures/</code> pins the invariance inputs.</p>
 <hr />
 <h2 id="what-to-do-next">What to do next</h2>
-<p><strong>1 · Finish the redesign (#110–#125).</strong> The largest open item, and the one with
-the most leverage: the library's output <em>is</em> the product, and every claim about
-correctness is read through a page that currently looks like a template.</p>
-<p>Phase 1 has landed. The order after it is fixed by dependency — the header
-(#111) and summary (#112) sit on the tokens, the cards (#114–#118) sit on both.
-Three things are worth holding onto while it runs:</p>
-<ul>
-<li><strong>The facts must not change while the presentation does.</strong> <code>scripts/report_fingerprint.py</code>
-  reduces a report to the set of numbers it asserts and discards everything
-  about how they look. Phase 1 and the logo change are both byte-identical
-  under it, 598 facts. #123 makes that a test rather than a habit.</li>
-<li><strong>#118 is a data issue wearing a presentation costume.</strong> Three real bugs found
-  while designing. It should be treated as correctness work and not deferred
-  behind the visual phases.</li>
-<li><strong>The compatibility shim is scaffolding</strong>, and scaffolding gets left up. 195
-  colour literals still sit in components that phases 2–9 own; the shim comes
-  out in #122, which is what makes that count reach zero.</li>
-</ul>
-<p><strong>2 · Publish (#38, one weekend).</strong> Unchanged from v6 in everything except its
-rank, and it drops one place only because the report is now the thing a reader
-sees first. Re-run the incumbent round-robin so the quoted number is one
-measurement rather than two.</p>
-<p><strong>3 · Prove the memory claim, then ship the budget (#92, then #79).</strong> "Bounded
+<p><strong>1 · Close out the redesign (#122, #124, #121).</strong> In that order.</p>
+<p><strong>#122 is the one that matters</strong>, and it carries a decision that has been open
+across six separate hand-offs and is now blocking: **the height criteria on</p>
+<h1 id="112-599px-measured-against-a-560-target-and-114-775px-against-600">112 (599px measured against a ≤560 target) and #114 (775px against ≤600)**.</h1>
+<h1 id="114s-is-not-a-matter-of-effort-it-is-a-conflict-between-two-of-its-own">114's is not a matter of effort. It is a conflict between two of its own</h1>
+<p>acceptance criteria: six controls at the required 44×44 wrap to 148px, and
+fourteen stats in the specified two-column mobile grid are seven rows. One
+decision resolves both, and it can be applied retroactively — but it has to be
+made rather than built past, which is what happened five times.</p>
+<h1 id="122-also-removes-the-compatibility-shim-that-is-scaffolding-and-scaffolding">122 also removes the compatibility shim. That is scaffolding, and scaffolding</h1>
+<p>gets left up: 195 colour literals still sit in components the visual phases own,
+and the shim coming out is what makes that count reach zero.</p>
+<p><strong>#124 should absorb the selector check.</strong> The acceptance criteria it exists to
+run are mostly geometric — heights, contrast, target sizes — and the note button
+is the proof that geometry is not the only thing that silently stops being true.</p>
+<p><strong>2 · #139, reopened.</strong> Per-column per-chunk missing counts are never produced.
+It was closed by a <strong>keyword in a PR body, not by a fix</strong> — the write-up of the
+gap sat in the commit message that GitHub read as a closing reference. Three
+verified findings stand: the renderer reads <code>chunk_metadata</code> off an object that
+does not carry it, only the numeric accumulator tracks it at all, and
+<code>mark_chunk_boundary()</code> is called only from <code>finalize()</code>, so there is exactly
+one boundary no matter how many chunks ran.</p>
+<p>The strip renderer is written and tested in isolation, and
+<code>TestTheDataGapIsRealAndDetected</code> fails the day the engine starts marking
+boundaries — so the view turns on by someone noticing a red test.</p>
+<p><strong>3 · Regenerate the example report.</strong> <code>docs/assets/titanic_report.html</code> is
+1,180,196 B and was last written by PR #23, at <strong>0.0.17</strong>. Every reader of the
+documentation is looking at a pre-redesign report roughly twice the size of what
+the library now emits — including the base64 logo the release notes say was
+removed. This is the cheapest credibility fix available and it is currently the
+largest gap between what the project claims and what a visitor sees.</p>
+<p><strong>4 · Publish (#38, one weekend).</strong> Unchanged except that it now has a
+precondition it did not have in v7: re-run the incumbent round-robin <em>and</em> the
+version series, so the two headline numbers are each one measurement rather than
+two. The 13.3× against ydata-profiling has not been re-measured since 0.0.26.</p>
+<p><strong>5 · Prove the memory claim, then ship the budget (#92, then #79).</strong> "Bounded
 memory, so it fits in CI" is the reason to prefer this over a profiler that
 loads the frame, and it has still never been measured on a constrained runner.</p>
 <p>Only then #79. The model in <code>docs/adr/memory-budget.md</code> is fitted on <strong>numeric
@@ -1925,30 +2025,37 @@ the budget would be optimistic exactly where it matters. It must be a planner
 that derives settings, never a cap that raises <code>MemoryError</code>, and it must report
 the accuracy consequence of what it chose: quantile error is <code>1/√k</code>, ±0.7% at
 k=20,000 and ±3.2% at k=1,000.</p>
-<p><strong>4 · The native core (#44, 3–5 weekends).</strong> Unchanged in ordering: <strong>KMV first,
-moments last</strong>, because moments were 1.3–5% of the numeric path while KMV was
-half of it. The crate is vendored with 20 passing tests, nothing imports it, and
-there is still no <code>[fast]</code> extra. #64 has since prepared the boundary, so the
-first real obstacle is gone.</p>
-<p><strong>5 · The rest of the report's weight (#39).</strong> The logo was the first item on
-that list and the largest; it is done, and the report is at 543 KB against a
-250 KB target. What remains is structural — a JSON payload block, and not
-pre-rendering six histograms per column. Both are best done <em>after</em> the
-redesign, since the redesign rewrites the markup they would restructure.</p>
+<p><strong>6 · The native core (#44, 3–5 weekends).</strong> Unchanged: <strong>KMV first, moments
+last</strong>, because moments were 1.3–5% of the numeric path while KMV was half of
+it. The crate is vendored with 20 passing tests, nothing imports it, and there
+is still no <code>[fast]</code> extra.</p>
+<p><strong>7 · The rest of the report's weight (#39).</strong> The redesign took 891 × 12 from
+629 KB to 600 KB — real, but a rounding error against the 250 KB target. The
+logo was the last easy win. What remains is structural: a JSON payload block,
+and not pre-rendering six histograms per column. Both are now unblocked, since
+the markup they would restructure has stopped moving.</p>
 <h3 id="one-piece-of-infrastructure">One piece of infrastructure</h3>
-<p><strong>#125 — CI has never run on <code>main</code>.</strong> <code>ci.yml</code> triggers on <code>pull_request</code> only.
-Every check the project relies on has only ever run against a proposed merge,
+<p><strong>#125 — CI has never run on <code>main</code>.</strong> <code>ci.yml</code> triggers on <code>pull_request</code> only,
+so every check the project relies on has only ever run against a proposed merge,
 never against the result. The fix needs care rather than effort: <code>version-check</code>
 and <code>changelog-check</code> compare against <code>origin/main</code> and would fail on every push
 to <code>main</code> by construction, so the push trigger has to be scoped to <code>lint</code>,
 <code>test</code> and <code>accuracy</code>.</p>
+<p>It has a second half found during the redesign: every workflow keys on
+<code>pull_request: branches: [main]</code>, so a <strong>stacked</strong> PR gets zero checks. Sixteen
+of the redesign PRs were stacked, and the ones that ran green did so only
+because they were retargeted at <code>main</code> before merge.</p>
 <hr />
 <p><em>Measurements: performance figures unchanged from v6 — 0.0.31 at <code>4831a36</code>, plus
 0.0.27, 0.0.26, 0.0.21 and 0.0.16 each on <code>sys.path</code> in its own interpreter;
 five round-robin rounds, best of five per version; <code>mixed</code> suite at 200,000 × 14,
-seed 0; 2-core x86-64 Linux container. Report sizes measured at 0.0.49 on an
-891 × 8 frame, before and after in a single run against a <code>main</code> worktree. Test
-count from <code>pytest -m "not benchmark"</code> at 0.0.50. Absolute times are not
+seed 0; 2-core x86-64 Linux container. </em><em>Report sizes re-measured for this
+audit</em><em>: 0.0.50 at <code>70e9701</code> against 0.0.62 at <code>de36425</code>, each on <code>sys.path</code> in
+its own interpreter, three interleaved rounds, byte length of the emitted HTML;
+frames are <code>docs/assets/titanic.csv</code> (891 × 12) and a seeded 891 × 8 frame
+covering all four card kinds. Output is deterministic — all three rounds agreed
+exactly — so best-of is not meaningful here and the single value is quoted. Test
+count from <code>pytest -m "not benchmark"</code> at 0.0.62. Absolute times are not
 comparable across sessions; ratios within a single round-robin are.</em></p>
 
 

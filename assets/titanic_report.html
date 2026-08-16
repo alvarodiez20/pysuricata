@@ -884,6 +884,27 @@ body.suricata-standalone:not(.light) {
   display: none;
 }
 
+/* Editing. The textarea is appended as a grid child, so without this it lands
+   in whichever 88px or auto track comes next and the reader types into a
+   sliver. It gets its own row, full width. */
+#pysuricata-report .description-block .description-editor {
+  grid-column: 1 / -1;
+}
+
+/* The invitation is the affordance, so it must clear the 24px minimum target
+   (WCAG 2.5.8) on its own -- the block-level `data-action` makes the whole row
+   clickable, but a control you can only hit by aiming at the row is not a
+   control the pointer target rule is satisfied by. */
+#pysuricata-report .description-block__action {
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+
+#pysuricata-report .description-block.editing {
+  align-items: start;
+}
+
 /* ---- mobile --------------------------------------------------- */
 @media (max-width: 768px) {
   #pysuricata-report .stat-row {
@@ -8870,59 +8891,14 @@ body.suricata-standalone:not(.light) {
    Description Editor
    ============================= */
 
-/* Description section styling - compact dropdown */
-#pysuricata-report .description-value {
-  font-family: var(--font-sans);
-  font-size: 0.9rem;
-  line-height: 1.4;
-  color: var(--text-primary);
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  hyphens: auto;
-  min-height: 1.2rem;
-  /* Removed: max-height, overflow constraints for dynamic sizing */
-  padding: 0;
-  margin: 0;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  display: flex;
-  align-items: flex-start;
-}
-
-#pysuricata-report .description-value:hover:not(.editing) {
-  background: rgba(0, 0, 0, 0.02);
-}
-
-#pysuricata-report:not(.light) .description-value:hover:not(.editing) {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-#pysuricata-report .description-value:empty::before {
-  content: "Click to add description...";
-  color: var(--text-muted);
-  font-style: italic;
-}
-
-/* Edit mode */
-#pysuricata-report .description-value.editing {
-  border-color: var(--bar);
-  background: var(--bg-secondary);
-  cursor: text;
-}
+/* `.description-value` styling lived here until the block was renamed to
+   `.description-block` (styled in _03-summary.css, next to the layout it
+   belongs to). The rules were dead -- no element has carried that class since
+   -- and are removed rather than renamed: the block is a margin note now, not
+   a compact dropdown, and the two rulesets disagreed about nearly everything. */
 
 #pysuricata-report .description-content {
   margin: 0;
-}
-
-
-#pysuricata-report .description-content .placeholder {
-  color: var(--text-muted);
-  font-style: italic;
-  font-size: 0.85rem;
 }
 
 /* Textarea editor */
@@ -10730,12 +10706,20 @@ body.suricata-standalone:not(.light) {
 
   const ROOT_ID = 'pysuricata-report';
   const STORAGE_KEY_PREFIX = 'pysuricata-description-';
-  const PLACEHOLDER_TEXT = 'Click to add description...';
 
   // ===== Private Helper Functions =====
 
+  // Located by id, not by class. The redesign renamed this block's class from
+  // `.description-value` to `.description-block`, and because every entry point
+  // here fails soft on a null container, the rename turned "+ add a note" into
+  // a button that did nothing at all -- silently, with no console error. The id
+  // is what the template guarantees; the class is presentation and may move
+  // again.
   function getDescriptionContainer() {
-    return document.querySelector(`#${ROOT_ID} .description-value`);
+    return (
+      document.getElementById('summary-description') ||
+      document.querySelector(`#${ROOT_ID} .description-block`)
+    );
   }
 
   function getStorageKey() {
@@ -10789,8 +10773,11 @@ body.suricata-standalone:not(.light) {
 
   function renderMarkdownToHtml(markdown) {
     // Simple client-side markdown rendering (basic support)
+    // Empty renders as empty: the row itself carries the invitation, and
+    // `.is-empty` hides this element, so a placeholder here would be a string
+    // nobody can ever see.
     if (!markdown || !markdown.trim()) {
-      return `<span class="placeholder">${PLACEHOLDER_TEXT}</span>`;
+      return '';
     }
 
     // Escape HTML for security
@@ -10822,6 +10809,24 @@ body.suricata-standalone:not(.light) {
     return html;
   }
 
+  // ===== State =====
+
+  // The server picks the empty/filled presentation once, at render time. Once
+  // the reader edits, the client owns it -- and must move all three parts
+  // together. Missing this is not cosmetic: `.is-empty` sets `display: none` on
+  // `.description-content`, so a note saved without clearing the class is
+  // stored, escaped, inserted, and invisible.
+  function applyState(container, markdown) {
+    const filled = Boolean(markdown && markdown.trim());
+    container.classList.toggle('is-empty', !filled);
+
+    const label = container.querySelector('.description-block__label');
+    if (label) label.textContent = filled ? 'Note' : 'Description';
+
+    const action = container.querySelector('.description-block__action');
+    if (action) action.textContent = filled ? 'edit' : '+ add a note';
+  }
+
   // ===== Init on Page Load =====
 
   function initializeDescription() {
@@ -10832,6 +10837,7 @@ body.suricata-standalone:not(.light) {
       if (container && contentEl) {
         setMarkdownSource(container, saved);
         contentEl.innerHTML = renderMarkdownToHtml(saved);
+        applyState(container, saved);
       }
     }
   }
@@ -10907,6 +10913,7 @@ body.suricata-standalone:not(.light) {
       // Clean up
       textarea.remove();
       container.classList.remove('editing');
+      applyState(container, newMarkdown);
     }
   };
 
@@ -10998,13 +11005,13 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-16 06:19:30</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-16 09:41:16</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <span><span class="k">Profiled in</span> <span class="v">0.13 s</span></span>
+            <span><span class="k">Profiled in</span> <span class="v">0.12 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Shape</span> <span class="v">891 rows × 12 columns</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.61</a>
+            <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata 0.0.62</a>
           </div>
         </div>
 
@@ -11042,7 +11049,7 @@ body.suricata-standalone:not(.light) {
             </div>
             <div class="stat stat--elapsed">
               <div class="stat__cap">Elapsed</div>
-              <div class="stat__val">0.13 s</div>
+              <div class="stat__val">0.12 s</div>
               <div class="stat__sub">wall clock</div>
             </div>
           </div>
@@ -11092,7 +11099,7 @@ body.suricata-standalone:not(.light) {
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260816-061930-7459" data-original-markdown=""
+            data-report-id="20260816-094116-9700" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>
