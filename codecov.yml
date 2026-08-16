@@ -24,6 +24,13 @@ coverage:
         # it is what surfaced the unreachable DuckDB branch in #96.
         target: 80%
         threshold: 0%
+        # A docs-only or config-only pull request changes no measurable lines,
+        # and Codecov reports "no coverage data" as a failure by default. That
+        # put a red check on pull requests with nothing to measure, which
+        # teaches the reader to ignore the check that does have something to
+        # say. Nothing to measure is not a failure.
+        if_not_found: success
+        if_ci_failed: error
 
 comment:
   layout: "condensed_header, diff, files"
