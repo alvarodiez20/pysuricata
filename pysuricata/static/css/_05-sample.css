@@ -20,6 +20,7 @@
   list-style: none;
   cursor: pointer;
   padding: 12px 14px;
+  min-height: var(--tap-min);
   display: flex;
   align-items: center;
   justify-content: space-between;

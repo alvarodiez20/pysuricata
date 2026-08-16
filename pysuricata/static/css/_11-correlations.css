@@ -202,24 +202,35 @@
   font-weight: 500;
 }
 
+/* Correlation strength is a word, and it reads the ink scale.
+
+   The four bands were four unrelated hues -- magenta, orange, blue, grey --
+   each on a 10% wash of itself, and three of the four failed 4.5:1 against
+   that wash. The data scale is not the answer either: `_00-tokens.css` maps
+   |r| onto --data-1..4 for the diverging *bar*, and --data-3 and --data-4
+   carry no text at all. So the bar keeps the data scale and the label takes
+   the ink one, which is what a label is.
+
+   Emphasis survives without hue: the strong bands are already `font-weight`
+   600 and the bar beside them is already longer. */
 #pysuricata-report .strength-item.very-strong {
-  background: rgba(220, 38, 127, 0.1);
-  color: #dc267f;
+  background: transparent;
+  color: var(--ink);
 }
 
 #pysuricata-report .strength-item.strong {
-  background: rgba(234, 88, 12, 0.1);
-  color: #ea580c;
+  background: transparent;
+  color: var(--ink);
 }
 
 #pysuricata-report .strength-item.moderate {
-  background: rgba(59, 130, 246, 0.1);
-  color: var(--data-1);
+  background: transparent;
+  color: var(--ink-2);
 }
 
 #pysuricata-report .strength-item.weak {
-  background: rgba(107, 114, 128, 0.1);
-  color: #6b7280;
+  background: transparent;
+  color: var(--muted);
 }
 
 /* ============================================================================
@@ -340,28 +351,33 @@
 }
 
 /* Correlation Value Colors */
+/* No colour on the sign. `_00-tokens.css` is explicit: sign is encoded by
+   which side of centre the diverging bar sits on, and by the `+` or `-`
+   printed in the value itself. Green-for-positive added a third encoding
+   that said nothing the other two did not, and it failed 4.5:1 in both
+   themes while saying it. */
 #pysuricata-report .correlations-table.enhanced .correlation-value.positive {
-  color: #059669;
+  color: var(--ink);
 }
 
 
 /* Strength Colors - Plain Text */
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="very-strong"] {
-  color: #dc267f;
+  color: var(--ink);
   font-weight: 600;
 }
 
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="strong"] {
-  color: #ea580c;
+  color: var(--ink);
   font-weight: 600;
 }
 
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="moderate"] {
-  color: var(--data-1);
+  color: var(--ink-2);
 }
 
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="weak"] {
-  color: #6b7280;
+  color: var(--muted);
 }
 
 /* ============================================================================
@@ -727,8 +743,8 @@
 }
 
 #pysuricata-report .correlation-value.positive {
-  color: #4caf50;
-  background: rgba(76, 175, 80, 0.1);
+  color: var(--ink);
+  background: transparent;
 }
 
 

@@ -221,6 +221,7 @@
 #pysuricata-report .controls-row input {
   flex: 1;
   min-width: 200px;
+  min-height: var(--tap-min);
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--rule-strong);
   border-radius: 4px;
@@ -262,6 +263,10 @@
 
 /* Filter tabs */
 #pysuricata-report .tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--tap-min);
   padding: 0.375rem 0.75rem;
   border: 1px solid var(--rule-strong);
   border-radius: 3px;
@@ -345,6 +350,11 @@
 }
 
 #pysuricata-report .pagination button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
   padding: 0.375rem 0.75rem;
   border: 1px solid var(--rule-strong);
   border-radius: 3px;
@@ -375,16 +385,29 @@
   gap: 0.125rem;
 }
 
+/* A `<button>` since #122, not a `<span>` with a click listener — which had
+   no role, no keyboard access and no focus ring. `font: inherit` and the
+   explicit background undo the UA button styling that comes with it. */
 #pysuricata-report .page-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--tap-min);
+  min-height: var(--tap-min);
   padding: 0.375rem 0.5rem;
   border: 1px solid var(--rule-strong);
   border-radius: 3px;
   background: transparent;
   color: var(--ink-2);
   cursor: pointer;
-  min-width: 1.75rem;
   text-align: center;
+  font-family: inherit;
   font-size: 0.8rem;
+}
+
+#pysuricata-report .page-number:focus-visible {
+  outline: 2px solid var(--data-1);
+  outline-offset: 2px;
 }
 
 #pysuricata-report .page-number:hover {

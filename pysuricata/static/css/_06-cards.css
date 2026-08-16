@@ -293,10 +293,47 @@
    not on either scale -- so a row of chips read as a row of coloured blocks
    with the severity competing against the text inside it. The border states
    the severity; the text states the fact. */
+/* Each band carries a shape as well as a hue, because the hue does not survive
+   a greyscale print. `--q-good` (#4A5D1E) and `--q-bad` (#963F1C) are 1.05:1
+   apart in luminance -- olive and rust are, in grey, the same grey. So a chip
+   reading "Positive-only" and a chip reading "24.28 heavy-tailed" look alike,
+   and those two say opposite things.
+
+   Most chips escape this because their text carries a number, and a severity
+   with a figure beside it is not relying on colour alone. The ones that fail
+   are the bare labels: "Positive-only", "Missing". Rather than special-case
+   those, all three bands get a mark:
+
+     good  ●   warn  ▲   bad  ■
+
+   Drawn, not typed. A `content: "✓"` would have been simpler and is what the
+   first version did, but generated content is announced by screen readers, so
+   every flag would have gained a spoken "check mark" or "multiplication x" in
+   front of a label that already says what it is. `content: ""` with a shape
+   made from border-radius and clip-path is silent and still tells the two
+   chips apart.
+
+   WCAG 1.4.1 is the rule, and greyscale printing is the smaller half of who
+   this is for: deuteranopia makes the same two chips the same chip on screen. */
+#pysuricata-report .quality-flags .flag::before {
+  content: "";
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 0.4em;
+  vertical-align: baseline;
+  background: currentColor;
+}
+
 #pysuricata-report .quality-flags .flag.bad {
   border-color: var(--q-bad);
   color: var(--q-bad);
   background: transparent;
+}
+
+/* square */
+#pysuricata-report .quality-flags .flag.bad::before {
+  border-radius: 0;
 }
 
 #pysuricata-report .quality-flags .flag.warn {
@@ -307,10 +344,21 @@
   background: transparent;
 }
 
+/* triangle */
+#pysuricata-report .quality-flags .flag.warn::before {
+  width: 8px;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+}
+
 #pysuricata-report .quality-flags .flag.good {
   border-color: var(--q-good);
   color: var(--q-good);
   background: transparent;
+}
+
+/* circle */
+#pysuricata-report .quality-flags .flag.good::before {
+  border-radius: 50%;
 }
 
 /* Enhanced hover state for all flags (tooltip system handles them) */
@@ -381,35 +429,33 @@
   position: relative;
 }
 
+/* The box is --tap-min; the icon inside it stays 24px and stays exactly where
+   it was. `top`/`right` fall from 12 to 2 as the box grows from 24 to 44, so
+   the glyph's centre is 24px from each edge either way — the target grows
+   outwards under the padding that was already there, and nothing moves. */
 #pysuricata-report .var-card__header .info-link {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 2px;
+  right: 2px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
+  width: var(--tap-min);
+  height: var(--tap-min);
   border-radius: 50%;
   background: transparent;
-  color: rgba(0, 0, 0, 0.4);
+  /* Was rgba(0, 0, 0, 0.4): 2.8:1 on the paper, under the 3:1 that WCAG
+     1.4.11 asks of an icon carrying meaning. --muted is 7.4:1 and is the
+     token for exactly this — a secondary mark that still has to be read. */
+  color: var(--muted);
   text-decoration: none;
   transition: all 0.2s ease;
 }
 
-#pysuricata-report:not(.light) .var-card__header .info-link {
-  color: rgba(255, 255, 255, 0.4);
-}
-
 #pysuricata-report .var-card__header .info-link:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: rgba(0, 0, 0, 0.7);
+  background: var(--track);
+  color: var(--ink);
   transform: scale(1.1);
-}
-
-#pysuricata-report:not(.light) .var-card__header .info-link:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
 }
 
 #pysuricata-report .var-card__header .info-link svg {
@@ -1413,17 +1459,18 @@
   flex-wrap: wrap;
 }
 
+/* No wash. A 2% black tint over the paper is invisible as decoration and
+   very visible as a contrast problem: it is what dropped --q-warn-text from
+   5.0:1 to 4.38:1 on the severity chip above, after that chip had just been
+   moved onto a token *because* the token passes. A surface nobody can see
+   is not worth a failure nobody would look for. */
 #pysuricata-report .method-severity-group {
   display: flex;
   gap: 8px;
   align-items: center;
   padding: 4px 8px;
-  background: rgba(0, 0, 0, 0.02);
+  background: transparent;
   border-radius: 4px;
-}
-
-#pysuricata-report:not(.light) .method-severity-group {
-  background: rgba(255, 255, 255, 0.03);
 }
 
 #pysuricata-report .method-label {
@@ -1440,19 +1487,38 @@
   font-weight: 500;
 }
 
+/* Outlier severity is a data-quality judgement, so it reads the warm scale --
+   and it reads the *text* members of it, because these are words on a tinted
+   chip rather than fills.
+
+   All three were framework literals on a 10% wash of themselves: GitHub's red,
+   orange and blue at 3.35, 2.28 and 2.21:1 against the chip they sat on. The
+   wash is what made them fail. Measured against `--paper` every one of them
+   would have looked defensible, which is why #122 asks for the *ancestor*
+   background: a 10% tint of a colour is the worst possible ground for that
+   same colour to be read on.
+
+   The tint is dropped rather than re-tinted. The chip already has the word
+   "Extreme" in it, so the colour is reinforcement, not the message -- and a
+   transparent chip lets the token clear 4.5:1 in both themes without anyone
+   having to compute a wash.
+
+   Moderate takes `--muted`, not `--q-good`. Olive means "passes a check" and
+   a moderate outlier has not passed anything; the neutral is the honest
+   choice for the mildest band. */
 #pysuricata-report .severity-item.extreme {
-  background: rgba(215, 58, 73, 0.1);
-  color: #d73a49;
+  background: transparent;
+  color: var(--q-bad);
 }
 
 #pysuricata-report .severity-item.high {
-  background: rgba(246, 106, 10, 0.1);
-  color: #f66a0a;
+  background: transparent;
+  color: var(--q-warn-text);
 }
 
 #pysuricata-report .severity-item.moderate {
-  background: rgba(3, 102, 214, 0.1);
-  color: #0366d6;
+  background: transparent;
+  color: var(--muted);
 }
 
 /* Context note styling for outliers section */
@@ -1632,14 +1698,32 @@
   gap: 0.35rem;
 }
 
+/* Each row is one target: the column name is the link, the flags beside it are
+   description. The row therefore carries --tap-min, and the link stretches to
+   fill it rather than staying a 16px line box floating in the middle of it.
+
+   This costs height — six rows go from 18px to 44px — and that cost was
+   accepted rather than traded away. #122's decision on the summary and the
+   numeric card raised both height targets to their measured values precisely
+   so that a target size would never again be argued down to fit a budget. */
 .attention-item {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: stretch;
   gap: 0.5rem;
+  min-height: var(--tap-min);
 }
 
+/* min-width as well as min-height, because a target has two dimensions and
+   the width of this one is the width of a column name. The kitchen-sink
+   fixture has names like `count_events` and passed at 49px; titanic has `Age`
+   and `Sex` and failed at 25px. Two fixtures, opposite verdicts, same rule. */
 .attention-col {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: var(--tap-min);
+  min-width: var(--tap-min);
   font-weight: 600;
   font-family: var(--font-mono);
   font-size: 0.85rem;

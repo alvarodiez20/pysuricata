@@ -11,15 +11,21 @@ A ban list can always be outgrown by a colour nobody thought to ban. The
 assertion runs the other way here: **every hex outside `_00-tokens.css` must
 equal a value the token file defines.**
 
-That cannot be satisfied today -- 77 file/value pairs do not -- so it ships as a
+That cannot be satisfied today -- 70 file/value pairs do not -- so it ships as a
 ratchet against a recorded baseline. A new literal fails immediately; removing
 one is expected and fails too, loudly, telling you to shrink the baseline. The
 number only goes down.
 
-It started at 88 and reached 77 in #122, without a single colour being chosen:
-11 of them were sitting in rules for markup the redesign had already replaced,
-and went out with 285 dead selectors. That is worth noticing about this kind of
-debt -- a good deal of it is not a decision anyone still has to make.
+It started at 88 and reached 70 in #122. Eleven went without anyone choosing a
+colour: they sat in rules for markup the redesign had already replaced, and
+left with 285 dead selectors. That is worth noticing about this kind of debt --
+a good deal of it is not a decision anyone still has to make.
+
+The other seven were chosen, and they were chosen because they *failed*. A
+contrast audit over the rendered report found 204 text nodes below 4.5:1, all
+of them tracing back to eight framework literals printed on a 10% wash of
+themselves. Every one would have passed if measured against `--paper`. See
+#122's note on ancestor backgrounds, and `test_contrast.py`.
 
 Two things are deliberately not counted:
 
@@ -62,13 +68,11 @@ BASELINE: set[str] = {
     "_06-cards.css #93c5fd",
     "_06-cards.css #aaa",
     "_06-cards.css #bfdbfe",
-    "_06-cards.css #d73a49",
     "_06-cards.css #d97706",
     "_06-cards.css #dbeafe",
     "_06-cards.css #e0e0e0",
     "_06-cards.css #ef4444",
     "_06-cards.css #f59e0b",
-    "_06-cards.css #f66a0a",
     "_06-cards.css #f9f9f9",
     "_06-cards.css #fff",
     "_07-histogram.css #999",
@@ -87,14 +91,9 @@ BASELINE: set[str] = {
     "_09-datetime.css #d1d5db",
     "_09-datetime.css #f9f9f9",
     "_10-boolean.css #fff",
-    "_11-correlations.css #059669",
     "_11-correlations.css #2a2a2a",
-    "_11-correlations.css #4caf50",
-    "_11-correlations.css #6b7280",
     "_11-correlations.css #d32f2f",
-    "_11-correlations.css #dc267f",
     "_11-correlations.css #e0e0e0",
-    "_11-correlations.css #ea580c",
     "_11-correlations.css #f44336",
     "_11-correlations.css #f57c00",
     "_11-correlations.css #fbc02d",
@@ -170,7 +169,7 @@ class TestTheRatchetOnlyTurnsOneWay:
 
     def test_the_count_is_what_the_roadmap_says(self):
         """So the number in the audit cannot drift from the number in the code."""
-        assert len(BASELINE) == 77
+        assert len(BASELINE) == 70
 
 
 class TestTheAssertionIsWorthHaving:

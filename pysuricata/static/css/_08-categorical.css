@@ -177,14 +177,15 @@
   color: #aaa;
 }
 
+/* A percentage in a table of common values is a figure, not a link. It was
+   #007acc, which is 4.36:1 on the row it sits on -- close enough to pass by
+   eye and not close enough to pass. --ink-2 is the token for a figure that
+   is secondary to the value beside it, and it clears 4.5:1 in both themes
+   without a per-theme override. */
 #pysuricata-report .common-values-table .common-pct {
   text-align: right;
   font-weight: 500;
-  color: #007acc;
-}
-
-#pysuricata-report:not(.light) .common-values-table .common-pct {
-  color: #4db8ff;
+  color: var(--ink-2);
 }
 
 #pysuricata-report .common-values-table tbody tr:hover {
@@ -322,12 +323,8 @@
 #pysuricata-report .common-values-table.enhanced .common-pct {
   text-align: center;
   font-weight: 500;
-  color: #007acc;
+  color: var(--ink-2);
   min-width: 60px;
-}
-
-#pysuricata-report:not(.light) .common-values-table.enhanced .common-pct {
-  color: #4db8ff;
 }
 
 /* Progress bar column */
