@@ -1979,11 +1979,26 @@ incremented by the act of merging rather than by a judgement about what merged.<
    3.14, asked for its version, then made to profile a frame and check
    <code>schema_version</code>. CI tests the repository; this tests the artifact, which is
    not the same object.</li>
-<li><strong>publish</strong> — Trusted Publishing over OIDC, gated on a <code>pypi</code> environment
-   with a required reviewer. No long-lived credential, and one human
-   confirmation before the only step that cannot be undone.</li>
+<li>
+<p><strong>publish</strong> — Trusted Publishing over OIDC, so no long-lived credential
+   lives in the repository.</p>
+<div class="admonition warning">
+<p class="admonition-title">Pushing the tag publishes. There is no confirmation step.</p>
+<p>The <code>pypi</code> environment has no protection rules, so nothing pauses
+between the tag and PyPI. A published version cannot be replaced, only
+yanked — and a yanked version keeps its number forever.</p>
+<p>The three jobs above are what stand in for a reviewer: the tag must
+match <code>pyproject.toml</code>, the changelog must carry notes, and the built
+wheel must install and profile a frame on 3.10 and 3.14. Check the
+version you are about to tag before you push it.</p>
+<p>A required reviewer can be added back under <strong>Settings → Environments
+→ pypi</strong>.</p>
+</div>
+<ol>
 <li><strong>release</strong> — GitHub release created <strong>after</strong> PyPI has the package, with
    notes lifted from <code>CHANGELOG.md</code>.</li>
+</ol>
+</li>
 </ol>
 <p>A pull request does <strong>not</strong> have to bump the version. If it does,
 <code>scripts/check_version.py</code> asserts the step is legal — one component raised, the
