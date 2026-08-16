@@ -8,6 +8,96 @@ from .card_config import DEFAULT_CAT_CONFIG, DEFAULT_CHART_DIMS
 from .card_types import BarData, CategoricalStats, QualityFlags
 from .format_utils import ordinal_number
 
+# Top-5 coverage below this means a bar chart of the top values would be a row
+# of near-identical slivers -- ten bars of one row each on Titanic's `Name`.
+_LOW_COVERAGE = 0.02
+
+# Or the column is distinct enough that the same is true by construction. 0.5
+# is the ceiling the report already uses for "high-cardinality categorical" in
+# the summary, so the card and the summary agree about which columns those are.
+# Titanic's `Cabin` is 147 distinct in 204 rows -- 0.72 -- and its top five
+# cover 8.8%, which clears the coverage arm but is still a chart of five values
+# out of a hundred and forty-seven.
+_HIGH_CARDINALITY = 0.5
+
+# A stronger claim than "high cardinality", and only this one licenses saying
+# every value is different.
+_NEAR_UNIQUE = 0.90
+
+
+def describe_high_cardinality(stats: CategoricalStats) -> dict | None:
+    """Whether to replace the chart with a sentence, and what it should say.
+
+    Returns None for an ordinary column. For a high-cardinality one, returns
+    the facts the sentence needs.
+
+    Two things make this rule harder than a threshold on `unique_est`:
+
+    **The inputs are approximate.** `unique_est` carries about 2.2% of KMV
+    error, so a column sitting on the boundary can flip between runs of the
+    same data -- and a card that changes shape on re-profiling is worse than
+    either shape. Coverage is computed from Misra-Gries counts, which are
+    *lower bounds*: the test can only under-state coverage, so it errs towards
+    the sentence, which is the safe direction. The distinct-count arm is set at
+    0.90 rather than near 1.0 so the sketch error cannot reach it.
+
+    **`top_items` may be empty rather than full of singletons.** Misra-Gries is
+    gated off entirely on high-cardinality columns (#62), so the branch has to
+    handle *no top values at all*, which is the case that looks like a bug if
+    it falls through to the chart.
+    """
+    count = int(getattr(stats, "count", 0) or 0)
+    if count <= 0:
+        return None
+
+    items = list(getattr(stats, "top_items", None) or [])
+    unique = int(getattr(stats, "unique_est", 0) or 0)
+    distinct_ratio = unique / count if count else 0.0
+
+    # No counters at all: the sketch was switched off because the column is
+    # high-cardinality, so the absence *is* the signal.
+    if not items:
+        # No counters at all. That only means high cardinality if the distinct
+        # count says so -- an all-missing column also has no top values.
+        if distinct_ratio < _HIGH_CARDINALITY or unique <= 1:
+            return None
+        coverage = 0.0
+    else:
+        coverage = sum(c for _, c in items[:5]) / count
+        if coverage > _LOW_COVERAGE and distinct_ratio < _HIGH_CARDINALITY:
+            return None
+
+    return {
+        "unique": unique,
+        "count": count,
+        "coverage": coverage,
+        "distinct_ratio": distinct_ratio,
+        "identifier_like": distinct_ratio >= _NEAR_UNIQUE,
+    }
+
+
+def high_cardinality_sentence(facts: dict) -> str:
+    """What to say in place of the chart.
+
+    Two sentences, because two different things are true. A column where every
+    value is distinct can say so outright. One that is merely high-cardinality
+    -- `Cabin` is 147 values in 204 rows -- cannot: claiming every value is
+    different there would be false, and the reason the chart is useless is that
+    the top few cover almost nothing, which is worth stating as a number.
+    """
+    unique = facts["unique"]
+    count = facts["count"]
+    if facts["identifier_like"]:
+        return (
+            "Every value is different. A top-values chart would be "
+            "bars of one row each, so there is nothing to plot."
+        )
+    return (
+        f"{unique:,} distinct values in {count:,} rows, and the five most "
+        f"common cover {facts['coverage'] * 100:.1f}% of them. A top-values "
+        "chart would be a row of slivers, so there is nothing worth plotting."
+    )
+
 
 class CategoricalCardRenderer(CardRenderer):
     """Renders categorical data cards."""
@@ -42,9 +132,16 @@ class CategoricalCardRenderer(CardRenderer):
         items = stats.top_items or []
         topn_list, default_topn = self._get_topn_candidates(items)
 
-        chart_html = self._build_categorical_variants(
-            col_id, items, total, topn_list, default_topn
-        )
+        # A high-cardinality column gets a sentence instead of a chart, and no
+        # chart box: an empty box the height of a chart reads as a failed
+        # render rather than as "there is nothing to draw here".
+        high_card = describe_high_cardinality(stats)
+        if high_card is not None:
+            chart_html = self._build_high_cardinality_note(stats, high_card)
+        else:
+            chart_html = self._build_categorical_variants(
+                col_id, items, total, topn_list, default_topn
+            ) + self._build_coverage_note(stats, items)
         common_table = self._build_common_values_table(stats)
         norm_tab_btn, norm_tab_pane = self._build_normalization_section(items, stats)
         missing_table = self._build_missing_values_table(stats, miss_pct)
@@ -222,6 +319,58 @@ class CategoricalCardRenderer(CardRenderer):
             10 if 10 in topn_list else (max(topn_list) if topn_list else max_n)
         )
         return topn_list, default_topn
+
+    def _build_high_cardinality_note(self, stats: CategoricalStats, facts: dict) -> str:
+        """The sentence that replaces the chart, plus what is worth knowing.
+
+        `Name`, `Ticket` and `Cabin` used to render ten bars of one row each --
+        a chart that says nothing, drawn at the same size as one that does.
+        """
+        items = list(getattr(stats, "top_items", None) or [])
+        extras = []
+        if items:
+            lengths = [(len(str(v)), str(v)) for v, _ in items]
+            shortest = min(lengths)[1]
+            longest = max(lengths)[1]
+            extras.append(
+                f'<li><span class="k">Shortest seen</span>'
+                f'<span class="v">{self.safe_html_escape(shortest)}</span></li>'
+            )
+            extras.append(
+                f'<li><span class="k">Longest seen</span>'
+                f'<span class="v">{self.safe_html_escape(longest)}</span></li>'
+            )
+        flag = (
+            '<span class="flag warn">identifier-like</span>'
+            if facts["identifier_like"]
+            else ""
+        )
+        extra_html = (
+            f'<ul class="nochart__facts">{"".join(extras)}</ul>' if extras else ""
+        )
+        return (
+            f'<div class="nochart">{flag}'
+            f'<p class="nochart__why">{high_cardinality_sentence(facts)}</p>'
+            f"{extra_html}</div>"
+        )
+
+    def _build_coverage_note(self, stats: CategoricalStats, items: list) -> str:
+        """How much of the column the bars actually account for.
+
+        A top-N chart is a sample of the levels, and without this line there is
+        nothing to say whether the bars are the whole column or a tenth of it.
+        """
+        count = int(getattr(stats, "count", 0) or 0)
+        if not items or count <= 0:
+            return ""
+        shown = len(items)
+        total_levels = max(int(getattr(stats, "unique_est", shown) or shown), shown)
+        covered = sum(c for _, c in items) / count * 100.0
+        levels = "level" if total_levels == 1 else "levels"
+        return (
+            f'<p class="coverage-note">{shown:,} of {total_levels:,} {levels} shown '
+            f"· covers {covered:.0f}% of non-missing rows</p>"
+        )
 
     def _build_categorical_variants(
         self,

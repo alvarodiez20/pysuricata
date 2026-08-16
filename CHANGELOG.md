@@ -19,6 +19,26 @@ Nothing yet. Planned work is tracked in
 [`docs/UX_ISSUES.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md) and
 [`docs/integration.md`](https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md).
 
+## [0.0.56] - 2026-08-16
+
+Phase 5.3 of the report redesign (#116): a chart with nothing to say now says
+so. Nothing removed or changed in the fact fingerprint.
+
+### Added
+- **High-cardinality columns get a sentence instead of a chart.** `Name`, `Ticket` and `Cabin` rendered ten bars of one row each — a chart drawn at full size, carrying no information, indistinguishable at a glance from one that carries plenty. **No chart element is emitted at all**, and no empty box: a container the height of a chart with nothing in it reads as a failed render rather than as *there is nothing to draw*.
+
+  The sentence tells the truth about which case it is. A column where every value is distinct says so. `Cabin` — 147 values in 204 rows — cannot, so it reports the numbers instead: `147 distinct values in 204 rows, and the five most common cover 8.8% of them.` An `identifier-like` flag appears only where uniqueness actually holds.
+- **Ordinary columns state their coverage**: `2 of 2 levels shown · covers 100% of non-missing rows`. A top-N chart is a sample of the levels, and without this there was nothing to say whether the bars were the whole column or a tenth of it.
+
+### On the rule
+Two arms, deliberately overlapping, because both inputs are approximate.
+
+Coverage comes from Misra-Gries counts, which are **lower bounds** — so the test can only under-state coverage, and errs towards replacing the chart. That is the safe direction: a sentence about a chartable column is a lesser failure than a chart of slivers.
+
+The cardinality arm sits at 0.5, the same ceiling the summary already uses for *high-cardinality categorical*, so the card and the summary agree about which columns those are. Far enough from the KMV error that a 2.2% wobble cannot move a column across it — a card that changes shape between runs of the same data would be worse than either shape.
+
+`top_items` can be **empty** rather than full of singletons, because Misra-Gries is gated off entirely on high-cardinality columns (#62). The absence is the signal — but not on its own, since an all-missing column has no top values either.
+
 ## [0.0.55] - 2026-08-16
 
 Phase 5.2 of the report redesign (#115): the histogram says what its axes mean.
@@ -880,7 +900,8 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.55...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.56...HEAD
+[0.0.56]: https://github.com/alvarodiez20/pysuricata/compare/0.0.55...0.0.56
 [0.0.55]: https://github.com/alvarodiez20/pysuricata/compare/0.0.54...0.0.55
 [0.0.54]: https://github.com/alvarodiez20/pysuricata/compare/0.0.53...0.0.54
 [0.0.53]: https://github.com/alvarodiez20/pysuricata/compare/0.0.52...0.0.53
