@@ -248,9 +248,21 @@ class ReportOrchestrator:
     def _apply_correlation_chips(self, accs, kinds, corr_est) -> None:
         """Process correlation chips and attach to numeric accumulators."""
         if corr_est is not None:
+            # Every partner, not only the strong ones (#154, 5b.6).
+            #
+            # The per-column pane used to repeat the section-level empty state
+            # inside a card -- `No significant correlations found` on a column
+            # that has partners and simply has no strong ones. `Age` has
+            # exactly two numeric partners in the Titanic frame, so listing
+            # both is *complete* information in two rows.
+            #
+            # This is one of the two deliberate fact changes the invariance
+            # harness names in `scripts/report_fingerprint.py`: below-threshold
+            # pairs become visible. `corr_max_cols` still bounds the work, so
+            # the list is at most one entry per numeric column tracked.
             top_map = corr_est.top_map(
-                threshold=self.config.corr_threshold,
-                max_per_col=self.config.corr_max_per_col,
+                threshold=0.0,
+                max_per_col=self.config.corr_max_cols,
             )
             for name in kinds.numeric:
                 acc = accs.get(name)

@@ -92,6 +92,10 @@ class Fence:
     q1: float
     q3: float
     median: float
+    #: Read only by the quantile strip, where it is the caret sitting above the
+    #: band. It lands ~24px from the median inside a dark fill, so the two are
+    #: told apart by shape rather than colour -- rule 2 of the token system.
+    mean: float
     whisker_lo: float
     whisker_hi: float
     #: The axis: the column's own range, and nothing wider.
@@ -146,6 +150,20 @@ class Fence:
         if span <= 0:
             return 50.0
         return min(100.0, max(0.0, (value - self.value_lo) / span * 100.0))
+
+
+#: How close to an end a label has to be before it anchors there instead of
+#: centring on its mark. 2% of a 1,099px axis is 22px, about one label wide.
+_ANCHOR_PCT = 2.0
+
+
+def _anchor(pct: float) -> str:
+    """The `data-anchor` for a label at this position, or nothing."""
+    if pct <= _ANCHOR_PCT:
+        return ' data-anchor="start"'
+    if pct >= 100.0 - _ANCHOR_PCT:
+        return ' data-anchor="end"'
+    return ""
 
 
 def _band(distance: float, bands: tuple[tuple[float, str], ...]) -> str:
@@ -278,6 +296,7 @@ def build_fence(stats, quantiles=None) -> Fence | None:
         q1=float(q1),
         q3=float(q3),
         median=float(median),
+        mean=float(stats.mean) if _finite(stats.mean) else float("nan"),
         whisker_lo=_whisker(quantiles, "p1", value_lo),
         whisker_hi=_whisker(quantiles, "p99", value_hi),
         value_lo=value_lo,
@@ -304,44 +323,79 @@ def _whisker(quantiles, attr: str, fallback: float) -> float:
 
 
 def _with_marks(fence: Fence, entries: list[dict]) -> Fence:
+    marks = cluster_marks(
+        fence,
+        [(entry["value"], (entry["iqr"] or entry["mad"])[1]) for entry in entries],
+    )
+    return Fence(**{**fence.__dict__, "marks": marks})
+
+
+def cluster_marks(fence: Fence, values: list[tuple[float, str]]) -> tuple[Mark, ...]:
     """Collapse marks that would overlap into one capsule with a count.
 
     Rule 2(e). Five values inside 0.41 years are narrower than one mark, so
     drawing five marks draws one blob and asserts nothing about how many are
     in it. The capsule says `x5` and its `title` carries the values.
+
+    Shared with the Min/Max pane (5b.5), where the same five lowest values on
+    `Age` fall inside 0.41 years and collapse to a single `x5`.
     """
     marks: list[Mark] = []
-    for entry in entries:
-        pct = fence.pct(entry["value"])
-        severity = (entry["iqr"] or entry["mad"])[1]
+    for value, severity in sorted(values):
+        pct = fence.pct(value)
         if marks and pct - marks[-1].pct < _CLUSTER_PCT:
             previous = marks.pop()
-            worse = _worst(previous.severity, severity)
-            values = (
-                f"{previous.title}, {entry['value']:g}"
+            values_seen = (
+                f"{previous.title}, {value:g}"
                 if previous.title
-                else (f"{previous.value:g}, {entry['value']:g}")
+                else f"{previous.value:g}, {value:g}"
             )
             marks.append(
                 Mark(
-                    value=entry["value"],
+                    value=value,
                     pct=previous.pct,
-                    severity=worse,
+                    severity=_worst(previous.severity, severity),
                     count=previous.count + 1,
-                    title=values,
+                    title=values_seen,
                 )
             )
         else:
-            marks.append(Mark(value=entry["value"], pct=pct, severity=severity))
+            marks.append(Mark(value=value, pct=pct, severity=severity))
 
-    return Fence(**{**fence.__dict__, "marks": tuple(marks)})
+    return tuple(marks)
 
 
-_SEVERITY_ORDER = {"moderate": 0, "high": 1, "extreme": 2}
+#: `inside` is the Min/Max pane's addition and sorts below every warm band: a
+#: cluster holding one outlier and four ordinary values is an outlier cluster,
+#: never the other way round.
+_SEVERITY_ORDER = {"inside": -1, "moderate": 0, "high": 1, "extreme": 2}
 
 
 def _worst(a: str, b: str) -> str:
     return a if _SEVERITY_ORDER.get(a, 0) >= _SEVERITY_ORDER.get(b, 0) else b
+
+
+def classify(fence: Fence, value: float) -> tuple[str, str]:
+    """``(severity, phrase)`` for one value against the fence.
+
+    The single source of the severity words, which is why 5b.5 calls it rather
+    than re-deriving them: a value that reads `high` in the Outliers pane
+    cannot read `moderate` in Min/Max, and no amount of care in two
+    implementations guarantees that.
+    """
+    iqr = fence.q3 - fence.q1
+    if iqr <= 0:
+        return "inside", "inside the fence"
+
+    if value < fence.lo:
+        gap = (fence.q1 - value) / iqr
+    elif value > fence.hi:
+        gap = (value - fence.q3) / iqr
+    else:
+        return "inside", "inside the fence"
+
+    band = _band(gap, _IQR_BANDS)
+    return band, f"{band} · {gap:.1f}× IQR"
 
 
 def fence_verdict(fence: Fence, fmt) -> str:
@@ -417,14 +471,32 @@ def method_note(fence: Fence) -> str:
     )
 
 
-def render_figure(fence: Fence, name: str, fmt) -> str:
-    """The fence, the box, and the marks beyond it.
+def render_figure(
+    fence: Fence,
+    name: str,
+    fmt,
+    marks: tuple[Mark, ...] | None = None,
+    described: str = "",
+    legend: str = "",
+) -> str:
+    """The fence, the box, and whatever marks the caller wants on it.
+
+    Two panes draw this. The Outliers pane marks what crossed the fence; the
+    Min/Max pane marks the five lowest and five highest, which is how a reader
+    sees that **every one of `Age`'s five maxima is an outlier and not one of
+    its five minima is** -- the whole story of that column's tails, and
+    invisible in the two tables of bare index-and-value it replaces.
+
+    Sharing the figure is not tidiness. The design requires a reader who has
+    opened one pane to be able to read the other, which means the same axis,
+    the same box, the same fence position and the same severity colours.
 
     HTML at percentage offsets rather than an SVG, for the reason set out in
     ``_07-histogram.css``: a glyph inside a stretched SVG is scaled by the
     ratio of the two axes, and there is no canvas size that is right at both
     284px and 820px.
     """
+    marks = fence.marks if marks is None else marks
     label_row: list[str] = []
     track: list[str] = []
 
@@ -454,9 +526,11 @@ def render_figure(fence: Fence, name: str, fmt) -> str:
         if not crossable:
             continue
         track.append(f'<span class="fence__line" style="left:{pct:.3f}%"></span>')
-        anchor = "end" if pct > 50 else "start"
+        anchor = _anchor(pct) or (
+            ' data-anchor="end"' if pct > 50 else ' data-anchor="start"'
+        )
         label_row.append(
-            f'<span class="fence__fencelabel" data-anchor="{anchor}" '
+            f'<span class="fence__fencelabel"{anchor} '
             f'style="left:{pct:.3f}%">fence {escape(fmt(value))}</span>'
         )
         taken.append(pct)
@@ -465,7 +539,7 @@ def render_figure(fence: Fence, name: str, fmt) -> str:
         f'<span class="fence__median" style="left:{fence.pct(fence.median):.3f}%"></span>'
     )
 
-    for mark in fence.marks:
+    for mark in marks:
         title = mark.title or fmt(mark.value)
         track.append(
             f'<span class="fence__mark" data-severity="{mark.severity}" '
@@ -481,9 +555,13 @@ def render_figure(fence: Fence, name: str, fmt) -> str:
         if mark.count > 1 and all(
             abs(mark.pct - other) >= _LABEL_MIN_GAP_PCT for other in taken
         ):
+            # A count centres on its mark, so one at either end of the axis
+            # hangs half its width past the figure -- measured at 1.3px on
+            # `Fare`, whose lowest five values are all zero and cluster at 0%.
+            # The end labels anchor instead, as the ticks and fence labels do.
             label_row.append(
-                f'<span class="fence__count" style="left:{mark.pct:.3f}%">'
-                f"×{mark.count}</span>"
+                f'<span class="fence__count"{_anchor(mark.pct)} '
+                f'style="left:{mark.pct:.3f}%">×{mark.count}</span>'
             )
             taken.append(mark.pct)
 
@@ -496,9 +574,28 @@ def render_figure(fence: Fence, name: str, fmt) -> str:
             f'style="left:{fraction * 100:.3f}%">{escape(fmt(value))}</span>'
         )
 
-    described = (
+    described = described or (
         f"{name} values with the IQR fence and {fence.n_outliers:,} "
         f"value{'s' if fence.n_outliers != 1 else ''} beyond it"
+    )
+
+    keys = [
+        '<li><span class="key key--box"></span>IQR and P1–P99</li>',
+        f'<li><span class="key key--median"></span>median {escape(fmt(fence.median))}</li>',
+    ]
+    if legend == "tails":
+        # The Min/Max pane plots values on both sides of the fence, so it needs
+        # the fourth key the Outliers pane has no use for.
+        keys.append(
+            '<li><span class="key key--mark" data-severity="inside"></span>'
+            "inside the fence</li>"
+        )
+    keys.append(
+        '<li><span class="key key--mark" data-severity="moderate"></span>moderate</li>'
+    )
+    keys.append(
+        '<li><span class="key key--mark" data-severity="extreme"></span>'
+        "high or extreme</li>"
     )
 
     return (
@@ -508,12 +605,7 @@ def render_figure(fence: Fence, name: str, fmt) -> str:
         f'<div class="fence__axis"></div>'
         f'<div class="fence__ticks">{"".join(ticks)}</div>'
         f"</div>"
-        f'<ul class="fence__legend">'
-        f'<li><span class="key key--box"></span>IQR and P1–P99</li>'
-        f'<li><span class="key key--median"></span>median {escape(fmt(fence.median))}</li>'
-        f'<li><span class="key key--mark" data-severity="moderate"></span>moderate</li>'
-        f'<li><span class="key key--mark" data-severity="extreme"></span>high or extreme</li>'
-        f"</ul>"
+        f'<ul class="fence__legend">{"".join(keys)}</ul>'
     )
 
 
@@ -566,3 +658,146 @@ def render_table(fence: Fence, fmt, col_id: str = "") -> str:
     )
 
     return f'<div class="fence-table">{head}{rows}</div>{note}'
+
+
+# --------------------------------------------------------------------------- #
+# the quantile strip (5b.1)
+# --------------------------------------------------------------------------- #
+
+#: Two ladder ticks closer than this, as a percentage of the axis, print only
+#: the outer one. On `Fare`, P1 through Q3 all land in the first fifth of the
+#: axis and every label in that fifth overprints its neighbour. The values stay
+#: in the table below, which is where a reader looks for a figure anyway.
+_LADDER_MIN_GAP_PCT = 4.0
+
+
+def render_quantile_strip(fence: Fence, quantiles, fmt) -> str:
+    """The nine percentiles as a shape, on the axis the other panes use.
+
+    Phase 5b.1 (#154). They were a column of numbers printed directly under a
+    histogram that draws the very shape they describe, and the two could not be
+    read against each other. On one axis they become one picture -- and what a
+    reader learns from it is not in the table at all: that the middle half of
+    `Age` sits in a narrow band well left of centre.
+
+    Three details are requirements rather than choices:
+
+    **The whiskers are two spans terminating at the band edges.** One span
+    running P1 to P99 paints *across* the IQR band, which reads as a range that
+    contains the box -- a different and weaker claim than the two the box
+    actually makes.
+
+    **The median protrudes past both band edges** and the mean sits entirely
+    *above* the band as a caret. They land about 24px apart inside a dark fill,
+    so they are told apart by shape rather than by colour -- rule 2 of the
+    token system, and the reason neither is a coloured line.
+
+    **The ladder drops crowded labels.** See `_LADDER_MIN_GAP_PCT`.
+    """
+    q1_pct, q3_pct = fence.pct(fence.q1), fence.pct(fence.q3)
+    lo_pct = fence.pct(fence.whisker_lo)
+    hi_pct = fence.pct(fence.whisker_hi)
+    median_pct = fence.pct(fence.median)
+
+    parts = [
+        f'<span class="qstrip__whisker" style="left:{lo_pct:.3f}%;'
+        f'width:{max(0.0, q1_pct - lo_pct):.3f}%"></span>',
+        f'<span class="qstrip__whisker" style="left:{q3_pct:.3f}%;'
+        f'width:{max(0.0, hi_pct - q3_pct):.3f}%"></span>',
+        f'<span class="qstrip__box" style="left:{q1_pct:.3f}%;'
+        f'width:{max(0.0, q3_pct - q1_pct):.3f}%" '
+        f'title="Interquartile range {escape(fmt(fence.q1))} to '
+        f'{escape(fmt(fence.q3))} — the middle half of the data"></span>',
+        f'<span class="qstrip__median" style="left:{median_pct:.3f}%" '
+        f'title="Median {escape(fmt(fence.median))}"></span>',
+    ]
+
+    mean = fence.mean
+    if _finite(mean):
+        parts.append(
+            f'<span class="qstrip__mean" style="left:{fence.pct(mean):.3f}%" '
+            f'title="Mean {escape(fmt(mean))}"></span>'
+        )
+
+    ladder = _ladder(fence, quantiles)
+    ticks = "".join(
+        f'<span class="qstrip__tick" style="left:{pct:.3f}%"></span>'
+        f'<span class="qstrip__label" data-row="{row}"{_anchor(pct)} '
+        f'style="left:{pct:.3f}%">'
+        f'<span class="qstrip__name">{escape(name)}</span>'
+        f'<span class="qstrip__figure">{escape(fmt(value))}</span></span>'
+        for row, (name, value, pct) in enumerate(ladder)
+    )
+
+    keys = [
+        f'<li><span class="key key--qbox"></span>IQR {escape(fmt(fence.q1))} – '
+        f"{escape(fmt(fence.q3))}</li>",
+        '<li><span class="key key--qwhisker"></span>P1 – P99</li>',
+        f'<li><span class="key key--qmedian"></span>median '
+        f"{escape(fmt(fence.median))}</li>",
+    ]
+    if _finite(mean):
+        keys.append(
+            f'<li><span class="key key--qmean"></span>mean {escape(fmt(mean))}</li>'
+        )
+
+    return (
+        '<div class="qstrip" role="img" aria-label="Distribution shape: '
+        f"interquartile range {escape(fmt(fence.q1))} to {escape(fmt(fence.q3))}, "
+        f'median {escape(fmt(fence.median))}">'
+        f'<div class="qstrip__track">{"".join(parts)}</div>'
+        f'<div class="qstrip__axis"></div>'
+        f'<div class="qstrip__ladder">{ticks}</div>'
+        "</div>"
+        f'<ul class="fence__legend">{"".join(keys)}</ul>'
+    )
+
+
+#: Percentiles that never drop, however crowded the axis: the two ends and the
+#: middle. The same tiering the histogram's x ticks use, and for the same
+#: reason -- a range with no middle says nothing about whether the distribution
+#: is centred, and the median is the one figure a reader looks for first.
+_LADDER_ANCHORS = frozenset({"P1", "P50", "P99"})
+
+
+def _ladder(fence: Fence, quantiles) -> list[tuple[str, float, float]]:
+    """The percentile ticks that fit, anchors first.
+
+    The first version dropped whichever point crowded its left-hand neighbour,
+    walking left to right. On `Fare` -- where P1 through Q3 all land in the
+    first fifth of the axis -- that kept `Q3` and dropped **`P50`**, purely by
+    arrival order. The median is the one figure a reader looks for first, and
+    it was being spent on whichever tick happened to come after it.
+
+    So the anchors are placed first and the rest fill in around them.
+    """
+    points = [
+        ("P1", getattr(quantiles, "p1", None)),
+        ("P5", getattr(quantiles, "p5", None)),
+        ("P10", getattr(quantiles, "p10", None)),
+        ("Q1", fence.q1),
+        ("P50", fence.median),
+        ("Q3", fence.q3),
+        ("P90", getattr(quantiles, "p90", None)),
+        ("P95", getattr(quantiles, "p95", None)),
+        ("P99", getattr(quantiles, "p99", None)),
+    ]
+    placed = [
+        (name, float(value), fence.pct(float(value)))
+        for name, value in points
+        if _finite(value)
+    ]
+    if not placed:
+        return []
+
+    kept = [point for point in placed if point[0] in _LADDER_ANCHORS]
+    for candidate in placed:
+        if candidate in kept:
+            continue
+        if all(abs(candidate[2] - other[2]) >= _LADDER_MIN_GAP_PCT for other in kept):
+            kept.append(candidate)
+
+    # Back into axis order, so the alternating rows alternate along the axis
+    # rather than in the order the anchors happened to be added.
+    kept.sort(key=lambda point: point[2])
+    return kept

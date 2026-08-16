@@ -11,14 +11,16 @@ from .card_config import (
 )
 from .card_types import NumericStats, QualityFlags, QuantileData
 from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
-from .format_utils import ordinal_number
 from .histogram_svg import SVGHistogramRenderer
 from .identifier import identifier_facts, looks_like_identifier
 from .outlier_fence import (
     build_fence,
+    classify,
+    cluster_marks,
     fence_verdict,
     method_note,
     render_figure,
+    render_quantile_strip,
     render_table,
 )
 from .sampling import quantiles_are_sampled
@@ -61,14 +63,14 @@ class NumericCardRenderer(CardRenderer):
         chart_html = self._build_histogram_variants(col_id, safe_name, stats)
 
         stats_table = self._build_stats_table(stats)
-        common_table = self._build_common_values_table(stats)
-        extremes_table = self._build_extremes_table(stats)
+        common_table = self._build_common_values_table(stats, col_id)
+        extremes_table = self._build_extremes_table(stats, quantiles, col_id)
         outliers_pane = self._build_outliers_pane(stats, quantiles, col_id)
         corr_table = self._build_correlation_table(stats)
         missing_table = self._build_missing_values_table(stats)
 
-        stats_quantiles = (
-            f"<div class='stats-quant'>{stats_table}{quant_stats_table}</div>"
+        stats_quantiles = self._build_statistics_pane(
+            stats, quantiles, stats_table, quant_stats_table
         )
 
         details_html, pane_summary = self._build_details_section(
@@ -417,7 +419,9 @@ class NumericCardRenderer(CardRenderer):
             ("P95 (≈)", self.format_number(quantiles.p95), "num"),
             ("P99 (≈)", self.format_number(quantiles.p99), "num"),
             ("Range", self.format_number(range_val), "num"),
-            ("Std Dev", self.format_number(stats.std), "num"),
+            # `Std Dev` used to be printed here *and* in the statistics table.
+            # It is a moment, not an order statistic, so it stays with the
+            # moments and this table stops repeating it (#154, 5b.1).
         ]
 
         return self.table_builder.build_key_value_table(data)
@@ -477,6 +481,93 @@ class NumericCardRenderer(CardRenderer):
         </div>
         '''
 
+    def _build_statistics_pane(
+        self,
+        stats: NumericStats,
+        quantiles: QuantileData,
+        stats_table: str,
+        quant_stats_table: str,
+    ) -> str:
+        """The percentiles as a shape, then the tables that hold the figures.
+
+        Phase 5b.1 (#154). Twenty-six key-value rows across two tables, with
+        nothing in the layout saying which to read: `Jarque-Bera chi-squared`
+        carried the same weight as `Median`, and `Std Dev` was printed twice.
+
+        The strip costs no new statistics. Every number in it was already in
+        the two tables below it -- what changes is that they are on an axis, so
+        a reader can see the middle half of `Age` sitting in a narrow band well
+        left of centre, which no arrangement of a table can show.
+
+        The prose lines spend thresholds the report already holds and never
+        showed: `data-threshold="JB chi-squared < 5.99"` has been in the DOM
+        all along, so a reader was handed 18.63 with no way to judge it.
+        """
+        try:
+            fence = build_fence(stats, quantiles)
+        except Exception:
+            fence = None
+
+        tables = f"<div class='stats-quant'>{stats_table}{quant_stats_table}</div>"
+        if fence is None:
+            return tables
+
+        name = self.safe_html_escape(stats.name)
+        header = (
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · statistics</span>'
+            '<span class="fence-head__rule"></span>'
+            f'<span class="fence-head__count">{fence.n_total:,} values · '
+            f"{self.format_number(fence.value_lo)} to "
+            f"{self.format_number(fence.value_hi)}</span>"
+            "</div>"
+        )
+        strip = render_quantile_strip(fence, quantiles, self.format_number)
+        prose = self._shape_prose(stats)
+
+        return f'<div class="fence-pane">{header}{strip}{prose}</div>{tables}'
+
+    def _shape_prose(self, stats: NumericStats) -> str:
+        """Two sentences spending thresholds the report already carries.
+
+        Both numbers are on the card today with nothing to judge them against:
+        the Jarque-Bera statistic is printed bare, and the confidence interval
+        is printed as two endpoints rather than as a width.
+        """
+        lines: list[str] = []
+
+        jb = getattr(stats, "jb_chi2", None)
+        if isinstance(jb, (int, float)) and math.isfinite(jb):
+            # 5.99 is the 95% critical value of chi-squared with 2 d.f., which
+            # is the test's own threshold and is already in the DOM as a
+            # `data-threshold` nobody renders.
+            verdict = (
+                "consistent with a normal distribution"
+                if jb < 5.99
+                else "far enough from normal to reject it"
+            )
+            lines.append(
+                f"Jarque–Bera is {self.format_number(jb)} against a 5.99 "
+                f"critical value — {verdict}."
+            )
+
+        ci_lo, ci_hi = getattr(stats, "ci_lo", None), getattr(stats, "ci_hi", None)
+        mean = getattr(stats, "mean", None)
+        if all(
+            isinstance(v, (int, float)) and math.isfinite(v)
+            for v in (ci_lo, ci_hi, mean)
+        ):
+            half = (float(ci_hi) - float(ci_lo)) / 2.0
+            lines.append(
+                f"The mean carries a ±{self.format_number(half)} 95% interval, "
+                f"so {self.format_number(mean)} is well determined at this "
+                "sample size."
+            )
+
+        if not lines:
+            return ""
+        return "".join(f'<p class="qstrip__prose">{line}</p>' for line in lines)
+
     def _build_stats_table(self, stats: NumericStats) -> str:
         """Build detailed statistics table."""
         # IQR and MAD are derived from the same reservoir as the quartiles, so
@@ -510,82 +601,319 @@ class NumericCardRenderer(CardRenderer):
 
         return self.table_builder.build_key_value_table(data)
 
-    def _build_common_values_table(self, stats: NumericStats) -> str:
-        """Build common values table with enhanced formatting and functionality.
+    def _build_common_values_table(self, stats: NumericStats, col_id: str = "") -> str:
+        """Ten rows, three columns, and the finding said out loud.
 
-        This method creates a professional, feature-rich table that provides
-        comprehensive insights into the most frequent values in the dataset.
+        Phase 5b.3 (#154). Five columns become three: the ordinals
+        `1st 2nd 3rd` are decoration on a list that is already ordered, and
+        count and percent are one fact about one value rather than two.
 
-        Args:
-            stats: NumericStats object containing the data
-
-        Returns:
-            HTML string for the enhanced common values table
+        **The bar is scaled to the most common value, not to 100%.** At 3.2%
+        of 714 rows every bar was 3% of its track and all ten looked
+        identical, which is a ranking drawn so that the ranking cannot be
+        seen. Relative scaling hides absolute rarity in exchange, so the
+        caption says which scale it is on.
         """
         try:
-            top_values = list(getattr(stats, "top_values", []) or [])
+            top_values = list(getattr(stats, "top_values", None) or [])[:10]
         except Exception:
             top_values = []
 
         if not top_values:
-            return '<div class="muted">No common values to display</div>'
-
-        rows = []
-        total_nonnull = max(1, int(getattr(stats, "count", 0)))
-
-        # Take only top 10 values for better display and performance
-        top_values = top_values[:10]
-
-        for i, (v, c) in enumerate(top_values):
-            pct = (int(c) / total_nonnull) * 100.0 if total_nonnull else 0.0
-
-            # Add ranking indicator for top values
-            rank_icon = ordinal_number(i + 1)
-
-            # Format value with appropriate precision and scientific notation for large numbers
-            if isinstance(v, float) and v.is_integer():
-                formatted_value = f"{int(v):,}"
-            else:
-                formatted_value = _fmt_compact_scientific(v)
-
-            rows.append(
-                f"<tr class='common-row rank-{i + 1}'>"
-                f"<td class='rank'>{rank_icon}</td>"
-                f"<td class='num common-value'>{formatted_value}</td>"
-                f"<td class='num common-count'>{int(c):,}</td>"
-                f"<td class='num common-pct'>{pct:.1f}%</td>"
-                f"<td class='progress-bar'><div class='bar-fill' style='width:{pct:.1f}%'></div></td>"
-                f"</tr>"
+            return (
+                '<p class="fence-none">No value repeats often enough to be '
+                "counted among the most common.</p>"
             )
 
-        body = "".join(rows)
-        return (
-            '<table class="common-values-table enhanced">'
-            "<thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead>"
-            f"<tbody>{body}</tbody>"
-            "</table>"
+        name = self.safe_html_escape(stats.name)
+        total = max(1, int(getattr(stats, "count", 0) or 0))
+        top_count = max(int(count) for _, count in top_values) or 1
+
+        header = (
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · common values</span>'
+            '<span class="fence-head__rule"></span>'
+            "</div>"
         )
 
-    def _build_extremes_table(self, stats: NumericStats) -> str:
-        """Build extremes table."""
+        # Nothing repeats, so there is nothing to rank and no tab to render.
+        #
+        # Drawing it would scale every bar to the top count of 1 and produce
+        # ten identical full-width bars -- a ranking drawn over ten values
+        # that are all equally common, which is the relative scale at its
+        # worst. `PassengerId` is exactly this column. Saying "no value
+        # repeats" instead would only restate the card face, where `Unique`
+        # already equals the row count, so 5b.4's rule applies: an empty
+        # string here removes the tab.
+        if top_count == 1:
+            return ""
 
-        def _sub(label: str, items: list) -> str:
+        rows = []
+        for value, count in top_values:
+            count = int(count)
+            pct = count / total * 100.0
+            width = count / top_count * 100.0
+            if isinstance(value, float) and value.is_integer():
+                shown = f"{int(value):,}"
+            else:
+                shown = _fmt_compact_scientific(value)
+            rows.append(
+                f'<div class="common__row">'
+                # `data-value` is how the invariance fingerprint sees this.
+                # The five-column table it replaces was extracted by pairing
+                # the ordinal against the value -- so removing the ordinals,
+                # which are decoration on an already-ordered list, would have
+                # taken the values with them.
+                f'<span class="common__value" data-col="{col_id}" '
+                f'data-value="{value:.12g}">{self.safe_html_escape(shown)}</span>'
+                f'<span class="common__track">'
+                f'<span class="common__bar" style="width:{width:.1f}%"></span></span>'
+                f'<span class="common__stat" data-col="{col_id}" '
+                f'data-count="{count}" data-pct="{pct:.1f}">'
+                f"{count:,} · {pct:.1f}%</span>"
+                f"</div>"
+            )
+
+        finding = self._heaping_finding(stats, top_values)
+        lede = f'<p class="fence-lede">{finding}</p>' if finding else ""
+
+        return (
+            f'<div class="fence-pane common">{header}{lede}'
+            f'<div class="common__rows">{"".join(rows)}</div>'
+            '<p class="common__caption">bar is scaled to the most common '
+            "value, not to 100%</p>"
+            "</div>"
+        )
+
+    def _heaping_finding(self, stats: NumericStats, top_values: list) -> str:
+        """Two numbers the report already computes and never puts together.
+
+        `Age` stores three decimals, all ten of its most common values are
+        whole numbers, and `Heaping %` is 22.27 — each of those was on the
+        card somewhere and the reader had to notice the connection unaided.
+
+        `heap_pct` counts values whose last significant digit is 0 or 5, so
+        that is what the sentence says. "Heaped on round numbers" is a gloss
+        and this is a report.
+        """
+        parts: list[str] = []
+
+        decimals = getattr(stats, "gran_decimals", None)
+        whole = [
+            value
+            for value, _ in top_values
+            if isinstance(value, (int, float)) and float(value).is_integer()
+        ]
+        if decimals and len(whole) == len(top_values) and len(top_values) > 1:
+            plural = "decimal" if decimals == 1 else "decimals"
+            parts.append(
+                f"All {len(top_values)} are whole numbers, though the column "
+                f"stores {decimals} {plural}."
+            )
+
+        heap = getattr(stats, "heap_pct", None)
+        if isinstance(heap, (int, float)) and math.isfinite(heap) and heap > 0:
+            parts.append(f"{heap:.1f}% of values end in a 0 or a 5.")
+
+        return " ".join(parts)
+
+    def _build_extremes_table(
+        self,
+        stats: NumericStats,
+        quantiles: QuantileData | None = None,
+        col_id: str = "",
+    ) -> str:
+        """The two tails, on the axis that says whether either one is unusual.
+
+        Phase 5b.5 (#154). What this replaces was two tables headed `Min
+        values` and `Max values`, five rows each of index and value. Ten
+        numbers, no context — and a reader could not tell that **every one of
+        `Age`'s five maxima is an outlier and not one of its five minima is**,
+        which is the whole story of that column's tails and was already
+        computable from the fence.
+
+        So the pane plots both tails on the Outliers pane's axis and gives each
+        row its position. `classify` is imported rather than reimplemented: a
+        value that reads `high` in one pane cannot read `moderate` in the
+        other, and two implementations cannot guarantee that however carefully
+        they are written.
+        """
+        lows = [(i, float(v)) for i, v in (getattr(stats, "min_items", None) or [])]
+        highs = [(i, float(v)) for i, v in (getattr(stats, "max_items", None) or [])]
+        if not lows and not highs:
+            return '<p class="fence-none">No extreme values were tracked.</p>'
+
+        try:
+            fence = build_fence(stats, quantiles)
+        except Exception:
+            fence = None
+
+        if fence is None:
+            # No fence means no position to report, so this falls back to the
+            # bare listing rather than inventing a verdict.
+            return self._build_extremes_listing(lows, highs)
+
+        name = self.safe_html_escape(stats.name)
+        low_rows = self._tail_rows(fence, lows)
+        high_rows = self._tail_rows(fence, highs)
+
+        marks = cluster_marks(
+            fence,
+            [(value, classify(fence, value)[0]) for _, value in lows + highs],
+        )
+
+        header = (
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · extreme values</span>'
+            '<span class="fence-head__rule"></span>'
+            f'<span class="fence-head__count">{len(lows)} lowest · '
+            f"{len(highs)} highest of {fence.n_total:,}</span>"
+            "</div>"
+        )
+        lede = f'<p class="fence-lede">{self._tails_verdict(low_rows, high_rows)}</p>'
+        figure = render_figure(
+            fence,
+            name,
+            self.format_number,
+            marks=marks,
+            described=(
+                f"{name} value axis: {len(lows)} lowest and {len(highs)} highest "
+                "against the IQR fence"
+            ),
+            legend="tails",
+        )
+        body = (
+            '<div class="tails-body">'
+            f"{self._tail_column('lowest', low_rows, col_id)}"
+            f"{self._tail_column('highest', high_rows, col_id)}"
+            "</div>"
+        )
+        return f'<div class="fence-pane">{header}{lede}{figure}{body}</div>'
+
+    def _tail_rows(self, fence, items: list[tuple]) -> list[dict]:
+        """One row per tracked value, with ties marked.
+
+        `Age` holds 0.75 twice and 71 twice, and the pane listed them as
+        separate rows without comment -- so the same value looked like two
+        findings.
+        """
+        seen: dict[float, int] = {}
+        for _, value in items:
+            seen[round(value, 12)] = seen.get(round(value, 12), 0) + 1
+
+        rows = []
+        for index, value in items:
+            severity, phrase = classify(fence, value)
+            ties = seen[round(value, 12)]
+            rows.append(
+                {
+                    "index": str(index),
+                    "value": value,
+                    "severity": severity,
+                    "phrase": phrase,
+                    "ties": ties,
+                }
+            )
+        return rows
+
+    def _tails_verdict(self, lows: list[dict], highs: list[dict]) -> str:
+        """The sentence the two bare tables never said.
+
+        On `Age`: *The low tail is ordinary — all five sit inside the fence.
+        Every one of the five highest crosses it.*
+
+        The asymmetry is the finding, so the both-quiet case gets one clause
+        rather than two. Saying `all 5 sit inside the fence` twice reads as a
+        template that did not notice it was describing the same thing.
+        """
+        low_beyond = sum(1 for row in lows if row["severity"] != "inside")
+        high_beyond = sum(1 for row in highs if row["severity"] != "inside")
+        tracked = len(lows) + len(highs)
+
+        if not tracked:
+            return "No extreme values were tracked for this column."
+
+        if not (low_beyond or high_beyond):
+            return (
+                f"Neither tail is unusual: all {tracked} tracked values sit "
+                "inside the fence."
+            )
+
+        def describe(rows: list[dict], beyond: int, side: str) -> str:
+            if beyond == 0:
+                return f"all {len(rows)} sit inside the fence"
+            if beyond == len(rows):
+                return f"every one of the {len(rows)} {side} crosses it"
+            return f"{beyond} of {len(rows)} cross it"
+
+        if not lows:
+            return f"The high tail: {describe(highs, high_beyond, 'highest')}."
+        if not highs:
+            return f"The low tail: {describe(lows, low_beyond, 'lowest')}."
+
+        low = describe(lows, low_beyond, "lowest")
+        high = describe(highs, high_beyond, "highest")
+        opening = "The low tail is ordinary — " if low_beyond == 0 else "The low tail: "
+        return f"{opening}{low}. {high[0].upper()}{high[1:]}."
+
+    def _tail_column(self, side: str, rows: list[dict], col_id: str = "") -> str:
+        if not rows:
+            return ""
+        beyond = sum(1 for row in rows if row["severity"] != "inside")
+        if beyond == 0:
+            summary, tone = "none beyond a fence", "good"
+        elif beyond == len(rows):
+            summary, tone = f"all {beyond} beyond the IQR fence", "warn"
+        else:
+            summary, tone = f"{beyond} beyond the IQR fence", "warn"
+
+        lines = "".join(
+            f'<div class="tails__row">'
+            f'<span class="tails__idx">{self.safe_html_escape(row["index"])}</span>'
+            f'<span class="tails__val" data-col="{col_id}" '
+            f'data-value="{row["value"]:.12g}">{self.format_number(row["value"])}'
+            + (
+                f'<span class="tails__tie" title="this value appears '
+                f'{row["ties"]} times in the tail">×{row["ties"]}</span>'
+                if row["ties"] > 1
+                else ""
+            )
+            + "</span>"
+            f'<span class="tails__note" data-severity="{row["severity"]}">'
+            f"{row['phrase']}</span>"
+            f"</div>"
+            for row in rows
+        )
+        return (
+            '<div class="tails__col">'
+            f'<div class="tails__head"><span class="tails__side">{len(rows)} {side}</span>'
+            f'<span class="tails__summary" data-tone="{tone}">{summary}</span></div>'
+            f"{lines}</div>"
+        )
+
+    def _build_extremes_listing(self, lows: list[tuple], highs: list[tuple]) -> str:
+        """The bare tails, for a column with no fence to place them against."""
+
+        def column(side: str, items: list[tuple]) -> str:
             if not items:
-                return f"<div class='sub'><div class='hdr'>{label}</div><div class='muted'>—</div></div>"
-            rows = "".join(
-                f"<tr><td>{self.safe_html_escape(str(idx))}</td><td class='num'>{self.format_number(val)}</td></tr>"
-                for idx, val in items
+                return ""
+            lines = "".join(
+                f'<div class="tails__row">'
+                f'<span class="tails__idx">{self.safe_html_escape(str(index))}</span>'
+                f'<span class="tails__val">{self.format_number(value)}</span>'
+                f'<span class="tails__note" data-severity="inside"></span>'
+                f"</div>"
+                for index, value in items
             )
             return (
-                f"<div class='sub'><div class='hdr'>{label}</div>"
-                f"<table class='kv'><thead><tr><th>Index</th><th>Value</th></tr></thead><tbody>{rows}</tbody></table></div>"
+                '<div class="tails__col">'
+                f'<div class="tails__head"><span class="tails__side">'
+                f"{len(items)} {side}</span></div>{lines}</div>"
             )
 
         return (
-            "<div class='extremes stats-quant'>"
-            + _sub("Min values", list(getattr(stats, "min_items", []) or []))
-            + _sub("Max values", list(getattr(stats, "max_items", []) or []))
-            + "</div>"
+            '<div class="fence-pane"><div class="tails-body">'
+            f"{column('lowest', lows)}{column('highest', highs)}</div></div>"
         )
 
     def _build_outliers_pane(
@@ -656,127 +984,110 @@ class NumericCardRenderer(CardRenderer):
         figure = render_figure(fence, name, self.format_number)
         return f'<div class="fence-pane">{header}{lede}{figure}{body}</div>'
 
+    #: The pane lists at most this many partners. Beyond it the list stops
+    #: informing and starts scrolling -- a 40-column frame would render 39 rows
+    #: inside a card.
+    _MAX_PARTNERS = 5
+
     def _build_correlation_table(self, stats: NumericStats) -> str:
-        """Build enhanced correlation table with visual improvements and summary statistics.
+        """Every partner this column has, strongest first, capped at five.
 
-        This method creates a professional, feature-rich table that provides comprehensive
-        insights into correlations with visual indicators, strength categorization, and context.
+        Phase 5b.6 (#154). The pane repeated the section-level empty state
+        inside a card: `No significant correlations found`, on a column that
+        has partners and simply has no *strong* ones.
 
-        Args:
-            stats: NumericStats object containing correlation data
+        `Age` has exactly two numeric partners in the Titanic frame, so listing
+        both is **complete** information in two rows -- nothing is withheld and
+        the reader can stop wondering. "Both partners are weak, the stronger is
+        Fare at +0.096" is a finding; "no significant correlations" is a shrug
+        that leaves a reader unable to tell an uncorrelated column from one the
+        threshold happened to hide.
 
-        Returns:
-            HTML string for the enhanced correlations table with summary
+        The bar is the section's own `_diverging_bar` shape, so sign stays
+        position and never colour -- a red bar for a negative correlation reads
+        as *bad*, and a negative correlation is often the interesting one.
         """
-        corr_data = getattr(stats, "corr_top", []) or []
+        partners = list(getattr(stats, "corr_top", None) or [])
+        if not partners:
+            return ""
 
-        if not corr_data:
-            threshold = getattr(stats, "corr_threshold", 0.5)
-            return f"""
-        <div class="correlation-summary">
-            <div class="no-correlations">
-                <span class="message">No significant correlations found</span>
-                <small>Correlations below {threshold:.1f} threshold are not shown</small>
-            </div>
-        </div>
+        partners.sort(key=lambda pair: abs(pair[1]), reverse=True)
+        threshold = float(getattr(stats, "corr_threshold", 0.5) or 0.0)
+
+        # `corr_max_per_col` is documented as a maximum, so it still binds --
+        # it just cannot push the list past the point where it stops being
+        # readable inside a card.
+        limit = min(self._MAX_PARTNERS, len(partners))
+        shown, hidden = partners[:limit], partners[limit:]
+
+        name = self.safe_html_escape(stats.name)
+        strongest, value = shown[0]
+        if abs(value) < threshold:
+            lede = (
+                f"Every partner is weak. The strongest is "
+                f"{self.safe_html_escape(str(strongest))} at {value:+.3f}, "
+                f"below the {threshold:.2f} threshold."
+            )
+        else:
+            lede = (
+                f"The strongest partner is "
+                f"{self.safe_html_escape(str(strongest))} at {value:+.3f}."
+            )
+
+        rows = "".join(
+            f'<div class="corr-partner">'
+            f'<span class="corr-partner__name">{self.safe_html_escape(str(other))}</span>'
+            f"{self._diverging_bar(corr)}"
+            f'<span class="corr-partner__value">{corr:+.3f}</span>'
+            f"</div>"
+            for other, corr in shown
+        )
+
+        # Completeness is the point of this pane, so it says which case it is
+        # in. A list that stops at five and a list that *is* the whole set look
+        # identical, and only one of them lets a reader stop wondering.
+        if hidden:
+            note = f"{len(hidden)} more, all below {abs(shown[-1][1]):.2f}."
+        elif len(shown) == 1:
+            note = "That is this column's only numeric partner, so nothing is withheld."
+        else:
+            note = (
+                f"Those are all {len(shown)} of this column's numeric partners, "
+                "so nothing is withheld."
+            )
+        more = f'<p class="corr-partner__more">{note}</p>'
+
+        return (
+            '<div class="fence-pane">'
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · correlations</span>'
+            '<span class="fence-head__rule"></span>'
+            f'<span class="fence-head__count">{len(partners)} numeric '
+            f"partner{'s' if len(partners) != 1 else ''}</span>"
+            "</div>"
+            f'<p class="fence-lede">{lede}</p>'
+            f'<div class="corr-partners">{rows}</div>'
+            f"{more}"
+            "</div>"
+        )
+
+    def _diverging_bar(self, corr: float) -> str:
+        """Zero at the centre, negative left, positive right.
+
+        Byte-identical in shape to `correlations_section._diverging_bar`, and
+        deliberately so: the per-column pane and the section-level list plot
+        the same numbers, and a reader who learns to read one must not have to
+        relearn the other.
         """
-
-        # Calculate summary statistics
-        corr_values = [abs(corr) for _, corr in corr_data]
-        sum(corr_values) / len(corr_values) if corr_values else 0
-
-        # Categorize correlations by strength
-        strength_counts = {"very_strong": 0, "strong": 0, "moderate": 0, "weak": 0}
-        for _, corr in corr_data:
-            abs_corr = abs(corr)
-            if abs_corr >= 0.9:
-                strength_counts["very_strong"] += 1
-            elif abs_corr >= 0.7:
-                strength_counts["strong"] += 1
-            elif abs_corr >= 0.5:
-                strength_counts["moderate"] += 1
-            else:
-                strength_counts["weak"] += 1
-
-        # Build summary header
-        summary_html = f"""
-        <div class="correlation-summary">
-            <div class="summary-header">
-                <span class="title">Correlations</span>
-                <span class="count">{len(corr_data)} significant correlations</span>
-            </div>
-            <div class="strength-breakdown">
-                <span class="strength-item very-strong">Very Strong: {strength_counts["very_strong"]}</span>
-                <span class="strength-item strong">Strong: {strength_counts["strong"]}</span>
-                <span class="strength-item moderate">Moderate: {strength_counts["moderate"]}</span>
-                <span class="strength-item weak">Weak: {strength_counts["weak"]}</span>
-            </div>
-        </div>
-        """
-
-        # Build enhanced table rows
-        parts = []
-        for i, (col_name, corr_value) in enumerate(corr_data):
-            abs_corr = abs(corr_value)
-
-            # Determine strength and color
-            if abs_corr >= 0.9:
-                strength = "Very Strong"
-                strength_class = "very-strong"
-            elif abs_corr >= 0.7:
-                strength = "Strong"
-                strength_class = "strong"
-            elif abs_corr >= 0.5:
-                strength = "Moderate"
-                strength_class = "moderate"
-            else:
-                strength = "Weak"
-                strength_class = "weak"
-
-            # Direction indicator
-            direction = "positive" if corr_value > 0 else "negative"
-            direction_icon = "↑" if corr_value > 0 else "↓"
-
-            # Ranking
-            rank_icon = ordinal_number(i + 1)
-
-            parts.append(f'''
-            <tr class="correlation-row strength-{strength_class}">
-                <td class="rank">{rank_icon}</td>
-                <td class="column">
-                    <code class="missing-col" title="{self.safe_html_escape(col_name)}">{self.safe_html_escape(col_name)}</code>
-                </td>
-                <td class="correlation-value {direction}">
-                    {corr_value:+.3f}
-                </td>
-                <td class="strength" data-strength="{strength_class}">
-                    {strength}
-                </td>
-                <td class="direction">
-                    <span class="direction-icon">{direction_icon}</span>
-                    <span class="direction-text">{direction.title()}</span>
-                </td>
-            </tr>
-            ''')
-
-        table_html = f"""
-        <table class="correlations-table enhanced">
-            <thead>
-                <tr>
-                    <th>Rank</th>
-                    <th>Column</th>
-                    <th>Correlation</th>
-                    <th>Strength</th>
-                    <th>Direction</th>
-                </tr>
-            </thead>
-            <tbody>
-                {"".join(parts)}
-            </tbody>
-        </table>
-        """
-
-        return summary_html + table_html
+        magnitude = min(abs(corr), 1.0) * 50.0
+        left = 50.0 - magnitude if corr < 0 else 50.0
+        return (
+            '<span class="corr-bar" aria-hidden="true">'
+            '<span class="corr-bar__zero"></span>'
+            f'<span class="corr-bar__fill" style="left:{left:.2f}%;'
+            f'width:{magnitude:.2f}%;background:var(--data-2)"></span>'
+            "</span>"
+        )
 
     def _build_missing_values_table(self, stats: NumericStats) -> str:
         """Build simple missing values analysis."""
@@ -1332,9 +1643,11 @@ class NumericCardRenderer(CardRenderer):
         """
         counts: dict[str, str] = {}
 
-        common = len(getattr(stats, "top_values", None) or [])
-        if common:
-            counts["common"] = f"{common:,}"
+        top_values = list(getattr(stats, "top_values", None) or [])
+        # A column where nothing repeats has no common values, whatever the
+        # length of the top-k list -- every entry in it was seen once.
+        if top_values and max(int(count) for _, count in top_values) > 1:
+            counts["common"] = f"{len(top_values):,}"
 
         lows = len(getattr(stats, "min_items", None) or [])
         highs = len(getattr(stats, "max_items", None) or [])

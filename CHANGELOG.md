@@ -24,6 +24,55 @@ quoted when both sides were measured in the same round-robin run.
   report's own cards wrap one per row. Nothing that worked was dropped — the
   log, the streamed 5M-row demo, the JSON download, the version line and the
   sandboxed report frame all survive, restyled.
+- **Sub-threshold correlation pairs are now kept per column** ([#154], 5b.6) —
+  a deliberate change to the `summarize()` payload, and one of the two the
+  invariance harness names as permitted. `corr_top` previously held only pairs
+  at or above `corr_threshold` (default 0.50), so on most frames it was empty
+  and every per-column pane rendered an empty state. It now holds every numeric
+  partner, strongest first, bounded by `corr_max_cols` (default 50). No other
+  field changed: every differing key in the golden payload is `corr_top`, and
+  every one goes from `[]` to a populated list.
+
+- **The statistics pane opens with the distribution's shape** ([#154], 5b.1).
+  Twenty-six key–value rows across two tables, with nothing in the layout
+  saying which to read — `Jarque–Bera χ²` carried the same weight as `Median`,
+  and **`Std Dev` was printed twice**, once in each table. The nine percentiles
+  now sit on the axis the Outliers and Min/Max panes use, as a box with the IQR
+  band, whiskers terminating at the band edges, the median protruding past both
+  and the mean as a caret above it. Two prose lines spend thresholds the report
+  already held and never showed: `Jarque–Bera is 18.79 against a 5.99 critical
+  value — far enough from normal to reject it`, and the confidence interval as
+  a width (`±1.066`) rather than two endpoints. `Std Dev` is printed once, with
+  the moments where it belongs.
+- **The per-column correlations pane shows every partner** ([#154], 5b.6).
+  It repeated the section-level empty state inside a card — `No significant
+  correlations found`, on a column that has partners and simply has no strong
+  ones. `Age` has exactly two numeric partners in the Titanic frame, so listing
+  both is *complete* information in two rows: **the strongest partner is Fare
+  at +0.096**, and the pane says so rather than shrugging. Capped at five with
+  a `6 more, all below 0.04` line, on the same diverging bar as the
+  section-level list so sign stays position and never colour.
+- **Common values rank visibly** ([#154], 5b.3). Five columns become three —
+  the ordinals `1ˢᵗ 2ⁿᵈ 3ʳᵈ` were decoration on a list that is already ordered,
+  and count and percent are one fact about one value rather than two. **The bar
+  is scaled to the most common value, not to 100%**: at 3.2% of 714 rows every
+  bar was 3% of its track and all ten looked identical, so the ranking could
+  not be seen. Relative scaling hides absolute rarity in exchange, which the
+  caption now carries. The pane also says the finding out loud — *All 10 are
+  whole numbers, though the column stores 3 decimals. 22.3% of values end in a
+  0 or a 5* — two numbers the report already computed and never put next to
+  each other. A column where nothing repeats loses the tab entirely rather than
+  drawing ten full-width bars over ten equally-common values.
+- **Min/Max plots both tails on the fence's axis** ([#154], 5b.5). It was two
+  tables headed `Min values` and `Max values`, five rows each of index and
+  value — ten numbers, no context. A reader could not tell that **every one of
+  `Age`'s five maxima crosses the IQR fence and not one of its five minima
+  does**, which is the whole story of that column's tails and was already
+  computable. The pane now reads *The low tail is ordinary — all 5 sit inside
+  the fence. Every one of the 5 highest crosses it.* above the same figure the
+  Outliers pane draws, and gives each row its position (`high · 2.3× IQR`,
+  `inside the fence`). Repeated values are marked, so `Age`'s two 0.75s and two
+  71s stop looking like four findings.
 - **The Outliers pane draws the fence** ([#154], 5b.2). It opened with roughly
   60px announcing `Low Outliers — 0 outliers (0.0%)` over three severity chips
   all reading zero, said the same again for the high side, then listed the

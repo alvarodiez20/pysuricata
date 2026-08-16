@@ -93,6 +93,12 @@ def _stats(**overrides) -> NumericStats:
     return NumericStats(**base)
 
 
+def _quantiles(p1, p5, p10, p90, p95, p99):
+    from pysuricata.render.card_types import QuantileData
+
+    return QuantileData(p1=p1, p5=p5, p10=p10, p90=p90, p95=p95, p99=p99)
+
+
 def _fmt(value: float) -> str:
     return f"{value:,.3g}"
 
@@ -351,3 +357,419 @@ class TestTheRenderedPane:
         decided by arrival order -- the harness already drops `min_items` and
         `max_items` indices for the same reason."""
         assert not re.search(r'class="fence-table__idx"[^>]*data-', report)
+
+
+class TestTheTwoTailsShareTheAxis:
+    """5b.5. What this replaced was two tables headed `Min values` and `Max
+    values`, five rows each of index and value. Ten numbers, no context — and
+    a reader could not tell that **every one of `Age`'s five maxima crosses
+    the fence and not one of its five minima does**, which is the whole story
+    of that column's tails and was already computable."""
+
+    @pytest.fixture(scope="class")
+    def report(self) -> str:
+        rng = np.random.default_rng(0)
+        return _markup_only(
+            profile(
+                pd.DataFrame(
+                    {
+                        "fare": rng.lognormal(3, 0.9, 600),
+                        "steady": rng.normal(0, 1, 600),
+                    }
+                ),
+                seed=0,
+            ).html
+        )
+
+    def test_the_bare_two_table_listing_is_gone(self, report):
+        assert "Min values" not in report and "Max values" not in report
+
+    def test_each_row_says_where_it_sits(self, report):
+        notes = re.findall(
+            r'class="tails__note" data-severity="(\w+)">([^<]*)<', report
+        )
+        assert notes
+        assert any(severity == "inside" for severity, _ in notes)
+        assert any(severity in {"moderate", "high", "extreme"} for severity, _ in notes)
+
+    def test_the_asymmetry_is_stated(self, report):
+        ledes = re.findall(r'class="fence-lede">([^<]+)<', report)
+        assert any("tail" in lede for lede in ledes)
+
+    def test_the_severity_words_agree_with_the_outliers_pane(self):
+        """The acceptance criterion, and the reason `classify` is imported
+        rather than reimplemented: a value that is `high` in one pane cannot be
+        `moderate` in the other."""
+        from pysuricata.render.outlier_fence import classify
+
+        stats = _stats(sample_vals=[45.0, 50.0, 55.0, 200.0], min=45.0, max=200.0)
+        fence = build_fence(stats)
+        for row in fence.rows:
+            if row.iqr_severity == "none":
+                continue
+            assert classify(fence, row.value)[0] == row.iqr_severity
+
+    def test_a_value_inside_the_fence_is_not_a_quality_judgement(self):
+        from pysuricata.render.outlier_fence import classify
+
+        stats = _stats(sample_vals=[45.0, 50.0, 55.0, 200.0], min=45.0, max=200.0)
+        fence = build_fence(stats)
+        assert classify(fence, 50.0) == ("inside", "inside the fence")
+
+    def test_ties_are_marked(self):
+        """`Age` holds 0.75 twice and 71 twice, and the pane listed them as
+        separate rows without comment — so one value looked like two findings.
+
+        Built here rather than taken from the rendered fixture: the fixture's
+        columns are continuous and hold no repeated value at all, so a check
+        against it would pass on a report where ties are never marked.
+        """
+        from pysuricata.render.numeric_card import NumericCardRenderer
+
+        stats = _stats(
+            sample_vals=[float(v) for v in range(10, 61)],
+            min=10.0,
+            max=60.0,
+            min_items=[("r1", 10.0), ("r2", 10.0), ("r3", 11.0)],
+            max_items=[("r9", 60.0), ("r8", 59.0)],
+        )
+        html = NumericCardRenderer()._build_extremes_table(stats)
+        ties = re.findall(r'class="tails__tie"[^>]*>(×\d+)<', html)
+        assert ties == ["×2", "×2"], html[:400]
+
+    def test_the_quiet_case_says_it_once(self):
+        """Both tails inside the fence used to render `all 5 sit inside the
+        fence.` twice in one sentence, which reads as a template that did not
+        notice it was describing the same thing."""
+        from pysuricata.render.numeric_card import NumericCardRenderer
+
+        rows = [{"severity": "inside"} for _ in range(5)]
+        sentence = NumericCardRenderer()._tails_verdict(rows, list(rows))
+        assert sentence.count("inside the fence") == 1
+        assert "Neither tail" in sentence
+
+
+class TestCommonValuesRankVisibly:
+    """5b.3. Five columns become three, and the bar is scaled to the most
+    common value rather than to 100% — at 3.2% of 714 rows every bar was 3%
+    of its track and all ten looked identical, which is a ranking drawn so
+    that the ranking cannot be seen."""
+
+    def _renderer(self):
+        from pysuricata.render.numeric_card import NumericCardRenderer
+
+        return NumericCardRenderer()
+
+    def test_the_bar_is_scaled_to_the_top_value(self):
+        stats = _stats(
+            count=1000,
+            top_values=[(1.0, 32), (2.0, 16), (3.0, 8)],
+            sample_vals=[1.0, 2.0, 3.0],
+        )
+        html = self._renderer()._build_common_values_table(stats)
+        widths = [
+            float(w) for w in re.findall(r'common__bar" style="width:([\d.]+)%', html)
+        ]
+        assert widths == [100.0, 50.0, 25.0]
+
+    def test_the_caption_says_which_scale_it_is_on(self):
+        """Relative scaling hides absolute rarity — ten values at 3% and ten
+        at 30% draw the same picture — so the caption has to carry it."""
+        stats = _stats(count=1000, top_values=[(1.0, 32), (2.0, 16)])
+        html = self._renderer()._build_common_values_table(stats)
+        assert "scaled to the most common value" in html
+
+    def test_count_and_percent_are_one_column(self):
+        stats = _stats(count=1000, top_values=[(1.0, 32)])
+        html = self._renderer()._build_common_values_table(stats)
+        assert "32 · 3.2%" in html
+
+    def test_the_ordinals_are_gone(self):
+        stats = _stats(count=1000, top_values=[(1.0, 32), (2.0, 16)])
+        html = self._renderer()._build_common_values_table(stats)
+        for ordinal in ("1ˢᵗ", "2ⁿᵈ", "3ʳᵈ"):
+            assert ordinal not in html
+
+    def test_a_column_where_nothing_repeats_gets_no_pane(self):
+        """Scaling to a top count of 1 gives every row a full bar — a ranking
+        drawn over ten values that are all equally common. `PassengerId` is
+        exactly this column, and saying "no value repeats" would only restate
+        the card face, where `Unique` already equals the row count."""
+        stats = _stats(count=10, top_values=[(float(v), 1) for v in range(10)])
+        assert self._renderer()._build_common_values_table(stats) == ""
+
+    def test_that_column_loses_the_tab_and_the_badge(self):
+        stats = _stats(count=10, top_values=[(float(v), 1) for v in range(10)])
+        assert "common" not in self._renderer()._pane_counts(stats)
+
+    def test_the_heaping_finding_is_said_out_loud(self):
+        """Two numbers the report computes and never puts next to each other:
+        `Age` stores three decimals, all ten of its most common values are
+        whole, and `Heaping %` is 22.27."""
+        stats = _stats(
+            count=714,
+            gran_decimals=3,
+            heap_pct=22.27,
+            top_values=[(float(v), 20 - v) for v in range(1, 11)],
+        )
+        html = self._renderer()._build_common_values_table(stats)
+        assert "whole numbers" in html and "3 decimals" in html
+        assert "22.3% of values end in a 0 or a 5" in html
+
+    def test_the_heaping_sentence_says_what_it_measures(self):
+        """`heap_pct` counts values whose last significant digit is 0 or 5.
+        "Heaped on round numbers" is a gloss, and this is a report."""
+        stats = _stats(count=100, heap_pct=54.0, top_values=[(1.5, 9), (2.5, 4)])
+        html = self._renderer()._build_common_values_table(stats)
+        assert "end in a 0 or a 5" in html
+        assert "whole numbers" not in html
+
+    def test_the_values_stay_visible_to_the_fingerprint(self):
+        """The five-column table was extracted by pairing the ordinal against
+        the value, so dropping the ordinals would have taken the values with
+        them."""
+        stats = _stats(count=1000, top_values=[(7.0, 32), (9.0, 16)])
+        html = self._renderer()._build_common_values_table(stats, "col_x")
+        tagged = re.findall(
+            r'class="common__value" data-col="col_x" data-value="([^"]+)"', html
+        )
+        assert tagged == ["7", "9"]
+
+
+class TestEveryPartnerIsShown:
+    """5b.6. The pane repeated the section-level empty state inside a card —
+    `No significant correlations found`, on a column that has partners and
+    simply has no *strong* ones.
+
+    `Age` has exactly two numeric partners in the Titanic frame, so listing
+    both is **complete** information in two rows. "Both partners are weak, the
+    stronger is Fare at +0.096" is a finding; "no significant correlations" is
+    a shrug that leaves a reader unable to tell an uncorrelated column from one
+    the threshold happened to hide.
+    """
+
+    def _renderer(self):
+        from pysuricata.render.numeric_card import NumericCardRenderer
+
+        return NumericCardRenderer()
+
+    def test_a_weak_partner_is_still_listed(self):
+        stats = _stats(corr_top=[("fare", 0.096)], corr_threshold=0.5)
+        html = self._renderer()._build_correlation_table(stats)
+        assert "fare" in html and "+0.096" in html
+        assert "No significant correlations" not in html
+
+    def test_the_strongest_is_named_and_its_weakness_stated(self):
+        stats = _stats(corr_top=[("fare", 0.096), ("id", 0.037)], corr_threshold=0.5)
+        html = self._renderer()._build_correlation_table(stats)
+        assert "strongest is fare at +0.096" in html
+        assert "below the 0.50 threshold" in html
+
+    def test_completeness_is_said_when_the_list_is_complete(self):
+        """A list that stops at five and a list that *is* the whole set look
+        identical, and only one lets a reader stop wondering."""
+        stats = _stats(corr_top=[("a", 0.4), ("b", 0.2)], corr_threshold=0.5)
+        html = self._renderer()._build_correlation_table(stats)
+        assert "all 2 of this column's numeric partners" in html
+
+    def test_one_partner_reads_as_one(self):
+        stats = _stats(corr_top=[("a", 0.4)], corr_threshold=0.5)
+        html = self._renderer()._build_correlation_table(stats)
+        assert "only numeric partner" in html
+
+    def test_the_list_caps_at_five_with_a_remainder(self):
+        """A 40-column frame would otherwise render 39 rows inside a card."""
+        stats = _stats(
+            corr_top=[(f"c{i}", 0.5 - i / 100) for i in range(11)],
+            corr_threshold=0.5,
+        )
+        html = self._renderer()._build_correlation_table(stats)
+        assert html.count('class="corr-partner"') == 5
+        assert "6 more, all below" in html
+
+    def test_partners_are_ordered_by_strength_not_sign(self):
+        stats = _stats(corr_top=[("weak", 0.1), ("strong", -0.9)], corr_threshold=0.5)
+        html = self._renderer()._build_correlation_table(stats)
+        assert html.index("strong") < html.index("weak")
+
+    def test_a_column_with_no_partners_renders_no_pane(self):
+        assert self._renderer()._build_correlation_table(_stats(corr_top=[])) == ""
+
+    def test_sign_is_position_and_never_colour(self):
+        """A red bar for a negative correlation reads as *bad*, and a negative
+        correlation is often the interesting one."""
+        renderer = self._renderer()
+        negative = renderer._build_correlation_table(
+            _stats(corr_top=[("a", -0.8)], corr_threshold=0.5)
+        )
+        positive = renderer._build_correlation_table(
+            _stats(corr_top=[("a", 0.8)], corr_threshold=0.5)
+        )
+        fills = re.compile(
+            r'corr-bar__fill" style="left:([\d.]+)%;width:([\d.]+)%;background:([^"]+)"'
+        )
+        neg_left, neg_width, neg_bg = fills.search(negative).groups()
+        pos_left, pos_width, pos_bg = fills.search(positive).groups()
+
+        assert neg_bg == pos_bg, "the two signs must share a fill"
+        assert float(neg_left) < 50.0 <= float(pos_left)
+        assert neg_width == pos_width, "equal magnitude, equal length"
+
+    def test_the_bar_matches_the_section_level_one(self):
+        """The pane and the section plot the same numbers; a reader who has
+        learned to read one must not have to relearn the other."""
+        from pysuricata.render.correlations_section import CorrelationsSectionRenderer
+
+        section = CorrelationsSectionRenderer()._diverging_bar(-0.42, "var(--data-2)")
+        pane = self._renderer()._diverging_bar(-0.42)
+        assert section == pane
+
+
+class TestTheQuantileStripIsAShape:
+    """5b.1. The nine percentiles were a column of numbers printed directly
+    under a histogram that draws the very shape they describe, so the two
+    could not be read against each other. Every number in the strip was
+    already in the two tables below it — what changes is that they are on an
+    axis."""
+
+    def _fence(self, **overrides):
+        stats = _stats(
+            sample_vals=[float(v) for v in range(0, 101)],
+            min=0.0,
+            max=100.0,
+            **overrides,
+        )
+        return build_fence(stats, _quantiles(1.0, 5.0, 10.0, 90.0, 95.0, 99.0)), stats
+
+    def test_the_whiskers_terminate_at_the_band_edges(self):
+        """One span running P1 to P99 paints *across* the box, which reads as
+        a range that contains it — a different and weaker claim than the two
+        the box actually makes."""
+        from pysuricata.render.outlier_fence import render_quantile_strip
+
+        fence, _ = self._fence()
+        html = render_quantile_strip(
+            fence, _quantiles(1.0, 5.0, 10.0, 90.0, 95.0, 99.0), _fmt
+        )
+        spans = re.findall(
+            r'qstrip__whisker" style="left:([\d.]+)%;width:([\d.]+)%', html
+        )
+        assert len(spans) == 2, "two spans, not one across the box"
+
+        box = re.search(r'qstrip__box" style="left:([\d.]+)%;width:([\d.]+)%', html)
+        box_left, box_width = float(box.group(1)), float(box.group(2))
+        box_right = box_left + box_width
+
+        (lo_left, lo_width), (hi_left, hi_width) = (
+            (float(a), float(b)) for a, b in spans
+        )
+        assert abs((float(lo_left) + float(lo_width)) - box_left) < 0.01
+        assert abs(float(hi_left) - box_right) < 0.01
+
+    def test_the_mean_and_median_are_different_shapes(self):
+        """They land ~24px apart inside a dark fill, so they are told apart by
+        shape rather than colour — rule 2 of the token system."""
+        from pysuricata.render.outlier_fence import render_quantile_strip
+
+        fence, _ = self._fence()
+        html = render_quantile_strip(
+            fence, _quantiles(1.0, 5.0, 10.0, 90.0, 95.0, 99.0), _fmt
+        )
+        assert "qstrip__median" in html and "qstrip__mean" in html
+
+    def test_the_median_is_never_dropped_from_the_ladder(self):
+        """The first version walked left to right dropping whichever point
+        crowded its neighbour. On `Fare`, where P1 through Q3 all land in the
+        first fifth of the axis, that kept `Q3` and dropped **`P50`** purely by
+        arrival order — the one figure a reader looks for first."""
+        from pysuricata.render.outlier_fence import render_quantile_strip
+
+        # A hard right skew: every low percentile piles into the first
+        # few percent of the axis.
+        stats = _stats(
+            sample_vals=[1.0] * 90 + [500.0] * 10,
+            min=1.0,
+            max=500.0,
+            q1=1.0,
+            q3=2.0,
+            median=1.0,
+            mean=51.0,
+        )
+        fence = build_fence(stats, _quantiles(1.0, 1.0, 1.0, 400.0, 450.0, 490.0))
+        assert fence is not None
+        html = render_quantile_strip(
+            fence, _quantiles(1.0, 1.0, 1.0, 400.0, 450.0, 490.0), _fmt
+        )
+        names = re.findall(r'qstrip__name">([^<]+)<', html)
+        assert "P50" in names, names
+        assert "P1" in names and "P99" in names, names
+
+    def test_crowded_ticks_are_dropped(self):
+        from pysuricata.render.outlier_fence import render_quantile_strip
+
+        stats = _stats(
+            sample_vals=[1.0] * 90 + [500.0] * 10,
+            min=1.0,
+            max=500.0,
+            q1=1.0,
+            q3=2.0,
+            median=1.0,
+        )
+        fence = build_fence(stats, _quantiles(1.0, 1.0, 1.0, 400.0, 450.0, 490.0))
+        html = render_quantile_strip(
+            fence, _quantiles(1.0, 1.0, 1.0, 400.0, 450.0, 490.0), _fmt
+        )
+        names = re.findall(r'qstrip__name">([^<]+)<', html)
+        assert len(names) < 9, f"nothing was dropped on a hard skew: {names}"
+
+    def test_labels_alternate_between_two_rows(self):
+        """A pair that clears the 4% drop rule can still be adjacent, and two
+        labels on one line at 4% apart touch."""
+        from pysuricata.render.outlier_fence import render_quantile_strip
+
+        fence, _ = self._fence()
+        html = render_quantile_strip(
+            fence, _quantiles(1.0, 5.0, 10.0, 90.0, 95.0, 99.0), _fmt
+        )
+        rows = [int(r) for r in re.findall(r'qstrip__label" data-row="(\d+)"', html)]
+        assert rows == sorted(rows)
+        assert any(r % 2 for r in rows), "no label ever reaches the second row"
+
+
+class TestTheThresholdsAreSpent:
+    """`data-threshold="JB χ² < 5.99"` has been in the DOM all along and never
+    rendered, so a reader was handed 18.63 with no way to judge it."""
+
+    def _renderer(self):
+        from pysuricata.render.numeric_card import NumericCardRenderer
+
+        return NumericCardRenderer()
+
+    def test_jarque_bera_is_judged_against_its_critical_value(self):
+        html = self._renderer()._shape_prose(_stats(jb_chi2=18.79))
+        assert "5.99" in html
+        assert "reject" in html
+
+    def test_a_normal_looking_column_says_so(self):
+        html = self._renderer()._shape_prose(_stats(jb_chi2=1.2))
+        assert "consistent with a normal distribution" in html
+
+    def test_the_interval_is_a_width_not_two_endpoints(self):
+        html = self._renderer()._shape_prose(
+            _stats(mean=29.7, ci_lo=28.634, ci_hi=30.766)
+        )
+        assert "±1.066" in html
+
+    def test_std_dev_is_printed_once(self):
+        """It was in both tables — a moment and an order statistic at the same
+        weight, which is exactly what this phase is about."""
+        renderer = self._renderer()
+        stats = _stats(std=23.01)
+        quantiles = _quantiles(1.0, 5.0, 10.0, 90.0, 95.0, 99.0)
+        pane = renderer._build_statistics_pane(
+            stats,
+            quantiles,
+            renderer._build_stats_table(stats),
+            renderer._build_quant_stats_table(stats, quantiles),
+        )
+        assert pane.count("Std Dev") == 1
