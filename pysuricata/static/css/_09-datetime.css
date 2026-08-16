@@ -25,8 +25,12 @@
   max-width: 100%;
 }
 
+/* Every figure and axis label is monospace: columns of digits then align
+   without font-variant-numeric hacks, and a tick label cannot drift to a
+   different face than the table beneath it. `inherit` pulled in the body
+   sans and beat the presentation attribute on the element. */
 #pysuricata-report .dt-svg text {
-  font-family: inherit;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report .dt-svg .axis,
@@ -355,9 +359,9 @@
 
 /* Bar styling with smooth transitions */
 #pysuricata-report .temporal-chart .bar {
-  fill: #3b82f6;
+  fill: var(--data-1);
   fill-opacity: 0.8;
-  stroke: #3b82f6;
+  stroke: var(--data-1);
   stroke-width: 1;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -365,7 +369,7 @@
 }
 
 #pysuricata-report .temporal-chart .bar:hover {
-  fill: #60a5fa;
+  fill: var(--data-1);
   fill-opacity: 1;
   stroke: #2563eb;
   stroke-width: 1.5;
@@ -396,7 +400,7 @@
 
 /* Dark mode adjustments */
 #pysuricata-report:not(.light) .temporal-chart .grid-line {
-  stroke: #4b5563;
+  stroke: var(--rule);
   stroke-opacity: 0.3;
 }
 

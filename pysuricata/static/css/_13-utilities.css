@@ -203,7 +203,7 @@
 #pysuricata-report .details-toggle:focus-visible,
 #pysuricata-report .details-section .tabs [role="tab"]:focus-visible,
 #pysuricata-report .btn-soft:focus-visible {
-  outline: 2px solid #4ea3f1;
+  outline: 2px solid var(--data-1);
   outline-offset: 2px;
   border-radius: 4px;
 }
@@ -587,7 +587,7 @@
 
 /* Description section styling - compact dropdown */
 #pysuricata-report .description-value {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-sans);
   font-size: 0.9rem;
   line-height: 1.4;
   color: var(--text-primary);

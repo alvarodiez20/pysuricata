@@ -1,4 +1,14 @@
-"""Tests for donut chart rendering."""
+"""Tests for donut chart rendering.
+
+The four colour assertions used to name a hex per column type. That is the
+thing #110 removed: a hue per type carried no information — the legend already
+names the type — and it collided, olive meaning both *categorical* and
+*passes*. They now assert steps of the one data scale, which is what the
+segments are.
+
+The donut itself becomes a stacked bar in #112, at which point this file is
+rewritten around widths summing to 100 rather than arcs.
+"""
 
 import pytest
 
@@ -25,7 +35,7 @@ class TestDonutChartRenderer:
         # Should use circle element for 100% case
         assert "dtype-donut-svg" in result
         assert '<circle cx="67.5" cy="67.5" r="67.5"' in result
-        assert 'fill="#4ea3f1"' in result  # Numeric color
+        assert 'fill="var(--data-1, #2C4A62)"' in result  # first step of the data scale
         assert 'data-percentage="100.0"' in result
         assert 'data-count="75"' in result
         assert 'data-type="Numeric"' in result
@@ -40,7 +50,7 @@ class TestDonutChartRenderer:
 
         assert "dtype-donut-svg" in result
         assert '<circle cx="67.5" cy="67.5" r="67.5"' in result
-        assert 'fill="#8ac926"' in result  # Categorical color
+        assert 'fill="var(--data-2, #3E6280)"' in result  # second step
         assert 'data-type="Categorical"' in result
 
     def test_single_type_100_percent_datetime(self):
@@ -50,7 +60,7 @@ class TestDonutChartRenderer:
 
         assert "dtype-donut-svg" in result
         assert '<circle cx="67.5" cy="67.5" r="67.5"' in result
-        assert 'fill="#ffca3a"' in result  # Datetime color
+        assert 'fill="var(--data-3, #7FA0B5)"' in result  # third step
         assert 'data-type="Datetime"' in result
 
     def test_single_type_100_percent_boolean(self):
@@ -60,7 +70,7 @@ class TestDonutChartRenderer:
 
         assert "dtype-donut-svg" in result
         assert '<circle cx="67.5" cy="67.5" r="67.5"' in result
-        assert 'fill="#ff595e"' in result  # Boolean color
+        assert 'fill="var(--data-4, #A8BECD)"' in result  # fourth step
         assert 'data-type="Boolean"' in result
 
     def test_mixed_types_normal_arcs(self):

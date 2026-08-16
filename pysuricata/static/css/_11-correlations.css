@@ -56,7 +56,7 @@
 
 #pysuricata-report .strength-item.moderate {
   background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  color: var(--data-1);
 }
 
 #pysuricata-report .strength-item.weak {
@@ -103,7 +103,7 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   vertical-align: middle;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report:not(.light) .correlations-table.enhanced th {
@@ -118,7 +118,7 @@
   vertical-align: middle;
   text-align: center;
   font-size: 0.8rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report:not(.light) .correlations-table.enhanced td {
@@ -162,7 +162,7 @@
 /* Column Name Code Element - Fixed for Correlation Tables */
 #pysuricata-report .correlations-table.enhanced .missing-col {
   display: inline-block;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   padding: 4px 8px;
   border-radius: 4px;
@@ -202,7 +202,7 @@
 }
 
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="moderate"] {
-  color: #3b82f6;
+  color: var(--data-1);
 }
 
 #pysuricata-report .correlations-table.enhanced .strength[data-strength="weak"] {
@@ -397,7 +397,7 @@
   padding: 20px;
   background: rgba(0, 0, 0, 0.02);
   border: 1px solid var(--chip-br-light);
-  border-radius: 10px;
+  border-radius: 0;
   transition: background-color 0.2s ease;
 }
 
@@ -427,7 +427,7 @@
   padding: 0.5rem 1rem;
   background: var(--chip-bg);
   border: 1px solid var(--chip-br);
-  border-radius: 20px;
+  border-radius: 6px;
   font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-secondary);
@@ -496,7 +496,7 @@
   margin-bottom: 0.75rem;
   padding: 0.5rem;
   background: var(--card-bg);
-  border-radius: 8px;
+  border-radius: 0;
   border: 1px solid var(--border-color);
   transition: all 0.2s ease;
 }
@@ -545,7 +545,7 @@
 
 /* Column name chip format for correlations */
 #pysuricata-report .col-pair .col-name.correlation-col {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.82rem;
   padding: 0.15rem 0.4rem;
   border-radius: 6px;
@@ -572,7 +572,7 @@
 #pysuricata-report .correlation-value {
   font-size: 0.9rem;
   font-weight: 700;
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   padding: 3px 8px;
   border-radius: 4px;
   min-width: 70px;
@@ -746,7 +746,7 @@
   padding: 10px;
   text-align: center;
   border: 1px solid var(--border-color);
-  font-family: ui-monospace, monospace;
+  font-family: var(--font-mono);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -815,7 +815,7 @@
   padding: 3rem;
   text-align: center;
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: 0;
   border: 1px solid var(--border-color);
 }
 
@@ -840,7 +840,7 @@
   align-items: center;
   padding: 1rem;
   background: var(--bg-secondary);
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 0.875rem;
   flex-wrap: wrap;
 }

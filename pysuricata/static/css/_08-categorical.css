@@ -13,8 +13,12 @@
 }
 
 /* Cat SVG styling (bars + labels) */
+/* Every figure and axis label is monospace: columns of digits then align
+   without font-variant-numeric hacks, and a tick label cannot drift to a
+   different face than the table beneath it. `inherit` pulled in the body
+   sans and beat the presentation attribute on the element. */
 #pysuricata-report .cat-svg text {
-  font-family: inherit;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report .cat-svg .bar {
@@ -83,7 +87,7 @@
   padding: 8px 12px;
   text-align: left;
   border-bottom: 2px solid var(--chip-br-light);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report:not(.light) .common-values-table thead th {
@@ -94,7 +98,7 @@
 #pysuricata-report .common-values-table td {
   padding: 6px 12px;
   border-bottom: 1px solid var(--chip-br-light);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
 }
 
 #pysuricata-report:not(.light) .common-values-table td {
@@ -147,17 +151,22 @@
 
 
 /* Enhanced major tick visibility */
+/* Tick marks are part of a graphic required to understand the chart, so
+   WCAG 1.4.11 applies: --axis clears 3:1 in both themes. currentColor at
+   0.9 opacity happened to look right on paper and had no such guarantee. */
 #pysuricata-report .tick-major {
-  stroke: currentColor;
+  stroke: var(--axis);
   stroke-width: 1;
-  opacity: 0.9;
 }
 
 /* Better tick label styling with improved readability */
+/* Tick LABELS are text, so they need 4.5:1, which --axis does not have.
+   --axis-text resolves to --muted at 7.4:1. This is why the two are
+   separate tokens. */
 #pysuricata-report .tick-label {
+  font-family: var(--font-mono);
   font-size: 10px;
-  fill: currentColor;
-  opacity: 0.9;
+  fill: var(--axis-text);
   font-weight: 500;
 }
 
@@ -175,9 +184,8 @@
 
 /* Ensure axis lines are visible */
 #pysuricata-report .axis {
-  stroke: currentColor;
+  stroke: var(--axis);
   stroke-width: 1.5;
-  opacity: 0.8;
 }
 
 /* =============================================
@@ -212,7 +220,7 @@
   padding: 10px 8px;
   text-align: center;
   border-bottom: 2px solid var(--chip-br-light);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -225,7 +233,7 @@
 #pysuricata-report .common-values-table.enhanced td {
   padding: 8px;
   border-bottom: 1px solid var(--chip-br-light);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-mono);
   vertical-align: middle;
   text-align: center;
 }
