@@ -16,6 +16,54 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The datetime timeline was drawn a third of the size it was displayed at**
+  ([#217]). The chart was authored in a `0 0 420 180` viewBox and stretched to
+  fill a ~1,150px column, so everything inside it was multiplied by **2.73**:
+  the stylesheet's 11px tick labels rendered at ~30px, three times the size of
+  the stat row beneath them, and the card stood **844px** tall to hold what is,
+  on a regular series, a flat line.
+
+  Same defect the categorical bar chart had, and the same fix — author the
+  chart at roughly the width of the column it lands in. Measured in Chromium
+  after: 1146×208 at a scale of **1.04**, labels at 11.5px, card **561px**.
+
+  Three things had to move together, which is why datetime was split out of
+  the categorical change rather than folded into it:
+
+  - **The margins are derived rather than constant.** They were `45, 35, 25,
+    42`, sized by eye against 420 units. A gutter is only "wide enough"
+    relative to the scale the chart is finally drawn at, so constants and a
+    viewBox are not independent — widening one without the other is what makes
+    the y labels stop fitting. The left gutter now comes from the widest axis
+    label it has to hold, which is correct at 420 units and at 1,100.
+  - **The end labels are anchored inward.** A centred date sits half its own
+    width past the end of the axis: the first ran off the left edge into the y
+    gutter, and the last would have needed a right margin the size of half a
+    timestamp.
+  - **The chart is no longer scaled below 1:1 either.** The fix cuts both ways
+    — fitting a 1,100-unit chart into a 694px column renders an 11px label at
+    6.9px, which is no more readable than 30px was large. A unit is now a pixel
+    at every width, and the wrapper scrolls instead of shrinking the text.
+    Measured from 1600px down to a 360px viewport: scale 1.00–1.04, labels
+    10–11.5px, zero label collisions, zero clipped labels, and no horizontal
+    scroll on the page itself.
+
+  The rotation tier for narrow screens was removed. It never worked —
+  `transform-origin: center` on an SVG child resolves against the viewport
+  element rather than the label's own box, so every date label was rotated
+  about the middle of the chart and thrown 275–400px below it (measured at a
+  560px viewport: labels at y=2240 against an SVG bottom of 1966). It is also
+  no longer needed, since five labels across ~1,050 units do not collide at any
+  width.
+
+  `tests/test_chart_layout.py` guards all of it from the markup and the
+  stylesheet; eleven of its new cases fail against the previous behaviour.
+
+  Note for anyone tracing this from the issue: the report said the timeline
+  goes through `TemporalChartRenderer`. It does not — the timeline is built in
+  `DateTimeCardRenderer._build_timeline_svg`. `TemporalChartRenderer` draws the
+  small hour/day/month/year charts, and those carry fixed pixel `width` and
+  `height` attributes, so they never stretched.
 - **A numeric card drew every histogram variant at once.** The bins and scale
   toggles offer six combinations, and all six were on screen simultaneously —
   stacked, overlapping their own captions, in a card **1,671px tall instead of

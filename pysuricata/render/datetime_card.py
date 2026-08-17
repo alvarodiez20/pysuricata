@@ -25,8 +25,47 @@ class DateTimeCardRenderer(CardRenderer):
         self.temporal_renderer = TemporalChartRenderer()
 
     def _get_chart_dimensions(self) -> tuple[int, int]:
-        """Get consistent chart dimensions for datetime timeline."""
-        return self.chart_dims.width, self.chart_dims.height + 20
+        """Get consistent chart dimensions for datetime timeline.
+
+        Taken from :class:`DateTimeConfig` rather than the shared
+        ``ChartDimensions``: the shared 420 units are a chart authored much
+        narrower than the column it is drawn into, which scaled the timeline up
+        by 2.73 (#217).
+        """
+        return self.dt_config.chart_width, self.dt_config.chart_height
+
+    def _timeline_margins(
+        self, width: int, height: int, y_labels: list[str]
+    ) -> tuple[int, int, int, int]:
+        """Derive the timeline's margins from the text they have to hold.
+
+        The margins used to be the constants ``45, 35, 25, 42``, sized by eye
+        against a 420-unit viewBox. Constants and a viewBox are not independent
+        -- a gutter is only "wide enough" relative to the scale the chart ends
+        up drawn at -- so widening one without the other is what makes the y
+        labels stop fitting. Deriving the gutter from the labels themselves
+        removes the coupling: it is correct at 420 units and at 1,100.
+
+        Returns ``(left, right, top, bottom)``.
+        """
+        cfg = self.dt_config
+        widest = max((len(label) for label in y_labels), default=1)
+        left = max(
+            cfg.min_gutter,
+            min(
+                cfg.max_gutter,
+                widest * cfg.char_width + cfg.tick_len + cfg.label_pad,
+            ),
+        )
+        # The title sits on its own baseline above the plot; the date row sits
+        # below the axis, and needs the tick mark plus a line of text.
+        top = cfg.title_font + 16
+        bottom = cfg.xlabel_font + cfg.tick_len + 23
+        right = cfg.margin_right
+        # A degenerate width must not produce a negative plot.
+        if left + right >= width:
+            left, right = cfg.min_gutter, cfg.margin_right
+        return left, right, top, bottom
 
     def render_card(self, stats: DateTimeStats) -> str:
         """Render a complete datetime card."""
@@ -326,7 +365,13 @@ class DateTimeCardRenderer(CardRenderer):
             y_max = int(max(1, counts.max()))
 
             width, height = self._get_chart_dimensions()
-            margin_left, margin_right, margin_top, margin_bottom = 45, 35, 25, 42
+            # The y ticks are needed before the margins are: the left gutter is
+            # sized to the widest label that goes in it.
+            y_ticks, _ = _nice_ticks(0, y_max, 5)
+            y_labels = [str(int(round(t))) for t in y_ticks]
+            margin_left, margin_right, margin_top, margin_bottom = (
+                self._timeline_margins(width, height, y_labels)
+            )
             iw = width - margin_left - margin_right
             ih = height - margin_top - margin_bottom
 
@@ -341,8 +386,6 @@ class DateTimeCardRenderer(CardRenderer):
                 f"{sx(x):.2f},{sy(float(c)):.2f}"
                 for x, c in zip(centers, counts, strict=False)
             )
-            y_ticks, _ = _nice_ticks(0, y_max, 5)
-
             n_xt = 5
             xt_vals = np.linspace(tmin, tmax, n_xt)
             span_ns = tmax - tmin
@@ -365,8 +408,16 @@ class DateTimeCardRenderer(CardRenderer):
                 except Exception:
                     return str(v)
 
+            # Sized like `.cat-svg`: intrinsic width and height matching the
+            # viewBox, and the stylesheet scales it with `width: 100%; height:
+            # auto`. `width="100%" height="100%"` with
+            # `preserveAspectRatio="none"` let the box be whatever the column
+            # was and stretched the drawing to fit it, which is the mechanism
+            # behind the 2.73x inflation in #217 -- and "none" additionally
+            # allowed the x and y scales to diverge, so a circle would not have
+            # been round.
             parts = [
-                f'<svg class="dt-svg" width="100%" height="100%" viewBox="0 0 {width} {height}" preserveAspectRatio="none" role="img" aria-label="Timeline">',
+                f'<svg class="dt-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Timeline">',
             ]
 
             # Add title with error handling
@@ -443,14 +494,20 @@ class DateTimeCardRenderer(CardRenderer):
                     f'<text class="tick-label" x="{margin_left - 6}" y="{py + 3:.2f}" text-anchor="end">{lab}</text>'
                 )
 
-            # X ticks
-            for xv in xt_vals:
+            # X ticks. The first and last labels are anchored inward rather
+            # than centred: a centred date is half its own width past the end
+            # of the axis, so the first one ran off the left edge into the y
+            # gutter and the last needed a right margin the size of half a
+            # timestamp. Anchoring them is what lets `margin_right` be a pad.
+            last_xt = len(xt_vals) - 1
+            for i, xv in enumerate(xt_vals):
                 px = sx(xv)
+                anchor = "start" if i == 0 else ("end" if i == last_xt else "middle")
                 parts.append(
                     f'<line class="tick" x1="{px:.2f}" y1="{x_axis_y}" x2="{px:.2f}" y2="{x_axis_y + 4}"></line>'
                 )
                 parts.append(
-                    f'<text class="tick-label x-tick-label" x="{px:.2f}" y="{x_axis_y + 16:.2f}" text-anchor="middle">{_format_xtick(xv)}</text>'
+                    f'<text class="tick-label x-tick-label" x="{px:.2f}" y="{x_axis_y + 16:.2f}" text-anchor="{anchor}" data-edge="{"first" if i == 0 else ("last" if i == last_xt else "")}">{_format_xtick(xv)}</text>'
                 )
 
             # Axis titles removed

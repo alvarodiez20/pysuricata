@@ -66,6 +66,17 @@ def _css_rules() -> list[tuple[str, str]]:
     ]
 
 
+def _css_body(selector: str) -> str:
+    """Every declaration this selector carries, across all of its blocks.
+
+    A selector may legitimately appear more than once -- `.dt-svg` has a sizing
+    block and a separate `overflow` one -- so keying a dict on the selector
+    silently keeps whichever came last and reports the other's declarations as
+    absent.
+    """
+    return "".join(body for sel, body in _css_rules() if sel == selector)
+
+
 def _strip_assets(html: str) -> str:
     """The report inlines its own CSS and JS, so a search over the whole
     document finds a class name in the very source that references it."""
@@ -300,3 +311,179 @@ class TestTheValueTextSaysWhichBackgroundItIsOn:
             "text on the bar must take the paper ink, not the muted grey that "
             "is chosen against the page background"
         )
+
+
+# --------------------------------------------------------------------------- #
+# 5. the datetime timeline is drawn at the size it is displayed at (#217)
+# --------------------------------------------------------------------------- #
+@pytest.fixture(scope="module")
+def dt_report() -> str:
+    """Two datetime columns reaching both x-label formats.
+
+    `booked` spans months, so the labels are `%Y-%m-%d`; `tight` spans under
+    three days, which crosses `short_span_ns` and produces the longer
+    `%Y-%m-%d %H:%M`. The wide-label case is the one that clips.
+    """
+    n = 800
+    frame = pd.DataFrame(
+        {
+            "booked": pd.date_range("2020-01-01", periods=n, freq="h"),
+            "tight": pd.date_range("2021-06-01", periods=n, freq="s"),
+        }
+    )
+    return profile(frame, seed=0).html
+
+
+def _dt_svgs(html: str) -> list[str]:
+    return re.findall(
+        r"<svg class=\"dt-svg\".*?</svg>", _strip_assets(html), flags=re.S
+    )
+
+
+class TestTheTimelineIsAuthoredAtTheSizeItIsDrawn:
+    """Measured in Chromium at `0f7c2c7`: a `0 0 420 180` viewBox rendered
+    1146x491, a scale of 2.73, so the stylesheet's 11px tick labels came out at
+    ~30px and the card stood 844px tall to hold a flat line.
+
+    Same defect the categorical chart had, and the same fix: author the chart at
+    roughly the width of the column it lands in. After: 1146x208, scale 1.04,
+    labels at 11.5px, card 561px.
+    """
+
+    def test_the_viewbox_is_not_a_fraction_of_the_column(self, dt_report):
+        svgs = _dt_svgs(dt_report)
+        assert svgs, "no datetime charts rendered"
+        for svg in svgs:
+            width = float(re.search(r'viewBox="0 0 ([\d.]+)', svg).group(1))
+            assert width >= 1000, (
+                f"the timeline is authored {width:.0f} units wide and is drawn "
+                "into a ~1,150px column, so everything inside it is scaled up "
+                f"by {1146 / width:.2f}x"
+            )
+
+    def test_the_svg_carries_its_own_size(self, dt_report):
+        """`width="100%" height="100%"` makes the box whatever the column is and
+        stretches the drawing onto it, which is the inflation mechanism."""
+        for svg in _dt_svgs(dt_report):
+            head = svg[: svg.index(">")]
+            vb = re.search(r'viewBox="0 0 ([\d.]+) ([\d.]+)"', head)
+            assert re.search(rf'width="{vb.group(1)}"', head), (
+                f"intrinsic width does not match the viewBox: {head}"
+            )
+            assert re.search(rf'height="{vb.group(2)}"', head), (
+                f"intrinsic height does not match the viewBox: {head}"
+            )
+
+    def test_the_aspect_ratio_is_not_thrown_away(self, dt_report):
+        """`preserveAspectRatio="none"` lets the x and y scales diverge, so the
+        drawing is not merely inflated but distorted."""
+        for svg in _dt_svgs(dt_report):
+            assert 'preserveAspectRatio="none"' not in svg[: svg.index(">")]
+
+    def test_the_stylesheet_scales_the_width_and_lets_height_follow(self):
+        body = _css_body("#pysuricata-report .dt-svg")
+        assert "height: auto" in body, (
+            "a fixed height with a scaled width is what distorts the drawing"
+        )
+
+    def test_the_chart_is_never_scaled_below_one_to_one(self):
+        """The fix cuts both ways. Fitting a 1,100-unit chart into a 694px
+        column renders an 11px label at 6.9px, which is no more readable than
+        30px was. The floor pins a unit to a pixel; the wrapper scrolls."""
+        body = _css_body("#pysuricata-report .dt-svg")
+        floor = re.search(r"min-width:\s*(\d+)px", body)
+        assert floor, ".dt-svg has no min-width, so it shrinks with the column"
+
+        width = int(floor.group(1))
+        wrapper = _css_body("#pysuricata-report .timeline-chart")
+        assert "overflow-x: auto" in wrapper, (
+            f"the chart is floored at {width}px but its wrapper does not "
+            "scroll, so a narrow column overflows the page instead"
+        )
+
+
+class TestTheGutterFollowsTheLabelsRatherThanTheViewBox:
+    """A constant gutter and a viewBox width are not independent -- 45 units is
+    11% of a 420-unit chart and 4% of a 1,100-unit one -- so the margins have to
+    come from the text they hold, or widening the viewBox moves them."""
+
+    def _margins(self, y_labels):
+        from pysuricata.render.datetime_card import DateTimeCardRenderer
+
+        return DateTimeCardRenderer()._timeline_margins(1100, 200, y_labels)
+
+    def test_a_wider_axis_label_gets_a_wider_gutter(self):
+        narrow = self._margins(["0", "5"])[0]
+        wide = self._margins(["0", "250000"])[0]
+        assert wide > narrow, (
+            f"a six-digit axis got the same {wide}-unit gutter as a one-digit "
+            "one, so the margin is not derived from its contents"
+        )
+
+    def test_the_gutter_holds_the_widest_label(self):
+        from pysuricata.render.card_config import DEFAULT_DT_CONFIG as cfg
+
+        for labels in (["0", "5"], ["0", "1200"], ["0", "250000"]):
+            gutter = self._margins(labels)[0]
+            needed = max(len(v) for v in labels) * cfg.char_width
+            assert gutter >= min(needed, cfg.max_gutter), (
+                f"{labels} needs ~{needed} units of ink and the gutter is "
+                f"{gutter}; the labels run into the plot"
+            )
+
+    def test_the_gutter_is_bounded(self):
+        from pysuricata.render.card_config import DEFAULT_DT_CONFIG as cfg
+
+        assert self._margins(["0"])[0] >= cfg.min_gutter
+        assert self._margins(["1" * 50])[0] <= cfg.max_gutter, (
+            "an unbounded gutter lets a pathological count eat the plot"
+        )
+
+    def test_a_degenerate_width_still_leaves_a_plot(self):
+        from pysuricata.render.datetime_card import DateTimeCardRenderer
+
+        left, right, _, _ = DateTimeCardRenderer()._timeline_margins(
+            60, 200, ["123456"]
+        )
+        assert left + right < 60, "margins consumed the whole chart"
+
+
+class TestTheEndLabelsAreAnchoredInward:
+    """A centred date sits half its own width past the end of the axis: the
+    first ran off the left edge into the y gutter, and the last would need a
+    right margin the size of half a timestamp."""
+
+    def _x_labels(self, svg):
+        return re.findall(
+            r'<text class="tick-label x-tick-label"[^>]*text-anchor="(\w+)"[^>]*'
+            r'data-edge="([^"]*)"[^>]*>([^<]*)</text>',
+            svg,
+        )
+
+    def test_the_first_and_last_are_anchored_and_the_rest_centred(self, dt_report):
+        svgs = _dt_svgs(dt_report)
+        assert svgs, "no datetime charts rendered"
+        for svg in svgs:
+            labels = self._x_labels(svg)
+            assert len(labels) >= 3, f"only {len(labels)} x labels to check"
+            assert labels[0][0] == "start" and labels[0][1] == "first"
+            assert labels[-1][0] == "end" and labels[-1][1] == "last"
+            for anchor, edge, _ in labels[1:-1]:
+                assert anchor == "middle" and edge == ""
+
+    def test_the_stylesheet_does_not_rotate_them(self):
+        """The rotation tier never worked: `transform-origin: center` on an SVG
+        child resolves against the viewport element, not the label's own box, so
+        every label was rotated about the middle of the chart and thrown
+        275-400px below it -- measured at a 560px viewport, labels landing at
+        y=2240 against an SVG bottom of 1966.
+
+        It is also unnecessary now. Five labels across ~1,050 units do not
+        collide: 0 collisions and 0 clipped labels down to a 360px viewport.
+        """
+        for selector, body in _css_rules():
+            if ".dt-svg .x-tick-label" in selector:
+                assert "rotate" not in body, (
+                    f"{selector} rotates the date labels about the chart's "
+                    f"centre rather than their own: {body.strip()}"
+                )

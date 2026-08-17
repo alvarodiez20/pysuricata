@@ -69,6 +69,44 @@ class DateTimeConfig:
     max_xticks: int = 5
     short_span_ns: int = 3 * 24 * 3600 * 1_000_000_000  # 3 days in nanoseconds
 
+    #: Authored at roughly the width of the chart column, for the same reason
+    #: `CategoricalConfig.chart_width` is. The timeline was drawn in a 420-unit
+    #: viewBox stretched to ~1,150px, so everything inside it was multiplied by
+    #: 2.73: an 11px tick label rendered at ~30px, three times the size of the
+    #: stat row beneath it, and the card stood 844px tall to hold a flat line
+    #: (#217). At this width the scale factor is ~1.04 and a unit is a pixel.
+    chart_width: int = 1100
+
+    #: 200 units tall rather than 180, which at the old 2.73x scale meant a
+    #: 491px plot. Drawn at ~1:1 that leaves ~134 units of plot between the
+    #: margins below, which is a line chart rather than a banner.
+    chart_height: int = 200
+
+    #: Advance width of the monospace face at 11px, the size the stylesheet
+    #: sets `.tick-label` to. Used to size the gutter to the labels that go in
+    #: it -- see `_timeline_margins`.
+    char_width: int = 7
+
+    #: Length of a y-axis tick mark, and the gap between it and its label.
+    tick_len: int = 4
+    label_pad: int = 6
+
+    #: Bounds on the derived left gutter. The floor keeps a one-digit axis from
+    #: sitting flush against the edge; the ceiling stops a pathological count
+    #: from eating the plot.
+    min_gutter: int = 30
+    max_gutter: int = 90
+
+    #: The right margin only has to clear the last x label's ink, and that
+    #: label is anchored `end` rather than centred, so it needs a pad and not
+    #: half a date string.
+    margin_right: int = 12
+
+    #: Font sizes the margins have to accommodate: the title above the plot and
+    #: the date row below it. Kept here so the margins move when they do.
+    title_font: int = 12
+    xlabel_font: int = 11
+
 
 @dataclass(frozen=True)
 class BooleanConfig:

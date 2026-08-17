@@ -3,9 +3,31 @@
    ============================= */
 
 
-/* SVG baseline for datetime charts (mirrors .hist-svg styling) */
+/* SVG baseline for datetime charts (mirrors .cat-svg sizing).
+
+   `height: auto` is the load-bearing half. The SVG carries intrinsic width and
+   height attributes matching its viewBox, so scaling the width to the column
+   and letting the height follow keeps the drawing at its authored proportions.
+   The element used to be `width="100%" height="100%"` with
+   `preserveAspectRatio="none"`, which made the box the column's and stretched
+   a 420-unit drawing across it -- 2.73x, so 11px tick labels rendered at 30px
+   (#217). */
 #pysuricata-report .dt-svg {
   display: block;
+  width: 100%;
+  height: auto;
+  /* Never scaled *down* either. Fitting the drawing to the column cuts both
+     ways: at a 694px column a 1,100-unit chart renders its 11px labels at
+     6.9px, which is less readable than the 30px it started at was large. The
+     floor pins a unit to a pixel at every width, and the wrapper below scrolls
+     instead of shrinking the text. */
+  min-width: 1100px;
+}
+
+/* The chart is wider than a narrow column, so it scrolls inside its own box
+   rather than widening the page. */
+#pysuricata-report .timeline-chart {
+  overflow-x: auto;
   max-width: 100%;
 }
 
@@ -134,11 +156,19 @@
   white-space: nowrap;
 }
 
+/* No rotation tier. It existed to stop date labels colliding once the chart
+   shrank, and it never worked: `transform-origin: center` on an SVG child
+   resolves against the *viewport element*, not the label's own box, so every
+   label was rotated about the middle of the chart and thrown 275-400px below
+   it -- measured at a 560px viewport with the labels landing at y=2240 against
+   an SVG bottom of 1966.
+
+   It is also no longer needed. The chart holds 1:1 at every width now, and
+   five labels across ~1,050 units do not collide: measured 0 collisions and 0
+   clipped labels down to a 360px viewport. */
 @media (max-width: 560px) {
   #pysuricata-report .dt-svg .x-tick-label {
     font-size: 10px;
-    transform: rotate(-45deg);
-    transform-origin: center;
   }
 }
 
