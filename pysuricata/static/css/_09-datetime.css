@@ -197,11 +197,19 @@
   }
 }
 
-/* Individual chart items */
+/* Individual chart items.
+
+   `container-type: inline-size` is what lets the tick row below thin itself on
+   the *chart's* width rather than the window's. A small multiple in a
+   two-column grid is about half the card wide, so the two numbers come apart:
+   at a 1,024px viewport each chart is 374px, which a viewport-keyed media
+   query reads as roomy while the labels are already colliding. */
 #pysuricata-report .temporal-item {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  container-type: inline-size;
+  container-name: temporal;
 }
 
 #pysuricata-report .temporal-item h4 {
@@ -212,87 +220,76 @@
   letter-spacing: -0.01em;
 }
 
-/* SVG chart styling */
-#pysuricata-report .temporal-chart {
-  width: 100%;
-  height: auto;
-  display: block;
+/* A temporal chart is a `figure.hist`, so it inherits the histogram's gutter,
+   plot, tick row and edge nudges. Only the height differs: these are small
+   multiples two-to-a-row, not the card's main chart. */
+#pysuricata-report .temporal-figure {
+  --hist-height: 132px;
+  margin: 0;
 }
 
-/* Bar styling with smooth transitions */
+/* Bars. The box is stretched by a different factor on each axis, so anything
+   with a *size* has to opt out of that scaling or it comes out distorted:
+   `vector-effect` for the stroke, and no `transform: scaleY()` on hover, which
+   used to stretch a bar against an already-stretched coordinate space. The
+   hover cue is colour and opacity, which scale cleanly. */
 #pysuricata-report .temporal-chart .bar {
-  fill: var(--data-1);
-  fill-opacity: 0.8;
-  stroke: var(--data-1);
-  stroke-width: 1;
+  fill: var(--data-2);
+  fill-opacity: 0.9;
+  stroke: none;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  transform-origin: center bottom;
+  transition: fill-opacity 0.2s ease;
 }
 
 #pysuricata-report .temporal-chart .bar:hover {
-  fill: var(--data-1);
   fill-opacity: 1;
-  stroke: #2563eb;
-  stroke-width: 1.5;
-  filter: drop-shadow(0 4px 8px rgba(59, 130, 246, 0.4));
-  transform: scaleY(1.05);
+  fill: var(--data-1);
 }
 
-/* Enhanced hover effect for better visibility */
-#pysuricata-report:not(.light) .temporal-chart .bar:hover {
-  filter: drop-shadow(0 4px 12px rgba(96, 165, 250, 0.5));
+#pysuricata-report .temporal-chart .grid {
+  stroke: var(--axis);
+  stroke-opacity: 0.25;
+  stroke-dasharray: 2 2;
 }
 
-/* Grid lines */
-#pysuricata-report .temporal-chart .grid-line {
-  stroke-dasharray: 2, 3;
-}
-
-/* Axis and tick styling */
 #pysuricata-report .temporal-chart .axis {
-  stroke-linecap: round;
+  stroke: var(--axis);
+  stroke-width: 1;
 }
 
-#pysuricata-report .temporal-chart .tick-label,
-#pysuricata-report .temporal-chart .x-label {
-  user-select: none;
-  pointer-events: none;
+/* Drop bucket labels once the chart itself is narrow, halving twice and
+   keeping the endpoints.
+
+   The container is the chart *item*, which measures a constant 44px wider than
+   the plot inside it (the count gutter), so the thresholds are quoted on item
+   width: twelve month names are clean at a 412px plot (456px item) and collide
+   at 374px (418px item), which puts the first halving at 450px.
+
+   Progressive enhancement on purpose: a browser without container-query
+   support keeps every label, which is the density that shipped before this
+   change rather than a new failure. */
+@container temporal (max-width: 450px) {
+  #pysuricata-report .hist__x .hist__tick[data-ttier="3"] {
+    display: none;
+  }
 }
 
-/* Dark mode adjustments */
-#pysuricata-report:not(.light) .temporal-chart .grid-line {
-  stroke: var(--rule);
-  stroke-opacity: 0.3;
+@container temporal (max-width: 270px) {
+  #pysuricata-report .hist__x .hist__tick[data-ttier="2"] {
+    display: none;
+  }
 }
 
-#pysuricata-report:not(.light) .temporal-chart .axis {
-  stroke: #9ca3af;
-}
-
-#pysuricata-report:not(.light) .temporal-chart .tick-label,
-#pysuricata-report:not(.light) .temporal-chart .x-label {
-  fill: #d1d5db;
-}
-
-/* Empty chart state */
-#pysuricata-report .temporal-chart.empty text {
+/* Empty state. It was a 14px `<text>` inside the stretched box, so the words
+   "No data available" were set at a different size in every column of the
+   grid; it is HTML now and reads at one size everywhere. */
+#pysuricata-report .hist__empty {
+  margin: 0;
+  padding: 1.25rem 0;
+  font-size: 12px;
   font-style: italic;
-}
-
-#pysuricata-report:not(.light) .temporal-chart.empty text {
-  fill: #6b7280;
-}
-
-/* Responsive adjustments */
-@media (max-width: 560px) {
-  #pysuricata-report .temporal-item .chart-container {
-    padding: 0.75rem;
-  }
-
-  #pysuricata-report .temporal-chart .x-label {
-    font-size: 9px;
-  }
+  color: var(--muted);
+  text-align: center;
 }
 
 

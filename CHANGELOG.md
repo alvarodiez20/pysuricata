@@ -16,6 +16,69 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The temporal distribution charts scaled their own labels**, the same defect
+  #217 found in the timeline, one pane over. The hour-of-day, day-of-week and
+  month charts were self-contained SVGs sized `width: 100%` into a responsive
+  grid, so the box they were painted into was whatever the grid gave them and
+  everything inside scaled with it.
+
+  Measured in Chromium: the same 11px label rendered between **5.6px and
+  14.9px** across viewport widths — and not monotonically, because the grid
+  drops from two columns to one, so a 600px viewport produced a *larger* label
+  than an 820px one.
+
+  #219's guard did not catch it. That rule is *no `<text>` inside a
+  non-uniformly stretched SVG*, and these charts were stretched **uniformly**:
+  they carried `width="400" height="160"` matching their viewBox, so every
+  attribute-level check passed and the scaling came entirely from the
+  stylesheet. The guard has been generalised accordingly — an SVG the
+  stylesheet sizes to its container has no intrinsic size, whatever its
+  attributes say, and nothing with a font-size belongs inside one.
+
+  Each chart is now a `figure.hist`, as the timeline became in #219: the SVG
+  holds only marks, with `vector-effect="non-scaling-stroke"`, and every label
+  is HTML. Labels measure a constant **11px at every width from 1600px down to
+  360px**.
+
+  Fixed alongside, all of them things the scaling had been hiding:
+
+  - **Bucket labels now thin as the chart narrows.** Labels that no longer
+    shrink with the box collide in it instead — 7 overlapping labels at a 360px
+    viewport once they were a fixed size. Three tiers halve twice, keeping the
+    endpoints.
+  - **The thinning is keyed on the chart, not the window.** These are small
+    multiples in a two-column grid, so the two widths come apart: at a 1,024px
+    viewport each chart is 374px and a media query reads that as roomy while
+    the labels already overlap. A container query measures the chart itself.
+    Inherited viewport rules were the other half of it — at a 700px viewport
+    the chart is 544px and perfectly roomy, and the histogram's `data-tier`
+    rules dropped half its labels anyway; the temporal ticks use `data-ttier`
+    so only the container query thins them.
+  - **The final label no longer lands on its neighbour.** Forcing it to survive
+    every thinning without demoting the label beside it left `18:00` on top of
+    `21:00` and `Nov` on top of `Dec`.
+  - **`RECORDS` no longer overhangs the first bucket label.** The unit sits in
+    the 44px count gutter and measured ~48px, rendering as `RECORDS00:00`. It
+    reads `ROWS`, which is what the histogram and the timeline already call the
+    same quantity.
+  - **Bars lost their `rx`.** A corner radius is in user units, so a stretched
+    box rounded the horizontal and vertical corners by different amounts. The
+    hover `transform: scaleY(1.05)` went for the same reason — it stretched a
+    bar against an already-stretched coordinate space.
+  - **The empty state is HTML.** "No data available" was a 14px `<text>` inside
+    the stretched box, so it was set at a different size in every column.
+
+  Verified across sixteen viewport widths: zero label overlaps, zero clipped
+  labels, zero unit collisions, and no painted text left in any stretched SVG
+  anywhere in the report. `TemporalChartRenderer` now carries no width, height
+  or margin constants at all — the four hardcoded margins #217 pointed at
+  described a box the grid actually controlled.
+
+  The untokenised-colour ratchet drops from **65 to 61**. Those four were a bar
+  hover stroke and three dark-mode overrides for labels drawn inside the
+  stretched SVG, so they left with the markup that needed them rather than as a
+  separate tidy-up.
+
 - **The README documented a project several releases behind** ([#151]). Every
   number in it was wrong: the sketch size was given as 1024 against an actual
   `max_uniques` of **2048**, the sample size as 10,000 against a

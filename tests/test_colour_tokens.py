@@ -80,10 +80,12 @@ BASELINE: set[str] = {
     "_08-categorical.css #66c2ff",
     "_08-categorical.css #aaa",
     "_08-categorical.css #e0e0e0",
-    "_09-datetime.css #2563eb",
-    "_09-datetime.css #6b7280",
-    "_09-datetime.css #9ca3af",
-    "_09-datetime.css #d1d5db",
+    # Four entries left this list when the temporal charts were rebuilt as
+    # `figure.hist`: #2563eb (a bar hover stroke), #9ca3af and #d1d5db (dark
+    # mode axis and label overrides) and #6b7280 (the empty-state text). The
+    # rules holding them were the ones drawing labels inside a stretched SVG,
+    # so tokenising them was not a separate tidy-up -- they went with the
+    # markup that needed them.
     "_09-datetime.css #f9f9f9",
     "_10-boolean.css #fff",
     "_11-correlations.css #2a2a2a",
@@ -163,8 +165,14 @@ class TestTheRatchetOnlyTurnsOneWay:
         )
 
     def test_the_count_is_what_the_roadmap_says(self):
-        """So the number in the audit cannot drift from the number in the code."""
-        assert len(BASELINE) == 65
+        """So the number in the audit cannot drift from the number in the code.
+
+        65 → 61 when the temporal charts were rebuilt as `figure.hist`. The
+        four that went were a bar hover stroke and three dark-mode overrides
+        for labels drawn inside a stretched SVG; they left with the markup that
+        needed them rather than as a separate tidy-up.
+        """
+        assert len(BASELINE) == 61
 
 
 class TestTheAssertionIsWorthHaving:

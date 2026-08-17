@@ -167,8 +167,17 @@ class TestTheAxesAreFixedNotPopulated:
 class TestTheTemporalChartsSayWhatTheyCount:
     def test_the_y_axis_names_its_unit(self, html):
         """Nothing said these were records per bucket -- a reader could as
-        easily have taken the axis for a share, or for the column's values."""
-        assert ">RECORDS<" in _card(html, "datetime")
+        easily have taken the axis for a share, or for the column's values.
+
+        The word is `ROWS` rather than the `RECORDS` this first shipped with.
+        The label sits inside the 44px count gutter and `RECORDS` measures
+        ~48px at 10px monospace with the tracking it carries, so it overhung
+        into the first bucket label and rendered as `RECORDS00:00`. `ROWS` is
+        also what the histogram and the timeline already call this quantity, so
+        the three charts in the card now agree.
+        """
+        card = _card(html, "datetime")
+        assert '<span class="hist__unit">ROWS</span>' in card
 
     def test_the_chart_carries_no_legacy_hue(self):
         source = TEMPORAL.read_text().lower()
@@ -176,4 +185,25 @@ class TestTheTemporalChartsSayWhatTheyCount:
             assert legacy not in source, legacy
 
     def test_its_figures_are_monospace(self):
-        assert "var(--font-mono)" in TEMPORAL.read_text()
+        """Asserted against the stylesheet, not the renderer's source.
+
+        The figures used to carry `font-family="var(--font-mono)"` as a
+        presentation attribute on each `<text>`, so grepping the renderer was a
+        fair proxy. They are HTML now and take the font from the histogram's
+        classes, which is the whole point of reusing them -- so the check has
+        to follow the label to where its font is actually decided, or it passes
+        on a string in a comment while the labels render in the body sans.
+        """
+        css = (Path(__file__).resolve().parents[1] / "pysuricata/static/css").glob(
+            "_*.css"
+        )
+        stylesheet = "".join(p.read_text() for p in sorted(css))
+        stylesheet = re.sub(r"/\*.*?\*/", "", stylesheet, flags=re.S)
+
+        for cls in ("hist__y", "hist__tick", "hist__unit"):
+            block = re.search(rf"#pysuricata-report \.{cls} \{{([^}}]*)\}}", stylesheet)
+            assert block, f".{cls} has no rule at all"
+            assert "var(--font-mono)" in block.group(1), (
+                f".{cls} does not set the monospace face, so the temporal "
+                "labels fall back to the body sans"
+            )
