@@ -487,3 +487,51 @@
   font-size: 10.5px;
   color: var(--muted);
 }
+
+
+/* =============================================================
+   SHAPE — what a high-cardinality column can say (5c.3, #155)
+
+   Phase 5.4 replaced the meaningless top-values *chart* on the card;
+   the details pane still opened on `Common values` -- ten bars of one
+   row each, 0.1% apiece. On the card the fix was to say there is
+   nothing to plot. Here there is something, just not that.
+   ============================================================= */
+#pysuricata-report .shape__rows {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ink);
+}
+
+#pysuricata-report .shape__row {
+  display: grid;
+  grid-template-columns: minmax(0, 160px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .shape__key {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+#pysuricata-report .shape__val {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 12.5px;
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 768px) {
+  #pysuricata-report .shape__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2px;
+  }
+}

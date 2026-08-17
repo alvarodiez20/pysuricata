@@ -16,6 +16,15 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **High-cardinality columns get a shape pane, and lose the control they
+  could not use** ([#155], 5c.3). Phase 5.4 replaced the meaningless
+  top-values *chart* on the card; the details pane still opened on `Common
+  values` — the same ten bars of one row each. It is now a `Shape` pane:
+  distinct against rows, whether anything repeats, the length range, empty
+  strings. The Top-N control renders only when it offers a real choice — `Sex`
+  rendered three buttons every one of which read `2`, `Cabin` rendered two both
+  reading `1`, and `Name` and `Ticket` rendered five above a sentence where no
+  chart exists.
 - **The label-length reservoir is spent** ([#155], 5c.2). `categorical.py` has
   kept a 5,000-value reservoir of label lengths all along and the report spent
   it on two numbers, `avg_len` and `len_p90`. The distribution is now drawn,
