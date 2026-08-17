@@ -62,7 +62,12 @@ def describe_high_cardinality(stats: CategoricalStats) -> dict | None:
         # count says so -- an all-missing column also has no top values.
         if distinct_ratio < _HIGH_CARDINALITY or unique <= 1:
             return None
-        coverage = 0.0
+        # Unknown, and *not* zero. Misra-Gries is gated off entirely on
+        # high-cardinality columns (#62), so there are no counts to sum --
+        # which is a different thing from having summed them and got nothing.
+        # `Cabin` shipped "the five most common cover 0.0%", a fabricated
+        # figure for a column that simply was not measured (#155, 5c.3).
+        coverage = None
     else:
         coverage = sum(c for _, c in items[:5]) / count
         if coverage > _LOW_COVERAGE and distinct_ratio < _HIGH_CARDINALITY:
@@ -71,6 +76,7 @@ def describe_high_cardinality(stats: CategoricalStats) -> dict | None:
     return {
         "unique": unique,
         "count": count,
+        #: `None` means *not measured*, never zero. See above.
         "coverage": coverage,
         "distinct_ratio": distinct_ratio,
         "identifier_like": distinct_ratio >= _NEAR_UNIQUE,
@@ -92,6 +98,14 @@ def high_cardinality_sentence(facts: dict) -> str:
         return (
             "Every value is different. A top-values chart would be "
             "bars of one row each, so there is nothing to plot."
+        )
+    if facts["coverage"] is None:
+        # The counters were never kept, so the coverage is unmeasured. Saying
+        # so is shorter than the alternative and does not invent a number.
+        return (
+            f"{unique:,} distinct values in {count:,} rows. The top-values "
+            "counters are not kept for a column this varied, so there is no "
+            "ranking to plot."
         )
     return (
         f"{unique:,} distinct values in {count:,} rows, and the five most "
@@ -143,11 +157,28 @@ class CategoricalCardRenderer(CardRenderer):
         high_card = describe_high_cardinality(stats)
         if high_card is not None:
             chart_html = self._build_high_cardinality_note(stats, high_card)
+            # There is no chart, so there is nothing for a Top-N control to
+            # control. `Name` and `Ticket` rendered five buttons above a
+            # sentence (#155, 5c.3).
+            topn_list, default_topn = [], default_topn
         else:
+            # One variant per option the control offers -- or, when it offers
+            # none, a single variant showing every level. An empty list here
+            # would render no chart at all.
+            chart_levels = topn_list or [max(1, len(items))]
             chart_html = self._build_categorical_variants(
-                col_id, items, total, topn_list, default_topn
+                col_id, items, total, chart_levels, default_topn
             ) + self._build_coverage_note(stats, items)
-        common_table = self._build_common_values_table(stats)
+        # A high-cardinality column has no ranking to show, so `Common values`
+        # is replaced rather than kept: ten bars of one row each imply a
+        # frequency that does not exist. What it can show is the *shape* of the
+        # values, which is what a reader of an identifier column wants.
+        common_table = (
+            self._build_shape_pane(stats, high_card)
+            if high_card is not None
+            else self._build_common_values_table(stats)
+        )
+        common_label = "Shape" if high_card is not None else "Common values"
         norm_tab_btn, norm_tab_pane = self._build_normalization_section(items, stats)
         missing_table = self._build_missing_values_table(stats, miss_pct)
         length_pane = self._build_length_pane(stats)
@@ -159,6 +190,7 @@ class CategoricalCardRenderer(CardRenderer):
             norm_tab_pane,
             missing_table,
             length_pane,
+            common_label,
             # NOT gated on chunk count, unlike the numeric and datetime
             # cards. `html.py` calls `finalize()` without chunk metadata for
             # this kind, so the accumulator has none to give -- gating on it
@@ -493,13 +525,32 @@ class CategoricalCardRenderer(CardRenderer):
     def _get_topn_candidates(
         self, items: Sequence[tuple[str, int]]
     ) -> tuple[list[int], int]:
-        """Get Top-N candidates for categorical display."""
-        max_n = max(1, min(15, len(items)))
-        candidates = [5, 10, 15, max_n]
-        topn_list = sorted({n for n in candidates if 1 <= n <= max_n})
-        default_topn = (
-            10 if 10 in topn_list else (max(topn_list) if topn_list else max_n)
-        )
+        """How many levels the chart may show, and how many it shows by default.
+
+        Returns an empty list when there is no choice to offer (#155, 5c.3).
+
+        `max_n` used to be folded in beside 5/10/15, so a column with two
+        levels got `{5, 10, 15, 2}` filtered to `{2}` -- and then rendered
+        three buttons, every one of them reading `2`. `Sex` shipped that: a
+        chooser offering the same choice three times. `Cabin` rendered two
+        buttons both reading `1`.
+
+        A control with one option is not a control. Below the smallest step
+        the chart already shows every level, so there is nothing to choose.
+
+        **The chart is not the control.** Returning an empty list here must
+        remove the buttons and leave the chart alone -- the first version of
+        this fed the same list to both, so `Sex` and `Embarked` lost their bar
+        chart entirely. A pre-existing test caught it.
+        """
+        levels = len(items)
+        steps = [n for n in (5, 10, 15) if n < levels]
+        if not steps:
+            return [], levels
+        # The last step shows everything, so it is labelled with the true
+        # level count rather than a round number that overstates it.
+        topn_list = sorted({*steps, levels})
+        default_topn = 10 if 10 in topn_list else topn_list[0]
         return topn_list, default_topn
 
     def _build_high_cardinality_note(self, stats: CategoricalStats, facts: dict) -> str:
@@ -534,6 +585,75 @@ class CategoricalCardRenderer(CardRenderer):
             f'<div class="nochart">{flag}'
             f'<p class="nochart__why">{high_cardinality_sentence(facts)}</p>'
             f"{extra_html}</div>"
+        )
+
+    def _build_shape_pane(self, stats: CategoricalStats, facts: dict) -> str:
+        """What a high-cardinality column can say instead of a ranking.
+
+        Phase 5c.3 (#155). Phase 5.4 replaced the meaningless top-values
+        *chart* on the card; the details pane still opened on `Common values`
+        -- the same ten bars of one row each, 0.1% apiece. On the card the fix
+        was to say there is nothing to plot. Here there *is* something to plot,
+        just not that.
+
+        Everything below is already computed. No sample of raw values is shown:
+        putting arbitrary cell contents into a shared HTML file is a privacy
+        question, and the design says to decide it deliberately rather than
+        inherit it from the sample table. The answer here is no -- the two
+        extremes the card already shows are enough to recognise a format, and
+        ten more rows would be ten more values to leak.
+        """
+        name = self.safe_html_escape(stats.name)
+        count = int(getattr(stats, "count", 0) or 0)
+        unique = int(getattr(stats, "unique_est", 0) or 0)
+        empty = int(getattr(stats, "empty_zero", 0) or 0)
+        bins = [
+            (int(length), int(number))
+            for length, number in (getattr(stats, "len_hist", None) or [])
+            if number > 0
+        ]
+
+        rows: list[tuple[str, str]] = [
+            ("Distinct", f"{unique:,} of {count:,} rows"),
+            (
+                "Repeats",
+                "none — every value is different"
+                if facts["identifier_like"]
+                else (
+                    "not measured — the counters are not kept for a column this varied"
+                    if facts["coverage"] is None
+                    else f"the five most common cover {facts['coverage'] * 100:.1f}%"
+                ),
+            ),
+        ]
+        if bins:
+            rows.append(
+                (
+                    "Length",
+                    f"{bins[0][0]} to {bins[-1][0]} characters"
+                    if bins[0][0] != bins[-1][0]
+                    else f"{bins[0][0]} characters, all of them",
+                )
+            )
+        if empty:
+            rows.append(("Empty or zero", f"{empty:,}"))
+
+        body = "".join(
+            f'<div class="shape__row">'
+            f'<span class="shape__key">{key}</span>'
+            f'<span class="shape__val">{value}</span>'
+            f"</div>"
+            for key, value in rows
+        )
+        return (
+            '<div class="fence-pane">'
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · shape</span>'
+            '<span class="fence-head__rule"></span>'
+            "</div>"
+            f'<p class="fence-lede">{high_cardinality_sentence(facts)}</p>'
+            f'<div class="shape__rows">{body}</div>'
+            "</div>"
         )
 
     def _build_coverage_note(self, stats: CategoricalStats, items: list) -> str:
@@ -985,6 +1105,7 @@ class CategoricalCardRenderer(CardRenderer):
         norm_tab_pane: str,
         missing_table: str,
         length_pane: str = "",
+        common_label: str = "Common values",
         *,
         has_missing: bool = True,
     ) -> str:
@@ -999,7 +1120,7 @@ class CategoricalCardRenderer(CardRenderer):
         return self._build_tabbed_details(
             col_id,
             [
-                ("common", "Common values", common_table, bool(common_table.strip())),
+                ("common", common_label, common_table, bool(common_table.strip())),
                 (
                     "normalize",
                     "Normalization",
@@ -1024,25 +1145,33 @@ class CategoricalCardRenderer(CardRenderer):
     def _build_controls_section(
         self, col_id: str, topn_list: list[int], default_topn: int
     ) -> str:
-        """Build controls section."""
-        topn_buttons = " ".join(
-            f'<button type="button" class="btn-soft{" active" if n == default_topn else ""}" data-topn="{n}">{n}</button>'
-            for n in topn_list
-        )
+        """Build controls section.
+
+        `topn_list` is empty when the chart shows every level, or when there is
+        no chart at all -- a high-cardinality column gets a sentence instead.
+        Either way there is nothing to control, so the group is not rendered.
+        """
+        if topn_list:
+            topn_buttons = " ".join(
+                f'<button type="button" class="btn-soft'
+                f'{" active" if n == default_topn else ""}" '
+                f'data-topn="{n}">{n}</button>'
+                for n in topn_list
+            )
+            controls = (
+                f'<div class="hist-controls" data-topn="{default_topn}">'
+                '<div class="center-controls"><span>Top‑N:</span>'
+                f'<div class="bin-group">{topn_buttons}</div></div></div>'
+            )
+        else:
+            controls = ""
 
         return f"""
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
                 <button type="button" class="details-toggle btn-soft" aria-controls="{col_id}-details" aria-expanded="false">Details</button>
             </div>
-            <div class="controls-slot">
-                <div class="hist-controls" data-topn="{default_topn}">
-                    <div class="center-controls">
-                        <span>Top‑N:</span>
-                        <div class="bin-group">{topn_buttons}</div>
-                    </div>
-                </div>
-            </div>
+            <div class="controls-slot">{controls}</div>
         </div>
         """
 

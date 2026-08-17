@@ -52,6 +52,30 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **A datetime column leads with how regular it is** ([#155], 5c.5). The
+  strongest fact about a generated series was a table row reading `Interval
+  std dev — 0.0 seconds`, filed alphabetically between timezone and weekend
+  ratio. A deviation of zero means every gap is identical, and the pane now
+  opens with *Every gap is identical: one record every 17.0 minutes, with no
+  irregularity at all. That is a generated series rather than observed
+  events.* An irregular column reads *this is an event stream, not a
+  schedule.*
+- **The temporal panels say what they are pictures of** ([#155], 5c.4). Each
+  carries its own peak inline, so a 211-record hour and a 2,626-record month
+  no longer draw identically with the peaks in a different tab. The year chart
+  is dropped when every record falls in one year — `by_year` is a dict, so
+  that rendered a single bar at full height, a chart whose only reading is
+  "all of it". The per-chart scaling is stated, since heights compare within a
+  chart and not between them.
+- **High-cardinality columns get a shape pane, and lose the control they
+  could not use** ([#155], 5c.3). Phase 5.4 replaced the meaningless
+  top-values *chart* on the card; the details pane still opened on `Common
+  values` — the same ten bars of one row each. It is now a `Shape` pane:
+  distinct against rows, whether anything repeats, the length range, empty
+  strings. The Top-N control renders only when it offers a real choice — `Sex`
+  rendered three buttons every one of which read `2`, `Cabin` rendered two both
+  reading `1`, and `Name` and `Ticket` rendered five above a sentence where no
+  chart exists.
 - **`psutil` is no longer a runtime dependency** ([#204]). It was declared in
   `dependencies` and imported by no code path under `pysuricata/` — only by the
   memory tests and the recipes in `docs/performance.md`. It is now the

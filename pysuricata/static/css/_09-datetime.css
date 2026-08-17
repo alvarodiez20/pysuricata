@@ -287,3 +287,38 @@
     font-size: 9px;
   }
 }
+
+
+/* =============================================================
+   TEMPORAL PANELS — each one says what it is a picture of
+   (5c.4, #155)
+
+   The four small multiples had an `<h4>` each and nothing else, so a
+   211-record hour and a 2,626-record month drew identically, and the
+   peaks that would have resolved it lived in a different tab.
+   ============================================================= */
+#pysuricata-report .temporal__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 0 0 6px;
+}
+
+#pysuricata-report .temporal__peak {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* `by_year` is a dict, so a dataset inside one year drew a single bar
+   at full height -- a chart whose only reading is "all of it". */
+#pysuricata-report .temporal__span,
+#pysuricata-report .temporal__caption {
+  margin: 10px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--muted);
+}

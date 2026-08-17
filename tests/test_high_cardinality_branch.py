@@ -21,6 +21,7 @@ and looks like a bug.
 from __future__ import annotations
 
 import re
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -244,3 +245,93 @@ class TestTheCoverageNote:
         out = profile(pd.DataFrame({"c": [None] * 200}), seed=0).html
         card = _card(out, "c")
         assert "0 of 0" not in card
+
+
+class TestTheControlOnlyRendersWhenItOffersAChoice:
+    """5c.3 of #155. A control with one option is not a control."""
+
+    def _renderer(self):
+        from pysuricata.render.categorical_card import CategoricalCardRenderer
+
+        return CategoricalCardRenderer()
+
+    def test_two_levels_get_no_control(self):
+        """`Sex` rendered three buttons, every one of them reading `2` — the
+        same choice offered three times."""
+        assert self._renderer()._get_topn_candidates([("a", 5), ("b", 4)])[0] == []
+
+    def test_one_level_gets_no_control(self):
+        """`Cabin` rendered two buttons both reading `1`."""
+        assert self._renderer()._get_topn_candidates([("a", 5)])[0] == []
+
+    def test_enough_levels_get_real_steps(self):
+        levels = [(str(n), 100 - n) for n in range(20)]
+        steps, default = self._renderer()._get_topn_candidates(levels)
+        assert steps == [5, 10, 15, 20]
+        assert default == 10
+        assert len(set(steps)) == len(steps), "no option may repeat another"
+
+    def test_the_last_step_is_the_true_level_count(self):
+        """Not a round number that overstates how many levels there are."""
+        levels = [(str(n), 100 - n) for n in range(12)]
+        steps, _ = self._renderer()._get_topn_candidates(levels)
+        assert steps[-1] == 12
+
+    def test_removing_the_control_does_not_remove_the_chart(self):
+        """The regression a pre-existing test caught: feeding the same empty
+        list to both left `Sex` and `Embarked` with no bar chart at all."""
+        frame = pd.DataFrame({"sex": ["male", "female"] * 200})
+        card = _card(profile(frame, seed=0).html, "sex")
+        # The chart's own variant div carries `data-topn` to identify itself,
+        # so the assertion is about the *control* rather than the attribute.
+        assert "hist-controls" not in card
+        assert 'class="btn-soft" data-topn' not in card
+        assert "cat-svg" in card
+
+
+class TestAHighCardinalityColumnGetsShapeNotARanking:
+    """The card stopped drawing ten bars of one row each in phase 5.4. The
+    details pane still opened on `Common values` — the same ten bars."""
+
+    @pytest.fixture(scope="class")
+    def report(self):
+        rng = np.random.default_rng(0)
+        return profile(
+            pd.DataFrame({"ticket": [f"T{i:05d}" for i in range(600)]}),
+            seed=0,
+        ).html
+
+    def test_the_first_tab_is_shape(self, report):
+        card = _card(report, "ticket")
+        assert '<span class="tab__label">Shape</span>' in card
+        assert "Common values" not in card
+
+    def test_it_reports_what_it_can_measure(self, report):
+        card = _card(report, "ticket")
+        assert "Distinct" in card and "600" in card
+
+    def test_no_raw_values_are_listed(self, report):
+        """A deliberate answer to the privacy question the design flags rather
+        than one inherited from the sample table: the two extremes the card
+        already shows are enough to recognise a format, and ten more rows would
+        be ten more values to leak."""
+        card = _card(report, "ticket")
+        shape = card[card.index("· shape") :] if "· shape" in card else ""
+        assert "T00042" not in shape
+
+    def test_an_unmeasured_coverage_is_not_reported_as_zero(self):
+        """`Cabin` shipped `the five most common cover 0.0%`. Misra-Gries is
+        gated off for a column this varied, so there are no counts to sum —
+        which is a different thing from having summed them and got nothing."""
+        from pysuricata.render.categorical_card import (
+            describe_high_cardinality,
+            high_cardinality_sentence,
+        )
+
+        facts = describe_high_cardinality(
+            SimpleNamespace(count=204, unique_est=147, top_items=[])
+        )
+        assert facts is not None
+        assert facts["coverage"] is None, "absent counters are not a zero coverage"
+        assert "0.0%" not in high_cardinality_sentence(facts)
+        assert "not kept" in high_cardinality_sentence(facts)
