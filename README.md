@@ -27,7 +27,7 @@
 
 PySuricata generates **self-contained HTML reports** from pandas or polars DataFrames. Reports include per-column statistics, histograms, correlation chips, missing value analysis, and outlier detection.
 
-Data is processed in chunks using streaming algorithms, so memory usage stays bounded regardless of dataset size.
+Data is processed in chunks using streaming algorithms, so memory usage stays bounded **in the number of rows** — a million rows costs no more than twenty thousand. It is *not* bounded in the number of columns: each column keeps its own sketches for the whole run and gets its own card in the report, so both memory and report size grow linearly with the width of the frame. Measured at 20,000 rows: **~1.3 MB of RSS and ~59 KB of report per column**, so a 600-column frame needs roughly 850 MB. See [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
 
 It also does two things a profiler usually does not: `summarize()` returns the same numbers as a versioned JSON payload with no HTML in the way, and `pysuricata check` compares a dataset against a stored baseline and exits non-zero when a threshold is crossed — so the same single pass can run in a notebook and in CI.
 
@@ -89,7 +89,7 @@ df = pd.DataFrame(
 
 ## Features
 
-- **Streaming architecture** — Data is processed in configurable chunks, keeping memory bounded. Useful for datasets that don't fit in RAM.
+- **Streaming architecture** — Data is processed in configurable chunks, keeping memory bounded in rows (not in columns — see above). Useful for datasets with more rows than fit in RAM.
 - **Pandas and Polars** — Works natively with `pandas.DataFrame`, `polars.DataFrame` and `polars.LazyFrame`, plus Parquet files, DuckDB relations and Arrow batches.
 - **Self-contained HTML** — Single file with inline CSS, JS, and SVG charts. No external assets needed.
 - **Configurable** — Control chunk size, sample size, correlations and more with keyword options, a `preset=`, or a `ProfileConfig`.

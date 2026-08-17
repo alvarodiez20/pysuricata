@@ -204,3 +204,58 @@ class TestNoStaleRenameArtifacts:
             "ReportConfig warns since 0.1.1 and goes in 0.3.0 (#210); the README "
             "should not teach a name with a removal date"
         )
+
+
+class TestTheMemoryClaimNamesItsAxis:
+    """ "Bounded memory" is true in rows and false in columns, and the README
+    said neither (#207).
+
+    Measured on the current code: a 1,000,000 x 14 frame costs 56 MB of
+    marginal RSS, and a 20,000 x 600 frame -- **fewer cells** -- costs 856 MB.
+    Both memory and report size are linear in the column count, because every
+    column holds its own sketches for the whole run and gets its own card.
+
+    A claim that does not say which axis it describes is not a weaker claim, it
+    is one a reader will apply to the axis it is false on. These check the
+    qualification is still there, not that the numbers are right -- the numbers
+    belong to `benchmarks/columns.py`.
+    """
+
+    def test_the_headline_claim_says_rows(self, readme):
+        claim = re.search(r"^Data is processed in chunks.*$", readme, re.M)
+        assert claim, "the streaming claim is gone from the README"
+
+        text = claim.group(0).lower()
+        assert "row" in text, (
+            "the memory claim does not name the axis it holds on. It is bounded "
+            f"in rows and unbounded in columns: {claim.group(0)!r}"
+        )
+
+    def test_the_claim_does_not_say_regardless_of_size(self, readme):
+        """The exact wording that was wrong. "Regardless of dataset size" reads
+        as *any* dataset, and a 600-column frame is a dataset."""
+        assert "bounded regardless of dataset size" not in readme
+
+    def test_the_column_axis_is_named_as_the_exception(self, readme):
+        # `[*_]*` between words: the sentence carries markdown emphasis, and
+        # which word is emphasised is an editorial choice this should not pin.
+        pattern = (
+            r"not[*_\s]+bounded[*_\s]+in[*_\s]+the[*_\s]+number[*_\s]+of[*_\s]+columns"
+        )
+        assert re.search(pattern, readme, re.I), (
+            "the README no longer states the exception, so a reader has only "
+            "the half of the claim that is favourable"
+        )
+
+    def test_the_feature_bullet_agrees_with_the_headline(self, readme):
+        """Two places make the claim. They drifted apart once already."""
+        bullet = re.search(r"^- \*\*Streaming architecture\*\*.*$", readme, re.M)
+        assert bullet, "the streaming feature bullet is gone"
+        assert "row" in bullet.group(0).lower(), bullet.group(0)
+
+    def test_the_column_benchmark_exists(self):
+        """The claim is only honest while something measures it."""
+        assert (REPO / "benchmarks" / "columns.py").exists(), (
+            "benchmarks/columns.py is what keeps the column axis measured; "
+            "without it the README's numbers are unfalsifiable again"
+        )

@@ -19,6 +19,27 @@ uv pip install ydata-profiling sweetviz skimpy  # optional, for end_to_end
 | `accuracy.py` | Are the numbers right — and do they stay right when the data is chunked? |
 | `end_to_end.py` | How does PySuricata compare to ydata-profiling / sweetviz / skimpy on identical data? |
 | `versions.py` | How much faster is this version than the last five, measured properly? |
+| `columns.py` | What does a *column* cost, in memory and in report bytes? |
+
+### On `columns.py`
+
+Every other script here scales rows. That is the axis the streaming design was
+built for and the axis the bounded-memory claim holds on — and it meant the
+other axis went unmeasured until #207 went looking. Holding rows fixed and
+widening the frame reverses the result:
+
+| Shape | Cells | Marginal RSS | Report |
+|---|---:|---:|---:|
+| 1,000,000 × 14 | 14 M | 56 MB | 1.1 MB |
+| 20,000 × 600 | 12 M | **856 MB** | **35.7 MB** |
+
+Fewer cells, 15× the memory. Both curves are linear in the column count —
+~1.3 MB of RSS and ~59 KB of report per column — because every column keeps its
+own sketches for the whole run and gets its own card in the document whether or
+not anyone scrolls to it.
+
+`--budget N` exits non-zero if any shape crosses N MB, so this doubles as the
+gate for #207's "a 600-column frame profiles inside a 512 MB runner".
 
 ### Order of operations
 
