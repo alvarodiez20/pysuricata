@@ -52,9 +52,11 @@ pip install pysuricata[polars]
 
 ### What are the dependencies?
 
-**Required:** pandas, markdown, psutil, numpy (on Python ≥3.13)
+**Required:** pandas, markdown, numpy (on Python ≥3.13)
 
-**Optional:** polars (install with `pip install pysuricata[polars]`)
+**Optional:** polars (`pip install pysuricata[polars]`), psutil (`pip install
+pysuricata[system]`, only needed for the memory-measurement recipes in
+[Performance](performance.md) — nothing in the library imports it)
 
 PySuricata requires Python 3.10+.
 

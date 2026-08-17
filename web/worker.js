@@ -10,10 +10,18 @@ let pyodide = null;
 let cfg = null;
 
 /* pysuricata imports psutil in no code path — it is a test-only dependency that
- * is declared as a runtime one. psutil has no WASM wheel, so micropip's resolver
+ * was declared as a runtime one. psutil has no WASM wheel, so micropip's resolver
  * would fail on it. A mock distribution satisfies the resolver and gives any
  * lazy third-party import something that degrades instead of raising.
- * Remove once psutil moves to an optional extra upstream. */
+ *
+ * psutil has since moved to the `pysuricata[system]` extra, so this is dead
+ * weight for any release built after that — but this worker installs pysuricata
+ * from *PyPI*, and the published 0.1.0 metadata still requires psutil. PyPI
+ * versions are immutable, so deleting this block now breaks the live demo
+ * against the only release it can currently resolve.
+ *
+ * Delete it once 0.1.1 is published, and confirm with a bare Pyodide session
+ * that `micropip.install("pysuricata")` resolves with no mock package. */
 const PSUTIL_SHIM = `__version__ = "7.1.0"
 
 class _VMem:

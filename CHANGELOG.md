@@ -14,8 +14,67 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Datetime columns are read at their own resolution** ([#203]). The pandas
+  converter cast straight to `int64` and called the result nanoseconds, which
+  held only because pandas 2 stored every datetime as `datetime64[ns]`. pandas
+  3 defaults to `datetime64[us]`, so the same cast returned microseconds and
+  **every datetime statistic came out a factor of 1,000 wrong while still
+  looking plausible** — a 2020 timestamp read as 1970, and a freshness check
+  reporting data 18,264 days old. The unit is now read from the column and
+  scaled; dates outside what `datetime64[ns]` can represent (before 1677-09-21
+  or after 2262-04-11) saturate to NaT, the sentinel the accumulator's validity
+  window already rejects, rather than wrapping into a plausible wrong date.
+
+  Not a pandas 3 bug, only a pandas 3 *default*: non-nanosecond dtypes are
+  constructible on pandas 2 and arrive on their own from parquet and pyarrow.
+  `tests/test_datetime_resolution.py` runs on both, and eleven of its cases
+  fail against the old conversion under pandas 2.
+- **An identifier column is no longer inferred as datetime** ([#203]). The
+  datetime sniff counted a successful parse as a date, and pandas 3 parses
+  `"T1"` as year 1 — `T` is the ISO 8601 time designator, so a bare identifier
+  parses instead of failing and the digits are taken as a year (`T32` → 2032,
+  `T123` → year 123). A ticket column of `T0..T680` scored 99.5% dates under
+  pandas 3 against 34% under pandas 2. The gate now requires a plausible year
+  as well as a parse, set at 1000 — far below the accumulator's own validity
+  window, so it excludes parser artifacts without narrowing which historical
+  dates count. (The `-2e18` bound made exactly that mistake once.)
+- **An all-missing text column no longer fails the whole profile** ([#204]).
+  The per-row memory estimate averaged the string lengths of a sample, and
+  `Series.mean()` of an all-NA series is NaN, which reached
+  `int(estimate * len(s))` and raised `ValueError: cannot convert float NaN to
+  integer`. A memory *estimate* failed a run whose statistics were fine. Under
+  pandas 2 this was unreachable because `astype(str)` rendered `None` as the
+  literal `"None"` and measured four characters; pandas 3 yields NaN. An
+  all-missing column now measures zero bytes of text per row, which is also the
+  more honest number.
+
 ### Changed
 
+- **`psutil` is no longer a runtime dependency** ([#204]). It was declared in
+  `dependencies` and imported by no code path under `pysuricata/` — only by the
+  memory tests and the recipes in `docs/performance.md`. It is now the
+  `pysuricata[system]` extra. Anyone relying on it transitively will need to
+  install it explicitly.
+
+  It was not free: psutil publishes no WASM wheel, so `micropip.install(
+  "pysuricata")` could not resolve at all, and the browser demo carries a
+  hand-written mock distribution purely to get past it. That shim stays until
+  0.1.1 is published, because the demo installs from PyPI and the immutable
+  0.1.0 metadata still requires psutil.
+- **The pandas ceiling admits pandas 3** ([#203]). `pandas~=2.0` and
+  `pandas>=2.2.3,<3.0` both excluded it, so installing into a pandas 3
+  environment silently pulled pandas back to 2.3.3 — a downgrade discovered
+  only when something else in the user's project broke. Now `<4` on both
+  requirement lines. The `python_version` split stays: it exists for the
+  *floor*, since 2.2.3 is the first pandas publishing cp313 wheels, and
+  collapsing it would let a constrained resolver build 2.2.0 from source
+  against a Python it never supported.
+
+  The cap turned out to be defending two real incompatibilities after all, both
+  fixed above and neither caught by the audit that profiled one clean frame. CI
+  now runs a pandas 3 leg so the claim is checked rather than assumed.
 - **The label-length reservoir is spent** ([#155], 5c.2). `categorical.py` has
   kept a 5,000-value reservoir of label lengths all along and the report spent
   it on two numbers, `avg_len` and `len_p90`. The distribution is now drawn,

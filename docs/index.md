@@ -75,7 +75,7 @@ PySuricata generates self-contained HTML reports for pandas and polars DataFrame
     pip install pysuricata
     ```
 
-This installs PySuricata along with its dependencies: **pandas**, **numpy** (on Python ≥3.13), **markdown**, and **psutil**.
+This installs PySuricata along with its dependencies: **pandas**, **numpy** (on Python ≥3.13), and **markdown**.
 
 To also install polars support:
 

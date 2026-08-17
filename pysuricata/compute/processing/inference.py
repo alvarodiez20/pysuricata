@@ -30,10 +30,51 @@ _DATE_SNIFF_FORMATS = (
 )
 
 
+#: Below this year, a "successful" parse cannot produce a usable datetime
+#: column: the datetime accumulator's validity window is what `datetime64[ns]`
+#: can represent, which starts at 1677-09-21, so every such value would be
+#: recorded as missing anyway. Set well below that bound rather than at it, so
+#: this stays a filter on parser artifacts and not a new opinion about which
+#: historical dates count -- narrowing that window is exactly the mistake the
+#: old `-2e18` bound made, and it silently nulled every 19th-century date.
+_IMPLAUSIBLE_YEAR = 1000
+
+
 try:
     import pandas as pd
 except ImportError:
     pd = None
+
+
+def _dated_fraction(parsed: Any) -> float:
+    """The fraction of a probe that parsed to something that is really a date.
+
+    `notna().mean()` on its own was the whole test, and it takes the parser's
+    word for it. **pandas 3 reads `"T1"` as year 1** -- `T` is the ISO 8601
+    time designator, so a bare identifier like a ticket number parses rather
+    than failing. On a column of `T0..T680`, `format="mixed"` reports 99.5% of
+    the probe as dates under pandas 3 and 34% under pandas 2, which is the
+    difference between profiling an identifier column as datetime and as
+    categorical.
+
+    Requiring a plausible year keeps the check honest without pinning it to one
+    pandas version: a parse landing before `_IMPLAUSIBLE_YEAR` carried no date
+    to begin with. Nothing real is excluded -- a column of genuine dates is
+    unaffected, and this is a yes/no question about the column's type, not a
+    filter on the values, which are parsed for real later.
+    """
+    if len(parsed) == 0:
+        return 0.0
+    dated = parsed.notna()
+    if not bool(dated.any()):
+        return 0.0
+    try:
+        dated &= parsed.dt.year >= _IMPLAUSIBLE_YEAR
+    except (AttributeError, TypeError, ValueError):
+        # Not a datetime-like result; `notna` alone is the best available read.
+        pass
+    return float(dated.mean())
+
 
 try:
     import polars as pl
@@ -396,7 +437,7 @@ class UnifiedTypeInferrer:
                 parsed = pd.to_datetime(probe, errors="coerce", utc=True, format=fmt)
             except (ValueError, TypeError):
                 continue
-            if float(parsed.notna().mean()) > 0.8:
+            if _dated_fraction(parsed) > 0.8:
                 return True
 
         # Last resort: dateutil, but only over the small probe.
@@ -406,7 +447,7 @@ class UnifiedTypeInferrer:
                 parsed = pd.to_datetime(
                     probe, errors="coerce", utc=True, format="mixed"
                 )
-            return float(parsed.notna().mean()) > 0.8
+            return _dated_fraction(parsed) > 0.8
         except (ValueError, TypeError):
             return False
 

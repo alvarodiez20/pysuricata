@@ -198,6 +198,23 @@ _PROCESS_DEPENDENT = (
     # a change in the data, and pinning it would fail on every machine but one.
 )
 
+#: The pandas major the checked-in fixtures were generated under.
+_BASELINE_PANDAS_MAJOR = 2
+
+#: `dtype` echoes the *input's* dtype rather than anything the profiler
+#: computed, so across pandas majors it compares pandas to itself. pandas 3
+#: reads what pandas 2 called `object` as `str`, and defaults datetimes to
+#: `datetime64[us]` where pandas 2 used `[ns]` -- both are faithful reports of a
+#: genuinely different input, and neither is a change in a statistic.
+#:
+#: Dropped only when the running pandas disagrees with the fixtures, so the
+#: field stays fully pinned on the version they were generated under and this
+#: never becomes a blanket exemption. Every other field is still compared on
+#: both, which is the point: the pandas 3 leg checks all 2,435 of them.
+_dtype_is_comparable = pd.__version__.split(".")[0] == str(_BASELINE_PANDAS_MAJOR)
+_ENVIRONMENT_DEPENDENT: tuple[str, ...] = () if _dtype_is_comparable else ("dtype",)
+
+
 #: Fields holding `(row_index, value)` pairs. The value is the fact; the row it
 #: came from is not, and with ties it is arbitrary -- twelve rows share the
 #: maximum age of 79, so CI recorded row 638 where this machine recorded 343.
@@ -263,7 +280,7 @@ def _stable(payload: object) -> object:
     if isinstance(payload, dict):
         out = {}
         for key, value in payload.items():
-            if key in _PROCESS_DEPENDENT:
+            if key in _PROCESS_DEPENDENT or key in _ENVIRONMENT_DEPENDENT:
                 continue
             if key in _INDEXED_VALUES:
                 value = _values_only(value)

@@ -92,6 +92,9 @@ report = profile(df, config=config)
 
 ### Monitor Memory Usage
 
+This recipe needs `psutil`, which is not a runtime dependency — nothing in the
+library imports it. Install it with `pip install pysuricata[system]`.
+
 ```python
 import os
 

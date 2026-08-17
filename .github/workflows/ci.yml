@@ -115,6 +115,45 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
 
+  # The matrix above resolves pandas to whatever the lockfile pins, which is a
+  # 2.x. The dependency ceiling says pandas 3 is supported, and until this job
+  # existed that was an assumption -- one that was wrong in two ways at once:
+  # pandas 3 defaults datetimes to `datetime64[us]` where 2 used `[ns]`, and it
+  # parses `"T1"` as year 1, so a ticket column inferred as datetime.
+  #
+  # A separate job rather than a matrix entry: an `include:` whose keys match an
+  # existing combination merges into that job instead of adding one, so a
+  # `python-version: "3.12"` entry would have silently modified the 3.12 leg
+  # rather than adding a pandas 3 leg.
+  test-pandas3:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install Dependencies
+        run: uv sync --all-extras
+
+      - name: Force pandas 3
+        run: |
+          uv pip install --upgrade "pandas>=3,<4"
+          uv run python -c "import pandas; print('pandas', pandas.__version__)"
+          uv run python -c "
+          import pandas, sys
+          if pandas.__version__.split('.')[0] != '3':
+              sys.exit('expected pandas 3, got ' + pandas.__version__)
+          "
+
+      - name: Run tests
+        run: uv run pytest -m "not benchmark" -q
+
   docs:
     runs-on: ubuntu-latest
     steps:
