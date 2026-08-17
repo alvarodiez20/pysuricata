@@ -317,7 +317,7 @@ quoted when both sides were measured in the same round-robin run.
   skip themselves anywhere it is absent.
 
 - **The report footer credits its author.** "Powered by pysuricata" becomes
-  "Built with pysuricata, developed by Álvaro Diez", the second name linking to
+  "Built with pysuricata, developed by alvarodiez20", the second name linking to
   the GitHub profile. Two new template placeholders, `author_url` and
   `author_name`.
 - **The browser demo reads Excel workbooks** — `.xlsx`, `.xlsm`, `.xlsb`,

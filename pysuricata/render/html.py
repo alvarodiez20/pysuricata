@@ -392,7 +392,10 @@ def render_html_snapshot(
     pysuricata_version = _resolve_pysuricata_version()
     repo_url = "https://github.com/alvarodiez20/pysuricata"
     author_url = "https://github.com/alvarodiez20"
-    author_name = "Álvaro Diez"
+    # The GitHub handle, not the legal name: the link goes to the profile, and
+    # the handle is what a reader can act on. Matches the bare "pysuricata" that
+    # sits beside it — a repo name with no owner prefix.
+    author_name = "alvarodiez20"
 
     # Process description
     description_raw = getattr(cfg, "description", None) or ""
