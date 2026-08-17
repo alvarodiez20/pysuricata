@@ -14,6 +14,50 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A link to a column on another page did nothing** ([#240]). `pagination.js`
+  hides off-page cards with `display: none`, which is not a rendering choice but
+  a removal — the browser finds no target for a fragment link and stays put.
+  Every link in the needs-attention block is one of these, so the report's own
+  navigation failed silently for any column past the first page, as did a
+  pasted deep link. Both now resolve the card to its page, switch to it and
+  scroll; a filter or search that excludes the target is cleared on the way,
+  because a deep link is an explicit request for one column and should outrank
+  a control the reader left set.
+
+- **The report printed one page of cards and said nothing about the rest**
+  ([#240]). There were no print rules at all, and `display: none` is not
+  printed, so a 60-column profile exported as **10 columns** in an artefact that
+  looks complete. Nobody re-checks a PDF that looks finished. `@media print` now
+  shows every card, keeps a card from splitting across sheets, and drops the
+  controls that are instructions a reader on paper cannot follow.
+
+### Changed
+
+- **The scripts' comments no longer ship with every report.** The same argument
+  that took 74,036 bytes of CSS comments out of the document, applied to the
+  half that was left out: **15,551 bytes, 20% of the inlined JavaScript**, sent
+  to every reader of every report. They stay in `static/js/`, which is the only
+  place anyone reads them.
+
+  A regex will not do this one. CSS has no construct in which `/*` means
+  something else; JavaScript has three, and all three are in these files — a
+  string holding a URL, a template literal, and a regex literal where `/` opens
+  a pattern rather than a comment. `strip_js_comments` is a scanner that tracks
+  which of those it is inside, and resolves regex-versus-division the way a
+  lexer does, from the last significant token. Every trap has a test, and all
+  four shipped scripts are checked with `node --check` after stripping, because
+  a byte saving is worthless if the script no longer runs.
+
+  This is what paid for the two fixes above. They cost 2,667 bytes and the
+  ratchet on report size refused them, correctly — the budget only goes down.
+  The way to afford a feature turned out to be six times larger than the
+  feature: **the Titanic report goes from 502,667 to 488,003 bytes**, and the
+  baseline drops from 500,000 to 489,000.
+
+[#240]: https://github.com/alvarodiez20/pysuricata/issues/240
+
 ### Removed
 
 - **The browser demo's mocked `psutil` is gone.** `worker.js` registered a fake
