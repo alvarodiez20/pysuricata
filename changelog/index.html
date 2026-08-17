@@ -2387,6 +2387,30 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD">Unreleased</a></h2>
 <h3 id="changed">Changed</h3>
 <ul>
+<li><strong>A datetime column leads with how regular it is</strong> ([#155], 5c.5). The
+  strongest fact about a generated series was a table row reading <code>Interval
+  std dev — 0.0 seconds</code>, filed alphabetically between timezone and weekend
+  ratio. A deviation of zero means every gap is identical, and the pane now
+  opens with <em>Every gap is identical: one record every 17.0 minutes, with no
+  irregularity at all. That is a generated series rather than observed
+  events.</em> An irregular column reads <em>this is an event stream, not a
+  schedule.</em></li>
+<li><strong>The temporal panels say what they are pictures of</strong> ([#155], 5c.4). Each
+  carries its own peak inline, so a 211-record hour and a 2,626-record month
+  no longer draw identically with the peaks in a different tab. The year chart
+  is dropped when every record falls in one year — <code>by_year</code> is a dict, so
+  that rendered a single bar at full height, a chart whose only reading is
+  "all of it". The per-chart scaling is stated, since heights compare within a
+  chart and not between them.</li>
+<li><strong>High-cardinality columns get a shape pane, and lose the control they
+  could not use</strong> ([#155], 5c.3). Phase 5.4 replaced the meaningless
+  top-values <em>chart</em> on the card; the details pane still opened on <code>Common
+  values</code> — the same ten bars of one row each. It is now a <code>Shape</code> pane:
+  distinct against rows, whether anything repeats, the length range, empty
+  strings. The Top-N control renders only when it offers a real choice — <code>Sex</code>
+  rendered three buttons every one of which read <code>2</code>, <code>Cabin</code> rendered two both
+  reading <code>1</code>, and <code>Name</code> and <code>Ticket</code> rendered five above a sentence where no
+  chart exists.</li>
 <li><strong>The label-length reservoir is spent</strong> ([#155], 5c.2). <code>categorical.py</code> has
   kept a 5,000-value reservoir of label lengths all along and the report spent
   it on two numbers, <code>avg_len</code> and <code>len_p90</code>. The distribution is now drawn,
