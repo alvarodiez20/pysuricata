@@ -49,10 +49,12 @@ tests were updated and the docs were not.
 
 ### 3. Fences missing their imports — 25 occurrences
 
-Blocks calling `profile()`, `summarize()` or `ReportConfig(...)` with no import
-line. **The names are correct** — `ReportConfig` is a live alias for
-`ProfileConfig` — but a reader who copies the block gets a `NameError`. Every
-fence should stand alone or be explicitly marked as a fragment.
+Blocks calling `profile()`, `summarize()` or `ProfileConfig(...)` with no import
+line. A reader who copies the block gets a `NameError`. Every fence should stand
+alone or be explicitly marked as a fragment.
+
+(The docs used to teach `ReportConfig`, which was a live alias. It now warns on
+use and goes in 0.3.0 (#210), so every fence was migrated to `ProfileConfig`.)
 
 ### 4. Output tagged as `python` — 9 occurrences
 

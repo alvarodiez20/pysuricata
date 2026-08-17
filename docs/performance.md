@@ -35,8 +35,8 @@ Optimize PySuricata for your specific use case with these strategies.
 For datasets with > 100 numeric columns, correlation computation is O(p²) and can be slow.
 
 ```python
-from pysuricata import ReportConfig, profile
-config = ReportConfig()
+from pysuricata import ProfileConfig, profile
+config = ProfileConfig()
 config.compute.compute_correlations = False  # Skip correlations
 
 report = profile(df, config=config)
@@ -49,8 +49,8 @@ report = profile(df, config=config)
 Larger chunks mean fewer iterations and less overhead.
 
 ```python
-from pysuricata import ReportConfig, profile
-config = ReportConfig()
+from pysuricata import ProfileConfig, profile
+config = ProfileConfig()
 config.compute.chunk_size = 500_000  # Default: 50_000
 
 report = profile(df, config=config)
@@ -63,8 +63,8 @@ report = profile(df, config=config)
 Smaller samples are faster to process.
 
 ```python
-from pysuricata import ReportConfig, profile
-config = ReportConfig()
+from pysuricata import ProfileConfig, profile
+config = ProfileConfig()
 config.compute.numeric_sample_size = 10_000  # Default: 20_000
 
 report = profile(df, config=config)
@@ -77,8 +77,8 @@ report = profile(df, config=config)
 ### Memory-Constrained Environments
 
 ```python
-from pysuricata import ReportConfig, profile
-config = ReportConfig()
+from pysuricata import ProfileConfig, profile
+config = ProfileConfig()
 config.compute.chunk_size = 50_000  # Small chunks
 config.compute.numeric_sample_size = 5_000  # Small samples
 config.compute.max_uniques = 1_024  # Small sketches
@@ -100,9 +100,9 @@ import os
 
 import psutil
 
-from pysuricata import ReportConfig, profile
+from pysuricata import ProfileConfig, profile
 
-config = ReportConfig()
+config = ProfileConfig()
 process = psutil.Process(os.getpid())
 print(f"Memory before: {process.memory_info().rss / 1024**2:.1f} MB")
 
@@ -116,8 +116,8 @@ print(f"Memory after: {process.memory_info().rss / 1024**2:.1f} MB")
 ### Profile Only Key Columns
 
 ```python
-from pysuricata import ReportConfig, profile
-config = ReportConfig()
+from pysuricata import ProfileConfig, profile
+config = ProfileConfig()
 config.compute.columns = ["user_id", "amount", "timestamp"]
 
 report = profile(df, config=config)
@@ -186,8 +186,8 @@ Because PySuricata processes data in chunks, memory stays bounded regardless of 
 ### For Maximum Speed
 
 ```python
-from pysuricata import ReportConfig, profile
-config = ReportConfig()
+from pysuricata import ProfileConfig, profile
+config = ProfileConfig()
 config.compute.chunk_size = 1_000_000  # Large chunks
 config.compute.numeric_sample_size = 5_000  # Small samples
 config.compute.max_uniques = 512  # Tiny sketches
@@ -201,8 +201,8 @@ report = profile(df, config=config)
 ### For Maximum Accuracy
 
 ```python
-from pysuricata import ReportConfig, profile
-config = ReportConfig()
+from pysuricata import ProfileConfig, profile
+config = ProfileConfig()
 config.compute.chunk_size = 100_000  # Smaller for better merging
 config.compute.numeric_sample_size = 100_000  # Large samples
 config.compute.max_uniques = 8_192  # Large sketches
@@ -264,10 +264,10 @@ For regular reporting, optimize for speed:
 from datetime import date
 from pathlib import Path
 
-from pysuricata import ReportConfig, profile
+from pysuricata import ProfileConfig, profile
 
 # Fast config for nightly reports
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.compute_correlations = False
 config.compute.numeric_sample_size = 10_000
 config.render.title = f"Daily Report - {date.today()}"

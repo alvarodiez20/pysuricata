@@ -58,7 +58,7 @@ PySuricata generates self-contained HTML reports for pandas and polars DataFrame
 - **Mathematically grounded** — Uses Welford's algorithm for numerically stable moments, Pébay's formulas for mergeable statistics, KMV sketches for distinct count estimation, and Misra-Gries for heavy hitters.
 - **Pandas and Polars support** — Works natively with both `pandas.DataFrame` and `polars.DataFrame` / `polars.LazyFrame`.
 - **Self-contained reports** — Generates a single HTML file with inline CSS, JS, and SVG charts. No external assets or dependencies needed to view.
-- **Configurable** — Control chunk sizes, sample sizes, sketch parameters, correlation thresholds, and rendering options via `ReportConfig`.
+- **Configurable** — Control chunk sizes, sample sizes, sketch parameters, correlation thresholds, and rendering options via `ProfileConfig`.
 - **Reproducible** — Seeded random sampling produces deterministic results across runs.
 
 ## Installation

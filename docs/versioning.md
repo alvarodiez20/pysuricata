@@ -141,8 +141,9 @@ Deliberately about evidence rather than dates.
 
 1. **Two consecutive minor releases with no breaking change, unforced.** A
    settled shape, not a freeze.
-2. **The deprecation queue is empty.** `ReportConfig` is currently aliased to
-   `ProfileConfig` with no warning; that has to be resolved, not carried.
+2. **The deprecation queue is empty.** `ReportConfig` is aliased to
+   `ProfileConfig` and now warns on use, naming **0.3.0** as the release that
+   removes it (#210). The queue is not empty until that removal happens.
 3. **Every approximate value carries its error bound.** The quantiles (#146) and
    the duplicate count (#161) are done; the distinct count already was.
 4. **No known correctness bug in a covered path.**

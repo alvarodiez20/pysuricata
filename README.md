@@ -68,7 +68,7 @@ report.save_html("titanic_report.html")
 - **Streaming architecture** — Data is processed in configurable chunks, keeping memory bounded. Useful for datasets that don't fit in RAM.
 - **Pandas and Polars** — Works natively with `pandas.DataFrame`, `polars.DataFrame`, and `polars.LazyFrame`.
 - **Self-contained HTML** — Single file with inline CSS, JS, and SVG charts. No external assets needed.
-- **Configurable** — Control chunk sizes, sample sizes, sketch parameters, and correlation thresholds via `ProfileConfig` (aliased as `ReportConfig`).
+- **Configurable** — Control chunk sizes, sample sizes, sketch parameters, and correlation thresholds via `ProfileConfig` (aliased as `ProfileConfig`).
 - **Reproducible** — Seeded random sampling produces deterministic results across runs.
 - **CLI tool** — Profile datasets from the command line.
 
@@ -132,9 +132,9 @@ print(f"Mean age: {stats['columns']['age']['mean']:.1f}")
 ## Configuration
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.chunk_size = 250_000
 config.compute.random_seed = 42
 config.compute.compute_correlations = True

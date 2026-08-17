@@ -92,9 +92,9 @@ report.save_html("report.html")
 Yes:
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.columns = ["col1", "col2", "col3"]
 
 report = profile(df, config=config)
@@ -105,8 +105,8 @@ report = profile(df, config=config)
 Set a random seed:
 
 ```python
-from pysuricata import ReportConfig, profile
-config = ReportConfig()
+from pysuricata import ProfileConfig, profile
+config = ProfileConfig()
 config.compute.random_seed = 42
 
 report = profile(df, config=config)
@@ -144,8 +144,8 @@ Processing a 10 GB dataset uses roughly the same memory as processing a 100 MB o
 Three quick changes:
 
 ```python
-from pysuricata import ReportConfig
-config = ReportConfig()
+from pysuricata import ProfileConfig
+config = ProfileConfig()
 config.compute.compute_correlations = False    # Skip O(p²) correlation step
 config.compute.numeric_sample_size = 10_000    # Smaller reservoir sample
 config.compute.chunk_size = 500_000            # Fewer iterations

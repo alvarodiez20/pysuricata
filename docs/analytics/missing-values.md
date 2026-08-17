@@ -134,9 +134,9 @@ Reveals chunk 4 has data quality issue.
 ## Configuration
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 
 # Missing columns display threshold (default 0.5%)
 # (Not yet configurable in current version)

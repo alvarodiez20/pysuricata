@@ -360,12 +360,12 @@ Classify categorical variables by distinct count:
 
 ## Configuration
 
-Control categorical analysis via `ReportConfig`:
+Control categorical analysis via `ProfileConfig`:
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 
 # Top-k size (Misra-Gries)
 config.compute.top_k = 50  # Default
@@ -461,14 +461,14 @@ report.save_html("report.html")
 ```python
 import pandas as pd
 
-from pysuricata import ReportConfig, profile
+from pysuricata import ProfileConfig, profile
 
 # Column with 10,000 unique values
 df = pd.DataFrame({
     "user_id": [f"user_{i}" for i in range(100_000)]
 })
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.top_k = 100  # Show top 100
 config.compute.max_uniques = 4_096  # More accurate distinct
 

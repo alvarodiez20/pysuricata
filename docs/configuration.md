@@ -30,10 +30,10 @@ Complete guide to configuring PySuricata for your specific needs.
 
 ## Overview
 
-PySuricata is highly configurable via the `ReportConfig` class hierarchy:
+PySuricata is highly configurable via the `ProfileConfig` class hierarchy:
 
 ```
-ReportConfig
+ProfileConfig
 ├── compute: ComputeOptions  # Analysis parameters
 └── render: RenderOptions    # Display parameters
 ```
@@ -41,10 +41,10 @@ ReportConfig
 ## Quick Start
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 # Create config
-config = ReportConfig()
+config = ProfileConfig()
 
 # Customize settings
 config.compute.chunk_size = 250_000
@@ -141,9 +141,9 @@ Correlation settings are available through the public `ComputeOptions` API.
 Enable/disable pairwise correlation computation.
 
 ```python
-from pysuricata import profile, ReportConfig, ComputeOptions
+from pysuricata import profile, ProfileConfig, ComputeOptions
 
-config = ReportConfig(compute=ComputeOptions(
+config = ProfileConfig(compute=ComputeOptions(
     compute_correlations=False  # Disable for speed
 ))
 report = profile(df, config=config)
@@ -154,8 +154,8 @@ report = profile(df, config=config)
 Minimum |r| to report.
 
 ```python
-from pysuricata import ComputeOptions, ReportConfig
-config = ReportConfig(compute=ComputeOptions(
+from pysuricata import ComputeOptions, ProfileConfig
+config = ProfileConfig(compute=ComputeOptions(
     corr_threshold=0.7  # Only strong correlations
 ))
 ```
@@ -165,8 +165,8 @@ config = ReportConfig(compute=ComputeOptions(
 Maximum columns for correlation computation. Skip if exceeded.
 
 ```python
-from pysuricata import ComputeOptions, ReportConfig
-config = ReportConfig(compute=ComputeOptions(
+from pysuricata import ComputeOptions, ProfileConfig
+config = ProfileConfig(compute=ComputeOptions(
     corr_max_cols=100  # Higher limit
 ))
 ```
@@ -176,8 +176,8 @@ config = ReportConfig(compute=ComputeOptions(
 Maximum correlations to show per column.
 
 ```python
-from pysuricata import ComputeOptions, ReportConfig
-config = ReportConfig(compute=ComputeOptions(
+from pysuricata import ComputeOptions, ProfileConfig
+config = ProfileConfig(compute=ComputeOptions(
     corr_max_per_col=5  # Show top 5
 ))
 ```
@@ -199,9 +199,9 @@ config.compute.checkpoint_every_n_chunks = 10  # Checkpoint every 10 chunks
 Directory to save checkpoint files. Defaults to current working directory or the directory of the final HTML report.
 
 ```python
-from pysuricata import ReportConfig
+from pysuricata import ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.checkpoint_dir = "/tmp/pysuricata_checkpoints"
 ```
 
@@ -276,8 +276,8 @@ config.render.sample_rows = 20  # Show 20 rows
 ### Memory-Constrained Environment
 
 ```python
-from pysuricata import ReportConfig
-config = ReportConfig()
+from pysuricata import ProfileConfig
+config = ProfileConfig()
 config.compute.chunk_size = 50_000  # Small chunks
 config.compute.numeric_sample_size = 5_000  # Small samples
 config.compute.max_uniques = 1_024  # Smaller sketches
@@ -288,8 +288,8 @@ config.compute.compute_correlations = False  # Skip correlations
 ### Maximum Accuracy
 
 ```python
-from pysuricata import ReportConfig
-config = ReportConfig()
+from pysuricata import ProfileConfig
+config = ProfileConfig()
 config.compute.numeric_sample_size = 100_000  # Large samples
 config.compute.max_uniques = 8_192  # Large sketches
 config.compute.top_k = 200  # Many top values
@@ -299,8 +299,8 @@ config.compute.corr_threshold = 0.0  # All correlations
 ### Speed Optimized
 
 ```python
-from pysuricata import ReportConfig
-config = ReportConfig()
+from pysuricata import ProfileConfig
+config = ProfileConfig()
 config.compute.chunk_size = 500_000  # Large chunks
 config.compute.numeric_sample_size = 10_000  # Small samples
 config.compute.compute_correlations = False  # Skip correlations
@@ -312,9 +312,9 @@ config.compute.top_k = 20  # Few top values
 ```python
 from datetime import datetime
 
-from pysuricata import ReportConfig
+from pysuricata import ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.random_seed = 42  # Deterministic
 config.render.title = f"Report generated {datetime.now()}"
 ```
@@ -322,9 +322,9 @@ config.render.title = f"Report generated {datetime.now()}"
 ### Production Data Quality Checks
 
 ```python
-from pysuricata import ReportConfig
+from pysuricata import ProfileConfig
 # Only check specific columns
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.columns = ["customer_id", "transaction_amount", "timestamp"]
 config.render.include_sample = False  # No PII in reports
 
@@ -347,9 +347,9 @@ from pysuricata.config import EngineConfig
 cfg = EngineConfig(chunk_size=50_000, numeric_sample_k=20_000)
 
 # New way (recommended)
-from pysuricata import ReportConfig
+from pysuricata import ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.chunk_size = 50_000
 config.compute.numeric_sample_size = 20_000
 ```
@@ -363,8 +363,8 @@ Not currently supported. All configuration via code.
 Invalid configurations raise `ValueError`:
 
 ```python
-from pysuricata import ReportConfig
-config = ReportConfig()
+from pysuricata import ProfileConfig
+config = ProfileConfig()
 config.compute.chunk_size = -1  # Invalid
 # Raises: ValueError: chunk_size must be positive
 ```

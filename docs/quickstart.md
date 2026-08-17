@@ -213,10 +213,10 @@ assert stats['dataset']['missing_cells_pct'] < 5.0, "Too many missing values"
 ### Profile Specific Columns
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 # Select specific columns
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.columns = ["sepal_length", "sepal_width", "species"]
 
 report = profile(df, config=config)
@@ -225,10 +225,10 @@ report = profile(df, config=config)
 ### Reproducible Reports
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 # Set random seed for deterministic sampling
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.random_seed = 42
 
 report = profile(df, config=config)
@@ -255,9 +255,9 @@ report.save_html("large_file_report.html")
 PySuricata is highly configurable. Here are some common settings:
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 
 # Adjust chunk size for memory management
 config.compute.chunk_size = 50_000  # Default
@@ -283,9 +283,9 @@ report = profile(df, config=config)
 ### For Large Datasets (> 1 GB)
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.chunk_size = 250_000  # Larger chunks
 config.compute.numeric_sample_size = 10_000  # Smaller samples
 config.compute.compute_correlations = False  # Skip if not needed
@@ -296,8 +296,8 @@ report = profile(df, config=config)
 ### For Memory-Constrained Environments
 
 ```python
-from pysuricata import ReportConfig, profile
-config = ReportConfig()
+from pysuricata import ProfileConfig, profile
+config = ProfileConfig()
 config.compute.chunk_size = 50_000  # Smaller chunks
 config.compute.numeric_sample_size = 5_000  # Smaller samples
 config.compute.max_uniques = 1_024  # Smaller sketches
@@ -308,8 +308,8 @@ report = profile(df, config=config)
 ### For Speed
 
 ```python
-from pysuricata import ReportConfig, profile
-config = ReportConfig()
+from pysuricata import ProfileConfig, profile
+config = ProfileConfig()
 config.compute.compute_correlations = False  # Skip correlations
 config.compute.top_k = 20  # Fewer top values
 

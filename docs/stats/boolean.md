@@ -225,12 +225,12 @@ Boolean analysis is extremely efficient: O(1) space, O(n) time.
 
 ## Configuration
 
-Control boolean analysis via `ReportConfig`:
+Control boolean analysis via `ProfileConfig`:
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 
 # Boolean-specific config
 # (Currently no boolean-specific parameters)

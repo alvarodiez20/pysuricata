@@ -14,6 +14,22 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Deprecated
+
+- **`ReportConfig` warns, and goes in 0.3.0** ([#210]). It was a bare alias for
+  `ProfileConfig`, exported in `__all__`, with no signal that it was going away
+  — a reader of `__init__.py` could not tell whether it was deprecated or simply
+  a second spelling intended to stay. #82 removed the two-constructor ceremony
+  and this alias is what was left holding the door open; the door now has a
+  closing date. The clock starts at 0.1.0, so by 0.3.0 a full minor has passed
+  with a warning in place: the deprecation policy run rather than described.
+
+  The warning fires on **use**, through a module-level `__getattr__` rather than
+  an eager alias, so `import pysuricata` stays silent for the users who never
+  touch the old name and `dir()` still lists it without firing. All 127 uses of
+  the old name across the documentation were migrated to `ProfileConfig`, since
+  a deprecation the docs keep teaching is not one.
+
 ### Fixed
 
 - **Datetime columns are read at their own resolution** ([#203]). The pandas

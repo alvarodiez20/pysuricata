@@ -37,10 +37,10 @@ This page explains the design decisions behind PySuricata and when it might be a
 Most profiling tools load the entire dataset into memory to compute statistics. PySuricata takes a different approach — it processes data **one chunk at a time**, updating lightweight accumulators as it goes.
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 # PySuricata processes data in chunks internally
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.chunk_size = 50_000  # 50k rows per chunk (default)
 
 report = profile(df, config=config)
@@ -161,12 +161,12 @@ The resulting file can be opened in any browser, shared via email, hosted on a s
 
 ## Configuration
 
-All processing parameters are exposed through `ReportConfig`:
+All processing parameters are exposed through `ProfileConfig`:
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 
 # Processing
 config.compute.chunk_size = 250_000       # Rows per chunk
@@ -248,9 +248,9 @@ When your data doesn't fit in memory, pass a generator:
 
 ```python
 import pandas as pd
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.chunk_size = 100_000
 config.compute.random_seed = 42
 

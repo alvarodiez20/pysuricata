@@ -277,14 +277,14 @@ For large \(p\) (many columns), correlation computation can be expensive:
 Configuration:
 
 ```python
-from pysuricata import ReportConfig
-config = ReportConfig()
+from pysuricata import ProfileConfig
+config = ProfileConfig()
 config.compute.compute_correlations = False  # Disable
 ```
 
 ## Configuration
 
-Control correlation analysis via `ReportConfig`:
+Control correlation analysis via `ProfileConfig`:
 
 ```python
 from pysuricata import profile, ProfileConfig, ComputeOptions
@@ -427,7 +427,7 @@ MI(X, Y) = \sum_{x, y} p(x, y) \log \frac{p(x, y)}{p(x)p(y)}
 
 ```python
 import pandas as pd
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 df = pd.DataFrame({
     "x": range(100),
@@ -435,7 +435,7 @@ df = pd.DataFrame({
     "z": [100 - i for i in range(100)]    # z = 100 - x
 })
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.compute_correlations = True
 config.compute.corr_threshold = 0.5
 
@@ -470,13 +470,13 @@ for col, r in correlations:
 import numpy as np
 import pandas as pd
 
-from pysuricata import ReportConfig, profile
+from pysuricata import ProfileConfig, profile
 
 rng = np.random.default_rng(0)
 wide_df = pd.DataFrame({f"c{i}": rng.standard_normal(1_000) for i in range(200)})
 
 # Many columns: disable correlations
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.compute_correlations = False  # Too expensive
 
 report = profile(wide_df, config=config)

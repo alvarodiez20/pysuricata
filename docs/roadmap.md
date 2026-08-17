@@ -86,7 +86,7 @@ the first time it was caught before it was written down.
 | UX‑21 | `Processed bytes (≈)` in the primary stat row | half — the donut is gone, this is not |
 | UX‑22 | `ComputeOptions` at 22 fields; `numeric_sample_size` not a keyword | open — and it is the knob UX‑8 drives |
 | UX‑8 | `memory_budget=` | open, deliberately post-launch |
-| — | `ReportConfig is ProfileConfig` | open, no deprecation warning |
+| #210 | `ReportConfig is ProfileConfig` | done — warns on use, removed in 0.3.0 |
 
 ## Found in this audit
 

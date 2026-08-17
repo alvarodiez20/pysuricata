@@ -194,7 +194,7 @@ The template produces a **single portable HTML file** — no external dependenci
 
 ## Configuration
 
-`ReportConfig` controls all behavior:
+`ProfileConfig` controls all behavior:
 
 | Parameter | Default | Effect |
 |-----------|---------|--------|
