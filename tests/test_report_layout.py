@@ -164,6 +164,47 @@ def _cards(doc: str) -> list[str]:
 
 
 # --------------------------------------------------------------------------- #
+# 2b. every correlation pair is represented
+# --------------------------------------------------------------------------- #
+class TestEveryCorrelationPairSurvives:
+    """#124 asks that the matrix emit `n(n-1)/2` cells. **There is no matrix.**
+
+    #122 removed the heatmap and #154's 5b.6 replaced it with a per-column
+    partners pane, so the criterion as written targets markup that no longer
+    exists -- searching for a `corr-cell` finds nothing and a test built on it
+    would pass by being vacuous, which is the failure mode this whole file is
+    about.
+
+    The invariant behind it survives the redesign, and is stronger in the new
+    shape. A matrix names each pair once; the panes name it from **both** sides,
+    so the count is `n(n-1)` -- exactly twice the cell count. Measured at n = 3,
+    4, 5 and 6, it is 6, 12, 20 and 30. A pair silently dropped, or one column's
+    pane missing a partner, breaks the identity.
+    """
+
+    @pytest.mark.parametrize("n", [3, 4, 5, 6])
+    def test_each_pair_appears_from_both_sides(self, n):
+        import numpy as np
+
+        rng = np.random.default_rng(0)
+        # Correlated on purpose: an all-independent frame is entitled to report
+        # nothing, and would make this pass without rendering a single pair.
+        common = rng.normal(0, 1, 400)
+        frame = pd.DataFrame(
+            {f"c{i}": rng.normal(0, 1, 400) + common * 0.3 for i in range(n)}
+        )
+
+        html = profile(frame, seed=0).html
+        partners = len(re.findall(r'class="corr-partner"', html))
+
+        assert partners == n * (n - 1), (
+            f"{n} numeric columns make {n * (n - 1) // 2} pairs, which the "
+            f"per-column panes should show twice over as {n * (n - 1)} partner "
+            f"entries; found {partners}"
+        )
+
+
+# --------------------------------------------------------------------------- #
 # 3. layout, in a browser
 # --------------------------------------------------------------------------- #
 #: The union of an element's own rect with any absolutely positioned pseudo

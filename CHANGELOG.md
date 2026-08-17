@@ -60,6 +60,22 @@ quoted when both sides were measured in the same round-robin run.
   Each of the seven gates was verified by breaking it on purpose; all seven fail
   when they should.
 
+- **#119's correlation criterion, in the shape that survived the redesign.**
+  #124 asks that the matrix emit `n(n-1)/2` cells; **there is no matrix** — #122
+  removed the heatmap and #154's 5b.6 replaced it with a per-column partners
+  pane, so a test written to the criterion would search for a `corr-cell`, find
+  nothing, and pass by being vacuous. The invariant behind it survives and is
+  stronger in the new shape: a matrix names each pair once, the panes name it
+  from **both** sides, so the count is `n(n-1)`. Measured at n = 3, 4, 5, 6 →
+  6, 12, 20, 30. A dropped pair, or one column's pane missing a partner, breaks
+  the identity.
+
+  The other four layout criteria #124 lists turned out to be covered already —
+  the 12 month slots in `test_accumulators_datetime.py` and
+  `test_boolean_and_temporal.py`, the high-cardinality no-chart rule in
+  `test_high_cardinality_branch.py`, the frozen index in `test_sample_table.py`,
+  and the nav rail by the scroll allow-list plus the recorded 31px target gap.
+
 - **A contact sheet for reviewing a phase** (`scripts/contact_sheet.py`, #124).
   Six full-page captures uploaded by CI as an artifact, and deliberately
   **never a gate**: thirteen redesign issues are *supposed* to change every
