@@ -14,6 +14,46 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **A column-scaling benchmark**, `benchmarks/columns.py` ([#207]). Every other
+  script in that directory scales rows — which is the axis the streaming design
+  was built for, and the axis the bounded-memory claim holds on. It also meant
+  the other axis was never measured.
+
+  Re-measured on current `main` (the issue's figures are from 0.0.61, before
+  the histogram-variant cut and the comment-stripping change):
+
+  | Shape | Cells | Marginal RSS | Report |
+  |---|---:|---:|---:|
+  | 1,000,000 × 14 | 14 M | 56 MB | 1.1 MB |
+  | 20,000 × 600 | 12 M | **856 MB** | **35.7 MB** |
+
+  **Fewer cells, 15× the memory.** Both curves are linear in the column count —
+  **~1.3 MB of RSS and ~59 KB of report per column** — because every column
+  holds its own sketches for the whole run and gets its own card in the
+  document whether or not anyone scrolls to it.
+
+  `--budget N` exits non-zero when a shape crosses N MB, so the script doubles
+  as the gate for #207's "a 600-column frame profiles inside a 512 MB runner".
+  It degrades to the `tracemalloc` column when psutil is absent, since psutil
+  is an extra rather than a runtime dependency (#204).
+
+  This is two of #207's four exit criteria. The other two — a 600-column frame
+  inside 512 MB, and raising the browser demo's 250-column refusal — need the
+  column-major chunking and shared sketch arena the issue describes, which are
+  architecture rather than measurement and are not attempted here.
+
+### Changed
+
+- **The README says which axis its memory claim describes** ([#207]). It read
+  "memory usage stays bounded regardless of dataset size". That is true in rows
+  and false in columns, and a claim that does not name its axis is not a weaker
+  claim — it is one a reader will apply to the axis where it does not hold. It
+  now states the bound, the exception and the per-column cost, and links the
+  issue. `tests/test_readme_is_checked.py` keeps the two places that make the
+  claim in agreement; four of its new cases fail against the old wording.
+
 ### Fixed
 
 - **Categorical and boolean columns track their own chunks, so the Missing
