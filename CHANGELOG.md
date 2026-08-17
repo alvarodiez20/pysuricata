@@ -14,6 +14,38 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Three stray `}` were swallowing a media query, and the Common Values table
+  lost its responsive rules** ([#232]). The stylesheets had 1,123 opening braces
+  against 1,126 closing ones. That reads like a tidy-up and was not.
+
+  One stray was harmless — a bare `}` at top level in `_06-cards.css`, left
+  behind when a `@media` block's contents were deleted; a parser discards it.
+  The other two were a different shape, in `_08-categorical.css`:
+
+  ```css
+  #pysuricata-report .common-values-table.enhanced
+  }
+  ```
+
+  A selector with no block. A parser accumulates a prelude until the first `{`,
+  and with the block missing **the next `{` in the file gets claimed instead** —
+  here the `@media (max-width: 768px)` two lines below. The media query became
+  part of an invalid selector and was dropped with it.
+
+  Measured in Chromium, both ways: **993 style rules and 37 media rules before,
+  995 and 38 after**, with `font-size: 0.7rem` and `width: 60px` recovered. The
+  user-visible consequence was that the Common Values table rendered at
+  **12.8px at a 500px viewport**, the desktop size, where the stylesheet has
+  said 11.2px since the rule was written. Unchanged at 1240px.
+
+  The fragments date to #23's CSS modularization, so they had been dropping
+  those rules for a long time. `tests/test_css_integrity.py` gains both a brace
+  balance check and — because a count says *that* something is wrong and not
+  *what* — a check for the specific shape, a selector followed by `}` instead of
+  `{`. Both catch their regression.
+
 ### Added
 
 - **The benchmark harnesses refuse to measure on a busy machine** ([#212]). The
@@ -276,6 +308,7 @@ quoted when both sides were measured in the same round-robin run.
 [#206]: https://github.com/alvarodiez20/pysuricata/issues/206
 [#209]: https://github.com/alvarodiez20/pysuricata/issues/209
 [#212]: https://github.com/alvarodiez20/pysuricata/issues/212
+[#232]: https://github.com/alvarodiez20/pysuricata/issues/232
 
 ## [0.1.1] - 2026-08-17
 

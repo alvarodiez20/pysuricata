@@ -265,3 +265,59 @@ class TestTheStylesheetShipsWithoutItsComments:
         assert style.count("{") > 900, f"only {style.count('{')} rules survived"
         for essential in ("#pysuricata-report", "--paper", ".hist__tick"):
             assert essential in style, essential
+
+
+# ---------------------------------------------------------------------------
+# Brace balance (#232)
+# ---------------------------------------------------------------------------
+def test_every_stylesheet_balances_its_braces():
+    """An unmatched `}` is not a cosmetic problem, which is the trap.
+
+    CSS error recovery is lenient: on an unexpected `}` the parser closes the
+    current block and carries on, so the symptom is never a broken page. It is
+    a rule silently applying to a different scope than it was written in, or
+    being dropped entirely -- and it stays invisible until it is the
+    explanation for something else.
+
+    Three stray `}` were found this way in `_06-cards.css` (1) and
+    `_08-categorical.css` (2), and two of them cost real rules. See
+    `test_a_selector_is_never_left_without_its_block`.
+    """
+    offenders = []
+    for path in sorted(glob.glob(os.path.join(_css_dir(), "_*.css"))):
+        with open(path, encoding="utf-8") as fh:
+            source = strip_css_comments(fh.read())
+        opening, closing = source.count("{"), source.count("}")
+        if opening != closing:
+            offenders.append(f"{os.path.basename(path)}: {opening} {{ vs {closing} }}")
+
+    assert not offenders, "unbalanced braces in " + "; ".join(offenders)
+
+
+def test_a_selector_is_never_left_without_its_block():
+    """A selector followed by `}` instead of `{` swallows what comes next.
+
+    This is the shape that made #232 a defect rather than a tidy-up:
+
+        #pysuricata-report .common-values-table.enhanced
+        }
+
+    A parser accumulates a selector's prelude until the first `{`. With the
+    block missing, the next `{` in the file is claimed instead -- here the
+    `@media (max-width: 768px)` two lines below -- so the media query became
+    part of an invalid selector and was dropped with it.
+
+    Measured: 993 style rules and 37 media rules before, 995 and 38 after, and
+    the Common Values table rendered at **12.8px at a 500px viewport** where
+    the swallowed rule says 0.7rem. Two responsive rules, silently gone.
+    """
+    pattern = re.compile(r"^\s*([#.\[][^{};]*?)\n\s*\}", re.M)
+    offenders = []
+    for path in sorted(glob.glob(os.path.join(_css_dir(), "_*.css"))):
+        with open(path, encoding="utf-8") as fh:
+            source = strip_css_comments(fh.read())
+        for match in pattern.finditer(source):
+            selector = " ".join(match.group(1).split())
+            offenders.append(f"{os.path.basename(path)}: {selector!r} has no block")
+
+    assert not offenders, "; ".join(offenders)
