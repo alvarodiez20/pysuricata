@@ -2619,6 +2619,19 @@ quoted when both sides were measured in the same round-robin run.</p>
   balance check and — because a count says <em>that</em> something is wrong and not
   <em>what</em> — a check for the specific shape, a selector followed by <code>}</code> instead of
   <code>{</code>. Both catch their regression.</p>
+<ul>
+<li><strong>The dark-mode switch arrived in waves.</strong> Nothing animated the theme on
+  purpose — but almost every hover rule in the stylesheet carries its own
+  <code>transition</code>, and a good number are <code>transition: all</code>, which animates colour
+  along with everything else. So the flip was paced by whatever duration each
+  element happened to declare: <code>.12s</code> on a card, <code>.2s</code> on a table row, <code>.3s</code> on
+  the page. Sections visibly caught each other up.</li>
+</ul>
+<p>The toggle now suppresses transitions across the flip and restores them on the
+  same tick, so the theme lands everywhere at once and hover transitions are
+  untouched. The two <code>transition</code> declarations that existed only to animate the
+  theme are gone. Verified by reading computed colours in the same tick as the
+  toggle: every sampled element is already at its final value.</p>
 <h3 id="added_1">Added</h3>
 <ul>
 <li><strong>The benchmark harnesses refuse to measure on a busy machine</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/212">#212</a>). The
@@ -2874,7 +2887,39 @@ quoted when both sides were measured in the same round-robin run.</p>
   CI job, so the other six jobs do not pull a ~300 MB Chromium, and the cases
   skip themselves anywhere it is absent.</p>
 </li>
+<li>
+<p><strong>The report footer credits its author.</strong> "Powered by pysuricata" becomes
+  "Built with pysuricata, developed by alvarodiez20", the second name linking to
+  the GitHub profile. Two new template placeholders, <code>author_url</code> and
+  <code>author_name</code>.</p>
+</li>
+<li><strong>The browser demo reads Excel workbooks</strong> — <code>.xlsx</code>, <code>.xlsm</code>, <code>.xlsb</code>,
+  <code>.xls</code> and <code>.ods</code>, through pandas' <code>calamine</code> engine. calamine rather than
+  openpyxl because openpyxl is not in the Pyodide distribution at all, while
+  <code>python-calamine</code> is, and one engine covers all five formats. It is loaded on
+  demand, so a visitor who only ever drops a CSV never downloads it.</li>
 </ul>
+<p>A workbook is a container of tables, not a table, so a multi-sheet file
+  <strong>pauses and asks which sheet</strong>, listing each one's row and column counts and
+  omitting the empty ones. Taking the first sheet silently is how a visitor ends
+  up reading a confident report about the wrong data.</p>
+<p>Excel is the one input that <strong>cannot stream</strong>: pandas exposes no <code>chunksize</code>
+  on <code>read_excel</code> in any engine, so the sheet is materialised whole. The demo
+  says so on screen rather than letting the page's bounded-memory claim cover a
+  format it does not apply to, and caps workbooks at <strong>40 MB</strong> against 600 MB
+  for CSV — a compressed workbook expands several times over on the way into the
+  heap.</p>
+<p>Two failure modes the format invites are named rather than rendered: a sheet
+  that opens with a title or a blank spacer instead of its header row comes back
+  as <code>Unnamed: n</code> columns and now raises a warning, and a workbook with no data
+  in any sheet is refused with a reason instead of dying inside <code>read_excel</code>.
+- <strong>The demo's report frame has a full-window control.</strong> An in-page overlay
+  rather than the Fullscreen API: iOS Safari grants <code>requestFullscreen()</code> to
+  <code>&lt;video&gt;</code> and nothing else, and staying in the document leaves the iframe's
+  sandbox exactly as it was — the report carries the visitor's own values and
+  must not acquire an origin. Esc exits, and the bar carries a visible exit too,
+  since key events inside the report belong to that document rather than to the
+  page.</p>
 <h2 id="011-2026-08-17"><a href="https://github.com/alvarodiez20/pysuricata/compare/v0.1.0...v0.1.1">0.1.1</a> - 2026-08-17</h2>
 <p><strong>The contract written at 0.1.0, held.</strong> Nothing covered by <code>docs/versioning.md</code>
 broke: the <code>summarize()</code> payload gained <code>duplicate_rows_uncertainty</code> and lost

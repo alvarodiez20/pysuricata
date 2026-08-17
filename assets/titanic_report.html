@@ -74,10 +74,18 @@
   text-transform: uppercase;
   color: var(--muted);
 }
+
+#pysuricata-report.theme-switching,
+#pysuricata-report.theme-switching *,
+#pysuricata-report.theme-switching *::before,
+#pysuricata-report.theme-switching *::after,
+body.theme-switching {
+  transition: none !important;
+}
+
 body.suricata-standalone {
   margin: 0;
   background-color: var(--paper, #FBF9F5);
-  transition: background-color 0.3s ease;
 }
 
 body.suricata-standalone:not(.light) {
@@ -90,7 +98,6 @@ body.suricata-standalone:not(.light) {
   margin: 20px;
   background-color: var(--paper);
   color: var(--ink);
-  transition: background-color 0.3s, color 0.3s;
 }
 
 #pysuricata-report.light {
@@ -7033,12 +7040,27 @@ body.suricata-standalone:not(.light) {
   function toggleDarkMode() {
     var root = document.getElementById(ROOT_ID);
     if (!root) return;
-    root.classList.toggle('light');
 
     var body = document.body;
+
+    // Suppress transitions across the flip, or the theme arrives in waves: the
+    // stylesheet's hover transitions animate colour too, at every duration from
+    // .12s to .3s, and each section catches up in its own time. The reflows are
+    // load-bearing — they flush the suppression before the colours move, and the
+    // new colours before it is lifted. Without them the browser coalesces all
+    // three class changes into one style pass and animates anyway.
+    root.classList.add('theme-switching');
+    if (body) body.classList.add('theme-switching');
+    void root.offsetHeight;
+
+    root.classList.toggle('light');
     if (body && body.classList.contains('suricata-standalone')) {
       body.classList.toggle('light');
     }
+
+    void root.offsetHeight;
+    root.classList.remove('theme-switching');
+    if (body) body.classList.remove('theme-switching');
 
     var icon = document.getElementById('toggle-icon');
     if (icon) {
@@ -9026,7 +9048,7 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-17 17:08:50</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-17 17:10:28</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Profiled in</span> <span class="v">0.14 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
@@ -9120,7 +9142,7 @@ body.suricata-standalone:not(.light) {
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260817-170850-2793" data-original-markdown=""
+            data-report-id="20260817-171028-9294" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>
@@ -9706,7 +9728,8 @@ body.suricata-standalone:not(.light) {
 
         <footer class="page" role="contentinfo">
           <p>
-            Powered by <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata</a>.
+            Built with <a href="https://github.com/alvarodiez20/pysuricata" target="_blank" rel="noreferrer">pysuricata</a>,
+            developed by <a href="https://github.com/alvarodiez20" target="_blank" rel="noreferrer">alvarodiez20</a>.
           </p>
         </footer>
 
