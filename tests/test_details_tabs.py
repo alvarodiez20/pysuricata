@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -294,3 +295,75 @@ class TestTheActiveMarkerIsOnTheLabel:
         assert "border-bottom: 2px" not in button.group(1), (
             "the underline is back on the 44px tap box"
         )
+
+
+class TestTheDatetimePanesSayWhatTheyKnow:
+    """5c.4 and 5c.5 of #155."""
+
+    @pytest.fixture(scope="class")
+    def report(self) -> str:
+        rng = np.random.default_rng(0)
+        return profile(
+            pd.DataFrame(
+                {
+                    # A record every 17 minutes: the design's motivating case.
+                    "regular": pd.date_range("2026-01-01", periods=900, freq="17min"),
+                    "events": pd.to_datetime(
+                        np.sort(rng.integers(1_577_836_800, 1_735_689_600, 900)),
+                        unit="s",
+                    ),
+                }
+            ),
+            seed=0,
+        ).html
+
+    def _card(self, report: str, column: str) -> str:
+        start = report.index(f'id="col_{column}"')
+        return report[start : report.index("</article>", start)]
+
+    def test_a_generated_series_says_so_first(self, report):
+        """It was a table row reading `Interval std dev — 0.0 seconds`, filed
+        alphabetically between timezone and weekend ratio. A deviation of zero
+        means every gap is identical, which is what anyone opens a datetime
+        column to ask."""
+        card = self._card(report, "regular")
+        assert "Every gap is identical" in card
+        assert "17.0 minutes" in card
+
+    def test_an_event_stream_is_not_called_a_schedule(self, report):
+        card = self._card(report, "events")
+        assert "vary widely" in card
+        assert "Every gap is identical" not in card
+
+    def test_the_claim_of_identical_gaps_needs_exactly_zero(self):
+        """A nearly-regular series is a different and weaker statement."""
+        from pysuricata.render.datetime_card import DateTimeCardRenderer
+
+        renderer = DateTimeCardRenderer()
+        nearly = SimpleNamespace(
+            avg_interval_seconds=1020.0, interval_std_seconds=0.001
+        )
+        assert "Every gap is identical" not in renderer._interval_sentence(nearly)
+
+    def test_a_single_year_draws_no_year_chart(self, report):
+        """`by_year` is a dict, so one year renders a single bar at full
+        height — a chart whose only reading is "all of it"."""
+        card = self._card(report, "regular")
+        assert "Every record falls in 2026" in card
+        assert "Year Distribution" not in card
+
+    def test_several_years_keep_the_chart(self, report):
+        card = self._card(report, "events")
+        assert "Year Distribution" in card
+
+    def test_each_panel_carries_its_own_peak(self, report):
+        """A 211-record hour and a 2,626-record month drew identically, and the
+        peaks that would resolve it lived in a different tab."""
+        card = self._card(report, "regular")
+        peaks = re.findall(r'class="temporal__peak">peak ([^<]+)<', card)
+        assert len(peaks) >= 3, peaks
+
+    def test_the_per_chart_scale_is_stated(self, report):
+        """Heights compare within a chart and not between them, and a reader
+        should not have to discover that."""
+        assert "scaled to its own peak" in self._card(report, "regular")

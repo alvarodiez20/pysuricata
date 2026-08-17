@@ -732,47 +732,140 @@ class DateTimeCardRenderer(CardRenderer):
         </div>
         """
 
-    def _build_temporal_distributions(self, stats: DateTimeStats) -> str:
-        """Build temporal distribution charts (hour/DOW/month/year).
+    def _interval_sentence(self, stats: DateTimeStats) -> str:
+        """The strongest fact about the column, said first.
 
-        Args:
-            stats: DateTimeStats object
+        Phase 5c.5 (#155). On a machine-generated series this was a table row
+        reading `Interval std dev — 0.0 seconds`, filed alphabetically between
+        timezone and weekend ratio. A standard deviation of zero means *every
+        gap is identical*: a record every 17 minutes, no gaps at all. That is
+        what anyone opens a datetime column to ask, and it was the least
+        prominent thing on the card.
 
-        Returns:
-            HTML string with temporal distribution charts
+        Only the free half of the design's proposal is taken. The mean and the
+        standard deviation are already computed; a longest gap and its
+        timestamp would need new state kept alongside the interval array, and
+        that is a change to the accumulator rather than to this pane.
         """
-        # Get temporal data
+        average = getattr(stats, "avg_interval_seconds", None)
+        deviation = getattr(stats, "interval_std_seconds", None)
+        if not isinstance(average, (int, float)) or average <= 0:
+            return ""
+        if not isinstance(deviation, (int, float)) or deviation < 0:
+            return ""
+
+        gap = self._humanise_seconds(average)
+        # Exactly zero, not merely small: the claim "every gap is identical" is
+        # only true at zero, and a series that is nearly regular is a different
+        # and weaker statement.
+        if deviation == 0:
+            return (
+                f"Every gap is identical: one record every {gap}, with no "
+                "irregularity at all. That is a generated series rather than "
+                "observed events."
+            )
+
+        spread = deviation / average
+        if spread < 0.1:
+            return (
+                f"A record every {gap} on average, and the gaps barely vary "
+                f"(± {self._humanise_seconds(deviation)}). Close to regular."
+            )
+        return (
+            f"A record every {gap} on average, but the gaps vary widely "
+            f"(± {self._humanise_seconds(deviation)}) — this is an event "
+            "stream, not a schedule."
+        )
+
+    @staticmethod
+    def _humanise_seconds(seconds: float) -> str:
+        """A duration in the largest unit that keeps it above one."""
+        for size, unit in (
+            (86400.0, "day"),
+            (3600.0, "hour"),
+            (60.0, "minute"),
+        ):
+            if seconds >= size:
+                value = seconds / size
+                return f"{value:.1f} {unit}{'s' if round(value, 1) != 1.0 else ''}"
+        return f"{seconds:.1f} second{'s' if round(seconds, 1) != 1.0 else ''}"
+
+    def _build_temporal_distributions(self, stats: DateTimeStats) -> str:
+        """The four small multiples, each saying what it is a picture of.
+
+        Phase 5c.4 (#155). They had an `<h4>` each and nothing else, so a
+        211-record hour and a 2,626-record month drew identically -- and the
+        peaks that would have resolved it lived in a different tab. Each
+        header now carries its own peak, which the card already computed.
+
+        **The year chart is dropped when the span is inside one year.**
+        `by_year` is a dict, so a single year renders one bar at full height:
+        a chart whose only reading is "all of it". The span is a sentence
+        instead.
+
+        The zero-based y axis, the `RECORDS` unit and rule 3 (a zero count
+        draws nothing) are already in `temporal_charts.py` and are not touched
+        here -- that part of the audit was stale.
+        """
         hour_counts = getattr(stats, "by_hour", None) or [0] * 24
         dow_counts = getattr(stats, "by_dow", None) or [0] * 7
         month_counts = getattr(stats, "by_month", None) or [0] * 12
         year_data = getattr(stats, "by_year", None) or {}
 
-        # Render charts
-        hour_svg = self.temporal_renderer.render_hour_chart(hour_counts)
-        dow_svg = self.temporal_renderer.render_dow_chart(dow_counts)
-        month_svg = self.temporal_renderer.render_month_chart(month_counts)
-        year_svg = self.temporal_renderer.render_year_chart(year_data)
+        panels = [
+            (
+                "Hour of day",
+                self._get_peak_hour(stats),
+                self.temporal_renderer.render_hour_chart(hour_counts),
+            ),
+            (
+                "Day of week",
+                self._get_peak_day(stats),
+                self.temporal_renderer.render_dow_chart(dow_counts),
+            ),
+            (
+                "Month",
+                self._get_peak_month(stats),
+                self.temporal_renderer.render_month_chart(month_counts),
+            ),
+        ]
 
-        return f"""
-        <div class="temporal-grid">
-            <div class="temporal-item">
-                <h4>Hour of Day</h4>
-                {hour_svg}
-            </div>
-            <div class="temporal-item">
-                <h4>Day of Week</h4>
-                {dow_svg}
-            </div>
-            <div class="temporal-item">
-                <h4>Month</h4>
-                {month_svg}
-            </div>
-            <div class="temporal-item">
-                <h4>Year</h4>
-                {year_svg}
-            </div>
-        </div>
-        """
+        populated_years = [year for year, n in year_data.items() if n]
+        if len(populated_years) > 1:
+            panels.append(
+                (
+                    "Year",
+                    self._get_peak_year(stats),
+                    self.temporal_renderer.render_year_chart(year_data),
+                )
+            )
+            year_note = ""
+        elif populated_years:
+            year_note = (
+                f'<p class="temporal__span">Every record falls in '
+                f"{populated_years[0]}, so there is no year distribution to "
+                "draw.</p>"
+            )
+        else:
+            year_note = ""
+
+        items = "".join(
+            f'<div class="temporal-item">'
+            f'<h4 class="temporal__head"><span>{title}</span>'
+            + (f'<span class="temporal__peak">peak {peak}</span>' if peak else "")
+            + f"</h4>{svg}</div>"
+            for title, peak, svg in panels
+        )
+
+        # Each chart has its own scale, so their heights cannot be compared to
+        # one another. A shared scale would fix that and flatten the hour chart
+        # to nothing -- a real trade, taken on the readable side, and said out
+        # loud rather than left for a reader to discover.
+        caption = (
+            '<p class="temporal__caption">each chart is scaled to its own '
+            "peak, so heights compare within a chart and not between them</p>"
+        )
+        return f'<div class="temporal-grid">{items}</div>{year_note}{caption}'
 
     def _build_details_section(self, col_id: str, stats: DateTimeStats) -> str:
         """Details tabs, minus the ones with nothing to say (#154, 5b.4).
@@ -784,6 +877,12 @@ class DateTimeCardRenderer(CardRenderer):
         stats_table = self._build_temporal_statistics_table(stats)
         missing_table = self._build_missing_values_table(stats)
         temporal_charts = self._build_temporal_distributions(stats)
+
+        # The regularity sentence leads the pane. It was a table row filed
+        # alphabetically, and it is the strongest thing the column knows.
+        sentence = self._interval_sentence(stats)
+        if sentence:
+            stats_table = f'<p class="fence-lede">{sentence}</p>{stats_table}'
 
         return self._build_tabbed_details(
             col_id,
