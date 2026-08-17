@@ -38,7 +38,13 @@ import sys
 import tempfile
 import time
 
-from benchmarks.end_to_end import MIN_QUOTABLE_ROUNDS, environment
+from benchmarks.end_to_end import (
+    MIN_QUOTABLE_ROUNDS,
+    _report_load,
+    environment,
+    load_average,
+    load_guard,
+)
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -209,7 +215,21 @@ def main(argv=None) -> int:
     ap.add_argument("--timeout", type=int, default=900)
     ap.add_argument("--json", default=None)
     ap.add_argument("--markdown", default=None)
+    ap.add_argument(
+        "--force",
+        action="store_true",
+        help="Measure even when the machine is busy. The load is still "
+        "recorded with the results, so the caveat travels with them.",
+    )
     args = ap.parse_args(argv)
+
+    # Before the environments are built, not after: building five of them takes
+    # minutes, and refusing at the end of that is a worse experience than
+    # refusing at the start.
+    load_start, refusal = load_guard(args.force)
+    if refusal:
+        print(f"refusing to measure: {refusal}", file=sys.stderr)
+        return 2
 
     if shutil.which("uv") is None:
         print("uv is required to build the per-version environments", file=sys.stderr)
@@ -248,9 +268,16 @@ def main(argv=None) -> int:
         "scale": args.scale,
         "rounds": args.rounds,
         "quotable": args.rounds >= MIN_QUOTABLE_ROUNDS,
+        # Both ends: a load average lags, so a job that starts during the run
+        # is invisible to the reading taken before it.
+        "load_start": load_start,
+        "load_end": load_average(),
+        "forced": bool(args.force),
         "baseline": next(iter(results), None),
         "results": results,
     }
+    print()
+    _report_load(payload)
     print()
     print(to_markdown(payload))
 

@@ -728,15 +728,6 @@
 }
 
 
-/* Make the histogram fill the same height as the tables */
-
-
-/* Override any generic SVG sizing (e.g., .viz svg { height:80px }) so the hist grows */
-
-
-/* Stack on narrow screens */
-}
-
 /* Ensure tables have bottom margin to align with histogram tick labels */
 
 

@@ -56,6 +56,69 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **Three stray `}` were swallowing a media query, and the Common Values table
+  lost its responsive rules** ([#232]). The stylesheets had 1,123 opening braces
+  against 1,126 closing ones. That reads like a tidy-up and was not.
+
+  One stray was harmless — a bare `}` at top level in `_06-cards.css`, left
+  behind when a `@media` block's contents were deleted; a parser discards it.
+  The other two were a different shape, in `_08-categorical.css`:
+
+  ```css
+  #pysuricata-report .common-values-table.enhanced
+  }
+  ```
+
+  A selector with no block. A parser accumulates a prelude until the first `{`,
+  and with the block missing **the next `{` in the file gets claimed instead** —
+  here the `@media (max-width: 768px)` two lines below. The media query became
+  part of an invalid selector and was dropped with it.
+
+  Measured in Chromium, both ways: **993 style rules and 37 media rules before,
+  995 and 38 after**, with `font-size: 0.7rem` and `width: 60px` recovered. The
+  user-visible consequence was that the Common Values table rendered at
+  **12.8px at a 500px viewport**, the desktop size, where the stylesheet has
+  said 11.2px since the rule was written. Unchanged at 1240px.
+
+  The fragments date to #23's CSS modularization, so they had been dropping
+  those rules for a long time. `tests/test_css_integrity.py` gains both a brace
+  balance check and — because a count says *that* something is wrong and not
+  *what* — a check for the specific shape, a selector followed by `}` instead of
+  `{`. Both catch their regression.
+
+### Added
+
+- **The benchmark harnesses refuse to measure on a busy machine** ([#212]). The
+  rule this project measures by — *both sides in the same round-robin, on the
+  same machine, within the same run* — cancels drift between the things being
+  compared. **It does not cancel a neighbour**, because the neighbour is not in
+  the round-robin, and that nearly published a claim: a run put 0.0.61 at
+  1,599 ms against 0.0.42's 1,448, a **10.5% regression** on a harness that
+  reproduces to ±1%, with a ready-made culprit in the abstraction boundary #108
+  had just added to the accumulator hot path. Bisecting seven commits refused it
+  — 1,203 to 1,271 ms, no trend, HEAD at 1.008× — and the cause was the coverage
+  suite running in parallel, competing for two cores with the benchmark
+  measuring against it.
+
+  `load_guard()` reads the one-minute load average and refuses above one per
+  core, with `--force` for anyone who knows what the neighbour is. The load is
+  recorded at **both ends** and exported with the results, because the reading
+  taken before a run cannot see a job that starts during it — a suite already
+  running is caught by the opening check, one launched a minute later is only
+  visible in the closing one. A run that ends busy prints a warning saying not
+  to quote a ratio from it.
+
+  `versions.py` imports the guard rather than reimplementing it, so there is one
+  threshold rather than two that drift. Where the OS has no `getloadavg`
+  (Windows), the check is skipped and says so rather than inventing a number.
+
+  The clause is now in `CLAUDE.md` beside the rule it amends, and
+  `tests/test_benchmark_load_guard.py` asserts it is there — a rule that lives
+  only in a document is what let this happen, so the test fails if the note is
+  removed. All four mutations of the guard are caught, including that one.
+
+### Fixed
+
 - **Categorical and boolean columns track their own chunks, so the Missing
   Values pane is gated the same way on all four card kinds** ([#193]). #154's
   5b.7 set the rule — render the pane only when **missing > 0 and chunks > 1**,
@@ -284,6 +347,8 @@ quoted when both sides were measured in the same round-robin run.
 [#193]: https://github.com/alvarodiez20/pysuricata/issues/193
 [#206]: https://github.com/alvarodiez20/pysuricata/issues/206
 [#209]: https://github.com/alvarodiez20/pysuricata/issues/209
+[#212]: https://github.com/alvarodiez20/pysuricata/issues/212
+[#232]: https://github.com/alvarodiez20/pysuricata/issues/232
 
 ## [0.1.1] - 2026-08-17
 
