@@ -1,0 +1,55 @@
+/* Print and PDF.
+   ==========================================================================
+
+   The report had no print rules at all, which made paper the one output that
+   lied. Pagination hides off-page cards with `display: none` (see
+   `pagination.js`), and `display: none` is not printed -- so a 60-column
+   profile exported as **10 columns**, with nothing on the page saying the
+   other 50 existed. Silent truncation of an artefact that looks complete is
+   worse than a visible failure: nobody re-checks a PDF that looks finished.
+
+   The rules below are all overrides of screen behaviour. Nothing here changes
+   what a browser shows. */
+
+@media print {
+  /* Every card, not the current page of them. `!important` because
+     `pagination.js` writes `display` as an inline style, which nothing else
+     can outrank. */
+  #pysuricata-report #cards-grid .var-card {
+    display: block !important;
+  }
+
+  /* A card is one unit of reading. Splitting one across a page boundary puts
+     its chart on one sheet and its numbers on the next. */
+  #pysuricata-report .var-card,
+  #pysuricata-report .summary-card,
+  #pysuricata-report figure {
+    break-inside: avoid;
+  }
+
+  /* Controls that do nothing on paper: the page buttons, the search box, the
+     type tabs, the theme toggle and the download button. They are not
+     decoration to be dimmed -- on a sheet of paper they are instructions the
+     reader cannot follow. */
+  #pysuricata-report .pagination,
+  #pysuricata-report .vars-controls,
+  #pysuricata-report .appbar .icon-btn,
+  #pysuricata-report .attention-hint {
+    display: none !important;
+  }
+
+  /* The section a reader arrives at first should not start halfway down a
+     sheet. */
+  #pysuricata-report .section-title {
+    break-after: avoid;
+  }
+
+  /* Backgrounds and fills carry meaning here -- a quality band, a bar's
+     length, the composition stack -- so they are not decoration a printer may
+     drop. Browsers honour this only when the user leaves "background graphics"
+     on, which is why the bars also differ by position and shape. */
+  #pysuricata-report {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

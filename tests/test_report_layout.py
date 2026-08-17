@@ -137,7 +137,14 @@ class TestTheReportIsOneFile:
 #: Found by the ratchet rather than by looking for it. A datetime-chart change
 #: added 907 bytes of CSS and pushed the report 578 over, which is a fair thing
 #: to be stopped by -- and the honest fix was not to write shorter comments.
-BYTES_BASELINE = 500_000
+#:
+#: 500,000 -> 488,000 by not shipping the *scripts'* comments either. The same
+#: argument and the same measurement, on the half that had been left out:
+#: **15,551 bytes, 20% of the inlined JavaScript.** #240's print rules and deep
+#: links cost 2,667 and were what pushed the report over -- the ratchet refused
+#: them, correctly, and the way to pay for a feature turned out to be six times
+#: larger than the feature.
+BYTES_BASELINE = 488_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
@@ -498,3 +505,128 @@ def test_the_themes_do_not_change_the_layout(measurements):
         assert light["header_height"] == dark["header_height"], width
         assert light["summary_height"] == dark["summary_height"], width
         assert len(light["undersized"]) == len(dark["undersized"]), width
+
+
+# --------------------------------------------------------------------------- #
+# Pagination must not take a card out of the document's reach
+# --------------------------------------------------------------------------- #
+@pytest.mark.browser
+class TestAnOffPageCardIsStillReachable:
+    """#240. `pagination.js` hides off-page cards with `display: none`, which
+    is not a rendering choice but a removal: the browser finds no target for a
+    fragment link, and prints nothing at all.
+
+    Four things broke on that, and two of them have universal fixes -- links
+    and paper. Both are asserted here. Browser find-in-page over hidden content
+    is the third and cannot be fixed while pagination hides cards; see the
+    issue.
+    """
+
+    @staticmethod
+    def _page(playwright, browser, report_html, tmp_path, hash_fragment=""):
+        page_file = tmp_path / "report.html"
+        page_file.write_text(report_html, encoding="utf-8")
+        page = browser.new_page(viewport={"width": 1240, "height": 900})
+        page.goto(page_file.as_uri() + hash_fragment)
+        page.wait_for_timeout(700)
+        return page
+
+    @pytest.fixture(scope="class")
+    def browser(self):
+        playwright = pytest.importorskip(
+            "playwright.sync_api", reason="this needs Playwright"
+        )
+        launch = {}
+        if chrome := _chrome():
+            launch["executable_path"] = chrome
+        with playwright.sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**launch)
+            except Exception as exc:
+                pytest.skip(f"Chromium is not available: {exc}")
+            yield browser
+            browser.close()
+
+    def test_every_attention_link_resolves_to_a_card(self, report_html):
+        """The block exists to be clicked. A link naming a column that is not
+        in the document is the failure this cannot be allowed to have."""
+        body = _without_script_and_style(report_html)
+        targets = set(re.findall(r'class="attention-col" href="#([^"]+)"', body))
+        if not targets:
+            pytest.skip("this frame raised no quality flags")
+        ids = set(re.findall(r'<article class="var-card" id="([^"]+)"', body))
+        assert targets <= ids, sorted(targets - ids)
+
+    def test_a_link_to_an_off_page_card_reveals_it(
+        self, browser, report_html, tmp_path
+    ):
+        page = self._page(None, browser, report_html, tmp_path)
+        hidden = page.evaluate(
+            "[...document.querySelectorAll('#cards-grid .var-card')]"
+            ".filter(c => c.style.display === 'none').map(c => c.id)"
+        )
+        if not hidden:
+            pytest.skip("this frame fits on one page")
+        target = hidden[-1]
+        page.evaluate(
+            "id => document.querySelector(`a[href='#${id}']`)?.click()"
+            " ?? (location.hash = id)",
+            target,
+        )
+        page.wait_for_timeout(400)
+        assert page.evaluate(
+            "id => document.getElementById(id).getBoundingClientRect().height > 0",
+            target,
+        ), f"{target} is on another page and the link did not go there"
+        page.close()
+
+    def test_a_deep_link_opens_on_the_right_page(self, browser, report_html, tmp_path):
+        page = self._page(None, browser, report_html, tmp_path)
+        hidden = page.evaluate(
+            "[...document.querySelectorAll('#cards-grid .var-card')]"
+            ".filter(c => c.style.display === 'none').map(c => c.id)"
+        )
+        page.close()
+        if not hidden:
+            pytest.skip("this frame fits on one page")
+        target = hidden[-1]
+        fresh = self._page(None, browser, report_html, tmp_path, f"#{target}")
+        assert fresh.evaluate(
+            "id => document.getElementById(id).getBoundingClientRect().height > 0",
+            target,
+        ), f"opening the report at #{target} left it on page 1"
+        fresh.close()
+
+    def test_print_shows_every_card(self, browser, report_html, tmp_path):
+        """The worst of the four: a 60-column profile exported as 10 columns
+        with nothing saying so. Read by re-targeting the print media query at
+        the screen, which exercises the real cascade rather than the rule text.
+        """
+        page = self._page(None, browser, report_html, tmp_path)
+        result = page.evaluate("""() => {
+  const cards = [...document.querySelectorAll('#cards-grid .var-card')];
+  const visible = () => cards.filter(c => c.getBoundingClientRect().height > 0).length;
+  const onScreen = visible();
+  let rule = null;
+  for (const s of [...document.styleSheets]) {
+    let rules; try { rules = s.cssRules; } catch { continue; }
+    for (const r of rules) {
+      if (r.type === CSSRule.MEDIA_RULE && r.conditionText.includes('print')) { rule = r; break; }
+    }
+    if (rule) break;
+  }
+  if (!rule) return {error: 'no @media print block ships with the report'};
+  rule.media.mediaText = 'screen';
+  const onPaper = visible();
+  const controls = getComputedStyle(document.querySelector('.pagination')).display;
+  rule.media.mediaText = 'print';
+  return {onScreen, onPaper, total: cards.length, controls};
+}""")
+        page.close()
+        assert "error" not in result, result.get("error")
+        assert result["onPaper"] == result["total"], (
+            f"{result['onPaper']} of {result['total']} cards would print"
+        )
+        assert result["controls"] == "none", (
+            "the page buttons print as instructions the reader cannot follow"
+        )

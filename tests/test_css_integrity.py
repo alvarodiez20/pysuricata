@@ -7,11 +7,16 @@ breakpoint standardization) and HTML template quality (no inline event handlers)
 import glob
 import os
 import re
+import shutil
+import subprocess
+import tempfile
+from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from pysuricata import profile
-from pysuricata.utils import strip_css_comments
+from pysuricata.utils import strip_css_comments, strip_js_comments
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -27,6 +32,11 @@ def _css_dir():
         "static",
         "css",
     )
+
+
+def _js_dir():
+    """`static/js/`, found the same way `_css_dir` finds its sibling."""
+    return Path(_css_dir()).parent / "js"
 
 
 def _concatenated_css():
@@ -110,7 +120,14 @@ def test_important_count_within_budget():
     """Only prefers-reduced-motion and documented exceptions may use !important."""
     css = _concatenated_css()
     count = css.count("!important")
-    budget = 6  # 4 reduced-motion + 1 legacy kill switch + 1 buffer
+    # 4 reduced-motion + 1 legacy kill switch + 2 print + 1 buffer.
+    #
+    # The print pair is the one kind this rule's advice does not cover. It says
+    # "fix specificity instead", and specificity cannot reach them: pagination.js
+    # writes `display` as an *inline style*, and no selector outranks an inline
+    # style. `!important` is the only mechanism that does. Without it a printed
+    # report silently contains one page of cards -- see #240.
+    budget = 8
     assert count <= budget, (
         f"Found {count} !important declarations (budget: {budget}). "
         "Fix specificity instead of adding !important."
@@ -321,3 +338,98 @@ def test_a_selector_is_never_left_without_its_block():
             offenders.append(f"{os.path.basename(path)}: {selector!r} has no block")
 
     assert not offenders, "; ".join(offenders)
+
+
+# --------------------------------------------------------------------------- #
+# The scripts' comments do not ship either
+# --------------------------------------------------------------------------- #
+class TestScriptCommentsStayInTheSource:
+    """The other half of the argument that took 74,036 bytes of CSS comments
+    out of the report. Measured across `static/js/`: **15,551 bytes, 20% of the
+    inlined JavaScript**, shipped to every reader of every report.
+
+    A regex cannot do this one. CSS has no construct in which `/*` means
+    something else; JavaScript has three, and each appears in these files -- a
+    string holding a URL, a template literal, and a regex literal in which `/`
+    opens a pattern. Every case below is one a substitution gets wrong, and
+    each corrupts the script *silently*: the report still renders, and one
+    control stops working.
+    """
+
+    def test_a_line_comment_goes(self):
+        assert strip_js_comments("let a = 1; // why\nlet b = 2;") == (
+            "let a = 1; \nlet b = 2;"
+        )
+
+    def test_a_block_comment_goes_but_its_line_break_survives(self):
+        """Dropping the newline as well joins two statements into one line,
+        which is legal but turns any later diff into noise."""
+        out = strip_js_comments("let a = 1;\n/* why\n   at length */\nlet b = 2;")
+        assert "why" not in out
+        assert "let a = 1;" in out and "let b = 2;" in out
+
+    def test_a_url_in_a_string_is_not_a_comment(self):
+        source = 'const docs = "https://example.com/x";'
+        assert strip_js_comments(source) == source
+
+    def test_a_template_literal_survives_whole(self):
+        source = "const t = `a // b /* c */ d`;"
+        assert strip_js_comments(source) == source
+
+    def test_a_regex_literal_containing_comment_markers_survives(self):
+        """`/\\/\\*/` is a valid pattern matching the characters `/*`. Read as
+        a comment opener it swallows the rest of the file."""
+        source = "const re = /\\/\\*/; let after = 1;"
+        assert strip_js_comments(source) == source
+
+    def test_a_character_class_holding_a_slash_survives(self):
+        source = "const re = /[/*]/g; let after = 1;"
+        assert strip_js_comments(source) == source
+
+    def test_division_is_not_mistaken_for_a_regex(self):
+        source = "const ratio = width / height; const half = total / 2;"
+        assert strip_js_comments(source) == source
+
+    def test_the_preserve_convention_is_honoured(self):
+        source = "/*! keep me */\nlet a = 1;"
+        assert "keep me" in strip_js_comments(source)
+
+    def test_an_escaped_quote_does_not_end_the_string(self):
+        source = 'const s = "a \\" // still in the string";'
+        assert strip_js_comments(source) == source
+
+    @pytest.mark.parametrize(
+        "path", sorted(_js_dir().glob("*.js")), ids=lambda p: p.name
+    )
+    def test_every_shipped_script_still_parses(self, path):
+        """Byte savings are worthless if the script no longer runs. `node` is
+        the only parser that agrees with the browsers this ships to; where it
+        is absent the check skips rather than pretending."""
+        node = shutil.which("node")
+        if not node:
+            pytest.skip("node is not on PATH")
+        stripped = strip_js_comments(path.read_text(encoding="utf-8"))
+        with tempfile.NamedTemporaryFile(
+            "w", suffix=".js", delete=False, encoding="utf-8"
+        ) as handle:
+            handle.write(stripped)
+            temp = handle.name
+        try:
+            result = subprocess.run(
+                [node, "--check", temp], capture_output=True, text=True
+            )
+        finally:
+            os.unlink(temp)
+        assert result.returncode == 0, result.stderr
+
+    def test_the_saving_is_real(self):
+        source = _js_dir().glob("*.js")
+        before = after = 0
+        for path in source:
+            text = path.read_text(encoding="utf-8")
+            before += len(text)
+            after += len(strip_js_comments(text))
+        assert after < before * 0.9, (
+            f"{before - after:,} bytes saved of {before:,}; the comments have "
+            "either gone from the source or stopped being stripped"
+        )
