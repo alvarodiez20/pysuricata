@@ -14,6 +14,20 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-08-17
+
+**The contract written at 0.1.0, held.** Nothing covered by `docs/versioning.md`
+broke: the `summarize()` payload gained `duplicate_rows_uncertainty` and lost
+nothing, so `schema_version` stays at `1`; no public name was removed;
+`ReportConfig` warns rather than disappearing, with 0.3.0 as its date. Verified
+by diffing the payload's key set against the 0.1.0 tag rather than by reading
+this file — zero removed, one added.
+
+The largest changes are in the report's HTML, which that page deliberately does
+not cover, and in the documentation, which is now checked against the live
+library instead of trusted.
+
+
 ### Fixed
 
 - **The README documented a project several releases behind** ([#151]). Every
@@ -1988,7 +2002,9 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/alvarodiez20/pysuricata/compare/0.0.73...v0.1.0
 [0.0.61]: https://github.com/alvarodiez20/pysuricata/compare/0.0.60...0.0.61
 [0.0.60]: https://github.com/alvarodiez20/pysuricata/compare/0.0.59...0.0.60
 [0.0.59]: https://github.com/alvarodiez20/pysuricata/compare/0.0.58...0.0.59
