@@ -7031,8 +7031,37 @@ body.suricata-standalone:not(.light) {
 #pysuricata-report .description-content em {
   font-style: italic;
 }
+
+@media print {
+  
+  #pysuricata-report #cards-grid .var-card {
+    display: block !important;
+  }
+
+  #pysuricata-report .var-card,
+  #pysuricata-report .summary-card,
+  #pysuricata-report figure {
+    break-inside: avoid;
+  }
+
+  #pysuricata-report .pagination,
+  #pysuricata-report .vars-controls,
+  #pysuricata-report .appbar .icon-btn,
+  #pysuricata-report .attention-hint {
+    display: none !important;
+  }
+
+  #pysuricata-report .section-title {
+    break-after: avoid;
+  }
+
+  #pysuricata-report {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
 </style>
-  <script>/* --- Core action handlers (no inline onclick) --- */
+  <script>
 (function () {
   'use strict';
 
@@ -7044,12 +7073,6 @@ body.suricata-standalone:not(.light) {
 
     var body = document.body;
 
-    // Suppress transitions across the flip, or the theme arrives in waves: the
-    // stylesheet's hover transitions animate colour too, at every duration from
-    // .12s to .3s, and each section catches up in its own time. The reflows are
-    // load-bearing — they flush the suppression before the colours move, and the
-    // new colours before it is lifted. Without them the browser coalesces all
-    // three class changes into one style pass and animates anyway.
     root.classList.add('theme-switching');
     if (body) body.classList.add('theme-switching');
     void root.offsetHeight;
@@ -7113,8 +7136,6 @@ body.suricata-standalone:not(.light) {
     }
   }
 
-  // An explicit `behavior` beats the CSS `scroll-behavior` property, so the
-  // reduced-motion rule in _01-base.css cannot reach these on its own.
   function motionBehavior() {
     return window.matchMedia &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -7126,7 +7147,6 @@ body.suricata-standalone:not(.light) {
     window.scrollTo({ top: 0, behavior: motionBehavior() });
   }
 
-  // Delegated click handler for data-action attributes
   document.addEventListener('click', function (e) {
     var actionEl = e.target.closest('[data-action]');
     if (!actionEl) return;
@@ -7156,7 +7176,6 @@ body.suricata-standalone:not(.light) {
     }
   });
 
-  // Sample details toggle text
   var sampleDetails = document.getElementById('sample-details');
   if (sampleDetails) {
     sampleDetails.addEventListener('toggle', function () {
@@ -7166,7 +7185,7 @@ body.suricata-standalone:not(.light) {
       }
     });
   } else {
-    // Retry on DOMContentLoaded if not yet available
+    
     document.addEventListener('DOMContentLoaded', function () {
       var el = document.getElementById('sample-details');
       if (el) {
@@ -7180,13 +7199,11 @@ body.suricata-standalone:not(.light) {
     });
   }
 
-  // Expose for backward compatibility (e.g. downloaded reports)
   window.toggleDarkModeScoped = toggleDarkMode;
   window.downloadReport = downloadReport;
   window.scrollToTop = scrollToTop;
 })();
 
-// --- Header pin/unpin toggle (scoped to #pysuricata-report) ---
 (function () {
   const ROOT_ID = 'pysuricata-report';
   const PIN_BTN_ID = 'pin-button';
@@ -7201,9 +7218,7 @@ body.suricata-standalone:not(.light) {
     if (pinned) {
       root.classList.remove('unpinned');
       try { localStorage.setItem(STORAGE_KEY, 'true'); } catch (e) { }
-      // title as well as aria-label: updating only the latter left the
-      // tooltip saying "Unpin header" on a header that was already unpinned,
-      // so the accessible name and the visible one disagreed.
+
       if (btn) { btn.setAttribute('aria-label', 'Unpin header'); btn.title = 'Unpin header'; }
       if (iconOn) iconOn.style.display = '';
       if (iconOff) iconOff.style.display = 'none';
@@ -7216,22 +7231,18 @@ body.suricata-standalone:not(.light) {
     }
   }
 
-  // Public toggle — called via data-action delegation
   function togglePin() {
     const current = (function () { try { return localStorage.getItem(STORAGE_KEY) !== 'false'; } catch (e) { return true; } })();
     setPinned(!current);
     return false;
   }
   window._pysuricataTogglePin = togglePin;
-  // Legacy alias for backward compatibility (downloaded reports)
+  
   window.toggleHeaderPinScoped = togglePin;
 
-  // Insert a pin link into the quick nav if one isn't present
   function ensurePinButton() {
     if (document.getElementById(PIN_BTN_ID)) return;
-    // The icon group, not the nav. A pin dropped into .quick lands among the
-    // text section links, and on mobile into the rail that has to fit five
-    // labels at 390px without scrolling.
+
     const quickNav = document.querySelector('#pysuricata-report .bar-actions')
       || document.querySelector('#pysuricata-report .quick');
     if (!quickNav) return;
@@ -7267,7 +7278,6 @@ body.suricata-standalone:not(.light) {
   });
 })();
 
-// --- Histogram controls: bins + scale (per-card, scoped to #pysuricata-report) ---
 (function () {
   const ROOT_ID = 'pysuricata-report';
   document.addEventListener('click', function (e) {
@@ -7275,18 +7285,17 @@ body.suricata-standalone:not(.light) {
     if (!btn) return;
     const root = document.getElementById(ROOT_ID);
     if (!root || !root.contains(btn)) return;
-    // Ignore Details toggle buttons; handled by dedicated listener below
+    
     if (btn.classList && btn.classList.contains('details-toggle')) return;
 
     const controls = btn.closest('.hist-controls');
     const card = btn.closest('.var-card');
     if (!controls || !card) return;
 
-    // Update state from the clicked button
     if (btn.hasAttribute('data-bin')) {
       const b = btn.getAttribute('data-bin');
       controls.dataset.bin = b;
-      // Activate only within the bin-group
+      
       const binGroup = controls.querySelector('.bin-group');
       if (binGroup) {
         binGroup.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === btn));
@@ -7295,7 +7304,7 @@ body.suricata-standalone:not(.light) {
     if (btn.hasAttribute('data-scale')) {
       const s = btn.getAttribute('data-scale');
       controls.dataset.scale = s;
-      // Activate only within the scale-group
+      
       const scaleGroup = controls.querySelector('.scale-group');
       if (scaleGroup) {
         scaleGroup.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === btn));
@@ -7306,7 +7315,6 @@ body.suricata-standalone:not(.light) {
     const bin = controls.dataset.bin || '25';
     let targetId = `${card.id}-${scale}-bins-${bin}`;
 
-    // Toggle active variant via class (CSS controls display)
     card.querySelectorAll('.hist.variant').forEach(v => v.classList.remove('active'));
     let target = document.getElementById(targetId);
     if (!target) {
@@ -7317,8 +7325,6 @@ body.suricata-standalone:not(.light) {
   }, { passive: true });
 })();
 
-
-/* --- Histogram/Datetime hover tooltip --- */
 (function () {
   const ROOT_ID = 'pysuricata-report';
   function ensureTip() {
@@ -7366,13 +7372,8 @@ body.suricata-standalone:not(.light) {
     }
   }
 
-  // Timeline histogram hover effects with mathematical notation
   document.addEventListener('mousemove', function (e) {
-    // `.hot` rather than `.dt-svg .hot`: #219 rebuilt the timeline as a
-    // `figure.hist` so it could reuse the histogram's classes, and the SVG
-    // became `.hist-svg`. Nothing has carried `.dt-svg` since, so this
-    // selector matched nothing and the timeline's tooltip was dead while its
-    // 60 hotspots carried count, percentage and bucket label (#233).
+
     const timelineHot = e.target.closest('.hot');
     if (timelineHot) {
       const count = timelineHot.getAttribute('data-count') || '0';
@@ -7384,14 +7385,12 @@ body.suricata-standalone:not(.light) {
       return;
     }
 
-    // Temporal distribution chart tooltips (hour/dow/month/year)
     const temporalBar = e.target.closest('.temporal-chart .temporal-bar');
     if (temporalBar) {
       const count = parseInt(temporalBar.getAttribute('data-count') || '0');
       const pct = temporalBar.getAttribute('data-pct') || '0.0';
       const label = temporalBar.getAttribute('data-label') || '';
 
-      // Smart number formatting
       const formattedCount = formatCount(count);
 
       const html = `<div class="line"><strong>${label}</strong></div>` +
@@ -7400,13 +7399,6 @@ body.suricata-standalone:not(.light) {
       return;
     }
 
-    // The donut's segment tooltip is gone with the donut. It existed because
-    // an arc cannot be read to a value, so the number had to be revealed on
-    // hover; the stacked bar prints each count inside its own segment and
-    // lists every count in the legend, including the zeros. A tooltip that
-    // repeats what is already on screen is a hover target that does nothing.
-
-    // Missing values distribution tooltips (chunk and spectrum segments)
     const missingSegment = e.target.closest('.chunk-segment, .spectrum-segment');
     if (missingSegment) {
       const startRow = parseInt(missingSegment.getAttribute('data-start') || '0');
@@ -7414,7 +7406,6 @@ body.suricata-standalone:not(.light) {
       const missingCount = parseInt(missingSegment.getAttribute('data-missing') || '0');
       const pct = missingSegment.getAttribute('data-pct') || '0.0';
 
-      // Smart number formatting for row ranges and counts
       const formattedStart = formatCount(startRow);
       const formattedEnd = formatCount(endRow);
       const formattedMissing = formatCount(missingCount);
@@ -7427,11 +7418,7 @@ body.suricata-standalone:not(.light) {
 
     const bar = e.target.closest('.hist-svg .bar');
     if (!bar) { hideTip(); return; }
-    // Decided by the data the branch needs rather than by an ancestor's class.
-    // A datetime bar labels a bucket; a numeric one spans a range. Keying on
-    // `.dt-svg` meant a container rename silently switched every datetime bar
-    // to the numeric format, printing `Range: [, )` from attributes it does
-    // not have (#233).
+
     const isDt = bar.hasAttribute('data-label');
     const count = bar.getAttribute('data-count') || '0';
     const pct = bar.getAttribute('data-pct') || '0.0';
@@ -7449,7 +7436,6 @@ body.suricata-standalone:not(.light) {
     }
   }, { passive: true });
 
-  // Hide when leaving a histogram entirely
   document.addEventListener('mouseleave', function (e) {
     if (e.target && e.target.closest &&
         (e.target.closest('.hist-svg') ||
@@ -7461,11 +7447,9 @@ body.suricata-standalone:not(.light) {
   }, true);
 })();
 
-/* --- Details section + tabs (full-width) --- */
 (function () {
   const ROOT_ID = 'pysuricata-report';
 
-  // Toggle full-width details section controlled via aria-controls
   document.addEventListener('click', function (e) {
     const btn = e.target.closest('.details-toggle');
     if (!btn) return;
@@ -7485,29 +7469,22 @@ body.suricata-standalone:not(.light) {
         panel.removeAttribute('hidden');
         btn.setAttribute('aria-expanded', 'true');
 
-        // Ask dt mini‑charts to render with actual widths now that panel is visible
         try {
           const ev = new CustomEvent('suricata:dt:render', { detail: { container: panel } });
-          // Single delayed render after layout settles
+          
           setTimeout(() => document.dispatchEvent(ev), 100);
         } catch (e) {
           console.error('Failed to trigger chart render:', e);
         }
       }
-      // Prevent any other listeners (e.g., legacy inline) from double-toggling
+      
       e.stopImmediatePropagation();
       e.preventDefault();
       return;
     }
 
-    // A `.details-panel` fallback for a pre-refactor layout used to run here.
-    // No renderer has emitted that class since the details section landed, so
-    // it was a second code path nobody exercised, reachable only if the first
-    // branch above failed to find its target -- which is precisely when a
-    // silent `return` is the wrong behaviour.
   }, { passive: false });
 
-  // Tab switching inside the details section (or legacy panel)
   document.addEventListener('click', function (e) {
     const tabBtn = e.target.closest('.tabs [role="tab"]');
     if (!tabBtn) return;
@@ -7522,17 +7499,16 @@ body.suricata-standalone:not(.light) {
 
     container.querySelectorAll('.tabs [role="tab"]').forEach(b => b.classList.toggle('active', b === tabBtn));
     container.querySelectorAll('.tab-pane').forEach(p => p.classList.toggle('active', p.getAttribute('data-tab') === name));
-    if (name === 'breakdown') {  // Updated tab name
+    if (name === 'breakdown') {  
       try {
         const ev = new CustomEvent('suricata:dt:render', { detail: { container } });
-        // Single delayed render after layout settles
+        
         setTimeout(() => document.dispatchEvent(ev), 100);
       } catch (e) { }
     }
   }, { passive: true });
 })();
 
-// --- Categorical controls: Top-N + scale (per-card, scoped to #pysuricata-report) ---
 (function () {
   const ROOT_ID = 'pysuricata-report';
   document.addEventListener('click', function (e) {
@@ -7545,15 +7521,12 @@ body.suricata-standalone:not(.light) {
     const card = btn.closest('.var-card');
     if (!controls || !card) return;
 
-    // Only handle cards that have categorical variants
     const hasCat = card.querySelector('.cat.variant');
-    if (!hasCat) return; // let the numeric handler manage others
+    if (!hasCat) return; 
 
-    // Read current state; set sensible defaults
     let topn = controls.dataset.topn || '10';
     let scale = controls.dataset.scale || 'count';
 
-    // Update state & active styles
     if (btn.hasAttribute('data-topn')) {
       topn = btn.getAttribute('data-topn') || topn;
       controls.dataset.topn = topn;
@@ -7571,7 +7544,6 @@ body.suricata-standalone:not(.light) {
       }
     }
 
-    // Prefer a scale-specific variant id if present, else fallback to simple top-N id
     let targetId = `${card.id}-cat-${scale}-top-${topn}`;
     let target = document.getElementById(targetId);
     if (!target) {
@@ -7579,35 +7551,19 @@ body.suricata-standalone:not(.light) {
       target = document.getElementById(targetId);
     }
 
-    // Toggle via active class to align with CSS
     card.querySelectorAll('.cat.variant').forEach(v => v.classList.remove('active'));
     if (target) target.classList.add('active');
   }, { passive: true });
 })();
 
-/* The missing-values tab switcher lived here. #120 replaced the tabs with a
-   route on chunk count, and test_missing_section_views.py asserts the markup
-   stays gone -- so this listened for clicks on elements no report emits. */
 
-/**
- * Tooltip functionality for PySuricata quality flags and numeric chips.
- *
- * Provides hover explanations for data quality indicators with comprehensive
- * definitions, accessibility support, and theme-aware styling.
- *
- * @fileoverview Quality flag tooltip system for PySuricata reports
- * @version 1.0.0
- * @author PySuricata Team
- */
+
 
 (function () {
   'use strict';
 
   const ROOT_ID = 'pysuricata-report';
 
-  /**
-   * Header tooltip definitions for metadata chips.
-   */
   const HEADER_TOOLTIP_DEFINITIONS = {
     'date': {
       title: 'Report Generation Time',
@@ -7626,12 +7582,8 @@ body.suricata-standalone:not(.light) {
     }
   };
 
-  /**
-   * Comprehensive tooltip definitions for all quality flags.
-   * Each definition includes title, description, and severity level.
-   */
   const TOOLTIP_DEFINITIONS = {
-    // Missing data flags
+    
     'missing': {
       title: 'Missing Data',
       description: 'This column contains missing or null values. Critical severity (red) when >20%, warning (orange) when ≤20%. High percentages may indicate data quality issues that need attention.',
@@ -7639,7 +7591,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-quality'
     },
 
-    // Infinite values
     'has-∞': {
       title: 'Infinite Values',
       description: 'This column contains infinite values (∞ or -∞). Critical severity triggered by any infinite value. This typically indicates calculation overflow, division by zero, or data corruption.',
@@ -7647,7 +7598,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-quality'
     },
 
-    // Negative values
     'has-negatives': {
       title: 'Negative Values',
       description: 'This column contains negative values. Warning severity when >10% negative. Consider if this is expected for your data type (e.g., temperatures, deltas) and analysis requirements.',
@@ -7655,7 +7605,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-characteristics'
     },
 
-    // Zero inflation
     'zero‑inflated': {
       title: 'Zero Inflation',
       description: 'This column has a high percentage of zero values. Critical severity (red) when ≥50%, warning (orange) when significant but <50%. May indicate sparse dataset, special zero category, or data quality issues.',
@@ -7663,7 +7612,6 @@ body.suricata-standalone:not(.light) {
       category: 'distribution'
     },
 
-    // Positive only
     'positive‑only': {
       title: 'Positive Only',
       description: 'All values in this column are positive. This is beneficial for certain types of analysis and transformations.',
@@ -7671,7 +7619,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-characteristics'
     },
 
-    // Skewness indicators
     'skewed-right': {
       title: 'Right Skewed',
       description: 'The data is skewed to the right (positive skew, typically >1). Mean > median, with a long right tail. Consider log transformation or other methods to normalize the distribution for analysis.',
@@ -7685,7 +7632,6 @@ body.suricata-standalone:not(.light) {
       category: 'distribution'
     },
 
-    // Heavy tails
     'heavy‑tailed': {
       title: 'Heavy Tailed',
       description: 'The data has heavy tails (high kurtosis, typically |kurtosis| > 3). More extreme values than a normal distribution. This may indicate outliers or non-normal distribution that could affect statistical tests.',
@@ -7693,7 +7639,6 @@ body.suricata-standalone:not(.light) {
       category: 'distribution'
     },
 
-    // Normal distribution
     '≈-normal-(jb)': {
       title: 'Approximately Normal',
       description: 'The data appears to follow a normal distribution based on the Jarque-Bera test (JB χ² < 5.99 at 5% significance). This is ideal for many parametric statistical analyses.',
@@ -7701,7 +7646,6 @@ body.suricata-standalone:not(.light) {
       category: 'distribution'
     },
 
-    // Discrete data
     'discrete': {
       title: 'Discrete Data',
       description: 'This column contains discrete (integer-like) values with low unique count relative to sample size. May behave more like categorical than continuous. Consider appropriate statistical methods for discrete data.',
@@ -7709,7 +7653,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-type'
     },
 
-    // Heaping patterns
     'heaping': {
       title: 'Heaping',
       description: 'The data shows heaping patterns, where values cluster at round numbers (detected via digit analysis). This may indicate measurement precision issues, rounding in data collection, or self-reporting.',
@@ -7717,7 +7660,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-quality'
     },
 
-    // Bimodal distribution
     'possibly-bimodal': {
       title: 'Possibly Bimodal',
       description: 'The data may have two distinct peaks, suggesting multiple underlying distributions or subpopulations in your data.',
@@ -7725,7 +7667,6 @@ body.suricata-standalone:not(.light) {
       category: 'distribution'
     },
 
-    // Log scale suggestion
     'log-scale-suggested': {
       title: 'Log Scale Suggested',
       description: 'The data distribution suggests that a logarithmic scale might be more appropriate for visualization and analysis.',
@@ -7733,7 +7674,6 @@ body.suricata-standalone:not(.light) {
       category: 'visualization'
     },
 
-    // High cardinality
     'high-cardinality': {
       title: 'High Cardinality',
       description: 'This column has many unique values relative to its size. Consider if this is expected and whether it affects your analysis.',
@@ -7741,7 +7681,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-characteristics'
     },
 
-    // Dominant category
     'dominant-category': {
       title: 'Dominant Category',
       description: 'One category dominates the data, which may indicate imbalanced classes. Consider stratified sampling for analysis.',
@@ -7749,7 +7688,6 @@ body.suricata-standalone:not(.light) {
       category: 'distribution'
     },
 
-    // Many rare levels
     'many-rare-levels': {
       title: 'Many Rare Levels',
       description: 'This column has many categories with very few occurrences. Consider grouping rare categories or using appropriate statistical methods.',
@@ -7757,7 +7695,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-characteristics'
     },
 
-    // Case variants
     'case-variants': {
       title: 'Case Variants',
       description: 'This column has values that differ only in case (e.g., "Apple" vs "apple"). Consider standardizing case for consistency.',
@@ -7765,7 +7702,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-quality'
     },
 
-    // Trim variants
     'trim-variants': {
       title: 'Trim Variants',
       description: 'This column has values that differ only in leading/trailing whitespace. Consider trimming whitespace for consistency.',
@@ -7773,7 +7709,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-quality'
     },
 
-    // Empty strings
     'empty-strings': {
       title: 'Empty Strings',
       description: 'This column contains empty string values, which may be different from missing values. Consider how to handle these in your analysis.',
@@ -7781,7 +7716,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-quality'
     },
 
-    // Many outliers
     'many-outliers': {
       title: 'Many Outliers',
       description: 'This column has a high number of outliers (>1%) that deviate significantly from the main distribution using IQR method. Critical severity. Consider investigating these values and their impact on your analysis.',
@@ -7789,7 +7723,6 @@ body.suricata-standalone:not(.light) {
       category: 'distribution'
     },
 
-    // Some outliers
     'some-outliers': {
       title: 'Some Outliers',
       description: 'This column contains some outliers (0.3% to 1%) detected using IQR or MAD methods. Warning severity. Review these values to ensure they are valid and consider their impact on statistical analysis.',
@@ -7797,7 +7730,6 @@ body.suricata-standalone:not(.light) {
       category: 'distribution'
     },
 
-    // Constant values
     'constant': {
       title: 'Constant Values',
       description: 'All values in this column are identical (only 1 unique value). This column provides no variation and may not be useful for analysis. Critical severity.',
@@ -7805,7 +7737,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-characteristics'
     },
 
-    // Quasi-constant values
     'quasi-constant': {
       title: 'Quasi-Constant',
       description: 'This column has very little variation, with one value dominating (very low cardinality). Warning severity. Consider if this column is useful for analysis.',
@@ -7813,7 +7744,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-characteristics'
     },
 
-    // Monotonic increasing
     'monotonic-↑': {
       title: 'Monotonic Increasing',
       description: 'Values in this column are strictly increasing. This may indicate a time series or ordered sequence.',
@@ -7821,7 +7751,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-characteristics'
     },
 
-    // Monotonic decreasing
     'monotonic-↓': {
       title: 'Monotonic Decreasing',
       description: 'Values in this column are strictly decreasing. This may indicate a time series or ordered sequence.',
@@ -7829,7 +7758,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-characteristics'
     },
 
-    // Log scale suggested
     'log-scale?': {
       title: 'Log Scale Suggested',
       description: 'The data distribution suggests that a logarithmic scale might be more appropriate for visualization and analysis.',
@@ -7837,7 +7765,6 @@ body.suricata-standalone:not(.light) {
       category: 'visualization'
     },
 
-    // Approx badge
     'approx': {
       title: 'Approximate Statistics',
       description: 'This column has more unique values than the tracker can hold exactly (default: 50). The unique count shown is an estimate from a cardinality sketch (KMV algorithm). Frequency counts for the most common values remain exact; only the total distinct-value count is approximated.',
@@ -7845,7 +7772,6 @@ body.suricata-standalone:not(.light) {
       category: 'data-quality'
     },
 
-    // Semantic column type badges
     'numeric': {
       title: 'Numeric',
       description: 'This column contains continuous or discrete numerical data. Suitable for statistical analysis, aggregations, histograms, and mathematical operations.',
@@ -7872,27 +7798,18 @@ body.suricata-standalone:not(.light) {
     }
   };
 
-  /**
-   * Tooltip definitions for pandas/polars dtype strings shown in the dtype chip.
-   */
-  /**
-   * Dtype tooltip definitions keyed case-sensitively by dtype string.
-   * int64 = NumPy non-nullable; Int64 = pandas nullable (ExtensionDtype).
-   * getDtypeTooltipContent() does a case-sensitive lookup first, then
-   * a case-insensitive fallback for dtypes not listed here.
-   */
   const DTYPE_TOOLTIP_DEFINITIONS = {
-    // ── NumPy signed integers (non-nullable) ──────────────────────────────
+    
     'int8':   { title: 'int8',   description: '8-bit signed integer. Range: −128 to 127. Very memory efficient for small integer data.' },
     'int16':  { title: 'int16',  description: '16-bit signed integer. Range: −32,768 to 32,767.' },
     'int32':  { title: 'int32',  description: '32-bit signed integer. Range: −2.1 billion to 2.1 billion.' },
     'int64':  { title: 'int64',  description: '64-bit signed integer. Range: −9.2×10¹⁸ to 9.2×10¹⁸. Default integer type in pandas. Cannot hold NA; becomes float64 when NaN is introduced.' },
-    // ── NumPy unsigned integers ────────────────────────────────────────────
+    
     'uint8':  { title: 'uint8',  description: '8-bit unsigned integer. Range: 0 to 255. Common for image pixel values and small non-negative counts.' },
     'uint16': { title: 'uint16', description: '16-bit unsigned integer. Range: 0 to 65,535.' },
     'uint32': { title: 'uint32', description: '32-bit unsigned integer. Range: 0 to 4.3 billion.' },
     'uint64': { title: 'uint64', description: '64-bit unsigned integer. Range: 0 to 1.8×10¹⁹.' },
-    // ── Pandas nullable integers (ExtensionDtype, capital first letter) ────
+    
     'Int8':   { title: 'Int8 (nullable)',   description: 'Pandas nullable 8-bit integer. Supports NA without silent conversion to float. Requires pandas ≥ 1.0.' },
     'Int16':  { title: 'Int16 (nullable)',  description: 'Pandas nullable 16-bit integer. Supports NA without silent conversion to float.' },
     'Int32':  { title: 'Int32 (nullable)',  description: 'Pandas nullable 32-bit integer. Supports NA without silent conversion to float.' },
@@ -7901,40 +7818,37 @@ body.suricata-standalone:not(.light) {
     'UInt16': { title: 'UInt16 (nullable)', description: 'Pandas nullable unsigned 16-bit integer. Range: 0 to 65,535. Supports NA.' },
     'UInt32': { title: 'UInt32 (nullable)', description: 'Pandas nullable unsigned 32-bit integer. Range: 0 to 4.3 billion. Supports NA.' },
     'UInt64': { title: 'UInt64 (nullable)', description: 'Pandas nullable unsigned 64-bit integer. Range: 0 to 1.8×10¹⁹. Supports NA.' },
-    // ── Floats ─────────────────────────────────────────────────────────────
+    
     'float16': { title: 'float16', description: 'Half-precision float. ~3 significant decimal digits. Very compact but limited range; rarely used for data analysis.' },
     'float32': { title: 'float32', description: 'Single-precision float. ~7 significant decimal digits. Common in ML model inputs.' },
     'float64': { title: 'float64', description: 'Double-precision float. ~15 significant decimal digits. Default float type in pandas. Used automatically when int columns gain NaN values.' },
     'Float32': { title: 'Float32 (nullable)', description: 'Pandas nullable single-precision float. Supports NA as a first-class value without ambiguity.' },
     'Float64': { title: 'Float64 (nullable)', description: 'Pandas nullable double-precision float. Supports NA as a first-class value without ambiguity.' },
-    // ── Booleans ───────────────────────────────────────────────────────────
+    
     'bool':    { title: 'bool',             description: 'NumPy boolean (True/False). No NA support — a missing value silently converts the column to object.' },
     'boolean': { title: 'boolean (nullable)', description: 'Pandas nullable boolean. Supports True, False, and NA as distinct states. Preferred when missing values are possible.' },
-    // ── Text / generic object ──────────────────────────────────────────────
+    
     'object': { title: 'object', description: 'Generic Python object dtype. Typically used for strings, but can hold any Python value. Slower and more memory-hungry than typed dtypes.' },
     'string': { title: 'string (StringDtype)', description: 'Pandas explicit string type. Better NA handling and performance than object. Use pd.StringDtype() or dtype="string".' },
-    // ── Datetime ───────────────────────────────────────────────────────────
+    
     'datetime64[ns]':    { title: 'datetime64[ns]',    description: 'Datetime with nanosecond precision. Covers ~1678–2262 CE. The standard pandas datetime dtype.' },
     'datetime64[us]':    { title: 'datetime64[us]',    description: 'Datetime with microsecond precision. Wider range than [ns]: ~290,000 years.' },
     'datetime64[ms]':    { title: 'datetime64[ms]',    description: 'Datetime with millisecond precision.' },
     'datetime64[s]':     { title: 'datetime64[s]',     description: 'Datetime with second precision.' },
     'datetime64':        { title: 'datetime64',        description: 'Datetime type (precision unspecified). Pandas typically uses nanosecond precision internally.' },
-    // ── Timedelta ──────────────────────────────────────────────────────────
+    
     'timedelta64[ns]':   { title: 'timedelta64[ns]',   description: 'Duration/time difference with nanosecond precision. Result of subtracting two datetime64 values.' },
     'timedelta64[us]':   { title: 'timedelta64[us]',   description: 'Duration with microsecond precision.' },
     'timedelta64[ms]':   { title: 'timedelta64[ms]',   description: 'Duration with millisecond precision.' },
     'timedelta64[s]':    { title: 'timedelta64[s]',    description: 'Duration with second precision.' },
     'timedelta64':       { title: 'timedelta64',       description: 'Time duration type (precision unspecified).' },
-    // ── Categorical ────────────────────────────────────────────────────────
+    
     'category': { title: 'category (CategoricalDtype)', description: 'Pandas categorical type. Stores repeated values efficiently using integer codes. Ideal for low-cardinality string or ordinal columns.' },
-    // ── Complex ────────────────────────────────────────────────────────────
+    
     'complex64':  { title: 'complex64',  description: '64-bit complex number (two 32-bit floats for real and imaginary parts).' },
     'complex128': { title: 'complex128', description: '128-bit complex number (two 64-bit floats). Default complex type in NumPy.' }
   };
 
-  /**
-   * Tooltip manager class for handling tooltip creation, positioning, and display.
-   */
   class TooltipManager {
     constructor() {
       this.tooltip = null;
@@ -7943,17 +7857,11 @@ body.suricata-standalone:not(.light) {
       this.init();
     }
 
-    /**
-     * Initialize the tooltip manager.
-     */
     init() {
       this.createTooltip();
       this.bindEvents();
     }
 
-    /**
-     * Create the tooltip DOM element.
-     */
     createTooltip() {
       const root = document.getElementById(ROOT_ID);
       if (!root) return;
@@ -7966,16 +7874,11 @@ body.suricata-standalone:not(.light) {
       root.appendChild(this.tooltip);
     }
 
-    /**
-     * Get tooltip content for a flag.
-     * @param {string} flagText - The text content of the flag
-     * @returns {Object} Tooltip content object
-     */
     getTooltipContent(flagText) {
-      // Normalize flag text for lookup
+      
       const normalizedText = flagText.toLowerCase()
         .replace(/\s+/g, '-')
-        .replace(/[^\w‑-]/g, ''); // Keep special dash character (‑) and regular dash (-)
+        .replace(/[^\w‑-]/g, ''); 
 
       return TOOLTIP_DEFINITIONS[normalizedText] || {
         title: 'Quality Flag',
@@ -7985,20 +7888,14 @@ body.suricata-standalone:not(.light) {
       };
     }
 
-    /**
-     * Get tooltip content for a dtype chip.
-     * Case-sensitive lookup first (int64 ≠ Int64), then case-insensitive fallback.
-     * @param {string} dtypeText - The dtype string (e.g. "int64", "Int64", "object")
-     * @returns {Object} Tooltip content object
-     */
     getDtypeTooltipContent(dtypeText) {
       const raw = dtypeText.trim();
-      // 1. Exact case-sensitive match (distinguishes int64 from Int64)
+      
       if (DTYPE_TOOLTIP_DEFINITIONS[raw]) return DTYPE_TOOLTIP_DEFINITIONS[raw];
-      // 2. Strip tz/unit suffix for datetime variants like "datetime64[ns, UTC]"
+      
       const baseRaw = raw.replace(/\[.*\]$/, '').trim();
       if (baseRaw !== raw && DTYPE_TOOLTIP_DEFINITIONS[baseRaw]) return DTYPE_TOOLTIP_DEFINITIONS[baseRaw];
-      // 3. Case-insensitive fallback
+      
       const lower = raw.toLowerCase();
       const baseLower = baseRaw.toLowerCase();
       for (const key of Object.keys(DTYPE_TOOLTIP_DEFINITIONS)) {
@@ -8013,13 +7910,6 @@ body.suricata-standalone:not(.light) {
       };
     }
 
-    /**
-     * Show tooltip for an element.
-     * @param {HTMLElement} element - The element to show tooltip for
-     * @param {string} flagText - The flag text
-     * @param {Object} headerTooltipData - Optional header tooltip data
-     * @param {string} dtypeText - Optional dtype string for dtype chip tooltips
-     */
     showTooltip(element, flagText, headerTooltipData = null, dtypeText = null) {
       if (!this.tooltip || !element) return;
 
@@ -8029,7 +7919,7 @@ body.suricata-standalone:not(.light) {
       let isDtypeTooltip = false;
 
       if (headerTooltipData) {
-        // Header tooltip
+        
         isHeaderTooltip = true;
         const def = HEADER_TOOLTIP_DEFINITIONS[headerTooltipData.type];
         content = {
@@ -8038,11 +7928,11 @@ body.suricata-standalone:not(.light) {
           category: def.category
         };
       } else if (dtypeText !== null) {
-        // Dtype chip tooltip
+        
         isDtypeTooltip = true;
         content = this.getDtypeTooltipContent(dtypeText);
       } else if (element.classList.contains('bar-fill')) {
-        // Bar-fill tooltip (simple text display)
+        
         isBarFillTooltip = true;
         content = {
           title: flagText,
@@ -8050,10 +7940,9 @@ body.suricata-standalone:not(.light) {
           category: 'data-completeness'
         };
       } else {
-        // Quality flag or semantic type badge tooltip
+        
         content = this.getTooltipContent(flagText);
 
-        // Read threshold and value from data attributes
         const threshold = element.getAttribute('data-threshold');
         const value = element.getAttribute('data-value');
 
@@ -8065,7 +7954,6 @@ body.suricata-standalone:not(.light) {
 
       this.currentElement = element;
 
-      // Build tooltip HTML
       if (isHeaderTooltip) {
         this.tooltip.innerHTML = `
           <div class="tooltip-header">
@@ -8077,7 +7965,7 @@ body.suricata-standalone:not(.light) {
           </div>
         `;
       } else if (isDtypeTooltip) {
-        // Dtype chip tooltip — informational, no severity badge
+        
         this.tooltip.innerHTML = `
           <div class="tooltip-header">
             <span class="tooltip-title">${this.escapeHtml(content.title)}</span>
@@ -8088,14 +7976,14 @@ body.suricata-standalone:not(.light) {
           </div>
         `;
       } else if (isBarFillTooltip) {
-        // Simple tooltip for bar-fill elements
+        
         this.tooltip.innerHTML = `
           <div class="tooltip-header">
             <span class="tooltip-title">${this.escapeHtml(content.title)}</span>
           </div>
         `;
       } else {
-        // Build threshold info HTML if available
+        
         let thresholdHtml = '';
         if (content.threshold && content.value) {
           thresholdHtml = `
@@ -8120,21 +8008,15 @@ body.suricata-standalone:not(.light) {
         `;
       }
 
-      // Position tooltip
       this.positionTooltip(element);
 
-      // Show tooltip
       this.tooltip.style.display = 'block';
       this.tooltip.setAttribute('aria-hidden', 'false');
       this.isVisible = true;
 
-      // Announce to screen readers
       this.announceTooltip(content.title, content.description);
     }
 
-    /**
-     * Hide the tooltip.
-     */
     hideTooltip() {
       if (!this.tooltip || !this.isVisible) return;
 
@@ -8144,10 +8026,6 @@ body.suricata-standalone:not(.light) {
       this.currentElement = null;
     }
 
-    /**
-     * Position tooltip relative to element.
-     * @param {HTMLElement} element - The target element
-     */
     positionTooltip(element) {
       const root = document.getElementById(ROOT_ID);
       if (!root || !this.tooltip) return;
@@ -8156,11 +8034,9 @@ body.suricata-standalone:not(.light) {
       const rootRect = root.getBoundingClientRect();
       const tooltipRect = this.tooltip.getBoundingClientRect();
 
-      // Calculate initial position (centered below element)
       let left = rect.left - rootRect.left + (rect.width / 2) - (tooltipRect.width / 2);
       let top = rect.bottom - rootRect.top + 10;
 
-      // Adjust if tooltip would go off screen
       const margin = 10;
       const maxLeft = rootRect.width - tooltipRect.width - margin;
       const maxTop = rootRect.height - tooltipRect.height - margin;
@@ -8172,7 +8048,7 @@ body.suricata-standalone:not(.light) {
       }
 
       if (top > maxTop) {
-        // Position above element if no space below
+        
         top = rect.top - rootRect.top - tooltipRect.height - 10;
       } else if (top < margin) {
         top = margin;
@@ -8182,24 +8058,14 @@ body.suricata-standalone:not(.light) {
       this.tooltip.style.top = top + 'px';
     }
 
-    /**
-     * Escape HTML to prevent XSS.
-     * @param {string} text - Text to escape
-     * @returns {string} Escaped HTML
-     */
     escapeHtml(text) {
       const div = document.createElement('div');
       div.textContent = text;
       return div.innerHTML;
     }
 
-    /**
-     * Announce tooltip content to screen readers.
-     * @param {string} title - Tooltip title
-     * @param {string} description - Tooltip description
-     */
     announceTooltip(title, description) {
-      // Create a temporary element for screen reader announcement
+      
       const announcement = document.createElement('div');
       announcement.setAttribute('aria-live', 'polite');
       announcement.setAttribute('aria-atomic', 'true');
@@ -8209,7 +8075,7 @@ body.suricata-standalone:not(.light) {
       const root = document.getElementById(ROOT_ID);
       if (root) {
         root.appendChild(announcement);
-        // Remove after announcement
+        
         setTimeout(() => {
           if (announcement.parentNode) {
             announcement.parentNode.removeChild(announcement);
@@ -8218,16 +8084,12 @@ body.suricata-standalone:not(.light) {
       }
     }
 
-    /**
-     * Bind event listeners.
-     */
     bindEvents() {
       const root = document.getElementById(ROOT_ID);
       if (!root) return;
 
-      // Handle mouse enter on quality flags
       root.addEventListener('mouseenter', (e) => {
-        // Prevent triggering on inner elements if already inside
+        
         if (e.relatedTarget && e.target.contains && e.target.contains(e.relatedTarget)) {
           return;
         }
@@ -8239,26 +8101,23 @@ body.suricata-standalone:not(.light) {
           return;
         }
 
-        // Handle semantic type badge tooltips
         const badge = e.target.closest('.var-card__header .badge');
         if (badge) {
           this.showTooltip(badge, badge.textContent.trim());
           return;
         }
 
-        // Handle dtype chip tooltips
         const dtypeChip = e.target.closest('.var-card__header .dtype');
         if (dtypeChip) {
           this.showTooltip(dtypeChip, null, null, dtypeChip.textContent.trim());
           return;
         }
 
-        // Handle bar-fill tooltips
         const barFill = e.target.closest('.completeness-bar-dual .bar-fill');
         if (barFill) {
           const tooltipText = barFill.getAttribute('title');
           if (tooltipText) {
-            // Remove title to prevent native tooltip
+            
             barFill.removeAttribute('title');
             barFill.setAttribute('data-original-title', tooltipText);
             this.showTooltip(barFill, tooltipText);
@@ -8266,7 +8125,6 @@ body.suricata-standalone:not(.light) {
           return;
         }
 
-        // Handle header tooltips
         const headerChip = e.target.closest('.header-tooltip');
         if (headerChip) {
           const tooltipType = headerChip.getAttribute('data-tooltip-type');
@@ -8277,7 +8135,6 @@ body.suricata-standalone:not(.light) {
         }
       }, true);
 
-      // Handle mouse leave on quality flags
       root.addEventListener('mouseleave', (e) => {
         const flag = e.target.closest('.quality-flags .flag');
         if (flag) {
@@ -8323,21 +8180,18 @@ body.suricata-standalone:not(.light) {
         }
       }, true);
 
-      // Hide tooltip when mouse leaves the root element
       root.addEventListener('mouseleave', (e) => {
         if (!root.contains(e.relatedTarget)) {
           this.hideTooltip();
         }
       }, true);
 
-      // Handle keyboard navigation
       root.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && this.isVisible) {
           this.hideTooltip();
         }
       }, true);
 
-      // Handle focus events for accessibility
       root.addEventListener('focusin', (e) => {
         const flag = e.target.closest('.quality-flags .flag');
         if (flag) {
@@ -8358,7 +8212,6 @@ body.suricata-standalone:not(.light) {
           return;
         }
 
-        // Handle header tooltips on focus
         const headerChip = e.target.closest('.header-tooltip');
         if (headerChip) {
           const tooltipType = headerChip.getAttribute('data-tooltip-type');
@@ -8384,19 +8237,15 @@ body.suricata-standalone:not(.light) {
     }
   }
 
-  /**
-   * Align completeness bars to equal length based on longest column name.
-   */
   function alignCompletenessBars() {
     const rows = document.querySelectorAll('.compact-row');
     if (rows.length === 0) return;
 
-    // Find the maximum width of column names
     let maxWidth = 0;
     rows.forEach(row => {
       const colName = row.querySelector('.col-name');
       if (colName) {
-        // Temporarily remove max-width to measure full content
+        
         const originalMaxWidth = colName.style.maxWidth;
         colName.style.maxWidth = 'none';
         const width = colName.getBoundingClientRect().width;
@@ -8405,7 +8254,6 @@ body.suricata-standalone:not(.light) {
       }
     });
 
-    // Apply the maximum width to all column names
     rows.forEach(row => {
       const colName = row.querySelector('.col-name');
       if (colName) {
@@ -8415,28 +8263,19 @@ body.suricata-standalone:not(.light) {
     });
   }
 
-  /**
-   * Initialize tooltips when DOM is ready.
-   */
   function initializeTooltips() {
     const root = document.getElementById(ROOT_ID);
     if (!root) return;
 
-    // Create tooltip manager
     const tooltipManager = new TooltipManager();
 
-    // Make tooltip manager globally accessible for debugging
     if (typeof window !== 'undefined') {
       window.pysuricataTooltips = tooltipManager;
     }
 
-    // Align completeness bars
     alignCompletenessBars();
   }
 
-  /**
-   * Re-initialize tooltips when new content is added.
-   */
   function setupContentObserver() {
     const root = document.getElementById(ROOT_ID);
     if (!root) return;
@@ -8444,12 +8283,12 @@ body.suricata-standalone:not(.light) {
     const observer = new MutationObserver((mutations) => {
       mutations.forEach((mutation) => {
         if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-          // Check if any added nodes contain quality flags or missing values sections
+          
           mutation.addedNodes.forEach((node) => {
             if (node.nodeType === Node.ELEMENT_NODE) {
               if (node.classList && (node.classList.contains('quality-flags') ||
                 node.classList.contains('missing-values-section-redesign'))) {
-                // Re-initialize tooltips and align bars for new content
+                
                 setTimeout(() => {
                   initializeTooltips();
                   alignCompletenessBars();
@@ -8467,7 +8306,6 @@ body.suricata-standalone:not(.light) {
     });
   }
 
-  // Initialize when DOM is ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       initializeTooltips();
@@ -8478,36 +8316,27 @@ body.suricata-standalone:not(.light) {
     setupContentObserver();
   }
 
-  // Export for module systems if available
   if (typeof module !== 'undefined' && module.exports) {
     module.exports = { TooltipManager, TOOLTIP_DEFINITIONS, HEADER_TOOLTIP_DEFINITIONS };
   }
 })();
 
-/**
- * Minimalistic Variables Pagination
- * Simple, modern pagination for the variables section
- */
+
 
 (function() {
     'use strict';
 
-    // Configuration
     const CARDS_PER_PAGE = 10;
     const SEARCH_DEBOUNCE = 300;
 
-    // State
     let currentPage = 1;
     let currentFilter = 'all';
-    // Set by clicking a quality chip in the "needs attention" block. The chips
-    // were already computed per column; this is what makes them navigation
-    // rather than decoration.
+
     let currentFlag = null;
     let searchTerm = '';
     let allCards = [];
     let filteredCards = [];
 
-    // Initialize when DOM is ready
     function init() {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', setup);
@@ -8517,13 +8346,9 @@ body.suricata-standalone:not(.light) {
     }
 
     function setup() {
-        // Get all cards
+        
         allCards = Array.from(document.querySelectorAll('#cards-grid .var-card'));
 
-        // Only the page buttons are pointless on a single page. Search, the
-        // type tabs and the chip filter are not -- returning early here left
-        // them wired to nothing on any report with ten columns or fewer, which
-        // is most of them.
         if (allCards.length <= CARDS_PER_PAGE) {
             const pagination = document.querySelector('.pagination');
             if (pagination) pagination.style.display = 'none';
@@ -8534,6 +8359,8 @@ body.suricata-standalone:not(.light) {
         setupFlagFilters();
         if (allCards.length > CARDS_PER_PAGE) setupPagination();
         applyFilters();
+        
+        setupDeepLinks();
     }
 
     function setupSearch() {
@@ -8557,9 +8384,7 @@ body.suricata-standalone:not(.light) {
                 document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
                 e.target.classList.add('active');
                 currentFilter = e.target.dataset.filter;
-                // A type tab is a different question from a chip, so choosing
-                // one clears the other. "All" therefore restores source order
-                // in a single click, which is the point of keeping it.
+
                 clearFlagFilter();
                 applyFilters();
             });
@@ -8591,8 +8416,7 @@ body.suricata-standalone:not(.light) {
             }
             applyFilters();
             const grid = document.getElementById('cards-grid');
-            // An explicit `behavior` beats CSS `scroll-behavior`, so the
-            // reduced-motion rule in _01-base.css cannot reach this one.
+
             const reduce = window.matchMedia &&
                 window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             if (grid) grid.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' });
@@ -8623,7 +8447,7 @@ body.suricata-standalone:not(.light) {
     }
 
     function applyFilters() {
-        // Filter cards
+        
         filteredCards = allCards.filter(card => {
             const cardType = card.dataset.type;
             const cardName = card.dataset.name.toLowerCase();
@@ -8637,19 +8461,17 @@ body.suricata-standalone:not(.light) {
             return typeMatch && searchMatch && flagMatch;
         });
 
-        // Reset page if needed
         currentPage = 1;
         updateDisplay();
         updatePagination();
     }
 
     function updateDisplay() {
-        // Hide all cards
+        
         allCards.forEach(card => {
             card.style.display = 'none';
         });
 
-        // Show filtered cards for current page
         const startIndex = (currentPage - 1) * CARDS_PER_PAGE;
         const endIndex = startIndex + CARDS_PER_PAGE;
         const visibleCards = filteredCards.slice(startIndex, endIndex);
@@ -8663,7 +8485,6 @@ body.suricata-standalone:not(.light) {
             });
         }
 
-        // Update info
         const info = document.getElementById('pagination-info');
         if (visibleCards.length > 0) {
             info.textContent = `Showing ${startIndex + 1}-${startIndex + visibleCards.length} of ${filteredCards.length}`;
@@ -8700,13 +8521,9 @@ body.suricata-standalone:not(.light) {
         document.getElementById('prev-btn').disabled = currentPage <= 1;
         document.getElementById('next-btn').disabled = currentPage >= totalPages;
 
-        // Generate page numbers
         const pageNumbers = document.getElementById('page-numbers');
         let html = '';
 
-        // A button, not a span with a click listener. The span version could
-        // not be reached by keyboard, announced no role, and had "2" as its
-        // whole accessible name.
         for (let i = 1; i <= totalPages; i++) {
             const active = i === currentPage ? 'active' : '';
             const current = i === currentPage ? ' aria-current="page"' : '';
@@ -8715,11 +8532,9 @@ body.suricata-standalone:not(.light) {
 
         pageNumbers.innerHTML = html;
 
-        // Add click listeners
         pageNumbers.querySelectorAll('.page-number').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                // currentTarget, not target: a click can land on a text node
-                // inside the button once it is a real button rather than a span.
+
                 goToPage(parseInt(e.currentTarget.dataset.page));
             });
         });
@@ -8734,29 +8549,61 @@ body.suricata-standalone:not(.light) {
         }
     }
 
-    // Initialize
+    function revealCard(id) {
+        if (!id) return false;
+        const card = document.getElementById(id);
+        if (!card || !allCards.includes(card)) return false;
+
+        if (!filteredCards.includes(card)) {
+            currentFilter = 'all';
+            currentFlag = null;
+            searchTerm = '';
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.value = '';
+
+            document.querySelectorAll('.tab[data-filter]').forEach((tab) => {
+                tab.classList.toggle('active', tab.dataset.filter === 'all');
+            });
+            applyFilters();
+        }
+
+        const index = filteredCards.indexOf(card);
+        if (index === -1) return false;
+        goToPage(Math.floor(index / CARDS_PER_PAGE) + 1);
+        
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
+    }
+
+    function setupDeepLinks() {
+
+        window.addEventListener('hashchange', () => {
+            revealCard(decodeURIComponent(location.hash.slice(1)));
+        });
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest('a[href^="#col_"]');
+            if (!link) return;
+            const id = decodeURIComponent(link.getAttribute('href').slice(1));
+            if (revealCard(id)) event.preventDefault();
+        });
+        
+        if (location.hash.startsWith('#col_')) {
+            revealCard(decodeURIComponent(location.hash.slice(1)));
+        }
+    }
+
     init();
 
 })();
 
-/**
- * Description Editor with Markdown Support
- * Handles interactive editing and markdown rendering
- */
+
+
 (function () {
   'use strict';
 
   const ROOT_ID = 'pysuricata-report';
   const STORAGE_KEY_PREFIX = 'pysuricata-description-';
 
-  // ===== Private Helper Functions =====
-
-  // Located by id, not by class. The redesign renamed this block's class from
-  // `.description-value` to `.description-block`, and because every entry point
-  // here fails soft on a null container, the rename turned "+ add a note" into
-  // a button that did nothing at all -- silently, with no console error. The id
-  // is what the template guarantees; the class is presentation and may move
-  // again.
   function getDescriptionContainer() {
     return (
       document.getElementById('summary-description') ||
@@ -8776,7 +8623,7 @@ body.suricata-standalone:not(.light) {
   }
 
   function getMarkdownSource(container) {
-    // Get markdown from data attribute or content
+    
     return container?.getAttribute('data-original-markdown') || '';
   }
 
@@ -8785,8 +8632,6 @@ body.suricata-standalone:not(.light) {
       container.setAttribute('data-original-markdown', markdown);
     }
   }
-
-  // ===== Storage Functions =====
 
   function saveToStorage(markdownText) {
     try {
@@ -8811,18 +8656,12 @@ body.suricata-standalone:not(.light) {
     }
   }
 
-  // ===== Rendering Functions =====
-
   function renderMarkdownToHtml(markdown) {
-    // Simple client-side markdown rendering (basic support)
-    // Empty renders as empty: the row itself carries the invitation, and
-    // `.is-empty` hides this element, so a placeholder here would be a string
-    // nobody can ever see.
+
     if (!markdown || !markdown.trim()) {
       return '';
     }
 
-    // Escape HTML for security
     let html = markdown
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
@@ -8830,34 +8669,25 @@ body.suricata-standalone:not(.light) {
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
 
-    // Basic markdown patterns
     html = html
-      // Headers
+      
       .replace(/^### (.+)$/gm, '<h3>$1</h3>')
       .replace(/^## (.+)$/gm, '<h2>$1</h2>')
       .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-      // Bold and italic
+      
       .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      // Lists
+      
       .replace(/^- (.+)$/gm, '<li>$1</li>')
       .replace(/^• (.+)$/gm, '<li>$1</li>')
-      // Line breaks
+      
       .replace(/\n/g, '<br>');
 
-    // Wrap lists
     html = html.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
 
     return html;
   }
 
-  // ===== State =====
-
-  // The server picks the empty/filled presentation once, at render time. Once
-  // the reader edits, the client owns it -- and must move all three parts
-  // together. Missing this is not cosmetic: `.is-empty` sets `display: none` on
-  // `.description-content`, so a note saved without clearing the class is
-  // stored, escaped, inserted, and invisible.
   function applyState(container, markdown) {
     const filled = Boolean(markdown && markdown.trim());
     container.classList.toggle('is-empty', !filled);
@@ -8868,8 +8698,6 @@ body.suricata-standalone:not(.light) {
     const action = container.querySelector('.description-block__action');
     if (action) action.textContent = filled ? 'edit' : '+ add a note';
   }
-
-  // ===== Init on Page Load =====
 
   function initializeDescription() {
     const saved = loadFromStorage();
@@ -8889,8 +8717,6 @@ body.suricata-standalone:not(.light) {
     initializeDescription();
   }
 
-  // ===== Public API =====
-
   window.startDescriptionEdit = function () {
     const container = getDescriptionContainer();
     const contentEl = getContentElement();
@@ -8901,13 +8727,11 @@ body.suricata-standalone:not(.light) {
 
     const currentMarkdown = getMarkdownSource(container);
 
-    // Create textarea
     const textarea = document.createElement('textarea');
     textarea.value = currentMarkdown;
     textarea.placeholder = 'Enter description (Markdown supported)...';
     textarea.className = 'description-editor';
 
-    // Enter edit mode
     container.classList.add('editing');
     contentEl.style.display = 'none';
     container.appendChild(textarea);
@@ -8915,7 +8739,6 @@ body.suricata-standalone:not(.light) {
     textarea.focus();
     textarea.select();
 
-    // Auto-resize
     function autoResize() {
       textarea.style.height = 'auto';
       textarea.style.height = Math.min(textarea.scrollHeight, 300) + 'px';
@@ -8925,7 +8748,6 @@ body.suricata-standalone:not(.light) {
     textarea.addEventListener('paste', () => setTimeout(autoResize, 10));
     autoResize();
 
-    // Event handlers
     textarea.addEventListener('blur', () => {
       setTimeout(() => {
         if (container.classList.contains('editing')) {
@@ -8944,15 +8766,12 @@ body.suricata-standalone:not(.light) {
     function saveEdit() {
       const newMarkdown = textarea.value;
 
-      // Update content
       setMarkdownSource(container, newMarkdown);
       contentEl.innerHTML = renderMarkdownToHtml(newMarkdown);
       contentEl.style.display = '';
 
-      // Save to storage
       saveToStorage(newMarkdown);
 
-      // Clean up
       textarea.remove();
       container.classList.remove('editing');
       applyState(container, newMarkdown);
@@ -8962,7 +8781,7 @@ body.suricata-standalone:not(.light) {
   window.getCurrentDescription = function () {
     const container = getDescriptionContainer();
     const markdown = getMarkdownSource(container);
-    // Return markdown for editing, HTML for download
+    
     return {
       markdown: markdown,
       html: renderMarkdownToHtml(markdown)
@@ -9049,9 +8868,9 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-17 18:37:31</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-17 18:50:54</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <span><span class="k">Profiled in</span> <span class="v">0.13 s</span></span>
+            <span><span class="k">Profiled in</span> <span class="v">0.16 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Shape</span> <span class="v">891 rows × 12 columns</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
@@ -9093,7 +8912,7 @@ body.suricata-standalone:not(.light) {
             </div>
             <div class="stat stat--elapsed">
               <div class="stat__cap">Elapsed</div>
-              <div class="stat__val">0.13 s</div>
+              <div class="stat__val">0.16 s</div>
               <div class="stat__sub">wall clock</div>
             </div>
           </div>
@@ -9143,7 +8962,7 @@ body.suricata-standalone:not(.light) {
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260817-183731-6593" data-original-markdown=""
+            data-report-id="20260817-185054-8079" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>
