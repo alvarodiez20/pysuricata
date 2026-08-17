@@ -129,6 +129,10 @@
      A non-scaling stroke is 1px by definition, at any width. */
   stroke: var(--paper);
   stroke-width: 1;
+  /* Declared once here rather than as an attribute on every bar. It was 41
+     bytes x 50 bars x 6 variants per numeric column (#206), and it belongs
+     beside the stroke it modifies. */
+  vector-effect: non-scaling-stroke;
   pointer-events: auto;
   cursor: pointer;
   transition: fill 0.15s ease;
@@ -139,12 +143,14 @@
 }
 
 #pysuricata-report .hist-svg .axis {
+  vector-effect: non-scaling-stroke;
   stroke: var(--axis);
   stroke-width: 1;
   shape-rendering: crispEdges;
 }
 
 #pysuricata-report .hist-svg .grid {
+  vector-effect: non-scaling-stroke;
   stroke: var(--axis);
   stroke-opacity: 0.25;
   stroke-dasharray: 2 2;

@@ -5,13 +5,19 @@ phrased as assertions; this runs them. Two things had to change on the way,
 both discovered by measuring rather than by reading the issue:
 
 **The criteria were a specification, not a description.** #124 quotes
-`len(html) < 400_000` and `elements_per_card < 400`. The Titanic report is
-600,491 bytes today and its widest card holds 843 elements. Those numbers are
-what #39 and #206 are open to deliver; asserting them now would ship a red
-suite that someone disables on Monday. They ship here as **ratchets** against a
-recorded baseline, the idiom `test_colour_tokens.py` already uses: growth fails
-immediately, and shrinking fails loudly asking for the baseline to come down.
-The number only goes one way.
+`len(html) < 400_000` and `elements_per_card < 400`. When this file was written
+the Titanic report was 600,491 bytes and its widest card held 843 elements.
+Those numbers are what #39 and #206 are open to deliver; asserting them now
+would ship a red suite that someone disables on Monday. They ship here as
+**ratchets** against a recorded baseline, the idiom `test_colour_tokens.py`
+already uses: growth fails immediately, and shrinking fails loudly asking for
+the baseline to come down. The number only goes one way.
+
+It has already gone down once. #206's first pass took the report to 573,809 by
+moving `vector-effect` out of every mark and trimming bar coordinates to two
+decimals, and the ratchet is what noticed — it failed with *"lower the baseline
+to lock the win in"*, which is the branch that exists so a saving cannot be
+quietly spent again.
 
 **Three criteria appear to fail and do not.** Measuring the obvious way says
 the header is 53px against a ≤52px budget, that it is 49px against ≤48px on
@@ -118,9 +124,11 @@ class TestTheReportIsOneFile:
 # --------------------------------------------------------------------------- #
 # 2. budgets, as ratchets
 # --------------------------------------------------------------------------- #
-#: Measured on the Titanic report at 0.1.1. #124 wants 400,000; #39 is the issue
-#: that gets there. Lower this when it drops -- the test says so when it does.
-BYTES_BASELINE = 601_000
+#: Measured on the Titanic report. #124 wants 400,000; #39 is the issue that
+#: gets there. Lower this when it drops -- the test says so when it does, and
+#: #206 is the first time it did: 601,000 -> 574,000, by moving `vector-effect`
+#: out of every mark and trimming coordinates to two decimals.
+BYTES_BASELINE = 574_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
@@ -240,6 +248,15 @@ _MEASURE = (
     }
   }
 
+  // #206 moved `vector-effect` off every mark and into the .bar/.grid/.axis
+  // rules. Computed style is the only form of this check that a declaration
+  // which never applies cannot satisfy.
+  const strokes = {};
+  for (const mark of ['bar', 'grid', 'axis']) {
+    const el = document.querySelector('.hist-svg .' + mark);
+    strokes[mark] = el ? getComputedStyle(el).vectorEffect : null;
+  }
+
   // Overflow is not scrolling. Only a box whose content is wider AND whose
   // overflow-x actually scrolls is a scroll pane.
   const scrollers = [];
@@ -259,6 +276,7 @@ _MEASURE = (
     document_overflow:
       document.documentElement.scrollWidth - document.documentElement.clientWidth,
     summary_height: summary ? Math.round(summary.getBoundingClientRect().height) : null,
+    strokes,
   };
 }"""
     # A plain replace, not %-format or .format(): the script is full of `{...}`
@@ -427,6 +445,25 @@ class TestLayoutAtEveryBreakpoint:
         assert len(undersized) >= _KNOWN_UNDERSIZED[width], (
             f"only {len(undersized)} targets are now under 44x44 at {width}px, "
             f"down from {_KNOWN_UNDERSIZED[width]}. Lower the baseline."
+        )
+
+    @pytest.mark.parametrize("mark", ["bar", "grid", "axis"])
+    def test_every_histogram_mark_keeps_a_hairline(
+        self, measurements, width, theme, mark
+    ):
+        """#147's invariant, after #206 moved the declaration into CSS.
+
+        A viewBox unit is a percent of the plot, so a 1-unit stroke is 11px at
+        1,100px and 0.28px at 284px -- which is how the bars once merged into
+        one block. `non-scaling-stroke` is what makes a hairline a hairline,
+        and reading it from computed style is the check that survives the
+        declaration moving from an attribute to a rule.
+        """
+        got = measurements[(width, theme)]["strokes"][mark]
+
+        assert got == "non-scaling-stroke", (
+            f".{mark} computes vector-effect={got!r} at {width}px, so its "
+            f"stroke scales with the plot"
         )
 
     def test_the_summary_does_not_get_taller(self, measurements, width, theme):

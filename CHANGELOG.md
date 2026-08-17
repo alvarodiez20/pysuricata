@@ -14,6 +14,52 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- **A histogram bar stopped paying for things nothing reads** ([#206], first
+  pass). A bar is the most repeated element in the report — 50 of them in each
+  of 6 variants of every numeric column, 300 per column — so anything constant
+  on one is multiplied by 300. Two things were:
+
+  `vector-effect="non-scaling-stroke"`, **41 bytes on every mark**, moved into
+  the `.bar`, `.grid` and `.axis` rules. It belongs there: the stylesheet's own
+  comment beside `stroke: var(--paper)` already explained why the stroke must
+  not scale. And a third decimal on four coordinates — the viewBox is 0..100, so
+  a unit is a percent of the plot and at 1,100px the third decimal is a
+  ten-thousandth of a pixel.
+
+  | | Before | After |
+  |---|---:|---:|
+  | one bar | 184 B | **131 B** |
+  | marginal bytes per numeric column | 73,204 | **63,596** |
+  | Titanic report | 600,491 | **573,809** |
+
+  `vector-effect` as a *CSS property* rather than an attribute is SVG2, so it
+  was verified rather than assumed: computed style reports `non-scaling-stroke`
+  on bar, grid and axis at 1240px and 390px, and the rendered histogram is
+  **pixel-identical** before and after — `getbbox()` on the difference returns
+  `None`. Isolating that mattered, because the coordinate rounding *does* move
+  264 of 1.1M pixels by at most 47/255, all of it antialiasing on bar edges.
+
+  **`data-col` was measured, removed, and put back.** It reads as pure
+  redundancy — the column is on the `.hist-variants` parent, and neither the
+  tooltip handler nor any stylesheet touches it. But `scripts/report_fingerprint.py`
+  takes an element's scope from the *same tag*, so dropping it turned every
+  `attr::col_age::count` into `attr::::count` and collided the bar counts of
+  every numeric column under one key. `tests/test_report_data_invariance.py`
+  caught it. A weaker invariance guard is the wrong thing to buy with 19 bytes a
+  bar, so the 5,700 bytes per column stay spent, and the reason is now written
+  next to the attribute.
+
+  This is the cheap half of #206 and does not close it: the six variants are
+  still all rendered. The remaining half — emit one and build the other five on
+  toggle — needs a JS port of a 179-line SVG renderer, which is a second
+  implementation of the chart and wants a decision rather than a commit.
+
+  Guarded by `TestABarPaysOnlyForWhatIsRead`, which asserts both directions:
+  nothing constant creeps back on, and everything with a reader stays. All four
+  mutations of it fail as they should.
+
 ### Added
 
 - **The redesign's acceptance criteria run as tests** ([#124]). Every redesign
@@ -88,6 +134,7 @@ quoted when both sides were measured in the same round-robin run.
   skip themselves anywhere it is absent.
 
 [#124]: https://github.com/alvarodiez20/pysuricata/issues/124
+[#206]: https://github.com/alvarodiez20/pysuricata/issues/206
 
 ## [0.1.1] - 2026-08-17
 
