@@ -16,6 +16,43 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **A histogram bin reported a count of −1 and drew a rect with negative
+  height** ([#253]). The Titanic `Fare` card's 50-bin variant emitted
+  `data-count="-1" data-pct="-0.1" height="-0.33"`. `data-count` is what the
+  tooltip reads, so a reader hovering that bar was told the bin holds −1 rows;
+  the negative height is invalid SVG, which Chrome logs and drops, three times
+  per report load.
+
+  **The cause was not the one the evidence suggested.** The bars summed to
+  exactly 891 — the row count — so one bin was −1 and another 1 too high with
+  the total conserved, which is the signature of counts obtained by
+  differencing something cumulative, and points at the sketches. It was not
+  that. `true_histogram_counts` leaves the accumulator with 25 bins and no
+  negatives; the 50-bin variant is resampled in the **renderer**, and rounding
+  25 fractional bins into 50 leaves a residual that has to go somewhere. The
+  old code put all of it in one bin chosen by `argmax(count - round(count))` —
+  correct only when the residual is positive, since that finds the bin rounded
+  *down* hardest. Measured: the residual is **−3** and the winning bin holds
+  2.5, which `np.round` sends to 2 under round-half-to-even, giving it the
+  largest fractional part in the array. 2 − 3 = −1. Conservation was never
+  evidence of differencing; it is the arithmetic identity of moving a residual
+  to one place.
+
+  Replaced with largest-remainder apportionment (Hare–Niemeyer): floor every
+  bin, then hand out the residual one row at a time, largest remainder first.
+  Floors are non-negative and only additions follow, so no bin can go below
+  zero; exactly `residual` rows are handed out, so the total stays exact; and
+  no bin moves by more than one row, where the old code moved one bin by the
+  whole residual. The bar loop now also skips a non-positive count rather than
+  only a zero one — zero is a drawing decision, negative is a value that cannot
+  exist, and the renderer must not turn one into geometry.
+
+  `tests/fixtures/fingerprint.txt` is re-baselined because the bin counts
+  genuinely changed. Checked before accepting it: **no fact was added or
+  removed**, all 82 changed facts are `count`/`pct` on the two numeric columns,
+  and the changed counts sum to the same total on each (698 → 698, 426 → 426) —
+  rows moved between bins, none created or destroyed.
+
 - **A link to a column on another page did nothing** ([#240]). `pagination.js`
   hides off-page cards with `display: none`, which is not a rendering choice but
   a removal — the browser finds no target for a fragment link and stays put.
@@ -64,6 +101,7 @@ quoted when both sides were measured in the same round-robin run.
   roadmap documents disagree and neither is current; reconciling them is the
   other half of #251 and is still open. Nothing about the library changed.
 
+[#253]: https://github.com/alvarodiez20/pysuricata/issues/253
 [#240]: https://github.com/alvarodiez20/pysuricata/issues/240
 
 ### Removed

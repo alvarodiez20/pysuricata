@@ -238,19 +238,47 @@ class SVGHistogramRenderer:
             scale_factor = total_original / total_new
             new_counts = new_counts * scale_factor
 
-            # Round to integers while preserving total
-            new_counts_int = np.round(new_counts).astype(int)
+            # Largest-remainder apportionment (#253). Rounding each bin
+            # independently does not preserve the total, so a residual has to go
+            # somewhere; the question is where, and the old answer was "all of
+            # it into one bin, chosen by `argmax(count - round(count))`".
+            #
+            # That choice is only right when the residual is positive. It picks
+            # the bin rounded *down* the hardest -- correct if you owe rows out,
+            # backwards if you need them back. On the Titanic `Fare` column at
+            # 50 bins the residual is -3 and the winning bin holds 2.5, which
+            # `np.round` sends to 2 under round-half-to-even, so it had the
+            # largest fractional part (0.5) of any bin. 2 - 3 = **-1 rows**, and
+            # the total still came to 891, which is what made it look like a
+            # conserved differencing error rather than a rounding one.
+            #
+            # Floor-then-hand-out-the-remainder has neither failure mode: floors
+            # are non-negative, only additions follow, and exactly `residual`
+            # of them happen. This is Hare-Niemeyer, and it is the standard
+            # answer to "round these to integers without changing the sum".
+            floors = np.floor(new_counts).astype(int)
+            residual = total_original - int(floors.sum())
 
-            # Adjust for any rounding errors to preserve exact total
-            diff = total_original - np.sum(new_counts_int)
-            if diff != 0:
-                # Find the bin with the largest fractional part and adjust it
-                fractional_parts = new_counts - new_counts_int
-                if len(fractional_parts) > 0:
-                    max_fractional_idx = np.argmax(fractional_parts)
-                    new_counts_int[max_fractional_idx] += int(diff)
+            if residual > 0:
+                # Negated so the largest remainder sorts first; `stable` so
+                # equal remainders break by bin order rather than arbitrarily,
+                # which keeps the report byte-identical across runs.
+                order = np.argsort(-(new_counts - floors), kind="stable")
+                floors[order[: min(residual, bins)]] += 1
+            elif residual < 0:
+                # Unreachable from exact arithmetic -- the fractional parts sum
+                # to less than `bins`, so flooring can only undershoot. It is
+                # reachable from float error in `scale_factor`, and the whole
+                # point of this block is that an impossible-looking residual
+                # must not be allowed to push a bin below zero.
+                for index in np.argsort(-floors, kind="stable"):
+                    if residual == 0:
+                        break
+                    take = min(int(floors[index]), -residual)
+                    floors[index] -= take
+                    residual += take
 
-            new_counts = new_counts_int
+            new_counts = floors
         else:
             new_counts = np.zeros(bins, dtype=int)
 
@@ -414,7 +442,15 @@ class SVGHistogramRenderer:
             # Rule 3: a zero count draws nothing. A 1px floor is right for a
             # small non-zero value and wrong for zero -- ten empty months drawn
             # as ten 1px bars assert data that is not there.
-            if count == 0:
+            #
+            # `<= 0` rather than `== 0` (#253). Those are two different
+            # statements: zero is a drawing decision, and negative is a value
+            # that cannot exist. The apportionment above is what stops one being
+            # produced, and this is the second line -- a bin count that is
+            # somehow negative must not become `height="-0.33"`, which is
+            # invalid SVG that Chrome refuses and drops, nor `data-count="-1"`,
+            # which the tooltip would read out to the reader as fact.
+            if count <= 0:
                 continue
 
             x = index * width
