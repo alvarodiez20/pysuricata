@@ -60,6 +60,25 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Removed
 
+- **The missing-values section's old two-tab implementation** ([#242]).
+  `_build_completeness_tab` and `_build_chunk_tab` have been unreachable since
+  the chunk-count routing replaced them — **157 lines with zero call sites**
+  anywhere in the package, the tests, the scripts or the docs.
+
+  They also carried a second copy of the `chunk-legend`, with severity colours
+  hardcoded beside the live one that reads its colours from the tokens. Dead
+  code that duplicates a thing which now lives once is worse than dead code:
+  it is a wrong answer waiting for someone to read it instead of the right one.
+
+  Every CSS class they used is still used by the live path, so nothing in the
+  stylesheets became dead with them. Verified inert rather than assumed: the
+  Titanic report is **byte-identical** before and after, and all **1,311 facts**
+  in `scripts/report_fingerprint.py` match.
+
+[#242]: https://github.com/alvarodiez20/pysuricata/issues/242
+
+### Removed
+
 - **The browser demo's mocked `psutil` is gone.** `worker.js` registered a fake
   distribution so micropip's resolver would not fail on a dependency with no
   WASM wheel — `psutil` was declared as a runtime requirement while being
