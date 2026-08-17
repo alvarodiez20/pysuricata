@@ -450,8 +450,19 @@ class SVGHistogramRenderer:
         for tick in y_ticks:
             top = (1 - tick / hist_data.y_max) * 100.0
             label = self._format_tick_label_standardized(tick, is_count=True)
+            # The two extreme labels are nudged inward by CSS, or the top one
+            # floats above the plot and the `0` hangs below the axis. Which
+            # label is which is stated here rather than left to `:first-of-type`
+            # and `:last-of-type`: ticks are emitted in *ascending* order, so
+            # the first span is the bottom of the plot and the last is the top
+            # -- the reverse of what those selectors read as, which is why the
+            # nudges were applied to the wrong ends and produced exactly the
+            # two defects they exist to prevent.
+            edge = ' data-edge="top"' if top <= 0.0 else ""
+            if top >= 100.0:
+                edge = ' data-edge="bottom"'
             out.append(
-                f'<span class="hist__y" style="top:{top:.3f}%">'
+                f'<span class="hist__y"{edge} style="top:{top:.3f}%">'
                 f"{self.safe_html_escape(label)}</span>"
             )
         return "".join(out)

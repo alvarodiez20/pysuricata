@@ -642,12 +642,22 @@
    ============================================================= */
 /* The chart owns its own height now (`--hist-height` in _07-histogram.css),
    because the figure is a stack -- plot, x labels, caption -- rather than one
-   SVG. These rules used to force `height: 100%` down onto a child `<svg>`
-   that no longer exists, and forcing a height on the figure would collapse
-   the caption. */
-#pysuricata-report .var-card__body .var-chart .hist-variants .hist.variant {
-  display: block;
-}
+   SVG. The rule that used to live here forced `height: 100%` down onto a child
+   `<svg>` that no longer exists.
+
+   It is deleted rather than emptied, and that matters. When the height was
+   removed it was left as a bare `display: block`, which reads as harmless and
+   is not: at one id and five classes it outranks both
+   `.hist-variants .variant { display: none }` (one id, two classes) and
+   `.hist-variants .variant.active { display: block }` (one id, three). So
+   **every** histogram variant was displayed, not just the active one -- six
+   stacked plots per numeric card, 1,671px tall instead of ~560px, with the
+   bins and scale toggles apparently doing nothing because all six were
+   already on screen.
+
+   Only numeric was affected: categorical variants are `.cat.variant`, which
+   this selector never matched, which is why one card kind showed a single
+   chart and the other showed all of them. */
 
 /* ---- the stat row ------------------------------------------- */
 /* minmax(0, 1fr), not 1fr: a grid track's default minimum is its content, so

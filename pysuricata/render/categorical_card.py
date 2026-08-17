@@ -733,10 +733,19 @@ class CategoricalCardRenderer(CardRenderer):
         return BarData(labels=labels, counts=counts, percentages=pcts, values=values)
 
     def _render_bar_svg(self, bar_data: BarData) -> str:
-        """Render bar chart SVG."""
-        width, height = self.chart_dims.width, self.chart_dims.height
-        margin_top, margin_bottom = 8, 8
+        """Render bar chart SVG.
+
+        The height follows the number of bars rather than the other way round.
+        Dividing a fixed height among the bars made thickness a function of
+        cardinality -- two levels drew two 218px slabs where five drew 87px --
+        so the same chart read differently for every column.
+        """
+        n = len(bar_data.labels)
+        width = self.cat_config.chart_width
+        margin_top = margin_bottom = self.cat_config.chart_margin_y
         margin_right = 12
+        bar_h = self.cat_config.bar_height
+        bar_gap = self.cat_config.bar_gap
 
         # Calculate label width
         max_label_len = max((len(label) for label in bar_data.labels), default=0)
@@ -747,15 +756,11 @@ class CategoricalCardRenderer(CardRenderer):
         )
         margin_left = max(120, gutter)
 
-        n = len(bar_data.labels)
+        height = margin_top + margin_bottom + n * bar_h + max(0, n - 1) * bar_gap
         iw = width - margin_left - margin_right
-        ih = height - margin_top - margin_bottom
 
-        if n <= 0 or iw <= 0 or ih <= 0:
-            return self.create_empty_svg("cat-svg", width, height)
-
-        bar_gap = 6
-        bar_h = max(4, (ih - bar_gap * (n - 1)) / max(n, 1))
+        if n <= 0 or iw <= 0:
+            return self.create_empty_svg("cat-svg", width, self.chart_dims.height)
 
         vmax = max(bar_data.values) or 1.0
 
@@ -785,13 +790,24 @@ class CategoricalCardRenderer(CardRenderer):
                 else label
             )
 
+            # The value sits inside the bar when the bar is wide enough to hold
+            # it, and just past the end when it is not. Those are two different
+            # backgrounds -- a saturated fill and the paper -- so they cannot
+            # share one colour. They did: `--muted` grey on the bar measured
+            # **1.20:1**, against the 4.5:1 that AA asks of text this size, so
+            # the count was effectively invisible on every bar wide enough to
+            # contain it. The class says which background the text is on and
+            # the stylesheet colours it accordingly.
+            inside = w >= 56
+            placement = "is-inside" if inside else "is-outside"
+
             parts.append(
                 f'<g class="bar-row">'
                 f'<rect class="bar" x="{x0:.2f}" y="{y:.2f}" width="{w:.2f}" height="{bar_h:.2f}" rx="2" ry="2">'
                 f"<title>{label}\n{c:,} rows ({p:.1f}%)</title>"
                 f"</rect>"
                 f'<text class="bar-label" x="{margin_left - 6}" y="{y + bar_h / 2 + 3:.2f}" text-anchor="end">{short}</text>'
-                f'<text class="bar-value" x="{(x1 - 6 if w >= 56 else x1 + 4):.2f}" y="{y + bar_h / 2 + 3:.2f}" text-anchor="{("end" if w >= 56 else "start")}">{c:,} ({p:.1f}%)</text>'
+                f'<text class="bar-value {placement}" x="{(x1 - 6 if inside else x1 + 4):.2f}" y="{y + bar_h / 2 + 3:.2f}" text-anchor="{("end" if inside else "start")}">{c:,} ({p:.1f}%)</text>'
                 f"</g>"
             )
 
