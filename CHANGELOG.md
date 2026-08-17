@@ -14,6 +14,8 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-17
+
 ### Added
 
 - **A column-scaling benchmark**, `benchmarks/columns.py` ([#207]). Every other
@@ -44,96 +46,6 @@ quoted when both sides were measured in the same round-robin run.
   column-major chunking and shared sketch arena the issue describes, which are
   architecture rather than measurement and are not attempted here.
 
-### Changed
-
-- **The README says which axis its memory claim describes** ([#207]). It read
-  "memory usage stays bounded regardless of dataset size". That is true in rows
-  and false in columns, and a claim that does not name its axis is not a weaker
-  claim — it is one a reader will apply to the axis where it does not hold. It
-  now states the bound, the exception and the per-column cost, and links the
-  issue. `tests/test_readme_is_checked.py` keeps the two places that make the
-  claim in agreement; four of its new cases fail against the old wording.
-
-### Fixed
-
-- **The datetime timeline's tooltip was dead, and #219 killed it** ([#233]).
-  Sixty hotspots per timeline carried `data-count`, `data-pct` and a bucket
-  label, and hovering one showed nothing. `functionality.js` bound
-  `closest('.dt-svg .hot')`, but #219 rebuilt the timeline as a `figure.hist` so
-  it could reuse the histogram's classes — the SVG became `.hist-svg`, and
-  **nothing has carried `.dt-svg` since**. Three bindings were left pointing at
-  a class that no longer exists.
-
-  The second one mattered too: `isDt = !!bar.closest('.dt-svg')` decided which
-  tooltip a bar gets. Always false, so a datetime bar would have printed the
-  numeric format — `Range: [, )` from `data-x0`/`data-x1` it does not carry. It
-  now keys on `data-label`, the attribute the branch actually needs, which a
-  container rename cannot break.
-
-  Confirmed in Chromium: the timeline reads `34 rows (1.7%) · Range: [2024-01-01
-  – 2024-01-02]`, and a numeric bar still reads `2 rows (0.1%) · Range: [-3.9,
-  -3.6)`.
-
-  **The issue as filed was a probe artefact, and said so.** It reported the
-  *temporal* bars' tooltip dead, having queried `.tooltip, .chart-tooltip,
-  [role=tooltip], #tooltip` — the element is `.hist-tooltip`, created lazily on
-  first show. It also hovered a bar ~1,900px down a 900px viewport, where mouse
-  coordinates are viewport-relative and the event lands on nothing. My own first
-  re-probe repeated the second mistake. With the right selector and the bar
-  scrolled into view, the temporal tooltip has been working throughout.
-
-  What found the real break was the third acceptance box:
-  `tests/test_js_selectors_match_markup.py` extracts every class selector
-  `functionality.js` binds with `closest()` and asserts the renderers emit
-  something matching. `.dt-svg` failed on the first run. The pairing between
-  those two files is the fragile part — neither imports the other, and a rename
-  on one side produces no error, just a control that goes quiet.
-
-- **Three stray `}` were swallowing a media query, and the Common Values table
-  lost its responsive rules** ([#232]). The stylesheets had 1,123 opening braces
-  against 1,126 closing ones. That reads like a tidy-up and was not.
-
-  One stray was harmless — a bare `}` at top level in `_06-cards.css`, left
-  behind when a `@media` block's contents were deleted; a parser discards it.
-  The other two were a different shape, in `_08-categorical.css`:
-
-  ```css
-  #pysuricata-report .common-values-table.enhanced
-  }
-  ```
-
-  A selector with no block. A parser accumulates a prelude until the first `{`,
-  and with the block missing **the next `{` in the file gets claimed instead** —
-  here the `@media (max-width: 768px)` two lines below. The media query became
-  part of an invalid selector and was dropped with it.
-
-  Measured in Chromium, both ways: **993 style rules and 37 media rules before,
-  995 and 38 after**, with `font-size: 0.7rem` and `width: 60px` recovered. The
-  user-visible consequence was that the Common Values table rendered at
-  **12.8px at a 500px viewport**, the desktop size, where the stylesheet has
-  said 11.2px since the rule was written. Unchanged at 1240px.
-
-  The fragments date to #23's CSS modularization, so they had been dropping
-  those rules for a long time. `tests/test_css_integrity.py` gains both a brace
-  balance check and — because a count says *that* something is wrong and not
-  *what* — a check for the specific shape, a selector followed by `}` instead of
-  `{`. Both catch their regression.
-
-- **The dark-mode switch arrived in waves.** Nothing animated the theme on
-  purpose — but almost every hover rule in the stylesheet carries its own
-  `transition`, and a good number are `transition: all`, which animates colour
-  along with everything else. So the flip was paced by whatever duration each
-  element happened to declare: `.12s` on a card, `.2s` on a table row, `.3s` on
-  the page. Sections visibly caught each other up.
-
-  The toggle now suppresses transitions across the flip and restores them on the
-  same tick, so the theme lands everywhere at once and hover transitions are
-  untouched. The two `transition` declarations that existed only to animate the
-  theme are gone. Verified by reading computed colours in the same tick as the
-  toggle: every sampled element is already at its final value.
-
-### Added
-
 - **The benchmark harnesses refuse to measure on a busy machine** ([#212]). The
   rule this project measures by — *both sides in the same round-robin, on the
   same machine, within the same run* — cancels drift between the things being
@@ -162,161 +74,6 @@ quoted when both sides were measured in the same round-robin run.
   `tests/test_benchmark_load_guard.py` asserts it is there — a rule that lives
   only in a document is what let this happen, so the test fails if the note is
   removed. All four mutations of the guard are caught, including that one.
-
-### Fixed
-
-- **Categorical and boolean columns track their own chunks, so the Missing
-  Values pane is gated the same way on all four card kinds** ([#193]). #154's
-  5b.7 set the rule — render the pane only when **missing > 0 and chunks > 1**,
-  the one condition under which it knows something the card face does not,
-  namely *where in the read* the gaps fall. It could only land for numeric and
-  datetime, because `render/html.py` finalized the other two without chunk
-  metadata and neither summary had a field to hold it.
-
-  A single-chunk report was consistent by accident: the numeric and datetime
-  panes dropped and the other two had nothing to drop against. A multi-chunk
-  report was not — `Age` got a strip showing where its gaps fell and `Embarked`
-  got a Present/Missing pair restating its header.
-
-  `CategoricalAccumulator` and `BooleanAccumulator` now count rows and missing
-  values per chunk through a shared `ChunkTracker`, carry `chunk_metadata` on
-  their summaries, and implement `mark_chunk_boundary()`. The engine needed no
-  change: it has always been duck-typed, with a comment saying the other kinds
-  "should start working the moment they do".
-
-  **Boolean earned its details section back.** It had none — a documented
-  decision (#155, 5c.6) rather than an omission, on the grounds that its two
-  panes restated the card face. That reasoning named this issue as the release
-  condition: *"boolean accumulators are finalized without chunk metadata, so
-  the pane has no such fact to offer and cannot acquire one. When #193 lands it
-  may earn its tab back under the same rule."* It now has one pane, Missing
-  Values, appearing only when the rule opens.
-
-  Merging is handled rather than assumed: a merged column's chunks are the two
-  runs' chunks in order, so the second side's boundaries are offset by the
-  first's row count instead of restarting at zero halfway through.
-
-  `tests/test_missing_pane_gate.py` asserts the gate **open and closed on every
-  kind**, which is the point the issue makes: `getattr(stats, "chunk_metadata",
-  None)` returns `None` rather than raising, so a gate applied to a kind with no
-  such field *looks* applied while hiding the pane permanently — and a test that
-  only checks the closed side passes just as happily against a pane that can
-  never appear. All four mutations of the fix are caught, including that one.
-
-  Two fixture traps hit while writing it, both recorded because they report
-  "absent" when the truth is "the fixture missed the branch":
-  `np.where(mask, pd.NaT, dates)` yields an *object* column that never infers as
-  datetime, and a bool column with `None` punched into it is object too and
-  infers as categorical. A nullable `"boolean"` dtype with `pd.NA` is what
-  produces a boolean card.
-
-  One thing deliberately not changed: feeding a nullable `"boolean"` Series
-  straight into the accumulator raises *"boolean value of NA is ambiguous"*.
-  That is a shape the pipeline never produces — `_to_bool_array_pandas` hands
-  over `[bool | None]`, having already converted `pd.NA` — so the crash was a
-  test inventing an input, not a defect.
-
-### Changed
-
-- **The stylesheet's comments no longer ship with every report** ([#39]). The
-  report inlines its own CSS, so all **545 of them went out with it: 74,036
-  bytes, 33% of the inlined stylesheet and 12.9% of the whole document.** The
-  Titanic report drops from **574,578 to 499,802 bytes — 13% — for no change a
-  reader can see.** The comments stay in `static/css/`, which is the only place
-  anybody reads them.
-
-  Verified rather than assumed: the same report was rendered twice in Chromium,
-  once with the comments and once without, and the *computed* style of every
-  element compared. **Zero of 3,978 elements differ.** A regex over a
-  stylesheet is only safe if the browser agrees, so the browser was asked.
-
-  Comments and the blank lines they leave, and nothing else. Collapsing
-  whitespace or rewriting values is a minifier, which is a much larger promise
-  to keep correct — `content` strings and `url()` payloads both have rules a
-  naive pass gets wrong. There are none in these stylesheets today, and this
-  stays safe if one appears tomorrow. `/*!` is honoured, so a licence header
-  added later survives.
-
-  Found by the ratchet rather than by looking for it: the datetime-chart fix
-  below added 907 bytes of CSS and pushed the report 578 bytes over its budget.
-  Being stopped by that is the ratchet working, and the honest answer was not
-  to write shorter comments. `BYTES_BASELINE` drops 574,000 → 500,000.
-- **`Processed bytes (≈)` left the primary stat row on the numeric and datetime
-  cards** ([#209]). UX-21 asked for this; #104 dropped the donut and the stat-row
-  half never landed. The numeric card's right-hand table read Min, Q1, Median,
-  Mean, Q3, Max — six facts about the distribution — and then one about the
-  profiler's own bookkeeping, in the position of highest attention on the card.
-  It answers a question about PySuricata, not about the data. It is not useless,
-  so it moved to the Statistics pane rather than going away.
-
-  **Two of four kinds, and the other two are recorded rather than waived.**
-  Categorical has details panes but no Statistics pane, and every pane it has is
-  conditional — filing a fact that must always be in the document inside a pane
-  that renders only sometimes would "move" it by making it vanish, which
-  `test_report_data_invariance.py` would rightly catch. Boolean has no details
-  section at all, and that is a documented decision (#155, 5c.6) rather than an
-  omission: two values, two counts, both on the card face, no second level of
-  disclosure to offer. Giving it one to house a byte count would be the tail
-  wagging the dog.
-
-  `tests/test_processed_bytes_placement.py` pins both halves as a ratchet — move
-  one of the remaining two and it fails, telling you to shrink the set. Its
-  fixture carries all four card kinds on purpose: Titanic has no datetime column
-  (#150), so the example report cannot exercise that branch at all, and a
-  fixture that misses a branch reports "absent", which reads as passing.
-
-  Worth recording for the next person: deciding "primary row or details pane" by
-  splitting the card's markup at the `details-toggle` button gets **categorical
-  backwards**, because that card emits the toggle ahead of its stat row. The
-  test decides by which container opened most recently instead, and the first
-  version of this measurement reported categorical as already done when it was
-  not.
-
-- **A histogram bar stopped paying for things nothing reads** ([#206], first
-  pass). A bar is the most repeated element in the report — 50 of them in each
-  of 6 variants of every numeric column, 300 per column — so anything constant
-  on one is multiplied by 300. Two things were:
-
-  `vector-effect="non-scaling-stroke"`, **41 bytes on every mark**, moved into
-  the `.bar`, `.grid` and `.axis` rules. It belongs there: the stylesheet's own
-  comment beside `stroke: var(--paper)` already explained why the stroke must
-  not scale. And a third decimal on four coordinates — the viewBox is 0..100, so
-  a unit is a percent of the plot and at 1,100px the third decimal is a
-  ten-thousandth of a pixel.
-
-  | | Before | After |
-  |---|---:|---:|
-  | one bar | 184 B | **131 B** |
-  | marginal bytes per numeric column | 73,204 | **63,596** |
-  | Titanic report | 600,491 | **573,809** |
-
-  `vector-effect` as a *CSS property* rather than an attribute is SVG2, so it
-  was verified rather than assumed: computed style reports `non-scaling-stroke`
-  on bar, grid and axis at 1240px and 390px, and the rendered histogram is
-  **pixel-identical** before and after — `getbbox()` on the difference returns
-  `None`. Isolating that mattered, because the coordinate rounding *does* move
-  264 of 1.1M pixels by at most 47/255, all of it antialiasing on bar edges.
-
-  **`data-col` was measured, removed, and put back.** It reads as pure
-  redundancy — the column is on the `.hist-variants` parent, and neither the
-  tooltip handler nor any stylesheet touches it. But `scripts/report_fingerprint.py`
-  takes an element's scope from the *same tag*, so dropping it turned every
-  `attr::col_age::count` into `attr::::count` and collided the bar counts of
-  every numeric column under one key. `tests/test_report_data_invariance.py`
-  caught it. A weaker invariance guard is the wrong thing to buy with 19 bytes a
-  bar, so the 5,700 bytes per column stay spent, and the reason is now written
-  next to the attribute.
-
-  This is the cheap half of #206 and does not close it: the six variants are
-  still all rendered. The remaining half — emit one and build the other five on
-  toggle — needs a JS port of a 179-line SVG renderer, which is a second
-  implementation of the chart and wants a decision rather than a commit.
-
-  Guarded by `TestABarPaysOnlyForWhatIsRead`, which asserts both directions:
-  nothing constant creeps back on, and everything with a reader stays. All four
-  mutations of it fail as they should.
-
-### Added
 
 - **The redesign's acceptance criteria run as tests** ([#124]). Every redesign
   issue ends with numeric acceptance lines, already phrased as assertions and
@@ -422,6 +179,243 @@ quoted when both sides were measured in the same round-robin run.
   must not acquire an origin. Esc exits, and the bar carries a visible exit too,
   since key events inside the report belong to that document rather than to the
   page.
+
+### Changed
+
+- **The README says which axis its memory claim describes** ([#207]). It read
+  "memory usage stays bounded regardless of dataset size". That is true in rows
+  and false in columns, and a claim that does not name its axis is not a weaker
+  claim — it is one a reader will apply to the axis where it does not hold. It
+  now states the bound, the exception and the per-column cost, and links the
+  issue. `tests/test_readme_is_checked.py` keeps the two places that make the
+  claim in agreement; four of its new cases fail against the old wording.
+
+- **The stylesheet's comments no longer ship with every report** ([#39]). The
+  report inlines its own CSS, so all **545 of them went out with it: 74,036
+  bytes, 33% of the inlined stylesheet and 12.9% of the whole document.** The
+  Titanic report drops from **574,578 to 499,802 bytes — 13% — for no change a
+  reader can see.** The comments stay in `static/css/`, which is the only place
+  anybody reads them.
+
+  Verified rather than assumed: the same report was rendered twice in Chromium,
+  once with the comments and once without, and the *computed* style of every
+  element compared. **Zero of 3,978 elements differ.** A regex over a
+  stylesheet is only safe if the browser agrees, so the browser was asked.
+
+  Comments and the blank lines they leave, and nothing else. Collapsing
+  whitespace or rewriting values is a minifier, which is a much larger promise
+  to keep correct — `content` strings and `url()` payloads both have rules a
+  naive pass gets wrong. There are none in these stylesheets today, and this
+  stays safe if one appears tomorrow. `/*!` is honoured, so a licence header
+  added later survives.
+
+  Found by the ratchet rather than by looking for it: the datetime-chart fix
+  below added 907 bytes of CSS and pushed the report 578 bytes over its budget.
+  Being stopped by that is the ratchet working, and the honest answer was not
+  to write shorter comments. `BYTES_BASELINE` drops 574,000 → 500,000.
+- **`Processed bytes (≈)` left the primary stat row on the numeric and datetime
+  cards** ([#209]). UX-21 asked for this; #104 dropped the donut and the stat-row
+  half never landed. The numeric card's right-hand table read Min, Q1, Median,
+  Mean, Q3, Max — six facts about the distribution — and then one about the
+  profiler's own bookkeeping, in the position of highest attention on the card.
+  It answers a question about PySuricata, not about the data. It is not useless,
+  so it moved to the Statistics pane rather than going away.
+
+  **Two of four kinds, and the other two are recorded rather than waived.**
+  Categorical has details panes but no Statistics pane, and every pane it has is
+  conditional — filing a fact that must always be in the document inside a pane
+  that renders only sometimes would "move" it by making it vanish, which
+  `test_report_data_invariance.py` would rightly catch. Boolean has no details
+  section at all, and that is a documented decision (#155, 5c.6) rather than an
+  omission: two values, two counts, both on the card face, no second level of
+  disclosure to offer. Giving it one to house a byte count would be the tail
+  wagging the dog.
+
+  `tests/test_processed_bytes_placement.py` pins both halves as a ratchet — move
+  one of the remaining two and it fails, telling you to shrink the set. Its
+  fixture carries all four card kinds on purpose: Titanic has no datetime column
+  (#150), so the example report cannot exercise that branch at all, and a
+  fixture that misses a branch reports "absent", which reads as passing.
+
+  Worth recording for the next person: deciding "primary row or details pane" by
+  splitting the card's markup at the `details-toggle` button gets **categorical
+  backwards**, because that card emits the toggle ahead of its stat row. The
+  test decides by which container opened most recently instead, and the first
+  version of this measurement reported categorical as already done when it was
+  not.
+
+- **A histogram bar stopped paying for things nothing reads** ([#206], first
+  pass). A bar is the most repeated element in the report — 50 of them in each
+  of 6 variants of every numeric column, 300 per column — so anything constant
+  on one is multiplied by 300. Two things were:
+
+  `vector-effect="non-scaling-stroke"`, **41 bytes on every mark**, moved into
+  the `.bar`, `.grid` and `.axis` rules. It belongs there: the stylesheet's own
+  comment beside `stroke: var(--paper)` already explained why the stroke must
+  not scale. And a third decimal on four coordinates — the viewBox is 0..100, so
+  a unit is a percent of the plot and at 1,100px the third decimal is a
+  ten-thousandth of a pixel.
+
+  | | Before | After |
+  |---|---:|---:|
+  | one bar | 184 B | **131 B** |
+  | marginal bytes per numeric column | 73,204 | **63,596** |
+  | Titanic report | 600,491 | **573,809** |
+
+  `vector-effect` as a *CSS property* rather than an attribute is SVG2, so it
+  was verified rather than assumed: computed style reports `non-scaling-stroke`
+  on bar, grid and axis at 1240px and 390px, and the rendered histogram is
+  **pixel-identical** before and after — `getbbox()` on the difference returns
+  `None`. Isolating that mattered, because the coordinate rounding *does* move
+  264 of 1.1M pixels by at most 47/255, all of it antialiasing on bar edges.
+
+  **`data-col` was measured, removed, and put back.** It reads as pure
+  redundancy — the column is on the `.hist-variants` parent, and neither the
+  tooltip handler nor any stylesheet touches it. But `scripts/report_fingerprint.py`
+  takes an element's scope from the *same tag*, so dropping it turned every
+  `attr::col_age::count` into `attr::::count` and collided the bar counts of
+  every numeric column under one key. `tests/test_report_data_invariance.py`
+  caught it. A weaker invariance guard is the wrong thing to buy with 19 bytes a
+  bar, so the 5,700 bytes per column stay spent, and the reason is now written
+  next to the attribute.
+
+  This is the cheap half of #206 and does not close it: the six variants are
+  still all rendered. The remaining half — emit one and build the other five on
+  toggle — needs a JS port of a 179-line SVG renderer, which is a second
+  implementation of the chart and wants a decision rather than a commit.
+
+  Guarded by `TestABarPaysOnlyForWhatIsRead`, which asserts both directions:
+  nothing constant creeps back on, and everything with a reader stays. All four
+  mutations of it fail as they should.
+
+### Fixed
+
+- **The datetime timeline's tooltip was dead, and #219 killed it** ([#233]).
+  Sixty hotspots per timeline carried `data-count`, `data-pct` and a bucket
+  label, and hovering one showed nothing. `functionality.js` bound
+  `closest('.dt-svg .hot')`, but #219 rebuilt the timeline as a `figure.hist` so
+  it could reuse the histogram's classes — the SVG became `.hist-svg`, and
+  **nothing has carried `.dt-svg` since**. Three bindings were left pointing at
+  a class that no longer exists.
+
+  The second one mattered too: `isDt = !!bar.closest('.dt-svg')` decided which
+  tooltip a bar gets. Always false, so a datetime bar would have printed the
+  numeric format — `Range: [, )` from `data-x0`/`data-x1` it does not carry. It
+  now keys on `data-label`, the attribute the branch actually needs, which a
+  container rename cannot break.
+
+  Confirmed in Chromium: the timeline reads `34 rows (1.7%) · Range: [2024-01-01
+  – 2024-01-02]`, and a numeric bar still reads `2 rows (0.1%) · Range: [-3.9,
+  -3.6)`.
+
+  **The issue as filed was a probe artefact, and said so.** It reported the
+  *temporal* bars' tooltip dead, having queried `.tooltip, .chart-tooltip,
+  [role=tooltip], #tooltip` — the element is `.hist-tooltip`, created lazily on
+  first show. It also hovered a bar ~1,900px down a 900px viewport, where mouse
+  coordinates are viewport-relative and the event lands on nothing. My own first
+  re-probe repeated the second mistake. With the right selector and the bar
+  scrolled into view, the temporal tooltip has been working throughout.
+
+  What found the real break was the third acceptance box:
+  `tests/test_js_selectors_match_markup.py` extracts every class selector
+  `functionality.js` binds with `closest()` and asserts the renderers emit
+  something matching. `.dt-svg` failed on the first run. The pairing between
+  those two files is the fragile part — neither imports the other, and a rename
+  on one side produces no error, just a control that goes quiet.
+
+- **Three stray `}` were swallowing a media query, and the Common Values table
+  lost its responsive rules** ([#232]). The stylesheets had 1,123 opening braces
+  against 1,126 closing ones. That reads like a tidy-up and was not.
+
+  One stray was harmless — a bare `}` at top level in `_06-cards.css`, left
+  behind when a `@media` block's contents were deleted; a parser discards it.
+  The other two were a different shape, in `_08-categorical.css`:
+
+  ```css
+  #pysuricata-report .common-values-table.enhanced
+  }
+  ```
+
+  A selector with no block. A parser accumulates a prelude until the first `{`,
+  and with the block missing **the next `{` in the file gets claimed instead** —
+  here the `@media (max-width: 768px)` two lines below. The media query became
+  part of an invalid selector and was dropped with it.
+
+  Measured in Chromium, both ways: **993 style rules and 37 media rules before,
+  995 and 38 after**, with `font-size: 0.7rem` and `width: 60px` recovered. The
+  user-visible consequence was that the Common Values table rendered at
+  **12.8px at a 500px viewport**, the desktop size, where the stylesheet has
+  said 11.2px since the rule was written. Unchanged at 1240px.
+
+  The fragments date to #23's CSS modularization, so they had been dropping
+  those rules for a long time. `tests/test_css_integrity.py` gains both a brace
+  balance check and — because a count says *that* something is wrong and not
+  *what* — a check for the specific shape, a selector followed by `}` instead of
+  `{`. Both catch their regression.
+
+- **The dark-mode switch arrived in waves.** Nothing animated the theme on
+  purpose — but almost every hover rule in the stylesheet carries its own
+  `transition`, and a good number are `transition: all`, which animates colour
+  along with everything else. So the flip was paced by whatever duration each
+  element happened to declare: `.12s` on a card, `.2s` on a table row, `.3s` on
+  the page. Sections visibly caught each other up.
+
+  The toggle now suppresses transitions across the flip and restores them on the
+  same tick, so the theme lands everywhere at once and hover transitions are
+  untouched. The two `transition` declarations that existed only to animate the
+  theme are gone. Verified by reading computed colours in the same tick as the
+  toggle: every sampled element is already at its final value.
+
+- **Categorical and boolean columns track their own chunks, so the Missing
+  Values pane is gated the same way on all four card kinds** ([#193]). #154's
+  5b.7 set the rule — render the pane only when **missing > 0 and chunks > 1**,
+  the one condition under which it knows something the card face does not,
+  namely *where in the read* the gaps fall. It could only land for numeric and
+  datetime, because `render/html.py` finalized the other two without chunk
+  metadata and neither summary had a field to hold it.
+
+  A single-chunk report was consistent by accident: the numeric and datetime
+  panes dropped and the other two had nothing to drop against. A multi-chunk
+  report was not — `Age` got a strip showing where its gaps fell and `Embarked`
+  got a Present/Missing pair restating its header.
+
+  `CategoricalAccumulator` and `BooleanAccumulator` now count rows and missing
+  values per chunk through a shared `ChunkTracker`, carry `chunk_metadata` on
+  their summaries, and implement `mark_chunk_boundary()`. The engine needed no
+  change: it has always been duck-typed, with a comment saying the other kinds
+  "should start working the moment they do".
+
+  **Boolean earned its details section back.** It had none — a documented
+  decision (#155, 5c.6) rather than an omission, on the grounds that its two
+  panes restated the card face. That reasoning named this issue as the release
+  condition: *"boolean accumulators are finalized without chunk metadata, so
+  the pane has no such fact to offer and cannot acquire one. When #193 lands it
+  may earn its tab back under the same rule."* It now has one pane, Missing
+  Values, appearing only when the rule opens.
+
+  Merging is handled rather than assumed: a merged column's chunks are the two
+  runs' chunks in order, so the second side's boundaries are offset by the
+  first's row count instead of restarting at zero halfway through.
+
+  `tests/test_missing_pane_gate.py` asserts the gate **open and closed on every
+  kind**, which is the point the issue makes: `getattr(stats, "chunk_metadata",
+  None)` returns `None` rather than raising, so a gate applied to a kind with no
+  such field *looks* applied while hiding the pane permanently — and a test that
+  only checks the closed side passes just as happily against a pane that can
+  never appear. All four mutations of the fix are caught, including that one.
+
+  Two fixture traps hit while writing it, both recorded because they report
+  "absent" when the truth is "the fixture missed the branch":
+  `np.where(mask, pd.NaT, dates)` yields an *object* column that never infers as
+  datetime, and a bool column with `None` punched into it is object too and
+  infers as categorical. A nullable `"boolean"` dtype with `pd.NA` is what
+  produces a boolean card.
+
+  One thing deliberately not changed: feeding a nullable `"boolean"` Series
+  straight into the accumulator raises *"boolean value of NA is ambiguous"*.
+  That is a shape the pipeline never produces — `_to_bool_array_pandas` hands
+  over `[bool | None]`, having already converted `pd.NA` — so the crash was a
+  test inventing an input, not a defect.
 
 [#124]: https://github.com/alvarodiez20/pysuricata/issues/124
 [#193]: https://github.com/alvarodiez20/pysuricata/issues/193
