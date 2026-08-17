@@ -158,8 +158,6 @@ attr::2026-02-05::count	15
 attr::2026-02-05::pct	1.7
 attr::2026-02-06 – 2026-02-07::count	15
 attr::2026-02-06 – 2026-02-07::pct	1.7
-attr::2026::count	891
-attr::2026::pct	100
 attr::20:00::count	37
 attr::20:00::pct	4.2
 attr::21:00::count	37
@@ -932,6 +930,10 @@ attr::col_fare::value	166.076141713
 attr::col_fare::value	176.265539114
 attr::col_fare::value	176.265539114
 attr::col_fare::value	2.2526764199
+attr::col_name::count	10
+attr::col_name::count	302
+attr::col_name::count	489
+attr::col_name::count	90
 kv::::booked 311	56
 kv::::columns	8
 kv::::duplicates	0
