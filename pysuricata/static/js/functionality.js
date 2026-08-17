@@ -319,7 +319,12 @@
 
   // Timeline histogram hover effects with mathematical notation
   document.addEventListener('mousemove', function (e) {
-    const timelineHot = e.target.closest('.dt-svg .hot');
+    // `.hot` rather than `.dt-svg .hot`: #219 rebuilt the timeline as a
+    // `figure.hist` so it could reuse the histogram's classes, and the SVG
+    // became `.hist-svg`. Nothing has carried `.dt-svg` since, so this
+    // selector matched nothing and the timeline's tooltip was dead while its
+    // 60 hotspots carried count, percentage and bucket label (#233).
+    const timelineHot = e.target.closest('.hot');
     if (timelineHot) {
       const count = timelineHot.getAttribute('data-count') || '0';
       const pct = timelineHot.getAttribute('data-pct') || '0.0';
@@ -371,9 +376,14 @@
       return;
     }
 
-    const bar = e.target.closest('.hist-svg .bar, .dt-svg .bar');
+    const bar = e.target.closest('.hist-svg .bar');
     if (!bar) { hideTip(); return; }
-    const isDt = !!bar.closest('.dt-svg');
+    // Decided by the data the branch needs rather than by an ancestor's class.
+    // A datetime bar labels a bucket; a numeric one spans a range. Keying on
+    // `.dt-svg` meant a container rename silently switched every datetime bar
+    // to the numeric format, printing `Range: [, )` from attributes it does
+    // not have (#233).
+    const isDt = bar.hasAttribute('data-label');
     const count = bar.getAttribute('data-count') || '0';
     const pct = bar.getAttribute('data-pct') || '0.0';
     if (isDt) {
@@ -393,7 +403,7 @@
   // Hide when leaving a histogram entirely
   document.addEventListener('mouseleave', function (e) {
     if (e.target && e.target.closest &&
-        (e.target.closest('.hist-svg') || e.target.closest('.dt-svg') ||
+        (e.target.closest('.hist-svg') ||
          e.target.closest('.temporal-chart') || e.target.closest('.chunk-distribution') ||
          e.target.closest('.chunk-spectrum') || e.target.closest('.missing-spectrum-bar') ||
          e.target.closest('.dataprep-spectrum'))) {

@@ -16,6 +16,39 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The datetime timeline's tooltip was dead, and #219 killed it** ([#233]).
+  Sixty hotspots per timeline carried `data-count`, `data-pct` and a bucket
+  label, and hovering one showed nothing. `functionality.js` bound
+  `closest('.dt-svg .hot')`, but #219 rebuilt the timeline as a `figure.hist` so
+  it could reuse the histogram's classes — the SVG became `.hist-svg`, and
+  **nothing has carried `.dt-svg` since**. Three bindings were left pointing at
+  a class that no longer exists.
+
+  The second one mattered too: `isDt = !!bar.closest('.dt-svg')` decided which
+  tooltip a bar gets. Always false, so a datetime bar would have printed the
+  numeric format — `Range: [, )` from `data-x0`/`data-x1` it does not carry. It
+  now keys on `data-label`, the attribute the branch actually needs, which a
+  container rename cannot break.
+
+  Confirmed in Chromium: the timeline reads `34 rows (1.7%) · Range: [2024-01-01
+  – 2024-01-02]`, and a numeric bar still reads `2 rows (0.1%) · Range: [-3.9,
+  -3.6)`.
+
+  **The issue as filed was a probe artefact, and said so.** It reported the
+  *temporal* bars' tooltip dead, having queried `.tooltip, .chart-tooltip,
+  [role=tooltip], #tooltip` — the element is `.hist-tooltip`, created lazily on
+  first show. It also hovered a bar ~1,900px down a 900px viewport, where mouse
+  coordinates are viewport-relative and the event lands on nothing. My own first
+  re-probe repeated the second mistake. With the right selector and the bar
+  scrolled into view, the temporal tooltip has been working throughout.
+
+  What found the real break was the third acceptance box:
+  `tests/test_js_selectors_match_markup.py` extracts every class selector
+  `functionality.js` binds with `closest()` and asserts the renderers emit
+  something matching. `.dt-svg` failed on the first run. The pairing between
+  those two files is the fragile part — neither imports the other, and a rename
+  on one side produces no error, just a control that goes quiet.
+
 - **Three stray `}` were swallowing a media query, and the Common Values table
   lost its responsive rules** ([#232]). The stylesheets had 1,123 opening braces
   against 1,126 closing ones. That reads like a tidy-up and was not.
@@ -309,6 +342,7 @@ quoted when both sides were measured in the same round-robin run.
 [#209]: https://github.com/alvarodiez20/pysuricata/issues/209
 [#212]: https://github.com/alvarodiez20/pysuricata/issues/212
 [#232]: https://github.com/alvarodiez20/pysuricata/issues/232
+[#233]: https://github.com/alvarodiez20/pysuricata/issues/233
 
 ## [0.1.1] - 2026-08-17
 
