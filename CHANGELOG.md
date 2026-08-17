@@ -30,6 +30,38 @@ quoted when both sides were measured in the same round-robin run.
   reports **pysuricata 0.1.2**, and profiles the sample to 891 rows × 12
   columns with no error and no lazy import.
 
+### Fixed
+
+- **The datetime card no longer claims a timezone the column does not have**
+  ([#241]). Two sites emitted the literal `("Timezone", "UTC", None)` and
+  `_format_timestamp` appended `UTC` to every rendered instant, so a
+  `US/Eastern` column was labelled UTC and a **naive** column — which has no
+  timezone at all — was labelled UTC too. The report was stating a fact about
+  the data that it did not get from the data.
+
+  `source_timezone` is the obvious fix and is not sufficient on its own. The
+  accumulator stores it only when the zone is *not* UTC, so `None` means "naive
+  **or** UTC" and cannot express the distinction the issue is about — measured:
+  naive and UTC columns both report `None`, only `US/Eastern` reports a value.
+  `_timezone_of()` falls back to the dtype string, which carries the whole truth
+  and is on the summary already.
+
+  | column | Timezone row | rendered instant |
+  |---|---|---|
+  | naive | `— (naive)` | `2024-01-01 00:00:00` |
+  | UTC | `UTC` | `2024-01-01 00:00:00 UTC` |
+  | US/Eastern | `US/Eastern` | `2024-01-01 05:00:00 UTC` |
+
+  The last row is deliberate. The accumulator stores epoch nanoseconds, so the
+  instant genuinely *is* 05:00 UTC — midnight in New York — and rendering it in
+  UTC is a correct conversion rather than a mislabelling, with the Timezone row
+  giving a reader what they need to reconcile the two. The naive case is the one
+  that was indefensible: there is no instant there, only a wall clock, and `UTC`
+  was invented. Its card now contains the string nowhere at all.
+
+  The `summarize()` payload is untouched — the fallback lives in the renderer,
+  so `source_timezone` still reports exactly what `docs/summary-schema.md` says.
+
 ## [0.1.2] - 2026-08-17
 
 ### Added
@@ -440,6 +472,7 @@ quoted when both sides were measured in the same round-robin run.
 [#212]: https://github.com/alvarodiez20/pysuricata/issues/212
 [#232]: https://github.com/alvarodiez20/pysuricata/issues/232
 [#233]: https://github.com/alvarodiez20/pysuricata/issues/233
+[#241]: https://github.com/alvarodiez20/pysuricata/issues/241
 
 ## [0.1.1] - 2026-08-17
 
