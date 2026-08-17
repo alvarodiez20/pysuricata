@@ -11,6 +11,13 @@ uv run pytest -m "not benchmark"            # test suite
 uv run pytest benchmarks/accuracy.py -v     # statistical accuracy oracle
 uv run ruff check . && uv run ruff format . # lint (line-length 88, py310 target)
 uv run mkdocs serve                         # docs
+uv run python -m benchmarks.check_docs --strict   # docs + README vs the live API
+
+# Layout acceptance criteria in a real browser (#124). Not in `dev`: Chromium is
+# ~300 MB and only these 31 cases need it, so they skip when it is absent.
+uv sync --all-extras --group browser && uv run playwright install chromium
+uv run pytest -m browser
+uv run python scripts/contact_sheet.py      # 6 review captures, never a gate
 
 python -m benchmarks.hotspots               # where does profile() spend its time
 python -m benchmarks.kernels                # per-kernel timings + memory roofline
@@ -62,23 +69,57 @@ Accumulators never see the frame, only arrays.
 
 ## Current priorities
 
-See `docs/roadmap.md` (**v8, re-audited at 0.0.62**) for the measured numbers and
-the ordering. Everything this section used to list as pending has landed: the
-chunk-size cap, the Misra-Gries gate, the KMV threshold pre-filter, the datetime
-vectorisation and the stale `-2e18` bound.
+`docs/roadmap.md` is **v10**. The working roadmap is **v15**, which is not in the
+repo — reconciling the two is #251, and until it lands treat the issue tracker as
+the authority rather than either document.
 
-**Phase 0 and Phase 1 are complete**, and the report redesign (#110–#125) is
-fifteen issues of sixteen closed. Do not regress any of it — a change that makes
-`benchmarks/accuracy.py` fail is wrong even if it is faster, and the same now
-goes for `tests/test_report_data_invariance.py`.
+**0.1.1 and 0.1.2 are published.** The report redesign is closed out, and so are
+both packaging blockers, the README drift, the per-chunk missing counts and the
+Missing-pane gate. Do not regress any of it — a change that makes
+`benchmarks/accuracy.py` fail is wrong even if it is faster, and the same goes
+for `tests/test_report_data_invariance.py`.
 
-Next, in order: close out the redesign (**#122**, which carries a height
-decision that needs the user rather than more work; then #124, #121), **#139**
-(reopened — per-column per-chunk missing counts are never produced), regenerate
-the stale example report in `docs/assets/`, publish (#38), prove the memory
-claim (#92) before shipping the budget (#79), then the native core (#44) —
-**KMV first, moments last**, since moments are ~1.4% of the numeric path and KMV
-was half of it.
+Three ratchets now guard things that only go one way. Each fails **in both
+directions**: growth is a regression, and shrinking asks you to lower the
+baseline so the win cannot be quietly respent.
+
+| ratchet | where |
+|---|---|
+| report bytes, and elements per card | `tests/test_report_layout.py` |
+| untokenised colours | `tests/test_colour_tokens.py` |
+| `Processed bytes` still in a stat row | `tests/test_processed_bytes_placement.py` |
+
+Next, in rough order:
+
+1. **The reach ladder** — the half v12–v14 dropped. #247 (Arrow IPC does not
+   load, which is the one format another language writes) then #250 (an
+   `action.yml` over `pysuricata check`, and a JSON Schema for the payload).
+   Cheapest reach per unit effort in the project.
+2. **Two one-hour corrections**: #248 (the duplicate threshold is 1σ, so a clean
+   frame false-alarms ~10% of runs) and #249 (a `sys.path` fall-through that
+   `__version__` cannot detect and that corrupts every round *identically*).
+3. **The column axis** — #207, and #39 for the report side. Bounded memory holds
+   in rows (189 MB at 2M, 190 MB at 5M) and fails in columns (929 MB at
+   20,000 × 600, on *less* data). Nothing in the field handles wide data, so
+   this is where a weakness converts into a claim. Exit: a 600-column frame
+   inside a 512 MB runner, which also answers #92 and unblocks #79.
+
+   Note the largest remaining report saving is **no longer tracked**. #206 is
+   closed on its cheap half (repeated constants out of every bar, 73,204 →
+   ~63,600 bytes per numeric column), but the six pre-rendered histogram variants
+   it was filed about are all still emitted, and they are ~65% of a numeric
+   column. Collecting that needs a JS port of a ~170-line SVG renderer — a second
+   implementation of the chart, which the reference-implementation rule under
+   **Conventions** argues against. Re-file it before building it.
+4. **Publish** (#38), then the native core (#44) — **KMV first, moments last**,
+   since moments are ~1.4% of the numeric path and KMV was half of it. #108's
+   abstraction boundary measured at 0.97–1.01×, so the preparation cost nothing.
+
+**Two open issues are blocked on a decision, not on effort.** Do not guess at
+them: #209 (categorical has no Statistics pane and boolean has no details
+section by an explicit earlier decision, so neither has a home for the row) and
+#150 (the best reachable demo dataset satisfies three of four acceptance
+criteria; the one that satisfies all four is not reachable from CI).
 
 Measurement discipline, all learned on this codebase:
 
@@ -118,4 +159,33 @@ Measurement discipline, all learned on this codebase:
   and absent reads as broken — confirm in a browser before calling anything dead.
 - **The report inlines its own CSS and JS**, so searching the whole document for
   a class name finds it in the very source that references it. Strip `<script>`
-  and `<style>` before asserting anything about markup.
+  and `<style>` before asserting anything about markup — or require a `class="`
+  attribute. `"dt-svg" in html` was `True` for a class no element carried.
+- **In a browser, the obvious measurement reads the wrong box.** Three of #124's
+  acceptance criteria looked failed and were not: the header is 53px by
+  `getBoundingClientRect()` and exactly `52px` by computed height, because the
+  rect counts a 1px border the budget does not; `.icon-btn` is 30×30 and its
+  *hit* area is a 44×44 absolutely positioned `::after`, which `elementFromPoint`
+  confirms and a rect cannot see; and `scrollWidth > clientWidth` names nine
+  elements at 1240px, none of which scrolls — a pane scrolls only if its content
+  overflows **and** its `overflow-x` does. Encode the invariant, not the box that
+  is easiest to read.
+- **A parametrised axis can be inert.** The report's dark mode is the *absence*
+  of a `light` class, not `prefers-color-scheme`, so Playwright's
+  `color_scheme=` did nothing and six "theme" cases measured one state twice —
+  visible only because the contact sheet came out byte-identical in pairs.
+  Toggling the class is not enough either: `transition: background-color 0.3s`
+  means an immediate read returns the old value. Make the axis prove it moved.
+- **A failing coverage check is a finding, not a chore.** `codecov/patch`
+  flagged an untested polars branch; writing the test showed the branch was
+  *unreachable*, and its twin in the accumulator was putting
+  `"time_zone='US/Eastern')"` into the `summarize()` payload. polars dtypes
+  contain a comma, so the pandas branch matched them first.
+- **`functionality.js` and the renderers never import each other.** A class
+  renamed on one side produces no error and no console warning, just a control
+  that goes quiet — the datetime timeline's tooltip was dead this way.
+  `tests/test_js_selectors_match_markup.py` pairs every `closest()` selector
+  against the markup that must match it.
+- **`git checkout -B` aborts against uncommitted changes**, and prints one line
+  saying so. A commit made afterwards lands on the old base and looks fine.
+  Check `git merge-base --is-ancestor origin/main HEAD` before opening a PR.

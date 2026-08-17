@@ -56,6 +56,14 @@ quoted when both sides were measured in the same round-robin run.
   feature: **the Titanic report goes from 502,667 to 488,003 bytes**, and the
   baseline drops from 500,000 to 489,000.
 
+- **`CLAUDE.md`'s priority list is back in line with what shipped** (part of
+  [#251]). It named `docs/roadmap.md` as *"v8"* — the file says v10, the working
+  roadmap is v15 — and pointed the next contributor at #122, #124 and #139,
+  all closed, plus an example report that has since been regenerated and put
+  under a byte ratchet. Rewritten against the issue tracker, because the two
+  roadmap documents disagree and neither is current; reconciling them is the
+  other half of #251 and is still open. Nothing about the library changed.
+
 [#240]: https://github.com/alvarodiez20/pysuricata/issues/240
 
 ### Removed
@@ -609,6 +617,7 @@ quoted when both sides were measured in the same round-robin run.
 [#232]: https://github.com/alvarodiez20/pysuricata/issues/232
 [#233]: https://github.com/alvarodiez20/pysuricata/issues/233
 [#241]: https://github.com/alvarodiez20/pysuricata/issues/241
+[#251]: https://github.com/alvarodiez20/pysuricata/issues/251
 
 ## [0.1.1] - 2026-08-17
 
