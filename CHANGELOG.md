@@ -14,6 +14,37 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **The benchmark harnesses refuse to measure on a busy machine** ([#212]). The
+  rule this project measures by — *both sides in the same round-robin, on the
+  same machine, within the same run* — cancels drift between the things being
+  compared. **It does not cancel a neighbour**, because the neighbour is not in
+  the round-robin, and that nearly published a claim: a run put 0.0.61 at
+  1,599 ms against 0.0.42's 1,448, a **10.5% regression** on a harness that
+  reproduces to ±1%, with a ready-made culprit in the abstraction boundary #108
+  had just added to the accumulator hot path. Bisecting seven commits refused it
+  — 1,203 to 1,271 ms, no trend, HEAD at 1.008× — and the cause was the coverage
+  suite running in parallel, competing for two cores with the benchmark
+  measuring against it.
+
+  `load_guard()` reads the one-minute load average and refuses above one per
+  core, with `--force` for anyone who knows what the neighbour is. The load is
+  recorded at **both ends** and exported with the results, because the reading
+  taken before a run cannot see a job that starts during it — a suite already
+  running is caught by the opening check, one launched a minute later is only
+  visible in the closing one. A run that ends busy prints a warning saying not
+  to quote a ratio from it.
+
+  `versions.py` imports the guard rather than reimplementing it, so there is one
+  threshold rather than two that drift. Where the OS has no `getloadavg`
+  (Windows), the check is skipped and says so rather than inventing a number.
+
+  The clause is now in `CLAUDE.md` beside the rule it amends, and
+  `tests/test_benchmark_load_guard.py` asserts it is there — a rule that lives
+  only in a document is what let this happen, so the test fails if the note is
+  removed. All four mutations of the guard are caught, including that one.
+
 ### Fixed
 
 - **Categorical and boolean columns track their own chunks, so the Missing
@@ -221,6 +252,7 @@ quoted when both sides were measured in the same round-robin run.
 [#193]: https://github.com/alvarodiez20/pysuricata/issues/193
 [#206]: https://github.com/alvarodiez20/pysuricata/issues/206
 [#209]: https://github.com/alvarodiez20/pysuricata/issues/209
+[#212]: https://github.com/alvarodiez20/pysuricata/issues/212
 
 ## [0.1.1] - 2026-08-17
 

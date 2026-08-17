@@ -26,6 +26,13 @@ reader:
   moves between them. Interleaving makes a slow patch penalise every tool in
   that round, so it cancels in the ratio. Fewer than three rounds and the
   output says so.
+* **Nothing else may be running.** Interleaving cancels drift *between* the
+  things being compared; it does not cancel a neighbour competing for cores,
+  because that neighbour is not in the round-robin. The harness reads the load
+  average before it starts and refuses above one per core (`--force` overrides),
+  and records the load at both ends beside the numbers — so a result that was
+  measured under contention carries its own caveat instead of being quoted
+  clean. See `load_guard()` for the measurement that motivated it.
 
 Publish the generated markdown table *with* the environment block. A benchmark
 without the machine spec is a screenshot.
@@ -47,6 +54,72 @@ import time
 # measured enough times, interleaved, to separate the difference between the
 # tools from the difference between two stretches of machine time.
 MIN_QUOTABLE_ROUNDS = 3
+
+#: Refuse to measure above this many runnable processes per core.
+#:
+#: One per core is already saturation: every additional runnable process takes
+#: cycles from the thing being timed. The threshold is deliberately not lower
+#: -- a load average includes the harness itself, and on a quiet machine it sits
+#: a little above zero rather than at it.
+MAX_LOAD_PER_CORE = 1.0
+
+
+def load_average() -> float | None:
+    """One-minute load average, or `None` where the OS has no such notion.
+
+    Windows has no `getloadavg`. That is a reason to skip the check and say so,
+    not to invent a number for it.
+    """
+    try:
+        return os.getloadavg()[0]
+    except (AttributeError, OSError):  # pragma: no cover - platform dependent
+        return None
+
+
+def load_guard(force: bool = False) -> tuple[float | None, str | None]:
+    """Refuse to benchmark on a busy machine.
+
+    Returns `(load, refusal)`. `refusal` is `None` when it is safe to proceed.
+
+    The rule this project measures by -- *both sides in the same round-robin,
+    on the same machine, within the same run* -- cancels drift between the
+    things being compared. **It does not cancel a neighbour**, because the
+    neighbour is not in the round-robin, and it very nearly published a claim:
+    a round-robin put 0.0.61 at 1,599 ms against 0.0.42's 1,448, a 10.5%
+    regression on a harness that reproduces to ±1%, with a ready-made
+    explanation in the abstraction boundary #108 had just added to the
+    accumulator hot path.
+
+    Bisecting seven commits refused it -- 1,203 to 1,271 ms, no trend, HEAD at
+    1.008x. The coverage suite had been running in parallel, so a
+    four-and-a-half-minute pytest run was competing for two cores with the
+    benchmark measuring against it.
+
+    That was the fourth measurement artefact in one audit series to nearly
+    become a published claim, and the first caught before it was written down.
+    A clause that lives only in a document gets forgotten, so it lives here.
+    """
+    load = load_average()
+    if load is None:
+        return None, None
+
+    cores = os.cpu_count() or 1
+    ceiling = MAX_LOAD_PER_CORE * cores
+    if load <= ceiling:
+        return load, None
+
+    refusal = (
+        f"load average is {load:.2f} across {cores} core(s), over the "
+        f"{ceiling:.2f} ceiling. Something else is running, and it will be "
+        f"charged to whichever tool happens to be measured while it runs -- "
+        f"which is not cancelled by interleaving, because it is not in the "
+        f"round-robin. Wait for the machine to go quiet, or pass --force if "
+        f"you know what the neighbour is and accept the caveat."
+    )
+    if force:
+        return load, None
+    return load, refusal
+
 
 TOOLS = {
     "pysuricata": {
@@ -331,6 +404,31 @@ def round_robin(
     return best
 
 
+def _report_load(payload: dict) -> None:
+    """Print the load at both ends, and say so loudly if it moved.
+
+    The reading taken before the run cannot see a job that starts during it,
+    which is the exact shape of the incident this guards against -- a coverage
+    suite that was already running would have been caught by the opening check,
+    one launched a minute later would not. Comparing the two ends is what
+    catches the second case, after the fact but before the number is quoted.
+    """
+    start, end = payload.get("load_start"), payload.get("load_end")
+    if start is None or end is None:
+        return
+
+    cores = os.cpu_count() or 1
+    print(f"load average: {start:.2f} at start, {end:.2f} at end")
+    if payload.get("forced"):
+        print("  (measured with --force; treat these numbers as indicative)")
+    if end > MAX_LOAD_PER_CORE * cores:
+        print(
+            "  WARNING: the machine was busy by the end. Something started "
+            "during the run, and whichever tool was being measured at the time "
+            "was charged for it. Do not quote a ratio from this."
+        )
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--tools", default=",".join(TOOLS))
@@ -346,10 +444,21 @@ def main(argv=None) -> int:
     )
     ap.add_argument("--json", default=None)
     ap.add_argument("--markdown", default=None)
+    ap.add_argument(
+        "--force",
+        action="store_true",
+        help="Measure even when the machine is busy. The load is still "
+        "recorded with the results, so the caveat travels with them.",
+    )
     args = ap.parse_args(argv)
 
     if args.rounds < 1:
         ap.error("--rounds must be at least 1")
+
+    load_start, refusal = load_guard(args.force)
+    if refusal:
+        print(f"refusing to measure: {refusal}", file=sys.stderr)
+        return 2
 
     repo = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     sys.path.insert(0, repo)
@@ -359,8 +468,15 @@ def main(argv=None) -> int:
         "environment": environment(),
         "rounds": args.rounds,
         "quotable": args.rounds >= MIN_QUOTABLE_ROUNDS,
+        # Both ends, because a load average lags: a job that starts *during*
+        # the run does not show up in the reading taken before it.
+        "load_start": load_start,
+        "load_end": None,
+        "forced": bool(args.force),
         "suites": {},
     }
+    if load_start is not None:
+        print(f"load average at start: {load_start:.2f}")
     print(json.dumps(payload["environment"], indent=2), "\n")
     if not payload["quotable"]:
         print(
@@ -379,6 +495,9 @@ def main(argv=None) -> int:
             round_robin(tools, suite, args.scale, repo, args.timeout, args.rounds)
         )
         print()
+
+    payload["load_end"] = load_average()
+    _report_load(payload)
 
     if args.json:
         with open(args.json, "w") as fh:

@@ -93,11 +93,22 @@ Measurement discipline, all learned on this codebase:
   as an array won its own benchmark by 2.7x and lost 35% end to end, because the
   benchmark never touched the scalar insert path categorical columns hammer.
 - **A ratio is only quotable when both sides were measured in the same
-  round-robin, on the same machine, within the same run.** Two published claims
-  came from cross-session pairing: "0.0.21 is 1.24x faster" is really 0.88x, a
-  regression, and a 3.56x headline is really 2.48x. `benchmarks/end_to_end.py`
-  and `benchmarks/versions.py` interleave every tool and version across rounds
-  and label anything under three rounds *Not quotable*.
+  round-robin, on the same machine, within the same run — and nothing else was
+  running.** Two published claims came from cross-session pairing: "0.0.21 is
+  1.24x faster" is really 0.88x, a regression, and a 3.56x headline is really
+  2.48x. `benchmarks/end_to_end.py` and `benchmarks/versions.py` interleave
+  every tool and version across rounds and label anything under three rounds
+  *Not quotable*.
+
+  The last clause is the one interleaving cannot buy you, because a neighbour
+  is not in the round-robin. A run once put 0.0.61 at 1,599 ms against 0.0.42's
+  1,448 — a 10.5% regression on a harness that reproduces to ±1%, with a
+  ready-made culprit in the abstraction boundary #108 had just added to the
+  accumulator hot path. Bisecting seven commits refused it (1,203–1,271 ms, no
+  trend, HEAD at 1.008x): the coverage suite was running in parallel. Both
+  harnesses now read the load average, **refuse above one per core** unless
+  `--force`, and record the load at both ends in the exported results, so a
+  contended run carries its own caveat (#212).
 - **A check over rendered output is only as good as the markup the fixture
   reaches.** A frame of `[1.0, 2, 3, 4, 5] * 40` has five distinct values and
   profiles as *categorical*, so a report built from it has no numeric card and
