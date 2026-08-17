@@ -47,6 +47,15 @@ quoted when both sides were measured in the same round-robin run.
   only a zero one — zero is a drawing decision, negative is a value that cannot
   exist, and the renderer must not turn one into geometry.
 
+  There is deliberately no give-rows-back branch and no clamp. The first draft
+  had one and `codecov/patch` flagged it as unreached, which turned out to be a
+  statement about the arithmetic rather than about the tests: `np.floor` never
+  rounds up, so the floors sum to at most the scaled total, and both are
+  integers, so a negative residual would need an error of one part in the row
+  count against float noise nearer one part in 1e15. A search over 200,000
+  random bin shapes found none. Deleted rather than carried untested, with the
+  bound asserted in its place.
+
   `tests/fixtures/fingerprint.txt` is re-baselined because the bin counts
   genuinely changed. Checked before accepting it: **no fact was added or
   removed**, all 82 changed facts are `count`/`pct` on the two numeric columns,

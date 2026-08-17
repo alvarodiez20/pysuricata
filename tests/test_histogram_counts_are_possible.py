@@ -183,6 +183,36 @@ class TestTheApportionmentIsExactAndNonNegative:
                 f"residual was concentrated rather than apportioned"
             )
 
+    def test_the_residual_is_never_negative(self):
+        """Why the apportionment needs no give-rows-back branch, and no clamp.
+
+        The first draft had one, and `codecov/patch` flagged it as unreached.
+        `np.floor` never rounds up, so `floors.sum() <= scaled.sum()`, which the
+        scaling puts at the original total to within float noise; both sides
+        are integers, so a negative residual needs an error of one part in the
+        row count against noise nearer one part in 1e15. Deleted rather than
+        left untested, and the bound asserted here instead -- if some future
+        edit makes a residual go negative, that edit needs to handle it, and
+        this is what will say so.
+        """
+        rng = np.random.default_rng(0)
+
+        worst = 0
+        for _ in range(20_000):
+            weights = rng.random(int(rng.integers(2, 60)))
+            weights *= rng.choice([1.0, 1e3, 1e6])
+            total = int(rng.integers(1, 10_000_000))
+            if weights.sum() <= 0:
+                continue
+
+            scaled = weights * (total / weights.sum())
+            worst = min(worst, total - int(np.floor(scaled).astype(np.int64).sum()))
+
+        assert worst >= 0, (
+            f"flooring overshot the total by {-worst} rows, so the residual can "
+            f"go negative and the apportionment can now drive a bin below zero"
+        )
+
 
 class TestTheRendererRefusesAnImpossibleCount:
     """The second line of the fix. The apportionment is what stops a negative

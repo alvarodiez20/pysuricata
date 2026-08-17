@@ -259,24 +259,25 @@ class SVGHistogramRenderer:
             floors = np.floor(new_counts).astype(int)
             residual = total_original - int(floors.sum())
 
+            # `residual` cannot be negative, so there is no give-rows-back
+            # branch here and no clamp. `np.floor` is exact and never rounds up,
+            # so `floors.sum() <= new_counts.sum()`, which the scaling above put
+            # at `total_original` to within float noise. Both sides are
+            # integers, so a negative residual needs `floors.sum()` to reach
+            # `total_original + 1` -- that is a relative error of one part in
+            # `total_original`, and the noise is nearer one part in 1e15.
+            #
+            # It was written with that branch, and `codecov/patch` flagged the
+            # lines as unreached. Searching 200,000 random bin shapes for a
+            # negative residual found none, which agrees with the bound. Dead
+            # defensive code that cannot run is worse than none: it never gets
+            # exercised, so it is free to be wrong.
             if residual > 0:
                 # Negated so the largest remainder sorts first; `stable` so
                 # equal remainders break by bin order rather than arbitrarily,
                 # which keeps the report byte-identical across runs.
                 order = np.argsort(-(new_counts - floors), kind="stable")
-                floors[order[: min(residual, bins)]] += 1
-            elif residual < 0:
-                # Unreachable from exact arithmetic -- the fractional parts sum
-                # to less than `bins`, so flooring can only undershoot. It is
-                # reachable from float error in `scale_factor`, and the whole
-                # point of this block is that an impossible-looking residual
-                # must not be allowed to push a bin below zero.
-                for index in np.argsort(-floors, kind="stable"):
-                    if residual == 0:
-                        break
-                    take = min(int(floors[index]), -residual)
-                    floors[index] -= take
-                    residual += take
+                floors[order[:residual]] += 1
 
             new_counts = floors
         else:
