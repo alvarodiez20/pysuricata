@@ -195,18 +195,31 @@ class DatetimeAccumulator(PicklableAccumulator):
         """
         try:
             self._dtype_str = str(dtype_str)
-            # Extract timezone from dtype string (e.g. "datetime64[ns, US/Eastern]")
-            if "," in dtype_str:
-                tz_part = dtype_str.split(",", 1)[1].rstrip("]").strip()
-                if tz_part and tz_part != "UTC":
-                    self._source_timezone = tz_part
-            elif "tz=" in dtype_str.lower():
-                # Polars-style: Datetime(time_unit='us', time_zone='Europe/Berlin')
+
+            # polars is checked first, and the order is load-bearing (#241).
+            # Its dtype reads `Datetime(time_unit='us', time_zone='US/Eastern')`
+            # -- which *contains a comma*, so the pandas branch below used to
+            # match it and store `time_zone='US/Eastern')` as the zone name.
+            # That string was reaching the `summarize()` payload. A naive
+            # polars column was worse: `time_zone=None` is a non-empty tail, so
+            # a column with no zone reported `time_zone=None)` as its timezone.
+            #
+            # The old polars branch was an `elif` guarded on `tz=`, so it was
+            # unreachable for any dtype containing a comma -- which is every
+            # polars datetime.
+            if "time_zone=" in dtype_str:
                 import re
 
                 m = re.search(r"time_zone=['\"]([^'\"]+)['\"]", dtype_str)
                 if m and m.group(1) != "UTC":
                     self._source_timezone = m.group(1)
+                return
+
+            # pandas: `datetime64[ns]` naive, `datetime64[ns, US/Eastern]` aware.
+            if "," in dtype_str:
+                tz_part = dtype_str.split(",", 1)[1].rstrip("]").strip()
+                if tz_part and tz_part != "UTC":
+                    self._source_timezone = tz_part
         except Exception:
             self._dtype_str = "datetime"
 

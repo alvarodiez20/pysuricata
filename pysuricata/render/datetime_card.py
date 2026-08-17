@@ -182,7 +182,7 @@ class DateTimeCardRenderer(CardRenderer):
                 f"{int(getattr(stats, 'missing', 0)):,} ({miss_pct:.1f}%)",
                 f"num {miss_cls}",
             ),
-            ("Timezone", "UTC", None),
+            ("Timezone", self._timezone_display(stats), None),
             ("Time span", span_display, None),
             ("Avg interval", interval_display, None),
             ("Interval std", std_display, None),
@@ -215,12 +215,18 @@ class DateTimeCardRenderer(CardRenderer):
         data = [
             (
                 "Min",
-                self._format_timestamp(getattr(stats, "min_ts", None)),
+                self._format_timestamp(
+                    getattr(stats, "min_ts", None),
+                    suffix=self._instant_suffix(stats),
+                ),
                 "timestamp-value",
             ),
             (
                 "Max",
-                self._format_timestamp(getattr(stats, "max_ts", None)),
+                self._format_timestamp(
+                    getattr(stats, "max_ts", None),
+                    suffix=self._instant_suffix(stats),
+                ),
                 "timestamp-value",
             ),
             ("Weekend %", f"{getattr(stats, 'weekend_ratio', 0.0) * 100:.1f}%", "num"),
@@ -234,7 +240,68 @@ class DateTimeCardRenderer(CardRenderer):
 
         return data
 
-    def _format_timestamp(self, ts: int | None, multiline: bool = True) -> str:
+    #: A column whose dtype carries no zone. `pandas` writes `datetime64[ns]`,
+    #: polars `Datetime(time_unit='ns')` -- neither mentions a zone, because
+    #: there is not one.
+    _NAIVE_LABEL = "— (naive)"
+
+    @staticmethod
+    def _timezone_of(stats: DateTimeStats) -> str | None:
+        """The column's timezone, or `None` when it genuinely has none (#241).
+
+        The card printed the literal `"UTC"` for every datetime column. A
+        `US/Eastern` column was labelled UTC, and so was a naive one -- which
+        has no timezone at all. That is the report stating a fact about the
+        data that it did not get from the data.
+
+        `source_timezone` is the obvious source and is not sufficient on its
+        own: the accumulator stores it only when it is *not* UTC
+        (`if tz_part and tz_part != "UTC"`), so `None` means "naive **or**
+        UTC" and cannot express the distinction this is about. The dtype
+        string can, and is carried on the summary already.
+        """
+        source = getattr(stats, "source_timezone", None)
+        if source:
+            return str(source)
+
+        dtype = str(getattr(stats, "dtype_str", "") or "")
+
+        # polars first, and the order is load-bearing. Its dtype reads
+        # `Datetime(time_unit='us', time_zone='US/Eastern')` -- which *contains
+        # a comma*, so the pandas branch below matches it and returns
+        # `time_zone='US/Eastern')` as the zone name. A naive polars column is
+        # worse: `time_zone=None` is a non-empty tail, so it reports the string
+        # `time_zone=None)` as a timezone instead of saying naive.
+        if "time_zone=" in dtype:
+            import re as _re
+
+            match = _re.search(r"time_zone=['\"]([^'\"]+)['\"]", dtype)
+            return match.group(1) if match else None
+
+        # pandas: `datetime64[ns]` naive, `datetime64[ns, UTC]` aware.
+        if "," in dtype:
+            tail = dtype.split(",", 1)[1].rstrip(")]").strip()
+            return tail or None
+        return None
+
+    def _timezone_display(self, stats: DateTimeStats) -> str:
+        zone = self._timezone_of(stats)
+        return zone if zone else self._NAIVE_LABEL
+
+    def _instant_suffix(self, stats: DateTimeStats) -> str:
+        """What to append to a rendered instant.
+
+        The accumulator stores epoch nanoseconds, so rendering them through
+        `utc=True` is correct **for a zone-aware column** -- the instant really
+        is that moment in UTC, whatever zone it was written in. For a naive
+        column there is no instant, only a wall clock, and calling it UTC
+        invents the zone. So the suffix is dropped there rather than guessed.
+        """
+        return " UTC" if self._timezone_of(stats) else ""
+
+    def _format_timestamp(
+        self, ts: int | None, multiline: bool = True, suffix: str = " UTC"
+    ) -> str:
         """Format a UTC nanoseconds epoch as readable datetime string.
 
         Args:
@@ -249,7 +316,7 @@ class DateTimeCardRenderer(CardRenderer):
             if pd is not None:  # type: ignore
                 dt = pd.to_datetime(int(ts), utc=True)
                 date_part = dt.strftime("%Y-%m-%d")
-                time_part = dt.strftime("%H:%M:%S UTC")
+                time_part = dt.strftime("%H:%M:%S") + suffix
                 if multiline:
                     return f"{date_part}<br>{time_part}"
                 else:
@@ -261,7 +328,7 @@ class DateTimeCardRenderer(CardRenderer):
 
             dt = _dt.utcfromtimestamp(int(ts) / 1_000_000_000)
             date_part = dt.strftime("%Y-%m-%d")
-            time_part = dt.strftime("%H:%M:%S UTC")
+            time_part = dt.strftime("%H:%M:%S") + suffix
             if multiline:
                 return f"{date_part}<br>{time_part}"
             else:
@@ -584,12 +651,20 @@ class DateTimeCardRenderer(CardRenderer):
         timestamp_data = [
             (
                 "Min timestamp",
-                self._format_timestamp(getattr(stats, "min_ts", None), multiline=False),
+                self._format_timestamp(
+                    getattr(stats, "min_ts", None),
+                    multiline=False,
+                    suffix=self._instant_suffix(stats),
+                ),
                 "timestamp-value",
             ),
             (
                 "Max timestamp",
-                self._format_timestamp(getattr(stats, "max_ts", None), multiline=False),
+                self._format_timestamp(
+                    getattr(stats, "max_ts", None),
+                    multiline=False,
+                    suffix=self._instant_suffix(stats),
+                ),
                 "timestamp-value",
             ),
             (
@@ -597,7 +672,7 @@ class DateTimeCardRenderer(CardRenderer):
                 f"{int(getattr(stats, 'unique_est', 0)):,}",
                 "num",
             ),
-            ("Timezone", "UTC", None),
+            ("Timezone", self._timezone_display(stats), None),
             ("Time span", time_span_display, None),
             ("Avg interval", interval_display, None),
             ("Interval std dev", std_display, None),
