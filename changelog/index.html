@@ -2432,12 +2432,63 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD">Unreleased</a></h2>
 <h3 id="fixed">Fixed</h3>
 <ul>
-<li><strong>A polars column of timestamp strings no longer loses every value</strong>
+<li><strong>A numeric card drew every histogram variant at once.</strong> The bins and scale
+  toggles offer six combinations, and all six were on screen simultaneously —
+  stacked, overlapping their own captions, in a card <strong>1,671px tall instead of
+  ~570px</strong>. The toggles appeared to do nothing because every option was already
+  displayed.</li>
+</ul>
+<p>A vestigial <code>display: block</code> was the whole cause. The rule that carried it
+  once forced <code>height: 100%</code> onto a child <code>&lt;svg&gt;</code>; when that was removed in
+  #167 the declaration was left behind, and at one id and five classes it
+  outranks both <code>.hist-variants .variant { display: none }</code> (one id, two
+  classes) and <code>.hist-variants .variant.active { display: block }</code> (one id,
+  three). Only numeric was affected — categorical variants are <code>.cat.variant</code>,
+  which that selector never matched, which is why one card kind showed a single
+  chart and the other showed all of them.
+- <strong>The extreme y-axis labels were nudged the wrong way.</strong> The stylesheet pulls
+  the top and bottom labels inward, "or the top label floats above the plot and
+  the <code>0</code> hangs below the axis" — its own words. It keyed that on
+  <code>:first-of-type</code> and <code>:last-of-type</code>, but ticks are emitted in <em>ascending</em>
+  order, so the first span is the bottom of the axis and the last is the top.
+  The corrections were therefore applied to the opposite ends and produced
+  exactly the two defects they exist to prevent. The renderer now tags each
+  extreme with <code>data-edge</code>, so the nudge no longer depends on DOM order.
+- <strong>The caption was drawn on top of the x-axis labels.</strong> <code>.hist__area</code> was
+  pinned to <code>--hist-height</code> and the tick row lives inside it, so that row
+  overflowed the box without contributing any layout height and the caption
+  below was placed over it — measured at ticks <code>y[2026..2044]</code> against caption
+  <code>y[2030..2044]</code>. The height moved to the plot itself.
+- <strong>Categorical bar thickness was inversely proportional to cardinality</strong>
+  ([#145] in part). The chart divided a fixed height among its bars, so a
+  two-level column drew two <strong>218px</strong> slabs where a five-level column drew
+  87px, and the same chart read as a different chart for every column. A bar
+  now has a height and the chart is however tall that makes it: 35px per bar
+  at any level count, and cards fall from a uniform 743px to 405–542px.</p>
+<p>The chart is also authored at 1,100 units wide rather than 420. It was being
+  stretched to fill a ~1,150px column, which multiplied everything inside it by
+  2.7 — so an 11px bar label rendered at ~30px, three times the size of the
+  stat row beneath it.
+- <strong>The count printed inside a bar was unreadable.</strong> It used <code>--muted</code>, a grey
+  chosen against the page, and on the bar fill that measures <strong>1.20:1</strong> against
+  the 4.5:1 AA asks of text this size. The value sits inside the bar when the
+  bar is wide enough and past its end when it is not — two different
+  backgrounds that cannot share one colour — so the renderer now says which,
+  and the inside case takes <code>--paper</code>: 6.12:1 in light, 6.28:1 in dark.</p>
+<p><code>tests/test_contrast.py</code> already declared <code>("paper", "data-2", "count printed
+  inside a default bar")</code> as the correct pairing. The palette was right and the
+  chart was not using it.</p>
+<p>All five were found by rendering a report in Chromium and measuring the
+  boxes, which is the only way any of them are visible: the fingerprint
+  deliberately discards presentation, and every other check reads values rather
+  than geometry. <code>tests/test_chart_layout.py</code> guards them from the markup and
+  the stylesheet, and twelve of its fifteen cases fail against the previous
+  behaviour.
+- <strong>A polars column of timestamp strings no longer loses every value</strong>
   ([#214]). 200 valid ISO-8601 timestamps profiled through polars came back
   <code>count=0, missing=200</code> — the column still labelled <code>datetime</code>, so nothing
   looked structurally wrong; the card simply asserted the data was entirely
-  absent. The same values through pandas were correct.</li>
-</ul>
+  absent. The same values through pandas were correct.</p>
 <p><code>Series.cast()</code> from a String yields nulls rather than raising, so a
   <code>strict=False</code> cast reports success while producing nothing, and the
   <code>except Exception</code> fallback written around it is unreachable. The conversion
