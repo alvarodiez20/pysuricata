@@ -53,8 +53,8 @@ quoted when both sides were measured in the same round-robin run.
   This is what paid for the two fixes above. They cost 2,667 bytes and the
   ratchet on report size refused them, correctly — the budget only goes down.
   The way to afford a feature turned out to be six times larger than the
-  feature: **the Titanic report goes from 502,667 to 487,096 bytes**, and the
-  baseline drops from 500,000 to 488,000.
+  feature: **the Titanic report goes from 502,667 to 488,003 bytes**, and the
+  baseline drops from 500,000 to 489,000.
 
 [#240]: https://github.com/alvarodiez20/pysuricata/issues/240
 

@@ -138,13 +138,17 @@ class TestTheReportIsOneFile:
 #: added 907 bytes of CSS and pushed the report 578 over, which is a fair thing
 #: to be stopped by -- and the honest fix was not to write shorter comments.
 #:
-#: 500,000 -> 488,000 by not shipping the *scripts'* comments either. The same
+#: 500,000 -> 489,000 by not shipping the *scripts'* comments either. The same
 #: argument and the same measurement, on the half that had been left out:
 #: **15,551 bytes, 20% of the inlined JavaScript.** #240's print rules and deep
 #: links cost 2,667 and were what pushed the report over -- the ratchet refused
 #: them, correctly, and the way to pay for a feature turned out to be six times
 #: larger than the feature.
-BYTES_BASELINE = 488_000
+#:
+#: Set at 488,000 first, against a report measured before #246 and #252
+#: landed; the rebase put it 3 bytes over. A baseline wants the headroom
+#: of a round number above the measurement, not the measurement itself.
+BYTES_BASELINE = 489_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
