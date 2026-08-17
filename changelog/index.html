@@ -2492,6 +2492,36 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...HEAD">Unreleased</a></h2>
 <h3 id="fixed">Fixed</h3>
 <ul>
+<li><strong>The datetime timeline's tooltip was dead, and #219 killed it</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/233">#233</a>).
+  Sixty hotspots per timeline carried <code>data-count</code>, <code>data-pct</code> and a bucket
+  label, and hovering one showed nothing. <code>functionality.js</code> bound
+  <code>closest('.dt-svg .hot')</code>, but #219 rebuilt the timeline as a <code>figure.hist</code> so
+  it could reuse the histogram's classes — the SVG became <code>.hist-svg</code>, and
+  <strong>nothing has carried <code>.dt-svg</code> since</strong>. Three bindings were left pointing at
+  a class that no longer exists.</li>
+</ul>
+<p>The second one mattered too: <code>isDt = !!bar.closest('.dt-svg')</code> decided which
+  tooltip a bar gets. Always false, so a datetime bar would have printed the
+  numeric format — <code>Range: [, )</code> from <code>data-x0</code>/<code>data-x1</code> it does not carry. It
+  now keys on <code>data-label</code>, the attribute the branch actually needs, which a
+  container rename cannot break.</p>
+<p>Confirmed in Chromium: the timeline reads <code>34 rows (1.7%) · Range: [2024-01-01
+  – 2024-01-02]</code>, and a numeric bar still reads <code>2 rows (0.1%) · Range: [-3.9,
+  -3.6)</code>.</p>
+<p><strong>The issue as filed was a probe artefact, and said so.</strong> It reported the
+  <em>temporal</em> bars' tooltip dead, having queried <code>.tooltip, .chart-tooltip,
+  [role=tooltip], #tooltip</code> — the element is <code>.hist-tooltip</code>, created lazily on
+  first show. It also hovered a bar ~1,900px down a 900px viewport, where mouse
+  coordinates are viewport-relative and the event lands on nothing. My own first
+  re-probe repeated the second mistake. With the right selector and the bar
+  scrolled into view, the temporal tooltip has been working throughout.</p>
+<p>What found the real break was the third acceptance box:
+  <code>tests/test_js_selectors_match_markup.py</code> extracts every class selector
+  <code>functionality.js</code> binds with <code>closest()</code> and asserts the renderers emit
+  something matching. <code>.dt-svg</code> failed on the first run. The pairing between
+  those two files is the fragile part — neither imports the other, and a rename
+  on one side produces no error, just a control that goes quiet.</p>
+<ul>
 <li><strong>Three stray <code>}</code> were swallowing a media query, and the Common Values table
   lost its responsive rules</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/232">#232</a>). The stylesheets had 1,123 opening braces
   against 1,126 closing ones. That reads like a tidy-up and was not.</li>
