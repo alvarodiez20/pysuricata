@@ -14,6 +14,43 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A polars column of timestamp strings no longer loses every value**
+  ([#214]). 200 valid ISO-8601 timestamps profiled through polars came back
+  `count=0, missing=200` — the column still labelled `datetime`, so nothing
+  looked structurally wrong; the card simply asserted the data was entirely
+  absent. The same values through pandas were correct.
+
+  `Series.cast()` from a String yields nulls rather than raising, so a
+  `strict=False` cast reports success while producing nothing, and the
+  `except Exception` fallback written around it is unreachable. The conversion
+  path tried `Date` first and kept it; inference tried `Date` then `Datetime`
+  and took the first that looked good. Where the two disagreed, a column was
+  typed `datetime` by one and emptied by the other:
+
+  | input | `cast(Date)` | `cast(Datetime)` | `str.to_datetime` |
+  |---|---|---|---|
+  | `2020-01-01` | ok | all null | ok |
+  | `2020-01-01 12:00:00` | all null | all null | ok |
+  | `2020-01-01T12:00:00` | all null | ok | ok |
+
+  Both paths now go through one shared parser, so they cannot disagree again.
+  Space-separated timestamps also stop being profiled as `categorical` by
+  polars and `datetime` by pandas.
+
+  The same change removes a **Polars 2.0** break: casting String → Date/Datetime
+  is deprecated from polars 1.43 and removed in 2.0, and `polars>=1.34.0` has no
+  upper bound, so an upgrade would have taken these paths out from under the
+  library. The repository lockfile pins 1.34.0, which is why CI never saw the
+  warning.
+
+  The bug needed **both backends** to be visible at all — one backend alone is
+  self-consistent and looks right — and the existing polars fixtures pass
+  already-typed `pl.Datetime` columns, which take the fast path and never reach
+  the cast. `tests/test_polars_datetime_strings.py` compares the two backends
+  field for field across all three string shapes.
+
 ### Added
 
 - **An oracle case pinning that `finalize()` is idempotent** ([#205]). The issue

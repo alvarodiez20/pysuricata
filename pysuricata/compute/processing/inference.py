@@ -13,6 +13,7 @@ from enum import Enum
 from typing import Any
 
 from ..core.types import ColumnKinds, InferenceResult, ProcessingResult
+from .conversion import polars_string_to_datetime
 
 # Date sniffing is a yes/no question, so it does not need a large sample.
 _DATE_SNIFF_SAMPLE = 200
@@ -532,27 +533,28 @@ class UnifiedTypeInferrer:
                 InferenceStrategy.AGGRESSIVE,
                 InferenceStrategy.BALANCED,
             ]:
-                try:
-                    # First try Date type (for date-only strings like '1914-12-01')
-                    ds = sample.cast(pl.Date, strict=False)
-                    null_count = ds.null_count()
-                    if (
-                        sample_size - null_count
-                    ) / sample_size > 0.8:  # 80% success rate
+                # One parse, through the same helper the conversion path uses.
+                # This used to be two `cast()` attempts, Date then Datetime,
+                # taking whichever looked good -- and the conversion path ran
+                # the same two in the same order but kept the *first*. So the
+                # two disagreed about which strings are datetimes, and a column
+                # this branch typed `datetime` could be converted to nothing,
+                # reporting 200 valid timestamps as 100% missing (#214).
+                # Sharing the helper is what stops them drifting again.
+                ds = (
+                    polars_string_to_datetime(sample)
+                    if sample.dtype == pl.String
+                    else None
+                )
+                if ds is None and sample.dtype != pl.String:
+                    try:
+                        ds = sample.cast(pl.Datetime, strict=False)
+                    except Exception:
+                        ds = None
+                if ds is not None:
+                    non_null = sample_size - ds.null_count()
+                    if sample_size and non_null / sample_size > 0.8:
                         return ProcessingResult.success_result("datetime")
-                except Exception:
-                    pass
-
-                try:
-                    # Then try Datetime type (for datetime strings with time components)
-                    ds = sample.cast(pl.Datetime, strict=False)
-                    null_count = ds.null_count()
-                    if (
-                        sample_size - null_count
-                    ) / sample_size > 0.8:  # 80% success rate
-                        return ProcessingResult.success_result("datetime")
-                except Exception:
-                    pass
 
             # Try numeric conversion
             try:
