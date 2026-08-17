@@ -191,9 +191,11 @@ class DateTimeCardRenderer(CardRenderer):
         return data
 
     def _right_stats(self, stats: DateTimeStats) -> list[tuple[str, str, str | None]]:
-        """Build right statistics table with temporal analysis."""
-        mem_display = self.format_bytes(int(getattr(stats, "mem_bytes", 0)))
+        """Build right statistics table with temporal analysis.
 
+        Facts about the column only. `Processed bytes (≈)` moved to the
+        Statistics pane in #209 -- see `_build_temporal_statistics_table`.
+        """
         # Seasonal pattern removed from display
 
         # Calculate data density (records per day)
@@ -228,7 +230,6 @@ class DateTimeCardRenderer(CardRenderer):
                 "num",
             ),
             ("Data density", density_display, None),
-            ("Processed bytes (≈)", mem_display, "num"),
         ]
 
         return data
@@ -611,6 +612,14 @@ class DateTimeCardRenderer(CardRenderer):
             ("Peak day", f"{self._get_peak_day(stats)}", None),
             ("Peak month", f"{self._get_peak_month(stats)}", None),
             ("Peak year", f"{self._get_peak_year(stats)}", None),
+            # UX-21 / #209. Moved out of the card's primary stat row, where it
+            # sat under `Data density` among facts about the column and was the
+            # only one about the profiler's own bookkeeping.
+            (
+                "Processed bytes (≈)",
+                self.format_bytes(int(getattr(stats, "mem_bytes", 0) or 0)),
+                "num",
+            ),
         ]
 
         # Build both tables

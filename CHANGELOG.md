@@ -16,6 +16,37 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **`Processed bytes (≈)` left the primary stat row on the numeric and datetime
+  cards** ([#209]). UX-21 asked for this; #104 dropped the donut and the stat-row
+  half never landed. The numeric card's right-hand table read Min, Q1, Median,
+  Mean, Q3, Max — six facts about the distribution — and then one about the
+  profiler's own bookkeeping, in the position of highest attention on the card.
+  It answers a question about PySuricata, not about the data. It is not useless,
+  so it moved to the Statistics pane rather than going away.
+
+  **Two of four kinds, and the other two are recorded rather than waived.**
+  Categorical has details panes but no Statistics pane, and every pane it has is
+  conditional — filing a fact that must always be in the document inside a pane
+  that renders only sometimes would "move" it by making it vanish, which
+  `test_report_data_invariance.py` would rightly catch. Boolean has no details
+  section at all, and that is a documented decision (#155, 5c.6) rather than an
+  omission: two values, two counts, both on the card face, no second level of
+  disclosure to offer. Giving it one to house a byte count would be the tail
+  wagging the dog.
+
+  `tests/test_processed_bytes_placement.py` pins both halves as a ratchet — move
+  one of the remaining two and it fails, telling you to shrink the set. Its
+  fixture carries all four card kinds on purpose: Titanic has no datetime column
+  (#150), so the example report cannot exercise that branch at all, and a
+  fixture that misses a branch reports "absent", which reads as passing.
+
+  Worth recording for the next person: deciding "primary row or details pane" by
+  splitting the card's markup at the `details-toggle` button gets **categorical
+  backwards**, because that card emits the toggle ahead of its stat row. The
+  test decides by which container opened most recently instead, and the first
+  version of this measurement reported categorical as already done when it was
+  not.
+
 - **A histogram bar stopped paying for things nothing reads** ([#206], first
   pass). A bar is the most repeated element in the report — 50 of them in each
   of 6 variants of every numeric column, 300 per column — so anything constant
@@ -135,6 +166,7 @@ quoted when both sides were measured in the same round-robin run.
 
 [#124]: https://github.com/alvarodiez20/pysuricata/issues/124
 [#206]: https://github.com/alvarodiez20/pysuricata/issues/206
+[#209]: https://github.com/alvarodiez20/pysuricata/issues/209
 
 ## [0.1.1] - 2026-08-17
 
