@@ -1,7 +1,23 @@
+/* A theme change is a state change, not a movement, and it must land everywhere
+   at once. It used to arrive in waves: almost every hover rule in this
+   stylesheet carries its own transition and a good number are `transition: all`,
+   which animates colour along with everything else — so the flip was paced by
+   whatever duration each element happened to declare, from .12s on a card to
+   .3s on the page. Sections visibly caught up with each other.
+
+   The toggle adds .theme-switching for the flip and drops it on the next paint,
+   so hover transitions are untouched; nothing here animates the theme itself. */
+#pysuricata-report.theme-switching,
+#pysuricata-report.theme-switching *,
+#pysuricata-report.theme-switching *::before,
+#pysuricata-report.theme-switching *::after,
+body.theme-switching {
+  transition: none !important;
+}
+
 body.suricata-standalone {
   margin: 0;
   background-color: var(--paper, #FBF9F5);
-  transition: background-color 0.3s ease;
 }
 
 /* The standalone body sits outside #pysuricata-report, so it cannot read the
@@ -20,7 +36,6 @@ body.suricata-standalone:not(.light) {
   margin: 20px;
   background-color: var(--paper);
   color: var(--ink);
-  transition: background-color 0.3s, color 0.3s;
 }
 
 #pysuricata-report.light {

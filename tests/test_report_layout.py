@@ -396,14 +396,18 @@ _HEADER_BUDGET = {390: 48, 768: 48, 1240: 52}
 _MAY_SCROLL = {"sample-scroll"}
 
 #: Interactive targets still under 44x44, recorded so no new one can appear.
-#: Both entries are inline links inside a sentence, which WCAG 2.5.8 exempts
-#: precisely because padding them out would wreck the line box. The desktop nav
-#: links are 31px tall and are *not* exempt -- they are counted below.
-_INLINE_LINK_EXEMPTIONS = 2
+#: All three are inline links inside a sentence, which WCAG 2.5.8 exempts
+#: precisely because padding them out would wreck the line box: the header's
+#: version link, and the two in the footer's "Built with pysuricata, developed
+#: by alvarodiez20". The third arrived with the author credit -- a ratchet is
+#: meant to make exactly that visible, and it did. The desktop nav links are
+#: 31px tall and are *not* exempt -- they are counted below.
+_INLINE_LINK_EXEMPTIONS = 3
 
 #: Desktop-only nav links, which are 31px tall. A real gap against #111's line,
 #: not an exemption -- recorded so it cannot grow while it waits for a fix.
-_KNOWN_UNDERSIZED = {390: 2, 768: 2, 1240: 8}
+#: 1240 is the six nav links plus the three exempt inline ones.
+_KNOWN_UNDERSIZED = {390: 3, 768: 3, 1240: 9}
 
 #: #112 wants the summary under 560px at 390px. It is 620px. Recorded, not
 #: waived.

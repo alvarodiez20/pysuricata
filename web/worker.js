@@ -4,6 +4,14 @@
  * mounted through WORKERFS rather than copied into the WASM heap, so pandas
  * reads it lazily off the Blob and pysuricata sees a chunk generator. That is
  * what keeps a 500 MB CSV inside a browser tab's memory budget.
+ *
+ * Three input kinds, and only two of them stream. CSV goes through
+ * `read_csv(chunksize=…)` and Parquet through `iter_row_groups()`; Excel has no
+ * streaming reader in pandas at all, so a workbook is decompressed and
+ * materialised whole. The page caps Excel far lower for exactly that reason and
+ * says so on screen — the bounded-memory claim is about the streaming formats,
+ * and pretending otherwise here would be the one dishonest thing this demo could
+ * do.
  */
 
 let pyodide = null;
@@ -72,12 +80,16 @@ function heapMB() {
 /* Drop the previous run's report from the Python heap. A failed run used to
  * leave it pinned, so the next run started from an inflated baseline and the
  * heap figure the page prints stopped being true. Best-effort by design: on an
- * early failure the names may never have been bound. */
+ * early failure the names may never have been bound.
+ *
+ * `source` and `wb` matter as much as the report for a workbook: read_excel
+ * hands back a whole materialised frame, and leaving it bound would carry a
+ * run's peak into the next one's baseline. */
 function releasePython() {
   try {
     pyodide.runPython(`
 import gc
-for _n in ("_report", "_stats", "_ds"):
+for _n in ("_report", "_stats", "_ds", "source", "wb", "sh", "pf", "sheets", "picked"):
     globals().pop(_n, None)
 gc.collect()
 `);
@@ -154,8 +166,10 @@ function mountFile(file) {
   return `${dir}/${file.name}`;
 }
 
-async function profileFile({ file, name, isParquet, chunkSize, maxColumns }) {
+async function profileFile({ file, name, kind, sheet, title, chunkSize, maxColumns }) {
   const t0 = performance.now();
+  const isParquet = kind === "parquet";
+  const isExcel = kind === "excel";
   status("Mounting the file…", "Nothing is uploaded — this stays in your browser");
   const path = mountFile(file);
 
@@ -163,10 +177,23 @@ async function profileFile({ file, name, isParquet, chunkSize, maxColumns }) {
     status("Loading the Parquet reader…", "fastparquet, ~2 MB, first time only");
     await pyodide.loadPackage("fastparquet");
   }
+  if (isExcel) {
+    // calamine rather than openpyxl: it is the one spreadsheet reader in the
+    // Pyodide distribution (openpyxl is not there at all), it covers xlsx, xlsm,
+    // xlsb, xls and ods through a single engine, and pandas has spoken to it
+    // natively since 2.2. Loaded on demand so a CSV visitor never pays for it.
+    status("Loading the spreadsheet reader…", "python-calamine, ~1 MB, first time only");
+    await pyodide.loadPackage("python-calamine");
+  }
 
   pyodide.globals.set("_PATH", path);
-  pyodide.globals.set("_NAME", name);
+  pyodide.globals.set("_NAME", title || name);
   pyodide.globals.set("_IS_PARQUET", isParquet);
+  pyodide.globals.set("_IS_EXCEL", isExcel);
+  // An empty string, not null: a JS null crosses into Python as JsNull, which is
+  // not None and passes every `is not None` guard on the way to a TypeError deep
+  // inside read_excel. "" is unambiguous on both sides of the bridge.
+  pyodide.globals.set("_SHEET", sheet || "");
   pyodide.globals.set("_CHUNK", chunkSize);
   pyodide.globals.set("_MAX_COLS", maxColumns);
 
@@ -180,19 +207,53 @@ import csv, json, os
 import pandas as pd
 
 size = os.path.getsize(_PATH)
-if _IS_PARQUET:
+sheets = chosen = None
+names = []
+
+if _IS_EXCEL:
+    from python_calamine import CalamineWorkbook
+
+    # The workbook is opened for its table of contents only. A sheet's cells are
+    # not read until one is chosen, so listing even a large book is cheap.
+    wb = CalamineWorkbook.from_path(_PATH)
+    sheets = []
+    for sheet_name in wb.sheet_names:
+        sh = wb.get_sheet_by_name(sheet_name)
+        # height counts the header row; the report's row count will not.
+        sheets.append({"name": sheet_name, "rows": max(sh.height - 1, 0), "cols": sh.width})
+    if _SHEET:
+        chosen = _SHEET
+    elif len(sheets) == 1:
+        chosen = sheets[0]["name"]
+    picked = next((s for s in sheets if s["name"] == chosen), None)
+    n_cols = picked["cols"] if picked else 0
+    rows = picked["rows"] if picked else None
+elif _IS_PARQUET:
     from fastparquet import ParquetFile
     pf = ParquetFile(_PATH)
-    cols = [c for c in pf.columns]
+    names = [str(c) for c in pf.columns]
+    n_cols = len(names)
     rows = pf.count()
 else:
     with open(_PATH, "r", newline="", errors="replace") as fh:
-        cols = next(csv.reader(fh))
+        names = [str(c) for c in next(csv.reader(fh))]
+    n_cols = len(names)
     rows = None
-json.dumps({"n_cols": len(cols), "n_rows": rows, "bytes": size,
-            "columns": [str(c) for c in cols[:12]]})
+
+json.dumps({"n_cols": n_cols, "n_rows": rows, "bytes": size, "sheets": sheets,
+            "sheet": chosen, "columns": names[:12]})
 `),
   );
+
+  // A workbook with more than one sheet is a question, not a dataset. Picking
+  // the first one silently is how a visitor ends up reading a confident report
+  // about the wrong table.
+  if (isExcel && sheet == null && preflight.sheets && preflight.sheets.length > 1) {
+    post("sheets", { book: name, sheets: preflight.sheets });
+    releasePython();
+    unmountLast();  // release the Blob until a sheet is chosen
+    return;
+  }
 
   if (preflight.n_cols > maxColumns) {
     post("refused", {
@@ -203,24 +264,58 @@ json.dumps({"n_cols": len(cols), "n_rows": rows, "bytes": size,
         "and ~66 KB of HTML per column). A browser tab runs out first. Run wide " +
         "frames locally, or pass columns=[...] to profile a subset.",
     });
+    releasePython();
     unmountLast();  // a refusal still holds the Blob until the mount goes
     return;
   }
 
+  // A workbook can also arrive with nothing in it — every sheet blank, or no
+  // sheet at all. Nothing above catches that, and read_excel would go on to
+  // raise something unreadable, so say it plainly here.
+  if (isExcel && (!preflight.sheet || !preflight.n_cols)) {
+    post("refused", {
+      reason: preflight.sheet
+        ? `The sheet “${preflight.sheet}” has no data in it.`
+        : "This workbook has no sheet with any data in it.",
+      detail:
+        "A profile needs at least one column of values. Check that the data is on a " +
+        "sheet of its own and starts at the top-left cell, then try again.",
+    });
+    releasePython();
+    unmountLast();
+    return;
+  }
+
   post("preflight", preflight);
+  // The chosen sheet is resolved in the preflight (a single-sheet workbook needs
+  // no question asked), so hand the answer back before the read.
+  if (isExcel) pyodide.globals.set("_SHEET", preflight.sheet);
   status(
-    isParquet ? "Profiling…" : `Profiling in ${chunkSize.toLocaleString()}-row chunks…`,
-    "Streaming — the whole file is never held in memory at once",
+    isExcel
+      ? `Reading “${preflight.sheet}”…`
+      : isParquet
+        ? "Profiling…"
+        : `Profiling in ${chunkSize.toLocaleString()}-row chunks…`,
+    isExcel
+      ? "Excel has no streaming reader — the sheet is read whole"
+      : "Streaming — the whole file is never held in memory at once",
   );
 
   const tRun = performance.now();
   const meta = JSON.parse(
     await pyodide.runPythonAsync(`
-import json
+import json, re
 import pandas as pd
 import pysuricata
 
-if _IS_PARQUET:
+unnamed = 0
+if _IS_EXCEL:
+    # No chunksize on read_excel, in any engine: the sheet is decompressed and
+    # built whole. This is the same call a visitor would make locally, which is
+    # the point — the report they get here is the report they would get there.
+    source = pd.read_excel(_PATH, sheet_name=_SHEET, engine="calamine")
+    unnamed = sum(bool(re.fullmatch(r"Unnamed: \\d+", str(c))) for c in source.columns)
+elif _IS_PARQUET:
     from fastparquet import ParquetFile
     pf = ParquetFile(_PATH)
     source = pf.iter_row_groups()
@@ -238,6 +333,8 @@ json.dumps({
     "missing_pct": _ds.get("missing_cells_pct"),
     "duplicate_pct": _ds.get("duplicate_rows_pct_est"),
     "html_bytes": len(_report.html),
+    "unnamed_cols": unnamed,
+    "sheet": _SHEET if _IS_EXCEL else None,
 })
 `),
   );

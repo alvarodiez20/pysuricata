@@ -119,6 +119,19 @@ quoted when both sides were measured in the same round-robin run.
   *what* — a check for the specific shape, a selector followed by `}` instead of
   `{`. Both catch their regression.
 
+- **The dark-mode switch arrived in waves.** Nothing animated the theme on
+  purpose — but almost every hover rule in the stylesheet carries its own
+  `transition`, and a good number are `transition: all`, which animates colour
+  along with everything else. So the flip was paced by whatever duration each
+  element happened to declare: `.12s` on a card, `.2s` on a table row, `.3s` on
+  the page. Sections visibly caught each other up.
+
+  The toggle now suppresses transitions across the flip and restores them on the
+  same tick, so the theme lands everywhere at once and hover transitions are
+  untouched. The two `transition` declarations that existed only to animate the
+  theme are gone. Verified by reading computed colours in the same tick as the
+  toggle: every sampled element is already at its final value.
+
 ### Added
 
 - **The benchmark harnesses refuse to measure on a busy machine** ([#212]). The
@@ -375,6 +388,40 @@ quoted when both sides were measured in the same round-robin run.
 - Browser work sits in its own `browser` dependency group and its own `layout`
   CI job, so the other six jobs do not pull a ~300 MB Chromium, and the cases
   skip themselves anywhere it is absent.
+
+- **The report footer credits its author.** "Powered by pysuricata" becomes
+  "Built with pysuricata, developed by alvarodiez20", the second name linking to
+  the GitHub profile. Two new template placeholders, `author_url` and
+  `author_name`.
+- **The browser demo reads Excel workbooks** — `.xlsx`, `.xlsm`, `.xlsb`,
+  `.xls` and `.ods`, through pandas' `calamine` engine. calamine rather than
+  openpyxl because openpyxl is not in the Pyodide distribution at all, while
+  `python-calamine` is, and one engine covers all five formats. It is loaded on
+  demand, so a visitor who only ever drops a CSV never downloads it.
+
+  A workbook is a container of tables, not a table, so a multi-sheet file
+  **pauses and asks which sheet**, listing each one's row and column counts and
+  omitting the empty ones. Taking the first sheet silently is how a visitor ends
+  up reading a confident report about the wrong data.
+
+  Excel is the one input that **cannot stream**: pandas exposes no `chunksize`
+  on `read_excel` in any engine, so the sheet is materialised whole. The demo
+  says so on screen rather than letting the page's bounded-memory claim cover a
+  format it does not apply to, and caps workbooks at **40 MB** against 600 MB
+  for CSV — a compressed workbook expands several times over on the way into the
+  heap.
+
+  Two failure modes the format invites are named rather than rendered: a sheet
+  that opens with a title or a blank spacer instead of its header row comes back
+  as `Unnamed: n` columns and now raises a warning, and a workbook with no data
+  in any sheet is refused with a reason instead of dying inside `read_excel`.
+- **The demo's report frame has a full-window control.** An in-page overlay
+  rather than the Fullscreen API: iOS Safari grants `requestFullscreen()` to
+  `<video>` and nothing else, and staying in the document leaves the iframe's
+  sandbox exactly as it was — the report carries the visitor's own values and
+  must not acquire an origin. Esc exits, and the bar carries a visible exit too,
+  since key events inside the report belong to that document rather than to the
+  page.
 
 [#124]: https://github.com/alvarodiez20/pysuricata/issues/124
 [#193]: https://github.com/alvarodiez20/pysuricata/issues/193

@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>PySuricata — profile a CSV in your browser</title>
-<meta name="description" content="Profile a 500 MB CSV in a browser tab. PySuricata runs entirely client-side via WebAssembly — your data never leaves your machine.">
+<meta name="description" content="Profile a 500 MB CSV, a Parquet file or an Excel workbook in a browser tab. PySuricata runs entirely client-side via WebAssembly — your data never leaves your machine.">
 <link rel="icon" href="assets/favicon.ico">
 <meta property="og:title" content="PySuricata — profile a CSV in your browser">
-<meta property="og:description" content="Drop a CSV. Get a full profiling report. Nothing is uploaded — the whole engine runs in your browser.">
+<meta property="og:description" content="Drop a CSV, a Parquet file or an Excel workbook. Get a full profiling report. Nothing is uploaded — the whole engine runs in your browser.">
 <meta property="og:type" content="website">
 <style>
   /* Palette is the report's own, from docs/design/tokens.css, so the page and
@@ -162,6 +162,15 @@
   .note.warn { border-left-color: var(--q-warn-fill); }
   .note.err { border-left-color: var(--q-bad); }
 
+  /* Sheet picker. A workbook is a container, so the run pauses here rather than
+     guessing; the row counts are what make the choice answerable. */
+  .sheets { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .sheets .btn { text-align: left; }
+  .sheets .btn small {
+    display: block; font-family: var(--mono); font-size: 11px; color: var(--muted);
+    letter-spacing: .04em; margin-top: 2px;
+  }
+
   /* Result. Figures as a label/value ledger rather than boxed tiles. */
   .result { margin-top: clamp(26px, 6vw, 34px); }
   .ledger {
@@ -198,10 +207,40 @@
     border: 1px solid var(--rule); border-radius: 3px; background: var(--paper);
   }
 
+  /* Maximised. Deliberately an in-page overlay rather than the Fullscreen API:
+     iOS Safari grants requestFullscreen() to <video> and nothing else, and
+     staying in the document leaves the iframe's sandbox exactly as it was — the
+     report carries the visitor's own values and must not acquire an origin.
+     100dvh, not 100vh, so a mobile URL bar cannot push the bar off-screen. */
+  .frame-wrap.max {
+    position: fixed; inset: 0; z-index: 40;
+    width: auto; height: 100dvh; margin: 0; transform: none;
+    display: flex; flex-direction: column; background: var(--paper);
+  }
+  .frame-wrap.max iframe#report {
+    flex: 1 1 auto; height: auto; min-height: 0; border: 0; border-radius: 0;
+  }
+  .max-bar {
+    display: none; flex: 0 0 auto; align-items: center; gap: 12px;
+    padding: 8px var(--gutter); border-bottom: 1px solid var(--rule);
+  }
+  .frame-wrap.max .max-bar { display: flex; }
+  .max-bar .name {
+    flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 600;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .max-bar kbd {
+    font-family: var(--mono); font-size: 11px; color: var(--muted);
+    border: 1px solid var(--rule-strong); border-radius: 3px; padding: 1px 5px;
+  }
+  @media (max-width: 560px) { .max-bar kbd { display: none; } }
+  body.maxed { overflow: hidden; }
+
   .closing {
     margin: clamp(52px, 12vw, 76px) 0 0; padding-top: 18px; border-top: 1px solid var(--rule);
     font-size: 15px; line-height: 1.6; color: var(--ink-2); max-width: 56ch; text-wrap: pretty;
   }
+  .closing code { font-family: var(--mono); font-size: 13px; color: var(--ink); }
 
   footer { padding: 0 0 40px; }
   footer .col {
@@ -241,7 +280,7 @@
     <button class="btn" id="pick" disabled>Choose a file</button>
     <button class="linkbtn" id="sample" disabled>or try the 60 KB sample</button>
     <button class="linkbtn" id="bigdemo" disabled>stream 5M generated rows</button>
-    <input type="file" id="file" accept=".csv,.tsv,.txt,.parquet,.pq" class="hidden">
+    <input type="file" id="file" accept=".csv,.tsv,.txt,.parquet,.pq,.xlsx,.xlsm,.xlsb,.xls,.ods" class="hidden">
   </div>
 
   <div class="status" id="status">
@@ -258,11 +297,17 @@
     <dl class="ledger" id="ledger"></dl>
     <div class="result-actions">
       <strong class="result-name" id="reportTitle">Report</strong>
+      <button class="btn quiet" id="expand" aria-pressed="false">Full window</button>
       <button class="btn ghost" id="download">Download the report</button>
       <button class="btn quiet" id="downloadStats">JSON</button>
       <button class="linkbtn" id="reset">another file</button>
     </div>
-    <div class="frame-wrap">
+    <div class="frame-wrap" id="frameWrap">
+      <div class="max-bar">
+        <span class="name" id="maxName"></span>
+        <kbd>Esc</kbd>
+        <button class="btn quiet" id="shrink">Exit full window</button>
+      </div>
       <!-- No allow-same-origin: the report embeds the user's own values, so it runs
            in an opaque origin and cannot reach this page's storage or DOM. -->
       <iframe id="report" title="PySuricata report" sandbox="allow-scripts allow-downloads"></iframe>
@@ -270,10 +315,13 @@
   </div>
 
   <p class="closing">
-    Statistics come from streaming sketches, so memory tracks column count rather than
-    row count. Counts and moments are exact; quantiles, distinct counts and duplicates
-    are estimated, and the report marks each one. Frames wider than 250 columns are
-    refused here — run those locally.
+    Reads CSV, TSV, Parquet and Excel — <code>.xlsx</code>, <code>.xlsm</code>,
+    <code>.xlsb</code>, <code>.xls</code> and <code>.ods</code>. CSV and Parquet are
+    streamed in chunks; a spreadsheet has no chunked reader in pandas, so a workbook is
+    read whole and capped at 40 MB here. Statistics come from streaming sketches, so
+    memory tracks column count rather than row count. Counts and moments are exact;
+    quantiles, distinct counts and duplicates are estimated, and the report marks each
+    one. Frames wider than 250 columns are refused here — run those locally.
   </p>
 
 </main>
@@ -302,7 +350,17 @@
   };
   const MAX_COLUMNS = 250;
   const MAX_BYTES = 600 * 1024 * 1024;
+  // Excel gets its own cap, two orders of magnitude lower, because it is the one
+  // input that cannot stream: pandas has no chunksize on read_excel in any
+  // engine, so the sheet is decompressed and built whole before the profiler
+  // sees a row. A workbook is also compressed XML — 40 MB on disk expands to
+  // several hundred in the heap, which is the real ceiling here.
+  const MAX_EXCEL_BYTES = 40 * 1024 * 1024;
   const CHUNK_SIZE = 200000;
+  const EXCEL_RE = /\.(xlsx|xlsm|xlsb|xls|ods)$/i;
+  const PARQUET_RE = /\.(parquet|pq)$/i;
+  const kindOf = (name) =>
+    EXCEL_RE.test(name) ? "excel" : PARQUET_RE.test(name) ? "parquet" : "csv";
   // Overridable so the row count can be dialled down when testing the page.
   const BIG_DEMO_ROWS = Number(params.get("rows")) || 5000000;
 
@@ -312,10 +370,14 @@
     status: $("status"), statusText: $("statusText"), statusDetail: $("statusDetail"),
     log: $("log"), notes: $("notes"),
     resultPanel: $("resultPanel"), ledger: $("ledger"), report: $("report"), reportTitle: $("reportTitle"),
+    frameWrap: $("frameWrap"), maxName: $("maxName"), expand: $("expand"), shrink: $("shrink"),
     download: $("download"), downloadStats: $("downloadStats"), reset: $("reset"), versions: $("versions"),
   };
 
   let ready = false, busy = false, last = null;
+  // The workbook a sheet chooser is currently asking about. Held so the choice
+  // can start a second run against the same File without a second file dialog.
+  let pending = null;
   // Held so it can be revoked when the next report replaces it. Revoking any
   // earlier than that would pull the document out from under a live frame.
   let reportUrl = null;
@@ -362,12 +424,28 @@
   /* Everything a previous run left on screen. Called by reset and by the start
      of every run, so a second profile never inherits the first one's figures. */
   function clearResult() {
+    setMaximised(false);   // a fixed overlay must not outlive the report inside it
     els.resultPanel.classList.add("hidden");
     els.ledger.textContent = "";
     els.report.removeAttribute("src");
     if (reportUrl) { URL.revokeObjectURL(reportUrl); reportUrl = null; }
     els.reportTitle.textContent = "Report";
     last = null;
+  }
+
+  /* Full window. The frame leaves the flow and covers the viewport; the report
+     inside it is untouched, so its own scroll position and theme survive. */
+  let maximised = false;
+  function setMaximised(on) {
+    if (on === maximised) return;
+    maximised = on;
+    els.frameWrap.classList.toggle("max", on);
+    document.body.classList.toggle("maxed", on);
+    els.expand.setAttribute("aria-pressed", String(on));
+    els.expand.textContent = on ? "Exit full window" : "Full window";
+    els.maxName.textContent = els.reportTitle.textContent;
+    // Focus has to follow, or the next Tab lands behind the overlay.
+    (on ? els.shrink : els.expand).focus();
   }
 
   // A worker that cannot be constructed — file:// origin, a CSP that forbids
@@ -417,9 +495,18 @@
       return;
     }
 
+    if (m.type === "sheets") {
+      setBusy(false);
+      setState("", "Which sheet?", `${m.sheets.length} sheets in this workbook`);
+      logLine(`workbook: ${m.sheets.map((s) => s.name).join(", ")}`);
+      clearNotes();
+      askForSheet(m);
+      return;
+    }
+
     if (m.type === "refused") {
       setBusy(false);
-      setState("failed", "Refused — too wide for a browser tab");
+      setState("failed", "Refused — nothing was profiled");
       logLine(`refused: ${m.reason}`);
       note("warn", m.reason, m.detail);
       return;
@@ -439,6 +526,16 @@
       setState("done", "Done — nothing left this tab",
         `${m.profileSecs.toFixed(1)}s to profile · ${m.heapMB} MB peak heap`);
       logLine(`profiled in ${m.profileSecs.toFixed(1)}s — ${fmtBytes(m.meta.html_bytes)} of HTML`);
+      // A spreadsheet whose first row is a title or a blank spacer profiles
+      // cleanly and describes the wrong thing: pandas takes that row as the
+      // header and every column comes back "Unnamed: n". Say so — the report
+      // itself has no way to know it was handed a preamble.
+      if (m.meta.unnamed_cols >= 2) {
+        note("warn", `${m.meta.unnamed_cols} columns came through unnamed.`,
+          "That usually means the sheet does not start with its header row — a title, a " +
+          "blank line or a merged banner above the table will do it. Delete the rows above " +
+          "the header and profile it again.");
+      }
       renderResult(m);
     }
   };
@@ -500,23 +597,66 @@
     return runId;
   }
 
-  function start(file) {
+  function start(file, sheet) {
     if (busy || !ready) return;
-    if (file.size > MAX_BYTES) {
+    const kind = kindOf(file.name);
+    const cap = kind === "excel" ? MAX_EXCEL_BYTES : MAX_BYTES;
+    if (file.size > cap) {
       clearNotes();
       note("warn", `That file is ${fmtBytes(file.size)}.`,
-        `The demo caps at ${fmtBytes(MAX_BYTES)} so a browser tab does not run out of address space. PySuricata itself has no such limit — run it locally for bigger files.`);
+        kind === "excel"
+          ? `Workbooks are capped at ${fmtBytes(cap)} here because Excel cannot be streamed — pandas builds the whole sheet in memory before profiling starts, and a compressed workbook expands several times over on the way. Save the sheet as CSV and the cap becomes ${fmtBytes(MAX_BYTES)}.`
+          : `The demo caps at ${fmtBytes(cap)} so a browser tab does not run out of address space. PySuricata itself has no such limit — run it locally for bigger files.`);
       return;
     }
     const run = beginRun();
-    const isParquet = /\.(parquet|pq)$/i.test(file.name);
-    els.reportTitle.textContent = file.name;
+    pending = file;
+    const title = sheet ? `${file.name} — ${sheet}` : file.name;
+    els.reportTitle.textContent = title;
     setState("working", "Profiling…", "one core, no threads");
     logLine(`${file.name} — ${fmtBytes(file.size)}, staying local`);
+    if (sheet) logLine(`sheet: ${sheet}`);
+    if (kind === "excel") {
+      note("", "Excel is read whole, not streamed.",
+        "pandas exposes no chunked reader for any spreadsheet format, so the sheet is " +
+        "materialised before profiling begins — exactly as pd.read_excel would do on your " +
+        "own machine. The bounded-memory path is CSV and Parquet.");
+    }
     worker.postMessage({
-      type: "profile", run, file, name: file.name, isParquet,
+      type: "profile", run, file, name: file.name, kind, sheet: sheet || null, title,
       chunkSize: CHUNK_SIZE, maxColumns: MAX_COLUMNS,
     });
+  }
+
+  /* A workbook holds many tables and the demo profiles one. Rather than take the
+     first sheet and present the result as though it were the file, the run stops
+     here and asks — with the row and column counts that make the choice real. */
+  function askForSheet(m) {
+    const only = m.sheets.filter((s) => s.rows > 0);
+    const list = only.length ? only : m.sheets;
+    const d = document.createElement("div");
+    d.className = "note";
+    const b = document.createElement("b");
+    b.textContent = `${m.book} has ${m.sheets.length} sheets.`;
+    const empty = m.sheets.length - only.length;
+    const p = document.createElement("span");
+    p.textContent = empty
+      ? `Profiling covers one sheet at a time. ${empty === 1 ? "One is empty and is" : `${empty} are empty and are`} not offered.`
+      : "Profiling covers one sheet at a time — pick the one you want.";
+    const row = document.createElement("div");
+    row.className = "sheets";
+    for (const s of list) {
+      const btn = document.createElement("button");
+      btn.className = "btn quiet";
+      btn.textContent = s.name;
+      const sub = document.createElement("small");
+      sub.textContent = `${fmtNum(s.rows)} rows × ${fmtNum(s.cols)} cols`;
+      btn.appendChild(sub);
+      btn.onclick = () => { if (pending) start(pending, s.name); };
+      row.appendChild(btn);
+    }
+    d.append(b, p, row);
+    els.notes.appendChild(d);
   }
 
   els.pick.onclick = () => els.file.click();
@@ -543,8 +683,8 @@
       logLine(`titanic.csv — ${fmtBytes(file.size)}, staying local`);
       setState("working", "Profiling…", "one core, no threads");
       worker.postMessage({
-        type: "profile", run, file, name: file.name, isParquet: false,
-        chunkSize: CHUNK_SIZE, maxColumns: MAX_COLUMNS,
+        type: "profile", run, file, name: file.name, kind: "csv", title: file.name,
+        sheet: null, chunkSize: CHUNK_SIZE, maxColumns: MAX_COLUMNS,
       });
     } catch (err) {
       if (run !== runId) return;
@@ -564,10 +704,20 @@
     worker.postMessage({ type: "generate", run, rows: BIG_DEMO_ROWS, chunkSize: CHUNK_SIZE });
   };
 
+  els.expand.onclick = () => setMaximised(!maximised);
+  els.shrink.onclick = () => setMaximised(false);
+  // Esc only reaches this document when focus is outside the frame — the report
+  // is a separate document and keeps its own key events — so the bar carries a
+  // visible exit as well rather than relying on the shortcut alone.
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && maximised) setMaximised(false);
+  });
+
   els.download.onclick = () => last && saveBlob(last.html, baseName() + "-pysuricata.html", "text/html");
   els.downloadStats.onclick = () => last && saveBlob(last.stats, baseName() + "-pysuricata.json", "application/json");
   els.reset.onclick = () => {
     runId += 1;             // orphan anything still in flight
+    pending = null;
     clearNotes();
     clearResult();
     els.log.textContent = "";
