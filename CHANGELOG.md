@@ -14,6 +14,59 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+
+- **Categorical and boolean columns track their own chunks, so the Missing
+  Values pane is gated the same way on all four card kinds** ([#193]). #154's
+  5b.7 set the rule — render the pane only when **missing > 0 and chunks > 1**,
+  the one condition under which it knows something the card face does not,
+  namely *where in the read* the gaps fall. It could only land for numeric and
+  datetime, because `render/html.py` finalized the other two without chunk
+  metadata and neither summary had a field to hold it.
+
+  A single-chunk report was consistent by accident: the numeric and datetime
+  panes dropped and the other two had nothing to drop against. A multi-chunk
+  report was not — `Age` got a strip showing where its gaps fell and `Embarked`
+  got a Present/Missing pair restating its header.
+
+  `CategoricalAccumulator` and `BooleanAccumulator` now count rows and missing
+  values per chunk through a shared `ChunkTracker`, carry `chunk_metadata` on
+  their summaries, and implement `mark_chunk_boundary()`. The engine needed no
+  change: it has always been duck-typed, with a comment saying the other kinds
+  "should start working the moment they do".
+
+  **Boolean earned its details section back.** It had none — a documented
+  decision (#155, 5c.6) rather than an omission, on the grounds that its two
+  panes restated the card face. That reasoning named this issue as the release
+  condition: *"boolean accumulators are finalized without chunk metadata, so
+  the pane has no such fact to offer and cannot acquire one. When #193 lands it
+  may earn its tab back under the same rule."* It now has one pane, Missing
+  Values, appearing only when the rule opens.
+
+  Merging is handled rather than assumed: a merged column's chunks are the two
+  runs' chunks in order, so the second side's boundaries are offset by the
+  first's row count instead of restarting at zero halfway through.
+
+  `tests/test_missing_pane_gate.py` asserts the gate **open and closed on every
+  kind**, which is the point the issue makes: `getattr(stats, "chunk_metadata",
+  None)` returns `None` rather than raising, so a gate applied to a kind with no
+  such field *looks* applied while hiding the pane permanently — and a test that
+  only checks the closed side passes just as happily against a pane that can
+  never appear. All four mutations of the fix are caught, including that one.
+
+  Two fixture traps hit while writing it, both recorded because they report
+  "absent" when the truth is "the fixture missed the branch":
+  `np.where(mask, pd.NaT, dates)` yields an *object* column that never infers as
+  datetime, and a bool column with `None` punched into it is object too and
+  infers as categorical. A nullable `"boolean"` dtype with `pd.NA` is what
+  produces a boolean card.
+
+  One thing deliberately not changed: feeding a nullable `"boolean"` Series
+  straight into the accumulator raises *"boolean value of NA is ambiguous"*.
+  That is a shape the pipeline never produces — `_to_bool_array_pandas` hands
+  over `[bool | None]`, having already converted `pd.NA` — so the crash was a
+  test inventing an input, not a defect.
+
 ### Changed
 
 - **`Processed bytes (≈)` left the primary stat row on the numeric and datetime
@@ -165,6 +218,7 @@ quoted when both sides were measured in the same round-robin run.
   skip themselves anywhere it is absent.
 
 [#124]: https://github.com/alvarodiez20/pysuricata/issues/124
+[#193]: https://github.com/alvarodiez20/pysuricata/issues/193
 [#206]: https://github.com/alvarodiez20/pysuricata/issues/206
 [#209]: https://github.com/alvarodiez20/pysuricata/issues/209
 

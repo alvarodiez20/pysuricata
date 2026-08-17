@@ -13,6 +13,7 @@ from typing import Any
 
 import numpy as np
 
+from .chunking import ChunkTracker
 from .config import BooleanConfig
 from .protocols import AccumulatorKind, PicklableAccumulator
 
@@ -35,6 +36,13 @@ class BooleanSummary:
     true_ratio: float = 0.0
     false_ratio: float = 0.0
     entropy: float = 0.0
+    #: `(start_row, end_row, missing_in_chunk)` per chunk (#193).
+    #:
+    #: Absent until now, which is why the Missing Values pane could not be
+    #: gated on this card kind the way #154's 5b.7 gates it on numeric and
+    #: datetime. `None` means the column tracked nothing, which is not the same
+    #: as a column that ran as a single chunk.
+    chunk_metadata: list[tuple[int, int, int]] | None = None
 
 
 class BooleanAccumulator(PicklableAccumulator):
@@ -61,6 +69,12 @@ class BooleanAccumulator(PicklableAccumulator):
         self.false_n = 0
         self._dtype_str = "boolean"
         self._mem_bytes = 0
+
+        # Per-column chunk tracking (#193).
+        self._chunks = ChunkTracker(
+            enabled=getattr(self.config, "enable_chunk_metadata", True),
+            max_chunks=getattr(self.config, "max_chunks", 1000),
+        )
 
     @property
     def kind(self) -> AccumulatorKind:
@@ -89,6 +103,31 @@ class BooleanAccumulator(PicklableAccumulator):
         return 2  # Boolean can only have 2 unique values
 
     def update(self, arr: Sequence[Any]) -> None:
+        """Update accumulator with new values, recording them against the chunk.
+
+        Counted by difference around `_update_values` rather than inside it:
+        that method has early returns and a per-value fallback beside the
+        vectorised path, and counting in each is how the two drift apart.
+        """
+        before_rows = self.count + self.missing
+        before_missing = self.missing
+        try:
+            self._update_values(arr)
+        finally:
+            self._chunks.note(
+                rows=(self.count + self.missing) - before_rows,
+                missing=self.missing - before_missing,
+            )
+
+    def mark_chunk_boundary(self) -> None:
+        """Tell the accumulator a chunk ended (#193).
+
+        Duck-typed by `compute/orchestration/engine.py`, which calls this on
+        every accumulator that has it.
+        """
+        self._chunks.mark_boundary()
+
+    def _update_values(self, arr: Sequence[Any]) -> None:
         """Update accumulator with new values using vectorized operations.
 
         Args:
@@ -178,12 +217,19 @@ class BooleanAccumulator(PicklableAccumulator):
         except (ValueError, TypeError):
             pass
 
-    def finalize(self) -> BooleanSummary:
+    def finalize(
+        self, chunk_metadata: list[tuple[int, int, int]] | None = None
+    ) -> BooleanSummary:
         """Finalize accumulator and return summary statistics.
+
+        Args:
+            chunk_metadata: Fallback triples, used only when this column
+                tracked none of its own.
 
         Returns:
             BooleanSummary containing all computed statistics
         """
+        per_column_chunks = self._chunks.metadata()
         # Calculate ratios
         total_valid = self.true_n + self.false_n
         true_ratio = self.true_n / max(1, total_valid)
@@ -208,6 +254,7 @@ class BooleanAccumulator(PicklableAccumulator):
             true_ratio=true_ratio,
             false_ratio=false_ratio,
             entropy=entropy,
+            chunk_metadata=per_column_chunks or chunk_metadata,
         )
 
     def _calculate_entropy(self, true_ratio: float, false_ratio: float) -> float:
@@ -289,6 +336,8 @@ class BooleanAccumulator(PicklableAccumulator):
         self.true_n += other.true_n
         self.false_n += other.false_n
         self._mem_bytes += other._mem_bytes
+        # Chunks concatenate, with the second side's boundaries offset (#193).
+        self._chunks.merge(other._chunks)
 
     def reset(self) -> None:
         """Reset accumulator to initial state."""
@@ -297,3 +346,4 @@ class BooleanAccumulator(PicklableAccumulator):
         self.true_n = 0
         self.false_n = 0
         self._mem_bytes = 0
+        self._chunks.reset()

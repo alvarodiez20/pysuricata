@@ -75,6 +75,13 @@ class CategoricalStats:
     empty_zero: int
     case_variants_est: int
     trim_variants_est: int
+    #: `(start_row, end_row, missing_in_chunk)` per chunk (#193).
+    #:
+    #: The renderer is duck-typed over this type and the accumulator's summary,
+    #: so both have to carry it. Without it here the unit-test type diverges
+    #: from the runtime one and the Missing Values gate reads `None` -- which
+    #: does not tighten the rule, it hides the pane permanently.
+    chunk_metadata: list[tuple[int, int, int]] | None = None
 
 
 @dataclass
@@ -118,6 +125,13 @@ class BooleanStats:
     false_n: int
     missing: int
     mem_bytes: int
+    #: `(start_row, end_row, missing_in_chunk)` per chunk (#193).
+    #:
+    #: The renderer is duck-typed over this type and the accumulator's summary,
+    #: so both have to carry it. Without it here the unit-test type diverges
+    #: from the runtime one and the Missing Values gate reads `None` -- which
+    #: does not tighten the rule, it hides the pane permanently.
+    chunk_metadata: list[tuple[int, int, int]] | None = None
 
 
 @dataclass

@@ -41,6 +41,8 @@ class BooleanCardRenderer(CardRenderer):
         # Chart (without card container)
         chart_html = self._build_boolean_chart(stats)
 
+        details_html = self._build_details_section(col_id, stats, miss_pct)
+
         return self._assemble_card(
             col_id,
             safe_name,
@@ -48,6 +50,48 @@ class BooleanCardRenderer(CardRenderer):
             quality_flags_html,
             stat_row,
             chart_html,
+            details_html,
+        )
+
+    def _build_details_section(
+        self, col_id: str, stats: BooleanStats, miss_pct: float
+    ) -> str:
+        """One pane, and only when it has something to say (#193).
+
+        The note further down this file records why boolean had no details
+        section: both its panes restated the card face. `Missing Values` was
+        the interesting removal -- on numeric and datetime it survives when
+        there is more than one chunk, because *where in the read the gaps fall*
+        is something the card face cannot show, and boolean accumulators were
+        finalized without chunk metadata so the pane had no such fact to offer
+        and could not acquire one.
+
+        It can now. `BooleanAccumulator` tracks chunks like the others, so the
+        pane earns its tab back under exactly the rule the other kinds already
+        use -- and stays absent on the single-chunk reports where it would only
+        restate the header.
+        """
+        # The render-layer `BooleanStats` carries `true_n`/`false_n`, not a
+        # `count` -- that is on the accumulator's summary, which is a different
+        # type. Present values are the two that are not missing.
+        present = int(stats.true_n + stats.false_n)
+        total = present + int(stats.missing)
+        present_pct = (present / max(1, total)) * 100.0 if total else 0.0
+        table = super()._build_missing_values_table(
+            present, present_pct, stats.missing, miss_pct, stats, total
+        )
+
+        return self._build_tabbed_details(
+            col_id,
+            [
+                (
+                    "missing",
+                    "Missing Values",
+                    f'<div class="sub">{table}</div>',
+                    int(getattr(stats, "missing", 0) or 0) > 0
+                    and len(getattr(stats, "chunk_metadata", None) or []) > 1,
+                ),
+            ],
         )
 
     def _build_quality_flags_html(
@@ -251,23 +295,26 @@ class BooleanCardRenderer(CardRenderer):
         return "".join(parts)
 
     # ------------------------------------------------------------------ #
-    # No details section (#155, 5c.6)
+    # One details pane, and only sometimes (#155 5c.6, then #193)
     #
     # A decision, not an omission, which is why it is written down.
     #
     # A boolean column has two values and two counts. The card face already
     # shows both, as a bar and as a percentage, and nothing is withheld -- so
-    # there is no second level of disclosure to offer. What was there:
+    # there is no second level of disclosure to offer. What was here:
     #
     #   `Breakdown`      a two-row table under a card showing the same split.
     #   `Missing Values` one fact restated under a header already carrying it.
     #
-    # `Missing Values` is the more interesting removal. On numeric and datetime
-    # columns it survives when there is more than one chunk, because *where in
-    # the read the gaps fall* is something the card face cannot show. Boolean
-    # accumulators are finalized without chunk metadata (#193), so the pane has
-    # no such fact to offer and cannot acquire one. When #193 lands it may earn
-    # its tab back under the same rule the other kinds already use.
+    # `Breakdown` is gone for good. `Missing Values` was the more interesting
+    # removal, and it has come back: on numeric and datetime it survives when
+    # there is more than one chunk, because *where in the read the gaps fall*
+    # is something the card face cannot show, and this accumulator was
+    # finalized without chunk metadata -- so the pane had no such fact to offer
+    # and could not acquire one. **#193 gave it one.** `BooleanAccumulator`
+    # now tracks chunks like the others, and `_build_details_section` gates the
+    # pane on exactly the rule the other three kinds use, so it stays absent on
+    # the single-chunk reports where it would only restate the header.
     #
     # The one thing a boolean pane could add that the card cannot is a true
     # rate per chunk -- a flag that is 12% early and 60% late is a pipeline
@@ -431,6 +478,7 @@ class BooleanCardRenderer(CardRenderer):
         quality_flags_html: str,
         stat_row: str,
         chart_html: str,
+        details_html: str = "",
     ) -> str:
         """Assemble the complete card HTML."""
         docs_url = "https://alvarodiez20.github.io/pysuricata/stats/boolean/"
@@ -455,5 +503,6 @@ class BooleanCardRenderer(CardRenderer):
                 <div class="var-chart">{chart_html}</div>
                 {stat_row}
             </div>
+            {details_html}
         </article>
         """

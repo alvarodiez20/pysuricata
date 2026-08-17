@@ -268,13 +268,13 @@ def render_html_snapshot(
             card_html = _render_numeric_card(acc.finalize(chunk_metadata))
             data_type = "numeric"
         elif name in kinds.categorical:
-            card_html = _render_cat_card(acc.finalize())
+            card_html = _render_cat_card(acc.finalize(chunk_metadata))
             data_type = "categorical"
         elif name in kinds.datetime:
             card_html = _render_dt_card(acc.finalize(chunk_metadata))
             data_type = "datetime"
         elif name in kinds.boolean:
-            card_html = _render_bool_card(acc.finalize())
+            card_html = _render_bool_card(acc.finalize(chunk_metadata))
             data_type = "boolean"
 
         # Add data attributes for filtering and search

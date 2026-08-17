@@ -591,16 +591,15 @@ class TestCrossRendererConsistency:
     def test_completeness_section_present_when_missing(self, renderer_class, stats_fn):
         """Renderers with missing values show the Data Completeness pane.
 
-        Numeric and datetime additionally require more than one chunk (#154,
-        5b.7); categorical does not, because its accumulator is never handed
-        chunk metadata to gate on (#193). The fixture supplies two chunks where
-        the type carries them, so this asserts the pane for every kind that can
-        render it.
+        Every kind requires more than one chunk (#154, 5b.7) -- the pane only
+        knows something the card face does not when it can say *where in the
+        read* the gaps fall. Categorical was the exception until #193, not by
+        design but because its accumulator was never handed chunk metadata to
+        gate on; now it is, so the fixture supplies chunks for it too.
         """
         renderer = renderer_class()
-        extra = {}
-        if renderer_class in (NumericCardRenderer, DateTimeCardRenderer):
-            extra["chunk_metadata"] = [(0, 49, 10), (50, 99, 10)]
-        stats = stats_fn(count=80, missing=20, **extra)
+        stats = stats_fn(
+            count=80, missing=20, chunk_metadata=[(0, 49, 10), (50, 99, 10)]
+        )
         html = renderer.render_card(stats)
         assert "Data Completeness" in html
