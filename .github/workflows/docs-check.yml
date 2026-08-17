@@ -7,6 +7,11 @@ on:
       - 'docs/**'
       - 'mkdocs.yml'
       - 'pysuricata/**/*.py'
+      # The README is checked against the live API like every page under
+      # `docs/` (#151). Without it here, the one file the check was added for
+      # could be edited without the check ever running.
+      - 'README.md'
+      - 'benchmarks/check_docs.py'
 
 permissions:
   contents: read

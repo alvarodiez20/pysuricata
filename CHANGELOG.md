@@ -595,7 +595,45 @@ quoted when both sides were measured in the same round-robin run.
 - The untokenised-colour ratchet drops from 88 to 70. Eleven of those needed no
   decision at all — they were sitting in rules for markup nobody renders.
 
+### Documentation
+
+- **The README is checked against the live API, and rewritten** ([#151]). Every
+  page under `docs/` has its fences executed and its option names resolved by
+  `benchmarks/check_docs.py`; the README was not in that set. So it drifted
+  while the rest stayed correct, and the file PyPI renders as the package
+  description advertised a sketch size of **1,024** against a live default of
+  **2,048**, a numeric sample of **10,000** against **20,000**, and two CLI
+  subcommands out of three.
+
+  The missing one was `pysuricata check` — the feature that separates this from
+  a report generator, absent from the page most likely to be the only one a
+  reader sees. The README now leads with it: `summarize()` for asserting in a
+  pipeline, `duplicate_rows_uncertainty` for reading a suppressed zero
+  correctly, and the exit codes (`0` pass, `1` threshold crossed, `2` could not
+  run) that make the subcommand usable in CI without reading the source.
+
+  The wiring is the durable half. `README.md` joins `_pages()`, and
+  `docs-check.yml` gains `README.md` and `benchmarks/check_docs.py` in its
+  trigger paths — a guard that does not run on the file it guards is not a
+  guard. It earned itself immediately: the draft of the new configuration
+  example passed `random_seed=42, top_k=25`, neither of which the API accepts,
+  and the check that had just been added is what caught it.
+  `tests/test_readme_is_checked.py` pins the wiring and the prose figures no
+  fence contains; ten of its twelve cases fail against the previous README.
+
+- **The report screenshot is current, and reproducible.** The one in
+  `docs/assets/` was referenced from nowhere and showed a version string of
+  0.0.26 over synthetic data in a design two redesigns old, because
+  regenerating it meant reverse-engineering how it had been taken.
+  `scripts/capture_report_screenshot.py` is that recipe. It finds the crop
+  boundary in the DOM instead of hard-coding it, so a layout change moves the
+  crop rather than slicing a table row in half — which is what the first
+  attempt did. It stays out of CI deliberately: the check would need a browser,
+  and a picture a release behind is a cosmetic lag rather than a false claim,
+  visible in the image because the report header carries its own version.
+
 [#122]: https://github.com/alvarodiez20/pysuricata/issues/122
+[#151]: https://github.com/alvarodiez20/pysuricata/issues/151
 [#180]: https://github.com/alvarodiez20/pysuricata/issues/180
 [#181]: https://github.com/alvarodiez20/pysuricata/issues/181
 [#182]: https://github.com/alvarodiez20/pysuricata/issues/182

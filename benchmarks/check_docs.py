@@ -90,7 +90,22 @@ _NOT_DOCUMENTATION = {
 
 
 def _pages() -> list[Path]:
-    return sorted(p for p in DOCS.rglob("*.md") if p.name not in _NOT_DOCUMENTATION)
+    """Every page this checks, `README.md` included.
+
+    It was not included, and that is how the README came to claim a sketch `k`
+    of 1,024 against a live 2,048, a sample of 10,000 against 20,000, and two
+    CLI subcommands against three -- while every page under `docs/` stayed
+    correct, because those were checked and it was not (#151).
+
+    It is the most-read page in the project and the one PyPI renders as the
+    package description, so it is the *last* file that should have been outside
+    the net.
+    """
+    pages = [p for p in DOCS.rglob("*.md") if p.name not in _NOT_DOCUMENTATION]
+    readme = REPO / "README.md"
+    if readme.is_file():
+        pages.append(readme)
+    return sorted(pages)
 
 
 def _line_of(text: str, needle: str) -> int:
@@ -395,7 +410,11 @@ def check_nav(out: list[Finding]) -> None:
     # was read as a nav entry and reported as a missing page.
     nav_text = re.sub(r"(?m)#.*$", "", nav_text)
     referenced = set(re.findall(r"([\w./-]+\.md)", nav_text))
-    on_disk = {str(p.relative_to(DOCS)) for p in _pages()}
+    # Only pages under `docs/`. This check asks whether mkdocs renders a page,
+    # and `README.md` is not a site page -- it is the repository's front door
+    # and PyPI's package description. It is checked for accuracy like every
+    # other page, and it is correctly absent from the nav.
+    on_disk = {str(p.relative_to(DOCS)) for p in _pages() if p.is_relative_to(DOCS)}
     for orphan in sorted(on_disk - referenced):
         out.append(
             Finding(
@@ -436,7 +455,9 @@ def main(argv=None) -> int:
     check_nav(findings)
     for page in _pages():
         text = page.read_text(encoding="utf-8")
-        rel = str(page.relative_to(DOCS))
+        # `README.md` sits at the repository root rather than under `docs/`, so
+        # it is labelled by its path from there.
+        rel = str(page.relative_to(DOCS if page.is_relative_to(DOCS) else REPO))
         before = len(findings)
         check_examples(page, text, findings, run=not args.no_run)
         check_symbols(page, text, findings)
