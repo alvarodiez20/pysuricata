@@ -51,6 +51,23 @@ quoted when both sides were measured in the same round-robin run.
   `build_docs_assets.py --check`: a browser screenshot is not byte-reproducible
   across platforms and font sets, so pinning it there buys a flaky job rather
   than a guarantee.
+
+  **Two gaps closed afterwards**, both about what the new check does *not*
+  reach. `docs-check.yml` triggered on `README.md` but not on
+  `benchmarks/check_docs.py`, so a pull request that narrowed or broke the
+  checker was the one pull request the checker did not run on; it now triggers
+  on every script the job runs — `check_docs.py`, `build_docs_assets.py`,
+  `regenerate_example_report.py` — and on the workflow file itself, since
+  editing the trigger list is exactly the edit that most needs the job to run. And every claim #151
+  was actually filed about — sketch `k`, numeric sample size, subcommand count
+  — is *prose*, not a fence: `k = sketch size (default 2048)` is italic text
+  under a table, and the CLI section is a `bash` block, which `check_docs`
+  cannot execute. The guard that closed #151 would not have caught what #151
+  reported. `tests/test_readme_is_checked.py` reads those figures from
+  `ComputeOptions()` and the subcommand list from the parser's own source, so a
+  renamed default fails a test rather than drifting. Digit grouping is
+  normalised away — `20 000`, `20,000` and `20_000` are one claim, and a test
+  that insists on one spelling fails the next person to restyle a sentence.
 - **The datetime timeline no longer scales its own labels** ([#217]). It drew
   every label inside an SVG carrying `preserveAspectRatio="none"` at
   `width: 100%`, so nothing in it had a size of its own: the viewBox mapped
