@@ -28,7 +28,6 @@ from .svg_utils import safe_col_id as _safe_col_id
 from .triage import actionable_chips as _actionable_chips
 from .triage import build_attention_block as _build_attention_block
 from .triage import extract_chips as _extract_chips
-from .triage import flag_slug as _flag_slug
 
 # Template placeholders are bare identifiers in braces ({report_title}). Anything
 # else that looks brace-wrapped -- CSS custom properties, JS object literals --
@@ -283,9 +282,11 @@ def render_html_snapshot(
             # triage block and the chip filter can both use them without
             # recomputing anything.
             chips = _extract_chips(card_html)
-            flags = " ".join(
-                sorted({_flag_slug(label) for _, label in _actionable_chips(chips)})
-            )
+            # The chip's stamped slug, not one re-derived from its face: the
+            # face leads with the column's own value, so deriving here gave
+            # every card a set of flags no other card could share and no filter
+            # could group. See #238.
+            flags = " ".join(sorted({slug for _, _, slug in _actionable_chips(chips)}))
             card_id = _safe_col_id(name)
             column_chips.append((name, card_id, chips))
             card_html = card_html.replace(

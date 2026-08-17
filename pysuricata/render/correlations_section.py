@@ -162,11 +162,23 @@ class CorrelationsSectionRenderer:
         """
 
     def _render_weak_row(self, col_a: str, col_b: str, corr: float) -> str:
-        """One below-threshold pair, on the same diverging bar as the list."""
+        """One below-threshold pair, on the same diverging bar as the list.
+
+        `--data-3`, not `--data-4`. A quieter step for a weaker pair is the
+        right instinct and `--data-4` is the wrong token to spend on it: it is
+        **1.83:1 on the paper**, and `_00-tokens.css` records it as
+        stack-internal only for that reason. This bar stands alone on the
+        paper, so the step below it was invisible in print and close to it on
+        screen -- the row rendered as a pair, a gap, and a number.
+
+        Nothing is lost to ambiguity by sharing `--data-3` with the list's
+        weakest band: this row only ever renders when *no* pair clears the
+        threshold, so the two never appear in the same document.
+        """
         return (
             '<li class="corr-weak__row">'
             f'<span class="corr-weak__pair">{self._escape(col_a)} · {self._escape(col_b)}</span>'
-            f"{self._diverging_bar(corr, 'var(--data-4)')}"
+            f"{self._diverging_bar(corr, 'var(--data-3)')}"
             f'<span class="corr-weak__value">{corr:+.3f}</span>'
             "</li>"
         )

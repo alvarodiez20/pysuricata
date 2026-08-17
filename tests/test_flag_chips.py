@@ -103,7 +103,7 @@ class TestDistinctNeverExceedsTheRowCount:
 class TestTheChipsShowWhatTheyKnow:
     def test_the_value_reaches_the_face_of_the_chip(self, frame):
         html = profile(frame, seed=0).html
-        labels = [label for _, label in extract_chips(html)]
+        labels = [label for _, label, _ in extract_chips(html)]
         assert any(re.match(r"[\d.\-]", label) for label in labels), labels[:6]
 
     def test_the_value_leads_and_the_name_follows(self):
@@ -129,7 +129,8 @@ class TestTheChipsShowWhatTheyKnow:
             'data-value="9.1">Heavy‑tailed</li>'
         )
         assert ">9.1 heavy‑tailed<" in out
-        assert extract_chips(out) == [("bad", "9.1 heavy‑tailed")]
+        # The face carries the value; the slug still says which flag it is.
+        assert extract_chips(out) == [("bad", "9.1 heavy‑tailed", "heavy-tailed")]
 
     def test_a_chip_with_no_value_is_left_alone(self):
         """Not every flag is a measurement. `Monotonic ↑` has no number, and

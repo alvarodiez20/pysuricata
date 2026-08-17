@@ -139,8 +139,16 @@
   background: var(--data-2);
 }
 
+/* The fill has to match the segment it labels -- that is the whole job of a
+   legend -- and --data-4 is 1.83:1 on the paper, legal inside the stacked bar
+   and a ghost as a swatch sitting on its own. A swatch is not a stack segment.
+
+   So the fill stays and the border does the work, exactly as .missing below
+   already does for --track. Changing the fill instead would make the legend
+   disagree with the bar, which is worse than a faint swatch. */
 .legend-color.false {
   background: var(--data-4);
+  border: 1px solid var(--rule-strong);
 }
 
 .legend-color.missing {

@@ -79,6 +79,62 @@ quoted when both sides were measured in the same round-robin run.
   `docs/versioning.md`. Found only because a failing coverage check on the
   untested polars branch was worth taking seriously rather than waiving.
 
+### Fixed
+
+- **Every valued `warn` chip was being dropped from the attention block**
+  ([#238]). `actionable_chips` admits everything `bad` plus eleven named `warn`
+  slugs — `missing`, `dominant-category`, `high-cardinality` and the rest. It
+  admitted none of them, because `annotate_flags` had already rewritten each
+  chip's face to lead with its value, and the rule matched on that face:
+  `Missing` slugs to `missing`, and `19.9% missing` slugs to `19-9-missing`.
+
+  So `_ACTIONABLE_WARNINGS` was eleven entries of dead configuration and the
+  block was `bad`-only without saying so. On the Titanic report it listed
+  **five** columns where it should list **seven**: `Embarked` — 72.4% dominant
+  category and 0.2% missing, both `warn` — was absent entirely, and `Age`
+  appeared only because it happens to carry an unrelated `bad` outlier chip.
+
+  The same defect ran through the card's `data-flags`, which is what the chip
+  filter selects on. Those slugs carried the column's own value, so each card's
+  flags were unique to it — clicking `77.1% missing` could only ever match the
+  one column that is 77.1% missing, never the other two that are also missing
+  values.
+
+  `annotate_flags` now stamps a `data-flag` identity from the label **before**
+  rewriting the face, and `extract_chips` returns `(severity, label, slug)` so
+  the rule can ask what a chip *is* rather than what it says. Every test in this
+  area built its chips by hand in the shape a card emits, which is not the shape
+  any card ships — that gap is the reason this survived, and
+  `TestTheRuleSurvivesTheChipBeingRewritten` closes it. Both mutations of the
+  fix fail against it.
+
+- **A below-threshold correlation bar was drawn in a colour that cannot be seen**
+  ([#239]). `correlations_section.py` filled it with `--data-4`, which
+  `_00-tokens.css` records as **1.83:1 on the paper** and documents as
+  stack-internal only. A quieter step for a weaker pair is the right instinct
+  and that is the wrong token to spend on it: the row rendered as a pair, a gap
+  and a number. Now `--data-3`, which clears 3:1 on both surfaces in both
+  themes. Nothing is lost to ambiguity by sharing it with the list's weakest
+  band — that row only renders when *no* pair clears the threshold, so the two
+  never appear in one document.
+
+- **The boolean legend's `false` swatch had the same problem**, and was not in
+  the design audit. A swatch is not a stack segment; it sits alone on the paper.
+  Its fill has to keep matching the segment it labels — that is what a legend is
+  — so it gains a border instead, exactly as the `--track` swatch beside it
+  already had one.
+
+  Rule 1 is not expressible as a token pair, so `test_contrast.py` could not see
+  either violation: `--data-4` on `--paper` is not a pair anyone declares, it is
+  a pair that happens because a bar was drawn on the page. It now carries a
+  ratchet on *where* the token is spent. Written the naive way first, that check
+  failed on its own subject — the docstring explaining the fix names the token —
+  so it reads code with comments and docstrings stripped, which is the sixth
+  instance of that trap recorded in this repository.
+
+[#238]: https://github.com/alvarodiez20/pysuricata/issues/238
+[#239]: https://github.com/alvarodiez20/pysuricata/issues/239
+
 ## [0.1.2] - 2026-08-17
 
 ### Added
