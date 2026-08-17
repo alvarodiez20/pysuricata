@@ -150,6 +150,7 @@ class CategoricalCardRenderer(CardRenderer):
         common_table = self._build_common_values_table(stats)
         norm_tab_btn, norm_tab_pane = self._build_normalization_section(items, stats)
         missing_table = self._build_missing_values_table(stats, miss_pct)
+        length_pane = self._build_length_pane(stats)
 
         details_html = self._build_details_section(
             col_id,
@@ -157,6 +158,7 @@ class CategoricalCardRenderer(CardRenderer):
             norm_tab_btn,
             norm_tab_pane,
             missing_table,
+            length_pane,
             # NOT gated on chunk count, unlike the numeric and datetime
             # cards. `html.py` calls `finalize()` without chunk metadata for
             # this kind, so the accumulator has none to give -- gating on it
@@ -817,6 +819,164 @@ class CategoricalCardRenderer(CardRenderer):
                 found.append((rule, sorted(members), key))
         return found
 
+    def _build_length_pane(self, stats: CategoricalStats) -> str:
+        """The label-length distribution, which was being spent on two numbers.
+
+        Phase 5c.2 (#155). `categorical.py` has kept a 5,000-value reservoir of
+        label lengths all along and the report spent it on `avg_len` and
+        `len_p90`. The whole distribution was sitting in it, and on an
+        identifier column the shape *is* the finding: `Ticket` clusters at 4-7
+        characters and at 8-10 with a tail to 18, which is two ticket formats
+        in one column and is available no other way.
+
+        **Suppressed below three distinct lengths.** `Embarked` has one, and a
+        chart of one bar at full height says only "all of them", which is what
+        the sentence says in fewer pixels and without implying a distribution.
+        """
+        bins = [
+            (int(length), int(count))
+            for length, count in (getattr(stats, "len_hist", None) or [])
+            if count > 0
+        ]
+        if not bins:
+            return ""
+
+        name = self.safe_html_escape(stats.name)
+        header = (
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · label length</span>'
+            '<span class="fence-head__rule"></span>'
+            f'<span class="fence-head__count">{bins[0][0]} to {bins[-1][0]} '
+            "characters</span>"
+            "</div>"
+        )
+
+        if len(bins) < 3:
+            if len(bins) == 1:
+                sentence = (
+                    f"Every label is {bins[0][0]} character"
+                    f"{'s' if bins[0][0] != 1 else ''} long."
+                )
+            else:
+                sentence = (
+                    f"Labels are either {bins[0][0]} or {bins[1][0]} characters "
+                    f"long — {bins[0][1]:,} and {bins[1][1]:,} of them."
+                )
+            return (
+                f'<div class="fence-pane">{header}'
+                f'<p class="fence-lede">{sentence}</p></div>'
+            )
+
+        top = max(count for _, count in bins)
+        rows = "".join(
+            f'<div class="lenbar" style="height:{count / top * 100:.1f}%" '
+            f'title="{count:,} label{"s" if count != 1 else ""} of '
+            f'{length} character{"s" if length != 1 else ""}" '
+            f'data-col="{self.safe_col_id(stats.name)}" data-count="{count}"></div>'
+            for length, count in bins
+        )
+        ticks = (
+            f'<span class="lenaxis__tick">{bins[0][0]}</span>'
+            f'<span class="lenaxis__tick">{bins[-1][0]}</span>'
+        )
+        return (
+            f'<div class="fence-pane">{header}'
+            f'<p class="fence-lede">{self._length_finding(bins)}</p>'
+            f'<div class="lenchart">{rows}</div>'
+            f'<div class="lenchart__axis"></div>'
+            f'<div class="lenaxis">{ticks}</div>'
+            '<p class="common__caption">one bar per label length, over a '
+            "sample of the values</p>"
+            "</div>"
+        )
+
+    #: A gap has to span this much of the length range before it is called a
+    #: gap. Without it every sparse tail reads as a finding -- `Name` runs 12
+    #: to 82 characters and almost every length above 60 is isolated, which the
+    #: first version reported as "27 separate clusters".
+    _GAP_MIN_SPAN = 0.12
+
+    #: And each side has to hold this much of the labels. A gap with two
+    #: stragglers beyond it is a tail, not a second format.
+    _GAP_MIN_MASS = 0.10
+
+    #: A gap has to span this much of the length range before it is called a
+    #: gap. Without it every sparse tail reads as a finding -- `Name` runs 12
+    #: to 82 characters and almost every length above 60 is isolated, which the
+    #: first version reported as "27 separate clusters".
+    _GAP_MIN_SPAN = 0.12
+
+    #: And each side has to hold this much of the labels, and at least
+    #: `_GAP_MIN_LABELS` of them. A gap with two stragglers beyond it is a
+    #: tail, not a second format. 2% rather than 10% because `Ticket`'s second
+    #: format is 40 of 891 labels -- rare, and still a real cleaning finding.
+    _GAP_MIN_MASS = 0.02
+    _GAP_MIN_LABELS = 5
+
+    def _length_finding(self, bins: list[tuple[int, int]]) -> str:
+        """What the shape says, when it says something.
+
+        A gap in the middle of a length distribution is two formats sharing a
+        column, which is a cleaning finding and the reason this chart exists.
+        But only a *substantial* gap is, and two earlier versions of this got
+        it wrong in opposite directions:
+
+        - Calling any gap of more than one character a cluster boundary
+          reported `Name` -- an ordinary right-skewed spread of 12 to 82
+          characters -- as "27 separate clusters". That is sparsity at the
+          tail described as a finding.
+        - Requiring 10% of the labels on each side then rejected `Ticket`,
+          whose 40 long tickets in 891 are exactly the second format this
+          chart exists to surface.
+
+        **The bin step matters.** Above `_MAX_LENGTH_BINS` distinct lengths the
+        histogram groups them, so adjacent bins sit a full bin apart and *every*
+        neighbour looks like a gap. `Name` bins at width 2, and its twenty-seven
+        "gaps" were all this artifact. The step is inferred as the smallest
+        distance between neighbours, and anything that close is contiguous.
+        """
+        lengths = [length for length, _ in bins]
+        total = sum(count for _, count in bins)
+        span = max(1, lengths[-1] - lengths[0])
+        spread = f"{lengths[0]} to {lengths[-1]} characters"
+        step = min(
+            (high - low for low, high in zip(lengths, lengths[1:], strict=False)),
+            default=1,
+        )
+
+        gaps = []
+        for index, (low, high) in enumerate(zip(lengths, lengths[1:], strict=False)):
+            if high - low <= step:
+                continue
+            if (high - low) / span < self._GAP_MIN_SPAN:
+                continue
+            below = sum(count for _, count in bins[: index + 1])
+            above = total - below
+            smaller = min(below, above)
+            if smaller / total < self._GAP_MIN_MASS or smaller < self._GAP_MIN_LABELS:
+                continue
+            gaps.append((low, high, below, above))
+
+        if len(gaps) == 1:
+            low, high, below, above = gaps[0]
+            return (
+                f"Lengths run {spread}, with nothing between {low} and {high}: "
+                f"{below:,} labels fall below the gap and {above:,} above it. "
+                "Two formats in one column look like this."
+            )
+        if len(gaps) > 1:
+            return (
+                f"Lengths run {spread} in {len(gaps) + 1} groups separated by "
+                "gaps, which is more than one format sharing a column."
+            )
+
+        peak_length, peak_count = max(bins, key=lambda item: item[1])
+        return (
+            f"Lengths run {spread}, with no gap wide enough to suggest a "
+            f"second format. The most common is {peak_length} characters "
+            f"({peak_count:,} of {total:,})."
+        )
+
     def _build_details_section(
         self,
         col_id: str,
@@ -824,6 +984,7 @@ class CategoricalCardRenderer(CardRenderer):
         norm_tab_btn: str,
         norm_tab_pane: str,
         missing_table: str,
+        length_pane: str = "",
         *,
         has_missing: bool = True,
     ) -> str:
@@ -844,6 +1005,12 @@ class CategoricalCardRenderer(CardRenderer):
                     "Normalization",
                     normalization,
                     bool(normalization) and bool(norm_tab_btn.strip()),
+                ),
+                (
+                    "length",
+                    "Label length",
+                    length_pane,
+                    bool(length_pane.strip()),
                 ),
                 (
                     "missing",

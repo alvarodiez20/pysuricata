@@ -6,8 +6,9 @@ with comprehensive error handling, validation, and performance optimizations for
 
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import numpy as np
@@ -35,6 +36,17 @@ class CategoricalSummary:
     mem_bytes: int = 0
     avg_len: float | None = None
     len_p90: int | None = None
+    #: `(length, count)` over the length reservoir, shortest first.
+    #:
+    #: The reservoir has been kept all along and spent on two numbers. The
+    #: whole distribution was sitting in it, and on an identifier column the
+    #: *shape* is the finding: `Ticket` clusters at 4-7 characters and 10-14
+    #: with a tail to 18, which is two ticket formats in one column and is
+    #: available no other way (#155, 5c.2).
+    #:
+    #: Binned here rather than in the renderer, and capped, so what crosses
+    #: into the summary is a few dozen pairs instead of a 5,000-element sample.
+    len_hist: list[tuple[int, int]] = field(default_factory=list)
     empty_zero: int = 0
     case_variants_est: int = 0
     trim_variants_est: int = 0
@@ -44,6 +56,41 @@ class CategoricalSummary:
     gini_impurity: float = 0.0
     most_common_ratio: float = 0.0
     diversity_ratio: float = 0.0
+
+
+#: Distinct lengths above this are grouped into the widest bins the range
+#: allows. Labels are short, so most columns never reach it -- `Name` is the
+#: outlier at 82 distinct lengths, and 40 bars is already more than a reader
+#: counts.
+_MAX_LENGTH_BINS = 40
+
+
+def _length_histogram(values: list[float]) -> list[tuple[int, int]]:
+    """`(length, count)` pairs over the length reservoir, shortest first.
+
+    One bar per distinct length while that stays readable, because a label
+    length *is* an integer and binning it hides the thing worth seeing -- a
+    column of 4-character and 7-character values is two formats, and a bin of
+    4-7 is one blur.
+    """
+    if not values:
+        return []
+
+    counts: dict[int, int] = {}
+    for value in values:
+        length = int(value)
+        counts[length] = counts.get(length, 0) + 1
+
+    if len(counts) <= _MAX_LENGTH_BINS:
+        return sorted(counts.items())
+
+    low, high = min(counts), max(counts)
+    width = max(1, math.ceil((high - low + 1) / _MAX_LENGTH_BINS))
+    binned: dict[int, int] = {}
+    for length, count in counts.items():
+        bucket = low + ((length - low) // width) * width
+        binned[bucket] = binned.get(bucket, 0) + count
+    return sorted(binned.items())
 
 
 def _string_lengths(values: Any) -> np.ndarray:
@@ -427,9 +474,9 @@ class CategoricalAccumulator(PicklableAccumulator):
 
         # Calculate string length statistics
         avg_len = self._len_sum / max(1, self._len_n) if self._len_n > 0 else None
-        len_p90 = self._calculate_percentile(
-            self._len_sample.values() if self._len_sample else [], 90
-        )
+        len_values = self._len_sample.values() if self._len_sample else []
+        len_p90 = self._calculate_percentile(len_values, 90)
+        len_hist = _length_histogram(len_values)
 
         # Calculate variant estimates
         case_variants_est = self._uniques_lower.estimate() if self._uniques_lower else 0
@@ -459,6 +506,7 @@ class CategoricalAccumulator(PicklableAccumulator):
             mem_bytes=self._bytes_seen,
             avg_len=avg_len,
             len_p90=len_p90,
+            len_hist=len_hist,
             empty_zero=self._empty_zero,
             case_variants_est=case_variants_est,
             trim_variants_est=trim_variants_est,

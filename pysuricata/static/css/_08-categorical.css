@@ -425,3 +425,65 @@
     gap: 4px;
   }
 }
+
+
+/* =============================================================
+   LABEL LENGTH — the reservoir, spent (5c.2, #155)
+
+   `categorical.py` has kept a 5,000-value reservoir of label lengths
+   all along and the report spent it on two numbers. The shape is the
+   finding on an identifier column: `Ticket` clusters at 4-7 characters
+   and again at 8-10 with a tail to 18, which is two ticket formats in
+   one column.
+
+   One bar per distinct length, because a label length *is* an integer
+   and binning it hides the thing worth seeing -- a column of
+   4-character and 7-character values is two formats, and a bin of 4-7
+   is one blur.
+   ============================================================= */
+#pysuricata-report .lenchart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 120px;
+  margin-top: 4px;
+}
+
+/* Rule 3 and its inverse, which are two different rules.
+
+   A zero count draws nothing: the renderer skips the bin entirely, so
+   there is no bar to style. Ten empty lengths drawn as ten 1px bars
+   would assert data that is not there.
+
+   A *non-zero* count draws at least a pixel. `Ticket` has two labels of
+   three characters against a peak of 419, which is 0.6px of a 120px
+   chart -- present in the data, invisible on the page, and therefore
+   indistinguishable from the zeros that are correctly absent. */
+#pysuricata-report .lenbar {
+  flex: 1 1 0;
+  min-width: 2px;
+  min-height: 1px;
+  background: var(--data-2);
+  cursor: help;
+}
+
+#pysuricata-report .lenbar:hover {
+  background: var(--data-1);
+}
+
+#pysuricata-report .lenchart__axis {
+  height: 1px;
+  background: var(--axis);
+}
+
+#pysuricata-report .lenaxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+#pysuricata-report .lenaxis__tick {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}

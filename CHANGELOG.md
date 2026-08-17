@@ -16,6 +16,14 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **The label-length reservoir is spent** ([#155], 5c.2). `categorical.py` has
+  kept a 5,000-value reservoir of label lengths all along and the report spent
+  it on two numbers, `avg_len` and `len_p90`. The distribution is now drawn,
+  one bar per distinct length, and on an identifier column the shape is the
+  finding: `Ticket` reads *Lengths run 3 to 18 characters, with nothing between
+  13 and 15: 851 labels fall below the gap and 40 above it. Two formats in one
+  column look like this.* Suppressed below three distinct lengths, where a
+  chart of one full-height bar says only "all of them".
 - **Boolean cards have no details section** ([#155], 5c.6) — a decision, not an
   omission. Two values, two counts, one bar, all on the card face: nothing is
   withheld, so there is no second level of disclosure to offer. `Breakdown` was

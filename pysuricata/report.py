@@ -79,6 +79,12 @@ SUMMARY_FIELDS_WITHHELD = {
     "chunk_metadata": "per-chunk bookkeeping used to draw the chunk strip",
     "corr_threshold": "an echo of the caller's own configuration",
     "hist_counts": "legacy field, superseded by true_histogram_counts",
+    "len_hist": (
+        "a render-shaped binning of the length reservoir, capped at a bin "
+        "count chosen for how many bars a reader can take in. `avg_len` and "
+        "`len_p90` are the statistics; publishing this would pin a "
+        "presentation choice into a versioned payload"
+    ),
 }
 
 
