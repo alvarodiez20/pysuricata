@@ -24,20 +24,12 @@ The runtime comes from the jsDelivr CDN and `pysuricata` is installed from PyPI 
 page load with `micropip`. Nothing here is vendored, so **the demo picks up every
 new PyPI release with no redeploy.**
 
-Two details worth knowing:
+One detail worth knowing:
 
 - **WORKERFS, not a copy.** The dropped `File` is mounted into the WASM filesystem
   rather than read into memory, so `pandas.read_csv(..., chunksize=…)` streams off
   the Blob and `profile()` receives a chunk generator. That is what makes a large
   file survive a browser tab.
-- **A mocked `psutil`.** `psutil` was declared as a runtime dependency but is
-  imported in no code path in the library (only in tests and docs). It has no WASM
-  wheel, so `micropip` would fail to resolve it. `worker.js` registers a mock
-  distribution to satisfy the resolver. It has since moved to the
-  `pysuricata[system]` extra, but this worker installs from PyPI and the published
-  0.1.0 metadata still requires it. **Delete that block once 0.1.1 is published**,
-  and confirm `micropip.install("pysuricata")` resolves in a bare Pyodide session
-  with no mock package — see the comment in `worker.js`.
 
 ## Input formats
 

@@ -14,6 +14,22 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Removed
+
+- **The browser demo's mocked `psutil` is gone.** `worker.js` registered a fake
+  distribution so micropip's resolver would not fail on a dependency with no
+  WASM wheel — `psutil` was declared as a runtime requirement while being
+  imported in no code path. It has since moved to the `pysuricata[system]`
+  extra, but the demo installs from PyPI and 0.1.0's metadata is immutable, so
+  the mock had to stay until a release carrying the corrected metadata was up.
+
+  0.1.2's `requires_dist` lists `psutil>=7.1.0; extra == "system"` and nothing
+  unconditional, so the resolver never reaches it. Verified the way the comment
+  asked for rather than by reading the metadata alone: a bare Pyodide session
+  with the mock deleted resolves `micropip.install("pysuricata")` in 2.2s,
+  reports **pysuricata 0.1.2**, and profiles the sample to 891 rows × 12
+  columns with no error and no lazy import.
+
 ## [0.1.2] - 2026-08-17
 
 ### Added

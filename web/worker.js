@@ -17,49 +17,6 @@
 let pyodide = null;
 let cfg = null;
 
-/* pysuricata imports psutil in no code path — it is a test-only dependency that
- * was declared as a runtime one. psutil has no WASM wheel, so micropip's resolver
- * would fail on it. A mock distribution satisfies the resolver and gives any
- * lazy third-party import something that degrades instead of raising.
- *
- * psutil has since moved to the `pysuricata[system]` extra, so this is dead
- * weight for any release built after that — but this worker installs pysuricata
- * from *PyPI*, and the published 0.1.0 metadata still requires psutil. PyPI
- * versions are immutable, so deleting this block now breaks the live demo
- * against the only release it can currently resolve.
- *
- * Delete it once 0.1.1 is published, and confirm with a bare Pyodide session
- * that `micropip.install("pysuricata")` resolves with no mock package. */
-const PSUTIL_SHIM = `__version__ = "7.1.0"
-
-class _VMem:
-    total = 2 * 1024 ** 3
-    available = 1 * 1024 ** 3
-    percent = 50.0
-    used = 1 * 1024 ** 3
-    free = 1 * 1024 ** 3
-
-def virtual_memory():
-    return _VMem()
-
-def cpu_count(logical=True):
-    return 1
-
-class _MemInfo:
-    rss = 0
-    vms = 0
-
-class Process:
-    def __init__(self, pid=None):
-        self.pid = pid or 0
-    def memory_info(self):
-        return _MemInfo()
-    def memory_percent(self):
-        return 0.0
-    def cpu_percent(self, interval=None):
-        return 0.0
-`;
-
 /* The run this worker is currently serving. Echoed back on every message so the
  * page can drop anything belonging to a run it has already moved past. */
 let runId;
@@ -114,11 +71,7 @@ async function boot(config) {
   await pyodide.loadPackage(["micropip", "pandas", "numpy"]);
 
   status("Installing pysuricata from PyPI…", "~0.6 MB");
-  pyodide.globals.set("PSUTIL_SHIM", PSUTIL_SHIM);
-  await pyodide.runPythonAsync(`
-import micropip
-micropip.add_mock_package("psutil", "7.1.0", modules={"psutil": PSUTIL_SHIM})
-`);
+  await pyodide.runPythonAsync("import micropip");
   const indexArg = cfg.indexUrls ? `, index_urls=${JSON.stringify(cfg.indexUrls)}` : "";
   await pyodide.runPythonAsync(`await micropip.install("pysuricata"${indexArg})`);
 
