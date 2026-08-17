@@ -399,20 +399,31 @@ class CategoricalCardRenderer(CardRenderer):
         return f'<span title="{self.safe_html_escape(reason)}">—</span>'
 
     def _length_display(self, value) -> str:
-        """A length, or an em dash when there is genuinely nothing to show.
+        """A length, or an em dash that says why there is not one.
 
         The em dash means *absent*. It used to appear for values that were
         merely being read from the wrong object, which is a different thing and
-        is what hid #155.
+        is what hid #155 -- `Embarked` reported a mean label length of `NaN`
+        for a column whose three labels are all one character long.
+
+        That is fixed, and the dash now survives in exactly one case: a column
+        with no non-missing values has no labels, so it has no label length.
+        It reads through `_unknown_cell` like every other unknown on this card,
+        because a bare dash leaves a reader unable to tell a column with
+        nothing to measure from a report that failed to measure it -- opposite
+        conclusions about their data (#155, 5c.2).
         """
+        absent = self._unknown_cell(
+            "this column has no non-missing values, so it has no labels to measure"
+        )
         if value is None:
-            return "—"
+            return absent
         try:
             number = float(value)
         except (TypeError, ValueError):
-            return "—"
+            return absent
         if number != number:  # NaN
-            return "—"
+            return absent
         return self.format_number(number)
 
     def _right_stats(
@@ -698,48 +709,113 @@ class CategoricalCardRenderer(CardRenderer):
     def _build_normalization_section(
         self, items: Sequence[tuple[str, int]], stats: CategoricalStats
     ) -> tuple[str, str]:
-        """Build normalization section if needed."""
+        """Whether normalising would *merge* levels, not what it would print.
+
+        Phase 5c.1 (#155). The pane printed original / `lower()` / `strip()`
+        per level, so for `Embarked` it said `S -> s -> S`. That is a
+        transformation nobody asked about. The question the pane exists to
+        answer is whether normalising changes the number of categories -- the
+        difference between three levels and two -- and it costs one
+        `len(set(...))` over levels already held.
+
+        **The verdict is hedged, deliberately.** Only the top-k levels are
+        tracked, so "nothing merges" is a claim about those and not about the
+        column. Saying it unqualified would be a stronger statement than the
+        sketch can support.
+
+        When nothing merges the pane returns empty and the tab does not
+        render, which is 5b.4's rule: a tab has to earn itself, and "I checked
+        and found nothing" is a sentence, not a pane.
+        """
         try:
-            need_norm = (getattr(stats, "case_variants_est", 0) > 0) or (
-                getattr(stats, "trim_variants_est", 0) > 0
-            )
-            if not (need_norm and items):
+            levels = [str(value) for value, _ in list(items or [])]
+            if not levels:
                 return "", ""
 
-            examples = []
-            for val, _ in list(items)[:10]:
-                raw = str(val)
-                low = raw.lower()
-                stp = raw.strip()
-                if raw != low or raw != stp:
-                    examples.append((raw, low, stp))
-                if len(examples) >= 6:
-                    break
+            groups = self._collisions(levels)
+            if not groups:
+                return "", ""
 
-            rows = (
-                "".join(
-                    f"<tr><td><code>{self.safe_html_escape(a)}</code></td>"
-                    f"<td><code>{self.safe_html_escape(b)}</code></td>"
-                    f"<td><code>{self.safe_html_escape(c)}</code></td></tr>"
-                    for a, b, c in examples
+            rows = "".join(
+                f'<div class="norm__row">'
+                f'<span class="norm__rule">{self.safe_html_escape(rule)}</span>'
+                f'<span class="norm__merged">'
+                + " · ".join(
+                    f"<code>{self.safe_html_escape(member)}</code>"
+                    for member in members
                 )
-                or "<tr><td colspan=3>—</td></tr>"
+                + "</span>"
+                f'<span class="norm__into">→ <code>'
+                f"{self.safe_html_escape(into)}</code></span>"
+                f"</div>"
+                for rule, members, into in groups
             )
 
-            norm_tbl = (
-                '<table class="kv"><thead><tr><th>Original</th><th>lower()</th><th>strip()</th></tr></thead>'
-                f"<tbody>{rows}</tbody></table>"
+            merged = sum(len(members) - 1 for _, members, _ in groups)
+            plural = (
+                f"{len(groups)} groups merge"
+                if len(groups) != 1
+                else "one group merges"
+            )
+            verdict = (
+                f"{len(levels)} tracked levels become {len(levels) - merged} "
+                f"under normalisation: {plural}."
             )
 
-            norm_tab_btn = (
-                '<button role="tab" data-tab="normalize">Normalization</button>'
+            pane = (
+                '<div class="fence-pane">'
+                '<div class="fence-head">'
+                '<span class="fence-head__title">normalisation</span>'
+                '<span class="fence-head__rule"></span>'
+                f'<span class="fence-head__count">{len(groups)} '
+                f"collision{'s' if len(groups) != 1 else ''}</span>"
+                "</div>"
+                f'<p class="fence-lede">{verdict}</p>'
+                f'<div class="norm__rows">{rows}</div>'
+                '<p class="common__caption">only the tracked levels are '
+                "checked, so a collision outside the top-k would not appear "
+                "here</p>"
+                "</div>"
             )
-            norm_tab_pane = (
-                f'<section class="tab-pane" data-tab="normalize">{norm_tbl}</section>'
+            return (
+                '<button role="tab" data-tab="normalize">Normalization</button>',
+                f'<section class="tab-pane" data-tab="normalize">{pane}</section>',
             )
-            return norm_tab_btn, norm_tab_pane
         except Exception:
             return "", ""
+
+    #: The normalisations worth asking about, and the order they are reported
+    #: in. `casefold` rather than `lower` because it is the one that folds the
+    #: cases `lower` misses, and a report that says "nothing merges" should not
+    #: be wrong about German or Turkish text.
+    _NORMALISERS = (
+        ("lower()", lambda text: text.casefold()),
+        ("strip()", lambda text: text.strip()),
+        ("both", lambda text: text.strip().casefold()),
+    )
+
+    def _collisions(self, levels: list[str]) -> list[tuple[str, list[str], str]]:
+        """Groups of levels that a normalisation would merge into one.
+
+        A level is reported under the *first* rule that merges it, so a pair
+        differing in both case and whitespace is one finding rather than three.
+        """
+        seen: set[frozenset[str]] = set()
+        found: list[tuple[str, list[str], str]] = []
+
+        for rule, normalise in self._NORMALISERS:
+            buckets: dict[str, list[str]] = {}
+            for level in levels:
+                buckets.setdefault(normalise(level), []).append(level)
+            for key, members in buckets.items():
+                if len(members) < 2:
+                    continue
+                identity = frozenset(members)
+                if identity in seen:
+                    continue
+                seen.add(identity)
+                found.append((rule, sorted(members), key))
+        return found
 
     def _build_details_section(
         self,

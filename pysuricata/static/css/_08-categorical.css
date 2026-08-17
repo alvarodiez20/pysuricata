@@ -374,3 +374,54 @@
     width: 60px;
   }
 }
+
+
+/* =============================================================
+   NORMALISATION — collisions, not transformations (5c.1, #155)
+
+   The pane printed original / lower() / strip() per level, so for
+   `Embarked` it said `S -> s -> S`: a transformation nobody asked
+   about. The question it exists to answer is whether normalising would
+   *merge* levels -- the difference between three categories and two --
+   so it reports the groups that merge, and renders nothing at all when
+   none do.
+   ============================================================= */
+#pysuricata-report .norm__rows {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ink);
+}
+
+#pysuricata-report .norm__row {
+  display: grid;
+  grid-template-columns: minmax(0, 76px) minmax(0, 1fr) minmax(0, 200px);
+  gap: 14px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .norm__rule {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+#pysuricata-report .norm__merged,
+#pysuricata-report .norm__into {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#pysuricata-report .norm__into {
+  color: var(--muted);
+}
+
+@media (max-width: 768px) {
+  #pysuricata-report .norm__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}

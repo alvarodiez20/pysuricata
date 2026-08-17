@@ -413,14 +413,19 @@ class TestBooleanCardRenderer:
     def test_table_builder_inherited(self):
         assert hasattr(self.renderer, "table_builder")
 
-    def test_missing_completeness_uses_boolean_total(self):
-        # Boolean total = true_n + false_n + missing (NOT count field)
-        # With 80 present and 20 missing, present_pct should be 80%
+    def test_missing_percentage_uses_the_boolean_total(self):
+        """Boolean total is `true_n + false_n + missing`, not the `count`
+        field — the arithmetic invariant this class exists to protect.
+
+        It used to be checked through the Missing Values pane, which 5c.6
+        removed along with the whole details section. The percentage is still
+        on the card face, which is where a reader sees it and therefore the
+        better place to assert it.
+        """
         html = self.renderer.render_card(
             make_boolean(true_n=40, false_n=40, missing=20)
         )
-        assert "80.0%" in html  # present_pct
-        assert "20.0%" in html  # missing_pct
+        assert "20.0%" in html, "20 missing of 100 is 20%, not 20 of 80"
 
     def test_chunk_metadata_not_in_boolean_stats(self):
         # BooleanStats doesn't have chunk_metadata; chunk section should not appear

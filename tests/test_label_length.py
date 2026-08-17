@@ -82,15 +82,27 @@ class TestTheFiguresReachTheCard:
 
 class TestTheEmDashMeansAbsent:
     """It was standing in for *read from the wrong place*, which is a different
-    thing and hid the bug."""
+    thing and hid the bug.
+
+    Since 5c.2 the dash also says *why*, through `_unknown_cell`, like every
+    other unknown on this card: a bare dash leaves a reader unable to tell a
+    column with nothing to measure from a report that failed to measure it,
+    and those are opposite conclusions about their data.
+    """
 
     @pytest.mark.parametrize("value", [None, float("nan")])
     def test_absent_renders_as_a_dash(self, value):
-        assert CategoricalCardRenderer()._length_display(value) == "—"
+        rendered = CategoricalCardRenderer()._length_display(value)
+        assert rendered.endswith("—</span>")
+
+    def test_the_dash_says_why(self):
+        rendered = CategoricalCardRenderer()._length_display(None)
+        assert "no non-missing values" in rendered
+        assert "title=" in rendered
 
     @pytest.mark.parametrize("value", [0, 1, 1.0, 26.97])
     def test_a_real_length_renders_as_a_number(self, value):
-        assert CategoricalCardRenderer()._length_display(value) != "—"
+        assert "—" not in CategoricalCardRenderer()._length_display(value)
 
     def test_zero_is_a_length_not_an_absence(self):
         """A column of empty strings has an average length of zero, and zero is
@@ -98,7 +110,8 @@ class TestTheEmDashMeansAbsent:
         assert CategoricalCardRenderer()._length_display(0) == "0"
 
     def test_something_unparseable_degrades_rather_than_raising(self):
-        assert CategoricalCardRenderer()._length_display("not a number") == "—"
+        rendered = CategoricalCardRenderer()._length_display("not a number")
+        assert rendered.endswith("—</span>")
 
 
 class TestTheDictNeverHadTheKeys:

@@ -41,11 +41,6 @@ class BooleanCardRenderer(CardRenderer):
         # Chart (without card container)
         chart_html = self._build_boolean_chart(stats)
 
-        # Details
-        details_html = self._build_details_section(
-            col_id, stats, true_pct_total, false_pct_total, miss_pct
-        )
-
         return self._assemble_card(
             col_id,
             safe_name,
@@ -53,7 +48,6 @@ class BooleanCardRenderer(CardRenderer):
             quality_flags_html,
             stat_row,
             chart_html,
-            details_html,
         )
 
     def _build_quality_flags_html(
@@ -256,114 +250,31 @@ class BooleanCardRenderer(CardRenderer):
         parts.append("</svg>")
         return "".join(parts)
 
-    def _build_details_section(
-        self,
-        col_id: str,
-        stats: BooleanStats,
-        true_pct_total: float,
-        false_pct_total: float,
-        miss_pct: float,
-    ) -> str:
-        """Build details section with breakdown and missing values tables."""
-
-        # Build enhanced breakdown table (Common Values style)
-        breakdown_table = self._build_common_values_style_table(
-            stats, true_pct_total, false_pct_total, miss_pct
-        )
-
-        # Build missing values table with distribution
-        missing_table = self._build_missing_values_table(stats, miss_pct)
-
-        # The Breakdown pane is a two-row table under a card already showing
-        # the same split, so it only earns a tab when the card cannot show it --
-        # which is never. Kept for now because dropping it is 5c.6, a separate
-        # decision; Missing Values is the one this change fixes.
-        return self._build_tabbed_details(
-            col_id,
-            [
-                (
-                    "breakdown",
-                    "Breakdown",
-                    f'<div class="sub"><div class="hdr">Value Distribution</div>{breakdown_table}</div>',
-                    True,
-                ),
-                (
-                    "missing",
-                    "Missing Values",
-                    f'<div class="sub"><div class="hdr">Missing Values</div>{missing_table}</div>',
-                    # NOT gated on chunk count, unlike the numeric and
-                    # datetime cards. `html.py` calls `finalize()` without
-                    # chunk metadata for this kind, so the accumulator has none
-                    # to give -- gating on it would hide the pane permanently
-                    # rather than tighten the rule. See #193.
-                    int(getattr(stats, "missing", 0) or 0) > 0,
-                ),
-            ],
-        )
-
-    def _build_common_values_style_table(
-        self,
-        stats: BooleanStats,
-        true_pct_total: float,
-        false_pct_total: float,
-        miss_pct: float,
-    ) -> str:
-        """Build breakdown table in Common Values style similar to numeric cards."""
-        int(stats.true_n + stats.false_n + stats.missing)
-
-        # Create value entries with ranking
-        values_data = []
-
-        # Add True value
-        if stats.true_n > 0:
-            values_data.append(("True", stats.true_n, true_pct_total, 1))
-
-        # Add False value
-        if stats.false_n > 0:
-            values_data.append(("False", stats.false_n, false_pct_total, 2))
-
-        # Add Missing value if present
-        if stats.missing > 0:
-            values_data.append(("Missing", stats.missing, miss_pct, 3))
-
-        # Sort by count (descending) for ranking
-        values_data.sort(key=lambda x: x[1], reverse=True)
-
-        rows = []
-        for i, (value, count, pct, _original_rank) in enumerate(values_data):
-            # Format value display
-            if value == "True":
-                formatted_value = "True"
-            elif value == "False":
-                formatted_value = "False"
-            else:
-                formatted_value = "Missing"
-
-            rows.append(
-                f"<tr class='common-row rank-{i + 1}'>"
-                f"<td class='num common-value'>{formatted_value}</td>"
-                f"<td class='num common-count'>{int(count):,}</td>"
-                f"<td class='num common-pct'>{pct:.1f}%</td>"
-                f"<td class='progress-bar'><div class='bar-fill' style='width:{pct:.1f}%'></div></td>"
-                f"</tr>"
-            )
-
-        body = "".join(rows)
-        return (
-            '<table class="common-values-table enhanced">'
-            "<thead><tr><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead>"
-            f"<tbody>{body}</tbody>"
-            "</table>"
-        )
-
-    def _build_missing_values_table(self, stats: BooleanStats, miss_pct: float) -> str:
-        """Build simple missing values analysis."""
-        total = int(stats.true_n + stats.false_n + stats.missing)
-        present = int(stats.true_n + stats.false_n)
-        present_pct = (present / max(1, total)) * 100.0 if total > 0 else 0.0
-        return super()._build_missing_values_table(
-            present, present_pct, stats.missing, miss_pct, stats, total
-        )
+    # ------------------------------------------------------------------ #
+    # No details section (#155, 5c.6)
+    #
+    # A decision, not an omission, which is why it is written down.
+    #
+    # A boolean column has two values and two counts. The card face already
+    # shows both, as a bar and as a percentage, and nothing is withheld -- so
+    # there is no second level of disclosure to offer. What was there:
+    #
+    #   `Breakdown`      a two-row table under a card showing the same split.
+    #   `Missing Values` one fact restated under a header already carrying it.
+    #
+    # `Missing Values` is the more interesting removal. On numeric and datetime
+    # columns it survives when there is more than one chunk, because *where in
+    # the read the gaps fall* is something the card face cannot show. Boolean
+    # accumulators are finalized without chunk metadata (#193), so the pane has
+    # no such fact to offer and cannot acquire one. When #193 lands it may earn
+    # its tab back under the same rule the other kinds already use.
+    #
+    # The one thing a boolean pane could add that the card cannot is a true
+    # rate per chunk -- a flag that is 12% early and 60% late is a pipeline
+    # change, and a single 38.4% hides it. That needs the same per-chunk counts
+    # #193 is about, and it needs a caveat, because chunks are an artifact of
+    # how the file was read: reorder the input and the chart changes.
+    # ------------------------------------------------------------------ #
 
     def _build_dataprep_spectrum_visualization(self, stats: BooleanStats) -> str:
         """Build DataPrep-style spectrum visualization for missing values per chunk.
@@ -520,7 +431,6 @@ class BooleanCardRenderer(CardRenderer):
         quality_flags_html: str,
         stat_row: str,
         chart_html: str,
-        details_html: str,
     ) -> str:
         """Assemble the complete card HTML."""
         docs_url = "https://alvarodiez20.github.io/pysuricata/stats/boolean/"
@@ -544,13 +454,6 @@ class BooleanCardRenderer(CardRenderer):
             <div class="var-card__body">
                 <div class="var-chart">{chart_html}</div>
                 {stat_row}
-                <div class="card-controls" role="group" aria-label="Column controls">
-                    <div class="details-slot">
-                        <button type="button" class="details-toggle btn-soft" aria-controls="{col_id}-details" aria-expanded="false">Details</button>
-                    </div>
-                    <div class="controls-slot"></div>
-                </div>
-                {details_html}
             </div>
         </article>
         """

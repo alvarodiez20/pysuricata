@@ -16,6 +16,20 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **Boolean cards have no details section** ([#155], 5c.6) — a decision, not an
+  omission. Two values, two counts, one bar, all on the card face: nothing is
+  withheld, so there is no second level of disclosure to offer. `Breakdown` was
+  a two-row table restating the card's own split; `Missing Values` restated one
+  fact under a header already carrying it, and unlike the numeric and datetime
+  cards it cannot earn its tab back, because boolean accumulators are finalized
+  without chunk metadata ([#193]).
+- **Normalisation reports collisions, not transformations** ([#155], 5c.1). The
+  pane printed original / `lower()` / `strip()` per level, so for `Embarked` it
+  said `S → s → S` — a transformation nobody asked about. It now answers the
+  question it exists for: whether normalising would **merge** levels. `5 tracked
+  levels become 3 under normalisation: 2 groups merge.` When nothing merges the
+  tab does not render. The verdict is hedged to the tracked levels, since only
+  the top-k are held.
 - **The browser demo adopts the minimal redesign** ([#196]). One 600px reading
   column, the report's own paper/ink and blue tokens from
   `docs/design/tokens.css` in place of the demo's separate green palette, mono
