@@ -305,6 +305,19 @@ class SVGHistogramRenderer:
     #: The plot's own coordinate space. Not pixels -- see above.
     _SPAN = 100.0
 
+    @staticmethod
+    def _n(value: float) -> str:
+        """A coordinate, at two decimals, without trailing zeros.
+
+        `x="30.00"` and `x="30"` place a bar in exactly the same spot, and the
+        four coordinates on a bar are the most repeated numbers in the report
+        -- 50 bars x 6 variants x every numeric column (#206). Two decimals is
+        already past what a display can resolve: the viewBox is 0..100, so one
+        unit is a percent of the plot, and at 1,100px the third decimal is a
+        ten-thousandth of a pixel.
+        """
+        return f"{round(value, 2):g}"
+
     #: Which x ticks survive which breakpoint, nine of them.
     #:
     #: Tiering by *importance* rather than by index is the point. Tier 1 is
@@ -361,21 +374,20 @@ class SVGHistogramRenderer:
         if not hist_data.y_max:
             return []
 
+        # `vector-effect` is carried by the `.grid` and `.axis` rules rather
+        # than repeated here, the same move the bars made (#206).
         parts = []
         for tick in y_ticks:
             y = (1 - tick / hist_data.y_max) * self._SPAN
             parts.append(
-                f'<line class="grid" x1="0" y1="{y:.3f}" x2="{self._SPAN:g}" '
-                f'y2="{y:.3f}" vector-effect="non-scaling-stroke"/>'
+                f'<line class="grid" x1="0" y1="{self._n(y)}" '
+                f'x2="{self._SPAN:g}" y2="{self._n(y)}"/>'
             )
         parts.append(
-            f'<line class="axis" x1="0" y1="{self._SPAN:g}" x2="{self._SPAN:g}" '
-            f'y2="{self._SPAN:g}" vector-effect="non-scaling-stroke"/>'
+            f'<line class="axis" x1="0" y1="{self._SPAN:g}" '
+            f'x2="{self._SPAN:g}" y2="{self._SPAN:g}"/>'
         )
-        parts.append(
-            f'<line class="axis" x1="0" y1="0" x2="0" y2="{self._SPAN:g}" '
-            f'vector-effect="non-scaling-stroke"/>'
-        )
+        parts.append(f'<line class="axis" x1="0" y1="0" x2="0" y2="{self._SPAN:g}"/>')
         return parts
 
     def _render_bars(self, hist_data: HistogramData, col_id: str) -> list[str]:
@@ -424,13 +436,29 @@ class SVGHistogramRenderer:
             )
 
             parts.append(
-                f'<rect class="bar" x="{x:.3f}" y="{y:.3f}" '
-                f'width="{width:.3f}" height="{height:.3f}" '
+                # Two decimals, not three. The viewBox is 0..100, so a unit is
+                # a percent of the plot: at 1,100px the third decimal is a
+                # ten-thousandth of a pixel. Six variants x 50 bars x 4
+                # coordinates make it the most-repeated number in the report.
+                f'<rect class="bar" x="{self._n(x)}" y="{self._n(y)}" '
+                f'width="{self._n(width)}" height="{self._n(height)}" '
                 # No fill-opacity and no rounded corners: both change the
                 # apparent length of a bar, which is the one thing it encodes.
-                f'vector-effect="non-scaling-stroke" '
+                #
+                # `vector-effect` lives in the `.bar` CSS rule, beside the
+                # stroke it modifies, rather than being repeated as a 41-byte
+                # attribute on every bar (#206).
                 f'data-count="{int(count)}" data-pct="{pct:.1f}" '
                 f'data-x0="{x0_label}" data-x1="{x1_label}" '
+                # `data-col` looks redundant -- the column is on the
+                # `.hist-variants` parent, and neither the tooltip handler nor
+                # any stylesheet reads it. It is not redundant.
+                # `scripts/report_fingerprint.py` scans element by element and
+                # takes the scope from the *same* tag, so dropping this turns
+                # every `attr::col_age::count` into `attr::::count` and collides
+                # the bar counts of every numeric column under one key. That is
+                # a weaker invariance guard bought with ~19 bytes a bar, which
+                # is the wrong trade (#206).
                 f'data-col="{col_id}"/>'
             )
 

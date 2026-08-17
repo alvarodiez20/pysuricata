@@ -103,14 +103,94 @@ class TestEveryStrokeSurvivesTheStretch:
     1,100x210 plot. `non-scaling-stroke` is what makes a hairline a hairline."""
 
     @pytest.mark.parametrize("element", ["rect", "line"])
-    def test_marks_are_marked_non_scaling(self, report, element):
+    def test_marks_carry_a_mark_class(self, report, element):
+        """The classes are the hook the rule below hangs on."""
         pattern = rf"<{element}[^>]*class=\"(?:bar|grid|axis)\"[^>]*>"
         found = re.findall(pattern, report) + re.findall(
             rf'<{element} class="(?:bar|grid|axis)"[^>]*>', report
         )
         assert found, f"no {element} marks found"
-        for mark in found:
-            assert 'vector-effect="non-scaling-stroke"' in mark, mark
+
+    @pytest.mark.parametrize("mark", ["bar", "grid", "axis"])
+    def test_every_mark_class_gets_a_non_scaling_stroke(self, mark):
+        """Declared once in CSS, not repeated on every element.
+
+        This used to assert the `vector-effect="non-scaling-stroke"` attribute
+        on each mark, which pinned the *mechanism* rather than the invariant.
+        The attribute was 41 bytes on every one of 50 bars in each of 6
+        variants of every numeric column, so #206 moved it into the `.bar`,
+        `.grid` and `.axis` rules -- beside the strokes it modifies, where the
+        stylesheet's own comment already explained why it was needed. Verified
+        pixel-identical before and after.
+
+        The invariant is unchanged and still guarded: drop the declaration and
+        this fails. `tests/test_report_layout.py` asserts the same thing from
+        the other end, on computed style in a browser, which is the form that
+        cannot be satisfied by a declaration that never applies.
+        """
+        sheet = (
+            Path(__file__).resolve().parents[1]
+            / "pysuricata"
+            / "static"
+            / "css"
+            / "_07-histogram.css"
+        ).read_text(encoding="utf-8")
+
+        rule = re.search(rf"\.hist-svg \.{mark} \{{(.*?)\}}", sheet, re.S)
+        assert rule, f"no .hist-svg .{mark} rule in the histogram stylesheet"
+        assert "vector-effect: non-scaling-stroke" in rule.group(1), (
+            f"`.{mark}` does not get a non-scaling stroke, so its hairline "
+            f"scales with the plot -- 1.1px at 1,100px and 0.28px at 284px"
+        )
+
+
+class TestABarPaysOnlyForWhatIsRead:
+    """#206. A bar is the most repeated element in the report -- 50 of them in
+    each of 6 variants of every numeric column -- so anything constant on it is
+    multiplied by 300 per column.
+
+    Two things were, and are not now: `vector-effect="non-scaling-stroke"` (41
+    bytes, moved to the `.bar` rule) and a third decimal on four coordinates
+    (the viewBox is 0..100, so at 1,100px that digit is a ten-thousandth of a
+    pixel). A bar went from 184 bytes to 131, and the marginal cost of a
+    numeric column from 73,204 to 63,596.
+
+    What stayed is what something reads. `data-count`, `data-pct`, `data-x0`
+    and `data-x1` drive the tooltip; `data-col` scopes the first two for
+    `scripts/report_fingerprint.py`, which takes an element's scope from the
+    same tag -- drop it and every `attr::col_age::count` collapses to
+    `attr::::count`, colliding the bar counts of every numeric column under one
+    key. That is a weaker invariance guard bought with 19 bytes a bar, and it
+    was measured and then put back.
+    """
+
+    def _a_bar(self, report: str) -> str:
+        bars = re.findall(r'<rect class="bar"[^>]*>', report)
+        assert bars, "no histogram bars found"
+        return max(bars, key=len)
+
+    def test_a_bar_carries_no_repeated_constant(self, report):
+        bar = self._a_bar(report)
+
+        assert "vector-effect" not in bar, (
+            "`vector-effect` is back on the bar; it belongs in the `.bar` rule, "
+            "where it costs 41 bytes once instead of once per bar"
+        )
+        assert not re.search(r'="\d+\.\d{3,}"', bar), (
+            f"a coordinate carries three or more decimals: {bar}"
+        )
+
+    def test_a_bar_still_carries_everything_that_is_read(self, report):
+        bar = self._a_bar(report)
+
+        for attribute, reader in (
+            ("data-count", "the tooltip"),
+            ("data-pct", "the tooltip"),
+            ("data-x0", "the tooltip's range line"),
+            ("data-x1", "the tooltip's range line"),
+            ("data-col", "report_fingerprint.py, to scope the counts per column"),
+        ):
+            assert attribute in bar, f"{attribute} is gone, and {reader} reads it"
 
 
 class TestTheBarGapIsNotGeometry:
