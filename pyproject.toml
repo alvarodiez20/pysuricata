@@ -102,6 +102,13 @@ dev = [
     "ipykernel>=7.2.0",
     "nbconvert>=7.17.0",
 ]
+# Deliberately not in `dev`. The layout acceptance criteria (#124) need a real
+# browser, and pulling a ~300 MB Chromium into every test job to run 31 cases
+# would slow all six of them down. The `layout` job in ci.yml syncs this group
+# and installs the browser; everywhere else the cases skip themselves.
+browser = [
+    "playwright>=1.47",
+]
 
 [tool.setuptools]
 include-package-data = true
@@ -183,6 +190,10 @@ known-first-party = ["pysuricata"]
 pythonpath = ["."]
 markers = [
     "benchmark: marks tests as slow benchmarks (deselect with '-m \"not benchmark\"')",
+    # Layout acceptance criteria (#124) measured in a real browser. They skip
+    # when Playwright is absent, so the ordinary run stays pure Python; the
+    # `layout` job in ci.yml installs Chromium and runs them for real.
+    "browser: marks tests that need Playwright and a Chromium build",
 ]
 # An xfail that starts passing is a fixed bug with a stale marker, and it must
 # not pass silently. With this on, XPASS fails the build and the marker has to

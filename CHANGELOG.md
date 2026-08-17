@@ -14,6 +14,65 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **The redesign's acceptance criteria run as tests** ([#124]). Every redesign
+  issue ends with numeric acceptance lines, already phrased as assertions and
+  until now only read. `tests/test_report_layout.py` executes them: 9 cases with
+  no browser, 31 in Chromium across 390/768/1240 × light/dark.
+
+  **The criteria turned out to be a specification, not a description.** #124
+  quotes `len(html) < 400_000` and `elements_per_card < 400`. The Titanic report
+  is **600,491 bytes** and its widest card holds **843** elements — those are the
+  numbers #39 and #206 are open to deliver. Asserting them now would ship a red
+  suite that gets disabled on Monday, so they land as **ratchets** against a
+  recorded baseline, the idiom `test_colour_tokens.py` already uses: growth
+  fails, and shrinking fails too, asking for the baseline to come down.
+
+  **Three criteria appear to fail and do not**, all three because the obvious
+  measurement reads the wrong box. The header measures 53px against a ≤52px
+  budget until you notice it computes to exactly `height: 52px` and carries a 1px
+  bottom border that `getBoundingClientRect()` counts. `.icon-btn` measures 30×30
+  against a 44×44 minimum until you notice the hit area is an absolutely
+  positioned 44×44 `::after` — `elementFromPoint` six pixels outside the visible
+  box still returns the button. And `scrollWidth > clientWidth` names nine
+  elements at 1240px, none of which scrolls: `sr-only` clips, `icon-btn`'s
+  `::after` overflows, an SVG returns an animated string for `className`. Scored
+  properly — content wider than the box *and* a scrollable `overflow-x` — there
+  is exactly **one** scroll pane, the sample table, and the document never
+  overflows at any breakpoint. All three budgets are met.
+
+  Two criteria genuinely miss and are recorded rather than waived: the summary is
+  **620px** at 390px against #112's 560px, and desktop nav links are 31px tall
+  against #111's 44px. The two remaining sub-44px targets are inline links inside
+  a sentence, which WCAG 2.5.8 exempts.
+
+  The theme axis had to be rebuilt to mean anything. The report does not use
+  `prefers-color-scheme` — dark is the *absence* of a `light` class — so
+  Playwright's `color_scheme=` did nothing, and the first contact sheet came out
+  byte-identical in pairs while six "theme" cases measured one state twice.
+  Toggling the class is also not enough on its own: `transition:
+  background-color 0.3s` means an immediate read still returns the old paper.
+  `assert_theme()` now sets the class, waits out the transition, and **requires
+  the two themes to compute different backgrounds**, so the axis cannot go inert
+  again. With it working, dark mode provably changes no geometry.
+
+  Each of the seven gates was verified by breaking it on purpose; all seven fail
+  when they should.
+
+- **A contact sheet for reviewing a phase** (`scripts/contact_sheet.py`, #124).
+  Six full-page captures uploaded by CI as an artifact, and deliberately
+  **never a gate**: thirteen redesign issues are *supposed* to change every
+  pixel, so a pixel-equality check would be switched off during the first phase
+  and stay off. The structural assertions are the gate; the images are how a
+  human reviews a phase in thirty seconds instead of thirty minutes.
+
+- Browser work sits in its own `browser` dependency group and its own `layout`
+  CI job, so the other six jobs do not pull a ~300 MB Chromium, and the cases
+  skip themselves anywhere it is absent.
+
+[#124]: https://github.com/alvarodiez20/pysuricata/issues/124
+
 ## [0.1.1] - 2026-08-17
 
 **The contract written at 0.1.0, held.** Nothing covered by `docs/versioning.md`
