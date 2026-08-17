@@ -14,6 +14,174 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- **`Processed bytes (≈)` left the primary stat row on the numeric and datetime
+  cards** ([#209]). UX-21 asked for this; #104 dropped the donut and the stat-row
+  half never landed. The numeric card's right-hand table read Min, Q1, Median,
+  Mean, Q3, Max — six facts about the distribution — and then one about the
+  profiler's own bookkeeping, in the position of highest attention on the card.
+  It answers a question about PySuricata, not about the data. It is not useless,
+  so it moved to the Statistics pane rather than going away.
+
+  **Two of four kinds, and the other two are recorded rather than waived.**
+  Categorical has details panes but no Statistics pane, and every pane it has is
+  conditional — filing a fact that must always be in the document inside a pane
+  that renders only sometimes would "move" it by making it vanish, which
+  `test_report_data_invariance.py` would rightly catch. Boolean has no details
+  section at all, and that is a documented decision (#155, 5c.6) rather than an
+  omission: two values, two counts, both on the card face, no second level of
+  disclosure to offer. Giving it one to house a byte count would be the tail
+  wagging the dog.
+
+  `tests/test_processed_bytes_placement.py` pins both halves as a ratchet — move
+  one of the remaining two and it fails, telling you to shrink the set. Its
+  fixture carries all four card kinds on purpose: Titanic has no datetime column
+  (#150), so the example report cannot exercise that branch at all, and a
+  fixture that misses a branch reports "absent", which reads as passing.
+
+  Worth recording for the next person: deciding "primary row or details pane" by
+  splitting the card's markup at the `details-toggle` button gets **categorical
+  backwards**, because that card emits the toggle ahead of its stat row. The
+  test decides by which container opened most recently instead, and the first
+  version of this measurement reported categorical as already done when it was
+  not.
+
+- **A histogram bar stopped paying for things nothing reads** ([#206], first
+  pass). A bar is the most repeated element in the report — 50 of them in each
+  of 6 variants of every numeric column, 300 per column — so anything constant
+  on one is multiplied by 300. Two things were:
+
+  `vector-effect="non-scaling-stroke"`, **41 bytes on every mark**, moved into
+  the `.bar`, `.grid` and `.axis` rules. It belongs there: the stylesheet's own
+  comment beside `stroke: var(--paper)` already explained why the stroke must
+  not scale. And a third decimal on four coordinates — the viewBox is 0..100, so
+  a unit is a percent of the plot and at 1,100px the third decimal is a
+  ten-thousandth of a pixel.
+
+  | | Before | After |
+  |---|---:|---:|
+  | one bar | 184 B | **131 B** |
+  | marginal bytes per numeric column | 73,204 | **63,596** |
+  | Titanic report | 600,491 | **573,809** |
+
+  `vector-effect` as a *CSS property* rather than an attribute is SVG2, so it
+  was verified rather than assumed: computed style reports `non-scaling-stroke`
+  on bar, grid and axis at 1240px and 390px, and the rendered histogram is
+  **pixel-identical** before and after — `getbbox()` on the difference returns
+  `None`. Isolating that mattered, because the coordinate rounding *does* move
+  264 of 1.1M pixels by at most 47/255, all of it antialiasing on bar edges.
+
+  **`data-col` was measured, removed, and put back.** It reads as pure
+  redundancy — the column is on the `.hist-variants` parent, and neither the
+  tooltip handler nor any stylesheet touches it. But `scripts/report_fingerprint.py`
+  takes an element's scope from the *same tag*, so dropping it turned every
+  `attr::col_age::count` into `attr::::count` and collided the bar counts of
+  every numeric column under one key. `tests/test_report_data_invariance.py`
+  caught it. A weaker invariance guard is the wrong thing to buy with 19 bytes a
+  bar, so the 5,700 bytes per column stay spent, and the reason is now written
+  next to the attribute.
+
+  This is the cheap half of #206 and does not close it: the six variants are
+  still all rendered. The remaining half — emit one and build the other five on
+  toggle — needs a JS port of a 179-line SVG renderer, which is a second
+  implementation of the chart and wants a decision rather than a commit.
+
+  Guarded by `TestABarPaysOnlyForWhatIsRead`, which asserts both directions:
+  nothing constant creeps back on, and everything with a reader stays. All four
+  mutations of it fail as they should.
+
+### Added
+
+- **The redesign's acceptance criteria run as tests** ([#124]). Every redesign
+  issue ends with numeric acceptance lines, already phrased as assertions and
+  until now only read. `tests/test_report_layout.py` executes them: 9 cases with
+  no browser, 31 in Chromium across 390/768/1240 × light/dark.
+
+  **The criteria turned out to be a specification, not a description.** #124
+  quotes `len(html) < 400_000` and `elements_per_card < 400`. The Titanic report
+  is **600,491 bytes** and its widest card holds **843** elements — those are the
+  numbers #39 and #206 are open to deliver. Asserting them now would ship a red
+  suite that gets disabled on Monday, so they land as **ratchets** against a
+  recorded baseline, the idiom `test_colour_tokens.py` already uses: growth
+  fails, and shrinking fails too, asking for the baseline to come down.
+
+  **Three criteria appear to fail and do not**, all three because the obvious
+  measurement reads the wrong box. The header measures 53px against a ≤52px
+  budget until you notice it computes to exactly `height: 52px` and carries a 1px
+  bottom border that `getBoundingClientRect()` counts. `.icon-btn` measures 30×30
+  against a 44×44 minimum until you notice the hit area is an absolutely
+  positioned 44×44 `::after` — `elementFromPoint` six pixels outside the visible
+  box still returns the button. And `scrollWidth > clientWidth` names nine
+  elements at 1240px, none of which scrolls: `sr-only` clips, `icon-btn`'s
+  `::after` overflows, an SVG returns an animated string for `className`. Scored
+  properly — content wider than the box *and* a scrollable `overflow-x` — there
+  is exactly **one** scroll pane, the sample table, and the document never
+  overflows at any breakpoint. All three budgets are met.
+
+  Two criteria genuinely miss and are recorded rather than waived: the summary is
+  **620px** at 390px against #112's 560px, and desktop nav links are 31px tall
+  against #111's 44px. The two remaining sub-44px targets are inline links inside
+  a sentence, which WCAG 2.5.8 exempts.
+
+  The theme axis had to be rebuilt to mean anything. The report does not use
+  `prefers-color-scheme` — dark is the *absence* of a `light` class — so
+  Playwright's `color_scheme=` did nothing, and the first contact sheet came out
+  byte-identical in pairs while six "theme" cases measured one state twice.
+  Toggling the class is also not enough on its own: `transition:
+  background-color 0.3s` means an immediate read still returns the old paper.
+  `assert_theme()` now sets the class, waits out the transition, and **requires
+  the two themes to compute different backgrounds**, so the axis cannot go inert
+  again. With it working, dark mode provably changes no geometry.
+
+  Each of the seven gates was verified by breaking it on purpose; all seven fail
+  when they should.
+
+- **#119's correlation criterion, in the shape that survived the redesign.**
+  #124 asks that the matrix emit `n(n-1)/2` cells; **there is no matrix** — #122
+  removed the heatmap and #154's 5b.6 replaced it with a per-column partners
+  pane, so a test written to the criterion would search for a `corr-cell`, find
+  nothing, and pass by being vacuous. The invariant behind it survives and is
+  stronger in the new shape: a matrix names each pair once, the panes name it
+  from **both** sides, so the count is `n(n-1)`. Measured at n = 3, 4, 5, 6 →
+  6, 12, 20, 30. A dropped pair, or one column's pane missing a partner, breaks
+  the identity.
+
+  The other four layout criteria #124 lists turned out to be covered already —
+  the 12 month slots in `test_accumulators_datetime.py` and
+  `test_boolean_and_temporal.py`, the high-cardinality no-chart rule in
+  `test_high_cardinality_branch.py`, the frozen index in `test_sample_table.py`,
+  and the nav rail by the scroll allow-list plus the recorded 31px target gap.
+
+- **A contact sheet for reviewing a phase** (`scripts/contact_sheet.py`, #124).
+  Six full-page captures uploaded by CI as an artifact, and deliberately
+  **never a gate**: thirteen redesign issues are *supposed* to change every
+  pixel, so a pixel-equality check would be switched off during the first phase
+  and stay off. The structural assertions are the gate; the images are how a
+  human reviews a phase in thirty seconds instead of thirty minutes.
+
+- Browser work sits in its own `browser` dependency group and its own `layout`
+  CI job, so the other six jobs do not pull a ~300 MB Chromium, and the cases
+  skip themselves anywhere it is absent.
+
+[#124]: https://github.com/alvarodiez20/pysuricata/issues/124
+[#206]: https://github.com/alvarodiez20/pysuricata/issues/206
+[#209]: https://github.com/alvarodiez20/pysuricata/issues/209
+
+## [0.1.1] - 2026-08-17
+
+**The contract written at 0.1.0, held.** Nothing covered by `docs/versioning.md`
+broke: the `summarize()` payload gained `duplicate_rows_uncertainty` and lost
+nothing, so `schema_version` stays at `1`; no public name was removed;
+`ReportConfig` warns rather than disappearing, with 0.3.0 as its date. Verified
+by diffing the payload's key set against the 0.1.0 tag rather than by reading
+this file — zero removed, one added.
+
+The largest changes are in the report's HTML, which that page deliberately does
+not cover, and in the documentation, which is now checked against the live
+library instead of trusted.
+
+
 ### Fixed
 
 - **The temporal distribution charts scaled their own labels**, the same defect
@@ -114,6 +282,23 @@ quoted when both sides were measured in the same round-robin run.
   `build_docs_assets.py --check`: a browser screenshot is not byte-reproducible
   across platforms and font sets, so pinning it there buys a flaky job rather
   than a guarantee.
+
+  **Two gaps closed afterwards**, both about what the new check does *not*
+  reach. `docs-check.yml` triggered on `README.md` but not on
+  `benchmarks/check_docs.py`, so a pull request that narrowed or broke the
+  checker was the one pull request the checker did not run on; it now triggers
+  on every script the job runs — `check_docs.py`, `build_docs_assets.py`,
+  `regenerate_example_report.py` — and on the workflow file itself, since
+  editing the trigger list is exactly the edit that most needs the job to run. And every claim #151
+  was actually filed about — sketch `k`, numeric sample size, subcommand count
+  — is *prose*, not a fence: `k = sketch size (default 2048)` is italic text
+  under a table, and the CLI section is a `bash` block, which `check_docs`
+  cannot execute. The guard that closed #151 would not have caught what #151
+  reported. `tests/test_readme_is_checked.py` reads those figures from
+  `ComputeOptions()` and the subcommand list from the parser's own source, so a
+  renamed default fails a test rather than drifting. Digit grouping is
+  normalised away — `20 000`, `20,000` and `20_000` are one claim, and a test
+  that insists on one spelling fails the next person to restyle a sentence.
 - **The datetime timeline no longer scales its own labels** ([#217]). It drew
   every label inside an SVG carrying `preserveAspectRatio="none"` at
   `width: 100%`, so nothing in it had a size of its own: the viewBox mapped
@@ -2034,7 +2219,9 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.0...v0.1.1
+[0.1.0]: https://github.com/alvarodiez20/pysuricata/compare/0.0.73...v0.1.0
 [0.0.61]: https://github.com/alvarodiez20/pysuricata/compare/0.0.60...0.0.61
 [0.0.60]: https://github.com/alvarodiez20/pysuricata/compare/0.0.59...0.0.60
 [0.0.59]: https://github.com/alvarodiez20/pysuricata/compare/0.0.58...0.0.59

@@ -194,3 +194,52 @@ jobs:
           name: titanic-report-ci
           path: docs/assets/titanic_report.html
           if-no-files-found: warn
+
+  # The redesign's layout acceptance criteria (#124), measured in a real browser
+  # rather than read off the issue. Its own job because Chromium is ~300 MB and
+  # the other six jobs have no use for it; without this the cases skip.
+  #
+  # Measuring is the point, and measuring naively is how this goes wrong: the
+  # header reads 53px against a 52px budget until you notice `getBoundingClient
+  # Rect()` counts the 1px border, and every icon button reads 30x30 against a
+  # 44x44 minimum until you notice the hit area is an absolutely positioned
+  # `::after`. Both budgets are met. See the module docstring.
+  layout:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --group browser
+
+      - name: Install Chromium
+        run: uv run playwright install --with-deps chromium
+
+      - name: Run the layout acceptance criteria
+        run: uv run pytest -m browser -q
+
+      # The contact sheet is a review aid, never a gate: thirteen redesign
+      # issues are *supposed* to change every pixel, so a pixel-equality check
+      # would be disabled on the first phase and stay disabled. The structural
+      # assertions above are the gate; these are how a human reviews a phase in
+      # thirty seconds instead of thirty minutes.
+      - name: Contact sheet
+        if: always()
+        continue-on-error: true
+        run: uv run python scripts/contact_sheet.py
+
+      - name: Upload contact sheet
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: layout-contact-sheet
+          path: contact-sheet/
+          if-no-files-found: warn

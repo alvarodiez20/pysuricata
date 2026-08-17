@@ -332,16 +332,16 @@ class NumericCardRenderer(CardRenderer):
         return data
 
     def _right_stats(self, stats: NumericStats) -> list[tuple[str, str, str]]:
-        """The distribution half: where the values sit."""
-        mem_display = self.format_bytes(int(getattr(stats, "mem_bytes", 0)))
+        """The distribution half: where the values sit.
 
+        Only that. `Processed bytes (≈)` used to close both branches below and
+        now lives in the Statistics pane (#209) -- see `_build_stats_table`.
+        """
         if looks_like_identifier(stats):
             # A key's mean, median and quartiles are arithmetic on labels. Show
             # what a key actually raises instead: how many, how many distinct,
             # whether the sequence has gaps.
-            data = [(label, value, "num") for label, value in identifier_facts(stats)]
-            data.append(("Processed bytes (≈)", mem_display, "num"))
-            return data
+            return [(label, value, "num") for label, value in identifier_facts(stats)]
 
         # Min, Max and Mean are exact -- the extremes come from every value
         # (#118) and the mean from Welford over the stream -- so they must keep
@@ -355,7 +355,6 @@ class NumericCardRenderer(CardRenderer):
             ("Mean", self.format_number(stats.mean), "num"),
             (f"Q3 (P75){sampled}", self.format_number(stats.q3), "num"),
             ("Max", self.format_number(stats.max), "num"),
-            ("Processed bytes (≈)", mem_display, "num"),
         ]
 
         return data
@@ -597,6 +596,17 @@ class NumericCardRenderer(CardRenderer):
                 None,
             ),
             ("Heaping %", self.format_number(stats.heap_pct), "num"),
+            # UX-21 / #209. This was the last row of the card's right-hand stat
+            # table, directly under `Max` -- six facts about the distribution
+            # and then one about the profiler's own bookkeeping, in the position
+            # of highest attention on the card. It answers a question about
+            # PySuricata, not about the data. It is not useless, so it moves
+            # here rather than going away.
+            (
+                "Processed bytes (≈)",
+                self.format_bytes(int(getattr(stats, "mem_bytes", 0))),
+                "num",
+            ),
         ]
 
         return self.table_builder.build_key_value_table(data)
