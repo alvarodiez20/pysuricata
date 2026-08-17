@@ -11,6 +11,11 @@ on:
       - 'README.md'
       - 'mkdocs.yml'
       - 'pysuricata/**/*.py'
+      # A change to the checker must re-run it over everything it covers.
+      # Otherwise a pull request that narrows what is checked -- or breaks it
+      # outright -- is the one pull request the check does not run on.
+      - 'benchmarks/check_docs.py'
+      - 'scripts/build_docs_assets.py'
 
 permissions:
   contents: read
