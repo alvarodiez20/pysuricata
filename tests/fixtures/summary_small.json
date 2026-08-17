@@ -375,6 +375,7 @@
     "cols": 2,
     "duplicate_rows_est": 0,
     "duplicate_rows_pct_est": 0.0,
+    "duplicate_rows_uncertainty": 0,
     "memory_bytes": 850,
     "missing_cells": 0,
     "missing_cells_pct": 0.0,

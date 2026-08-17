@@ -170,6 +170,11 @@ class TestTheDocumentedKeys:
             "missing_cells_pct",
             "duplicate_rows_est",
             "duplicate_rows_pct_est",
+            # The bound that makes the estimate readable. Zero with a zero
+            # uncertainty is "exactly none"; zero with an uncertainty of 2,201
+            # is "nothing resolvable below about 2,201". Without this key a
+            # consumer could not reach the answer the report already printed.
+            "duplicate_rows_uncertainty",
             "memory_bytes",
             "top_missing",
         }

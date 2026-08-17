@@ -24,7 +24,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pysuricata import profile
+from pysuricata import profile, summarize
 from pysuricata.accumulators.sketches import RowKMV
 
 
@@ -148,3 +148,102 @@ class TestNothingDegradesOnEmptyOrTinyInput:
             sketch.update_from_pandas(pd.DataFrame({"id": np.arange(n)}))
         assert sketch.duplicates_uncertainty() == 0
         assert sketch.duplicates_are_resolvable()
+
+
+class TestTheReportAndThePayloadAgree:
+    """The invariant that was missing, and the reason #202 got through.
+
+    #161 fixed the duplicate figure in `render/html.py` — the surface
+    `docs/versioning.md` explicitly does *not* cover — and left it raw in
+    `compute/manifest.py` and `report.py`, which build the payload that carries
+    `schema_version`. Two call sites produced the figure and one of them
+    corrected it.
+
+    So on 200,000-row frames with exactly zero duplicate rows the report read
+    `< 2,201 · below sketch resolution` while `summarize()` returned counts up
+    to 880. A human was told the truth; a CI gate, a `pysuricata check` or a
+    dbt hook reading the payload was told there were duplicates in a dataset
+    that had none.
+
+    Checking one surface could never have caught that. These tests check both
+    against each other.
+    """
+
+    def _payload_and_report(self, frame):
+        stats = summarize(frame, seed=0)["dataset"]
+        value, note = _duplicates_stat(profile(frame, seed=0).html)
+        return stats, value, note
+
+    def test_a_suppressed_report_means_a_suppressed_payload(self):
+        """200,000 distinct rows: below resolution, so both say so."""
+        stats, value, note = self._payload_and_report(_frame(200_000, 0))
+
+        assert note == "below sketch resolution"
+        assert stats["duplicate_rows_est"] == 0, (
+            "the report suppressed the count and the payload published it raw"
+        )
+        assert stats["duplicate_rows_pct_est"] == 0.0
+        # The ceiling the report prints is the uncertainty the payload exports,
+        # so a consumer can reach the same conclusion the reader can.
+        assert value == f"&lt; {stats['duplicate_rows_uncertainty']:,}"
+
+    def test_a_resolvable_count_reaches_the_payload_intact(self):
+        """Suppression must not become a blanket zero: 50,000 duplicates in
+        200,000 rows are far above the sketch's resolution and must survive."""
+        stats, value, _ = self._payload_and_report(_frame(200_000, 50_000))
+
+        assert stats["duplicate_rows_est"] > 0
+        assert value == f"{stats['duplicate_rows_est']:,}"
+        assert abs(stats["duplicate_rows_est"] - 50_000) <= 2 * max(
+            stats["duplicate_rows_uncertainty"], 1
+        )
+
+    def test_an_exact_zero_is_not_dressed_up_as_a_ceiling(self):
+        """891 rows is below `k`, so the count is exact rather than estimated.
+
+        "Exactly none" is a resolved result; reporting it as "fewer than some
+        bound" would understate what the sketch knows.
+        """
+        stats, value, note = self._payload_and_report(_frame(891, 0))
+
+        assert (value, note) == ("0", "exact")
+        assert stats["duplicate_rows_est"] == 0
+        assert stats["duplicate_rows_uncertainty"] == 0
+
+    @pytest.mark.parametrize("seed", range(8))
+    def test_frames_with_no_duplicates_report_none(self, seed):
+        """#161's reproduction, through the payload this time.
+
+        Every one of these frames has exactly zero duplicate rows; before the
+        fix each returned a non-zero `duplicate_rows_est`.
+        """
+        rng = np.random.default_rng(seed)
+        frame = pd.DataFrame({"id": rng.permutation(200_000)})
+        assert frame.duplicated().sum() == 0
+
+        stats = summarize(frame, seed=0)["dataset"]
+
+        assert stats["duplicate_rows_est"] == 0, (
+            f"seed {seed}: reported {stats['duplicate_rows_est']} duplicates "
+            "in a frame that has none"
+        )
+
+
+class TestTheUncertaintyIsExported:
+    """`duplicates_uncertainty()` was computed and never exported, so a payload
+    consumer had no key to apply the threshold themselves."""
+
+    def test_the_payload_carries_it(self):
+        stats = summarize(_frame(200_000, 0), seed=0)["dataset"]
+        assert "duplicate_rows_uncertainty" in stats
+        assert stats["duplicate_rows_uncertainty"] > 0
+
+    def test_zero_with_zero_uncertainty_is_distinguishable_from_zero_without(self):
+        """The distinction the extra key exists to make: "exactly none" and
+        "nothing resolvable" are both `duplicate_rows_est == 0`."""
+        exact = summarize(_frame(891, 0), seed=0)["dataset"]
+        unresolved = summarize(_frame(200_000, 0), seed=0)["dataset"]
+
+        assert exact["duplicate_rows_est"] == unresolved["duplicate_rows_est"] == 0
+        assert exact["duplicate_rows_uncertainty"] == 0
+        assert unresolved["duplicate_rows_uncertainty"] > 0

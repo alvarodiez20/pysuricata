@@ -60,10 +60,33 @@ kind. Those four are safe to read without checking `type` first.
 | `cols` | int | Columns profiled |
 | `missing_cells` | int | Missing cells across profiled columns |
 | `missing_cells_pct` | float | As a percentage of `rows_est × cols` |
-| `duplicate_rows_est` | int | **Approximate.** From a row-level KMV sketch |
+| `duplicate_rows_est` | int | **Approximate.** From a row-level KMV sketch. `0` when the estimate is below the sketch's own resolution — see below |
 | `duplicate_rows_pct_est` | float | **Approximate.** As above |
+| `duplicate_rows_uncertainty` | int | One standard deviation on the count, in rows. `0` when the count is exact |
 | `memory_bytes` | int | Approximate in-memory size of the source |
 | `top_missing` | list | Up to five `{column, pct, count}`, worst first |
+
+### Reading the duplicate count
+
+The duplicate count is `rows − distinct`. `rows` is exact and `distinct` is a
+sketch estimate, so **the whole absolute error of the distinct estimate lands on
+the duplicate count** — a quantity that is usually far smaller. On 200,000 rows
+containing exactly 2,000 duplicates the distinct estimate was 0.48% off, well
+inside spec, and the duplicate count came back 47% high.
+
+So `duplicate_rows_est` is suppressed to `0` when it does not exceed its own
+uncertainty, and `duplicate_rows_uncertainty` carries the ceiling. Read the two
+together:
+
+| `est` | `uncertainty` | Means |
+|---|---|---|
+| `0` | `0` | Exactly none. The distinct count was exact, not estimated |
+| `0` | `2201` | Nothing resolvable. The true count is somewhere below roughly 2,201 |
+| `50602` | `1651` | About 50,602, give or take 1,651 |
+
+Gating on `duplicate_rows_est > 0` is therefore safe against false positives and
+will not fire on a count the sketch cannot support. If you need to fail on the
+*possibility* of duplicates, gate on `duplicate_rows_uncertainty` instead.
 
 ## `columns[name]["type"]`
 
