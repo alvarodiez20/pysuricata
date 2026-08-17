@@ -56,6 +56,10 @@ _SEVERITY_RANK = {"bad": 0, "warn": 1}
 
 _ATTR = re.compile(r'(?P<name>data-(?:threshold|value))="(?P<value>[^"]*)"')
 
+#: The identity :func:`annotate_flags` stamps on, read back by
+#: :func:`extract_chips`.
+_FLAG_ATTR = re.compile(r'data-flag="([^"]*)"')
+
 
 def annotate_flags(flags_html: str) -> str:
     """Put the number a chip already knows on the face of the chip.
@@ -92,47 +96,71 @@ def annotate_flags(flags_html: str) -> str:
             return match.group(0)
 
         title = f' title="threshold: {_html.escape(threshold)}"' if threshold else ""
+        # The identity of the flag, stamped before the face is rewritten and
+        # taken from the label as it was *emitted*. Everything downstream --
+        # triage, the card's data-flags, the chip filter -- has to ask "which
+        # flag is this", and the face stops being able to answer the moment the
+        # value is prepended to it: `Missing` slugs to `missing`, and
+        # `19.9% missing` slugs to `19-9-missing`, which matches nothing and is
+        # unique per column into the bargain. See #238.
+        identity = f' data-flag="{flag_slug(label)}"'
         # The value leads: it is the fact, and the label says what the fact is
         # about. `48.7% has negatives` reads; `Has negatives 48.7%` does not.
         face = f"{value} {label[0].lower() + label[1:]}"
-        return f'<li class="flag{severity}"{attrs}{title}>{_html.escape(face)}</li>'
+        return (
+            f'<li class="flag{severity}"{attrs}{identity}{title}>'
+            f"{_html.escape(face)}</li>"
+        )
 
     return _CHIP.sub(rewrite, flags_html)
 
 
-def extract_chips(card_html: str) -> list[tuple[str, str]]:
+def extract_chips(card_html: str) -> list[tuple[str, str, str]]:
     """Read the quality chips out of a rendered card.
 
     Args:
         card_html: A rendered ``<article class="var-card">`` fragment.
 
     Returns:
-        (severity, label) pairs in the order the card emitted them. Severity is
-        one of ``bad``, ``warn``, ``good`` or ``""``.
+        ``(severity, label, slug)`` in the order the card emitted them.
+        Severity is one of ``bad``, ``warn``, ``good`` or ``""``. The label is
+        what the chip displays; the slug is what it *is*, and the two stopped
+        agreeing once :func:`annotate_flags` began putting the value on the
+        face. The slug is read from ``data-flag`` when the chip carries one and
+        derived from the label otherwise, so markup that never passed through
+        :func:`annotate_flags` still behaves.
     """
-    chips: list[tuple[str, str]] = []
+    chips: list[tuple[str, str, str]] = []
     for match in _CHIP.finditer(card_html):
         severity = match.group("severity").strip()
         label = _html.unescape(match.group("label")).strip()
-        if label:
-            chips.append((severity, label))
+        if not label:
+            continue
+        stamped = _FLAG_ATTR.search(match.group("attrs"))
+        slug = stamped.group(1) if stamped else flag_slug(label)
+        chips.append((severity, label, slug))
     return chips
 
 
-def actionable_chips(chips: list[tuple[str, str]]) -> list[tuple[str, str]]:
+def actionable_chips(chips: list[tuple[str, str, str]]) -> list[tuple[str, str, str]]:
     """Keep only the chips that mean a column needs attention.
 
     Args:
-        chips: (severity, label) pairs from :func:`extract_chips`.
+        chips: ``(severity, label, slug)`` triples from :func:`extract_chips`.
 
     Returns:
         The subset a reader should act on: everything the card marked ``bad``,
         plus the ``warn`` chips that describe a defect rather than a shape.
+
+    The membership test is on the slug, never the label. It used to be on the
+    label, and since every chip's label carries its value the set matched
+    nothing at all -- eleven entries of dead configuration, and an attention
+    block that was ``bad``-only without saying so.
     """
     return [
-        (sev, label)
-        for sev, label in chips
-        if sev == "bad" or (sev == "warn" and flag_slug(label) in _ACTIONABLE_WARNINGS)
+        (sev, label, slug)
+        for sev, label, slug in chips
+        if sev == "bad" or (sev == "warn" and slug in _ACTIONABLE_WARNINGS)
     ]
 
 
@@ -146,7 +174,9 @@ def flag_slug(label: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", normalised.lower()).strip("-")
 
 
-def build_attention_block(columns: list[tuple[str, str, list[tuple[str, str]]]]) -> str:
+def build_attention_block(
+    columns: list[tuple[str, str, list[tuple[str, str, str]]]],
+) -> str:
     """Build the "needs attention" summary.
 
     Args:
@@ -168,19 +198,23 @@ def build_attention_block(columns: list[tuple[str, str, list[tuple[str, str]]]])
 
     # Worst first: a column with a `bad` chip outranks one with only warnings,
     # and among equals the one with more findings.
-    def rank(entry: tuple[str, str, list[tuple[str, str]]]) -> tuple[int, int]:
+    def rank(entry: tuple[str, str, list[tuple[str, str, str]]]) -> tuple[int, int]:
         _, _, chips = entry
-        worst = min(_SEVERITY_RANK.get(sev, 9) for sev, _ in chips)
+        worst = min(_SEVERITY_RANK.get(sev, 9) for sev, _, _ in chips)
         return (worst, -len(chips))
 
     flagged.sort(key=rank)
 
     items = []
     for name, card_id, chips in flagged:
+        # The stamped slug, not one derived from the face. The card's
+        # `data-flags` is built from the same slugs, so clicking a chip here
+        # selects every column sharing that defect -- which it could not do
+        # while both sides carried the value, since `77-1-missing` is unique to
+        # the one column that happens to be 77.1% missing.
         chip_html = "".join(
-            f'<span class="flag {sev}" data-flag="{flag_slug(label)}">'
-            f"{_html.escape(label)}</span>"
-            for sev, label in chips
+            f'<span class="flag {sev}" data-flag="{slug}">{_html.escape(label)}</span>'
+            for sev, label, slug in chips
         )
         items.append(
             f'<li class="attention-item">'

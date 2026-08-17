@@ -48,6 +48,8 @@
         setupFlagFilters();
         if (allCards.length > CARDS_PER_PAGE) setupPagination();
         applyFilters();
+        // After applyFilters, which builds the list revealCard indexes into.
+        setupDeepLinks();
     }
 
     function setupSearch() {
@@ -245,6 +247,68 @@
             currentPage = page;
             updateDisplay();
             updatePagination();
+        }
+    }
+
+    /* Take a #col_<name> link to the card it names, wherever that card is.
+     *
+     * Off-page cards are hidden with `display: none`, so a fragment link to one
+     * used to do nothing at all: the browser finds no rendered target and stays
+     * put. Every link in the needs-attention block is one of these, and the
+     * block exists precisely to be clicked -- so the report's own navigation
+     * silently failed for any column past the first page.
+     *
+     * A filter or a search that excludes the target is cleared on the way. A
+     * deep link is an explicit request for one column and should outrank a
+     * control the reader left set; landing on "No columns found" because a type
+     * tab was still on `numeric` would be the same failure with extra steps.
+     */
+    function revealCard(id) {
+        if (!id) return false;
+        const card = document.getElementById(id);
+        if (!card || !allCards.includes(card)) return false;
+
+        if (!filteredCards.includes(card)) {
+            currentFilter = 'all';
+            currentFlag = null;
+            searchTerm = '';
+            const searchInput = document.getElementById('search-input');
+            if (searchInput) searchInput.value = '';
+            // `.tab`, which is what html.py emits. This read `.filter-tab`
+            // first -- a plausible name that appears in no report -- and the
+            // tabs would have kept showing a filter that was no longer applied.
+            // `test_every_class_it_selects_on_exists` caught it.
+            document.querySelectorAll('.tab[data-filter]').forEach((tab) => {
+                tab.classList.toggle('active', tab.dataset.filter === 'all');
+            });
+            applyFilters();
+        }
+
+        const index = filteredCards.indexOf(card);
+        if (index === -1) return false;
+        goToPage(Math.floor(index / CARDS_PER_PAGE) + 1);
+        // After updateDisplay, so the card has a box to scroll to.
+        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        return true;
+    }
+
+    function setupDeepLinks() {
+        // `hashchange` covers the back button and a pasted URL. It does *not*
+        // fire when the clicked link's fragment is already the current hash, so
+        // the click is handled as well -- otherwise the second click on the same
+        // column reads as a dead link.
+        window.addEventListener('hashchange', () => {
+            revealCard(decodeURIComponent(location.hash.slice(1)));
+        });
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest('a[href^="#col_"]');
+            if (!link) return;
+            const id = decodeURIComponent(link.getAttribute('href').slice(1));
+            if (revealCard(id)) event.preventDefault();
+        });
+        // A report opened straight at #col_x.
+        if (location.hash.startsWith('#col_')) {
+            revealCard(decodeURIComponent(location.hash.slice(1)));
         }
     }
 

@@ -320,3 +320,121 @@ def test_the_mark_is_drawn_rather_than_spoken():
         f"the mark is {content and content.group(1)!r}, which a screen reader "
         "will read out. Draw the shape instead."
     )
+
+
+# --------------------------------------------------------------------------- #
+# Rule 1: the stack-only step stays in the stack
+# --------------------------------------------------------------------------- #
+#: The sites where `--data-4` is legal. Each is a segment of a stacked bar,
+#: which is the one surface the token file permits: `#A8BECD` is **1.83:1 on
+#: the paper**, so a mark drawn with it alone is a ghost on screen and gone in
+#: print. `_00-tokens.css` states the rule; nothing enforced it, and it was
+#: being broken in the correlations list at the time this was written.
+_STACK_INTERNAL = {
+    # The composition bar -- the stack the token exists for.
+    "pysuricata/render/composition_bar.py",
+    # The boolean card's true/false/missing bar, also a stack. Its labels
+    # already take `--on-data-4`, so the pairing was understood here.
+    "pysuricata/render/boolean_card.py",
+    # That bar's geometry, and its legend swatch -- which is *not* a stack
+    # segment and earns its legibility from a border instead. See below.
+    "pysuricata/static/css/_10-boolean.css",
+}
+
+_REPO_ROOT = CSS_DIR.parent.parent.parent
+
+_CSS_COMMENT = re.compile(r"/\*.*?\*/", re.S)
+
+
+def _code_only(path: Path) -> str:
+    """The file with its prose removed.
+
+    Written the naive way first, and it failed on its own subject: the fix that
+    moved the correlations bar off `--data-4` explains itself in a docstring
+    that names the token, so a plain substring scan reported the file it had
+    just cleaned. This repository has a standing note about that exact trap and
+    this is one more instance of it -- a check over source is only as good as
+    its ability to tell code from a sentence about code.
+
+    Strings are *not* stripped: `--data-4` inside an f-string is a real use,
+    which is precisely how the boolean card draws its stack. Only comments go,
+    plus docstrings, which `ast` can identify exactly.
+    """
+    text = path.read_text(encoding="utf-8")
+    if path.suffix in {".css", ".js"}:
+        return _CSS_COMMENT.sub("", text)
+
+    import ast
+    import io
+    import tokenize
+
+    stripped = "".join(
+        token.string if token.type != tokenize.COMMENT else ""
+        for token in tokenize.generate_tokens(io.StringIO(text).readline)
+    )
+    docstrings = []
+    for node in ast.walk(ast.parse(text)):
+        if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef)):
+            doc = ast.get_docstring(node, clean=False)
+            if doc:
+                docstrings.append(doc)
+    for doc in docstrings:
+        stripped = stripped.replace(doc, "")
+    return stripped
+
+
+def _files_spending_data_4() -> set[str]:
+    """Every tracked source file naming `--data-4` in code, bar the tokens."""
+    roots = (_REPO_ROOT / "pysuricata" / "render", _REPO_ROOT / "pysuricata" / "static")
+    found = set()
+    for root in roots:
+        for path in root.rglob("*"):
+            if path.suffix not in {".py", ".css", ".js"} or path == TOKENS_CSS:
+                continue
+            if "--data-4" in _code_only(path):
+                found.add(str(path.relative_to(_REPO_ROOT)))
+    return found
+
+
+def test_data_4_is_only_spent_inside_a_stack():
+    """A ratchet on rule 1, which no token pair can express.
+
+    The rule is about which *surface* a mark lands on, not which two colours
+    meet, so `test_non_text_contrast` cannot see a violation: `--data-4` on
+    `--paper` is a pair nobody declares, it is a pair that happens because a
+    bar was drawn on the page.
+    """
+    spent = _files_spending_data_4()
+    assert spent <= _STACK_INTERNAL, (
+        "--data-4 is 1.83:1 on the paper and stack-internal only. New site(s): "
+        f"{sorted(spent - _STACK_INTERNAL)}. Use --data-3, which clears 3:1 on "
+        "both surfaces in both themes."
+    )
+
+
+def test_the_below_threshold_correlation_bar_can_be_seen():
+    """It was filled with `--data-4` -- a standalone bar on the paper, so the
+    row rendered as a pair, a gap and a number."""
+    source = (_REPO_ROOT / "pysuricata/render/correlations_section.py").read_text(
+        encoding="utf-8"
+    )
+    bars = re.findall(r"_diverging_bar\([^)]*'var\((--data-\d)\)'\)", source)
+    assert bars, "the weak row's bar no longer names its fill inline"
+    assert "--data-4" not in bars, bars
+
+
+def test_the_boolean_legend_swatch_is_discernible():
+    """The swatch must keep the fill of the segment it labels -- that is what a
+    legend is -- so its legibility has to come from a border, exactly as the
+    `--track` swatch beside it already does."""
+    css = (_REPO_ROOT / "pysuricata/static/css/_10-boolean.css").read_text(
+        encoding="utf-8"
+    )
+    block = re.search(r"\.legend-color\.false\s*\{([^}]*)\}", css)
+    assert block, "the false swatch rule is gone"
+    body = block.group(1)
+    assert "--data-4" in body, "the swatch must match the segment it labels"
+    assert "border" in body, (
+        "--data-4 is 1.83:1 on the paper; a swatch drawn with it and no border "
+        "is invisible"
+    )
