@@ -22,6 +22,8 @@ supposed to mean.
 from __future__ import annotations
 
 import re
+from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -82,15 +84,27 @@ class TestTheFiguresReachTheCard:
 
 class TestTheEmDashMeansAbsent:
     """It was standing in for *read from the wrong place*, which is a different
-    thing and hid the bug."""
+    thing and hid the bug.
+
+    Since 5c.2 the dash also says *why*, through `_unknown_cell`, like every
+    other unknown on this card: a bare dash leaves a reader unable to tell a
+    column with nothing to measure from a report that failed to measure it,
+    and those are opposite conclusions about their data.
+    """
 
     @pytest.mark.parametrize("value", [None, float("nan")])
     def test_absent_renders_as_a_dash(self, value):
-        assert CategoricalCardRenderer()._length_display(value) == "—"
+        rendered = CategoricalCardRenderer()._length_display(value)
+        assert rendered.endswith("—</span>")
+
+    def test_the_dash_says_why(self):
+        rendered = CategoricalCardRenderer()._length_display(None)
+        assert "no non-missing values" in rendered
+        assert "title=" in rendered
 
     @pytest.mark.parametrize("value", [0, 1, 1.0, 26.97])
     def test_a_real_length_renders_as_a_number(self, value):
-        assert CategoricalCardRenderer()._length_display(value) != "—"
+        assert "—" not in CategoricalCardRenderer()._length_display(value)
 
     def test_zero_is_a_length_not_an_absence(self):
         """A column of empty strings has an average length of zero, and zero is
@@ -98,7 +112,8 @@ class TestTheEmDashMeansAbsent:
         assert CategoricalCardRenderer()._length_display(0) == "0"
 
     def test_something_unparseable_degrades_rather_than_raising(self):
-        assert CategoricalCardRenderer()._length_display("not a number") == "—"
+        rendered = CategoricalCardRenderer()._length_display("not a number")
+        assert rendered.endswith("—</span>")
 
 
 class TestTheDictNeverHadTheKeys:
@@ -122,3 +137,122 @@ class TestTheDictNeverHadTheKeys:
         stats = acc.finalize()
         assert stats.avg_len is not None
         assert stats.len_p90 is not None
+
+
+class TestTheReservoirIsSpent:
+    """5c.2 of #155. `categorical.py` has kept a 5,000-value reservoir of label
+    lengths all along and the report spent it on two numbers. The whole
+    distribution was sitting in it, and on an identifier column the shape *is*
+    the finding."""
+
+    def _hist(self, values: list[str]):
+        from pysuricata.accumulators.categorical import CategoricalAccumulator
+        from pysuricata.accumulators.config import CategoricalConfig
+
+        acc = CategoricalAccumulator("x", CategoricalConfig())
+        acc.update(np.array(values, dtype=object))
+        return acc.finalize().len_hist
+
+    def test_one_bar_per_distinct_length(self):
+        """A label length *is* an integer, and binning hides the thing worth
+        seeing: a column of 4- and 7-character values is two formats, and a
+        bin of 4-7 is one blur."""
+        assert self._hist(["a", "bb", "bb", "cccc"]) == [(1, 1), (2, 2), (4, 1)]
+
+    def test_a_zero_count_is_never_emitted(self):
+        """Rule 3. Ten empty lengths drawn as ten 1px bars assert data that is
+        not there."""
+        hist = self._hist(["a", "ccc"])
+        assert all(count > 0 for _, count in hist)
+        assert 2 not in [length for length, _ in hist]
+
+    def test_a_wide_range_is_binned_rather_than_drawn_as_hundreds_of_bars(self):
+        hist = self._hist(["x" * n for n in range(1, 300)])
+        assert len(hist) <= 40
+
+
+class TestTheLengthPaneOnlyClaimsWhatItCanSee:
+    """Two earlier versions got the gap rule wrong in opposite directions, and
+    both produced a confident sentence about the reader's data."""
+
+    def _renderer(self):
+        from pysuricata.render.categorical_card import CategoricalCardRenderer
+
+        return CategoricalCardRenderer()
+
+    def test_a_sparse_tail_is_not_a_finding(self):
+        """`Name` runs 12 to 82 characters with almost every length above 60
+        isolated. The first version reported that as "27 separate clusters"."""
+        bins = [(12, 100), (14, 200), (16, 300)] + [(n, 1) for n in range(40, 82, 4)]
+        finding = self._renderer()._length_finding(bins)
+        assert "clusters" not in finding and "groups" not in finding
+
+    def test_a_rare_second_format_is_a_finding(self):
+        """`Ticket`'s 40 long tickets in 891 are exactly what this chart exists
+        to surface, and a 10% mass rule rejected them."""
+        # Titanic's real `Ticket` distribution, not a condensed one: leaving
+        # intermediate lengths out invents gaps the data does not have, which
+        # is how the first version of this test failed for the wrong reason.
+        bins = [
+            (3, 2),
+            (4, 101),
+            (5, 131),
+            (6, 419),
+            (7, 27),
+            (8, 76),
+            (9, 26),
+            (10, 41),
+            (11, 14),
+            (12, 8),
+            (13, 6),
+            (15, 22),
+            (16, 12),
+            (17, 4),
+            (18, 2),
+        ]
+        finding = self._renderer()._length_finding(bins)
+        assert "Two formats in one column" in finding
+
+    def test_the_bin_step_is_not_mistaken_for_a_gap(self):
+        """Above the bin cap the histogram groups lengths, so adjacent bins sit
+        a full bin apart and every neighbour looks like a gap. `Name` bins at
+        width 2, and its twenty-seven gaps were all this artifact."""
+        bins = [(n, 50) for n in range(10, 90, 2)]
+        finding = self._renderer()._length_finding(bins)
+        assert "no gap wide enough" in finding
+
+    def test_a_single_length_is_a_sentence_not_a_chart(self):
+        """A chart of one bar at full height says only "all of them"."""
+        stats = SimpleNamespace(name="x", len_hist=[(1, 889)])
+        html = self._renderer()._build_length_pane(stats)
+        assert "Every label is 1 character long" in html
+        assert "lenbar" not in html
+
+    def test_two_lengths_are_a_sentence_too(self):
+        stats = SimpleNamespace(name="x", len_hist=[(4, 577), (6, 314)])
+        html = self._renderer()._build_length_pane(stats)
+        assert "either 4 or 6 characters" in html
+        assert "lenbar" not in html
+
+    def test_three_lengths_earn_the_chart(self):
+        stats = SimpleNamespace(name="x", len_hist=[(4, 10), (5, 20), (6, 5)])
+        html = self._renderer()._build_length_pane(stats)
+        assert html.count('class="lenbar"') == 3
+
+    def test_no_reservoir_means_no_pane(self):
+        assert self._renderer()._build_length_pane(SimpleNamespace(name="x")) == ""
+
+    def test_a_non_zero_count_is_never_invisible(self):
+        """The inverse of rule 3, and a different rule. `Ticket` has two labels
+        of three characters against a peak of 419 — 0.6px of a 120px chart,
+        present in the data and indistinguishable on the page from the zeros
+        that are correctly absent."""
+        css = (
+            Path(__file__).resolve().parents[1]
+            / "pysuricata"
+            / "static"
+            / "css"
+            / "_08-categorical.css"
+        ).read_text(encoding="utf-8")
+        rule = re.search(r"\.lenbar \{(.*?)\}", css, re.S)
+        assert rule and "min-height: 1px" in rule.group(1)

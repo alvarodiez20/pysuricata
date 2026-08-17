@@ -157,6 +157,21 @@ _RUN_DEPENDENT = (
 )
 
 
+#: `457 (51.3%)` -- a count and its share, which the report writes as one cell
+#: on every stat row. Both halves are facts and neither is a bare number, so
+#: without this the whole cell is discarded: the boolean card's `True` and
+#: `False` counts were visible to a reader and invisible here.
+_COUNT_AND_SHARE = re.compile(r"^(-?[\d,]+(?:\.\d+)?)\s*\(\s*(-?[\d.]+\s*%)\s*\)$")
+
+
+def _split_value(value: str) -> list[str]:
+    """The figures in one rendered cell. Usually one; sometimes two."""
+    match = _COUNT_AND_SHARE.match(value)
+    if match:
+        return [match.group(1), match.group(2)]
+    return [value] if _NUMBER.fullmatch(value) else []
+
+
 def _is_run_dependent(label: str) -> bool:
     lowered = label.lower()
     return any(marker in lowered for marker in _RUN_DEPENDENT)
@@ -208,11 +223,13 @@ def _pairs_from_kv(doc: str) -> list[tuple[str, str]]:
                 # had changed.
                 if not any(character.isalpha() for character in label):
                     continue
-                if not _NUMBER.fullmatch(value):
+                figures = _split_value(value)
+                if not figures:
                     continue
                 if _is_run_dependent(label):
                     continue
-                out.append((f"kv::{scope}::{label.lower()}", _canon_number(value)))
+                for figure in figures:
+                    out.append((f"kv::{scope}::{label.lower()}", _canon_number(figure)))
     return out
 
 

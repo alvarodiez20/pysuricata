@@ -374,3 +374,116 @@
     width: 60px;
   }
 }
+
+
+/* =============================================================
+   NORMALISATION — collisions, not transformations (5c.1, #155)
+
+   The pane printed original / lower() / strip() per level, so for
+   `Embarked` it said `S -> s -> S`: a transformation nobody asked
+   about. The question it exists to answer is whether normalising would
+   *merge* levels -- the difference between three categories and two --
+   so it reports the groups that merge, and renders nothing at all when
+   none do.
+   ============================================================= */
+#pysuricata-report .norm__rows {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--ink);
+}
+
+#pysuricata-report .norm__row {
+  display: grid;
+  grid-template-columns: minmax(0, 76px) minmax(0, 1fr) minmax(0, 200px);
+  gap: 14px;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+#pysuricata-report .norm__rule {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+#pysuricata-report .norm__merged,
+#pysuricata-report .norm__into {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+#pysuricata-report .norm__into {
+  color: var(--muted);
+}
+
+@media (max-width: 768px) {
+  #pysuricata-report .norm__row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+  }
+}
+
+
+/* =============================================================
+   LABEL LENGTH — the reservoir, spent (5c.2, #155)
+
+   `categorical.py` has kept a 5,000-value reservoir of label lengths
+   all along and the report spent it on two numbers. The shape is the
+   finding on an identifier column: `Ticket` clusters at 4-7 characters
+   and again at 8-10 with a tail to 18, which is two ticket formats in
+   one column.
+
+   One bar per distinct length, because a label length *is* an integer
+   and binning it hides the thing worth seeing -- a column of
+   4-character and 7-character values is two formats, and a bin of 4-7
+   is one blur.
+   ============================================================= */
+#pysuricata-report .lenchart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 120px;
+  margin-top: 4px;
+}
+
+/* Rule 3 and its inverse, which are two different rules.
+
+   A zero count draws nothing: the renderer skips the bin entirely, so
+   there is no bar to style. Ten empty lengths drawn as ten 1px bars
+   would assert data that is not there.
+
+   A *non-zero* count draws at least a pixel. `Ticket` has two labels of
+   three characters against a peak of 419, which is 0.6px of a 120px
+   chart -- present in the data, invisible on the page, and therefore
+   indistinguishable from the zeros that are correctly absent. */
+#pysuricata-report .lenbar {
+  flex: 1 1 0;
+  min-width: 2px;
+  min-height: 1px;
+  background: var(--data-2);
+  cursor: help;
+}
+
+#pysuricata-report .lenbar:hover {
+  background: var(--data-1);
+}
+
+#pysuricata-report .lenchart__axis {
+  height: 1px;
+  background: var(--axis);
+}
+
+#pysuricata-report .lenaxis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+}
+
+#pysuricata-report .lenaxis__tick {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}

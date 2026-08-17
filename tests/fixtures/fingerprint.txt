@@ -941,6 +941,8 @@ kv::col_age::coeff. of var	0.5569
 kv::col_age::count	891
 kv::col_age::geometric mean	31.34
 kv::col_age::heaping %	17.85
+kv::col_age::infinites	0
+kv::col_age::infinites	0%
 kv::col_age::iqr	39
 kv::col_age::jarque–bera χ²	53.75
 kv::col_age::kurtosis	-1.193
@@ -952,6 +954,12 @@ kv::col_age::median	42
 kv::col_age::median (p50)	42
 kv::col_age::min	1
 kv::col_age::min	1
+kv::col_age::missing	0
+kv::col_age::missing	0%
+kv::col_age::negatives	0
+kv::col_age::negatives	0%
+kv::col_age::outliers	0
+kv::col_age::outliers	0%
 kv::col_age::p1 (≈)	1
 kv::col_age::p10 (≈)	9
 kv::col_age::p5 (≈)	4
@@ -968,9 +976,13 @@ kv::col_age::std dev	23.01
 kv::col_age::std error	0.7708
 kv::col_age::unique	79
 kv::col_age::variance	529.3
+kv::col_age::zeros	0
+kv::col_age::zeros	0%
 kv::col_booked::business hours	24.2%
 kv::col_booked::business hrs %	24.2%
 kv::col_booked::count	891
+kv::col_booked::missing	0
+kv::col_booked::missing	0%
 kv::col_booked::unique (≈)	891
 kv::col_booked::unique timestamps (≈)	891
 kv::col_booked::weekend %	27.3%
@@ -980,16 +992,24 @@ kv::col_cabin::empty or zero	0
 kv::col_cabin::entropy	0.9855
 kv::col_cabin::label length (avg)	3
 kv::col_cabin::length p90	3
+kv::col_cabin::missing	672
+kv::col_cabin::missing	75.4%
 kv::col_cabin::mode %	57.1%
+kv::col_cabin::rare levels	0
+kv::col_cabin::rare levels	0%
 kv::col_cabin::top 5 coverage	100%
 kv::col_cabin::unique	2
 kv::col_empty::count	0
 kv::col_empty::empty or zero	0
+kv::col_empty::missing	100%
+kv::col_empty::missing	891
 kv::col_empty::unique	0
 kv::col_fare::coeff. of var	0.7096
 kv::col_fare::count	891
 kv::col_fare::geometric mean	30.26
 kv::col_fare::heaping %	12.46
+kv::col_fare::infinites	0
+kv::col_fare::infinites	0%
 kv::col_fare::iqr	35.15
 kv::col_fare::jarque–bera χ²	424.1
 kv::col_fare::kurtosis	2.143
@@ -1001,6 +1021,12 @@ kv::col_fare::median	33.46
 kv::col_fare::median (p50)	33.46
 kv::col_fare::min	0.3883
 kv::col_fare::min	0.3883
+kv::col_fare::missing	0
+kv::col_fare::missing	0%
+kv::col_fare::negatives	0
+kv::col_fare::negatives	0%
+kv::col_fare::outliers	2.9%
+kv::col_fare::outliers	26
 kv::col_fare::p1 (≈)	3.399
 kv::col_fare::p10 (≈)	10.19
 kv::col_fare::p5 (≈)	6.94
@@ -1017,12 +1043,18 @@ kv::col_fare::std dev	28.4
 kv::col_fare::std error	0.9513
 kv::col_fare::unique	891
 kv::col_fare::variance	806.3
+kv::col_fare::zeros	0
+kv::col_fare::zeros	0%
 kv::col_name::count	891
 kv::col_name::empty or zero	0
 kv::col_name::entropy	1.045
 kv::col_name::label length (avg)	11.18
 kv::col_name::length p90	13
+kv::col_name::missing	0
+kv::col_name::missing	0%
 kv::col_name::mode %	5.2%
+kv::col_name::rare levels	1.8%
+kv::col_name::rare levels	11
 kv::col_name::top 5 coverage	16.8%
 kv::col_name::unique	599
 kv::col_sex::count	891
@@ -1030,10 +1062,18 @@ kv::col_sex::empty or zero	0
 kv::col_sex::entropy	0.9999
 kv::col_sex::label length (avg)	4.988
 kv::col_sex::length p90	6
+kv::col_sex::missing	0
+kv::col_sex::missing	0%
 kv::col_sex::mode %	50.6%
+kv::col_sex::rare levels	0
+kv::col_sex::rare levels	0%
 kv::col_sex::top 5 coverage	100%
 kv::col_sex::unique	2
 kv::col_survived::count	891
 kv::col_survived::false	434
+kv::col_survived::false	48.7%
+kv::col_survived::missing	0
+kv::col_survived::missing	0%
 kv::col_survived::true	457
+kv::col_survived::true	51.3%
 kv::col_survived::unique	2

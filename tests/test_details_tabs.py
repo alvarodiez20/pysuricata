@@ -115,10 +115,30 @@ class TestTheChunkGate:
         assert "missing" in _tabs(chunked, column)
 
     def test_every_card_kind_is_covered(self, report):
-        """Not just the numeric card. The pane is built by four renderers and
-        the fix has to reach all of them."""
-        for column in ("num_full", "cat_full", "when_full", "flag"):
+        """Not just the numeric card. The pane is built by three renderers now
+        and the fix has to reach all of them."""
+        for column in ("num_full", "cat_full", "when_full"):
             assert _tabs(report, column), f"{column} has no details section at all"
+
+    def test_a_boolean_card_has_no_details_section(self):
+        """5c.6, and a decision rather than an omission. Two values, two
+        counts, one bar on the card face — nothing is withheld, so there is no
+        second level of disclosure to offer. `Missing Values` goes with it:
+        boolean accumulators are finalized without chunk metadata (#193), so
+        the pane cannot know *where in the read* the gaps fall, which is the
+        only thing it knows that the card face does not."""
+        # `boolean` dtype, not an object column of Python bools: an object
+        # column with `None` in it infers as *categorical*, and the assertion
+        # below would then pass or fail on a card of the wrong kind.
+        frame = pd.DataFrame(
+            {"flag": pd.array([True, False, None] * 60, dtype="boolean")}
+        )
+        html = profile(frame, seed=0).html
+        assert 'id="col_flag"' in html and ">Boolean<" in html
+        card = html[html.index('id="col_flag"') :]
+        card = card[: card.index("</article>")]
+        assert "details-section" not in card
+        assert "details-toggle" not in card
 
 
 class TestTheOrderIsFixed:
@@ -143,7 +163,9 @@ class TestSomethingIsAlwaysActive:
 
     @pytest.mark.parametrize(
         "column",
-        ["num_gap", "num_full", "cat_gap", "cat_full", "when_gap", "when_full", "flag"],
+        # `flag` is absent by design: a boolean card has no details section
+        # at all since 5c.6, so there is no tab for one to be active among.
+        ["num_gap", "num_full", "cat_gap", "cat_full", "when_gap", "when_full"],
     )
     def test_exactly_one_tab_is_active(self, report, column):
         markup = re.sub(r"<(script|style)\b.*?</\1>", "", report, flags=re.S | re.I)

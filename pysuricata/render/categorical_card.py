@@ -150,6 +150,7 @@ class CategoricalCardRenderer(CardRenderer):
         common_table = self._build_common_values_table(stats)
         norm_tab_btn, norm_tab_pane = self._build_normalization_section(items, stats)
         missing_table = self._build_missing_values_table(stats, miss_pct)
+        length_pane = self._build_length_pane(stats)
 
         details_html = self._build_details_section(
             col_id,
@@ -157,6 +158,7 @@ class CategoricalCardRenderer(CardRenderer):
             norm_tab_btn,
             norm_tab_pane,
             missing_table,
+            length_pane,
             # NOT gated on chunk count, unlike the numeric and datetime
             # cards. `html.py` calls `finalize()` without chunk metadata for
             # this kind, so the accumulator has none to give -- gating on it
@@ -399,20 +401,31 @@ class CategoricalCardRenderer(CardRenderer):
         return f'<span title="{self.safe_html_escape(reason)}">—</span>'
 
     def _length_display(self, value) -> str:
-        """A length, or an em dash when there is genuinely nothing to show.
+        """A length, or an em dash that says why there is not one.
 
         The em dash means *absent*. It used to appear for values that were
         merely being read from the wrong object, which is a different thing and
-        is what hid #155.
+        is what hid #155 -- `Embarked` reported a mean label length of `NaN`
+        for a column whose three labels are all one character long.
+
+        That is fixed, and the dash now survives in exactly one case: a column
+        with no non-missing values has no labels, so it has no label length.
+        It reads through `_unknown_cell` like every other unknown on this card,
+        because a bare dash leaves a reader unable to tell a column with
+        nothing to measure from a report that failed to measure it -- opposite
+        conclusions about their data (#155, 5c.2).
         """
+        absent = self._unknown_cell(
+            "this column has no non-missing values, so it has no labels to measure"
+        )
         if value is None:
-            return "—"
+            return absent
         try:
             number = float(value)
         except (TypeError, ValueError):
-            return "—"
+            return absent
         if number != number:  # NaN
-            return "—"
+            return absent
         return self.format_number(number)
 
     def _right_stats(
@@ -698,48 +711,271 @@ class CategoricalCardRenderer(CardRenderer):
     def _build_normalization_section(
         self, items: Sequence[tuple[str, int]], stats: CategoricalStats
     ) -> tuple[str, str]:
-        """Build normalization section if needed."""
+        """Whether normalising would *merge* levels, not what it would print.
+
+        Phase 5c.1 (#155). The pane printed original / `lower()` / `strip()`
+        per level, so for `Embarked` it said `S -> s -> S`. That is a
+        transformation nobody asked about. The question the pane exists to
+        answer is whether normalising changes the number of categories -- the
+        difference between three levels and two -- and it costs one
+        `len(set(...))` over levels already held.
+
+        **The verdict is hedged, deliberately.** Only the top-k levels are
+        tracked, so "nothing merges" is a claim about those and not about the
+        column. Saying it unqualified would be a stronger statement than the
+        sketch can support.
+
+        When nothing merges the pane returns empty and the tab does not
+        render, which is 5b.4's rule: a tab has to earn itself, and "I checked
+        and found nothing" is a sentence, not a pane.
+        """
         try:
-            need_norm = (getattr(stats, "case_variants_est", 0) > 0) or (
-                getattr(stats, "trim_variants_est", 0) > 0
-            )
-            if not (need_norm and items):
+            levels = [str(value) for value, _ in list(items or [])]
+            if not levels:
                 return "", ""
 
-            examples = []
-            for val, _ in list(items)[:10]:
-                raw = str(val)
-                low = raw.lower()
-                stp = raw.strip()
-                if raw != low or raw != stp:
-                    examples.append((raw, low, stp))
-                if len(examples) >= 6:
-                    break
+            groups = self._collisions(levels)
+            if not groups:
+                return "", ""
 
-            rows = (
-                "".join(
-                    f"<tr><td><code>{self.safe_html_escape(a)}</code></td>"
-                    f"<td><code>{self.safe_html_escape(b)}</code></td>"
-                    f"<td><code>{self.safe_html_escape(c)}</code></td></tr>"
-                    for a, b, c in examples
+            rows = "".join(
+                f'<div class="norm__row">'
+                f'<span class="norm__rule">{self.safe_html_escape(rule)}</span>'
+                f'<span class="norm__merged">'
+                + " · ".join(
+                    f"<code>{self.safe_html_escape(member)}</code>"
+                    for member in members
                 )
-                or "<tr><td colspan=3>—</td></tr>"
+                + "</span>"
+                f'<span class="norm__into">→ <code>'
+                f"{self.safe_html_escape(into)}</code></span>"
+                f"</div>"
+                for rule, members, into in groups
             )
 
-            norm_tbl = (
-                '<table class="kv"><thead><tr><th>Original</th><th>lower()</th><th>strip()</th></tr></thead>'
-                f"<tbody>{rows}</tbody></table>"
+            merged = sum(len(members) - 1 for _, members, _ in groups)
+            plural = (
+                f"{len(groups)} groups merge"
+                if len(groups) != 1
+                else "one group merges"
+            )
+            verdict = (
+                f"{len(levels)} tracked levels become {len(levels) - merged} "
+                f"under normalisation: {plural}."
             )
 
-            norm_tab_btn = (
-                '<button role="tab" data-tab="normalize">Normalization</button>'
+            pane = (
+                '<div class="fence-pane">'
+                '<div class="fence-head">'
+                '<span class="fence-head__title">normalisation</span>'
+                '<span class="fence-head__rule"></span>'
+                f'<span class="fence-head__count">{len(groups)} '
+                f"collision{'s' if len(groups) != 1 else ''}</span>"
+                "</div>"
+                f'<p class="fence-lede">{verdict}</p>'
+                f'<div class="norm__rows">{rows}</div>'
+                '<p class="common__caption">only the tracked levels are '
+                "checked, so a collision outside the top-k would not appear "
+                "here</p>"
+                "</div>"
             )
-            norm_tab_pane = (
-                f'<section class="tab-pane" data-tab="normalize">{norm_tbl}</section>'
+            return (
+                '<button role="tab" data-tab="normalize">Normalization</button>',
+                f'<section class="tab-pane" data-tab="normalize">{pane}</section>',
             )
-            return norm_tab_btn, norm_tab_pane
         except Exception:
             return "", ""
+
+    #: The normalisations worth asking about, and the order they are reported
+    #: in. `casefold` rather than `lower` because it is the one that folds the
+    #: cases `lower` misses, and a report that says "nothing merges" should not
+    #: be wrong about German or Turkish text.
+    _NORMALISERS = (
+        ("lower()", lambda text: text.casefold()),
+        ("strip()", lambda text: text.strip()),
+        ("both", lambda text: text.strip().casefold()),
+    )
+
+    def _collisions(self, levels: list[str]) -> list[tuple[str, list[str], str]]:
+        """Groups of levels that a normalisation would merge into one.
+
+        A level is reported under the *first* rule that merges it, so a pair
+        differing in both case and whitespace is one finding rather than three.
+        """
+        seen: set[frozenset[str]] = set()
+        found: list[tuple[str, list[str], str]] = []
+
+        for rule, normalise in self._NORMALISERS:
+            buckets: dict[str, list[str]] = {}
+            for level in levels:
+                buckets.setdefault(normalise(level), []).append(level)
+            for key, members in buckets.items():
+                if len(members) < 2:
+                    continue
+                identity = frozenset(members)
+                if identity in seen:
+                    continue
+                seen.add(identity)
+                found.append((rule, sorted(members), key))
+        return found
+
+    def _build_length_pane(self, stats: CategoricalStats) -> str:
+        """The label-length distribution, which was being spent on two numbers.
+
+        Phase 5c.2 (#155). `categorical.py` has kept a 5,000-value reservoir of
+        label lengths all along and the report spent it on `avg_len` and
+        `len_p90`. The whole distribution was sitting in it, and on an
+        identifier column the shape *is* the finding: `Ticket` clusters at 4-7
+        characters and at 8-10 with a tail to 18, which is two ticket formats
+        in one column and is available no other way.
+
+        **Suppressed below three distinct lengths.** `Embarked` has one, and a
+        chart of one bar at full height says only "all of them", which is what
+        the sentence says in fewer pixels and without implying a distribution.
+        """
+        bins = [
+            (int(length), int(count))
+            for length, count in (getattr(stats, "len_hist", None) or [])
+            if count > 0
+        ]
+        if not bins:
+            return ""
+
+        name = self.safe_html_escape(stats.name)
+        header = (
+            '<div class="fence-head">'
+            f'<span class="fence-head__title">{name} · label length</span>'
+            '<span class="fence-head__rule"></span>'
+            f'<span class="fence-head__count">{bins[0][0]} to {bins[-1][0]} '
+            "characters</span>"
+            "</div>"
+        )
+
+        if len(bins) < 3:
+            if len(bins) == 1:
+                sentence = (
+                    f"Every label is {bins[0][0]} character"
+                    f"{'s' if bins[0][0] != 1 else ''} long."
+                )
+            else:
+                sentence = (
+                    f"Labels are either {bins[0][0]} or {bins[1][0]} characters "
+                    f"long — {bins[0][1]:,} and {bins[1][1]:,} of them."
+                )
+            return (
+                f'<div class="fence-pane">{header}'
+                f'<p class="fence-lede">{sentence}</p></div>'
+            )
+
+        top = max(count for _, count in bins)
+        rows = "".join(
+            f'<div class="lenbar" style="height:{count / top * 100:.1f}%" '
+            f'title="{count:,} label{"s" if count != 1 else ""} of '
+            f'{length} character{"s" if length != 1 else ""}" '
+            f'data-col="{self.safe_col_id(stats.name)}" data-count="{count}"></div>'
+            for length, count in bins
+        )
+        ticks = (
+            f'<span class="lenaxis__tick">{bins[0][0]}</span>'
+            f'<span class="lenaxis__tick">{bins[-1][0]}</span>'
+        )
+        return (
+            f'<div class="fence-pane">{header}'
+            f'<p class="fence-lede">{self._length_finding(bins)}</p>'
+            f'<div class="lenchart">{rows}</div>'
+            f'<div class="lenchart__axis"></div>'
+            f'<div class="lenaxis">{ticks}</div>'
+            '<p class="common__caption">one bar per label length, over a '
+            "sample of the values</p>"
+            "</div>"
+        )
+
+    #: A gap has to span this much of the length range before it is called a
+    #: gap. Without it every sparse tail reads as a finding -- `Name` runs 12
+    #: to 82 characters and almost every length above 60 is isolated, which the
+    #: first version reported as "27 separate clusters".
+    _GAP_MIN_SPAN = 0.12
+
+    #: And each side has to hold this much of the labels. A gap with two
+    #: stragglers beyond it is a tail, not a second format.
+    _GAP_MIN_MASS = 0.10
+
+    #: A gap has to span this much of the length range before it is called a
+    #: gap. Without it every sparse tail reads as a finding -- `Name` runs 12
+    #: to 82 characters and almost every length above 60 is isolated, which the
+    #: first version reported as "27 separate clusters".
+    _GAP_MIN_SPAN = 0.12
+
+    #: And each side has to hold this much of the labels, and at least
+    #: `_GAP_MIN_LABELS` of them. A gap with two stragglers beyond it is a
+    #: tail, not a second format. 2% rather than 10% because `Ticket`'s second
+    #: format is 40 of 891 labels -- rare, and still a real cleaning finding.
+    _GAP_MIN_MASS = 0.02
+    _GAP_MIN_LABELS = 5
+
+    def _length_finding(self, bins: list[tuple[int, int]]) -> str:
+        """What the shape says, when it says something.
+
+        A gap in the middle of a length distribution is two formats sharing a
+        column, which is a cleaning finding and the reason this chart exists.
+        But only a *substantial* gap is, and two earlier versions of this got
+        it wrong in opposite directions:
+
+        - Calling any gap of more than one character a cluster boundary
+          reported `Name` -- an ordinary right-skewed spread of 12 to 82
+          characters -- as "27 separate clusters". That is sparsity at the
+          tail described as a finding.
+        - Requiring 10% of the labels on each side then rejected `Ticket`,
+          whose 40 long tickets in 891 are exactly the second format this
+          chart exists to surface.
+
+        **The bin step matters.** Above `_MAX_LENGTH_BINS` distinct lengths the
+        histogram groups them, so adjacent bins sit a full bin apart and *every*
+        neighbour looks like a gap. `Name` bins at width 2, and its twenty-seven
+        "gaps" were all this artifact. The step is inferred as the smallest
+        distance between neighbours, and anything that close is contiguous.
+        """
+        lengths = [length for length, _ in bins]
+        total = sum(count for _, count in bins)
+        span = max(1, lengths[-1] - lengths[0])
+        spread = f"{lengths[0]} to {lengths[-1]} characters"
+        step = min(
+            (high - low for low, high in zip(lengths, lengths[1:], strict=False)),
+            default=1,
+        )
+
+        gaps = []
+        for index, (low, high) in enumerate(zip(lengths, lengths[1:], strict=False)):
+            if high - low <= step:
+                continue
+            if (high - low) / span < self._GAP_MIN_SPAN:
+                continue
+            below = sum(count for _, count in bins[: index + 1])
+            above = total - below
+            smaller = min(below, above)
+            if smaller / total < self._GAP_MIN_MASS or smaller < self._GAP_MIN_LABELS:
+                continue
+            gaps.append((low, high, below, above))
+
+        if len(gaps) == 1:
+            low, high, below, above = gaps[0]
+            return (
+                f"Lengths run {spread}, with nothing between {low} and {high}: "
+                f"{below:,} labels fall below the gap and {above:,} above it. "
+                "Two formats in one column look like this."
+            )
+        if len(gaps) > 1:
+            return (
+                f"Lengths run {spread} in {len(gaps) + 1} groups separated by "
+                "gaps, which is more than one format sharing a column."
+            )
+
+        peak_length, peak_count = max(bins, key=lambda item: item[1])
+        return (
+            f"Lengths run {spread}, with no gap wide enough to suggest a "
+            f"second format. The most common is {peak_length} characters "
+            f"({peak_count:,} of {total:,})."
+        )
 
     def _build_details_section(
         self,
@@ -748,6 +984,7 @@ class CategoricalCardRenderer(CardRenderer):
         norm_tab_btn: str,
         norm_tab_pane: str,
         missing_table: str,
+        length_pane: str = "",
         *,
         has_missing: bool = True,
     ) -> str:
@@ -768,6 +1005,12 @@ class CategoricalCardRenderer(CardRenderer):
                     "Normalization",
                     normalization,
                     bool(normalization) and bool(norm_tab_btn.strip()),
+                ),
+                (
+                    "length",
+                    "Label length",
+                    length_pane,
+                    bool(length_pane.strip()),
                 ),
                 (
                     "missing",
