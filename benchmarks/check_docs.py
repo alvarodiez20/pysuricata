@@ -93,6 +93,29 @@ def _pages() -> list[Path]:
     return sorted(p for p in DOCS.rglob("*.md") if p.name not in _NOT_DOCUMENTATION)
 
 
+#: Documentation that does not live under `docs/`. The README is the page most
+#: readers see first and it drifted furthest: at 0.0.62 it advertised a sketch
+#: size, a sample size and a default chunk size that were all wrong, taught a
+#: configuration ceremony removed in #87, and documented two of the three CLI
+#: subcommands (#151). It was the only page outside this checker's reach, which
+#: is most of why. Running its fences here is a smaller change than the rewrite
+#: it protects.
+_EXTRA_PAGES = (REPO / "README.md",)
+
+
+def _checked_pages() -> list[Path]:
+    """Everything the API checks run over: the docs tree plus the README."""
+    return _pages() + [p for p in _EXTRA_PAGES if p.exists()]
+
+
+def _page_label(page: Path) -> str:
+    """`docs/`-relative for a docs page, repo-relative for anything else."""
+    try:
+        return str(page.relative_to(DOCS))
+    except ValueError:
+        return str(page.relative_to(REPO))
+
+
 def _line_of(text: str, needle: str) -> int:
     idx = text.find(needle)
     return text[:idx].count("\n") + 1 if idx >= 0 else 0
@@ -108,6 +131,14 @@ SETUP_BLOCK = re.compile(
     r"""!!! info "Examples on this page assume.*?```python\n(.*?)```""", re.S
 )
 
+# The README is not an mkdocs page, so it cannot use the admonition above --
+# `!!! info` renders as literal text on GitHub. This marker carries the same
+# declaration in a form GitHub ignores, and the rule it enforces is unchanged:
+# the fence it tags is *visible* to the reader, so a page leaning on a shared
+# `df` still has to say what that `df` is. Hiding the setup inside the comment
+# would recreate exactly the failure the note below describes.
+SETUP_COMMENT = re.compile(r"<!--\s*docs-check:setup\s*-->\s*```python\n(.*?)```", re.S)
+
 
 # The changelog is a record of past releases. Its snippets illustrate options as
 # they were at the time, and some will legitimately no longer run; executing them
@@ -119,7 +150,7 @@ def check_examples(page: Path, text: str, out: list[Finding], run: bool) -> None
     """Execute python fences that look self-contained."""
     if page.name in _NOT_RUNNABLE:
         run = False
-    setup_match = SETUP_BLOCK.search(text)
+    setup_match = SETUP_BLOCK.search(text) or SETUP_COMMENT.search(text)
     setup = textwrap.dedent(setup_match.group(1)) if setup_match else ""
     for m in FENCE.finditer(text):
         lang, code = m.group(2), textwrap.dedent(m.group(3))
@@ -152,8 +183,13 @@ def check_examples(page: Path, text: str, out: list[Finding], run: bool) -> None
         if setup and code.strip() == setup.strip():
             continue
         # Skip blocks that obviously need a file or network we do not have.
+        # `stream_*` are the streaming readers in `pysuricata.sources`. They
+        # need a file or a live relation exactly as `read_*` does, so they
+        # belong in the same skip rather than failing on a missing path.
         if re.search(
-            r"(read|scan)_(csv|parquet|json|ndjson)\(|open\(|requests\.|http", code
+            r"(read|scan|stream)_(csv|parquet|json|ndjson|duckdb|arrow)\(|"
+            r"open\(|requests\.|http|duckdb\.",
+            code,
         ):
             out.append(
                 Finding(page.name, line, "INFO", "skipped", "needs an external input")
@@ -433,10 +469,12 @@ def main(argv=None) -> int:
         pd.DataFrame({"a": np.arange(400, dtype=float), "b": ["x", "y"] * 200})
     )
 
+    # Nav coverage stays scoped to `docs/`: the README is deliberately not an
+    # mkdocs page, and including it here would report that as an orphan.
     check_nav(findings)
-    for page in _pages():
+    for page in _checked_pages():
         text = page.read_text(encoding="utf-8")
-        rel = str(page.relative_to(DOCS))
+        rel = _page_label(page)
         before = len(findings)
         check_examples(page, text, findings, run=not args.no_run)
         check_symbols(page, text, findings)
@@ -451,7 +489,7 @@ def main(argv=None) -> int:
     for f in findings:
         by_level[f.level].append(f)
 
-    print(f"{len(_pages())} pages checked\n")
+    print(f"{len(_checked_pages())} pages checked\n")
     for level in ("ERROR", "WARN", "INFO"):
         items = by_level[level]
         if not items or (level == "INFO" and args.quiet_info):

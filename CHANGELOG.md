@@ -16,6 +16,41 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The README documented a project several releases behind** ([#151]). Every
+  number in it was wrong: the sketch size was given as 1024 against an actual
+  `max_uniques` of **2048**, the sample size as 10,000 against a
+  `numeric_sample_size` of **20,000**, and the configuration example set a
+  `chunk_size` of 250,000 while describing it as ordinary — it is 5× the
+  default of 50,000. It taught the two-constructor ceremony removed in #87,
+  described `ProfileConfig` as "aliased as `ProfileConfig`", and documented two
+  of the three CLI subcommands.
+
+  The ~2.2% KMV error was the one figure that survived, and only by accident:
+  the relative standard error is `1/sqrt(k - 2)`, which is 2.2% at k=2048 and
+  3.1% at the 1024 the same sentence claimed. The number had quietly followed
+  the code while its own `k` did not.
+
+  Missing entirely: `pysuricata check` — the differentiator — plus `compare()`,
+  the Parquet/DuckDB/Arrow readers, keyword options, `preset=`, `schema_version`
+  and `py.typed`. All now documented.
+
+  **The permanent part is that the README is now checked.** `benchmarks.check_docs`
+  globbed `docs/` only, so the one page every reader sees first was the one page
+  outside the checker that exists to stop exactly this. It now executes the
+  README's fences and resolves its config options and summary keys against the
+  live API, and `docs-check.yml` triggers on `README.md`. Two real defects
+  surfaced on the first run — a `KeyError: 'mean'` and a missing `profile`
+  import — and one of them is the trap the house rules warn about: the setup
+  frame was small enough that `age` profiled as *categorical*, so the column
+  genuinely had no mean.
+
+  The screenshot is regenerated too, by `scripts/capture_report_screenshot.py`.
+  The previous one was captured at **0.0.26** and sat unchanged through the
+  entire report redesign, so the picture advertising the project showed a design
+  it no longer had. That script is deliberately not wired into
+  `build_docs_assets.py --check`: a browser screenshot is not byte-reproducible
+  across platforms and font sets, so pinning it there buys a flaky job rather
+  than a guarantee.
 - **The datetime timeline no longer scales its own labels** ([#217]). It drew
   every label inside an SVG carrying `preserveAspectRatio="none"` at
   `width: 100%`, so nothing in it had a size of its own: the viewBox mapped
