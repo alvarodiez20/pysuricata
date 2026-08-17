@@ -25,8 +25,15 @@ class DateTimeCardRenderer(CardRenderer):
         self.temporal_renderer = TemporalChartRenderer()
 
     def _get_chart_dimensions(self) -> tuple[int, int]:
-        """Get consistent chart dimensions for datetime timeline."""
-        return self.chart_dims.width, self.chart_dims.height + 20
+        """Get consistent chart dimensions for datetime timeline.
+
+        Its own, not `ChartDimensions` (420x180). That is the numeric card's
+        plot size, and the timeline is drawn with `preserveAspectRatio="none"`
+        at `width: 100%`, so borrowing it made the viewBox 2.73x smaller than
+        the box it was painted into and scaled every label by the same factor.
+        See `DateTimeConfig.chart_width`.
+        """
+        return self.dt_config.chart_width, self.dt_config.chart_height
 
     def render_card(self, stats: DateTimeStats) -> str:
         """Render a complete datetime card."""
@@ -326,7 +333,10 @@ class DateTimeCardRenderer(CardRenderer):
             y_max = int(max(1, counts.max()))
 
             width, height = self._get_chart_dimensions()
-            margin_left, margin_right, margin_top, margin_bottom = 45, 35, 25, 42
+            margin_left = self.dt_config.margin_left
+            margin_right = self.dt_config.margin_right
+            margin_top = self.dt_config.margin_top
+            margin_bottom = self.dt_config.margin_bottom
             iw = width - margin_left - margin_right
             ih = height - margin_top - margin_bottom
 
@@ -365,47 +375,68 @@ class DateTimeCardRenderer(CardRenderer):
                 except Exception:
                     return str(v)
 
-            parts = [
-                f'<svg class="dt-svg" width="100%" height="100%" viewBox="0 0 {width} {height}" preserveAspectRatio="none" role="img" aria-label="Timeline">',
+            # A marks-only SVG in a square viewBox, stretched by CSS, with every
+            # label in HTML beside it -- the structure the numeric histogram
+            # already uses, and the reason it does.
+            #
+            # This chart used to draw its labels *inside* an SVG carrying
+            # `preserveAspectRatio="none"` at `width: 100%`. Nothing inside such
+            # an SVG has a fixed size: the viewBox maps onto whatever box CSS
+            # gives it, so an 11px tick label rendered at 37px in a 1,146px
+            # column and would render at 5px in a 470px one. There is no viewBox
+            # that is right at both widths, which is why the fix is to take the
+            # text out of the SVG rather than to pick a better number.
+            #
+            # Reusing the `hist` classes rather than styling a second chart: the
+            # gutter, the tiered x labels, the caption and the axis-label
+            # nudges all already exist and are already tested.
+            span = self._SPAN
+            marks = [
+                f'<svg class="hist-svg" viewBox="0 0 {span:g} {span:g}" '
+                f'preserveAspectRatio="none" role="img" '
+                f'aria-label="Timeline for {self.safe_html_escape(column_name)}">',
+                f"<desc>Records over time, {len(counts)} intervals</desc>",
             ]
 
-            # Add title with error handling
-            try:
-                title_text = self.safe_html_escape(column_name)
-                parts.append(
-                    f'<text x="{width // 2}" y="15" '
-                    f'text-anchor="middle" class="hist-title" '
-                    f'font-family="system-ui, -apple-system, sans-serif" '
-                    f'font-size="12">{title_text}</text>'
-                )
-            except Exception:
-                # Fallback to generic title
-                parts.append(
-                    f'<text x="{width // 2}" y="15" '
-                    f'text-anchor="middle" class="hist-title" '
-                    f'font-family="system-ui, -apple-system, sans-serif" '
-                    f'font-size="12">Timeline</text>'
-                )
+            def gx(x: float) -> float:
+                return (x - tmin) / (tmax - tmin) * span
 
-            parts.append('<g class="plot-area">')
+            def gy(y: float) -> float:
+                return (1 - y / y_max) * span
 
-            # Grid lines
+            # `vector-effect="non-scaling-stroke"` throughout: the box is
+            # stretched by a different factor on each axis, so without it a
+            # 1-unit rule is thick one way and invisible the other.
             for yt in y_ticks:
-                parts.append(
-                    f'<line class="grid" x1="{margin_left}" y1="{sy(yt):.2f}" x2="{margin_left + iw}" y2="{sy(yt):.2f}"></line>'
+                marks.append(
+                    f'<line class="grid" x1="0" y1="{gy(yt):.3f}" '
+                    f'x2="{span:g}" y2="{gy(yt):.3f}" '
+                    f'vector-effect="non-scaling-stroke"/>'
                 )
+            marks.append(
+                f'<line class="axis" x1="0" y1="{span:g}" x2="{span:g}" '
+                f'y2="{span:g}" vector-effect="non-scaling-stroke"/>'
+            )
+            marks.append(
+                f'<line class="axis" x1="0" y1="0" x2="0" y2="{span:g}" '
+                f'vector-effect="non-scaling-stroke"/>'
+            )
 
-            # Main line
-            parts.append(f'<polyline class="line" points="{pts}"></polyline>')
+            centers_g = (edges[:-1] + edges[1:]) / 2.0
+            line_pts = " ".join(
+                f"{gx(float(x)):.3f},{gy(float(c)):.3f}"
+                for x, c in zip(centers_g, counts, strict=False)
+            )
+            marks.append(
+                f'<polyline class="line" points="{line_pts}" '
+                f'vector-effect="non-scaling-stroke"/>'
+            )
 
-            # Hotspots for tooltips
-            parts.append('<g class="hotspots">')
+            total = int(counts.sum())
+            marks.append('<g class="hotspots">')
             for i, c in enumerate(counts):
-                if not np.isfinite(c):
-                    continue
-                x0p = sx(edges[i])
-                x1p = sx(edges[i + 1])
-                wp = max(1.0, x1p - x0p)
+                x0p = gx(float(edges[i]))
+                x1p = gx(float(edges[i + 1]))
                 start_label = _format_xtick(edges[i])
                 end_label = _format_xtick(edges[i + 1])
                 range_label = (
@@ -413,53 +444,101 @@ class DateTimeCardRenderer(CardRenderer):
                     if start_label != end_label
                     else start_label
                 )
-                pct = (c / sum(counts) * 100) if sum(counts) > 0 else 0
-                parts.append(
-                    f'<rect class="hot" x="{x0p:.2f}" y="{margin_top}" width="{wp:.2f}" height="{ih:.2f}" '
+                pct = (c / total * 100) if total > 0 else 0.0
+                marks.append(
+                    f'<rect class="hot" x="{x0p:.3f}" y="0" '
+                    f'width="{max(0.001, x1p - x0p):.3f}" height="{span:g}" '
                     f'fill="transparent" pointer-events="all" '
-                    f'data-count="{int(c)}" data-pct="{pct:.1f}" data-label="{range_label}">'
-                    f"</rect>"
+                    f'data-count="{int(c)}" data-pct="{pct:.1f}" '
+                    f'data-label="{self.safe_html_escape(range_label)}"/>'
                 )
-            parts.append("</g>")
-            parts.append("</g>")
+            marks.append("</g>")
+            marks.append("</svg>")
 
-            # Axes
-            x_axis_y = margin_top + ih
-            parts.append(
-                f'<line class="axis" x1="{margin_left}" y1="{x_axis_y}" x2="{margin_left + iw}" y2="{x_axis_y}"></line>'
+            return (
+                '<figure class="hist dt-figure">'
+                '<div class="hist__plot">'
+                f'<div class="hist__gutter">{self._render_count_labels(y_ticks, y_max)}'
+                '<span class="hist__unit">ROWS</span></div>'
+                f'<div class="hist__area">{"".join(marks)}'
+                f"{self._render_time_labels(xt_vals, _format_xtick)}</div>"
+                "</div>"
+                f"{self._render_timeline_caption(counts, edges, _format_xtick)}"
+                "</figure>"
             )
-            parts.append(
-                f'<line class="axis" x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{x_axis_y}"></line>'
-            )
-
-            # Y ticks
-            for yt in y_ticks:
-                py = sy(yt)
-                parts.append(
-                    f'<line class="tick" x1="{margin_left - 4}" y1="{py:.2f}" x2="{margin_left}" y2="{py:.2f}"></line>'
-                )
-                lab = int(round(yt))
-                parts.append(
-                    f'<text class="tick-label" x="{margin_left - 6}" y="{py + 3:.2f}" text-anchor="end">{lab}</text>'
-                )
-
-            # X ticks
-            for xv in xt_vals:
-                px = sx(xv)
-                parts.append(
-                    f'<line class="tick" x1="{px:.2f}" y1="{x_axis_y}" x2="{px:.2f}" y2="{x_axis_y + 4}"></line>'
-                )
-                parts.append(
-                    f'<text class="tick-label x-tick-label" x="{px:.2f}" y="{x_axis_y + 16:.2f}" text-anchor="middle">{_format_xtick(xv)}</text>'
-                )
-
-            # Axis titles removed
-
-            parts.append("</svg>")
-            return "".join(parts)
         except Exception:
             width, height = self._get_chart_dimensions()
             return self.create_empty_svg("dt-svg", width, height)
+
+    #: A square viewBox stretched by CSS on both axes, as the histogram uses.
+    _SPAN = 100.0
+
+    #: Five time labels, thinning to three under 768px. Dates are ~10 glyphs
+    #: where a histogram's numbers are ~6, so nine would collide long before
+    #: the histogram's do.
+    _TIME_TIERS = (1, 3, 1, 3, 1)
+
+    def _render_count_labels(self, y_ticks, y_max: float) -> str:
+        """Count labels in the gutter, positioned as a percentage of the plot.
+
+        `data-edge` marks the two extremes so the stylesheet can nudge them
+        inward; without it the top label overhangs the plot and the `0` drops
+        into the tick row below.
+        """
+        if not y_max:
+            return ""
+        out = []
+        for tick in y_ticks:
+            top = (1 - tick / y_max) * 100.0
+            edge = ""
+            if top <= 0.0:
+                edge = ' data-edge="top"'
+            elif top >= 100.0:
+                edge = ' data-edge="bottom"'
+            out.append(
+                f'<span class="hist__y"{edge} style="top:{top:.3f}%">'
+                f"{int(round(float(tick))):,}</span>"
+            )
+        return "".join(out)
+
+    def _render_time_labels(self, xt_vals, formatter) -> str:
+        """Dates across the axis, tagged by importance so CSS can thin them."""
+        count = len(self._TIME_TIERS)
+        out = []
+        for index, tier in enumerate(self._TIME_TIERS):
+            fraction = index / (count - 1)
+            position = int(round(fraction * (len(xt_vals) - 1)))
+            # The end labels anchor to the plot edge rather than centring on
+            # their tick, so a wide date at either end sits inside the chart
+            # instead of overhanging it.
+            if index == 0:
+                anchor = ' data-anchor="start"'
+            elif index == count - 1:
+                anchor = ' data-anchor="end"'
+            else:
+                anchor = ""
+            out.append(
+                f'<span class="hist__tick" data-tier="{tier}"{anchor} '
+                f'style="left:{fraction * 100:.3f}%">'
+                f"{self.safe_html_escape(formatter(xt_vals[position]))}</span>"
+            )
+        return f'<div class="hist__x">{"".join(out)}</div>'
+
+    def _render_timeline_caption(self, counts, edges, formatter) -> str:
+        """`60 intervals · peak 83 rows at 2024-03-01`.
+
+        The same job the histogram's caption does: the y labels round, so the
+        exact peak lives here.
+        """
+        if len(counts) == 0:
+            return ""
+        peak = int(counts.argmax())
+        return (
+            '<figcaption class="hist__caption">'
+            f"{len(counts):,} intervals · peak {int(counts[peak]):,} rows at "
+            f"{self.safe_html_escape(formatter(edges[peak]))}"
+            "</figcaption>"
+        )
 
     def _build_temporal_statistics_table(self, stats: DateTimeStats) -> str:
         """Build temporal statistics table with human-readable formatting."""

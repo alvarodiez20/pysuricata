@@ -69,6 +69,28 @@ class DateTimeConfig:
     max_xticks: int = 5
     short_span_ns: int = 3 * 24 * 3600 * 1_000_000_000  # 3 days in nanoseconds
 
+    #: The timeline is drawn with `preserveAspectRatio="none"` at `width:100%`,
+    #: so its viewBox units map straight onto rendered pixels and its *height*
+    #: comes from the viewBox aspect: 1,146px of column at 420x180 rendered
+    #: 1,146 x 491, a scale of 2.73 in both axes. Everything inside was
+    #: multiplied by that -- an 11px tick label came out at ~37px, three times
+    #: the stat row beneath it, and the card stood 844px tall for what is often
+    #: a flat line.
+    #:
+    #: Authoring at roughly the column's real width makes the scale ~1, so the
+    #: stylesheet's 11px is 11px. The height is then a free choice rather than a
+    #: consequence: 260 puts the plot area at 193 units, near the histogram's
+    #: 200px, instead of 491.
+    chart_width: int = 1100
+    chart_height: int = 260
+
+    #: In the same units, which are now pixels. `margin_left` holds the count
+    #: labels and their ticks; `margin_bottom` holds a `YYYY-MM-DD` at 11px.
+    margin_left: int = 52
+    margin_right: int = 35
+    margin_top: int = 25
+    margin_bottom: int = 42
+
 
 @dataclass(frozen=True)
 class BooleanConfig:

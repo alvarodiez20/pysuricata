@@ -101,7 +101,11 @@
   fill: #f9f9f9;
 }
 
-#pysuricata-report .dt-svg .line {
+/* The timeline is a `figure.hist` now, so its marks live in `.hist-svg` like
+   the histogram's. `.dt-svg` is kept alongside because the empty-state chart
+   still carries that class. */
+#pysuricata-report .dt-svg .line,
+#pysuricata-report .dt-figure .hist-svg .line {
   stroke: var(--data-2);
   stroke-width: 1.5;
   fill: none;
@@ -109,17 +113,20 @@
   transition: stroke-width 0.2s ease, stroke-opacity 0.2s ease;
 }
 
-#pysuricata-report .dt-svg .line:hover {
+#pysuricata-report .dt-svg .line:hover,
+#pysuricata-report .dt-figure .hist-svg .line:hover {
   stroke-width: 2.5;
   stroke-opacity: 0.8;
 }
 
-#pysuricata-report .dt-svg .hot {
+#pysuricata-report .dt-svg .hot,
+#pysuricata-report .dt-figure .hist-svg .hot {
   cursor: pointer;
   transition: fill 0.2s ease, opacity 0.2s ease;
 }
 
-#pysuricata-report .dt-svg .hot:hover {
+#pysuricata-report .dt-svg .hot:hover,
+#pysuricata-report .dt-figure .hist-svg .hot:hover {
   fill: var(--data-2);
   opacity: 0.15;
 }
