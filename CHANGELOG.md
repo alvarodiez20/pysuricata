@@ -14,6 +14,29 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **An oracle case pinning that `finalize()` is idempotent** ([#205]). The issue
+  reported that finalising mid-stream consumed the reservoir's randomness, so
+  `checkpoint_write_html=True` changed the median across eleven fields. **It
+  does not reproduce**: with `random_seed` set, profiling with partial renders
+  on is field-for-field identical to profiling with them off, and no statistic
+  in any of the four accumulators moves when `finalize()` is called mid-stream.
+
+  The eleven-field divergence appears to have been a measurement artifact. An
+  accumulator built with `seed=None` seeds itself non-deterministically, so two
+  runs of the *same* uninterrupted stream already disagree on exactly those
+  quantile-and-sample fields — reproduced here by accident while trying to
+  confirm the report, which is how it was identified. The only genuine residue
+  is `chunk_metadata`, and only when the engine is *not* marking boundaries;
+  since #139 it always is, so the real pipeline is unaffected.
+
+  The oracle is added anyway, because the invariant matters more than the bug
+  report: it is the precondition for the progressive report, and it now has a
+  control case (two uninterrupted runs must agree) so it cannot go green for
+  the reason the original measurement went red. Verified against an injected
+  RNG draw in `finalize()`, which it catches.
+
 ### Fixed
 
 - **`chunk_size` below 1,000 is honoured** ([#173]). Anything smaller was
