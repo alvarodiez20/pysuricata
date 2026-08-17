@@ -1814,7 +1814,16 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Unreleased">
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#011-2026-08-17" class="md-nav__link">
+    <span class="md-ellipsis">
+      0.1.1 - 2026-08-17
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="0.1.1 - 2026-08-17">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -1924,11 +1933,11 @@
         <li class="md-nav__item">
   <a href="#010-2026-08-16" class="md-nav__link">
     <span class="md-ellipsis">
-      [0.1.0] - 2026-08-16
+      0.1.0 - 2026-08-16
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="[0.1.0] - 2026-08-16">
+    <nav class="md-nav" aria-label="0.1.0 - 2026-08-16">
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
@@ -2429,7 +2438,17 @@ treated as a contract.</p>
 <p>Each entry states what changed and, where it matters, <strong>what was measured</strong>.
 Numbers here come from the benchmark harness in <code>benchmarks/</code>; ratios are only
 quoted when both sides were measured in the same round-robin run.</p>
-<h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.61...HEAD">Unreleased</a></h2>
+<h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...HEAD">Unreleased</a></h2>
+<h2 id="011-2026-08-17"><a href="https://github.com/alvarodiez20/pysuricata/compare/v0.1.0...v0.1.1">0.1.1</a> - 2026-08-17</h2>
+<p><strong>The contract written at 0.1.0, held.</strong> Nothing covered by <code>docs/versioning.md</code>
+broke: the <code>summarize()</code> payload gained <code>duplicate_rows_uncertainty</code> and lost
+nothing, so <code>schema_version</code> stays at <code>1</code>; no public name was removed;
+<code>ReportConfig</code> warns rather than disappearing, with 0.3.0 as its date. Verified
+by diffing the payload's key set against the 0.1.0 tag rather than by reading
+this file — zero removed, one added.</p>
+<p>The largest changes are in the report's HTML, which that page deliberately does
+not cover, and in the documentation, which is now checked against the live
+library instead of trusted.</p>
 <h3 id="fixed">Fixed</h3>
 <ul>
 <li><strong>The README documented a project several releases behind</strong> ([#151]). Every
@@ -3068,7 +3087,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <li>The untokenised-colour ratchet drops from 88 to 70. Eleven of those needed no
   decision at all — they were sitting in rules for markup nobody renders.</li>
 </ul>
-<h2 id="010-2026-08-16">[0.1.0] - 2026-08-16</h2>
+<h2 id="010-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.73...v0.1.0">0.1.0</a> - 2026-08-16</h2>
 <p><strong>The first release that promises anything.</strong></p>
 <p>The sixty-one releases before this one were not decisions. <code>version-check</code>
 required a bump on every pull request and <code>cd.yml</code> published on every push to
