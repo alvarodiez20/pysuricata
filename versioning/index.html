@@ -1802,6 +1802,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="What is covered">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-schema_version-gates-and-what-it-does-not" class="md-nav__link">
+    <span class="md-ellipsis">
+      What schema_version gates, and what it does not
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1940,6 +1955,28 @@ major bump at 1.0 and after.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="what-schema_version-gates-and-what-it-does-not">What <code>schema_version</code> gates, and what it does not</h3>
+<p><code>schema_version</code> describes the payload's <strong>shape</strong>, not the values in it.</p>
+<ul>
+<li><strong>Adding a key does not bump it.</strong> Nothing that read the payload before can
+  break by a key appearing beside the ones it already reads.</li>
+<li><strong>Removing or repurposing a key bumps it.</strong> A consumer reading that key is
+  broken by definition.</li>
+<li><strong>Correcting a wrong value does not bump it.</strong> A statistic that was wrong and
+  is now right is a bug fix; pinning it under the schema would mean the contract
+  guaranteed the bug.</li>
+</ul>
+<p>That last rule was decided on <code>duplicate_rows_est</code> (#202), which is the case
+worth recording because it looks like a break and is not. The figure was
+published raw while the HTML report suppressed it below the sketch's resolution,
+so <code>summarize()</code> reported over a thousand duplicate rows in frames that had
+exactly zero. It now carries the same suppression the report always applied, and
+<code>duplicate_rows_uncertainty</code> was added beside it.</p>
+<p>A consumer gating on <code>duplicate_rows_est &gt; 0</code> sees that gate stop firing on
+frames where it should never have fired. That is the fix, not a break — and it
+is why the correction belongs where the figure is produced rather than where it
+is drawn. Two call sites producing one statistic, with the threshold on only one
+of them, is how the two surfaces drifted apart in the first place.</p>
 <h2 id="what-is-not-covered">What is not covered</h2>
 <p>Depending on any of these is depending on an implementation detail. They change
 in patch releases without notice.</p>
@@ -2009,8 +2046,9 @@ changelog section exists.</p>
 <ol>
 <li><strong>Two consecutive minor releases with no breaking change, unforced.</strong> A
    settled shape, not a freeze.</li>
-<li><strong>The deprecation queue is empty.</strong> <code>ReportConfig</code> is currently aliased to
-   <code>ProfileConfig</code> with no warning; that has to be resolved, not carried.</li>
+<li><strong>The deprecation queue is empty.</strong> <code>ReportConfig</code> is aliased to
+   <code>ProfileConfig</code> and now warns on use, naming <strong>0.3.0</strong> as the release that
+   removes it (#210). The queue is not empty until that removal happens.</li>
 <li><strong>Every approximate value carries its error bound.</strong> The quantiles (#146) and
    the duplicate count (#161) are done; the distinct count already was.</li>
 <li><strong>No known correctness bug in a covered path.</strong></li>

@@ -1948,7 +1948,7 @@
 <li><strong>Mathematically grounded</strong> — Uses Welford's algorithm for numerically stable moments, Pébay's formulas for mergeable statistics, KMV sketches for distinct count estimation, and Misra-Gries for heavy hitters.</li>
 <li><strong>Pandas and Polars support</strong> — Works natively with both <code>pandas.DataFrame</code> and <code>polars.DataFrame</code> / <code>polars.LazyFrame</code>.</li>
 <li><strong>Self-contained reports</strong> — Generates a single HTML file with inline CSS, JS, and SVG charts. No external assets or dependencies needed to view.</li>
-<li><strong>Configurable</strong> — Control chunk sizes, sample sizes, sketch parameters, correlation thresholds, and rendering options via <code>ReportConfig</code>.</li>
+<li><strong>Configurable</strong> — Control chunk sizes, sample sizes, sketch parameters, correlation thresholds, and rendering options via <code>ProfileConfig</code>.</li>
 <li><strong>Reproducible</strong> — Seeded random sampling produces deterministic results across runs.</li>
 </ul>
 <h2 id="installation">Installation</h2>
@@ -1964,7 +1964,7 @@
 </div>
 </div>
 </div>
-<p>This installs PySuricata along with its dependencies: <strong>pandas</strong>, <strong>numpy</strong> (on Python ≥3.13), <strong>markdown</strong>, and <strong>psutil</strong>.</p>
+<p>This installs PySuricata along with its dependencies: <strong>pandas</strong>, <strong>numpy</strong> (on Python ≥3.13), and <strong>markdown</strong>.</p>
 <p>To also install polars support:</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pip<span class="w"> </span>install<span class="w"> </span>pysuricata<span class="o">[</span>polars<span class="o">]</span>
 </span></code></pre></div>

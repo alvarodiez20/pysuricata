@@ -1004,6 +1004,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="dataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#reading-the-duplicate-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reading the duplicate count
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2040,12 +2055,17 @@ kind. Those four are safe to read without checking <code>type</code> first.</p>
 <tr>
 <td><code>duplicate_rows_est</code></td>
 <td>int</td>
-<td><strong>Approximate.</strong> From a row-level KMV sketch</td>
+<td><strong>Approximate.</strong> From a row-level KMV sketch. <code>0</code> when the estimate is below the sketch's own resolution — see below</td>
 </tr>
 <tr>
 <td><code>duplicate_rows_pct_est</code></td>
 <td>float</td>
 <td><strong>Approximate.</strong> As above</td>
+</tr>
+<tr>
+<td><code>duplicate_rows_uncertainty</code></td>
+<td>int</td>
+<td>One standard deviation on the count, in rows. <code>0</code> when the count is exact</td>
 </tr>
 <tr>
 <td><code>memory_bytes</code></td>
@@ -2059,6 +2079,44 @@ kind. Those four are safe to read without checking <code>type</code> first.</p>
 </tr>
 </tbody>
 </table>
+<h3 id="reading-the-duplicate-count">Reading the duplicate count</h3>
+<p>The duplicate count is <code>rows − distinct</code>. <code>rows</code> is exact and <code>distinct</code> is a
+sketch estimate, so <strong>the whole absolute error of the distinct estimate lands on
+the duplicate count</strong> — a quantity that is usually far smaller. On 200,000 rows
+containing exactly 2,000 duplicates the distinct estimate was 0.48% off, well
+inside spec, and the duplicate count came back 47% high.</p>
+<p>So <code>duplicate_rows_est</code> is suppressed to <code>0</code> when it does not exceed its own
+uncertainty, and <code>duplicate_rows_uncertainty</code> carries the ceiling. Read the two
+together:</p>
+<table>
+<thead>
+<tr>
+<th><code>est</code></th>
+<th><code>uncertainty</code></th>
+<th>Means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td><code>0</code></td>
+<td>Exactly none. The distinct count was exact, not estimated</td>
+</tr>
+<tr>
+<td><code>0</code></td>
+<td><code>2201</code></td>
+<td>Nothing resolvable. The true count is somewhere below roughly 2,201</td>
+</tr>
+<tr>
+<td><code>50602</code></td>
+<td><code>1651</code></td>
+<td>About 50,602, give or take 1,651</td>
+</tr>
+</tbody>
+</table>
+<p>Gating on <code>duplicate_rows_est &gt; 0</code> is therefore safe against false positives and
+will not fire on a count the sketch cannot support. If you need to fail on the
+<em>possibility</em> of duplicates, gate on <code>duplicate_rows_uncertainty</code> instead.</p>
 <h2 id="columnsnametype"><code>columns[name]["type"]</code></h2>
 <p>One of <code>numeric</code>, <code>categorical</code>, <code>datetime</code>, <code>boolean</code>, <code>identifier</code>.</p>
 <p><code>identifier</code> is a numeric column that is monotonic, integer-like and has a

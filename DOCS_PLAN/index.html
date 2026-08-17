@@ -1849,10 +1849,11 @@ which is worse.</p>
 and the example raises <code>KeyError</code>. The accuracy oracle caught this rename; the
 tests were updated and the docs were not.</p>
 <h3 id="3-fences-missing-their-imports-25-occurrences">3. Fences missing their imports — 25 occurrences</h3>
-<p>Blocks calling <code>profile()</code>, <code>summarize()</code> or <code>ReportConfig(...)</code> with no import
-line. <strong>The names are correct</strong> — <code>ReportConfig</code> is a live alias for
-<code>ProfileConfig</code> — but a reader who copies the block gets a <code>NameError</code>. Every
-fence should stand alone or be explicitly marked as a fragment.</p>
+<p>Blocks calling <code>profile()</code>, <code>summarize()</code> or <code>ProfileConfig(...)</code> with no import
+line. A reader who copies the block gets a <code>NameError</code>. Every fence should stand
+alone or be explicitly marked as a fragment.</p>
+<p>(The docs used to teach <code>ReportConfig</code>, which was a live alias. It now warns on
+use and goes in 0.3.0 (#210), so every fence was migrated to <code>ProfileConfig</code>.)</p>
 <h3 id="4-output-tagged-as-python-9-occurrences">4. Output tagged as <code>python</code> — 9 occurrences</h3>
 <p>Console output and shell transcripts inside <code>```python</code> fences.
 <code>quickstart.md</code>, <code>usage.md</code> and <code>why-pysuricata.md</code> have three each. Re-tag as
