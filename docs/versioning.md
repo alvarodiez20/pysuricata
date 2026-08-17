@@ -38,7 +38,7 @@ major bump at 1.0 and after.
 | **The CLI** | The three subcommands, their documented flags, and the exit codes `0` (pass), `1` (findings), `2` (usage or input error) |
 | **The `summarize()` payload** | Its shape, gated by `schema_version`. A field is never removed or repurposed without a bump |
 | **The baseline file** | The format `check` reads and writes |
-| **Documented defaults** | Changing a default that alters results — `uniques_k`, `numeric_sample_size`, `chunk_size` — is a behavioural break |
+| **Documented defaults** | Changing a default that alters results — `max_uniques`, `numeric_sample_size`, `chunk_size` — is a behavioural break |
 
 ### What `schema_version` gates, and what it does not
 

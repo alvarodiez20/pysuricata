@@ -29,6 +29,8 @@ PySuricata generates **self-contained HTML reports** from pandas or polars DataF
 
 Data is processed in chunks using streaming algorithms, so memory usage stays bounded regardless of dataset size.
 
+It also does two things a profiler usually does not: `summarize()` returns the same numbers as a versioned JSON payload with no HTML in the way, and `pysuricata check` compares a dataset against a stored baseline and exits non-zero when a threshold is crossed — so the same single pass can run in a notebook and in CI.
+
 ## Quick Start
 
 ### Installation
@@ -63,14 +65,37 @@ report.save_html("titanic_report.html")
 
 **[▶ See a live example report →](https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html)**
 
+<div align="center">
+  <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/docs/assets/report-screenshot.png" alt="A PySuricata report: the dataset summary, the five columns that need a look, and a numeric column card with its histogram and bin controls" width="900">
+</div>
+
+The examples below assume a `df` in scope. The Quick Start frame works, or anything of your own:
+
+<!-- docs-check:setup -->
+```python
+import numpy as np
+import pandas as pd
+
+rng = np.random.default_rng(0)
+df = pd.DataFrame(
+    {
+        "age": rng.normal(30, 12, 800).round(1),
+        "fare": rng.gamma(2, 20, 800).round(2),
+        "sex": rng.choice(["male", "female"], 800),
+        "booked": pd.date_range("2024-01-01", periods=800, freq="h"),
+    }
+)
+```
+
 ## Features
 
 - **Streaming architecture** — Data is processed in configurable chunks, keeping memory bounded. Useful for datasets that don't fit in RAM.
-- **Pandas and Polars** — Works natively with `pandas.DataFrame`, `polars.DataFrame`, and `polars.LazyFrame`.
+- **Pandas and Polars** — Works natively with `pandas.DataFrame`, `polars.DataFrame` and `polars.LazyFrame`, plus Parquet files, DuckDB relations and Arrow batches.
 - **Self-contained HTML** — Single file with inline CSS, JS, and SVG charts. No external assets needed.
-- **Configurable** — Control chunk sizes, sample sizes, sketch parameters, and correlation thresholds via `ProfileConfig` (aliased as `ProfileConfig`).
+- **Configurable** — Control chunk size, sample size, correlations and more with keyword options, a `preset=`, or a `ProfileConfig`.
 - **Reproducible** — Seeded random sampling produces deterministic results across runs.
-- **CLI tool** — Profile datasets from the command line.
+- **Typed** — Ships `py.typed`; `summarize()` returns a payload carrying a `schema_version`.
+- **CLI tool** — `profile`, `summarize` and `check` from the command line.
 
 ## How It Works
 
@@ -83,7 +108,9 @@ PySuricata uses well-known streaming algorithms from the academic literature:
 | **Misra-Gries** | Top-k frequent values | O(1) amortized | O(k) |
 | **Reservoir sampling** | Uniform random sample for quantiles | O(1) per value | O(s) |
 
-*k = sketch size (default 1024), s = sample size (default 10 000)*
+*k = sketch size (`max_uniques`, default 2048), s = sample size (`numeric_sample_size`, default 20 000)*
+
+KMV's relative standard error is `1/sqrt(k - 2)`, which is where the ~2.2% comes from. Approximate values are labelled approximate in the report and carry their error bound rather than being printed as exact integers.
 
 All statistics are computed in a **single pass** over the data.
 
@@ -114,22 +141,72 @@ report = profile(read_in_chunks())
 report.save_html("large_report.html")
 ```
 
+A Parquet path, a DuckDB relation or an Arrow source can be streamed directly, without loading the whole thing:
+
+```python
+import duckdb
+from pysuricata import profile
+from pysuricata.sources import stream_duckdb, stream_parquet
+
+report = profile(stream_parquet("data/events.parquet"))
+
+relation = duckdb.connect("warehouse.db").sql("SELECT * FROM events")
+report = profile(stream_duckdb(relation))
+```
+
 ## Statistics Only (No HTML)
 
-Use `summarize()` for CI/CD quality checks:
+Use `summarize()` for CI/CD quality checks. The payload carries a `schema_version` and is treated as a contract:
 
 ```python
 from pysuricata import summarize
 
 stats = summarize(df)
 
+assert stats["schema_version"] == 1
 assert stats["dataset"]["missing_cells_pct"] < 5.0
 assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 
 print(f"Mean age: {stats['columns']['age']['mean']:.1f}")
 ```
 
+## Comparing Two Datasets
+
+`compare()` runs both through the same single pass and reports what moved:
+
+```python
+from pysuricata import compare
+
+last_week, this_week = df.iloc[:3], df.iloc[3:]
+diff = compare(last_week, this_week).to_dict()
+```
+
 ## Configuration
+
+Pass keyword options for the common cases:
+
+```python
+from pysuricata import profile
+
+report = profile(
+    df,
+    chunk_size=250_000,   # default 50_000
+    sample=20_000,
+    seed=42,
+    correlations=True,
+    title="My Analysis",
+)
+```
+
+Or start from a preset — `"fast"` or `"thorough"`:
+
+```python
+from pysuricata import profile
+
+report = profile(df, preset="fast")
+```
+
+For everything else, build a `ProfileConfig`. Keyword options and `config=` are mutually exclusive:
 
 ```python
 from pysuricata import profile, ProfileConfig
@@ -137,7 +214,6 @@ from pysuricata import profile, ProfileConfig
 config = ProfileConfig()
 config.compute.chunk_size = 250_000
 config.compute.random_seed = 42
-config.compute.compute_correlations = True
 config.compute.corr_threshold = 0.5
 config.render.title = "My Analysis"
 
@@ -149,12 +225,18 @@ See the [Configuration Guide](https://alvarodiez20.github.io/pysuricata/configur
 ## CLI
 
 ```bash
-# Generate HTML report
+# Generate an HTML report
 pysuricata profile data.csv --output report.html
 
 # Get JSON statistics
 pysuricata summarize data.csv
+
+# Compare against a stored baseline; exit non-zero when a threshold is crossed
+pysuricata check data.csv --write-baseline baseline.json
+pysuricata check data.csv --baseline baseline.json --max-missing-pct 5
 ```
+
+`check` exits `0` on pass, `1` when a threshold is crossed, and `2` when the check could not run — so it drops into CI without a wrapper.
 
 ## Documentation
 

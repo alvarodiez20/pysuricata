@@ -5,6 +5,10 @@ on:
   pull_request:
     paths:
       - 'docs/**'
+      # The README is checked by `benchmarks.check_docs` too (#151). Without it
+      # here, editing only the README skips the very job that executes its
+      # fences -- which is the drift this was added to stop.
+      - 'README.md'
       - 'mkdocs.yml'
       - 'pysuricata/**/*.py'
 
