@@ -38,7 +38,13 @@ import pandas as pd
 import pytest
 
 from pysuricata import profile
-from pysuricata.render.histogram_svg import SVGHistogramRenderer
+
+#: The same frame `test_report_layout.py` measures against.
+TITANIC = Path(__file__).resolve().parent.parent / "docs" / "assets" / "titanic.csv"
+from pysuricata.render.histogram_svg import (
+    SVGHistogramRenderer,
+    _round_preserving_total,
+)
 
 CSS = Path(__file__).resolve().parents[1] / "pysuricata" / "static" / "css"
 
@@ -363,3 +369,114 @@ class TestTheEmptyStateIsNotAFailedChart:
         chart = renderer.render_histogram_from_bins([], [], 10, "lin", "x", "c")
         assert "No values to plot" in chart
         assert "<svg" not in chart
+
+
+# --------------------------------------------------------------------------- #
+# A bin count is a count of rows, and rows do not come in negative quantities
+# --------------------------------------------------------------------------- #
+class TestRebinningCannotInventANegativeCount:
+    """#253. Every variant is re-binned from one set of 25 non-negative counts,
+    so a negative can only be manufactured on the way.
+
+    It was. Counts were rounded to nearest and the whole residual was then
+    dumped into the single bin with the largest fractional part. On `Fare` at
+    50 bins that residual was **-3** and the chosen bin held **2**, so the
+    report shipped a bin of -1: a count that cannot exist, drawn as
+    `height="-0.33"` -- which the browser rejects and logs -- and printed in
+    that bar's tooltip.
+
+    The negative was the visible half. Dumping a residual of any sign into one
+    bin moves rows out of, or into, a single column of the chart; a bin holding
+    5 could display 2 with nothing wrong on screen.
+    """
+
+    def test_the_largest_remainder_method_preserves_the_total(self):
+        values = np.array([0.5, 0.5, 0.5, 0.5, 1.5, 1.5])
+        out = _round_preserving_total(values, 5)
+        assert out.sum() == 5
+        assert (out >= 0).all()
+
+    def test_it_never_goes_negative_when_rounding_overshoots(self):
+        """Six halves round to nearest as six ones -- one over the true five.
+        The old code took that one back out of a single bin."""
+        values = np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5])
+        out = _round_preserving_total(values, 3)
+        assert out.sum() == 3
+        assert (out >= 0).all(), out
+
+    def test_no_bin_moves_by_more_than_one(self):
+        """The correction is spread, not dumped. Each bin ends within one of
+        its own weight, which is the smallest change consistent with the
+        total."""
+        rng = np.random.default_rng(0)
+        values = rng.random(50) * 20
+        total = int(round(values.sum()))
+        out = _round_preserving_total(values, total)
+        assert out.sum() == total
+        assert np.all(np.abs(out - values) < 1.0 + 1e-9), np.max(np.abs(out - values))
+
+    def test_the_titanic_fare_case_that_produced_the_minus_one(self):
+        """The exact input from the report: 891 rows over 50 bins."""
+        frame = pd.read_csv(TITANIC)
+        stats = profile(frame, seed=0).stats["columns"]["Fare"]
+        edges = np.array(stats["true_histogram_edges"])
+        counts = np.array(stats["true_histogram_counts"])
+        assert (counts >= 0).all(), "the source counts were never the problem"
+
+        new_edges = np.linspace(edges[0], edges[-1], 51)
+        weights = np.zeros(50)
+        for i, count in enumerate(counts):
+            if count <= 0:
+                continue
+            left, right = edges[i], edges[i + 1]
+            for j in range(50):
+                overlap = min(right, new_edges[j + 1]) - max(left, new_edges[j])
+                if overlap > 0:
+                    weights[j] += count * overlap / (right - left)
+        weights *= counts.sum() / weights.sum()
+        out = _round_preserving_total(weights, int(counts.sum()))
+        assert out.sum() == 891
+        assert out.min() >= 0, out.min()
+
+    @pytest.mark.parametrize("column", ["Fare", "Age", "SibSp", "Parch"])
+    def test_no_rendered_bar_carries_a_count_below_zero(self, column):
+        """The check #253 asks for, over the real document: no `<rect>` in a
+        generated report may carry a negative `data-count` or a negative
+        `height`."""
+        html = profile(pd.read_csv(TITANIC), seed=0).html
+        card = re.search(
+            rf'<article class="var-card" id="col_{column}".*?</article>', html, re.S
+        )
+        assert card, f"no card for {column}"
+        assert not re.findall(r'data-count="(-\d+)"', card.group(0))
+        assert not re.findall(r'<rect[^>]*height="-[\d.]+"', card.group(0))
+
+    def test_every_linear_variant_still_accounts_for_every_row(self):
+        """Preserving the total is the property the old code was reaching for
+        and got at the cost of a negative. Both, or it is not a fix.
+
+        Linear only: the log variants drop rows for a different reason, and a
+        much larger one -- see #258.
+        """
+        html = profile(pd.read_csv(TITANIC), seed=0).html
+        card = re.search(
+            r'<article class="var-card" id="col_Fare".*?</article>', html, re.S
+        ).group(0)
+        # Split rather than match a nested block -- a non-greedy `(.*?)</div>`
+        # ends at the first closing tag inside the variant, several elements
+        # before its bars. Then bound each chunk at its own `</svg>`: the last
+        # chunk otherwise runs to the end of the card and picks up the scale
+        # buttons, which carry a `data-scale` of their own and made a log
+        # variant read as a linear one.
+        found = 0
+        for chunk in card.split('<div class="hist variant')[1:]:
+            svg = chunk.split("</svg>")[0]
+            scale = re.search(r'data-scale="(\w+)"', svg)
+            if not scale or scale.group(1) != "lin":
+                continue
+            bins = re.search(r'data-bin="(\d+)"', svg).group(1)
+            counts = [int(c) for c in re.findall(r'data-count="(-?\d+)"', svg)]
+            assert counts, f"{bins} bins drew nothing"
+            assert sum(counts) == 891, f"{bins} bins sum to {sum(counts)}"
+            found += 1
+        assert found == 3, f"expected 3 linear variants, read {found}"

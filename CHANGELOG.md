@@ -16,6 +16,40 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **A histogram bin reported a count of -1** ([#253]). Every variant of a
+  numeric card's chart is re-binned from one set of 25 non-negative counts, so
+  a negative could only be manufactured on the way — and it was. Re-binning
+  rounded each bin to nearest and then dumped the **entire** residual into the
+  single bin with the largest fractional part. On the Titanic report's `Fare`
+  column at 50 bins that residual was **-3** and the chosen bin held **2**, so
+  the report shipped a bin of -1: a count that cannot exist, drawn as
+  `height="-0.33"` — which the browser rejects and logs — and printed in that
+  bar's tooltip.
+
+  The negative was only the visible half. Dumping a residual of either sign
+  into one bin moves rows out of, or into, a single column of the chart, so a
+  bin holding 5 could quietly display 2 with nothing wrong on screen.
+
+  Replaced with the largest-remainder method: floor every bin, then hand the
+  shortfall out one unit at a time to the bins with the largest discarded
+  fractions. It preserves the total exactly — which is what the old code was
+  reaching for — it cannot go negative, and it moves no bin by more than one
+  row. Measured across both numeric columns at 10, 25 and 50 bins: **worst
+  per-bin change 1, totals preserved everywhere.**
+
+  The bar loop now also skips a count of `<= 0` rather than `== 0`. Rule 3 is
+  about a zero count drawing nothing; a negative count is not a drawing
+  decision but a value that cannot exist, and it should not become geometry
+  even if something upstream produces one again.
+
+  This is a deliberate change to the invariance fingerprint, the first since
+  the harness was written: **82 facts moved, all of them `count` and `pct`, and
+  none added or removed.** The old numbers were wrong.
+
+[#253]: https://github.com/alvarodiez20/pysuricata/issues/253
+
+### Fixed
+
 - **A link to a column on another page did nothing** ([#240]). `pagination.js`
   hides off-page cards with `display: none`, which is not a rendering choice but
   a removal — the browser finds no target for a fragment link and stays put.
