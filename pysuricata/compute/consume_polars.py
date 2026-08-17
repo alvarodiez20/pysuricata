@@ -21,6 +21,7 @@ from ..accumulators import (
     NumericAccumulator,
 )
 from .core.types import ColumnKinds
+from .processing.conversion import polars_string_to_datetime
 from .processing.inference import UnifiedTypeInferrer
 
 
@@ -84,14 +85,20 @@ def _to_datetime_ns_array_polars(s: pl.Series) -> np.ndarray:  # type: ignore[na
             if s.dtype == pl.Datetime:
                 # Already datetime, just cast time unit
                 s2 = s.dt.cast_time_unit("ns")
+            elif s.dtype == pl.Date:
+                s2 = s.cast(pl.Datetime("ns"))
+            elif s.dtype == pl.String:
+                # Never `cast()` from a String: it yields nulls instead of
+                # raising, so the Date-then-Datetime chain this used to run
+                # reported success while producing nothing, and its `except`
+                # fallback could never fire. A column of 200 valid timestamps
+                # came out 100% missing (#214).
+                parsed = polars_string_to_datetime(s, "ns")
+                if parsed is None:
+                    return np.full(len(s), np.iinfo(np.int64).min, dtype=np.int64)
+                s2 = parsed
             else:
-                # Try Date first for date-only strings, then Datetime
-                try:
-                    s_date = s.cast(pl.Date, strict=False)
-                    s2 = s_date.cast(pl.Datetime("ns"))
-                except Exception:
-                    # Fallback to direct datetime conversion
-                    s2 = s.cast(pl.Datetime("ns"), strict=False)
+                s2 = s.cast(pl.Datetime("ns"), strict=False)
             # Cast to Int64 to extract raw ns. Nulls become the int64-min
             # sentinel, which the accumulator's validity window already counts
             # as missing -- so there is no reason to box every row into a

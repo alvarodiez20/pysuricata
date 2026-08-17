@@ -33,9 +33,9 @@ Advanced techniques for power users.
 Add rich descriptions to reports:
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 config.render.description = """
 # Q4 2024 Analysis
 
@@ -150,11 +150,11 @@ For multi-hour pipelines analyzing massive datasets (i.e. over 100M rows), you c
 import numpy as np
 import pandas as pd
 
-from pysuricata import ReportConfig, profile
+from pysuricata import ProfileConfig, profile
 
 rng = np.random.default_rng(0)
 
-config = ReportConfig()
+config = ProfileConfig()
 # Checkpoint roughly every 10 million rows assuming chunk_size is 500,000
 config.compute.chunk_size = 500_000
 config.compute.checkpoint_every_n_chunks = 20

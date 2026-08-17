@@ -86,15 +86,31 @@ class TestPublicNamespace:
         assert hasattr(pysuricata, "__all__")
 
     def test_everything_exported_actually_resolves(self):
-        for name in pysuricata.__all__:
-            assert hasattr(pysuricata, name), name
+        # Deprecated exports resolve through `__getattr__` and warn on access
+        # (#210). Resolving is what is under test here, not the warning.
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            for name in pysuricata.__all__:
+                assert hasattr(pysuricata, name), name
 
     def test_internal_modules_are_not_advertised(self):
         for internal in ("accumulators", "compute", "render", "report", "api"):
             assert internal not in pysuricata.__all__
 
     def test_the_config_alias_still_works(self):
-        assert pysuricata.ReportConfig is ProfileConfig
+        """Deprecated (#210, removed in 0.3.0) but not yet gone, so it must
+        still resolve -- and to the same object, not a copy.
+
+        The warning itself is asserted in `tests/test_deprecations.py`; it is
+        suppressed here so this stays a test of the surface.
+        """
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", DeprecationWarning)
+            assert pysuricata.ReportConfig is ProfileConfig
 
     def test_py_typed_ships(self):
         from pathlib import Path

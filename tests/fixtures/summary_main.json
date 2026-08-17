@@ -817,6 +817,7 @@
     "cols": 8,
     "duplicate_rows_est": 0,
     "duplicate_rows_pct_est": 0.0,
+    "duplicate_rows_uncertainty": 0,
     "memory_bytes": 69354,
     "missing_cells": 1563,
     "missing_cells_pct": 21.927609427609426,

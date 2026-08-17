@@ -29,7 +29,7 @@ Two entry points cover most workflows:
 | `summarize(data, config)` | `dict` | Statistics only (no HTML) |
 
 ```python
-from pysuricata import profile, summarize, ReportConfig
+from pysuricata import profile, summarize, ProfileConfig
 ```
 
 ## Inputs
@@ -86,11 +86,11 @@ assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 
 ## Configuration
 
-All options live in `ReportConfig`:
+All options live in `ProfileConfig`:
 
 ```python
-from pysuricata import ReportConfig, profile
-cfg = ReportConfig()
+from pysuricata import ProfileConfig, profile
+cfg = ProfileConfig()
 
 # Chunking
 cfg.compute.chunk_size = 250_000        # rows per chunk (default: 50_000)
@@ -137,8 +137,8 @@ report.save_html("report.html")
 Set `random_seed` to make reservoir sampling reproducible:
 
 ```python
-from pysuricata import ReportConfig
-cfg = ReportConfig()
+from pysuricata import ProfileConfig
+cfg = ProfileConfig()
 cfg.compute.random_seed = 42
 # Same data + same seed = identical report
 ```

@@ -123,6 +123,11 @@ def _pairs_from_attrs(doc: str) -> list[tuple[str, str]]:
 # only knew about table cells -- reported `max` and `median` as *removed* from
 # a report that still displayed both. That is the over-fitting this module's
 # docstring warns about, and the fix is here rather than in the card.
+#: A structural boundary that a single label cannot contain. Matching one means
+#: the non-greedy group backtracked past the end of its own cell and the "label"
+#: is really two elements glued together.
+_CROSSES_CELL = re.compile(r"</t[dhr]\s*>|</thead|<tbody", re.I)
+
 _PAIR_PATTERNS = (
     # <th>Label</th><td>Value</td>  and  <td>Label</td><td>Value</td>
     re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>\s*<t[dh][^>]*>(.*?)</t[dh]>", re.S),
@@ -212,6 +217,21 @@ def _pairs_from_kv(doc: str) -> list[tuple[str, str]]:
     for scope, region in _regions(doc):
         for pattern in _PAIR_PATTERNS:
             for m in pattern.finditer(region):
+                # A label lives in one cell. `(.*?)` backtracks across closing
+                # tags, so a header could swallow a whole row boundary and glue
+                # itself to the first cell of the body: the sample table's
+                # `<th>booked</th></tr></thead><tbody><tr><td>311</td>` matched
+                # with a "label" of `booked 311` and a value of `56.0`.
+                #
+                # That label carries data -- 311 is a sampled row index -- so
+                # the fact was keyed on the draw. Chunking changes which rows
+                # the reservoir keeps, and because the *key* moved with the
+                # value it registered as removed-plus-added rather than
+                # changed, which reads as a fact vanishing from the report.
+                # The alphabetic guard below could not catch it, since `booked`
+                # supplies the letters.
+                if _CROSSES_CELL.search(m.group(1)):
+                    continue
                 label, value = _text(m.group(1)), _text(m.group(2))
                 if not label or not value or len(label) > 40:
                     continue

@@ -26,6 +26,56 @@ except ImportError:
     pl = None
 
 
+def polars_string_to_datetime(s: Any, time_unit: str = "ns") -> Any:
+    """Parse a polars String column to `Datetime`, or return None.
+
+    **`Series.cast()` is the wrong tool for this and was the cause of #214.**
+    Casting from a String silently yields nulls rather than raising, so a
+    `strict=False` cast reports success while producing nothing, and every
+    `except Exception` fallback written around one is dead code. Measured on
+    polars 1.34:
+
+    | input                   | `cast(Date)` | `cast(Datetime)` | `str.to_datetime` |
+    |-------------------------|--------------|------------------|-------------------|
+    | `2020-01-01`            | ok           | **all null**     | ok                |
+    | `2020-01-01 12:00:00`   | **all null** | **all null**     | ok                |
+    | `2020-01-01T12:00:00`   | **all null** | ok               | ok                |
+
+    Conversion tried `Date` first and inference took the first cast that looked
+    good, so the two disagreed about which strings were datetimes -- and a
+    column typed `datetime` by inference then converted to nothing by the Date
+    branch was reported as 100% missing while holding 200 valid timestamps.
+
+    `str.to_datetime` handles all three shapes, is the API polars asks for
+    (casting from String is deprecated in 1.43 and removed in 2.0), and raises
+    rather than silently emptying when no format can be inferred -- which makes
+    the fallback below a real branch instead of an unreachable one.
+
+    Both the sniff and the conversion call this, so they cannot drift apart
+    again.
+
+    Args:
+        s: A polars Series. Only String columns are handled here.
+        time_unit: Resolution of the result.
+
+    Returns:
+        A `Datetime` Series, or None when the column holds no parseable dates.
+    """
+    if pl is None:
+        return None
+    try:
+        return s.str.to_datetime(time_unit=time_unit, strict=False)
+    except Exception:
+        pass
+    # Date-only columns whose format `to_datetime` could not infer. Reached
+    # rarely, but it costs one call and it is the difference between a
+    # datetime column and a categorical one.
+    try:
+        return s.str.to_date(strict=False).cast(pl.Datetime(time_unit))
+    except Exception:
+        return None
+
+
 class ConversionStrategy(Enum):
     """Strategy for data conversion operations."""
 
@@ -357,8 +407,19 @@ class UnifiedConverter:
             if s.dtype == pl.Datetime:
                 return ProcessingResult.success_result(s.to_list())
 
-            # Convert to datetime first
-            dt_series = s.cast(pl.Datetime, strict=False)
+            # Convert to datetime first. A String goes through the parser
+            # rather than a cast, for the reasons in
+            # `polars_string_to_datetime` -- a cast from String returns nulls
+            # instead of raising, so it cannot be relied on and is deprecated
+            # from polars 1.43.
+            if s.dtype == pl.String:
+                dt_series = polars_string_to_datetime(s)
+                if dt_series is None:
+                    return ProcessingResult.error_result(
+                        "no parseable datetimes in this String column"
+                    )
+            else:
+                dt_series = s.cast(pl.Datetime, strict=False)
             return ProcessingResult.success_result(dt_series.to_list())
 
         except Exception as e:

@@ -621,3 +621,96 @@ class TestRngIsolation:
         first = profile(df, config=cfg).stats["columns"]["a"]["median"]
         second = profile(df, config=cfg).stats["columns"]["a"]["median"]
         assert first == second
+
+
+class TestFinalizeIsIdempotent:
+    """#205. Calling ``finalize()`` mid-stream must not change what follows.
+
+    A checkpoint is a chunk boundary with a side effect, and a progressive
+    report calls ``finalize()`` repeatedly by construction. If finalising
+    consumed the reservoir's randomness, ``checkpoint_write_html=True`` would
+    move the median -- a *rendering* option altering a statistic, which breaks
+    the invariant the whole accumulator design rests on.
+
+    It does not, and these pin that. Note the seeds: an accumulator built with
+    ``seed=None`` seeds itself non-deterministically, so two runs of the *same*
+    uninterrupted stream already disagree on every reservoir-derived field.
+    That is the trap this class is shaped to avoid -- comparing two
+    unseeded accumulators reports exactly the quantile-and-sample divergence a
+    real RNG bug would, and reports it whether or not one exists.
+    """
+
+    @staticmethod
+    def _chunks(n_chunks: int = 6, size: int = 4_000) -> list[np.ndarray]:
+        g = np.random.default_rng(11)
+        return [g.lognormal(0, 1, size) for _ in range(n_chunks)]
+
+    def _run(self, finalize_after: set[int]):
+        from pysuricata.accumulators.numeric import NumericAccumulator
+
+        acc = NumericAccumulator("a", seed=0)
+        for index, chunk in enumerate(self._chunks()):
+            acc.update(chunk)
+            acc.mark_chunk_boundary()
+            if index in finalize_after:
+                acc.finalize()
+        return acc.finalize()
+
+    def test_two_uninterrupted_runs_agree(self):
+        """The control. Without it a green result below proves nothing, since
+        an unseeded accumulator fails this too."""
+        first, second = self._run(set()), self._run(set())
+        for field in first.__dataclass_fields__:
+            assert np.array_equal(
+                np.asarray(getattr(first, field), dtype=object),
+                np.asarray(getattr(second, field), dtype=object),
+            ), field
+
+    @pytest.mark.parametrize(
+        "finalize_after", [{2}, {0, 1, 2, 3, 4, 5}], ids=["once", "every-chunk"]
+    )
+    def test_finalising_midstream_changes_nothing(self, finalize_after):
+        uninterrupted = self._run(set())
+        interrupted = self._run(finalize_after)
+
+        divergent = [
+            field
+            for field in uninterrupted.__dataclass_fields__
+            if not np.array_equal(
+                np.asarray(getattr(uninterrupted, field), dtype=object),
+                np.asarray(getattr(interrupted, field), dtype=object),
+            )
+        ]
+        assert not divergent, f"finalize() perturbed: {divergent}"
+
+    def test_partial_renders_do_not_move_a_single_field(self, tmp_path):
+        """The acceptance criterion, end to end: profiling with partial renders
+        on must equal profiling with them off, field for field."""
+        import pandas as pd
+
+        from pysuricata import summarize
+        from pysuricata.api import ComputeOptions, ProfileConfig
+
+        g = np.random.default_rng(3)
+        df = pd.DataFrame(
+            {"a": g.lognormal(0, 1, 60_000), "b": g.standard_normal(60_000)}
+        )
+
+        def run(**overrides):
+            options = ComputeOptions(chunk_size=10_000, random_seed=0, **overrides)
+            return summarize(df, config=ProfileConfig(compute=options))["columns"]
+
+        plain = run()
+        checkpointed = run(
+            checkpoint_every_n_chunks=2,
+            checkpoint_dir=str(tmp_path),
+            checkpoint_write_html=True,
+        )
+
+        for column, expected in plain.items():
+            divergent = {
+                key: (value, checkpointed[column].get(key))
+                for key, value in expected.items()
+                if checkpointed[column].get(key) != value
+            }
+            assert not divergent, f"{column}: {divergent}"

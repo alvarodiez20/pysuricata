@@ -228,14 +228,30 @@ class AdaptiveChunker:
         Returns:
             Optimal chunk size.
         """
-        # An explicitly requested size is honoured, clamped only to the bounds
-        # this chunker was constructed with. Blending it with a heuristic
-        # (previously 0.7*optimal + 0.3*requested) meant a documented option
-        # never produced the behaviour it documented: asking for 50,000 rows
-        # silently gave something else, which makes chunk-dependent behaviour
-        # impossible to reason about or test.
+        # An explicitly requested size is honoured, full stop. Blending it with
+        # a heuristic (previously 0.7*optimal + 0.3*requested) meant a documented
+        # option never produced the behaviour it documented: asking for 50,000
+        # rows silently gave something else, which makes chunk-dependent
+        # behaviour impossible to reason about or test.
+        #
+        # Clamping to `min_chunk_size`/`max_chunk_size` reintroduced exactly
+        # that for every value under 1,000, and the argument above applies
+        # unchanged. `chunk_size` is a documented public option that
+        # `docs/versioning.md` puts in the covered surface, and the clamp was
+        # silent -- the caller was told nothing and their value never took
+        # effect.
+        #
+        # It was a testing-surface problem as much as an API one. Small
+        # deterministic fixtures are exactly where a small chunk size is wanted,
+        # and two separate guards were passing for free because of this: #139's
+        # per-chunk guard asked for 150 rows on a 900-row frame and got one
+        # chunk, and `test_chunking_does_not_change_the_facts` (#201) asked for
+        # 100 on an 891-row frame and compared a run against itself.
+        #
+        # A pathological `chunk_size=1` is the caller's choice and the caller's
+        # cost. The bounds still apply to sizes this chunker picks for itself.
         if requested_size:
-            return max(self.min_chunk_size, min(requested_size, self.max_chunk_size))
+            return max(1, int(requested_size))
 
         # No size requested: size it from the data.
         return self.adaptive_chunk_size(source)

@@ -30,6 +30,7 @@ from typing import Any
 # Checkpointing imports
 # Processing imports
 from .compute.analysis import RowKMV
+from .compute.manifest import duplicate_fields
 from .compute.orchestration.engine import StreamingEngine
 
 # Core imports
@@ -332,12 +333,7 @@ class ReportOrchestrator:
             "missing_cells_pct": (total_missing_cells / max(1, n_rows * n_cols) * 100.0)
             if (n_rows and n_cols)
             else 0.0,
-            "duplicate_rows_est": int(self.row_kmv.approx_duplicates()[0])
-            if hasattr(self.row_kmv, "approx_duplicates")
-            else 0,
-            "duplicate_rows_pct_est": float(self.row_kmv.approx_duplicates()[1])
-            if hasattr(self.row_kmv, "approx_duplicates")
-            else 0.0,
+            **duplicate_fields(self.row_kmv),
             "memory_bytes": int(approx_mem_bytes),
             "top_missing": [
                 {"column": str(col), "pct": float(pct), "count": int(cnt)}

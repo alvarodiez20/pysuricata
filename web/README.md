@@ -30,11 +30,14 @@ Two details worth knowing:
   rather than read into memory, so `pandas.read_csv(..., chunksize=…)` streams off
   the Blob and `profile()` receives a chunk generator. That is what makes a large
   file survive a browser tab.
-- **A mocked `psutil`.** `psutil` is declared as a runtime dependency but is
+- **A mocked `psutil`.** `psutil` was declared as a runtime dependency but is
   imported in no code path in the library (only in tests and docs). It has no WASM
   wheel, so `micropip` would fail to resolve it. `worker.js` registers a mock
-  distribution to satisfy the resolver. **Delete that block once `psutil` moves to
-  an optional extra upstream** — see the comment in `worker.js`.
+  distribution to satisfy the resolver. It has since moved to the
+  `pysuricata[system]` extra, but this worker installs from PyPI and the published
+  0.1.0 metadata still requires it. **Delete that block once 0.1.1 is published**,
+  and confirm `micropip.install("pysuricata")` resolves in a bare Pyodide session
+  with no mock package — see the comment in `worker.js`.
 
 ## Guardrails
 

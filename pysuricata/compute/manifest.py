@@ -14,6 +14,36 @@ except Exception:  # pragma: no cover
     pd = None  # type: ignore
 
 
+def duplicate_fields(row_kmv: Any) -> dict[str, Any]:
+    """The duplicate keys of the `summarize()` payload, suppression applied.
+
+    Shared by both payload producers -- this module and `report.py` -- because
+    they used to build these keys independently from raw `approx_duplicates()`
+    while `render/html.py` applied a resolvability threshold to the same
+    numbers. The report printed `< 2,225 · below sketch resolution` and the
+    payload returned 1,109 for a frame with no duplicate rows at all, which is
+    the wrong way round: the HTML structure is explicitly *not* covered by
+    `docs/versioning.md` and the payload is.
+
+    `duplicate_rows_uncertainty` is what makes a zero readable. Zero with an
+    uncertainty of zero is "exactly none"; zero with an uncertainty of 2,225 is
+    "nothing resolvable below about 2,225". Without the second key a consumer
+    had no way to reach the answer the report already had.
+    """
+    if not hasattr(row_kmv, "duplicates"):
+        return {
+            "duplicate_rows_est": 0,
+            "duplicate_rows_pct_est": 0.0,
+            "duplicate_rows_uncertainty": 0,
+        }
+    estimate = row_kmv.duplicates()
+    return {
+        "duplicate_rows_est": int(estimate.rows),
+        "duplicate_rows_pct_est": float(estimate.pct),
+        "duplicate_rows_uncertainty": int(estimate.uncertainty),
+    }
+
+
 def build_summary(
     kinds_map: Mapping[str, tuple[str, FinalizableAccumulator]],
     col_order: Sequence[str],
@@ -41,12 +71,7 @@ def build_summary(
         "missing_cells_pct": (total_missing_cells / max(1, n_rows * n_cols) * 100.0)
         if (n_rows and n_cols)
         else 0.0,
-        "duplicate_rows_est": int(row_kmv.approx_duplicates()[0])
-        if hasattr(row_kmv, "approx_duplicates")
-        else 0,
-        "duplicate_rows_pct_est": float(row_kmv.approx_duplicates()[1])
-        if hasattr(row_kmv, "approx_duplicates")
-        else 0.0,
+        **duplicate_fields(row_kmv),
         "top_missing": _get_intelligent_top_missing(miss_list, n_rows, n_cols),
     }
 

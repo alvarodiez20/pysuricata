@@ -4,7 +4,31 @@ import bisect
 import hashlib
 import math
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple
+
+
+class DuplicateEstimate(NamedTuple):
+    """What the row sketch can say about duplicate rows, suppression applied.
+
+    Attributes:
+        rows: Estimated duplicate rows, or 0 when the estimate is below the
+            sketch's own resolution. Never a figure the sketch cannot support.
+        pct: `rows` as a percentage of the rows seen, suppressed in step.
+        uncertainty: One standard deviation on the count, in rows. When
+            `resolvable` is False this is the ceiling: the true count is
+            somewhere below roughly this many. Zero when the distinct count is
+            exact, which is the common case for frames smaller than `k`.
+        resolvable: Whether the count exceeded its own uncertainty. False means
+            `rows` is 0 because nothing could be resolved, not because the data
+            is known to be free of duplicates -- the two are distinguishable
+            only by reading `uncertainty` alongside it.
+    """
+
+    rows: int
+    pct: float
+    uncertainty: int
+    resolvable: bool
+
 
 if TYPE_CHECKING:
     import pandas as pd
@@ -881,6 +905,30 @@ class RowKMV:
             return True
         d, _ = self.approx_duplicates()
         return d > uncertainty
+
+    def duplicates(self) -> DuplicateEstimate:
+        """The duplicate figure with its resolvability already applied.
+
+        **This is the only place the suppression belongs.** It used to live in
+        `render/html.py`, so the HTML report printed `< 2,225 · below sketch
+        resolution` while `summarize()` -- the surface `docs/versioning.md`
+        actually covers -- returned a raw `approx_duplicates()` of 1,109 for
+        the same frame, on a frame with exactly zero duplicate rows. Two call
+        sites produced the figure and one of them corrected it, so a human
+        reading the report was told the truth and a pipeline gating on
+        duplicates was not.
+
+        Returns a value both surfaces render rather than recompute, which is
+        what stops them drifting apart again.
+        """
+        rows, pct = self.approx_duplicates()
+        uncertainty = self.duplicates_uncertainty()
+        if self.duplicates_are_resolvable():
+            return DuplicateEstimate(rows, pct, uncertainty, True)
+        # Below the sketch's resolution. The count is not distinguishable from
+        # zero, so zero is what is reported, and `uncertainty` carries the
+        # ceiling that makes the zero interpretable.
+        return DuplicateEstimate(0, 0.0, uncertainty, False)
 
 
 class StreamingHistogram:

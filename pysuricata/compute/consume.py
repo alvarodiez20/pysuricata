@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import math
+import re
 import warnings
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any
@@ -34,6 +35,25 @@ from .processing.inference import UnifiedTypeInferrer
 _memory_cache: dict[tuple[str, str], float] = {}
 
 
+def _mean_label_length(lengths: pd.Series) -> float:
+    """The mean of a per-value length series, with all-missing meaning zero.
+
+    `Series.mean()` of an all-NA series is NaN, and a NaN estimate propagates
+    to `int(estimate * len(s))`, which raises `ValueError: cannot convert float
+    NaN to integer` -- the whole profile fails on one all-missing column.
+
+    Reaching that state depends on the pandas version. Under pandas 2,
+    `Series([None]).astype(str)` produced the literal string `"None"`, so an
+    all-missing object column measured 4 characters per row and the mean was
+    never NaN. Under pandas 3 the same call yields NaN, so it always is. The
+    guard belongs here either way: a column holding no strings carries no
+    string payload, and zero is the honest answer to "how many bytes of text
+    per row", where 4 was an artifact of stringifying a missing value.
+    """
+    mean = lengths.mean()
+    return 0.0 if pd.isna(mean) else float(mean)
+
+
 def _estimate_memory_per_row_fast(s: pd.Series) -> float:
     """Fast memory estimation based on dtype instead of deep profiling.
 
@@ -55,16 +75,14 @@ def _estimate_memory_per_row_fast(s: pd.Series) -> float:
             sample_size = min(100, len(s))
             sample = s.head(sample_size)
             # Rough estimate: 8 bytes overhead + average string length
-            avg_length = sample.astype(str).str.len().mean()
-            return 8 + avg_length
+            return 8 + _mean_label_length(sample.astype(str).str.len())
         return 8  # Default for empty series
     elif dtype == "string":
         # String dtype - estimate based on sample
         if len(s) > 0:
             sample_size = min(100, len(s))
             sample = s.head(sample_size)
-            avg_length = sample.str.len().mean()
-            return avg_length
+            return _mean_label_length(sample.str.len())
         return 8
     else:
         # Numeric/datetime types - use dtype size
@@ -169,7 +187,60 @@ def _to_datetime_ns_array_pandas(s: pd.Series) -> np.ndarray:
             ds = pd.to_datetime(s, errors="coerce", utc=True, format="mixed")
         except TypeError:
             ds = pd.to_datetime(s, errors="coerce", utc=True)
-    return ds.astype("int64", copy=False).to_numpy()
+    # `copy=` is deprecated under pandas 3 (copy-on-write makes it a no-op).
+    return _as_int64_nanoseconds(ds.astype("int64").to_numpy(), _datetime_unit(ds))
+
+
+#: int64 nanoseconds per unit of each resolution pandas can carry a datetime in.
+_NS_PER_UNIT = {"ns": 1, "us": 1_000, "ms": 1_000_000, "s": 1_000_000_000}
+
+#: What pandas stores for NaT once the column is viewed as int64.
+_NAT_INT64 = np.iinfo(np.int64).min
+
+
+def _datetime_unit(ds: pd.Series) -> str:
+    """The resolution a datetime Series is stored at, as a bare unit string.
+
+    `utc=True` gives a `DatetimeTZDtype`, which carries `.unit` directly; the
+    string fallback covers a tz-naive `datetime64[us]` reaching here by another
+    route. Anything unrecognised is treated as nanoseconds, which is what this
+    function assumed unconditionally before.
+    """
+    unit = getattr(ds.dtype, "unit", None)
+    if unit in _NS_PER_UNIT:
+        return unit
+    match = re.search(r"\[(\w+)", str(ds.dtype))
+    return match.group(1) if match and match.group(1) in _NS_PER_UNIT else "ns"
+
+
+def _as_int64_nanoseconds(values: np.ndarray, unit: str) -> np.ndarray:
+    """Rescale int64 datetime values of any resolution to nanoseconds.
+
+    This used to be `astype("int64")` and nothing else, which was correct only
+    because pandas 2 stored every datetime at nanosecond resolution. **pandas 3
+    defaults to microseconds** -- `pd.date_range(...)` returns
+    `datetime64[us]` -- so the same cast silently returned microseconds, and
+    every datetime statistic downstream came out a factor of 1,000 wrong while
+    still looking entirely plausible. A freshness check read a 2020 timestamp
+    as 1970.
+
+    Nanoseconds span roughly 1677-2262. A coarser column can hold dates outside
+    that, and those cannot be represented at all, so they become NaT -- the
+    sentinel the accumulator's validity window already rejects. Saturating is
+    the honest failure: an out-of-range date is missing from the ns view, not
+    silently wrapped into a plausible wrong one.
+    """
+    scale = _NS_PER_UNIT.get(unit, 1)
+    if scale == 1:
+        return values
+
+    limit = np.iinfo(np.int64).max // scale
+    # NaT is int64 min; it is out of range by construction and must stay NaT
+    # rather than be scaled into a real date.
+    representable = (values != _NAT_INT64) & (np.abs(values) <= limit)
+    out = np.full(values.shape, _NAT_INT64, dtype=np.int64)
+    np.multiply(values, scale, out=out, where=representable)
+    return out
 
 
 def _to_categorical_iter_pandas(s: pd.Series) -> Iterable[Any]:
@@ -230,9 +301,16 @@ def consume_chunk_pandas(
         if cache_key not in _memory_cache:
             try:
                 # Use fast dtype-based estimation instead of expensive deep profiling
-                _memory_cache[cache_key] = _estimate_memory_per_row_fast(s)
+                estimate = _estimate_memory_per_row_fast(s)
             except Exception:
-                _memory_cache[cache_key] = 0
+                estimate = 0
+            # A bytes-per-row estimate is a finite, non-negative number. It used
+            # to be neither only in an unreachable-looking corner, and the cost
+            # of landing there was the whole profile raising out of `int()` --
+            # a memory *estimate* failing a run whose statistics were fine.
+            if not math.isfinite(estimate) or estimate < 0:
+                estimate = 0
+            _memory_cache[cache_key] = estimate
 
         # Use cached memory estimate
         estimated_memory = int(_memory_cache[cache_key] * len(s))

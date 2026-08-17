@@ -13,6 +13,7 @@ from enum import Enum
 from typing import Any
 
 from ..core.types import ColumnKinds, InferenceResult, ProcessingResult
+from .conversion import polars_string_to_datetime
 
 # Date sniffing is a yes/no question, so it does not need a large sample.
 _DATE_SNIFF_SAMPLE = 200
@@ -30,10 +31,51 @@ _DATE_SNIFF_FORMATS = (
 )
 
 
+#: Below this year, a "successful" parse cannot produce a usable datetime
+#: column: the datetime accumulator's validity window is what `datetime64[ns]`
+#: can represent, which starts at 1677-09-21, so every such value would be
+#: recorded as missing anyway. Set well below that bound rather than at it, so
+#: this stays a filter on parser artifacts and not a new opinion about which
+#: historical dates count -- narrowing that window is exactly the mistake the
+#: old `-2e18` bound made, and it silently nulled every 19th-century date.
+_IMPLAUSIBLE_YEAR = 1000
+
+
 try:
     import pandas as pd
 except ImportError:
     pd = None
+
+
+def _dated_fraction(parsed: Any) -> float:
+    """The fraction of a probe that parsed to something that is really a date.
+
+    `notna().mean()` on its own was the whole test, and it takes the parser's
+    word for it. **pandas 3 reads `"T1"` as year 1** -- `T` is the ISO 8601
+    time designator, so a bare identifier like a ticket number parses rather
+    than failing. On a column of `T0..T680`, `format="mixed"` reports 99.5% of
+    the probe as dates under pandas 3 and 34% under pandas 2, which is the
+    difference between profiling an identifier column as datetime and as
+    categorical.
+
+    Requiring a plausible year keeps the check honest without pinning it to one
+    pandas version: a parse landing before `_IMPLAUSIBLE_YEAR` carried no date
+    to begin with. Nothing real is excluded -- a column of genuine dates is
+    unaffected, and this is a yes/no question about the column's type, not a
+    filter on the values, which are parsed for real later.
+    """
+    if len(parsed) == 0:
+        return 0.0
+    dated = parsed.notna()
+    if not bool(dated.any()):
+        return 0.0
+    try:
+        dated &= parsed.dt.year >= _IMPLAUSIBLE_YEAR
+    except (AttributeError, TypeError, ValueError):
+        # Not a datetime-like result; `notna` alone is the best available read.
+        pass
+    return float(dated.mean())
+
 
 try:
     import polars as pl
@@ -396,7 +438,7 @@ class UnifiedTypeInferrer:
                 parsed = pd.to_datetime(probe, errors="coerce", utc=True, format=fmt)
             except (ValueError, TypeError):
                 continue
-            if float(parsed.notna().mean()) > 0.8:
+            if _dated_fraction(parsed) > 0.8:
                 return True
 
         # Last resort: dateutil, but only over the small probe.
@@ -406,7 +448,7 @@ class UnifiedTypeInferrer:
                 parsed = pd.to_datetime(
                     probe, errors="coerce", utc=True, format="mixed"
                 )
-            return float(parsed.notna().mean()) > 0.8
+            return _dated_fraction(parsed) > 0.8
         except (ValueError, TypeError):
             return False
 
@@ -491,27 +533,28 @@ class UnifiedTypeInferrer:
                 InferenceStrategy.AGGRESSIVE,
                 InferenceStrategy.BALANCED,
             ]:
-                try:
-                    # First try Date type (for date-only strings like '1914-12-01')
-                    ds = sample.cast(pl.Date, strict=False)
-                    null_count = ds.null_count()
-                    if (
-                        sample_size - null_count
-                    ) / sample_size > 0.8:  # 80% success rate
+                # One parse, through the same helper the conversion path uses.
+                # This used to be two `cast()` attempts, Date then Datetime,
+                # taking whichever looked good -- and the conversion path ran
+                # the same two in the same order but kept the *first*. So the
+                # two disagreed about which strings are datetimes, and a column
+                # this branch typed `datetime` could be converted to nothing,
+                # reporting 200 valid timestamps as 100% missing (#214).
+                # Sharing the helper is what stops them drifting again.
+                ds = (
+                    polars_string_to_datetime(sample)
+                    if sample.dtype == pl.String
+                    else None
+                )
+                if ds is None and sample.dtype != pl.String:
+                    try:
+                        ds = sample.cast(pl.Datetime, strict=False)
+                    except Exception:
+                        ds = None
+                if ds is not None:
+                    non_null = sample_size - ds.null_count()
+                    if sample_size and non_null / sample_size > 0.8:
                         return ProcessingResult.success_result("datetime")
-                except Exception:
-                    pass
-
-                try:
-                    # Then try Datetime type (for datetime strings with time components)
-                    ds = sample.cast(pl.Datetime, strict=False)
-                    null_count = ds.null_count()
-                    if (
-                        sample_size - null_count
-                    ) / sample_size > 0.8:  # 80% success rate
-                        return ProcessingResult.success_result("datetime")
-                except Exception:
-                    pass
 
             # Try numeric conversion
             try:

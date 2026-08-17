@@ -504,12 +504,12 @@ where \(x_k\) is the \(k\)-th smallest hash (normalized to [0,1]).
 
 ## Configuration
 
-Control numeric analysis via `ReportConfig`:
+Control numeric analysis via `ProfileConfig`:
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 
 # Sample size for quantiles/histograms
 config.compute.numeric_sample_size = 20_000  # Default
@@ -604,13 +604,13 @@ report.save_html("report.html")
 ### Streaming Large Dataset
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 def read_chunks():
     for i in range(100):
         yield pd.read_parquet(f"data/part-{i}.parquet")
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.numeric_sample_size = 50_000
 config.compute.random_seed = 42
 

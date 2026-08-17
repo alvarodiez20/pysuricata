@@ -267,12 +267,12 @@ t_{\text{UTC}} = t_{\text{local}} - \text{offset}
 
 ## Configuration
 
-Control datetime analysis via `ReportConfig`:
+Control datetime analysis via `ProfileConfig`:
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 
 # Timeline histogram bins
 # (Not separately configurable, uses default 50)

@@ -89,7 +89,7 @@ Process multi-GB dataset in bounded memory.
 
 ```python
 import pandas as pd
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 def read_large_dataset():
     """Generator yielding chunks"""
@@ -97,7 +97,7 @@ def read_large_dataset():
         yield pd.read_parquet(f"data/part-{i}.parquet")
 
 # Configure for large data
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.chunk_size = 250_000
 config.compute.numeric_sample_size = 50_000
 config.compute.random_seed = 42
@@ -114,7 +114,7 @@ Handle datasets with hundreds of columns.
 ```python
 import pandas as pd
 import numpy as np
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 # Create wide dataset
 n_rows, n_cols = 10_000, 500
@@ -124,7 +124,7 @@ df = pd.DataFrame(
 )
 
 # Disable correlations (too expensive for 500 columns)
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.compute_correlations = False
 
 report = profile(df, config=config)
@@ -240,13 +240,13 @@ Streaming evaluation with polars.
 
 ```python
 import polars as pl
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 # Create lazy frame
 lf = pl.scan_csv("large_file.csv").filter(pl.col("value") > 0)
 
 # Configure chunk size
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.chunk_size = 50_000
 
 # Profile lazily evaluated data
@@ -342,10 +342,10 @@ validate_data_quality(df)
 Profile only specific columns.
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 # Large dataset, only analyze key columns
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.columns = ["user_id", "purchase_amount", "timestamp"]
 
 report = profile(df, config=config)
@@ -357,11 +357,11 @@ report.save_html("key_columns_report.html")
 Generate identical reports across runs.
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 from datetime import datetime
 
 # Set random seed
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.random_seed = 42
 
 # Add metadata
@@ -382,10 +382,10 @@ report.save_html(f"report_{datetime.now().strftime('%Y%m%d')}.html")
 Profile on device with limited RAM.
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 # Optimize for low memory
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.chunk_size = 10_000  # Small chunks
 config.compute.numeric_sample_size = 5_000  # Small samples
 config.compute.max_uniques = 1_024  # Small sketches

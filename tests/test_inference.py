@@ -431,3 +431,53 @@ class TestDateSniffing:
         # milliseconds. A generous ceiling still catches a regression to
         # full-column parsing.
         assert time.perf_counter() - start < 1.0
+
+
+class TestAParseIsNotTheSameAsADate:
+    """`notna().mean()` took the parser's word for what counts as a date.
+
+    pandas 3 reads `"T1"` as year 1 -- `T` is the ISO 8601 time designator, so
+    a bare identifier parses instead of failing, and the digits after it are
+    taken as a year: `T32` becomes 2032, `T123` becomes year 123. On a column
+    of `T0..T680` the mixed-format probe reported 99.5% of rows as dates under
+    pandas 3 against 34% under pandas 2, which is the difference between
+    profiling a ticket column as categorical and as datetime.
+
+    The gate now requires a plausible year as well as a successful parse. It is
+    set at 1000, far below the datetime accumulator's own validity window
+    (which starts at 1677-09-21), so it excludes parser artifacts without
+    becoming a new opinion about which historical dates count.
+    """
+
+    @pytest.fixture
+    def inferrer(self):
+        return UnifiedTypeInferrer()
+
+    def test_t_prefixed_identifiers_are_not_dates(self, inferrer):
+        s = pd.Series([f"T{i % 681}" for i in range(200)])
+        assert inferrer.infer_series_type(s).data == "categorical"
+
+    def test_the_dated_fraction_discounts_implausible_years(self):
+        from pysuricata.compute.processing.inference import _dated_fraction
+
+        parsed = pd.to_datetime(
+            pd.Series(["0001-01-01", "0123-01-01", "2020-01-01", "2021-06-01"]),
+            errors="coerce",
+            utc=True,
+        )
+        # Two of four parse to a year a real column would not carry.
+        assert _dated_fraction(parsed) == pytest.approx(0.5)
+
+    def test_it_does_not_narrow_the_window_on_real_history(self, inferrer):
+        """The `-2e18` bound silently nulled every 19th-century date once
+        already. This gate must not reintroduce that."""
+        s = pd.Series(pd.date_range("1850-01-01", periods=200).astype(str))
+        assert inferrer.infer_series_type(s).data == "datetime"
+
+    def test_an_all_unparseable_probe_scores_zero(self):
+        from pysuricata.compute.processing.inference import _dated_fraction
+
+        parsed = pd.to_datetime(
+            pd.Series(["nope", "also nope"]), errors="coerce", utc=True
+        )
+        assert _dated_fraction(parsed) == 0.0

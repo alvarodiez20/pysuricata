@@ -40,6 +40,31 @@ major bump at 1.0 and after.
 | **The baseline file** | The format `check` reads and writes |
 | **Documented defaults** | Changing a default that alters results — `uniques_k`, `numeric_sample_size`, `chunk_size` — is a behavioural break |
 
+### What `schema_version` gates, and what it does not
+
+`schema_version` describes the payload's **shape**, not the values in it.
+
+- **Adding a key does not bump it.** Nothing that read the payload before can
+  break by a key appearing beside the ones it already reads.
+- **Removing or repurposing a key bumps it.** A consumer reading that key is
+  broken by definition.
+- **Correcting a wrong value does not bump it.** A statistic that was wrong and
+  is now right is a bug fix; pinning it under the schema would mean the contract
+  guaranteed the bug.
+
+That last rule was decided on `duplicate_rows_est` (#202), which is the case
+worth recording because it looks like a break and is not. The figure was
+published raw while the HTML report suppressed it below the sketch's resolution,
+so `summarize()` reported over a thousand duplicate rows in frames that had
+exactly zero. It now carries the same suppression the report always applied, and
+`duplicate_rows_uncertainty` was added beside it.
+
+A consumer gating on `duplicate_rows_est > 0` sees that gate stop firing on
+frames where it should never have fired. That is the fix, not a break — and it
+is why the correction belongs where the figure is produced rather than where it
+is drawn. Two call sites producing one statistic, with the threshold on only one
+of them, is how the two surfaces drifted apart in the first place.
+
 ## What is not covered
 
 Depending on any of these is depending on an implementation detail. They change
@@ -116,8 +141,9 @@ Deliberately about evidence rather than dates.
 
 1. **Two consecutive minor releases with no breaking change, unforced.** A
    settled shape, not a freeze.
-2. **The deprecation queue is empty.** `ReportConfig` is currently aliased to
-   `ProfileConfig` with no warning; that has to be resolved, not carried.
+2. **The deprecation queue is empty.** `ReportConfig` is aliased to
+   `ProfileConfig` and now warns on use, naming **0.3.0** as the release that
+   removes it (#210). The queue is not empty until that removal happens.
 3. **Every approximate value carries its error bound.** The quantiles (#146) and
    the duplicate count (#161) are done; the distinct count already was.
 4. **No known correctness bug in a covered path.**

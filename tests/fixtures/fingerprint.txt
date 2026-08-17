@@ -934,7 +934,6 @@ attr::col_name::count	10
 attr::col_name::count	302
 attr::col_name::count	489
 attr::col_name::count	90
-kv::::booked 311	56
 kv::::columns	8
 kv::::duplicates	0
 kv::::missing	21.9%

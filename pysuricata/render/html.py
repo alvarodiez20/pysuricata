@@ -169,22 +169,21 @@ def render_html_snapshot(
     )
     total_cells = n_rows * n_cols
     missing_overall = f"{total_missing_cells:,} ({(total_missing_cells / max(1, total_cells) * 100):.1f}%)"
-    dup_rows, dup_pct = row_kmv.approx_duplicates()
     # The duplicate count is `rows - distinct`, so the whole absolute error of
     # the distinct estimate lands on it -- a quantity that is usually far
     # smaller. `≈ KMV sketch` alone read as the sketch's own ~1%, which is the
     # error on a different number: at 200,000 rows with 2,000 true duplicates
     # the figure came back 47% high while the distinct estimate was 0.48% off.
-    dup_sigma = (
-        row_kmv.duplicates_uncertainty()
-        if hasattr(row_kmv, "duplicates_uncertainty")
-        else 0
-    )
-    dup_resolvable = (
-        row_kmv.duplicates_are_resolvable()
-        if hasattr(row_kmv, "duplicates_are_resolvable")
-        else True
-    )
+    #
+    # The threshold itself is applied by `RowKMV.duplicates()`, not here. It
+    # used to live in this function alone, so the report suppressed an
+    # unresolvable count while `summarize()` published it raw -- the report
+    # correct, the versioned payload wrong.
+    if hasattr(row_kmv, "duplicates"):
+        dup_rows, dup_pct, dup_sigma, dup_resolvable = row_kmv.duplicates()
+    else:  # pragma: no cover - a row sketch that predates `duplicates()`
+        dup_rows, dup_pct = row_kmv.approx_duplicates()
+        dup_sigma, dup_resolvable = 0, True
     if dup_resolvable:
         duplicates_value = f"{dup_rows:,}"
         # No bound when the count is exact -- KMV counts exactly until it has

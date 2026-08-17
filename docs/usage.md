@@ -154,9 +154,9 @@ report.save_json("stats.json")
 Set `random_seed` to make histogram sampling deterministic across runs:
 
 ```python
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.random_seed = 42
 
 report = profile(df, config=config)
@@ -169,7 +169,7 @@ A complete example covering all four column types:
 
 ```python
 import pandas as pd
-from pysuricata import profile, ReportConfig
+from pysuricata import profile, ProfileConfig
 
 df = pd.DataFrame({
     "amount": [1.0, 2.5, None, 4.0, 5.5],
@@ -178,7 +178,7 @@ df = pd.DataFrame({
     "flag": [True, False, True, None, False],
 })
 
-config = ReportConfig()
+config = ProfileConfig()
 config.compute.random_seed = 0
 
 report = profile(df, config=config)
