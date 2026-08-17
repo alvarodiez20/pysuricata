@@ -14,6 +14,32 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- **The correlations section says which kind of empty it is** ([#243]). Phase
+  6.1's enriched copy landed on the path where pairs exist and all come back
+  weak — the interesting case, and the one both example reports hit. The two
+  paths that mean *nothing to compare* kept a single bare sentence,
+  "Correlation analysis requires at least 2 numeric columns", and they are the
+  ones a small frame lands on.
+
+  That sentence states the rule and none of the case. A reader looking at a
+  correlations section already knows a correlation needs two things; what they
+  cannot see is how many this frame has, which one it is when it has one, or —
+  when it has several and still shows nothing — why. All three are in hand
+  where the message is written.
+
+  One numeric column now names it. None points at the typing rather than at the
+  data: **"no column in this report is profiled as numeric"**, not "this
+  dataset has no numeric columns", because the second is a claim about the
+  frame and it can be false — a column that never varies is reclassified as
+  categorical, so two constant float columns reached that branch and would have
+  been told the dataset holds no numbers. And numeric columns with no usable
+  pair now name the two reachable causes, a column that never varies and too
+  few rows with a value in both columns, instead of reporting the absence.
+
+[#243]: https://github.com/alvarodiez20/pysuricata/issues/243
+
 ### Fixed
 
 - **A histogram bin reported a count of -1** ([#253]). Every variant of a

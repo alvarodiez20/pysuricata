@@ -25,6 +25,7 @@ import pandas as pd
 import pytest
 
 from pysuricata import profile
+from pysuricata.render.correlations_section import CorrelationsSectionRenderer
 
 
 def _section(html: str) -> str:
@@ -135,10 +136,22 @@ class TestWeakIsAFindingNotAnAbsence:
         assert "numeric pair is weakly related" in section
 
     def test_fewer_than_two_numeric_columns_says_why(self):
-        out = profile(
-            pd.DataFrame({"a": [1.0] * 50, "t": list("xy") * 25}), seed=0
-        ).html
-        assert "at least 2 numeric columns" in _section(out)
+        """It says *why* now rather than restating the rule.
+
+        This used to assert `"at least 2 numeric columns"`, which is the
+        sentence #243 was filed about: it tells a reader what a correlation
+        needs, which they know, and nothing about the frame in front of them.
+
+        Note what this fixture actually is -- `a` is constant, so it is
+        reclassified as categorical and the frame reaches the section with
+        **zero** numeric columns, not one. The copy has to hold for that
+        without telling the reader their float column is not a number.
+        """
+        section = _section(
+            profile(pd.DataFrame({"a": [1.0] * 50, "t": list("xy") * 25}), seed=0).html
+        )
+        assert "profiled as numeric" in section
+        assert "at least 2 numeric columns" not in section
 
 
 # --------------------------------------------------------------------------- #
@@ -240,3 +253,78 @@ class TestTheEmojiAreGone:
     def test_none_reach_the_report(self, matrix, ranked, weak, emoji):
         for html in (matrix, ranked, weak):
             assert emoji not in html
+
+
+# --------------------------------------------------------------------------- #
+# The two states that mean "nothing to compare"
+# --------------------------------------------------------------------------- #
+class TestAnEmptyStateSaysWhichEmptyItIs:
+    """#243. Phase 6.1's enriched copy landed on the path where pairs exist and
+    all come back weak -- the interesting case, and the one both example reports
+    hit. The two paths that mean *nothing to compare* kept a single bare
+    sentence, and they are the ones a small frame lands on.
+
+    "Correlation analysis requires at least 2 numeric columns" states the rule
+    and none of the case. A reader looking at a correlations section already
+    knows a correlation needs two things; what they cannot see is how many this
+    frame has, which one it is when it has one, or -- when it has several and
+    still shows nothing -- why.
+    """
+
+    @staticmethod
+    def _text(frame: pd.DataFrame) -> str:
+        section = _section(profile(frame, seed=0).html)
+        return re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", section)).strip()
+
+    def test_one_numeric_column_is_named(self):
+        frame = pd.DataFrame({"age": np.arange(60.0), "grade": list("ab") * 30})
+        text = self._text(frame)
+        assert "age" in text, text
+        assert "only numeric column" in text, text
+
+    def test_no_numeric_column_points_at_the_typing(self):
+        """And says it about *the report*, not about the data.
+
+        "This dataset has no numeric columns" is a claim about the frame and it
+        can be false: a column that never varies is reclassified as
+        categorical, so two constant float columns reach here and would be told
+        the dataset holds no numbers. The report's own Summary says 0 numeric
+        for that frame, so the sentence has to agree with the classification
+        rather than contradict the input.
+        """
+        frame = pd.DataFrame({"a": list("xyz") * 20, "b": list("pq") * 30})
+        text = self._text(frame)
+        assert "profiled as numeric" in text, text
+        assert "dataset has no numeric" not in text, text
+
+    def test_two_constant_floats_are_not_told_they_are_not_numbers(self):
+        frame = pd.DataFrame({"a": [1.0] * 60, "b": [2.0] * 60})
+        text = self._text(frame)
+        assert "profiled as numeric" in text, text
+
+    def test_numeric_columns_with_no_usable_pair_say_why(self):
+        """Reachable with the estimator absent -- correlations switched off, or
+        a frame the estimator never ran on -- and the bare copy could not tell
+        that apart from having no numeric columns at all."""
+        renderer = CorrelationsSectionRenderer()
+        out = renderer.render_section(None, ["a", "b"])
+        text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", out)).strip()
+        assert "no pair produced a usable coefficient" in text, text
+        assert "never varies" in text, text
+
+    def test_the_weak_state_is_untouched(self):
+        """The path that was already enriched must stay that way -- it is the
+        common one."""
+        rng = np.random.default_rng(0)
+        frame = pd.DataFrame({"a": rng.normal(0, 1, 300), "b": rng.normal(0, 1, 300)})
+        text = self._text(frame)
+        assert "weakly related" in text, text
+        assert "strongest is" in text, text
+
+    def test_no_state_prints_the_old_bare_rule(self):
+        for frame in (
+            pd.DataFrame({"age": np.arange(60.0), "g": list("ab") * 30}),
+            pd.DataFrame({"a": list("xyz") * 20}),
+            pd.DataFrame({"a": [1.0] * 60, "b": [2.0] * 60}),
+        ):
+            assert "requires at least 2 numeric columns" not in self._text(frame)

@@ -36,9 +36,7 @@ class CorrelationsSectionRenderer:
             Complete HTML string for correlations section
         """
         if len(numeric_columns) < 2:
-            return self._render_no_correlations_state(
-                "Correlation analysis requires at least 2 numeric columns"
-            )
+            return self._render_too_few_columns_state(numeric_columns)
 
         # Everything, not only what clears the threshold. The pairs below it
         # were computed either way, and they are the *answer* in the common
@@ -129,9 +127,7 @@ class CorrelationsSectionRenderer:
         turns a shrug into an answer, and the numbers were already to hand.
         """
         if not every_pair:
-            return self._render_no_correlations_state(
-                "No numeric pairs were available to compare"
-            )
+            return self._render_nothing_comparable_state()
 
         checked = len(every_pair)
         strongest = every_pair[0]
@@ -373,19 +369,65 @@ class CorrelationsSectionRenderer:
 
         return f'<div class="correlation-matrix-container">{"".join(matrix_html)}</div>'
 
-    def _render_no_correlations_state(self, message: str) -> str:
-        """Render empty state when no correlations are available.
+    def _render_too_few_columns_state(self, numeric_columns: list[str]) -> str:
+        """Fewer than two numeric columns, so there is no pair to correlate.
 
-        Args:
-            message: Message to display
-
-        Returns:
-            HTML string for empty state
+        This used to read "Correlation analysis requires at least 2 numeric
+        columns", which states the rule and none of the case. The reader
+        already knows a correlation needs two things; what they do not know is
+        how many this frame has, or which one it is when it has one. Both are
+        in hand at this point, and phase 6.1's enriched copy landed only on the
+        path where pairs exist and come back weak -- so the two states that
+        actually mean *nothing to compare* kept the bare line, and they are the
+        ones a small frame hits. See #243.
         """
+        count = len(numeric_columns)
+        if count == 1:
+            only = _html.escape(numeric_columns[0])
+            body = (
+                f"<p><strong>{only}</strong> is the only numeric column in this "
+                "dataset. A correlation describes how two numbers move "
+                "together, so one column has nothing to be compared with.</p>"
+            )
+        else:
+            # "No column *is profiled as* numeric", not "this dataset has no
+            # numeric columns". The second is a claim about the data and it can
+            # be false: a column that never varies is reclassified as
+            # categorical, so a frame of two constant floats reaches here and
+            # would be told it has no numbers in it. The report's own Summary
+            # says 0 numeric for the same frame, so this stays consistent with
+            # it while pointing at the classification, which is the thing the
+            # reader can actually look into.
+            body = (
+                "<p><strong>No column in this report is profiled as "
+                "numeric</strong>, so there is nothing to correlate.</p>"
+                "<p class='micro-label'>Numbers stored as text are profiled as "
+                "categorical, and a column that never varies is too — check the "
+                "Variables section for how each one was typed.</p>"
+            )
         return f"""
         <div class="correlations-section-redesign">
+            <div class="no-correlations-state">{body}</div>
+        </div>
+        """
+
+    def _render_nothing_comparable_state(self) -> str:
+        """Two or more numeric columns, and still not one usable coefficient.
+
+        The reachable causes are worth naming rather than summarising as "no
+        pairs available", because each one is actionable and the reader cannot
+        tell them apart from the sentence alone: a column that never varies has
+        no correlation defined with anything, and an estimator that saw too few
+        complete rows has nothing to divide by.
+        """
+        return """
+        <div class="correlations-section-redesign">
             <div class="no-correlations-state">
-                <p>{_html.escape(message)}</p>
+                <p>There are numeric columns here, but <strong>no pair produced
+                a usable coefficient</strong>.</p>
+                <p class="micro-label">A correlation is undefined when a column
+                never varies, and cannot be estimated when too few rows have a
+                value in both columns of a pair.</p>
             </div>
         </div>
         """
