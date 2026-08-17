@@ -26,7 +26,7 @@ from pysuricata import (
     UnsupportedDataError,
     profile,
 )
-from pysuricata.render.triage import extract_chips
+from pysuricata.render.triage import extract_chips, flag_slug
 
 
 def _flags(html: str) -> list[str]:
@@ -39,14 +39,30 @@ def _flags(html: str) -> list[str]:
     the chips started carrying their values (#118).
 
     Labels now lead with the value: `99.5% quasi-constant`, not
-    `Quasi-constant`. `_has` matches on the name.
+    `Quasi-constant`. `_has` matches on the slug.
     """
-    return [label for _, label in extract_chips(html)]
+    return [label for _, label, _ in extract_chips(html)]
+
+
+def _slugs(html: str) -> list[str]:
+    """The quality chips, by identity rather than by face."""
+    return [slug for _, _, slug in extract_chips(html)]
 
 
 def _has(html: str, name: str) -> bool:
-    """Whether a flag of this name is present, whatever value it carries."""
-    return any(name.lower() in label.lower() for label in _flags(html))
+    """Whether a flag of this name is present, whatever value it carries.
+
+    On the slug, and exactly. This used to be a substring test over the label,
+    which cannot separate `constant` from `quasi-constant` -- one contains the
+    other, so asking for the first found the second. The chips carry a stable
+    `data-flag` since #238, which answers the question the substring was
+    approximating.
+
+    The name goes through `flag_slug` rather than a local lowercase-and-hyphen:
+    these labels carry non-breaking hyphens, and the callers below spell them
+    that way. One normalisation, the same one the renderer uses.
+    """
+    return flag_slug(name) in _slugs(html)
 
 
 class TestQualityFlagsDoNotDependOnTheRowCount:
