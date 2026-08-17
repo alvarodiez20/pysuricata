@@ -16,6 +16,29 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **The stylesheet's comments no longer ship with every report** ([#39]). The
+  report inlines its own CSS, so all **545 of them went out with it: 74,036
+  bytes, 33% of the inlined stylesheet and 12.9% of the whole document.** The
+  Titanic report drops from **574,578 to 499,802 bytes — 13% — for no change a
+  reader can see.** The comments stay in `static/css/`, which is the only place
+  anybody reads them.
+
+  Verified rather than assumed: the same report was rendered twice in Chromium,
+  once with the comments and once without, and the *computed* style of every
+  element compared. **Zero of 3,978 elements differ.** A regex over a
+  stylesheet is only safe if the browser agrees, so the browser was asked.
+
+  Comments and the blank lines they leave, and nothing else. Collapsing
+  whitespace or rewriting values is a minifier, which is a much larger promise
+  to keep correct — `content` strings and `url()` payloads both have rules a
+  naive pass gets wrong. There are none in these stylesheets today, and this
+  stays safe if one appears tomorrow. `/*!` is honoured, so a licence header
+  added later survives.
+
+  Found by the ratchet rather than by looking for it: the datetime-chart fix
+  below added 907 bytes of CSS and pushed the report 578 bytes over its budget.
+  Being stopped by that is the ratchet working, and the honest answer was not
+  to write shorter comments. `BYTES_BASELINE` drops 574,000 → 500,000.
 - **`Processed bytes (≈)` left the primary stat row on the numeric and datetime
   cards** ([#209]). UX-21 asked for this; #104 dropped the donut and the stat-row
   half never landed. The numeric card's right-hand table read Min, Q1, Median,

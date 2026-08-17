@@ -20,14 +20,23 @@ def test_load_template_missing(tmp_path):
 
 
 def test_load_css_ok(tmp_path):
-    css = "body{color:#123;} /* Ω */"
+    """Wraps in `<style>`, keeps the declarations, drops the comments.
+
+    The non-ASCII probe moved out of the comment and into a declaration. It was
+    `/* Ω */`, which checked the UTF-8 round-trip through the only part of the
+    file that is now deliberately discarded -- so left there it would have gone
+    on passing while testing nothing.
+    """
+    css = 'body{color:#123;} /* a comment */ .x::after{content:"Ω";}'
     p = tmp_path / "style.css"
     p.write_text(css, encoding="utf-8")
     from pysuricata.utils import load_css
 
     out = load_css(str(p))
     assert out.startswith("<style>") and out.endswith("</style>")
-    assert css in out
+    assert "body{color:#123;}" in out
+    assert 'content:"Ω";' in out
+    assert "a comment" not in out
 
 
 def test_load_css_missing(tmp_path):

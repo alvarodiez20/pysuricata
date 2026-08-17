@@ -128,7 +128,16 @@ class TestTheReportIsOneFile:
 #: gets there. Lower this when it drops -- the test says so when it does, and
 #: #206 is the first time it did: 601,000 -> 574,000, by moving `vector-effect`
 #: out of every mark and trimming coordinates to two decimals.
-BYTES_BASELINE = 574_000
+#:
+#: 574,000 -> 500,000 by not shipping the stylesheet's comments. The report
+#: inlines its own CSS, so all 545 of them were going out with every report:
+#: **74,036 bytes, 33% of the inlined stylesheet and 12.9% of the document.**
+#: They stay in `static/css/`, which is the only place anyone reads them.
+#:
+#: Found by the ratchet rather than by looking for it. A datetime-chart change
+#: added 907 bytes of CSS and pushed the report 578 over, which is a fair thing
+#: to be stopped by -- and the honest fix was not to write shorter comments.
+BYTES_BASELINE = 500_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
