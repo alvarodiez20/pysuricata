@@ -16,6 +16,61 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **A numeric card drew every histogram variant at once.** The bins and scale
+  toggles offer six combinations, and all six were on screen simultaneously —
+  stacked, overlapping their own captions, in a card **1,671px tall instead of
+  ~570px**. The toggles appeared to do nothing because every option was already
+  displayed.
+
+  A vestigial `display: block` was the whole cause. The rule that carried it
+  once forced `height: 100%` onto a child `<svg>`; when that was removed in
+  #167 the declaration was left behind, and at one id and five classes it
+  outranks both `.hist-variants .variant { display: none }` (one id, two
+  classes) and `.hist-variants .variant.active { display: block }` (one id,
+  three). Only numeric was affected — categorical variants are `.cat.variant`,
+  which that selector never matched, which is why one card kind showed a single
+  chart and the other showed all of them.
+- **The extreme y-axis labels were nudged the wrong way.** The stylesheet pulls
+  the top and bottom labels inward, "or the top label floats above the plot and
+  the `0` hangs below the axis" — its own words. It keyed that on
+  `:first-of-type` and `:last-of-type`, but ticks are emitted in *ascending*
+  order, so the first span is the bottom of the axis and the last is the top.
+  The corrections were therefore applied to the opposite ends and produced
+  exactly the two defects they exist to prevent. The renderer now tags each
+  extreme with `data-edge`, so the nudge no longer depends on DOM order.
+- **The caption was drawn on top of the x-axis labels.** `.hist__area` was
+  pinned to `--hist-height` and the tick row lives inside it, so that row
+  overflowed the box without contributing any layout height and the caption
+  below was placed over it — measured at ticks `y[2026..2044]` against caption
+  `y[2030..2044]`. The height moved to the plot itself.
+- **Categorical bar thickness was inversely proportional to cardinality**
+  ([#145] in part). The chart divided a fixed height among its bars, so a
+  two-level column drew two **218px** slabs where a five-level column drew
+  87px, and the same chart read as a different chart for every column. A bar
+  now has a height and the chart is however tall that makes it: 35px per bar
+  at any level count, and cards fall from a uniform 743px to 405–542px.
+
+  The chart is also authored at 1,100 units wide rather than 420. It was being
+  stretched to fill a ~1,150px column, which multiplied everything inside it by
+  2.7 — so an 11px bar label rendered at ~30px, three times the size of the
+  stat row beneath it.
+- **The count printed inside a bar was unreadable.** It used `--muted`, a grey
+  chosen against the page, and on the bar fill that measures **1.20:1** against
+  the 4.5:1 AA asks of text this size. The value sits inside the bar when the
+  bar is wide enough and past its end when it is not — two different
+  backgrounds that cannot share one colour — so the renderer now says which,
+  and the inside case takes `--paper`: 6.12:1 in light, 6.28:1 in dark.
+
+  `tests/test_contrast.py` already declared `("paper", "data-2", "count printed
+  inside a default bar")` as the correct pairing. The palette was right and the
+  chart was not using it.
+
+  All five were found by rendering a report in Chromium and measuring the
+  boxes, which is the only way any of them are visible: the fingerprint
+  deliberately discards presentation, and every other check reads values rather
+  than geometry. `tests/test_chart_layout.py` guards them from the markup and
+  the stylesheet, and twelve of its fifteen cases fail against the previous
+  behaviour.
 - **A polars column of timestamp strings no longer loses every value**
   ([#214]). 200 valid ISO-8601 timestamps profiled through polars came back
   `count=0, missing=200` — the column still labelled `datetime`, so nothing

@@ -59,14 +59,19 @@
 /*# =============================================
 #   Categorical mini‑bars (Top‑N) – sizing + typography
 #   ============================================= */
-/* Make categorical variants fill the chart column just like histograms */
+/* The categorical chart sizes itself to its bars; it does not fill the column
+   the way a histogram does. A histogram is a fixed-height plot with a variable
+   number of bins inside it, so filling is right there. A bar chart is a list,
+   and stretching it to a fixed height made bar thickness a function of how many
+   levels the column happened to have -- two levels became two 218px slabs.
+   `height: auto` lets the viewBox the renderer computed decide. */
 #pysuricata-report .var-card__body .var-chart .hist-variants .cat.variant {
-  height: 100%;
+  height: auto;
 }
 
 #pysuricata-report .var-card__body .var-chart .hist-variants .cat.variant>svg {
   width: 100%;
-  height: 100%;
+  height: auto;
   display: block;
 }
 
@@ -92,6 +97,14 @@
 #pysuricata-report .cat-svg .bar-value {
   font-size: 11px;
   fill: var(--muted);
+}
+
+/* Drawn on the bar, not on the paper. `--muted` is a grey chosen against the
+   page, and on the bar fill it measured 1.20:1 -- the count was there and
+   unreadable on every bar wide enough to hold it. The renderer tags which
+   background the text landed on, because it is the only thing that knows. */
+#pysuricata-report .cat-svg .bar-value.is-inside {
+  fill: var(--paper);
 }
 
 /* Optional: keep long label/value text from poking outside on very narrow cards */

@@ -38,6 +38,26 @@ class CategoricalConfig:
     min_gutter: int = 60
     max_gutter: int = 180
 
+    #: The bar chart sizes itself to its content, unlike the numeric histogram,
+    #: which is a fixed-height plot with a variable number of bins inside it.
+    #:
+    #: It used to borrow `ChartDimensions.height` (160) and divide it among the
+    #: bars, so bar thickness was inversely proportional to how many levels the
+    #: column had: a two-level column drew two 218px slabs, five levels drew
+    #: 87px, and the same chart read as a different chart at every cardinality.
+    #: A bar has a height; the chart is however tall that makes it.
+    bar_height: int = 34
+    bar_gap: int = 10
+    chart_margin_y: int = 8
+
+    #: Wide enough that the SVG is not scaled up much to fill the chart column,
+    #: which is what made 11px labels render at ~30px: the viewBox was 420 units
+    #: across and the column is roughly 1,100px, so everything inside was
+    #: multiplied by 2.7. At this width the bar labels are the size the
+    #: stylesheet asks for, and match the histogram's HTML tick labels beside
+    #: them.
+    chart_width: int = 1100
+
 
 @dataclass(frozen=True)
 class DateTimeConfig:

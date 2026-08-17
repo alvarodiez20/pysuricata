@@ -66,11 +66,18 @@
   white-space: nowrap;
 }
 
-#pysuricata-report .hist__y:first-of-type {
+/* Keyed on which end of the axis the label sits at, not on DOM order. The
+   ticks are emitted ascending, so the *first* span is the `0` at the bottom
+   and the *last* is the top of the range -- the opposite of how
+   `:first-of-type` and `:last-of-type` read. The nudges were therefore applied
+   to the wrong ends, and produced the two defects the rule above exists to
+   prevent: the top label overhung the plot by half its height and was clipped,
+   and the `0` hung below the axis into the x-tick row. */
+#pysuricata-report .hist__y[data-edge="top"] {
   transform: translateY(-2px);
 }
 
-#pysuricata-report .hist__y:last-of-type {
+#pysuricata-report .hist__y[data-edge="bottom"] {
   transform: translateY(-100%);
 }
 
@@ -94,15 +101,23 @@
   color: var(--muted);
 }
 
+/* No fixed height here. The x-tick row is a child of this box, so pinning the
+   box to `--hist-height` made that row overflow it without contributing any
+   layout height -- and `.hist__caption`, which flows after `.hist__plot`, was
+   then placed at 200px and drawn straight over the tick labels. Measured:
+   ticks at y[2026..2044], caption at y[2030..2044], overlapping in x too.
+
+   The height belongs to the plot itself, below. The gutter keeps its own
+   `--hist-height` so the y labels' percentage offsets still resolve against
+   the plot rather than against the plot plus its axis. */
 #pysuricata-report .hist__area {
   position: relative;
-  height: var(--hist-height);
 }
 
 #pysuricata-report .hist-svg {
   display: block;
   width: 100%;
-  height: 100%;
+  height: var(--hist-height);
 }
 
 /* ---- marks ---------------------------------------------------- */
