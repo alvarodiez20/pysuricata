@@ -56,7 +56,9 @@ quoted when both sides were measured in the same round-robin run.
   reach. `docs-check.yml` triggered on `README.md` but not on
   `benchmarks/check_docs.py`, so a pull request that narrowed or broke the
   checker was the one pull request the checker did not run on; it now triggers
-  on the checker and on `build_docs_assets.py` as well. And every claim #151
+  on every script the job runs — `check_docs.py`, `build_docs_assets.py`,
+  `regenerate_example_report.py` — and on the workflow file itself, since
+  editing the trigger list is exactly the edit that most needs the job to run. And every claim #151
   was actually filed about — sketch `k`, numeric sample size, subcommand count
   — is *prose*, not a fence: `k = sketch size (default 2048)` is italic text
   under a table, and the CLI section is a `bash` block, which `check_docs`

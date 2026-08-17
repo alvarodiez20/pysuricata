@@ -95,10 +95,27 @@ class TestTheReadmeIsInTheCheckedSet:
         )
 
     def test_the_checker_itself_triggers_the_check(self):
-        """Changing the checker must re-run it over everything it covers."""
+        """Changing the checker must re-run it over everything it covers.
+
+        Otherwise the pull request that narrows what is checked -- or breaks it
+        outright -- is the one pull request the check does not run on."""
         workflow = WORKFLOW.read_text(encoding="utf-8")
 
-        assert "benchmarks/check_docs.py" in workflow
+        for script in (
+            "benchmarks/check_docs.py",
+            "scripts/build_docs_assets.py",
+            "scripts/regenerate_example_report.py",
+        ):
+            assert script in workflow, (
+                f"docs-check.yml runs {script} but does not trigger on it"
+            )
+
+    def test_the_workflow_triggers_on_itself(self):
+        """One step further out: editing the trigger list is exactly the edit
+        that most needs the job to run."""
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+
+        assert ".github/workflows/docs-check.yml" in workflow
 
 
 class TestTheProseNumbersMatchTheLibrary:
