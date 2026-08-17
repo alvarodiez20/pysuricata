@@ -3961,6 +3961,7 @@ body.suricata-standalone:not(.light) {
 
 .legend-color.false {
   background: var(--data-4);
+  border: 1px solid var(--rule-strong);
 }
 
 .legend-color.missing {
@@ -9048,9 +9049,9 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-17 18:21:28</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-17 18:37:31</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <span><span class="k">Profiled in</span> <span class="v">0.14 s</span></span>
+            <span><span class="k">Profiled in</span> <span class="v">0.13 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Shape</span> <span class="v">891 rows × 12 columns</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
@@ -9092,7 +9093,7 @@ body.suricata-standalone:not(.light) {
             </div>
             <div class="stat stat--elapsed">
               <div class="stat__cap">Elapsed</div>
-              <div class="stat__val">0.14 s</div>
+              <div class="stat__val">0.13 s</div>
               <div class="stat__sub">wall clock</div>
             </div>
           </div>
@@ -9142,7 +9143,7 @@ body.suricata-standalone:not(.light) {
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260817-182128-0377" data-original-markdown=""
+            data-report-id="20260817-183731-6593" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>
@@ -9179,9 +9180,9 @@ body.suricata-standalone:not(.light) {
           
           <section class="needs-attention" id="needs-attention">
             <h3 class="attention-title">
-              <strong>5</strong> of 12 columns need a look
+              <strong>7</strong> of 12 columns need a look
             </h3>
-            <ul class="attention-list"><li class="attention-item"><a class="attention-col" href="#col_Fare">Fare</a><span class="attention-flags"><span class="flag bad" data-flag="33-20-heavy-tailed">33.20 heavy‑tailed</span><span class="flag bad" data-flag="13-0-many-outliers">13.0% many outliers</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Age">Age</a><span class="attention-flags"><span class="flag bad" data-flag="1-5-many-outliers">1.5% many outliers</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Cabin">Cabin</a><span class="attention-flags"><span class="flag bad" data-flag="77-1-missing">77.1% missing</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Name">Name</a><span class="attention-flags"><span class="flag warn" data-flag="high-cardinality">High cardinality</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Ticket">Ticket</a><span class="attention-flags"><span class="flag warn" data-flag="high-cardinality">High cardinality</span></span></li></ul>
+            <ul class="attention-list"><li class="attention-item"><a class="attention-col" href="#col_Age">Age</a><span class="attention-flags"><span class="flag warn" data-flag="missing">19.9% missing</span><span class="flag bad" data-flag="many-outliers">1.5% many outliers</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Fare">Fare</a><span class="attention-flags"><span class="flag bad" data-flag="heavy-tailed">33.20 heavy‑tailed</span><span class="flag bad" data-flag="many-outliers">13.0% many outliers</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Cabin">Cabin</a><span class="attention-flags"><span class="flag bad" data-flag="missing">77.1% missing</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Embarked">Embarked</a><span class="attention-flags"><span class="flag warn" data-flag="dominant-category">72.4% dominant category</span><span class="flag warn" data-flag="missing">0.2% missing</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Name">Name</a><span class="attention-flags"><span class="flag warn" data-flag="high-cardinality">High cardinality</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Parch">Parch</a><span class="attention-flags"><span class="flag warn" data-flag="dominant-category">76.1% dominant category</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Ticket">Ticket</a><span class="attention-flags"><span class="flag warn" data-flag="high-cardinality">High cardinality</span></span></li></ul>
             <p class="muted small attention-hint">
               Click a column to jump to its card, or a chip to filter the list below.
             </p>
@@ -9388,14 +9389,14 @@ body.suricata-standalone:not(.light) {
             </div>
         </article>
         
-        <article class="var-card" id="col_Age" data-type="numeric" data-name="Age" data-flags="1-5-many-outliers">
+        <article class="var-card" id="col_Age" data-type="numeric" data-name="Age" data-flags="many-outliers missing">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname" title="Age">Age</span>
                     <span class="badge">Numeric</span>
                     <span class="dtype chip">float64</span>
                     
-                    <ul class='quality-flags'><li class="flag warn" data-threshold="≤20%" data-value="19.9%" title="threshold: ≤20%">19.9% missing</li><li class="flag good">Positive‑only</li><li class="flag bad" data-threshold=">1%" data-value="1.5%" title="threshold: &gt;1%">1.5% many outliers</li></ul>
+                    <ul class='quality-flags'><li class="flag warn" data-threshold="≤20%" data-value="19.9%" data-flag="missing" title="threshold: ≤20%">19.9% missing</li><li class="flag good">Positive‑only</li><li class="flag bad" data-threshold=">1%" data-value="1.5%" data-flag="many-outliers" title="threshold: &gt;1%">1.5% many outliers</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/numeric/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Numeric analysis" aria-label="View Numeric analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -9449,7 +9450,7 @@ body.suricata-standalone:not(.light) {
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">int64</span>
                     
-                    <ul class="quality-flags"><li class="flag" data-threshold='empty string or "0"' data-value="608">608 empty or zero</li></ul>
+                    <ul class="quality-flags"><li class="flag" data-threshold='empty string or "0"' data-value="608" data-flag="empty-or-zero">608 empty or zero</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -9488,14 +9489,14 @@ body.suricata-standalone:not(.light) {
             </div>
         </article>
         
-        <article class="var-card" id="col_Parch" data-type="categorical" data-name="Parch" data-flags="">
+        <article class="var-card" id="col_Parch" data-type="categorical" data-name="Parch" data-flags="dominant-category">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Parch</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">int64</span>
                     
-                    <ul class="quality-flags"><li class="flag warn" data-threshold="one level dominates" data-value="76.1%" title="threshold: one level dominates">76.1% dominant category</li><li class="flag" data-threshold='empty string or "0"' data-value="678">678 empty or zero</li></ul>
+                    <ul class="quality-flags"><li class="flag warn" data-threshold="one level dominates" data-value="76.1%" data-flag="dominant-category" title="threshold: one level dominates">76.1% dominant category</li><li class="flag" data-threshold='empty string or "0"' data-value="678" data-flag="empty-or-zero">678 empty or zero</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -9564,14 +9565,14 @@ body.suricata-standalone:not(.light) {
             </div>
         </article>
         
-        <article class="var-card" id="col_Fare" data-type="numeric" data-name="Fare" data-flags="13-0-many-outliers 33-20-heavy-tailed">
+        <article class="var-card" id="col_Fare" data-type="numeric" data-name="Fare" data-flags="heavy-tailed many-outliers">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname" title="Fare">Fare</span>
                     <span class="badge">Numeric</span>
                     <span class="dtype chip">float64</span>
                     
-                    <ul class='quality-flags'><li class="flag warn" data-threshold=">1" data-value="4.78" title="threshold: &gt;1">4.78 skewed Right</li><li class="flag bad" data-threshold="|kurtosis| > 3" data-value="33.20" title="threshold: |kurtosis| &gt; 3">33.20 heavy‑tailed</li><li class="flag" data-threshold="Detected rounding" data-value="54.0%" title="threshold: Detected rounding">54.0% heaping</li><li class="flag bad" data-threshold=">1%" data-value="13.0%" title="threshold: &gt;1%">13.0% many outliers</li></ul>
+                    <ul class='quality-flags'><li class="flag warn" data-threshold=">1" data-value="4.78" data-flag="skewed-right" title="threshold: &gt;1">4.78 skewed Right</li><li class="flag bad" data-threshold="|kurtosis| > 3" data-value="33.20" data-flag="heavy-tailed" title="threshold: |kurtosis| &gt; 3">33.20 heavy‑tailed</li><li class="flag" data-threshold="Detected rounding" data-value="54.0%" data-flag="heaping" title="threshold: Detected rounding">54.0% heaping</li><li class="flag bad" data-threshold=">1%" data-value="13.0%" data-flag="many-outliers" title="threshold: &gt;1%">13.0% many outliers</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/numeric/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Numeric analysis" aria-label="View Numeric analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -9618,14 +9619,14 @@ body.suricata-standalone:not(.light) {
             </div>
         </article>
         
-        <article class="var-card" id="col_Cabin" data-type="categorical" data-name="Cabin" data-flags="77-1-missing">
+        <article class="var-card" id="col_Cabin" data-type="categorical" data-name="Cabin" data-flags="missing">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Cabin</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">object</span>
                     
-                    <ul class="quality-flags"><li class="flag bad" data-threshold=">20%" data-value="77.1%" title="threshold: &gt;20%">77.1% missing</li></ul>
+                    <ul class="quality-flags"><li class="flag bad" data-threshold=">20%" data-value="77.1%" data-flag="missing" title="threshold: &gt;20%">77.1% missing</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -9648,14 +9649,14 @@ body.suricata-standalone:not(.light) {
             </div>
         </article>
         
-        <article class="var-card" id="col_Embarked" data-type="categorical" data-name="Embarked" data-flags="">
+        <article class="var-card" id="col_Embarked" data-type="categorical" data-name="Embarked" data-flags="dominant-category missing">
             <header class="var-card__header">
                 <div class="title">
                     <span class="colname">Embarked</span>
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">object</span>
                     
-                    <ul class="quality-flags"><li class="flag warn" data-threshold="one level dominates" data-value="72.4%" title="threshold: one level dominates">72.4% dominant category</li><li class="flag warn" data-threshold="≤20%" data-value="0.2%" title="threshold: ≤20%">0.2% missing</li></ul>
+                    <ul class="quality-flags"><li class="flag warn" data-threshold="one level dominates" data-value="72.4%" data-flag="dominant-category" title="threshold: one level dominates">72.4% dominant category</li><li class="flag warn" data-threshold="≤20%" data-value="0.2%" data-flag="missing" title="threshold: ≤20%">0.2% missing</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -9707,7 +9708,7 @@ body.suricata-standalone:not(.light) {
                 <strong>0.50</strong> reporting threshold.
             </p>
             <p class="micro-label">All 3 pairs</p>
-            <ul class="corr-weak__list"><li class="corr-weak__row"><span class="corr-weak__pair">Age · Fare</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:4.80%;background:var(--data-4)"></span></span><span class="corr-weak__value">+0.096</span></li><li class="corr-weak__row"><span class="corr-weak__pair">Age · PassengerId</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:1.84%;background:var(--data-4)"></span></span><span class="corr-weak__value">+0.037</span></li><li class="corr-weak__row"><span class="corr-weak__pair">Fare · PassengerId</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:0.63%;background:var(--data-4)"></span></span><span class="corr-weak__value">+0.013</span></li></ul>
+            <ul class="corr-weak__list"><li class="corr-weak__row"><span class="corr-weak__pair">Age · Fare</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:4.80%;background:var(--data-3)"></span></span><span class="corr-weak__value">+0.096</span></li><li class="corr-weak__row"><span class="corr-weak__pair">Age · PassengerId</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:1.84%;background:var(--data-3)"></span></span><span class="corr-weak__value">+0.037</span></li><li class="corr-weak__row"><span class="corr-weak__pair">Fare · PassengerId</span><span class="corr-bar" aria-hidden="true"><span class="corr-bar__zero"></span><span class="corr-bar__fill" style="left:50.00%;width:0.63%;background:var(--data-3)"></span></span><span class="corr-weak__value">+0.013</span></li></ul>
         </div>
         
         </section>
