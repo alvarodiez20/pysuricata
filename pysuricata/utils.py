@@ -1,7 +1,39 @@
 import base64
 import glob
 import os
+import re
 from functools import lru_cache
+
+#: A CSS comment, non-greedy so it ends at the first `*/`. CSS comments do not
+#: nest, so a `/*` inside a comment body is part of that comment and not the
+#: start of another -- which is why `_13-utilities.css` counts 43 openers to 42
+#: closers and is nonetheless well-formed.
+#:
+#: `/*!` is the convention for "keep this even when minifying", so it is left
+#: alone. Nothing in the stylesheets uses it today; honouring it costs one
+#: character and means a licence header added later survives.
+_CSS_COMMENT = re.compile(r"/\*(?!!).*?\*/", re.S)
+
+#: Runs of blank lines left behind once a comment between two rules is gone.
+_BLANK_RUN = re.compile(r"\n\s*\n(\s*\n)+")
+
+
+def strip_css_comments(css: str) -> str:
+    """Drop comments from stylesheet text on its way into a report.
+
+    The report inlines its own CSS, so every comment in `static/css/` was being
+    shipped to every reader: **545 comments, 74,036 bytes -- 33% of the inlined
+    stylesheet and 12.9% of the whole Titanic report.** The comments are worth
+    having, and this is not an argument for deleting them; they are worth
+    having *in the source*, which is the only place anybody reads them.
+
+    Deliberately only comments and the blank runs they leave. Collapsing
+    whitespace or rewriting values is a minifier, and a minifier is a much
+    larger promise to keep correct -- `content` strings and `url()` payloads
+    both have rules a naive pass gets wrong. There are none in these
+    stylesheets today, and this stays safe if one appears tomorrow.
+    """
+    return _BLANK_RUN.sub("\n\n", _CSS_COMMENT.sub("", css))
 
 
 def load_template(template_path: str) -> str:
@@ -32,7 +64,7 @@ def load_css(css_path: str) -> str:
     if os.path.exists(css_path):
         with open(css_path, encoding="utf-8") as f:
             css_content = f.read()
-        return f"<style>{css_content}</style>"
+        return f"<style>{strip_css_comments(css_content)}</style>"
     return ""
 
 
@@ -55,7 +87,7 @@ def load_css_dir(css_dir: str) -> str:
             parts.append(f.read())
     if not parts:
         return ""
-    return f"<style>{''.join(parts)}</style>"
+    return f"<style>{strip_css_comments(''.join(parts))}</style>"
 
 
 def embed_image(

@@ -441,3 +441,174 @@ class TestTheTimelineIsBuiltLikeTheHistogram:
         figure = self._figure(report_with_dates)
 
         assert "hist-title" not in figure
+
+
+# --------------------------------------------------------------------------- #
+# 7. the temporal small multiples, rebuilt the same way
+# --------------------------------------------------------------------------- #
+class TestNoLabelIsInsideAChartTheStylesheetStretches:
+    """The generalisation of the rule above, and the reason it was needed.
+
+    The `preserveAspectRatio="none"` guard catches a chart whose *markup* says
+    it may be distorted. It does not catch one that is stretched by CSS while
+    keeping its proportions — and that is exactly what the hour/day/month
+    charts were doing. They carried `width="400" height="160"` matching their
+    viewBox, so every attribute-level check passed, and then `width: 100%` in
+    the stylesheet scaled the whole thing to fill a grid cell.
+
+    Measured in Chromium before the fix: the same 11px label rendered between
+    **5.6px and 14.9px** across viewport widths, and not even monotonically —
+    the grid drops from two columns to one, so a 600px viewport gave a *larger*
+    label than an 820px one.
+
+    So the rule is about neither attribute: an SVG that the stylesheet sizes to
+    its container has no intrinsic size, and nothing with a font-size belongs
+    inside it.
+    """
+
+    _SVG = re.compile(r"<svg\b[^>]*>.*?</svg>", re.S | re.I)
+
+    def _classes_of_svgs_containing_text(self, html: str) -> set[str]:
+        out: set[str] = set()
+        for svg in self._SVG.findall(_strip_assets(html)):
+            if not re.search(r"<text\b", svg):
+                continue
+            match = re.search(r'<svg\b[^>]*\bclass="([^"]*)"', svg)
+            if match:
+                out.update(match.group(1).split())
+        return out
+
+    def test_no_class_holding_text_is_given_a_container_width(self, report_with_dates):
+        stretched = set()
+        for selector, body in _css_rules():
+            if not re.search(r"width:\s*100%", body):
+                continue
+            subject = re.split(r"[\s>+~]+", selector)[-1]
+            for cls in re.findall(r"\.([\w-]+)", subject):
+                stretched.add(cls)
+
+        offenders = sorted(
+            self._classes_of_svgs_containing_text(report_with_dates) & stretched
+        )
+        assert not offenders, (
+            "these SVG classes contain painted text and are stretched to their "
+            f"container by the stylesheet, so the text has no fixed size: "
+            f"{offenders}"
+        )
+
+
+class TestTheTemporalChartsAreBuiltLikeTheHistogram:
+    """Same treatment as the timeline in #219, for the same reason."""
+
+    def _figures(self, html: str) -> list[str]:
+        return re.findall(
+            r'<figure class="hist temporal-figure">.*?</figure>',
+            _strip_assets(html),
+            re.S,
+        )
+
+    def test_the_card_renders_temporal_figures(self, report_with_dates):
+        """A guard on the guard: every assertion below passes vacuously if the
+        charts stop being emitted."""
+        assert len(self._figures(report_with_dates)) >= 2
+
+    def test_their_labels_are_html(self, report_with_dates):
+        for figure in self._figures(report_with_dates):
+            assert '<span class="hist__y"' in figure, "count labels are not HTML"
+            assert '<span class="hist__tick"' in figure, "bucket labels are not HTML"
+
+    def test_their_svgs_hold_no_text(self, report_with_dates):
+        for figure in self._figures(report_with_dates):
+            svg = re.search(r"<svg\b.*?</svg>", figure, re.S)
+            assert svg, "no marks svg"
+            assert not re.search(r"<text\b", svg.group(0))
+
+    def test_the_bars_keep_the_data_the_tooltip_reads(self, report_with_dates):
+        """`functionality.js` binds on `.temporal-chart .temporal-bar` and
+        reads these attributes; the rebuild has to keep both the hooks."""
+        for figure in self._figures(report_with_dates):
+            assert 'class="bar temporal-bar"' in figure
+            assert "data-count=" in figure and "data-label=" in figure
+
+    def test_no_bar_carries_a_corner_radius(self, report_with_dates):
+        """`rx` is in user units, so a stretched box rounds the horizontal and
+        vertical corners by different amounts and the bars come out lopsided."""
+        for figure in self._figures(report_with_dates):
+            assert " rx=" not in figure
+
+
+class TestTheBucketLabelsThinWithoutColliding:
+    """Constant-size labels are the point of the rebuild, and they are also why
+    thinning became necessary: labels that no longer shrink with the box will
+    collide in it instead. Measured before the tiers: 7 overlapping labels at a
+    360px viewport."""
+
+    def _tick_rows(self, html: str) -> list[list[tuple[str, str]]]:
+        rows = []
+        for figure in re.findall(
+            r'<figure class="hist temporal-figure">.*?</figure>',
+            _strip_assets(html),
+            re.S,
+        ):
+            row = re.search(r'<div class="hist__x">.*?</div>', figure, re.S)
+            if row:
+                rows.append(
+                    re.findall(r'data-ttier="(\d)"[^>]*>([^<]*)</span>', row.group(0))
+                )
+        return [r for r in rows if r]
+
+    def test_the_last_label_survives_every_thinning(self, report_with_dates):
+        for row in self._tick_rows(report_with_dates):
+            assert row[-1][0] == "1", (
+                f"the axis loses its right endpoint when it thins: {row[-1]}"
+            )
+
+    def test_the_label_before_the_last_goes_first(self, report_with_dates):
+        """Promoting the final label without demoting its neighbour is what put
+        `18:00` on top of `21:00` and `Nov` on top of `Dec`: the two then
+        survived every thinning together, side by side."""
+        for row in self._tick_rows(report_with_dates):
+            if len(row) < 2:
+                continue
+            assert row[-2][0] == "3", (
+                f"the label beside the last one is tier {row[-2][0]}, so the "
+                f"two collide at every width: {row[-2:]}"
+            )
+
+    def test_thinning_leaves_an_evenly_spaced_set(self, report_with_dates):
+        """Tier 1 alone must not be two labels bunched at one end."""
+        for row in self._tick_rows(report_with_dates):
+            keep = [i for i, (tier, _) in enumerate(row) if tier == "1"]
+            assert len(keep) >= 2, f"nothing left after thinning: {row}"
+            gaps = [b - a for a, b in zip(keep, keep[1:], strict=False)]
+            assert max(gaps) - min(gaps) <= 2, (
+                f"tier-1 labels are unevenly spaced at {keep} in {row}"
+            )
+
+    def test_the_thinning_is_keyed_on_the_chart_not_the_viewport(self):
+        """A media query reads the window; these charts are small multiples in
+        a two-column grid, so at a 1,024px viewport each one is only 374px wide
+        and a viewport rule calls that roomy while the labels already collide.
+        """
+        css = _css()
+        assert "container-type: inline-size" in css, (
+            "the chart item is not a container, so the queries below cannot "
+            "resolve against it"
+        )
+        assert re.search(r"@container\s+temporal\s*\(max-width", css), (
+            "bucket labels are not thinned by a container query"
+        )
+
+    def test_the_temporal_tiers_are_not_the_histograms(self):
+        """`data-ttier`, deliberately. The histogram thins `data-tier` on
+        viewport media queries, which are wrong here — at a 700px viewport this
+        chart is 544px and perfectly roomy, and the inherited rule dropped half
+        its labels anyway."""
+        for selector, body in _css_rules():
+            if "@container" in selector or "display" not in body:
+                continue
+            if "data-ttier" in selector:
+                continue
+            assert not re.search(r"\.temporal-figure[^{]*data-tier=", selector), (
+                f"a viewport rule is thinning the temporal ticks: {selector}"
+            )

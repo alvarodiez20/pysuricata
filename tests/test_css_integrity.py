@@ -8,6 +8,11 @@ import glob
 import os
 import re
 
+import pandas as pd
+
+from pysuricata import profile
+from pysuricata.utils import strip_css_comments
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -193,3 +198,70 @@ def test_template_has_data_action_attributes():
         assert f'data-action="{action}"' in html, (
             f'Missing data-action="{action}" in template'
         )
+
+
+# --------------------------------------------------------------------------- #
+# comments belong in the source, not in every report
+# --------------------------------------------------------------------------- #
+class TestTheStylesheetShipsWithoutItsComments:
+    """The report inlines its own CSS, so every comment in `static/css/` was
+    going out with every report: **545 of them, 74,036 bytes -- 33% of the
+    inlined stylesheet and 12.9% of the Titanic document.**
+
+    This is not an argument for writing fewer comments. They are worth having
+    in the source, which is the only place they are ever read.
+    """
+
+    def test_a_comment_between_rules_goes(self):
+        css = "a { color: red; }\n/* why red */\nb { color: blue; }"
+        out = strip_css_comments(css)
+
+        assert "why red" not in out
+        assert "color: red" in out and "color: blue" in out
+
+    def test_a_comment_containing_an_opener_ends_at_the_first_close(self):
+        """CSS comments do not nest. `_13-utilities.css` counts 43 openers to
+        42 closers and is well-formed for exactly this reason -- a `/*` inside
+        a comment body is text, not the start of another comment. A stripper
+        that treats it as nesting eats the rule after it.
+        """
+        css = "/* see /* below */ a { color: red; }"
+        out = strip_css_comments(css)
+
+        assert "a { color: red; }" in out
+        assert "see" not in out
+
+    def test_a_bang_comment_is_kept(self):
+        """`/*!` is the convention for "survive minification". Nothing uses it
+        today; honouring it costs one character and means a licence header
+        added later is not silently dropped."""
+        out = strip_css_comments("/*! (c) someone */\na { color: red; }")
+
+        assert "(c) someone" in out
+
+    def test_declarations_are_never_touched(self):
+        css = "a { content: 'x'; background: url(data:image/png;base64,AAA); }"
+        assert strip_css_comments(css) == css
+
+    def test_the_shipped_report_carries_no_comments(self):
+        """The property that matters, checked on the real document."""
+        frame = pd.DataFrame({"n": range(200), "s": ["a", "b"] * 100})
+        html = profile(frame, seed=0).html
+        style = "".join(re.findall(r"<style>.*?</style>", html, re.S))
+
+        assert style, "the report stopped inlining a stylesheet"
+        assert not re.findall(r"/\*.*?\*/", style, re.S), (
+            "stylesheet comments are being shipped to every reader again"
+        )
+
+    def test_the_rules_themselves_survive(self):
+        """A guard on the guard: a stripper that deleted everything would pass
+        the assertion above."""
+        frame = pd.DataFrame({"n": range(200)})
+        style = "".join(
+            re.findall(r"<style>.*?</style>", profile(frame, seed=0).html, re.S)
+        )
+
+        assert style.count("{") > 900, f"only {style.count('{')} rules survived"
+        for essential in ("#pysuricata-report", "--paper", ".hist__tick"):
+            assert essential in style, essential
