@@ -7,12 +7,27 @@
   function toggleDarkMode() {
     var root = document.getElementById(ROOT_ID);
     if (!root) return;
-    root.classList.toggle('light');
 
     var body = document.body;
+
+    // Suppress transitions across the flip, or the theme arrives in waves: the
+    // stylesheet's hover transitions animate colour too, at every duration from
+    // .12s to .3s, and each section catches up in its own time. The reflows are
+    // load-bearing — they flush the suppression before the colours move, and the
+    // new colours before it is lifted. Without them the browser coalesces all
+    // three class changes into one style pass and animates anyway.
+    root.classList.add('theme-switching');
+    if (body) body.classList.add('theme-switching');
+    void root.offsetHeight;
+
+    root.classList.toggle('light');
     if (body && body.classList.contains('suricata-standalone')) {
       body.classList.toggle('light');
     }
+
+    void root.offsetHeight;
+    root.classList.remove('theme-switching');
+    if (body) body.classList.remove('theme-switching');
 
     var icon = document.getElementById('toggle-icon');
     if (icon) {

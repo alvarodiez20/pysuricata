@@ -391,6 +391,8 @@ def render_html_snapshot(
     report_id = datetime.now().strftime("%Y%m%d-%H%M%S-%f")[:20]
     pysuricata_version = _resolve_pysuricata_version()
     repo_url = "https://github.com/alvarodiez20/pysuricata"
+    author_url = "https://github.com/alvarodiez20"
+    author_name = "Álvaro Diez"
 
     # Process description
     description_raw = getattr(cfg, "description", None) or ""
@@ -451,6 +453,8 @@ def render_html_snapshot(
         "pysuricata_version": pysuricata_version,
         "report_duration": _human_time(duration_seconds),
         "repo_url": repo_url,
+        "author_url": author_url,
+        "author_name": author_name,
         "n_rows": f"{n_rows:,}",
         "n_cols": f"{n_cols:,}",
         "memory_usage": _human_bytes(approx_mem_bytes) if approx_mem_bytes else "—",
