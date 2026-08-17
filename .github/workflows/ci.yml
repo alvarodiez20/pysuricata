@@ -127,6 +127,13 @@ jobs:
   # rather than adding a pandas 3 leg.
   test-pandas3:
     runs-on: ubuntu-latest
+    # `uv run` re-syncs the environment from the lockfile before running, which
+    # silently undid the `uv pip install` below and put pandas 2 back -- the
+    # first version of this job upgraded to 3.0.5 and then tested 2.3.3. The
+    # assertion caught it, which is the whole reason it is written as an
+    # assertion rather than a print.
+    env:
+      UV_NO_SYNC: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -139,20 +146,23 @@ jobs:
         run: pip install uv
 
       - name: Install Dependencies
+        # The one place a sync is wanted, so it opts out of UV_NO_SYNC.
         run: uv sync --all-extras
+        env:
+          UV_NO_SYNC: "0"
 
       - name: Force pandas 3
         run: |
           uv pip install --upgrade "pandas>=3,<4"
-          uv run python -c "import pandas; print('pandas', pandas.__version__)"
-          uv run python -c "
+          uv run --no-sync python -c "
           import pandas, sys
+          print('pandas', pandas.__version__)
           if pandas.__version__.split('.')[0] != '3':
               sys.exit('expected pandas 3, got ' + pandas.__version__)
           "
 
       - name: Run tests
-        run: uv run pytest -m "not benchmark" -q
+        run: uv run --no-sync pytest -m "not benchmark" -q
 
   docs:
     runs-on: ubuntu-latest
