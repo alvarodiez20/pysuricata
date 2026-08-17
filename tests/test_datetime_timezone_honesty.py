@@ -53,15 +53,18 @@ CASES = {
 }
 
 
-def _card(timezone: str | None) -> str:
-    index = pd.date_range("2024-01-01", periods=500, freq="h", tz=timezone)
-    html = profile(pd.DataFrame({"when": pd.Series(index)}), seed=0).html
+def _card_from(html: str) -> str:
     found = re.search(r'<article[^>]*data-type="datetime".*?</article>', html, re.S)
     assert found, (
         "no datetime card rendered -- the fixture missed the branch, and "
         "absent reads as passing"
     )
     return found.group(0)
+
+
+def _card(timezone: str | None) -> str:
+    index = pd.date_range("2024-01-01", periods=500, freq="h", tz=timezone)
+    return _card_from(profile(pd.DataFrame({"when": pd.Series(index)}), seed=0).html)
 
 
 def _timezone_row(card: str) -> str:
@@ -154,3 +157,43 @@ class TestTheLiteralIsGone:
         payload = summarize(pd.DataFrame({"when": pd.Series(index)}), seed=0)
 
         assert payload["columns"]["when"]["source_timezone"] == "US/Eastern"
+
+
+class TestPolarsCarriesItsZoneToo:
+    """The dtype fallback has two shapes, and only one is pandas'.
+
+    polars writes `Datetime(time_unit='us', time_zone='US/Eastern')`, which has
+    no comma-separated tail to split on -- it needs the `time_zone=` branch.
+    Untested, that branch is a plausible-looking regex nothing ever runs.
+    """
+
+    def test_a_zoned_polars_column_is_not_called_naive(self):
+        polars = pytest.importorskip("polars")
+
+        import datetime as _dt
+
+        moments = [
+            _dt.datetime(2024, 1, 1) + _dt.timedelta(hours=i) for i in range(300)
+        ]
+        frame = polars.DataFrame({"when": moments}).with_columns(
+            polars.col("when").dt.replace_time_zone("US/Eastern")
+        )
+
+        card = _card_from(profile(frame, seed=0).html)
+
+        assert _timezone_row(card) == "US/Eastern"
+        assert "naive" not in card.lower()
+
+    def test_a_naive_polars_column_still_says_naive(self):
+        polars = pytest.importorskip("polars")
+
+        import datetime as _dt
+
+        moments = [
+            _dt.datetime(2024, 1, 1) + _dt.timedelta(hours=i) for i in range(300)
+        ]
+
+        card = _card_from(profile(polars.DataFrame({"when": moments}), seed=0).html)
+
+        assert "naive" in _timezone_row(card).lower()
+        assert "UTC" not in card

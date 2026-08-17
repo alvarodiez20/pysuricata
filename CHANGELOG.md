@@ -59,8 +59,25 @@ quoted when both sides were measured in the same round-robin run.
   that was indefensible: there is no instant there, only a wall clock, and `UTC`
   was invented. Its card now contains the string nowhere at all.
 
-  The `summarize()` payload is untouched — the fallback lives in the renderer,
-  so `source_timezone` still reports exactly what `docs/summary-schema.md` says.
+  **A second bug surfaced while covering the polars branch, and it was in the
+  payload.** polars writes `Datetime(time_unit='us', time_zone='US/Eastern')`,
+  which *contains a comma* — so the accumulator's pandas branch matched it first
+  and stored `time_zone='US/Eastern')` as the zone name. Its polars branch was
+  an `elif` guarded on `tz=`, unreachable for any dtype with a comma in it,
+  which is every polars datetime. A naive polars column was worse:
+  `time_zone=None` is a non-empty tail, so a column with no zone reported
+  `time_zone=None)` as its timezone, and that string was reaching
+  `summarize()`. Both parsers now check `time_zone=` first.
+
+  | frame | before | after |
+  |---|---|---|
+  | polars `US/Eastern` | `"time_zone='US/Eastern')"` | `'US/Eastern'` |
+  | polars naive | `"time_zone=None)"` | `None` |
+  | pandas, all shapes | correct | unchanged |
+
+  Correcting a wrong value, so `schema_version` stays at 1 per
+  `docs/versioning.md`. Found only because a failing coverage check on the
+  untested polars branch was worth taking seriously rather than waiving.
 
 ## [0.1.2] - 2026-08-17
 

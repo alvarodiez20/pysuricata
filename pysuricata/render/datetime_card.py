@@ -265,16 +265,23 @@ class DateTimeCardRenderer(CardRenderer):
             return str(source)
 
         dtype = str(getattr(stats, "dtype_str", "") or "")
-        # pandas: `datetime64[ns, UTC]`. polars: `Datetime(.., time_zone='UTC')`.
-        if "," in dtype:
-            tail = dtype.split(",", 1)[1].rstrip(")]").strip()
-            return tail or None
+
+        # polars first, and the order is load-bearing. Its dtype reads
+        # `Datetime(time_unit='us', time_zone='US/Eastern')` -- which *contains
+        # a comma*, so the pandas branch below matches it and returns
+        # `time_zone='US/Eastern')` as the zone name. A naive polars column is
+        # worse: `time_zone=None` is a non-empty tail, so it reports the string
+        # `time_zone=None)` as a timezone instead of saying naive.
         if "time_zone=" in dtype:
             import re as _re
 
             match = _re.search(r"time_zone=['\"]([^'\"]+)['\"]", dtype)
-            if match:
-                return match.group(1)
+            return match.group(1) if match else None
+
+        # pandas: `datetime64[ns]` naive, `datetime64[ns, UTC]` aware.
+        if "," in dtype:
+            tail = dtype.split(",", 1)[1].rstrip(")]").strip()
+            return tail or None
         return None
 
     def _timezone_display(self, stats: DateTimeStats) -> str:
