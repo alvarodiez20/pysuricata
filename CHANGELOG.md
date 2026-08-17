@@ -16,6 +16,33 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The datetime timeline no longer scales its own labels** ([#217]). It drew
+  every label inside an SVG carrying `preserveAspectRatio="none"` at
+  `width: 100%`, so nothing in it had a size of its own: the viewBox mapped
+  onto whatever box CSS handed it. In a 1,146px column a 420-unit box scaled
+  everything by **2.73** — an 11px tick rendered at ~37px, three times the stat
+  row beside it — and the card stood 844px tall for what is often a flat line.
+
+  Widening the viewBox is not the fix, and finding that out is most of the
+  work: authoring at ~1,100 units makes a wide column right and a 470px one
+  render the same label at **5px**. There is no viewBox that is correct at both
+  widths.
+
+  The timeline is now a `figure.hist`, the structure the numeric histogram
+  already uses and the reason it uses it: the SVG holds only marks, and every
+  label is HTML positioned by percentage. Labels measure 11px at every width
+  from 1600px down to 600px. Reusing the histogram's classes rather than
+  styling a second chart also means the timeline inherits the gutter, the
+  tiered labels that thin 5 → 3 on narrow screens, the caption, and the
+  axis-label nudges — all of which already exist and are already tested, and
+  none of which can now drift apart from the histogram's.
+
+  The card falls from 844px to 601px, and the column name is no longer drawn a
+  second time inside the chart when the card header already carries it.
+
+  `tests/test_chart_layout.py` gains the general rule this came down to: **no
+  `<text>` inside a non-uniformly stretched SVG**, anywhere in the report.
+
 - **A numeric card drew every histogram variant at once.** The bins and scale
   toggles offer six combinations, and all six were on screen simultaneously —
   stacked, overlapping their own captions, in a card **1,671px tall instead of

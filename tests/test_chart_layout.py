@@ -1,6 +1,6 @@
 """The charts have to be *looked at*, and these are what the looking found.
 
-Four defects, all invisible to the existing suite because the fingerprint
+Five defects, all invisible to the existing suite because the fingerprint
 deliberately discards presentation and every other check reads values rather
 than geometry. They were found by rendering a report in Chromium and measuring
 the boxes.
@@ -21,6 +21,11 @@ the boxes.
    fixed height divided among the bars gave two levels two 218px slabs and five
    levels 87px each, and the 420-unit viewBox stretched to a ~1,100px column
    rendered every 11px label at ~30px.
+5. **The datetime timeline drew its labels inside a stretched SVG** (#217), so
+   an 11px date came out at ~37px in a wide column and would have come out at
+   5px in a narrow one. No viewBox is right at both widths, which is why the
+   last class here is a rule about structure -- text does not belong inside a
+   `preserveAspectRatio="none"` SVG at all -- rather than a measurement.
 
 These tests read the markup and the stylesheet rather than a browser, so they
 run everywhere; the browser is what found the defects, not what guards them.
@@ -300,3 +305,139 @@ class TestTheValueTextSaysWhichBackgroundItIsOn:
             "text on the bar must take the paper ink, not the muted grey that "
             "is chosen against the page background"
         )
+
+
+# --------------------------------------------------------------------------- #
+# 5. nothing readable inside a stretched SVG
+# --------------------------------------------------------------------------- #
+@pytest.fixture(scope="module")
+def report_with_dates() -> str:
+    """The datetime card needs its own frame; the fixture above has no dates."""
+    rng = np.random.default_rng(0)
+    n = 400
+    return profile(
+        pd.DataFrame(
+            {
+                "num": rng.gamma(2, 20, n),
+                "when": pd.date_range("2024-01-01", periods=n, freq="7h"),
+            }
+        ),
+        seed=0,
+    ).html
+
+
+class TestNoTextInsideAStretchedSvg:
+    """#217, and the rule that generalises it.
+
+    `preserveAspectRatio="none"` maps the viewBox onto whatever box CSS hands
+    the element, independently on each axis. Nothing inside such an SVG has a
+    size of its own: the datetime timeline authored its labels at 11px in a
+    420-unit box that was painted 1,146px wide, and they came out at ~37px —
+    three times the stat row beside them — while the same chart in a 470px
+    column would have rendered them at 5px.
+
+    **There is no viewBox that is correct at both widths.** That is why the fix
+    is to take the text out, not to pick a better number, and why this test is
+    a rule about the structure rather than a measurement of one chart.
+
+    A uniformly scaled SVG (the default `xMidYMid meet`) is not in scope here:
+    it keeps proportions, and the categorical chart is authored near its real
+    width so its scale is ~1.
+    """
+
+    _SVG = re.compile(r"<svg\b[^>]*>.*?</svg>", re.S | re.I)
+
+    def _stretched_svgs(self, html: str) -> list[str]:
+        return [
+            svg
+            for svg in self._SVG.findall(_strip_assets(html))
+            if 'preserveAspectRatio="none"' in svg
+        ]
+
+    def test_the_report_has_stretched_svgs_at_all(self, report_with_dates):
+        """A guard on the guard: if the marks stopped being stretched, the
+        assertion below would pass by matching nothing."""
+        assert self._stretched_svgs(report_with_dates)
+
+    def test_none_of_them_contains_a_text_element(self, report_with_dates):
+        offenders = []
+        for svg in self._stretched_svgs(report_with_dates):
+            # `<title>` and `<desc>` are accessibility metadata, never painted.
+            painted = re.findall(r"<text\b[^>]*>(.*?)</text>", svg, re.S)
+            if painted:
+                offenders.append(painted[:3])
+
+        assert not offenders, (
+            "text inside a non-uniformly stretched SVG has no size of its own; "
+            f"it scales with the column. Move it to HTML: {offenders}"
+        )
+
+
+class TestTheTimelineIsBuiltLikeTheHistogram:
+    """Reusing `figure.hist` rather than styling a second chart: the gutter,
+    the tiered labels, the caption and the axis nudges already exist, are
+    already tested, and now cannot drift apart from the histogram's."""
+
+    def _figure(self, html: str) -> str:
+        match = re.search(
+            r'<figure class="hist dt-figure">.*?</figure>', _strip_assets(html), re.S
+        )
+        assert match, "the datetime card no longer renders a hist figure"
+        return match.group(0)
+
+    def test_the_labels_are_html_not_svg(self, report_with_dates):
+        figure = self._figure(report_with_dates)
+
+        assert '<span class="hist__y"' in figure, "count labels are not HTML"
+        assert '<span class="hist__tick"' in figure, "date labels are not HTML"
+
+    def test_the_extremes_of_the_count_axis_are_tagged(self, report_with_dates):
+        gutter = re.search(
+            r'<div class="hist__gutter">.*?</div>',
+            self._figure(report_with_dates),
+            re.S,
+        )
+        assert gutter
+
+        assert 'data-edge="top"' in gutter.group(0)
+        assert 'data-edge="bottom"' in gutter.group(0)
+        assert gutter.group(0).count("data-edge=") == 2
+
+    def test_the_date_labels_are_tiered_so_narrow_widths_thin_them(
+        self, report_with_dates
+    ):
+        """Dates are ~10 glyphs where the histogram's numbers are ~6, so they
+        collide sooner and have to be droppable."""
+        row = re.search(
+            r'<div class="hist__x">.*?</div>', self._figure(report_with_dates), re.S
+        )
+        assert row
+
+        tiers = re.findall(r'data-tier="(\d)"', row.group(0))
+        assert tiers, "no tick tiers emitted"
+        assert "1" in tiers, "some labels must survive every breakpoint"
+        assert len(set(tiers)) > 1, "all one tier means nothing ever thins"
+
+    def test_the_ends_anchor_inside_the_plot(self, report_with_dates):
+        row = re.search(
+            r'<div class="hist__x">.*?</div>', self._figure(report_with_dates), re.S
+        ).group(0)
+
+        assert 'data-anchor="start"' in row
+        assert 'data-anchor="end"' in row
+
+    def test_the_caption_carries_the_exact_peak(self, report_with_dates):
+        """The count labels round, so the caption is where the real figure is."""
+        figure = self._figure(report_with_dates)
+
+        caption = re.search(
+            r'<figcaption class="hist__caption">(.*?)</figcaption>', figure, re.S
+        )
+        assert caption and "peak" in caption.group(1)
+
+    def test_the_column_name_is_not_repeated_inside_the_chart(self, report_with_dates):
+        """The card header already names the column; the SVG used to draw it
+        again as a title."""
+        figure = self._figure(report_with_dates)
+
+        assert "hist-title" not in figure
