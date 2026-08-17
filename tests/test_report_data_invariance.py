@@ -21,6 +21,17 @@ check the thing that actually has to hold instead.
 Regenerate the fixtures deliberately, never to make a red test green:
 
     uv run python tests/test_report_data_invariance.py --write
+
+Deliberate fact changes so far, each with the reason it was allowed:
+
+* **#253, the histogram bin counts.** Re-binning rounded each bin to nearest
+  and then dumped the entire residual into the one bin with the largest
+  fractional part. On `Fare` at 50 bins that residual was -3 into a bin holding
+  2, so the report shipped a bin of **-1**. Replaced with the largest-remainder
+  method, which preserves the total the old code was reaching for *and* cannot
+  go negative. 82 facts moved, all of them `count` and `pct` on the two numeric
+  columns; **no fact was added or removed**, and no bin moved by more than one
+  row. The old numbers were wrong, so this fixture records the corrected ones.
 """
 
 from __future__ import annotations

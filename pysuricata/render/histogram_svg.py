@@ -52,6 +52,60 @@ _UNIT_BY_NAME: tuple[tuple[frozenset[str], str], ...] = (
 _SPLIT = re.compile(r"[^a-z0-9]+")
 
 
+def _round_preserving_total(values: np.ndarray, total: int) -> np.ndarray:
+    """Round non-negative bin weights to integers summing to ``total``.
+
+    The largest-remainder method: floor everything, then hand the shortfall out
+    one unit at a time to the bins with the largest discarded fractions. It is
+    the standard way to apportion a whole number across shares, and it has two
+    properties this needs and the previous approach had neither of.
+
+    **It cannot produce a negative count.** The previous code rounded each bin
+    to nearest and then dumped the *entire* residual into the single bin with
+    the largest fractional part. On the Titanic report's `Fare` column at 50
+    bins, rounding to nearest overshot by 3 and the chosen bin held 2, so the
+    report shipped a bin of **-1** -- a count that cannot exist, drawn as a
+    `<rect>` with a negative height that the browser rejects, and printed in
+    that bar's tooltip. See #253.
+
+    **And it spreads the correction.** A negative was the visible symptom of
+    something wrong in every direction: dumping the whole residual into one bin
+    moves rows out of (or into) a single column of the chart. A bin holding 5
+    silently displayed 2. Handing out one unit per bin moves each affected bin
+    by at most one, which is the smallest change consistent with the total.
+
+    Args:
+        values: Non-negative weights, one per bin. Their sum should already be
+            ``total`` up to floating-point error.
+        total: The row count the bins must sum to.
+
+    Returns:
+        Non-negative integers summing exactly to ``total``.
+    """
+    floors = np.floor(values).astype(int)
+    # Clamp defensively: `values` is a sum of non-negative products and cannot
+    # be negative, but a caller that broke that would otherwise reintroduce
+    # exactly the defect this function exists to remove.
+    np.maximum(floors, 0, out=floors)
+
+    shortfall = int(total - floors.sum())
+    if shortfall <= 0:
+        return floors
+
+    # Largest discarded fraction first; ties go to the earlier bin, which keeps
+    # the result a function of the input alone rather than of sort stability.
+    order = np.argsort(-(values - floors), kind="stable")
+    for index in order[:shortfall]:
+        floors[index] += 1
+    # More units than bins only happens if `values` summed low by more than one
+    # per bin, which float error cannot do -- but if it ever did, the remainder
+    # belongs somewhere rather than nowhere.
+    remaining = int(total - floors.sum())
+    if remaining > 0 and len(floors):
+        floors[order[0]] += remaining
+    return floors
+
+
 def derive_x_unit(column_name: str) -> str | None:
     """The unit of a numeric column's x axis, or None when it has none.
 
@@ -237,20 +291,7 @@ class SVGHistogramRenderer:
             # Scale to preserve total count
             scale_factor = total_original / total_new
             new_counts = new_counts * scale_factor
-
-            # Round to integers while preserving total
-            new_counts_int = np.round(new_counts).astype(int)
-
-            # Adjust for any rounding errors to preserve exact total
-            diff = total_original - np.sum(new_counts_int)
-            if diff != 0:
-                # Find the bin with the largest fractional part and adjust it
-                fractional_parts = new_counts - new_counts_int
-                if len(fractional_parts) > 0:
-                    max_fractional_idx = np.argmax(fractional_parts)
-                    new_counts_int[max_fractional_idx] += int(diff)
-
-            new_counts = new_counts_int
+            new_counts = _round_preserving_total(new_counts, total_original)
         else:
             new_counts = np.zeros(bins, dtype=int)
 
@@ -414,7 +455,13 @@ class SVGHistogramRenderer:
             # Rule 3: a zero count draws nothing. A 1px floor is right for a
             # small non-zero value and wrong for zero -- ten empty months drawn
             # as ten 1px bars assert data that is not there.
-            if count == 0:
+            #
+            # `<= 0`, not `== 0`. A negative count is not a drawing decision at
+            # all: it is a value that cannot exist, and it used to reach here
+            # and become `height="-0.33"`, which browsers reject and log. The
+            # binning that produced it is fixed above; this is the guard that
+            # keeps a value that cannot exist from becoming geometry. See #253.
+            if count <= 0:
                 continue
 
             x = index * width
