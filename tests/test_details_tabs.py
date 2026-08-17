@@ -77,22 +77,20 @@ class TestMissingValuesEarnsItsTab:
     pane; `TestTheChunkGate` covers the other side.
     """
 
-    @pytest.mark.parametrize("column", ["num_gap", "when_gap", "num_full", "flag"])
+    @pytest.mark.parametrize(
+        "column", ["num_gap", "when_gap", "num_full", "flag", "cat_gap"]
+    )
     def test_one_chunk_never_renders_it(self, report, column):
-        assert "missing" not in _tabs(report, column)
+        """`cat_gap` was the exception until #193.
 
-    @pytest.mark.parametrize("column", ["cat_gap"])
-    def test_categorical_is_not_gated_yet(self, report, column):
-        """Recorded, not endorsed.
-
-        `html.py` calls `finalize()` **without** chunk metadata for categorical
-        and boolean columns, so those accumulators have none to give. Applying
-        the gate there would not tighten the rule, it would hide the pane
-        permanently -- which is what the first version of this change did, and
-        what the test above caught. Plumbing chunk metadata into two more
-        accumulators is #139's remaining half. See #193.
+        It was recorded rather than endorsed: `html.py` called `finalize()`
+        without chunk metadata for categorical and boolean, so those
+        accumulators had none to give, and applying the gate would not have
+        tightened the rule -- it would have hidden the pane permanently, which
+        is what the first attempt did. Both accumulators now track their own
+        chunks, so the rule is the same on all four kinds.
         """
-        assert "missing" in _tabs(report, column)
+        assert "missing" not in _tabs(report, column)
 
 
 class TestTheChunkGate:
@@ -111,7 +109,7 @@ class TestTheChunkGate:
             chunk_size=1000,
         ).html
 
-    @pytest.mark.parametrize("column", ["num_gap"])
+    @pytest.mark.parametrize("column", ["num_gap", "cat_gap"])
     def test_more_than_one_chunk_brings_it_back(self, chunked, column):
         assert "missing" in _tabs(chunked, column)
 
@@ -121,13 +119,18 @@ class TestTheChunkGate:
         for column in ("num_full", "cat_full", "when_full"):
             assert _tabs(report, column), f"{column} has no details section at all"
 
-    def test_a_boolean_card_has_no_details_section(self):
+    def test_a_boolean_card_has_no_details_section_on_one_chunk(self):
         """5c.6, and a decision rather than an omission. Two values, two
         counts, one bar on the card face — nothing is withheld, so there is no
-        second level of disclosure to offer. `Missing Values` goes with it:
-        boolean accumulators are finalized without chunk metadata (#193), so
-        the pane cannot know *where in the read* the gaps fall, which is the
-        only thing it knows that the card face does not."""
+        second level of disclosure to offer.
+
+        `Missing Values` was removed with it because a boolean accumulator was
+        finalized without chunk metadata and so could never say *where in the
+        read* the gaps fall, which is the only thing that pane knows and the
+        card face does not. **#193 changed that**, and the pane came back under
+        the same rule the other kinds use — so this frame is deliberately a
+        single chunk, where the rule closes the gate and the whole section
+        disappears again. `TestTheChunkGate` covers the open side."""
         # `boolean` dtype, not an object column of Python bools: an object
         # column with `None` in it infers as *categorical*, and the assertion
         # below would then pass or fail on a card of the wrong kind.

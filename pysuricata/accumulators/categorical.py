@@ -13,6 +13,7 @@ from typing import Any
 
 import numpy as np
 
+from .chunking import ChunkTracker
 from .config import CategoricalConfig
 from .protocols import AccumulatorKind, PicklableAccumulator
 from .sketches import KMV, MisraGries, ReservoirSampler
@@ -56,6 +57,13 @@ class CategoricalSummary:
     gini_impurity: float = 0.0
     most_common_ratio: float = 0.0
     diversity_ratio: float = 0.0
+    #: `(start_row, end_row, missing_in_chunk)` per chunk (#193).
+    #:
+    #: Absent until now, which is why the Missing Values pane could not be
+    #: gated on this card kind the way #154's 5b.7 gates it on numeric and
+    #: datetime. Defaulting it to `None` rather than `[]` keeps "this column
+    #: tracked nothing" distinguishable from "this column ran as one chunk".
+    chunk_metadata: list[tuple[int, int, int]] | None = None
 
 
 #: Distinct lengths above this are grouped into the widest bins the range
@@ -165,6 +173,14 @@ class CategoricalAccumulator(PicklableAccumulator):
         self._dtype_str = "categorical"
         self._bytes_seen = 0
 
+        # Per-column chunk tracking (#193), so the Missing Values pane can be
+        # gated on "more than one chunk" here the way it already is on numeric
+        # and datetime columns.
+        self._chunks = ChunkTracker(
+            enabled=getattr(self.config, "enable_chunk_metadata", True),
+            max_chunks=getattr(self.config, "max_chunks", 1000),
+        )
+
         # Initialize data structures with optimized sizes for big data
         self._uniques = KMV(self.config.uniques_sketch_size)
         self._uniques_lower = (
@@ -225,6 +241,35 @@ class CategoricalAccumulator(PicklableAccumulator):
         return None
 
     def update(self, arr: Sequence[Any]) -> None:
+        """Update accumulator with new values, recording them against the chunk.
+
+        The chunk bookkeeping is done here, by difference, rather than inside
+        `_update_values`: that method has several early returns and two
+        independent paths (vectorised and a per-value fallback), and counting
+        in each of them is how they would drift apart. Totals before and after
+        cannot.
+        """
+        before_rows = self.count + self.missing
+        before_missing = self.missing
+        try:
+            self._update_values(arr)
+        finally:
+            self._chunks.note(
+                rows=(self.count + self.missing) - before_rows,
+                missing=self.missing - before_missing,
+            )
+
+    def mark_chunk_boundary(self) -> None:
+        """Tell the accumulator a chunk ended (#193).
+
+        Duck-typed by `compute/orchestration/engine.py`, which has always
+        called this on every accumulator that has it -- only the numeric one
+        did, so categorical columns reached the report with no chunk metadata
+        and their Missing Values pane could not be gated like the others'.
+        """
+        self._chunks.mark_boundary()
+
+    def _update_values(self, arr: Sequence[Any]) -> None:
         """Update accumulator with new values using optimized batch processing.
 
         Args:
@@ -463,12 +508,20 @@ class CategoricalAccumulator(PicklableAccumulator):
         except (ValueError, TypeError):
             pass
 
-    def finalize(self) -> CategoricalSummary:
+    def finalize(
+        self, chunk_metadata: list[tuple[int, int, int]] | None = None
+    ) -> CategoricalSummary:
         """Finalize accumulator and return comprehensive summary statistics.
+
+        Args:
+            chunk_metadata: Fallback `(start_row, end_row, missing)` triples,
+                used only when this column tracked none of its own -- the same
+                shape the numeric and datetime accumulators accept.
 
         Returns:
             CategoricalSummary containing all computed statistics
         """
+        per_column_chunks = self._chunks.metadata()
         # Get top items with optimized access
         top_items = self._topk.items()
 
@@ -515,6 +568,7 @@ class CategoricalAccumulator(PicklableAccumulator):
             gini_impurity=gini_impurity,
             most_common_ratio=most_common_ratio,
             diversity_ratio=diversity_ratio,
+            chunk_metadata=per_column_chunks or chunk_metadata,
         )
 
     def _calculate_percentile(
@@ -674,6 +728,10 @@ class CategoricalAccumulator(PicklableAccumulator):
         self._len_sum += other._len_sum
         self._len_n += other._len_n
         self._empty_zero += other._empty_zero
+        # A merged column's chunks are the two runs' chunks in order, which
+        # needs the second side's boundaries offset by the first's row count
+        # rather than restarting at zero halfway through (#193).
+        self._chunks.merge(other._chunks)
 
         self._topk.merge(other._topk)
         self._uniques.merge(other._uniques)
@@ -695,6 +753,7 @@ class CategoricalAccumulator(PicklableAccumulator):
         self._len_sum = 0
         self._len_n = 0
         self._empty_zero = 0
+        self._chunks.reset()
 
         # A reset accumulator must replay identically, so rewind the generator
         # rather than continuing its stream.

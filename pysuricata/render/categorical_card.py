@@ -191,12 +191,21 @@ class CategoricalCardRenderer(CardRenderer):
             missing_table,
             length_pane,
             common_label,
-            # NOT gated on chunk count, unlike the numeric and datetime
-            # cards. `html.py` calls `finalize()` without chunk metadata for
-            # this kind, so the accumulator has none to give -- gating on it
-            # would hide the pane permanently rather than tighten the rule.
-            # See #193.
-            has_missing=int(getattr(stats, "missing", 0) or 0) > 0,
+            # The same rule as every other card kind, now that this one can
+            # answer it (#193): the pane only knows something the card face
+            # does not when there is more than one chunk -- *where in the read*
+            # the gaps fall. With one chunk it restates the header's
+            # percentage.
+            #
+            # This was ungated until the accumulator tracked chunks, and the
+            # comment that stood here warned why gating it early would be
+            # worse than leaving it: `getattr(stats, "chunk_metadata", None)`
+            # returns `None` rather than raising, so the gate would have looked
+            # applied while hiding the pane permanently.
+            has_missing=(
+                int(getattr(stats, "missing", 0) or 0) > 0
+                and len(getattr(stats, "chunk_metadata", None) or []) > 1
+            ),
         )
         controls_html = self._build_controls_section(col_id, topn_list, default_topn)
 
