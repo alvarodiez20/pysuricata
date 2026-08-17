@@ -14,6 +14,41 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`chunk_size` below 1,000 is honoured** ([#173]). Anything smaller was
+  silently raised to `min_chunk_size`, so a documented public option — one
+  `docs/versioning.md` puts in the covered surface — never produced the
+  behaviour it documented. Asking for 100 rows on a 5,000-row frame gave five
+  chunks of 1,000. A request above `max_chunk_size` was lowered just as
+  quietly; both bounds now constrain only the size the chunker picks for
+  itself. A pathological `chunk_size=1` is the caller's choice and the caller's
+  cost.
+
+  This was a testing-surface bug as much as an API one, and it had already cost
+  the project twice. Small deterministic fixtures are exactly where a small
+  chunk size is wanted, so **two separate guards were passing for free**:
+  #139's per-chunk guard asked for 150 rows on a 900-row frame, and
+  `test_chunking_does_not_change_the_facts` asked for 100 on 891 rows. Both got
+  a single chunk and neither could reach the condition it guarded.
+- **The chunking-invariance test now actually chunks** ([#201]). It profiled a
+  fixture whole, then again with `chunk_size=100`, and asserted no fact
+  vanished between the two — comparing a run against itself for its entire
+  life, green for a reason that had nothing to do with the invariant the
+  accumulators are built on. It now counts the chunks the engine consumes and
+  asserts the count, so it fails if it ever silently stops chunking again.
+- **The report fingerprint no longer keys facts on sampled row indices**
+  ([#201]). With the chunk size honoured, the invariance test reported
+  `booked 311` removed and `booked 33` added. Classified: **artifact, not a
+  datetime bug.** `_pairs_from_kv` matches a label cell followed by a value
+  cell, and the non-greedy group backtracks across closing tags, so the sample
+  table's `<th>booked</th></tr></thead><tbody><tr><td>311</td>` matched as one
+  label of `booked 311` with `56.0` as its value. The key was a *sampled row
+  index*; chunking changes which rows the reservoir keeps, so the key moved
+  with the value and the fact read as removed-plus-added rather than changed.
+  Labels may no longer span a cell boundary. Exactly one fact is dropped —
+  1,081 collected becomes 1,080 — and it is that one.
+
 ### Deprecated
 
 - **`ReportConfig` warns, and goes in 0.3.0** ([#210]). It was a bare alias for

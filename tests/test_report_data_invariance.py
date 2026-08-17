@@ -26,6 +26,8 @@ Regenerate the fixtures deliberately, never to make a red test green:
 from __future__ import annotations
 
 import json
+import math
+import re
 import sys
 from pathlib import Path
 
@@ -136,6 +138,37 @@ def test_the_fingerprint_is_not_trivially_small():
     assert len(actual.splitlines()) > 400
 
 
+def test_no_fact_is_keyed_on_a_label_that_carries_data():
+    """#201. A key that moves with its value cannot be compared.
+
+    `_pairs_from_kv` matches a label cell followed by a value cell, and the
+    non-greedy group backtracks across closing tags. In the sample table that
+    let `<th>booked</th></tr></thead><tbody><tr><td>311</td>` match as a single
+    label of `booked 311`, with `56.0` as its value -- so the fact was keyed on
+    a *sampled row index*.
+
+    Chunking changes which rows the reservoir keeps, so the key moved with the
+    value and the fact registered as removed-plus-added rather than changed.
+    That reads as a fact vanishing from the report, which is precisely the
+    alarm `test_chunking_does_not_change_the_facts` exists to raise.
+
+    A statistic's name never contains a bare number, so any key ending in one
+    is this bug returning by another route.
+    """
+    facts = fingerprint(profile(_frame(), seed=0).html).splitlines()
+
+    offenders = [
+        line
+        for line in facts
+        if line.startswith("kv::") and re.search(r"\s\d+$", line.split("\t", 1)[0])
+    ]
+
+    assert not offenders, (
+        "these facts are keyed on a label ending in a number, which is data "
+        f"rather than a name: {offenders[:5]}"
+    )
+
+
 def test_every_fact_collected_is_a_fact_compared():
     """The second guard on the guard, and it caught a real hole.
 
@@ -169,12 +202,52 @@ def test_every_fact_collected_is_a_fact_compared():
         )
 
 
+def _profile_counting_chunks(frame, **kwargs) -> tuple[str, int]:
+    """Profile `frame`, returning its HTML and **how many chunks were consumed**.
+
+    Counted, never inferred. This test asked for `chunk_size=100` on an 891-row
+    fixture for its whole life and got a single chunk every time, because sizes
+    below 1,000 were silently raised to 1,000 (#173). It compared a run against
+    itself and passed for free -- green for a reason that had nothing to do
+    with what it guards, which is the invariant the accumulators are built on.
+
+    The same failure had already cost an impossible 175.4% figure through
+    #139's guard. Asserting the count is what makes a third instance loud.
+    """
+    from pysuricata.compute.adapters import pandas as _pandas_adapter
+
+    chunks = 0
+    original = _pandas_adapter.PandasAdapter.consume_chunk
+
+    def counting(self, data, *args, **kw):
+        nonlocal chunks
+        chunks += 1
+        return original(self, data, *args, **kw)
+
+    _pandas_adapter.PandasAdapter.consume_chunk = counting
+    try:
+        html = profile(frame, **kwargs).html
+    finally:
+        _pandas_adapter.PandasAdapter.consume_chunk = original
+    return html, chunks
+
+
 def test_chunking_does_not_change_the_facts():
     """The invariant the accumulators are built on, checked where a reader
     would actually notice it breaking."""
-    whole = fingerprint(profile(_frame(), seed=0).html)
-    split = fingerprint(profile(_frame(), seed=0, chunk_size=100).html)
-    removed, _, changed = diff(whole, split)
+    frame = _frame()
+    whole_html, whole_chunks = _profile_counting_chunks(frame, seed=0)
+    split_html, split_chunks = _profile_counting_chunks(frame, seed=0, chunk_size=100)
+
+    # The premise, asserted before anything is compared. Without this the test
+    # can silently stop chunking again and keep passing.
+    assert whole_chunks == 1, f"the unchunked run took {whole_chunks} chunks"
+    assert split_chunks == math.ceil(len(frame) / 100), (
+        f"chunk_size=100 on {len(frame)} rows produced {split_chunks} chunks; "
+        "this run is not actually chunked, so the comparison is worthless"
+    )
+
+    removed, _, changed = diff(fingerprint(whole_html), fingerprint(split_html))
     # Row-count-dependent figures may legitimately differ in a streamed run;
     # nothing may vanish.
     assert not removed, removed[:5]
