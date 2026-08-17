@@ -141,3 +141,7 @@ docs/assets/titanic_report.html
 # sweep it into a commit -- which it did once.
 _to_delete/
 README.draft.md
+
+# Review aid from scripts/contact_sheet.py (#124). Regenerated on demand and
+# uploaded by CI as an artifact; never a committed asset.
+contact-sheet/
