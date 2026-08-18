@@ -69,11 +69,14 @@ Accumulators never see the frame, only arrays.
 
 ## Current priorities
 
-`docs/roadmap.md` is **v10**. The working roadmap is **v15**, which is not in the
-repo — reconciling the two is #251, and until it lands treat the issue tracker as
-the authority rather than either document.
+**The issue tracker is the authority.** `docs/roadmap.md` was v10, pinned to
+0.0.62, and shipped in the docs nav describing a project ninety releases older
+than the one readers were installing; it is deleted rather than re-synced,
+because a roadmap in the docs dates the moment it is written and nothing after.
+The working roadmap is **v15** and lives outside the repo. Half of #251 goes
+with the file; what is left of it is the per-column figure, now measured.
 
-**0.1.1 and 0.1.2 are published.** The report redesign is closed out, and so are
+**0.1.5 is published.** The report redesign is closed out, and so are
 both packaging blockers, the README drift, the per-chunk missing counts and the
 Missing-pane gate. Do not regress any of it — a change that makes
 `benchmarks/accuracy.py` fail is wrong even if it is faster, and the same goes

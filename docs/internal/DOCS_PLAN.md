@@ -114,8 +114,10 @@ A page can be mechanically clean and still be the most wrong page in the set:
 `algorithms/sampling.md` has zero errors and documents an algorithm you do not
 use. The checker buys you the boring half so your attention goes to this half.
 
-Also: `docs/roadmap.md` is on disk but not in the mkdocs nav, so it is never
-rendered. Add it or move it out of `docs/`.
+Also: `docs/roadmap.md` was on disk and unrendered, then rendered and stale. It
+is gone. A roadmap in the docs dates the moment it is written and nothing after,
+and this one described 0.0.62 from 0.1.5; the issue tracker is where the plan
+actually lives.
 
 ---
 

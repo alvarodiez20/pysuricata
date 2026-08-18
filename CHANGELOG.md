@@ -14,6 +14,32 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- **The versioning contract said a minor bump may break you. It may not.** The
+  page had adopted Cargo's pre-1.0 convention, under which `0.1.0 → 0.2.0` is
+  the release allowed to break. That is now stated the way SemVer means it:
+  **only a major bump breaks**, `0.2.0` adds, `0.1.1` fixes. The cost is
+  deliberate and written down beside the rule: a break costs 1.0.0, so until
+  then a change to a covered surface waits, or ships behind a new name beside
+  the old one.
+
+  That rule applies immediately to the rename in the entry below.
+  `outliers_mod_zscore` is **published again** beside `outliers_mod_zscore_est`
+  rather than replaced by it, and goes at 1.0.0. Nothing reading the payload
+  today has to change.
+
+### Removed
+
+- **`docs/roadmap.md`.** It was v10, pinned to 0.0.62, and sat in the docs nav
+  describing a project ninety releases older than the one a reader was
+  installing: the report redesign it called unfinished has shipped, the
+  correctness item it tracked is closed, and the headline ratio it quoted came
+  from the cross-session pairing that was later shown to be wrong. A roadmap in
+  the docs dates the moment it is written and nothing after. The issue tracker
+  is the authority, which is what `CLAUDE.md` already told anyone working here.
+  Half of #251 goes with the file.
+
 ### Fixed
 
 - **Top-k counts claimed to be exact in exactly the case they were most
