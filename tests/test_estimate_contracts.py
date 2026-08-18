@@ -32,7 +32,7 @@ from __future__ import annotations
 
 import dataclasses as dc
 from collections import Counter
-from typing import Callable
+from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
@@ -125,9 +125,7 @@ class _Estimate:
 _ORACLES: dict[str, _Estimate] = {
     "outliers_iqr_est": _Estimate("numeric", _lognormal, _exact_iqr_outliers),
     "unique_est": _Estimate("numeric", _lognormal, _exact_distinct),
-    "case_variants_est": _Estimate(
-        "categorical", _cased_words, _exact_distinct_folded
-    ),
+    "case_variants_est": _Estimate("categorical", _cased_words, _exact_distinct_folded),
     "trim_variants_est": _Estimate(
         "categorical", _cased_words, _exact_distinct_trimmed
     ),
@@ -216,7 +214,7 @@ class TestEstimatesTrackTruth:
 
         assert max(ratios) - min(ratios) < TOLERANCE, (
             f"{key} ratios across {SIZES}: "
-            f"{['%.3f' % r for r in ratios]}. A spread this wide is a scale "
+            f"{[f'{r:.3f}' for r in ratios]}. A spread this wide is a scale "
             "error, not sampling noise."
         )
 
@@ -331,7 +329,9 @@ class TestTheThresholdsAreCrossed:
         frame = pd.DataFrame({"x": values})
         whole = _numeric_column(pysuricata.summarize(frame))
         chunked = _numeric_column(
-            pysuricata.summarize([frame.iloc[i : i + 10_000] for i in range(0, n, 10_000)])
+            pysuricata.summarize(
+                [frame.iloc[i : i + 10_000] for i in range(0, n, 10_000)]
+            )
         )
         assert whole["count"] == chunked["count"]
 
