@@ -91,10 +91,24 @@ class TestDistinctNeverExceedsTheRowCount:
         assert payload["columns"]["x"]["approx"] is False
 
     def test_an_empty_frame_does_not_raise(self):
-        """It returns an empty payload rather than a column with zero rows, so
-        there is nothing to clamp -- but it must not fail on the way there."""
+        """The clamp still has to hold when there is nothing to clamp.
+
+        This used to assert the payload had **no columns at all** -- a zero-row
+        frame returned `{}` and the column never existed to be checked. #315
+        changed that: the schema is known, so the column is reported with zero
+        counts, which means the invariant this class exists for now applies to
+        it rather than skipping it.
+
+        The stronger statement is the one worth making. `0 <= 0` is trivially
+        true, but a sketch that returned any positive estimate for a column it
+        never saw a value in would be the same defect as the reported case
+        above, and nothing else would catch it.
+        """
         payload = summarize(pd.DataFrame({"x": pd.Series([], dtype=float)}), seed=0)
-        assert payload.get("columns", {}) == {}
+        column = payload["columns"]["x"]
+
+        assert column["count"] == 0
+        assert column["unique_est"] <= column["count"]
 
 
 # --------------------------------------------------------------------------- #

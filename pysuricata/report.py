@@ -130,9 +130,85 @@ def _f(value: Any) -> float | None:
     if value is None:
         return None
     try:
-        return float(value)
+        number = float(value)
     except (TypeError, ValueError):
         return None
+    # NaN and the infinities are not values, and this payload is documented as
+    # JSON-safe: `json.dumps(..., allow_nan=False)` rejects all three, and the
+    # `NaN` Python emits by default is not JSON any other language will read.
+    # A statistic that could not be computed is `null`, which every consumer
+    # already has to handle.
+    if number != number or number in (float("inf"), float("-inf")):
+        return None
+    return number
+
+
+#: Keys that still mean something for a column holding no values.
+#:
+#: The rule is one line: **a count over an empty set is zero, a statistic over
+#: an empty set is undefined** (#315). `count`, `missing` and `zeros` are
+#: genuinely 0 for a column with nothing in it; `mean`, `entropy` and
+#: `time_span_days` are not 0, they are unanswerable, and reporting 0.0 for
+#: them invents a reading rather than declining to give one.
+#:
+#: The same argument covers the booleans. `mono_inc` came back `True` for an
+#: empty column -- vacuously true, and a claim no reader wants to be handed.
+#:
+#: `dtype` and `source_timezone` stay because they are properties of the
+#: *schema*, which a zero-row frame still has; that schema is the whole reason
+#: this payload is worth producing. `approx` stays because it describes the
+#: sketch rather than the data. The collections stay because empty is the
+#: correct answer for them, and is different from null.
+_DEFINED_WHEN_EMPTY = frozenset(
+    {
+        # identity
+        "type",
+        "dtype",
+        "source_timezone",
+        # counts, all legitimately zero
+        "count",
+        "missing",
+        "unique_est",
+        "inf",
+        "zeros",
+        "negatives",
+        "true",
+        "false",
+        "mem_bytes",
+        # a property of the sketch, not of the data
+        "approx",
+        # collections whose correct value is empty
+        "corr_top",
+        "top_values",
+        "top_items",
+        "min_items",
+        "max_items",
+        "true_histogram_counts",
+        "true_histogram_edges",
+        "by_hour",
+        "by_dow",
+        "by_month",
+        "by_year",
+    }
+)
+
+
+def _null_undefined_statistics(payload: dict[str, Any]) -> dict[str, Any]:
+    """Blank the statistics a column with no values cannot have (#315).
+
+    Applies to every column kind, because all four fabricated the same way: an
+    empty numeric column reported `min` and `mean` of `0.0`, an empty
+    categorical one an `entropy` of `0.0`, an empty datetime one a
+    `time_span_days` of `0.0`.
+
+    A no-op for any column that saw a value, so the ordinary path is untouched.
+    """
+    if payload.get("count"):
+        return payload
+    return {
+        key: (value if key in _DEFINED_WHEN_EMPTY else None)
+        for key, value in payload.items()
+    }
 
 
 def _i(value: Any) -> int | None:
@@ -501,7 +577,10 @@ class ReportOrchestrator:
         return {
             "schema_version": SUMMARY_SCHEMA_VERSION,
             "dataset": dataset_summary,
-            "columns": columns_summary,
+            "columns": {
+                name: _null_undefined_statistics(payload)
+                for name, payload in columns_summary.items()
+            },
         }
 
     def _write_output_file(self, html: str, output_file: str) -> None:

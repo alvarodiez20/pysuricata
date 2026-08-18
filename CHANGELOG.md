@@ -14,6 +14,76 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`summarize()` returned `{}` for a zero-row frame** (#315), and the same
+  frame rendered a 221-byte unstyled page reading `Empty source.` (#313). Both
+  came from one cause: a frame with columns and no rows was treated as an
+  *empty source*, so its schema was thrown away at the chunk loop.
+
+  A zero-row frame is not an empty source — `pd.DataFrame({"a": pd.Series([],
+  dtype="float64")})` knows it has a column `a` of dtype `float64`, and that
+  schema is exactly what a reader needs when the question is *did my filter
+  match nothing, or did I select the wrong columns?* The ordinary path now runs
+  over one empty chunk: inference types each column from its dtype, the
+  accumulators fold in zero values, and `finalize()` reports counts of zero.
+
+  This is the one surface `docs/versioning.md` guarantees, and it was failing by
+  returning **silence** — `payload["schema_version"]` raised `KeyError` — on the
+  shape a filter matching nothing produces routinely.
+
+- **The payload no longer invents statistics for a column with no values**
+  (#315). A count over an empty set is zero; a statistic over an empty set is
+  undefined. An empty numeric column reported a `min` and a `mean` of `0.0`, an
+  empty categorical one an `entropy` of `0.0`, and `mono_inc` came back `True` —
+  vacuously. All are `null` now. Counts, dtypes and `source_timezone` stay,
+  because those are properties of the schema rather than readings of data.
+
+  Non-finite floats are `null` too: `NaN` is what Python emits by default and is
+  not JSON any other language will read, and this payload is documented as
+  JSON-safe. `json.dumps(..., allow_nan=False)` now succeeds on it.
+
+  This also reaches all-missing columns in ordinary frames, which had the same
+  fabricated zeros.
+
+- **The datetime calendar panel is suppressed for a column with no values.**
+  The ratios finalise to `0.0`, which the verdict read as `under-represented ·
+  −28.6pp vs 28.6%` — a confident finding about a column containing nothing.
+  Only reachable since a zero-row frame renders at all; the panel exists to stop
+  a number being read as a finding when it is not one, so it must not be the
+  thing doing that.
+
+### Changed
+
+- **The datetime timeline draws bars instead of a line** (design 14b, phase
+  5e.4, #293). A `<polyline>` through bucket centres draws a continuous slope
+  between "84 records on 8 Jan" and "83 on 9 Jan", asserting every value in
+  between — and the data holds values only at the buckets. A bucket count is a
+  quantity per interval, which is what a bar means and what a line does not, so
+  the report now has one encoding for counts across the numeric histogram, the
+  temporal panes and the timeline.
+
+  The issue was filed as a decision, and the plan proposed keeping the line
+  above ~180 buckets where bars go sub-pixel. Two measurements settled it
+  against that. **The threshold could not have fired**: the bucket count is
+  fixed at 60 and is not reachable from `ProfileConfig` or `ComputeOptions`, so
+  the line branch would have been unreachable code. And **the sub-pixel risk is
+  a viewport width, not a bucket count** — those 60 buckets are 12.5px each at
+  1240 and 3.8px at 390, which a static report cannot branch on, and which is
+  the width the numeric histogram already draws bars at on the same screen.
+
+  An empty bucket now draws nothing, where the line sloped through it. On a
+  column with two bursts ten months apart that is 56 of 60 buckets: the line
+  drew a gradual decline and recovery across ten months in which nothing
+  happened. Every bucket keeps its full-height hover target, so an empty
+  stretch still answers `0 rows` — the design proposed merging the two, and
+  merging them would have made exactly those buckets unhoverable.
+
+  Deleted with the polyline: its stylesheet rules, and a whole unused
+  pixel-space coordinate system in the renderer — margins, an inner box, `sx`,
+  `sy`, bin centres and a `pts` string that nothing read. `render/*` carries a
+  per-file `F841` ignore, so ruff never mentioned it.
+
 ## [0.1.5] - 2026-08-18
 
 ### Added

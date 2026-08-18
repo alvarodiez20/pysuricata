@@ -13,10 +13,11 @@ rather than pinned here, because a test asserting today's wrong answer makes
 the wrong answer permanent:
 
 * #312 -- a zero-column frame reports 9 duplicate rows where pandas reports 0
-* #313 -- a zero-row frame renders a bare unstyled page
 * #314 -- flags that fire by construction, contradictory quick facts, and `-0`
-* #315 -- `summarize()` returns `{}` for a zero-row frame, so the one part of
-  the surface `docs/versioning.md` guarantees is the part that breaks
+
+#313 and #315 were both fixed by treating a zero-row frame as a frame with a
+schema rather than as an empty source, and their cases below are ordinary
+assertions now rather than xfails.
 
 The cases below are written to pass **either** side of #312 and #313 landing,
 so they guard the shapes without freezing the bugs.
@@ -159,27 +160,55 @@ class TestTheZeroRowFrame:
     def test_it_does_not_raise(self) -> None:
         assert profile(ZERO_ROWS, seed=0).html
 
-    @pytest.mark.xfail(
-        reason="#315: summarize() returns {} for a zero-row frame, so every "
-        "documented key -- schema_version included -- is absent",
-        strict=True,
-    )
     def test_summarize_honours_its_contract(self) -> None:
         """`docs/versioning.md` makes this payload the one guaranteed surface,
-        and a zero-row frame is where it returns nothing at all."""
+        and a zero-row frame used to be where it returned nothing at all — not
+        an error, not a zeroed payload, but `{}` (#315).
+
+        The dataset key is `rows_est`, not `n_rows`. This test asserted
+        `n_rows` while it was an xfail, so it was failing for a reason that had
+        nothing to do with the defect it named — which an xfail cannot tell you,
+        because a test that fails for the wrong reason looks exactly like a test
+        that fails for the right one.
+        """
         payload = summarize(ZERO_ROWS)
 
         assert "schema_version" in payload
-        assert payload["dataset"]["n_rows"] == 0
+        assert payload["dataset"]["rows_est"] == 0
+        assert payload["dataset"]["cols"] == 2
         assert len(payload["columns"]) == 2
 
-    @pytest.mark.xfail(
-        reason="#313: a zero-row frame takes the bare-page path, so the schema "
-        "it does know is never rendered",
-        strict=True,
-    )
+    def test_every_column_keeps_its_name_and_dtype(self) -> None:
+        """The schema is the whole reason the payload is worth producing here:
+        *did my filter match nothing, or did I select the wrong columns?*"""
+        columns = summarize(ZERO_ROWS)["columns"]
+
+        assert set(columns) == {"a", "b"}
+        assert columns["a"]["dtype"] == "float64"
+        assert columns["b"]["dtype"] == "object"
+
+    def test_no_statistic_is_invented(self) -> None:
+        """A count over an empty set is zero; a statistic over an empty set is
+        undefined. `min` and `mean` of `0.0` for a column with no values is a
+        reading invented rather than declined."""
+        column = summarize(ZERO_ROWS)["columns"]["a"]
+
+        assert column["count"] == 0
+        for statistic in ("mean", "std", "min", "q1", "median", "q3", "max"):
+            assert column[statistic] is None, statistic
+
+    def test_the_payload_is_strict_json(self) -> None:
+        """`NaN` is what Python emits by default and is not JSON any other
+        language will read. The manifest is documented as JSON-safe."""
+        import json
+
+        json.dumps(summarize(ZERO_ROWS), allow_nan=False)
+
     def test_it_renders_the_schema_it_knows(self) -> None:
+        """#313, fixed by the same change: the bare-page path is 221 bytes and
+        carries no stylesheet, so a zero-row frame looked like a crash."""
         html = profile(ZERO_ROWS, seed=0).html
 
         assert "Empty source." not in html
         assert "<style>" in html
+        assert 'id="summary"' in html

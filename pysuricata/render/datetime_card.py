@@ -374,7 +374,17 @@ class DateTimeCardRenderer(CardRenderer):
         occludes it rather than crossing it -- rule 2 in `tokens.css`. It also
         protrudes above and below the track onto the paper, which is what keeps
         it visible at 390px after its label is dropped.
+
+        Nothing is drawn for a column with no values. A zero-row frame reaches
+        this now that #315 renders one at all, and the ratios finalise to 0.0,
+        which the verdict read as `under-represented -28.6pp vs 28.6%` -- a
+        confident finding about a column that contains nothing. The whole point
+        of this panel is to stop a number being read as a finding when it is
+        not one, so it must not become the thing doing that.
         """
+        if not int(getattr(stats, "count", 0) or 0):
+            return ""
+
         rows: list[str] = []
         for label, attr, flat_pct, unit_note in self._CALENDAR_BASELINES:
             raw = getattr(stats, attr, None)

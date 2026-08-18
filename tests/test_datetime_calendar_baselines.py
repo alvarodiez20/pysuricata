@@ -108,6 +108,36 @@ class TestTheBaselineIsDrawn:
         assert "8 of 24 hours on 5 of 7 days" in card
 
 
+class TestAColumnWithNoValuesGetsNoPanel:
+    """#315 made a zero-row frame render a report, which brought this panel
+    within reach of a column that contains nothing.
+
+    The ratios finalise to 0.0 there, and the verdict read
+    `under-represented · −28.6pp vs 28.6%` — a confident finding about an empty
+    column. This panel exists to stop a number being read as a finding when it
+    is not one; it must not become the thing doing that.
+    """
+
+    @pytest.fixture(scope="class")
+    def empty_card(self) -> str:
+        frame = pd.DataFrame({"when": pd.Series([], dtype="datetime64[ns]")})
+        return _TAGS.sub("", profile(frame, seed=0).html)
+
+    def test_no_bar_is_drawn(self, empty_card: str) -> None:
+        assert "cal-base__row" not in empty_card
+
+    def test_no_verdict_is_stated(self, empty_card: str) -> None:
+        assert "cal-base__verdict" not in empty_card
+        assert "under-represented" not in empty_card
+
+    def test_the_card_still_renders(self, empty_card: str) -> None:
+        """Suppressing the panel must not take the column with it."""
+        assert 'class="badge">Datetime</span>' in empty_card
+
+    def test_a_column_with_values_is_unaffected(self, card: str) -> None:
+        assert card.count('class="cal-base__row"') == 2
+
+
 class TestTheVerdictIsInPercentagePoints:
     def test_a_flat_column_is_called_flat(self, card: str) -> None:
         verdicts = re.findall(r"cal-base__verdict[^>]*>([^<]+)<", card)
