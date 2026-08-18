@@ -171,6 +171,32 @@ class TestTheEngineFallsBackWithoutCalamine:
         with pytest.raises(ImportError, match="python-calamine"):
             _read_excel(workbook)
 
+    def test_a_value_error_with_no_calamine_to_blame_still_propagates(
+        self, workbook, monkeypatch
+    ):
+        """The retry is specifically for `engine="calamine"` being unknown to
+        an old pandas. A `ValueError` with `engine=None` already -- nothing
+        left to fall back to -- has to reach the caller, not vanish."""
+        import builtins
+
+        real_import = builtins.__import__
+
+        def blocked_import(name, *args, **kwargs):
+            if name == "python_calamine":
+                raise ImportError("no calamine here")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", blocked_import)
+
+        def raises_for_an_unrelated_reason(*args, **kwargs):
+            assert kwargs.get("engine") is None
+            raise ValueError("Excel file format cannot be determined")
+
+        monkeypatch.setattr(pd, "read_excel", raises_for_an_unrelated_reason)
+
+        with pytest.raises(ValueError, match="cannot be determined"):
+            _read_excel(workbook)
+
 
 class TestErrorsMatchTheOtherFormats:
     def test_a_missing_file_is_reported_before_any_reader_runs(self, tmp_path):
