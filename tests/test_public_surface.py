@@ -157,8 +157,8 @@ class TestErrorsShareOneBase:
             profile("/nonexistent/nowhere.csv")
 
     def test_an_unreadable_format_says_which_are_supported(self, tmp_path):
-        path = tmp_path / "data.xlsx"
-        path.write_bytes(b"not really a spreadsheet")
+        path = tmp_path / "data.docx"
+        path.write_bytes(b"not really a document")
         with pytest.raises(UnsupportedDataError, match=r"\.csv"):
             profile(path)
 

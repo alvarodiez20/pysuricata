@@ -169,6 +169,56 @@ jobs:
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
 
+  # ---------------------------------------------------------------- demo ---
+  # `worker.js` installs `pysuricata==<latest>` from PyPI at page load, so
+  # every publish above edits the demo's launch asset in production -- and
+  # until this job existed, nothing tested that edit before real visitors did.
+  #
+  # DOM presence would not have caught the one failure this project already
+  # found this way: Chrome silently drops a large `srcdoc` document, no error,
+  # no console warning, no failed request, just a blank frame that looks
+  # identical to a rendered one in the markup. `web/e2e.py` asserts on the
+  # screenshot's actual pixels instead (#1).
+  #
+  # Targets the live site, not a local checkout of `web/`: Cloudflare Pages
+  # redeploys on push to `main` on its own schedule, so a local copy can be
+  # ahead or behind what a visitor is actually served, and the live URL is the
+  # only thing that answers "does this work right now."
+  #
+  # Deliberately not a dependency of `release` below. PyPI already has the
+  # package by the time this runs, and nothing can take that back -- gating
+  # the GitHub release on this would make the release notes late for a reason
+  # that has nothing to do with whether they are accurate. A failure here
+  # fails the workflow on its own, which is the signal to stop tagging further
+  # releases until the demo is fixed (docs/versioning.md).
+  demo-check:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --group browser
+
+      - name: Install Chromium
+        run: uv run playwright install --with-deps chromium
+
+      - name: The live demo renders a visible report on the version just published
+        run: uv run python web/e2e.py --url https://pysuricata.pages.dev --out e2e-out
+
+      - name: Upload the report screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: demo-e2e-screenshot
+          path: e2e-out/
+          if-no-files-found: warn
+
   # -------------------------------------------------------------- release ---
   # Last, and after publish, so a GitHub release never announces a version PyPI
   # does not have. These two used to run in parallel with no `needs:` between

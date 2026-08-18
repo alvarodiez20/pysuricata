@@ -60,7 +60,7 @@ DataLike = Union[
     "pd.DataFrame",  # pandas
     "pl.DataFrame",  # polars eager
     "pl.LazyFrame",  # polars lazy
-    str,  # path to a .csv / .parquet / .json file
+    str,  # path to a .csv / .parquet / .json / .arrow / .xlsx file
     os.PathLike,
     cabc.Iterable,  # iterator/generator yielding pandas or polars DataFrames
 ]
@@ -572,7 +572,8 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
               ``__arrow_c_stream__``, streamed a batch at a time;
             - a DuckDB relation, streamed without landing the result set;
             - a path to a ``.csv``, ``.parquet``, ``.json``, ``.arrow``,
-              ``.feather`` or ``.ipc`` file;
+              ``.feather``, ``.ipc``, ``.xlsx``, ``.xlsm``, ``.xlsb``,
+              ``.xls`` or ``.ods`` file;
             - an iterable (generator, list, tuple, etc.) yielding pandas or
               polars ``DataFrame`` chunks.
 
@@ -677,8 +678,8 @@ def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
     raise UnsupportedDataError(
         f"Cannot profile {type(data).__name__}. Provide a pandas DataFrame, a "
         "polars DataFrame/LazyFrame, an Arrow table or reader, a DuckDB "
-        "relation, a path to a .csv/.parquet/.json file, or an iterable of "
-        "DataFrame chunks."
+        "relation, a path to a .csv/.parquet/.json/.arrow/.xlsx file, or an "
+        "iterable of DataFrame chunks."
     )
 
 
@@ -702,9 +703,68 @@ def _is_frame(obj: Any) -> bool:
 #: happens to be named with.
 _IPC_SUFFIXES = frozenset({".arrow", ".feather", ".ipc"})
 
+#: Extensions read as spreadsheets. All five go through `_read_excel` --
+#: which library actually decodes the bytes is decided by what is installed,
+#: not by which of these the file happens to be named with.
+_EXCEL_SUFFIXES = frozenset({".xlsx", ".xlsm", ".xlsb", ".xls", ".ods"})
+
+
+def _read_excel(path: Path) -> pd.DataFrame:
+    """Load the first sheet of a workbook into a DataFrame.
+
+    No engine gives `read_excel` a `chunksize` -- a workbook is always
+    materialised whole before anything sees a row, unlike the CSV, Parquet
+    and Arrow paths above. That is a property of every Excel reader, not a
+    choice made here.
+
+    Tries `python-calamine` first: one dependency across all five formats
+    here instead of openpyxl for `.xlsx`/`.xlsm`, xlrd for `.xls`, pyxlsb for
+    `.xlsb` and odfpy for `.ods` -- and the engine the browser demo settled on
+    for the same reason (`web/README.md`), so a workbook profiles the same
+    way there and here. Falls back to pandas' own per-format engine when
+    calamine is not installed, or when the installed pandas predates its
+    support (added in 2.2 -- this project's floor is 2.0), so this does not
+    force a new dependency on a caller who already has openpyxl.
+
+    Only the first sheet, silently. `profile()` is a one-shot call over one
+    table and has no prompt to put a sheet chooser behind, unlike the demo,
+    which pauses and asks (`web/README.md`) -- and `sheet_name=0` is what a
+    plain `pd.read_excel(path)` already defaults to, not a narrower choice.
+
+    Raises:
+        ImportError: If no engine that can read this format is installed.
+    """
+    import pandas as pd
+
+    try:
+        import python_calamine  # noqa: F401
+
+        engine: str | None = "calamine"
+    except ImportError:
+        engine = None
+
+    try:
+        return pd.read_excel(path, sheet_name=0, engine=engine)
+    except ValueError:
+        # `engine="calamine"` on a pandas that predates its support raises
+        # ValueError("Unknown engine: calamine") rather than ImportError --
+        # calamine itself is installed and usable, pandas just does not know
+        # its name yet. Retry with pandas' own default instead of failing on
+        # a dependency that would actually work.
+        if engine is None:
+            raise
+        return pd.read_excel(path, sheet_name=0)
+    except ImportError as e:
+        raise ImportError(
+            f"Reading '{path}' needs an Excel engine. `pip install "
+            "python-calamine` covers .xlsx/.xlsm/.xlsb/.xls/.ods with one "
+            "dependency; pandas' own per-format engines (openpyxl, xlrd, "
+            "pyxlsb, odfpy) work too."
+        ) from e
+
 
 def _read_path(path: str | os.PathLike) -> pd.DataFrame:
-    """Load a CSV, Parquet or JSON file into a DataFrame.
+    """Load a CSV, Parquet, JSON, Arrow IPC or Excel file into a DataFrame.
 
     Args:
         path: Path to the file to read.
@@ -742,13 +802,27 @@ def _read_path(path: str | os.PathLike) -> pd.DataFrame:
     if suffix in _IPC_SUFFIXES:
         return _sources.first_batch_or_stream(_sources.stream_ipc(resolved))
 
+    # Excel workbooks materialise whole regardless of engine -- see
+    # `_read_excel`'s docstring for why that is not this function's decision
+    # to make, and why only the first sheet is read.
+    if suffix in _EXCEL_SUFFIXES:
+        return _read_excel(resolved)
+
     readers = {
         ".csv": pd.read_csv,
         ".json": pd.read_json,
     }
     reader = readers.get(suffix)
     if reader is None:
-        supported = ", ".join([".csv", ".parquet", ".json", *sorted(_IPC_SUFFIXES)])
+        supported = ", ".join(
+            [
+                ".csv",
+                ".parquet",
+                ".json",
+                *sorted(_IPC_SUFFIXES),
+                *sorted(_EXCEL_SUFFIXES),
+            ]
+        )
         raise UnsupportedDataError(
             f"Cannot read '{resolved.name}': unsupported format "
             f"'{resolved.suffix}'. Use one of {supported}, or load it "
@@ -968,7 +1042,8 @@ def profile(
               ``__arrow_c_stream__``
             - a DuckDB relation
             - a path to a ``.csv``, ``.parquet``, ``.json``, ``.arrow``,
-              ``.feather`` or ``.ipc`` file
+              ``.feather``, ``.ipc``, ``.xlsx``, ``.xlsm``, ``.xlsb``,
+              ``.xls`` or ``.ods`` file
             - Iterable yielding ``pandas.DataFrame`` or ``polars.DataFrame`` chunks
 
             The last three stream a batch at a time and are never materialised

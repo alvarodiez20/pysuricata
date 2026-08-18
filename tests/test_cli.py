@@ -97,7 +97,7 @@ class TestLoadData:
             temp_path = f.name
 
         try:
-            with pytest.raises(ValueError, match="Unsupported file format"):
+            with pytest.raises(ValueError, match="unsupported format"):
                 load_data(temp_path)
         finally:
             os.unlink(temp_path)

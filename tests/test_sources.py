@@ -330,9 +330,9 @@ class TestTheCliStreamsParquetToo:
     def test_an_unsupported_suffix_is_still_refused(self, tmp_path):
         from pysuricata.cli import load_data
 
-        path = tmp_path / "data.xlsx"
-        path.write_text("not really a spreadsheet")
-        with pytest.raises(ValueError, match="Unsupported file format"):
+        path = tmp_path / "data.docx"
+        path.write_text("not really a document")
+        with pytest.raises(ValueError, match="unsupported format"):
             load_data(str(path))
 
 

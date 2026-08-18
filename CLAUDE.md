@@ -19,6 +19,12 @@ uv sync --all-extras --group browser && uv run playwright install chromium
 uv run pytest -m browser
 uv run python scripts/contact_sheet.py      # 6 review captures, never a gate
 
+# Real Pyodide boot + profile run, asserted on rendered pixels not markup (#1).
+# Slow and network-dependent (PyPI, jsDelivr) -- not part of `pytest -m browser`,
+# runs post-release in cd.yml's demo-check job against the live site instead.
+uv run python web/e2e.py                                    # local web/, over loopback
+uv run python web/e2e.py --url https://pysuricata.pages.dev # the live demo
+
 python -m benchmarks.hotspots               # where does profile() spend its time
 python -m benchmarks.kernels                # per-kernel timings + memory roofline
 python -m benchmarks.end_to_end --markdown results.md   # vs ydata/sweetviz/skimpy

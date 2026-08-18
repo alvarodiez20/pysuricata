@@ -121,8 +121,8 @@ def _as_public_error(message: str) -> Exception:
         return UnsupportedDataError(
             f"Cannot profile a source yielding {named}. Provide a pandas "
             "DataFrame, a polars DataFrame/LazyFrame, an Arrow table or reader, "
-            "a DuckDB relation, a path to a .csv/.parquet/.json file, or an "
-            "iterable of DataFrame chunks."
+            "a DuckDB relation, a path to a .csv/.parquet/.json/.arrow/.xlsx "
+            "file, or an iterable of DataFrame chunks."
         )
     return PySuricataError(message)
 
