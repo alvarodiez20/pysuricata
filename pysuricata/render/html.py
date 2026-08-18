@@ -126,6 +126,48 @@ def _quick_facts(
     return " · ".join(facts)
 
 
+def _sample_section(body: str | None) -> str:
+    """The Sample section, or nothing at all.
+
+    `render.include_sample = False` blanks `body`, and blanking only the body
+    left a section headed "Sample" holding a `Hide sample` toggle over an empty
+    card -- a control for content that is not there. The switch is named after
+    the section, so it removes the section (#266).
+
+    The wrapper lives here rather than in the template because a template can
+    only interpolate, not omit: the heading, the toggle and the header's
+    `#sample` nav link all have to go with the body, and a nav link to a section
+    that is not in the document is the dead-anchor failure
+    `tests/test_js_selectors_match_markup.py` exists to catch.
+
+    Args:
+        body: The rendered sample table, or empty when the sample is off.
+
+    Returns:
+        The section markup, or `""`.
+    """
+    if not body:
+        return ""
+    return (
+        '<section id="sample" class="collapsible-card">\n'
+        '          <span id="dataset-sample" class="anchor-alias"></span>\n'
+        '          <h2 class="section-title">Sample</h2>\n'
+        "          <!-- open by default (#103): the sample is the fastest way to see\n"
+        "               whether the profile matches the data, and hiding it behind a\n"
+        "               click meant most readers never looked. -->\n"
+        '          <details class="card" id="sample-details" open>\n'
+        "            <summary>\n"
+        '              <span id="sample-toggle-text">Hide sample</span>\n'
+        '              <span class="chev" aria-hidden="true">\u25b8</span>\n'
+        "            </summary>\n"
+        '            <div class="card-content">\n'
+        f"              {body}\n"
+        "            </div>\n"
+        "          </details>\n"
+        "        </section>"
+    )
+
+
 def render_html_snapshot(
     *,
     kinds: ColumnKinds,
@@ -439,6 +481,8 @@ def render_html_snapshot(
         else ""
     )
 
+    # The heading, the collapse toggle and the divider belong to the sample as
+    # much as the table does, so they live or die with it.
     # Substitution is done with a single regex pass rather than str.format()
     # because CSS custom properties ({--var-name}) and JavaScript braces would be
     # read by .format() as named placeholders and raise KeyError. A single pass is
@@ -501,7 +545,10 @@ def render_html_snapshot(
         "date_max": date_max,
         "text_cols": f"{text_cols:,}",
         "avg_text_len": avg_text_len,
-        "dataset_sample_section": sample_section_html or "",
+        "sample_section": _sample_section(sample_section_html),
+        "sample_nav_link": (
+            '<a href="#sample">Sample</a>' if sample_section_html else ""
+        ),
         "variables_section": variables_section_html,
         "correlations_section": correlations_section_html,
         "missing_values_section": missing_values_section_html,

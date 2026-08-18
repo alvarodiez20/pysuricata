@@ -503,9 +503,13 @@ class RenderOptions:
             consistent styling. Can be used to provide context about the dataset
             or analysis.
         include_sample: Whether the report shows a handful of sample rows.
-            Default: True. Set it to False when the frame carries data that must
-            not leave the pipeline -- the sample is the only place raw values
-            appear in the report.
+            Default: True.
+
+            It removes the sample table, and **only** the sample table. Raw
+            values still reach the page from four other places: a categorical
+            card's top-value labels and its shortest/longest exemplars, and the
+            numeric and datetime extremes. This is not a redaction switch, and
+            the docs no longer describe it as one (#285).
         sample_rows: How many rows the sample shows, when it is shown.
             Default: 10.
     """
@@ -517,6 +521,9 @@ class RenderOptions:
     # nothing -- including in a recipe that offered `include_sample = False` as
     # a way to keep raw values out of a report (#266). A silent no-op is bad; a
     # silent no-op sold as a privacy control is worse.
+    #
+    # It is still not a privacy control, which is the correction #285 makes:
+    # it governs the sample table and nothing else.
     include_sample: bool = True
     sample_rows: int = 10
 

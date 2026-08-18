@@ -280,9 +280,9 @@ class PolarsAdapter(BaseAdapter):
             HTML string for sample section.
         """
         if not getattr(cfg, "include_sample", True):
-            # The sample is the only place raw values appear in the report, so
-            # this is the switch a caller reaches for when the frame must not
-            # leave the pipeline (#266). An empty section renders as no section.
+            # An empty section renders as no section (#266). Note the scope:
+            # this governs the sample table, not raw values in general -- the
+            # cards still print category labels and extremes (#285).
             return ""
 
         if not isinstance(first, pl.DataFrame):

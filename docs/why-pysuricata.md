@@ -182,7 +182,7 @@ config.compute.max_uniques = 4096 # KMV sketch size
 # Rendering
 config.render.title = "My Report"
 config.render.description = "Custom **markdown** description"
-config.render.include_sample = True   # the only place raw values appear
+config.render.include_sample = True   # show the sample table
 config.render.sample_rows = 10
 
 report = profile(df, config=config)

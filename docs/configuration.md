@@ -381,13 +381,27 @@ Key metrics:
 
 Whether the report shows a handful of sample rows.
 
-The sample is the **only place raw values appear** in the report — every other
-number is an aggregate. Turn it off when the frame carries data that must not
-leave the pipeline.
-
 ```python
-config.render.include_sample = False  # no raw rows in the output
+config.render.include_sample = False  # no sample table in the output
 ```
+
+!!! warning "This is not a redaction switch"
+
+    It removes the sample table, and only the sample table. Raw values still
+    reach the page from four other places:
+
+    | card | what it prints verbatim |
+    |---|---|
+    | categorical | the top-value labels |
+    | categorical | *Shortest seen* and *Longest seen* |
+    | numeric | the smallest and largest values |
+    | datetime | the earliest and latest timestamps |
+
+    Turning the sample off removes the largest block of raw data from a report
+    and is worth doing on a frame you are circulating. It does not make the
+    report safe to circulate. If that is what you need, profile a redacted
+    frame, or use `columns=` to leave the sensitive ones out of the pass
+    entirely — which also means they never enter an accumulator.
 
 **`sample_rows: int = 10`**
 
@@ -457,7 +471,7 @@ from pysuricata import ProfileConfig
 # Only check specific columns
 config = ProfileConfig()
 config.compute.columns = ["customer_id", "transaction_amount", "timestamp"]
-config.render.include_sample = False  # No PII in reports
+config.render.include_sample = False  # drop the sample table -- see the note above
 
 # Generate stats only (no HTML)
 from pysuricata import summarize

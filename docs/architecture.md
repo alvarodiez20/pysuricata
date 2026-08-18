@@ -38,10 +38,15 @@ three are read a batch at a time and never materialised.
 
 **Summary Metrics** → After all chunks are consumed, accumulators are finalized and dataset-wide metrics (missingness, duplicates, etc.) are computed.
 
-**HTML Renderer** → One template, `templates/report_template.html`, filled by
-`str.format` over bare `{identifier}` placeholders — no templating engine and no
-dependency for one. CSS, JS and SVG are inlined, producing a portable,
-self-contained file.
+**HTML Renderer** → One template, `templates/report_template.html`, carrying
+bare `{identifier}` placeholders — no templating engine and no dependency for
+one. They are filled in a **single regex pass**, not by `str.format` and not by
+sequential `replace()`, and both halves of that matter: the inlined CSS and JS
+contain braces (`{--var-name}`, every JS block) that `.format()` would read as
+placeholders and raise `KeyError` on, while sequential replacement would rescan
+a value it had already substituted — a user-supplied title containing
+`{report_date}` would be expanded by a later pass. CSS, JS and SVG are inlined,
+producing a portable, self-contained file.
 
 ---
 
@@ -218,7 +223,7 @@ The template produces a **single portable HTML file** — no external dependenci
 | `compute_correlations` | `True` | Enable/disable correlation chips |
 | `corr_threshold` | 0.5 | Minimum \|r\| to display |
 | `random_seed` | `0` | Deterministic sampling — reproducible unless you ask otherwise |
-| `render.include_sample` | `True` | Show sample rows; the only place raw values appear |
+| `render.include_sample` | `True` | Show sample rows (the table only — cards still print labels and extremes) |
 
 ---
 

@@ -358,7 +358,7 @@ card with its own SVG charts.
 - Profile fewer columns: `profile(df, columns=["col1", "col2"])`
 - Reduce `top_k`, which sets how many bars a categorical card draws
 - Skip correlations: `profile(df, correlations=False)`
-- Or drop the sample rows: `config.render.include_sample = False`
+- Drop the sample table: `config.render.include_sample = False`
 
 ### Out of memory
 - Hand over the path rather than a loaded frame, so the file streams

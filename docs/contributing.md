@@ -403,7 +403,7 @@ pysuricata/
 │   ├── consume.py      # pandas chunk -> accumulator wiring
 │   └── consume_polars.py
 ├── render/             # HTML generation; html.py drives the template
-├── templates/          # report_template.html -- str.format, no engine
+├── templates/          # report_template.html -- placeholders, one regex pass
 └── static/             # CSS, JS, images, all inlined into the report
 native/                 # optional Rust kernels (PyO3 + maturin)
 benchmarks/             # accuracy oracle, performance harness, docs checker

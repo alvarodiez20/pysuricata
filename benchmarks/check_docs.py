@@ -26,6 +26,13 @@ Checks, in rough order of how often they catch something:
 7. **Stale markers.** Version strings, hardcoded timings and "N x faster"
    claims are listed for human review -- not auto-failed, since only a human
    knows whether a number is still true.
+8. **Option defaults.** Every ``**`name: type = default`**`` heading and every
+   row of a table with a Default column is resolved against
+   ``dataclasses.fields()`` of ``ComputeOptions`` and ``RenderOptions``. Check 3
+   verifies that a *name* resolves on a populated instance; this verifies that
+   the field is declared and that the documented *default* is the real one.
+9. **CLI flags.** ``cli.md``'s ``--flag`` tokens, per subcommand, against the
+   options ``create_parser()`` actually defines -- in both directions.
 """
 
 from __future__ import annotations
@@ -55,7 +62,12 @@ IMAGE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
 SUMMARY_PATH = re.compile(
     r"""(?:summary|stats|result|s)\s*\[\s*["']([\w ]+)["']\s*\]\s*\[\s*["']([\w ]+)["']\s*\]"""
 )
-CFG_ATTR = re.compile(r"(?:config|cfg)\.(compute|output|report)\.(\w+)")
+# `render` was missing here for as long as this check has existed, and
+# `output`/`report` are groups `ProfileConfig` has never had -- so two thirds of
+# the pattern matched nothing and the third of the config that does exist went
+# unchecked. That is how `config.render.include_sample` stayed documented on
+# four pages while `RenderOptions` had two fields (#266).
+CFG_ATTR = re.compile(r"(?:config|cfg)\.(compute|render)\.(\w+)")
 KWARG = re.compile(
     r"(?:ProfileConfig|ComputeOptions|OutputOptions)\s*\(([^)]*)\)", re.S
 )
@@ -301,7 +313,7 @@ def _config_fields() -> dict[str, set[str]]:
 
     fields: dict[str, set[str]] = {}
     cfg = ProfileConfig()
-    for group in ("compute", "output", "report"):
+    for group in ("compute", "render"):
         obj = getattr(cfg, group, None)
         if obj is None:
             continue
@@ -428,6 +440,238 @@ def check_stale_markers(page: Path, text: str, out: list[Finding]) -> None:
             )
 
 
+#: `**`name: type = default`**`, which is how `configuration.md` heads each
+#: option -- 22 of them. The type annotation is not checked: it is prose about a
+#: union and gets written several ways, while the default is a literal that
+#: either matches the dataclass or does not.
+DOC_OPTION_HEADING = re.compile(
+    r"^\*\*`([a-z_][a-z0-9_]*)\s*:\s*[^=`]+=\s*(.+?)`\*\*", re.M
+)
+
+#: A row of a table whose header carries a Default column. The group prefix is
+#: captured rather than discarded: `compute.x` / `render.x` is an unambiguous
+#: claim that `x` is a config field, while a bare first cell might be a CLI
+#: flag, a payload key or a positional argument -- `cli.md` and `data-checks.md`
+#: both have Default columns over things that are not options.
+DOC_OPTION_ROW = re.compile(
+    r"^\|\s*`(compute\.|render\.)?([a-z_][a-z0-9_]*)`\s*\|\s*`?([^|`]+?)`?\s*\|",
+    re.M,
+)
+
+
+def _option_defaults() -> dict[str, object]:
+    """Field name -> default, over the two public options dataclasses.
+
+    `dataclasses.fields()` rather than `dir()` on an instance, which is the
+    whole point: a plain dataclass has no slots, so a populated instance happily
+    reports an attribute nobody declared. `dir()` cannot tell a real field from
+    one the documentation invented, and that is precisely what #266 was.
+    """
+    from pysuricata import ComputeOptions, RenderOptions
+
+    out: dict[str, object] = {}
+    for cls in (ComputeOptions, RenderOptions):
+        for f in dataclasses.fields(cls):
+            if f.default is not dataclasses.MISSING:
+                out[f.name] = f.default
+            elif f.default_factory is not dataclasses.MISSING:  # type: ignore[misc]
+                out[f.name] = f.default_factory()  # type: ignore[misc]
+    return out
+
+
+def _as_literal(raw: str):
+    """Parse a documented default, or return `None` if it is not a literal.
+
+    Normalises the three ways the pages write a number -- `50_000`, `50000` and
+    `50,000` -- so a thousands separator is not reported as a wrong default.
+    """
+    text = raw.strip().strip("`").strip()
+    if not text:
+        return None, False
+    if re.fullmatch(r"-?[\d,_]+(?:\.\d+)?", text):
+        text = text.replace(",", "").replace("_", "")
+    try:
+        return ast.literal_eval(text), True
+    except (ValueError, SyntaxError):
+        return None, False
+
+
+def _table_sections_with_defaults(text: str) -> list[tuple[int, str]]:
+    """Slices of `text` belonging to a table that has a Default column.
+
+    A header is a row *followed by a separator row* whose cells include one
+    called exactly "default". Both halves matter: matching any line containing
+    the word reported a Guarantees table as a defaults table because one of its
+    cells said "at the default `uniques_k=2048`".
+    """
+    spans: list[tuple[int, str]] = []
+    lines = text.splitlines(keepends=True)
+    starts: list[int] = []
+    offset = 0
+    for line in lines:
+        starts.append(offset)
+        offset += len(line)
+
+    i = 0
+    while i < len(lines) - 1:
+        header, sep = lines[i], lines[i + 1]
+        cells = [c.strip().lower() for c in header.strip().strip("|").split("|")]
+        is_sep = bool(re.fullmatch(r"\s*\|[\s|:-]+\|\s*", sep))
+        if header.lstrip().startswith("|") and is_sep and "default" in cells:
+            j = i + 2
+            while j < len(lines) and lines[j].lstrip().startswith("|"):
+                j += 1
+            spans.append(
+                (
+                    starts[i],
+                    text[starts[i] : starts[j] if j < len(lines) else len(text)],
+                )
+            )
+            i = j
+            continue
+        i += 1
+    return spans
+
+
+def check_option_defaults(
+    page: Path, text: str, out: list[Finding], defaults: dict[str, object]
+) -> None:
+    """Documented option names and defaults, against the real dataclasses.
+
+    Three of the sixteen findings in the #266-#282 sweep were this: an option
+    that does not exist, and two defaults that had moved. All three were
+    mechanical, and none of them was caught -- so this is the ratchet under
+    that correction (#284).
+    """
+    if page.name in _NOT_RUNNABLE:
+        # The changelog names options as they were at the time. See check_config.
+        return
+
+    def report(
+        name: str, documented: str, offset: int, *, declared: bool = True
+    ) -> None:
+        line = text[:offset].count("\n") + 1
+        if name not in defaults:
+            if not declared:
+                # The row never claimed this was a config option. Saying nothing
+                # is right: the alternative reported every CLI positional and
+                # every threshold category as a missing field.
+                return
+            out.append(
+                Finding(
+                    page.name,
+                    line,
+                    "ERROR",
+                    "option",
+                    f"`{name}` is not a field of ComputeOptions or RenderOptions",
+                )
+            )
+            return
+        value, parsed = _as_literal(documented)
+        if not parsed:
+            return
+        actual = defaults[name]
+        if value != actual or type(value) is not type(actual):
+            out.append(
+                Finding(
+                    page.name,
+                    line,
+                    "ERROR",
+                    "option",
+                    f"`{name}` documented as {value!r}, actual default {actual!r}",
+                )
+            )
+
+    for m in DOC_OPTION_HEADING.finditer(text):
+        report(m.group(1), m.group(2), m.start())
+
+    for start, block in _table_sections_with_defaults(text):
+        for m in DOC_OPTION_ROW.finditer(block):
+            prefix, name, documented = m.group(1), m.group(2), m.group(3).strip()
+            # A prose cell is a description, not a default. Only rows whose
+            # second cell is a literal are making a claim this can check.
+            if not _as_literal(documented)[1] and name in defaults:
+                continue
+            report(name, documented, start + m.start(), declared=bool(prefix))
+
+
+def check_cli_flags(out: list[Finding]) -> None:
+    """`cli.md`'s flags against the flags `create_parser()` actually defines.
+
+    The page transcribes 31 options across three subcommands, and its whole
+    value is being exhaustive -- so the first flag anyone adds or renames makes
+    it wrong, silently, unless something pairs the two (#284).
+    """
+    page = DOCS / "cli.md"
+    if not page.exists():
+        return
+    try:
+        from pysuricata.cli import create_parser
+    except Exception as e:  # pragma: no cover - import guard
+        out.append(Finding("cli.md", 0, "WARN", "cli", f"cannot import parser: {e}"))
+        return
+
+    parser = create_parser()
+    subparsers: dict[str, object] = {}
+    for action in parser._actions:
+        choices = getattr(action, "choices", None)
+        if isinstance(choices, dict):
+            subparsers.update(choices)
+
+    text = page.read_text(encoding="utf-8")
+    # One slice of the page per `## subcommand` heading, so a flag documented
+    # under `profile` is not credited to `check`.
+    sections: dict[str, tuple[int, str]] = {}
+    headings = list(re.finditer(r"^##\s+`?(\w+)`?\s*$", text, re.M))
+    for i, m in enumerate(headings):
+        name = m.group(1)
+        if name not in subparsers:
+            continue
+        end = headings[i + 1].start() if i + 1 < len(headings) else len(text)
+        sections[name] = (m.start(), text[m.start() : end])
+
+    for name, sub in sorted(subparsers.items()):
+        real = {
+            opt
+            for action in sub._actions  # type: ignore[attr-defined]
+            for opt in action.option_strings
+            if opt.startswith("--")
+        }
+        if name not in sections:
+            out.append(
+                Finding(
+                    "cli.md",
+                    0,
+                    "WARN",
+                    "cli",
+                    f"subcommand `{name}` has no `## {name}` section",
+                )
+            )
+            continue
+        start, body = sections[name]
+        documented = set(re.findall(r"(--[a-z][a-z0-9-]*)", body))
+        for flag in sorted(documented - real - {"--help"}):
+            out.append(
+                Finding(
+                    "cli.md",
+                    text[:start].count("\n") + 1,
+                    "ERROR",
+                    "cli",
+                    f"`{flag}` is documented under `{name}` but the parser has no such flag",
+                )
+            )
+        for flag in sorted(real - documented - {"--help"}):
+            out.append(
+                Finding(
+                    "cli.md",
+                    text[:start].count("\n") + 1,
+                    "WARN",
+                    "cli",
+                    f"`{name} {flag}` exists but is not documented",
+                )
+            )
+
+
 def check_nav(out: list[Finding]) -> None:
     nav_text = (REPO / "mkdocs.yml").read_text(encoding="utf-8")
     # Strip comments first. The regex scans raw text, so a filename mentioned in
@@ -463,6 +707,7 @@ def main(argv=None) -> int:
 
     findings: list[Finding] = []
     fields = _config_fields()
+    defaults = _option_defaults()
 
     import numpy as np
     import pandas as pd
@@ -476,6 +721,7 @@ def main(argv=None) -> int:
     # Nav coverage stays scoped to `docs/`: the README is deliberately not an
     # mkdocs page, and including it here would report that as an orphan.
     check_nav(findings)
+    check_cli_flags(findings)
     for page in _checked_pages():
         text = page.read_text(encoding="utf-8")
         rel = _page_label(page)
@@ -483,6 +729,7 @@ def main(argv=None) -> int:
         check_examples(page, text, findings, run=not args.no_run)
         check_symbols(page, text, findings)
         check_config(page, text, findings, fields)
+        check_option_defaults(page, text, findings, defaults)
         check_summary_keys(page, text, findings, real)
         check_links(page, text, findings)
         check_stale_markers(page, text, findings)

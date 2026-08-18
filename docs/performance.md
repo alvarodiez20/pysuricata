@@ -214,7 +214,7 @@ config.compute.numeric_sample_size = 5_000   # Small samples
 config.compute.max_uniques = 512             # Tiny sketches
 config.compute.top_k = 10                    # Few top values
 config.compute.compute_correlations = False  # Skip the O(p^2) step
-config.render.include_sample = False         # No raw rows in the report
+config.render.include_sample = False         # skip the sample table
 
 report = profile(df, config=config)
 ```

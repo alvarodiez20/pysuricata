@@ -461,6 +461,82 @@ quoted when both sides were measured in the same round-robin run.
 [#281]: https://github.com/alvarodiez20/pysuricata/issues/281
 [#282]: https://github.com/alvarodiez20/pysuricata/issues/282
 
+### Fixed
+
+- **`include_sample=False` left an empty Sample card behind** ([#266]). The
+  section shell — the heading, the `Hide sample` toggle and the header's
+  `#sample` nav link — lived in the template with only the table as a
+  placeholder, so turning the sample off produced a control for content that was
+  not there, and a nav link to a section no longer in the document. That second
+  one is the dead-anchor failure `tests/test_js_selectors_match_markup.py`
+  exists to catch.
+
+  The wrapper moved into `render/html.py`, because a template can only
+  interpolate and not omit. The default report is byte-identical apart from one
+  fewer HTML comment.
+
+- **The documentation oversold what `include_sample=False` removes** ([#285]).
+  It was described, in five places, as leaving a report with no raw values in
+  it — "the sample is the **only place raw values appear**". That is false, and
+  the test written for [#266] is what caught it: it asserted the claim and
+  failed.
+
+  With the sample off, `alice@example.invalid` still appears on the page as the
+  categorical card's *Shortest seen*. Four places print raw values: a
+  categorical card's top-value labels and its shortest/longest exemplars, and
+  the numeric and datetime extremes.
+
+  So the switch does what its name says and nothing more. `configuration.md`
+  now carries the list, and says what to reach for instead — profile a redacted
+  frame, or use `columns=` so the sensitive ones never enter an accumulator.
+  A test pins the limitation, so the claim cannot be re-derived: if a future
+  change genuinely does redact the cards, that test failing is the signal to
+  revisit the warning.
+
+- **The docs checker was blind to a third of the config** ([#284]). `CFG_ATTR`
+  matched `config.(compute|output|report).X`, and `ProfileConfig` has never had
+  an `output` or a `report` group — it has `compute` and **`render`**. Two
+  thirds of the pattern matched nothing and the third that exists went
+  unchecked, which is how `config.render.include_sample` stayed documented on
+  four pages while `RenderOptions` had two fields.
+
+### Added
+
+- **`check_docs.py` gains two checks** ([#284]), because three of the sixteen
+  findings in the documentation sweep were mechanical and none of them was
+  caught.
+
+  **Option defaults.** Every ``**`name: type = default`**`` heading — 22 of them
+  in `configuration.md` — and every row of a table with a Default column is
+  resolved against `dataclasses.fields()` of `ComputeOptions` and
+  `RenderOptions`. `dataclasses.fields()` rather than `dir()` on an instance is
+  the point: a plain dataclass has no slots, so a populated instance reports an
+  attribute nobody declared, and `dir()` cannot tell a real field from one the
+  documentation invented. Defaults are compared through `ast.literal_eval`, so
+  `50_000`, `50000` and `50,000` all match.
+
+  A bare first cell in a table is *not* treated as a config option — `cli.md`
+  and `data-checks.md` both have Default columns over positionals and threshold
+  categories — but `compute.x` / `render.x` is an unambiguous claim and is
+  checked as one.
+
+  **CLI flags.** `cli.md`'s `--flag` tokens, per subcommand, against what
+  `create_parser()` actually defines. A documented flag the parser lacks is an
+  error; a parser flag documented nowhere is a warning. The page transcribes 31
+  options and its whole value is being exhaustive, so it would have gone stale
+  on the first rename.
+
+  Verified by reverting each of the three original defects in the working tree:
+
+  ```
+  configuration.md:137  `random_seed` documented as None, actual default 0
+  architecture.md:221   `nonexistent_field` is not a field of ComputeOptions or RenderOptions
+  cli.md:75             `--warn-onlyy` is documented under `check` but the parser has no such flag
+  ```
+
+[#284]: https://github.com/alvarodiez20/pysuricata/issues/284
+[#285]: https://github.com/alvarodiez20/pysuricata/issues/285
+
 ## [0.1.2] - 2026-08-17
 
 ### Added
