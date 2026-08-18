@@ -87,6 +87,13 @@ def high_cardinality_sentence(facts: dict) -> str:
     -- `Cabin` is 147 values in 204 rows -- cannot: claiming every value is
     different there would be false, and the reason the chart is useless is that
     the top few cover almost nothing, which is worth stating as a number.
+
+    The merely-high-cardinality branches carry **rows per level** (#297). A
+    distinct count and a row count are two numbers the reader has to divide to
+    learn the thing that matters -- whether this is a few crowded levels or a
+    drift of near-singletons. `Cabin` is 1.4 rows per level, which says
+    *near-singletons* in one figure and is the shape argument for not drawing
+    the chart. It needs no statistic that is not already here.
     """
     unique = facts["unique"]
     count = facts["count"]
@@ -95,18 +102,20 @@ def high_cardinality_sentence(facts: dict) -> str:
             "Every value is different. A top-values chart would be "
             "bars of one row each, so there is nothing to plot."
         )
+    per_level = count / unique if unique else 0.0
     if facts["coverage"] is None:
         # The counters were never kept, so the coverage is unmeasured. Saying
         # so is shorter than the alternative and does not invent a number.
         return (
-            f"{unique:,} distinct values in {count:,} rows. The top-values "
-            "counters are not kept for a column this varied, so there is no "
-            "ranking to plot."
+            f"{unique:,} distinct values in {count:,} rows -- "
+            f"{per_level:.1f} rows per level. The top-values counters are not "
+            "kept for a column this varied, so there is no ranking to plot."
         )
     return (
-        f"{unique:,} distinct values in {count:,} rows, and the five most "
-        f"common cover {facts['coverage'] * 100:.1f}% of them. A top-values "
-        "chart would be a row of slivers, so there is nothing worth plotting."
+        f"{unique:,} distinct values in {count:,} rows -- {per_level:.1f} rows "
+        f"per level, and the five most common cover "
+        f"{facts['coverage'] * 100:.1f}% of them. A top-values chart would be "
+        "a row of slivers, so there is nothing worth plotting."
     )
 
 
