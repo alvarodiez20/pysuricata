@@ -109,6 +109,57 @@ Every one of those trades accuracy for footprint, and the sample size is the
 one that costs most: quantile error goes as \(1/\sqrt{k}\), so dropping the
 reservoir from 20,000 to 5,000 moves it from about ±0.7% to ±1.4%.
 
+### Proof: `pysuricata check` under a 512 MB ceiling
+
+"Bounded memory, so it fits in CI" is the reason to prefer this over a
+profiler that loads the frame — until it is measured under an *enforced*
+ceiling it is an argument, not a result ([#92](https://github.com/alvarodiez20/pysuricata/issues/92)).
+`benchmarks/memory_bounded_check.py` runs `pysuricata check` — first
+`--write-baseline`, then a comparison against it — inside a child cgroup
+capped at a fixed memory limit, against a Parquet file sized past that limit.
+The cgroup is the kernel primitive Docker's own `--memory` flag rests on: the
+process is genuinely killed by the kernel if it crosses the ceiling, not just
+observed afterward.
+
+| budget | file on disk | rows × cols | peak, `--write-baseline` | peak, compare |
+|---:|---:|---|---:|---:|
+| 512 MB | 775 MB (1.5×) | 10.8M × 12 | 301 MB | 296 MB |
+| 350 MB | 531 MB (1.5×) | 7.4M × 12 | 295 MB | 295 MB |
+
+Both runs completed. The frame is deliberately text-heavy (mixed numeric,
+category-string and timestamp columns) — the shape
+[docs/adr/memory-budget.md](adr/memory-budget.md) flags as most likely to
+break its model, since that model was fitted on numeric columns only. It does:
+the ADR's formula predicts 119 MB for this shape, and actual peak usage was
+roughly 2.5× that. The gap is a real finding about the model, not about
+`check` — both runs still landed comfortably under budget, and peak stayed
+flat (295–301 MB) as the file grew from 531 MB to 775 MB, which is the actual
+claim under test: memory does not grow with file size.
+
+One genuine bug came out of getting this measurement to pass at all:
+`stream_parquet` was calling pyarrow with its default `pre_buffer=True`, which
+prefetches row groups ahead of what the reader has asked for — a sensible
+trade on remote storage, and pure retained memory for the local files this
+reader always sees. A 300 MB file's read alone was enough to breach a 512
+MB-shaped ceiling with prefetching on; disabling it (now the default in
+`stream_parquet`) roughly halved the reader's own footprint.
+
+Two caveats, stated rather than glossed over. First, this measurement
+environment has no Docker daemon, so the ceiling is a cgroup v1 child group
+rather than a literal container — the same primitive, one layer down.
+`RLIMIT_AS` was tried first and rejected: it caps virtual address space, and
+`import pysuricata` alone reserves about 420 MB of it (pandas' and pyarrow's
+arena and BLAS reservations, almost none of it resident), which makes it an
+unrepresentative ceiling for this purpose. Second, "larger than RAM" in the
+original acceptance criterion means larger than the *runner's* memory — the
+host actually measured on has abundant physical RAM, so the file is sized
+past the configured *ceiling* (1.5×) rather than past the host's total
+memory, which is the dimension a CI runner is actually fixed at.
+
+```bash
+python -m benchmarks.memory_bounded_check --budget-mb 512
+```
+
 ### Monitor Memory Usage
 
 This recipe needs `psutil`, which is not a runtime dependency — nothing in the

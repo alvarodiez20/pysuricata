@@ -243,3 +243,49 @@ jobs:
           name: layout-contact-sheet
           path: contact-sheet/
           if-no-files-found: warn
+
+  # #250: action.yml wraps `pysuricata check` for someone who does not want a
+  # Python script in their pipeline. `requirement: .` installs this checkout
+  # rather than the last PyPI release, so a CLI flag this PR renamed breaks
+  # here before it breaks anyone downstream -- the acceptance criterion was
+  # "used in this repository's own CI, so it cannot rot unnoticed".
+  check-action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write a baseline
+        uses: ./
+        with:
+          file: docs/assets/titanic.csv
+          write-baseline: /tmp/titanic-baseline.json
+          requirement: .
+
+      - name: Compare against it -- should pass
+        id: compare
+        uses: ./
+        with:
+          file: docs/assets/titanic.csv
+          baseline: /tmp/titanic-baseline.json
+          max-missing-pct: 90
+          requirement: .
+
+      - name: The action's outputs reflect a passing run
+        run: |
+          test "${{ steps.compare.outputs.exit-code }}" = "0"
+          test -n "${{ steps.compare.outputs.result }}"
+
+      - name: A threshold no real dataset clears -- should fail
+        id: impossible
+        continue-on-error: true
+        uses: ./
+        with:
+          file: docs/assets/titanic.csv
+          baseline: /tmp/titanic-baseline.json
+          min-rows: 999999999
+          requirement: .
+
+      - name: The action's outputs reflect a failing run
+        run: |
+          test "${{ steps.impossible.outcome }}" = "failure"
+          test "${{ steps.impossible.outputs.exit-code }}" = "1"

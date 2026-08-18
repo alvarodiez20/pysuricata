@@ -74,7 +74,14 @@ def stream_parquet(
     if not resolved.exists():
         raise FileNotFoundError(f"File not found: {resolved}")
 
-    handle = pq.ParquetFile(resolved)
+    # `pre_buffer=True` is pyarrow's default and it is aimed at remote storage:
+    # it schedules ahead-of-time reads for row groups the caller has not asked
+    # for yet, trading memory for hiding read latency. `stream_parquet` only
+    # ever sees a local path (`resolved.exists()` above), so there is no
+    # latency to hide and the prefetch is pure retained memory -- measured at
+    # roughly 2x this reader's own working set on a text-heavy file under a
+    # 512 MB ceiling (#92).
+    handle = pq.ParquetFile(resolved, pre_buffer=False)
     batches = handle.iter_batches(
         batch_size=batch_size or DEFAULT_BATCH_ROWS, columns=columns
     )

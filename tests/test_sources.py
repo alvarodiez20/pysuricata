@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+from unittest import mock
 
 import numpy as np
 import pandas as pd
@@ -260,6 +261,27 @@ class TestTheReadersDirectly:
     def test_stream_parquet_on_a_missing_file(self, tmp_path):
         with pytest.raises(FileNotFoundError, match="not found"):
             next(stream_parquet(tmp_path / "absent.parquet"))
+
+    def test_stream_parquet_disables_pyarrow_prebuffering(self, parquet_path):
+        """`pre_buffer=True` is pyarrow's default, aimed at hiding remote-storage
+        latency by reading ahead of what the caller asked for -- pure retained
+        memory for the local files this reader always sees. Measured at #92 as
+        roughly 2x this reader's own working set on a text-heavy file under a
+        512 MB ceiling, so this is a regression a future refactor could easily
+        reintroduce by dropping the keyword rather than by an explicit choice."""
+        import pyarrow.parquet as pq
+
+        seen_kwargs = {}
+        real_init = pq.ParquetFile.__init__
+
+        def spy(self, source, **kwargs):
+            seen_kwargs.update(kwargs)
+            return real_init(self, source, **kwargs)
+
+        with mock.patch.object(pq.ParquetFile, "__init__", spy):
+            list(stream_parquet(parquet_path))
+
+        assert seen_kwargs.get("pre_buffer") is False
 
     def test_stream_duckdb_on_something_that_is_not_a_relation(self):
         with pytest.raises(TypeError, match="not a DuckDB relation"):

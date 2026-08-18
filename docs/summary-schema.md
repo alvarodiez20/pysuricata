@@ -23,6 +23,13 @@ stats["dataset"]["rows_est"]
 stats["columns"]["amount"]["median"]
 ```
 
+A machine-readable version of this same contract -- for a consumer that is not
+Python -- is published alongside this page as a JSON Schema, one file per
+`schema_version`: [`summary.v2.schema.json`](schemas/summary.v2.schema.json).
+It is generated from a live payload by `scripts/generate_summary_schema.py`
+rather than written by hand, and `tests/test_summary_json_schema.py` fails the
+suite if it drifts from either the generator or a real `summarize()` call.
+
 ## Stability policy
 
 `schema_version` is an integer at the top level.

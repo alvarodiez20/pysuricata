@@ -104,6 +104,30 @@ quoted when both sides were measured in the same round-robin run.
   launch window, because the demo re-installs whatever is newest with no
   redeploy and a broken demo cannot be un-shipped along with it.
 
+- **`action.yml`, wrapping `pysuricata check` for a workflow that does not
+  want a Python step, and a JSON Schema for the `summarize()` payload**
+  (#250). Of the reach ladder's six items, the browser demo was shipped and
+  Arrow IPC nearly is (#247); these two were the cheapest of the rest — the
+  capability already existed, and what was missing was the thing that lets
+  someone outside Python reach it.
+
+  Every documented `check` flag is an input; the exit code is the action's
+  own (a non-zero `pysuricata check` fails the step, matching what running
+  the command directly would do). Exercised in this repository's own CI
+  (`check-action` in `ci.yml`) against a real dataset, `requirement: .`
+  installing this checkout rather than the last release — so a flag this PR
+  renamed would have broken the job that tests the wrapper, not just left it
+  silently stale.
+
+  `docs/schemas/summary.v2.schema.json` is generated from a live
+  `summarize()` payload by `scripts/generate_summary_schema.py` rather than
+  written by hand — a hand-maintained schema is the same class of problem as
+  a hand-written changelog number, saying one thing while the code does
+  another. `tests/test_summary_json_schema.py` fails the suite if the
+  checked-in file drifts from the generator, or if a real payload (two
+  different frames, not just the generator's own exemplar) fails to validate
+  against it.
+
 ### Changed
 
 - **`docs/internal/integration.md` records the phase 4b decision** it had been
@@ -422,6 +446,25 @@ quoted when both sides were measured in the same round-robin run.
   Only reachable since a zero-row frame renders at all; the panel exists to stop
   a number being read as a finding when it is not one, so it must not be the
   thing doing that.
+
+- **`stream_parquet` disables pyarrow's `pre_buffer`** (#92). Found while
+  proving `pysuricata check` runs against a file larger than a 512 MB
+  ceiling — the one acceptance criterion #76 shipped without, carried over
+  from #42. `pre_buffer=True` is pyarrow's default and it schedules
+  ahead-of-time reads for row groups the caller has not asked for yet, a
+  reasonable trade for hiding remote-storage latency and pure retained
+  memory for the local files `stream_parquet` always sees: a 300 MB file's
+  read alone was enough to breach a 512 MB-shaped ceiling with prefetching
+  on, and reading the same file with it off roughly halved the reader's own
+  footprint. `benchmarks/memory_bounded_check.py` runs `check` — write a
+  baseline, then compare against it — inside a cgroup capped at a fixed
+  limit, against a Parquet file sized past it. Both steps completed under
+  512 MB (peak 296–301 MB) and under 350 MB (peak 295 MB) against files of
+  775 MB and 531 MB respectively — peak memory stayed flat as the file grew,
+  which is the claim actually under test. Recorded in `docs/performance.md`
+  alongside the ADR's model prediction for the same shape (119 MB, a real
+  gap: the model was fitted on numeric columns only, and this frame is
+  deliberately text-heavy).
 
 ### Changed
 
