@@ -24,6 +24,24 @@ The runtime comes from the jsDelivr CDN and `pysuricata` is installed from PyPI 
 page load with `micropip`. Nothing here is vendored, so **the demo picks up every
 new PyPI release with no redeploy.**
 
+That is checked rather than assumed. The worker reads the newest version off the
+PyPI JSON API (`cache: "no-store"`, because the API is served `max-age=900` and a
+returning visitor would otherwise be handed their own cached copy of the previous
+answer), installs *that version by name*, and compares what actually imported
+against what PyPI said. An unpinned `micropip.install` also means "newest", but
+only as far as the resolver can see — when the newest release will not install
+inside the pinned Pyodide, micropip settles on an older one and says nothing, and
+a demo several releases behind looks exactly like a current one. So:
+
+- the pinned install is tried first, and if it fails the unpinned one runs, since
+  a stale demo beats no demo;
+- either way a version below the current one raises a **warning on the page**
+  naming both versions, and the reason when there is one;
+- a pre-release is not installed — `info.version` can name an alpha or an rc, and
+  that is resolved back to the newest stable;
+- `?local=1` skips the query entirely: a mirror serves whatever it was populated
+  with, and a mismatch nobody offline can act on is just noise.
+
 One detail worth knowing:
 
 - **WORKERFS, not a copy.** The dropped `File` is mounted into the WASM filesystem
@@ -96,3 +114,8 @@ Every push to `main` redeploys. Pull requests get preview URLs.
 `index.html` pins the Pyodide version in `CONFIG.pyodideBase`. Bump it deliberately
 and re-test — a new Pyodide ships a new pandas, and `pysuricata`'s pandas
 requirement has to keep being satisfiable inside it.
+
+`pysuricata` itself is the opposite: pinned at boot to whatever PyPI is serving
+that second, never to a version in this repository. If a release ever stops being
+installable in the pinned Pyodide, the page keeps working and says so — that
+warning is the signal to bump Pyodide.

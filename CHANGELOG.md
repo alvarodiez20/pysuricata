@@ -26,6 +26,24 @@ quoted when both sides were measured in the same round-robin run.
   that had already landed. What is genuinely left is twelve items, each now
   carrying an issue.
 
+### Fixed
+
+- **The browser demo now installs the release PyPI is actually serving.**
+  `micropip.install("pysuricata")` means "newest" only as far as the resolver
+  can see: when the newest release will not install inside the pinned Pyodide,
+  micropip settles on an older one and says nothing — and the page then printed
+  that older version in its footer as though it were the release it advertises.
+
+  The worker reads the newest version off the PyPI JSON API (`no-store`,
+  because the API is served `max-age=900` and a returning visitor would
+  otherwise be handed their own cached copy of the previous answer), installs
+  that version by name, and compares what imported against what PyPI said. The
+  pinned install is tried first and the unpinned one is the fallback, since a
+  stale demo beats no demo; a version below the current one raises a **warning
+  on the page** naming both, and the reason when the pin was what failed. A
+  pre-release is not installed, and `?local=1` skips the query entirely — a
+  mirror serves whatever it was populated with.
+
 ## [0.1.4] - 2026-08-18
 
 ### Added
