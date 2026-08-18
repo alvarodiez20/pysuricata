@@ -239,7 +239,23 @@ class TestTheReportIsOneFile:
 #: name, because `Cabin` is 77.1% empty and a coverage figure without its
 #: denominator cannot distinguish 5.9% of the non-missing rows from 1.3% of
 #: the frame.
-BYTES_BASELINE = 499_500
+#:
+#: 499,500 -> 486,500, and this one is a **paydown, not a raise**. #294 asked
+#: for a legend and a hover instruction to come out of the per-card missing
+#: pane. Following the legend to its renderer found that the pane those strings
+#: lived in -- `_build_dataprep_spectrum_visualization`, four near-copies
+#: across the card kinds, plus `_generate_missing_insights`,
+#: `_render_chunk_visualization` and `_build_simple_missing_distribution` --
+#: was **reached by no code path at all**. What ships is one shared renderer in
+#: `card_base.py`. The dead markup took 523 lines of stylesheet with it, and
+#: the report inlines its CSS into every document, so every report was carrying
+#: it.
+#:
+#: This is the dead-CSS sweep the note above abandoned, done the way that note
+#: says it has to be: per class, checked against the renderers rather than
+#: against one fixture's output. Three untokenised colours went with it, which
+#: `test_colour_tokens.py` noticed and asked to have written down.
+BYTES_BASELINE = 486_500
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
