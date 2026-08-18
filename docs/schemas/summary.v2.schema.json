@@ -32,6 +32,9 @@
         "duplicate_rows_uncertainty": {
           "type": "integer"
         },
+        "duplicates_degraded": {
+          "type": "boolean"
+        },
         "duplicate_rows_lo": {
           "type": "integer"
         },
@@ -55,6 +58,7 @@
         "duplicate_rows_lo",
         "duplicate_rows_pct_est",
         "duplicate_rows_uncertainty",
+        "duplicates_degraded",
         "memory_bytes",
         "missing_cells",
         "missing_cells_pct",
