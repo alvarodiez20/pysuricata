@@ -31,13 +31,19 @@
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     --gutter: clamp(22px, 6vw, 28px);
-    /* Two widths, not one. `--shell` is the page column — the chrome, the hero
-       and the report all share its left edge; `--pane` caps the blocks that
-       become unreadable stretched, a mono log and a label/value ledger above
-       all. A single 600px column looked deliberate on a phone and looked like a
-       phone on a 1440px monitor, which is what it was: nothing widened it. */
+    /* Two widths, not one. `--shell` is the page: the chrome frames it and the
+       report fills it. `--measure` is the reading column inside it — the hero,
+       the controls, the log and the ledger — centred on the same axis, so the
+       report is wider than the text without either one hugging an edge.
+
+       A single 600px column looked deliberate on a phone and looked like a
+       phone on a 1440px monitor. Left-aligning everything in the shell fixed
+       the measure and broke the composition instead: prose at 52ch, panes at
+       760 and the report at 1064 gave four left-aligned widths down the left
+       of an empty screen. One centred column and one full-width report is two
+       edges rather than four. */
     --shell: 1120px;
-    --pane: 760px;
+    --measure: 720px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -81,15 +87,28 @@
 
   .col { width: 100%; max-width: var(--shell); margin: 0 auto; padding: 0 var(--gutter); }
 
-  /* Below the shell width there is nothing to cap: the gutters already own the
-     edges, so a phone renders exactly as it did before these two widths split.
+  /* The reading column, as a grid track rather than a `max-width` per block.
+     Capping each block instead would centre each one on its own width — a 20ch
+     heading and a 52ch lede would end up with different left edges, which is
+     the ragged centre this is here to avoid. One track, one left edge, and the
+     side tracks collapse to nothing below `--measure`, so a phone is untouched.
 
-     `.result-actions` is not in this list. It labels and controls the frame
-     directly beneath it, and capping it at `--pane` under a `--shell` frame put
-     `another file` 300px short of the right edge of the thing it resets — one
-     block with two right edges, which reads as a layout that slipped rather
-     than as two measures chosen on purpose. */
-  .status, .log, .note, .ledger { max-width: var(--pane); }
+     `full` is for the two things that belong to the report rather than to the
+     reading: the frame, and the control row that labels it. #317 put those two
+     on one right edge and they stay on one. */
+  main.col, .result {
+    display: grid;
+    grid-template-columns:
+      [full-start] minmax(0, 1fr)
+      [text-start] minmax(0, var(--measure)) [text-end]
+      minmax(0, 1fr) [full-end];
+  }
+  main.col > *, .result > * { grid-column: text; }
+  /* `main.col > .result`, not `.result`: the rule above it is a child selector
+     and would otherwise win on specificity, leaving the panel — and so the
+     report inside it — in the reading track. */
+  main.col > .result { grid-column: full; }
+  .result > .result-actions, .result > .frame-wrap { grid-column: full; }
 
   /* Micro-label: mono, uppercase, wide-tracked. The one recurring device. */
   .label {

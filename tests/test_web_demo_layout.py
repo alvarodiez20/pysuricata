@@ -12,17 +12,27 @@ CSS, and the bug is a width that never widened: no selector is missing, no rule
 is malformed, `ruff` and every existing test pass either way. It only exists at
 a viewport, which is where these cases look for it.
 
+The first fix over-corrected. Left-aligning every block in the shell gave the
+page four widths — prose at 52ch, the panes at 760, the control row and the
+report at 1064 — all starting at the same x and stacked down the left of an
+empty monitor. Left edges only compose when the blocks are close in width. The
+page now has one reading column, centred, and one full-width report centred on
+the same axis: two widths on one line of symmetry.
+
 The invariants encoded here are the ones that were actually violated, not the
 boxes that were easiest to read:
 
 * **the column tracks the window**, so a desktop viewport is not handed a phone
   measure. Asserted as a floor at 1280px, not as an exact width, so the design
   can be retuned without rewriting the test;
-* **one left edge.** The hero, the report frame and the page chrome line up.
-  The old breakout hack (`margin-left: 50%` and a translate) put the report
-  56px left of the text it belonged to;
-* **the panes stay readable.** A mono log and a label/value ledger get worse
-  stretched to 1120px, so they carry their own cap and must keep it;
+* **one axis.** The reading column and the report share a centre, which is what
+  lets them differ in width without reading as a slip;
+* **the reading track holds its measure**, as a grid track rather than a cap per
+  block — capping each block centres each on its own width, and a 20ch heading
+  beside a 52ch lede would give the page two left edges where it has one;
+* **the control row ends where the report ends** (#317), since it labels it;
+* **the report takes the whole window on a phone** (#317), where the page's
+  gutter around the report's own is a gutter charged twice;
 * **nothing scrolls sideways** at any width, phone widths included.
 
 These need Playwright and a Chromium build; they are marked `browser` and skip
@@ -51,11 +61,11 @@ WEB = REPO / "web"
 #: first width where the column stops growing and the page starts centring.
 WIDTHS = (320, 390, 768, 1024, 1280, 1440, 1920)
 
-#: `--shell` and `--pane` in `web/index.html`. Kept as the numbers the page
+#: `--shell` and `--measure` in `web/index.html`. Kept as the numbers the page
 #: declares rather than as a copy of a measurement, so a deliberate retune
 #: fails here and gets updated, and an accidental one is caught.
 SHELL = 1120
-PANE = 760
+MEASURE = 720
 
 #: At or below this the report frame breaks out of the page gutter and takes the
 #: whole window. The page's tablet breakpoint, and also the widest of the three
@@ -190,6 +200,19 @@ def test_a_desktop_window_is_not_given_a_phone_column(measurements, width):
     )
 
 
+@pytest.mark.parametrize("width", [w for w in WIDTHS if w > FULL_BLEED])
+def test_the_reading_track_holds_its_measure(measurements, width):
+    """The blocks that are read sit in one track of `--measure`, not one cap per
+    block: capping each would centre each on its own width, and a 20ch heading
+    beside a 52ch lede would give the page two left edges where it has one."""
+    m = measurements[width]
+    track = min(MEASURE, m["column"]["width"] - 2 * 28)  # the gutter at this size
+
+    assert m["log"]["width"] == track, (
+        f"at {width}px the reading track is {m['log']['width']}px, not {track}px"
+    )
+
+
 @pytest.mark.parametrize("width", [w for w in WIDTHS if w < 1280])
 def test_below_the_shell_the_column_fills_the_window(measurements, width):
     """Between a phone and the shell there is nothing to centre: the gutters own
@@ -203,18 +226,28 @@ def test_below_the_shell_the_column_fills_the_window(measurements, width):
 
 
 @pytest.mark.parametrize("width", [w for w in WIDTHS if w > FULL_BLEED])
-def test_the_hero_and_the_report_share_a_left_edge(measurements, width):
-    """The report used to be centred on the viewport while the text was centred
-    in a 600px column, so the two disagreed by 56px at every desktop width.
+def test_the_reading_column_and_the_report_share_a_centre(measurements, width):
+    """Two widths on one axis, which is what stops two widths reading as a slip.
 
-    Only above the tablet breakpoint. Below it the frame goes to the window edge
-    on purpose, which is the next test.
+    They shared a *left* edge for two releases, and that is what made the page
+    look wrong on a monitor: prose at 52ch, panes at 760 and the report at 1064
+    all starting at the same x, stacked down the left of an empty screen. Left
+    edges only compose when the blocks are close in width. Centring both on one
+    axis makes the report visibly wider than the text on purpose.
+
+    Above the full-bleed breakpoint only. Below it the frame is at the window
+    edge and the reading column is inside the gutter, so their centres agree for
+    a different reason and the next test is the one that means something.
     """
     m = measurements[width]
+    text = m["log"]["x"] + m["log"]["width"] / 2
+    frame = m["frame"]["x"] + m["frame"]["width"] / 2
 
-    assert m["hero"]["x"] == m["frame"]["x"], (
-        f"at {width}px the hero starts at {m['hero']['x']}px and the report at "
-        f"{m['frame']['x']}px — they are meant to be one column"
+    # A pixel of slack: an odd leftover width splits unevenly between the two
+    # side tracks, and a page is not crooked because a rounding went one way.
+    assert abs(text - frame) <= 1, (
+        f"at {width}px the reading column is centred on {text}px and the report "
+        f"on {frame}px — they are meant to share an axis"
     )
 
 
@@ -278,13 +311,13 @@ def test_the_chrome_frames_the_same_column(measurements, width):
 
 @pytest.mark.parametrize("pane", ["log", "ledger"])
 @pytest.mark.parametrize("width", WIDTHS)
-def test_the_panes_keep_their_reading_cap(measurements, width, pane):
+def test_the_panes_keep_their_reading_measure(measurements, width, pane):
     """Widening the shell is only right for the blocks that gain by it. A mono
     log set 1120px wide, or a ledger with its value a thousand pixels from its
     label, is worse than the narrow column this change was fixing."""
     m = measurements[width]
 
-    assert m[pane]["width"] <= PANE, (
+    assert m[pane]["width"] <= MEASURE, (
         f"at {width}px the {pane} is {m[pane]['width']}px wide, past the "
-        f"{PANE}px cap it is meant to keep"
+        f"{MEASURE}px measure it is meant to keep"
     )
