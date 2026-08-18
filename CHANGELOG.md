@@ -32,6 +32,28 @@ quoted when both sides were measured in the same round-robin run.
   fixed to match. Adding keys does not move `schema_version`
   (`docs/versioning.md`).
 
+- **A contract that every estimate is checked against truth** (#331). Three
+  defects shipped in one release — #327, #328 and #329 — and an outside
+  benchmark found them, not the suite, because the suite tested that estimators
+  *run* rather than that they are *right*: `outliers_iqr_est` was 49x low at a
+  million rows and every test passed.
+
+  `tests/test_estimate_contracts.py` pairs each published estimate with an
+  independent exact computation of the same quantity, so no test can be
+  satisfied by an estimator agreeing with itself. Three contracts run off that
+  table — scale invariance across sizes straddling every internal budget, the
+  `approx` promise in both directions, and threshold crossings at `k-1`, `k`,
+  `k+1` and `10k`.
+
+  Adding an estimate now forces a decision: a payload key matching the
+  estimate-shaped naming convention with neither an oracle nor a stated reason
+  fails the suite. That check found `case_variants_est` and `trim_variants_est`
+  on its first run — two KMV estimates nothing had ever compared against an
+  exact count. Both are accurate, and both are now oracled.
+
+  Verified by reintroducing each defect rather than assuming: #327 fails scale
+  invariance at 50,001 rows, #328 fails the bound-brackets-truth contract.
+
 - **The live demo is a tab on every documentation page**, not only a link on
   the landing page. `docs/index.md` already offered it twice, which serves a
   reader who arrives at the front door; a search result lands on
@@ -111,6 +133,15 @@ quoted when both sides were measured in the same round-robin run.
   redeploy and a broken demo cannot be un-shipped along with it.
 
 ### Changed
+
+- **The `ReportConfig` deprecation now names 1.0.0 as its removal, not 0.3.0.**
+  Removing a public name is a break and a break costs a major bump, so the old
+  date was a deadline that could not happen: it was set under the Cargo-style
+  reading of SemVer that this cycle replaced. The 1.0.0 gate asking for an
+  empty deprecation queue said the same thing in reverse -- the queue cannot
+  empty before the release that empties it -- and it now asks instead that
+  every entry has warned long enough to be removed *in* 1.0.0. `docs/`'s
+  release example also tagged `v0.1.0`, five releases behind.
 
 - **A report ships only the card-kind CSS it can use** (#306). `load_css_dir`
   concatenated all fourteen partials into every document, so a frame with no
@@ -227,6 +258,21 @@ quoted when both sides were measured in the same round-robin run.
   Half of #251 goes with the file.
 
 ### Fixed
+
+- **A duplicate count from a partial hash was still labelled `exact`.** The
+  label came from the sketch's own sigma, which measures the error of a sketch
+  that saw every row -- it says nothing about rows that never reached it. When
+  a chunk cannot be hashed, `RowKMV` feeds the sketch the first 2,000 rows and
+  records the shortfall, so the distinct count is an underestimate and the
+  duplicate count an overestimate of unknown size. The tile now reads `partial
+  hash · overestimate`, and `duplicates_degraded` is published in the dataset
+  payload, since a consumer of the JSON cannot see the tile and the figure is
+  just as unreliable for them. This is the second half of #312; the count
+  itself was fixed in #345.
+
+  Note what the flag does *not* mean: hashing failing is not the same as rows
+  going unseen. Below the fallback sample the stringified rows are all of them,
+  so the count is as good as it ever was and the flag stays down.
 
 - **A zero-column frame reported 90% duplicate rows; pandas reports none**
   (#312). `RowKMV.update_from_pandas` seeded its row hash from `columns[0]`,
