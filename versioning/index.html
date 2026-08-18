@@ -1670,8 +1670,6 @@
       
         
       
-        
-      
     
     
     
@@ -1724,29 +1722,6 @@
   
   <span class="md-ellipsis">
     About Suricatas
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../roadmap/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Roadmap
     
   </span>
   
@@ -1837,9 +1812,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-contract-at-0x" class="md-nav__link">
+  <a href="#the-contract" class="md-nav__link">
     <span class="md-ellipsis">
-      The contract, at 0.x
+      The contract
     </span>
   </a>
   
@@ -1957,24 +1932,31 @@
 <h1 id="versioning">Versioning</h1>
 <p>A version number means nothing until the surface it describes is written down.
 This page is that surface.</p>
-<h2 id="the-contract-at-0x">The contract, at 0.x</h2>
-<p>pysuricata follows <a href="https://semver.org/">Semantic Versioning</a>, with the
-convention Cargo uses for pre-1.0 crates:</p>
+<h2 id="the-contract">The contract</h2>
+<p>pysuricata follows <a href="https://semver.org/">Semantic Versioning</a>, and means the
+part everyone skips:</p>
 <div class="admonition note">
-<p class="admonition-title">At 0.x, a <strong>minor</strong> bump is what a major bump becomes at 1.0</p>
-<p><code>0.1.0 → 0.2.0</code> is the release allowed to break you.
-<code>0.1.0 → 0.1.1</code> never is.</p>
+<p class="admonition-title">Only a <strong>major</strong> bump may break you</p>
+<p><code>0.1.0 → 1.0.0</code> is the release allowed to break you.
+<code>0.1.0 → 0.2.0</code> adds; it does not break.
+<code>0.1.0 → 0.1.1</code> fixes.</p>
 </div>
-<p>That makes <code>pysuricata~=0.1.0</code> a real guarantee: you will get fixes, and you
-will not get a breaking change without changing that line yourself.</p>
+<p>That makes <code>pysuricata&gt;=0.1,&lt;1</code> a real guarantee, not just <code>~=0.1.0</code>: every
+release before 1.0.0 keeps the surface below working.</p>
 <p>Semver's own text says <code>0.y.z</code> means "anything may change" and that <code>1.0.0</code> is
-what defines a public API — so "a stable release at 0.1.0" is, read strictly, a
-contradiction. It is resolved by writing the contract down rather than by
-picking a bigger number. <strong>A 0.x with a written contract beats a 1.0 you have to
-walk back.</strong></p>
+what defines a public API — so read strictly, a 0.x promises nothing. Some
+projects resolve that by adopting Cargo's convention, where a 0.x minor bump
+does the job of a major one. <strong>This project does not.</strong> A minor number that
+sometimes breaks and sometimes does not is a number a consumer cannot act on
+without reading the changelog, which is the thing the version number exists to
+save them from.</p>
+<p>The cost is deliberate and worth stating: a breaking change costs 1.0.0. If the
+surface below has to change before then, the change waits, ships behind a new
+name beside the old one, or the project goes to 1.0. <strong>A 0.x with a written
+contract beats a 1.0 you have to walk back</strong>, and a contract that only holds
+when convenient is not one.</p>
 <h2 id="what-is-covered">What is covered</h2>
-<p>A breaking change to anything in this list requires a minor bump at 0.x, and a
-major bump at 1.0 and after.</p>
+<p>A breaking change to anything in this list requires a <strong>major</strong> bump.</p>
 <table>
 <thead>
 <tr>
@@ -2018,8 +2000,14 @@ major bump at 1.0 and after.</p>
 </ul>
 <p><code>outliers_iqr_est</code> is the same call made again (#327): it was a count inside the
 reservoir published beside a population <code>count</code>, 49x low at a million rows, and
-correcting it did not bump anything. Schema 2 was bought by the rename that
-travelled with it, <code>outliers_mod_zscore</code> to <code>outliers_mod_zscore_est</code>.</p>
+correcting it is a fix. It moved <code>schema_version</code> to 2 anyway, for a reason the
+rule above does not cover: a baseline stored before the fix holds counts on the
+old scale, and <code>check</code> refusing across schema versions is the only thing that
+stops it being compared against the new ones as though it were drift.</p>
+<p>The rename that travelled with it, <code>outliers_mod_zscore</code> to
+<code>outliers_mod_zscore_est</code>, is a break, and a break costs a major bump. So it did
+not ship as one: <strong>both names are published</strong>, and the old one goes at 1.0.0.
+That is the shape every rename takes here.</p>
 <p>That last rule was decided on <code>duplicate_rows_est</code> (#202), which is the case
 worth recording because it looks like a break and is not. The figure was
 published raw while the HTML report suppressed it below the sketch's resolution,
@@ -2043,13 +2031,14 @@ in patch releases without notice.</p>
 <li><strong>The exact value of any approximate figure.</strong> Distinct counts, quantiles,
   duplicate counts and the bounds printed beside them are sketch estimates.
   Improving one is a fix, not a break: <code>0.0.73</code> changed how quantiles are
-  <em>presented</em> and what error bound the duplicate count carries, and neither
-  should have forced a minor bump.</li>
+  <em>presented</em> and what error bound the duplicate count carries, and neither is
+  a breaking change.</li>
 <li><strong>Log output, progress reporting and timing figures.</strong></li>
 <li><strong>The wheel's dependency floors</strong>, except where raising one drops a Python
   version — that is covered.</li>
 </ul>
-<p>Python version support is covered: dropping a Python is a minor bump at 0.x.</p>
+<p>Python version support is covered: dropping a Python is a break, so it waits
+for a major bump.</p>
 <h2 id="how-a-release-happens">How a release happens</h2>
 <p>Publishing is triggered by <strong>pushing a tag</strong>, not by merging.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># after the version bump and changelog section have merged to main</span>

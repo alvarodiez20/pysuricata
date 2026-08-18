@@ -1844,8 +1844,6 @@
       
         
       
-        
-      
     
     
     
@@ -1895,29 +1893,6 @@
   
   <span class="md-ellipsis">
     About Suricatas
-    
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../roadmap/" class="md-nav__link">
-        
-  
-  
-  <span class="md-ellipsis">
-    Roadmap
     
   </span>
   
@@ -2059,12 +2034,19 @@ documented example and would have broken every downstream consumer.</p>
 to compare against one written by a different version, rather than quietly
 matching whatever keys still line up.</p>
 <h3 id="what-changed-in-2">What changed in 2</h3>
-<p><code>outliers_mod_zscore</code> is now <code>outliers_mod_zscore_est</code>, which is the rename that
-bought the bump. Both outlier counts also changed value: they were the number of
-crossings found <em>inside</em> the 20,000-value reservoir and are now estimates for the
-column, so above <code>numeric_sample_size</code> rows they are roughly <code>n / 20,000</code> times
-larger than before (#327). By the rule above, that correction on its own would
-<strong>not</strong> have bumped the version. The rename is what did.</p>
+<p>Both outlier counts changed value: they were the number of crossings found
+<em>inside</em> the 20,000-value reservoir and are now estimates for the column, so
+above <code>numeric_sample_size</code> rows they are roughly <code>n / 20,000</code> times larger than
+before (#327). By the rule above that is a <strong>correction, not a break</strong>, and it
+would not have bumped the version on its own. The version moved anyway, because
+a stored baseline written before the fix holds counts on the old scale and
+comparing it against the new ones would silently mis-report drift: <code>check</code>
+refuses across versions, which is exactly the signal wanted here.</p>
+<p><code>outliers_mod_zscore_est</code> is a new name for <code>outliers_mod_zscore</code>, which is
+<strong>deprecated and still published</strong>. Renaming a key outright is a break, and a
+break costs a major bump under <a href="../versioning/">Versioning</a> -- so the old name
+stays until 1.0.0 rather than the rename shipping in a minor release. New code
+should read <code>_est</code>; nothing is required to change today.</p>
 <p>Every column carries <code>type</code>, <code>count</code>, <code>missing</code> and <code>mem_bytes</code>, whatever its
 kind. Those four are safe to read without checking <code>type</code> first.</p>
 <h2 id="top-level">Top level</h2>
@@ -2284,6 +2266,11 @@ the numbers mean.</p>
 <td><code>(value, count)</code>. <strong><code>None</code> means not tracked</strong></td>
 </tr>
 <tr>
+<td><code>top_values_uncertainty</code></td>
+<td>int</td>
+<td><strong>Approximate.</strong> How far below the truth each count above may sit. <code>0</code> means exact</td>
+</tr>
+<tr>
 <td><code>outliers_iqr_est</code>, <code>outliers_mod_zscore_est</code></td>
 <td>int</td>
 <td><strong>Approximate.</strong> Counted in the sample, scaled to the column</td>
@@ -2358,6 +2345,11 @@ tracked and nothing was frequent enough.</p>
 <td><code>top_items</code></td>
 <td>list</td>
 <td><code>(value, count)</code>. <strong>Approximate</strong> — Misra-Gries counts are lower bounds</td>
+</tr>
+<tr>
+<td><code>top_items_uncertainty</code></td>
+<td>int</td>
+<td><strong>The bound on those counts.</strong> <code>0</code> means the counters never evicted, so they are exact</td>
 </tr>
 <tr>
 <td><code>entropy</code>, <code>gini_impurity</code>, <code>diversity_ratio</code>, <code>most_common_ratio</code></td>
@@ -2511,6 +2503,18 @@ quantiles are exact.</p>
 <p><code>top_items</code> and <code>top_values</code> come from Misra-Gries counters. Their counts are
 <strong>lower bounds</strong> — a reported count never overstates, and the counters neither
 partition the column nor sum to the row count.</p>
+<p>How far below is published rather than left to the reader.
+<code>top_items_uncertainty</code> (and <code>top_values_uncertainty</code> on numeric columns) is the
+total weight the sketch decremented, and Misra-Gries guarantees</p>
+<div class="language-text highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>true_count(x) ∈ [reported(x), reported(x) + uncertainty]
+</span></code></pre></div>
+<p>so <code>sku-0753: 37</code> with an uncertainty of 1,112 is honestly rendered as
+<code>37 – 1,149</code>. Zero means no eviction ever happened and the counts are exact.</p>
+<p><code>approx</code> follows from the same number. It used to be <code>len(top_items) &gt;=
+top_k</code>, which reads the dangerous case backwards: eviction <em>deletes</em> counters,
+so the list shrinks below the budget exactly when the sketch is under most
+pressure, and a 1M-row column over 1,000 categories reported nine items,
+<code>approx=False</code>, and a top count 30x low (#328).</p>
 <h2 id="what-is-not-in-the-payload">What is not in the payload</h2>
 <p>Deliberately withheld, and listed in <code>pysuricata.report.SUMMARY_FIELDS_WITHHELD</code>
 with the reason for each: the reservoir sample itself (up to 20,000 floats per
