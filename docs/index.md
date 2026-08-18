@@ -102,29 +102,30 @@ pip install pysuricata[polars]
 import pandas as pd
 from pysuricata import profile
 
-# Load Titanic dataset
-url = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
-df = pd.read_csv(url)
+# Two years of hourly bike rentals — a timestamp, two booleans, two
+# categoricals, and numeric columns that genuinely correlate.
+url = "https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/docs/assets/bike_sharing.csv"
+df = pd.read_csv(url, parse_dates=["rented_at"])
 
 # Generate report
 report = profile(df)
-report.save_html("titanic_report.html")
+report.save_html("example_report.html")
 ```
 
 Or from a shell, without writing a script:
 
 ```bash
-pysuricata profile titanic.csv --output titanic_report.html
+pysuricata profile bike_sharing.csv --output example_report.html
 ```
 
-This is the actual report generated from the code above (Titanic dataset, 891 rows × 12 columns):
+This is the actual report generated from the code above (17,379 rows × 12 columns):
 
 <div style="border: 2px solid #7CB342; border-radius: 8px; overflow: hidden; margin: 2rem 0;">
-  <iframe src="assets/titanic_report.html" width="100%" height="800px" style="border: none;"></iframe>
+  <iframe src="assets/example_report.html" width="100%" height="800px" style="border: none;"></iframe>
 </div>
 
 <div align="center">
-  <p><em>Can't see the report? <a href="assets/titanic_report.html" target="_blank">Open in new tab →</a></em></p>
+  <p><em>Can't see the report? <a href="assets/example_report.html" target="_blank">Open in new tab →</a></em></p>
 </div>
 
 ## How It Works

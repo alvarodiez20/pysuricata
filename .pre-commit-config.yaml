@@ -14,8 +14,15 @@ repos:
       - id: check-yaml
         args: [--unsafe]
       - id: check-toml
+      # 500 -> 1500 for the demo dataset (#150). The guard is against adding a
+      # large file by *accident*; the one deliberate exception is
+      # `docs/assets/bike_sharing.csv` at 1,194 KB, which is vendored so no CI
+      # job ever fetches it. It cannot be smaller and still do its job: two
+      # calendar years are what make the datetime card's year panel render at
+      # all, and the floor for two years of hourly rows is ~1,150 KB even with
+      # minute-precision timestamps and two-decimal floats.
       - id: check-added-large-files
-        args: [--maxkb=500]
+        args: [--maxkb=1500]
       # Work lands on main only through a reviewed PR, never a direct commit.
       - id: no-commit-to-branch
         args: [--branch, main]
