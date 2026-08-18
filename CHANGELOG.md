@@ -29,6 +29,39 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **The example dataset can exercise what the report does** (#150). Titanic is
+  in the README, the docs quick start and the linked example report, and it has
+  no datetime column and no numeric pair correlating above 0.5 — so the
+  datetime card, its four temporal panels, and both populated correlation views
+  never appeared in the one example anybody looks at. Three of four card kinds
+  and one of three correlation views.
+
+  `docs/assets/bike_sharing.csv` replaces it: two calendar years of hourly bike
+  rentals from the UCI repository, 17,379 rows, vendored so no CI job fetches
+  anything. It renders all four card kinds, a populated correlation view
+  (`temp` ↔ `feels_like` at r = 0.99), and **all four temporal panels** — two
+  years is what buys the year panel, which the renderer drops inside a single
+  year. It profiles in 0.16 s.
+
+  Two changes to the source earn their keep, and `scripts/build_demo_dataset.py`
+  is the reproducible record of both: the date and hour columns are recombined
+  into one timestamp, without which every value is midnight and the hour-of-day
+  panel is a single bar; and `season` and `weathersit` are decoded from small
+  integers to labels, because a bar chart of `1, 2, 3, 4` is a chart of nothing.
+  Nothing is sampled, filtered or reordered. `docs/assets/bike_sharing.NOTICE`
+  carries the citation the source asks for.
+
+  The generated example is now `example_report.html` rather than
+  `titanic_report.html` — a dataset-neutral name, so the next swap does not
+  break the link again. **Titanic stays as the fixture for
+  `tests/test_report_layout.py`**, whose byte and height ratchets are pinned to
+  it.
+
+  The large-file pre-commit hook goes from 500 KB to 1500 KB for this one file.
+  It cannot be smaller and still do its job: the floor for two years of hourly
+  rows is ~1,150 KB even with minute-precision timestamps and two-decimal
+  floats, and dropping to one year loses the year panel.
+
 - **`duplicate_rows_lo` / `duplicate_rows_hi` in the `summarize()` payload,
   and a `pysuricata check --max-duplicate-pct` gate that reads them** (#329).
   `duplicate_rows_est == 0` cannot be told from "below the sketch's own

@@ -33,7 +33,7 @@
 </div>
 
 - **[Run it in your browser →](https://pysuricata.pages.dev)**: drop a CSV, Parquet file or Excel workbook and get the real report back. The profiler is compiled to WebAssembly and runs in the page, so **nothing is uploaded**.
-- **[Open a finished report →](https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html)**: the Titanic dataset, as PySuricata renders it.
+- **[Open a finished report →](https://alvarodiez20.github.io/pysuricata/assets/example_report.html)**: two years of hourly bike rentals, as PySuricata renders it — all four card kinds, and correlations worth ranking.
 
 ## Quick Start
 
@@ -45,7 +45,7 @@ uv add pysuricata      # or: pip install pysuricata
 import pandas as pd
 from pysuricata import profile
 
-df = pd.read_csv("titanic.csv")
+df = pd.read_csv("bike_sharing.csv")
 profile(df).save_html("report.html")
 ```
 

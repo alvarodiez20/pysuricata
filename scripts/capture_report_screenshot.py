@@ -28,7 +28,7 @@ REPO_ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
 OUT = REPO_ROOT / "docs" / "assets" / "report-screenshot.png"
-SOURCE = REPO_ROOT / "docs" / "assets" / "titanic_report.html"
+SOURCE = REPO_ROOT / "docs" / "assets" / "example_report.html"
 
 #: Wide enough that cards are drawn at their intended proportions rather than a
 #: responsive tier, and tall enough to reach the first column card -- the
