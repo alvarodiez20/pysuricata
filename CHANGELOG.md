@@ -16,6 +16,28 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **`benchmarks/versions.py` could silently measure the same code four times
+  under four different version labels** (#249). `RUNNER`'s subprocess script
+  imported `pysuricata` after `sys.path.insert(0, REPO)` had already put this
+  checkout ahead of the throwaway venv's own installation, and `python -c`
+  additionally puts the caller's cwd at `sys.path[0]` — so running from the
+  repo root shadowed every venv's install with the local working tree even
+  without the insert. `pysuricata.__version__` could not have caught it: it
+  resolves through `importlib.metadata`, which reports the *installed*
+  distribution regardless of what actually imported. Only `pysuricata.__file__`
+  tells the truth.
+
+  `REPO` is now appended to `sys.path` rather than inserted at the front (it
+  can no longer outrank a venv's own site-packages), the subprocess runs with
+  `cwd` set away from `REPO`, and — the belt-and-suspenders fix, since some
+  other path-pollution source could still reach this — `RUNNER` checks
+  `pysuricata.__file__` against the venv it meant to measure before timing
+  anything, refusing the entire run with both paths named if they disagree.
+  Caught for real in testing: an incidental empty `pysuricata/` directory
+  elsewhere on the machine resolved as an implicit namespace package with
+  `__file__ is None`, which the first version of this check crashed on
+  (`realpath(None)`) rather than refusing cleanly — fixed alongside it.
+
 - **`outliers_iqr_est` was a reservoir count published against a population
   denominator, so it read 49x low at a million rows** (#327). The IQR fence is
   fitted inside the 20,000-value sample and the crossings counted there; that
