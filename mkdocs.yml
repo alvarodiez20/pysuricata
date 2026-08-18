@@ -41,6 +41,11 @@ theme:
 
 nav:
   - Home: index.md
+  # An external link, so it becomes a tab on every page rather than a link the
+  # reader has to go back to the landing page to find. `index.md` already offers
+  # the demo twice, which serves someone who arrives at the front door and nobody
+  # who lands on a stats page from a search result.
+  - Live Demo: https://pysuricata.pages.dev
   - Getting Started:
       - Why PySuricata?: why-pysuricata.md
       - Installation: install.md
