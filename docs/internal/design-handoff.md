@@ -1,3 +1,10 @@
+> **Retired — the handoff is complete.** The redesign shipped. Kept as a record
+> of the design decisions. Not documentation, not published. Note that the
+> example reports it tells you to regenerate no longer exist as committed files:
+> the example report is generated at docs-build time by
+> `scripts/regenerate_example_report.py`, and `integration.md` moved here beside
+> this file.
+
 # pysuricata report redesign — handoff
 
 Start with **`integration.md`**. It opens with a status table saying what already landed

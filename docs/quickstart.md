@@ -51,7 +51,7 @@ For optional polars support:
 
 ## Command Line Usage
 
-The fastest way to profile a dataset:
+The fastest way to profile a dataset — no script needed:
 
 ```bash
 # Generate an HTML report
@@ -60,11 +60,12 @@ pysuricata profile data.csv --output report.html
 # Get JSON statistics (no HTML)
 pysuricata summarize data.csv --output stats.json
 
-# With options
-pysuricata profile data.csv -o report.html --seed 42 --no-correlations
+# Gate a build on drift, with an exit code
+pysuricata check data.parquet --baseline baseline.json
 ```
 
-See `pysuricata --help` for all options.
+Every option is in the [CLI reference](cli.md); `check` in particular has a
+guide of its own in [Gating CI on drift](data-checks.md).
 
 ## Your First Report
 
@@ -110,6 +111,29 @@ report.save_html("iris_report.html")
 ```
 
 That's it! Open `iris_report.html` in your browser to see a comprehensive analysis.
+
+You did not have to configure anything, and you will not have to for most
+frames. When you do, the seven most-reached-for settings are keywords and there
+are two presets:
+
+```python
+from pysuricata import profile
+
+report = profile(df, preset="fast", title="Iris")
+```
+
+See [Configuration](configuration.md).
+
+### Skip the load
+
+`profile()` takes a path too, and reads it a batch at a time rather than
+building a frame first:
+
+```python
+from pysuricata import profile
+
+report = profile("data.parquet")
+```
 
 ## Understanding Your Report
 
@@ -259,7 +283,7 @@ from pysuricata import profile, ProfileConfig
 
 config = ProfileConfig()
 
-# Adjust chunk size for memory management
+# Adjust chunk size to trade memory against chunk boundaries -- not for speed
 config.compute.chunk_size = 50_000  # Default
 
 # Control sample sizes
@@ -271,7 +295,7 @@ config.compute.top_k = 50                     # For top values
 config.compute.compute_correlations = True
 config.compute.corr_threshold = 0.5
 
-# Deterministic sampling
+# Deterministic sampling (already the default -- this pins a different sample)
 config.compute.random_seed = 42
 
 # Generate report
@@ -286,7 +310,7 @@ report = profile(df, config=config)
 from pysuricata import profile, ProfileConfig
 
 config = ProfileConfig()
-config.compute.chunk_size = 250_000  # Larger chunks
+config.compute.chunk_size = 100_000  # near the top of the useful range
 config.compute.numeric_sample_size = 10_000  # Smaller samples
 config.compute.compute_correlations = False  # Skip if not needed
 
@@ -308,12 +332,9 @@ report = profile(df, config=config)
 ### For Speed
 
 ```python
-from pysuricata import ProfileConfig, profile
-config = ProfileConfig()
-config.compute.compute_correlations = False  # Skip correlations
-config.compute.top_k = 20  # Fewer top values
+from pysuricata import profile
 
-report = profile(df, config=config)
+report = profile(df, preset="fast")
 ```
 
 ## Next Steps
@@ -325,23 +346,33 @@ Now that you've created your first report, explore:
 - **[Performance Tips](performance.md)** - Optimize for your use case
 - **[Examples Gallery](examples.md)** - More real-world examples
 - **[Statistical Methods](stats/overview.md)** - Understand the algorithms
+- **[Command Line](cli.md)** - `profile`, `summarize` and `check` from a shell
+- **[Gating CI on drift](data-checks.md)** - fail a build when the data moves
 
 ## Troubleshooting
 
 ### Report is too large
-- Reduce `numeric_sample_size`
-- Skip correlations: `config.compute.compute_correlations = False`
-- Profile fewer columns: `config.compute.columns = ["col1", "col2"]`
+Size grows with the number of **columns**, not rows — each column contributes a
+card with its own SVG charts.
+
+- Profile fewer columns: `profile(df, columns=["col1", "col2"])`
+- Reduce `top_k`, which sets how many bars a categorical card draws
+- Skip correlations: `profile(df, correlations=False)`
+- Drop the sample table: `config.render.include_sample = False`
 
 ### Out of memory
+- Hand over the path rather than a loaded frame, so the file streams
 - Reduce `chunk_size`
-- Reduce all sample sizes
-- Process columns separately
+- Reduce `numeric_sample_size` and `max_uniques`
+- Memory is bounded in rows but grows about 3 MB per column, so a very wide
+  frame is the case to watch
+  ([#207](https://github.com/alvarodiez20/pysuricata/issues/207))
 
 ### Report takes too long
-- Increase `chunk_size` (if memory allows)
-- Disable correlations
-- Reduce `top_k`
+- `profile(df, preset="fast")`
+- Hand over the path instead of a loaded frame, so the file streams
+- Use `summarize()` if you do not need the HTML
+- Do **not** raise `chunk_size` — it costs memory and time both
 
 ### Want more decimal places
 ```python

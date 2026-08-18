@@ -1,7 +1,16 @@
 # ADR: a user-specified memory budget
 
-**Status:** proposed
+**Status:** proposed, not built.
+**Tracked as:** [#79](https://github.com/alvarodiez20/pysuricata/issues/79).
 **Verdict:** do it — as a *planner* that derives settings, not as a *cap* that enforces them.
+
+!!! note "Read this as a record of a decision, not as documentation"
+
+    The measurements below were taken at **0.0.27**. They have not been re-run,
+    and `memory_budget=` does not exist in the released library. The shape of
+    the model is what this document is for — in particular the ~3.2 MB per
+    column, which is the same finding
+    [#207](https://github.com/alvarodiez20/pysuricata/issues/207) is open about.
 
 ---
 

@@ -92,24 +92,22 @@ report.save_html("report.html")
 Yes:
 
 ```python
-from pysuricata import profile, ProfileConfig
+from pysuricata import profile
 
-config = ProfileConfig()
-config.compute.columns = ["col1", "col2", "col3"]
-
-report = profile(df, config=config)
+report = profile(df, columns=["id", "amount", "country"])
 ```
 
 ### How do I make reports reproducible?
 
-Set a random seed:
+They already are. `random_seed` defaults to `0`, so the same data produces the
+same report — re-running is a no-op rather than a set of sampling wobbles.
+
+Pass `seed=` to pin a different sample, or `seed=None` for a fresh one each run:
 
 ```python
-from pysuricata import ProfileConfig, profile
-config = ProfileConfig()
-config.compute.random_seed = 42
+from pysuricata import profile
 
-report = profile(df, config=config)
+report = profile(df, seed=42)
 ```
 
 ### Can I get statistics without generating HTML?
@@ -137,25 +135,44 @@ Memory usage depends on configuration, not dataset size. The main factors are:
 - **numeric_sample_size** — reservoir sample size per numeric column (default: 20,000)
 - **max_uniques** — KMV sketch size per column (default: 2,048)
 
-Processing a 10 GB dataset uses roughly the same memory as processing a 100 MB one.
+Processing a 10 GB dataset uses roughly the same memory as processing a 100 MB
+one — **in rows**.
+
+In columns it is not bounded: state is per column, at roughly 3 MB each, so a
+20,000 x 600 frame costs far more than a 5,000,000 x 8 one on less data. That is
+a known limit, tracked in
+[#207](https://github.com/alvarodiez20/pysuricata/issues/207), and worth knowing
+before you point it at a very wide frame.
 
 ### My report is slow. How can I speed it up?
 
-Three quick changes:
+Start with the preset:
 
 ```python
-from pysuricata import ProfileConfig
-config = ProfileConfig()
-config.compute.compute_correlations = False    # Skip O(p²) correlation step
-config.compute.numeric_sample_size = 10_000    # Smaller reservoir sample
-config.compute.chunk_size = 500_000            # Fewer iterations
+from pysuricata import profile
+
+report = profile(df, preset="fast")
 ```
 
-See [Performance Tips](performance.md) for more strategies.
+That turns down the sample size, the sketches and top-k, and skips the
+\(O(p^2)\) correlation step. If you only need the numbers, `summarize()` skips
+rendering altogether.
+
+Do **not** raise `chunk_size` to go faster. The sketch merges are superlinear in
+batch size, so a bigger batch costs more memory *and* more time. See
+[Performance Tips](performance.md).
 
 ### Can PySuricata handle very large datasets?
 
-Yes, by passing a generator:
+Yes. The cheapest way is to hand over the path and let it stream:
+
+```python
+from pysuricata import profile
+
+profile("events.parquet")
+```
+
+Or pass a generator, when the chunks are yours to produce:
 
 ```python
 from pysuricata import profile
@@ -210,7 +227,64 @@ No. PySuricata only reads data, never modifies it.
 
 ### What data formats are supported?
 
-Anything that can be loaded into pandas or polars: CSV, Parquet, JSON, Excel, SQL databases. Load into a DataFrame first, then pass it to `profile()`.
+`profile()` and `summarize()` take more than a frame:
+
+| input | note |
+|---|---|
+| `pandas.DataFrame` | |
+| `polars.DataFrame` / `LazyFrame` | needs `pysuricata[polars]` |
+| a **file path** | `.csv`, `.parquet`, `.json`, `.arrow`, `.feather`, `.ipc` |
+| an **Arrow** table or reader | or anything exporting `__arrow_c_stream__` |
+| a **DuckDB relation** | a query that has not run yet |
+| an iterable of frames | your own chunks, from anywhere |
+
+The last three are read a **batch at a time** and never exist as one frame, so
+handing over the path costs less than loading it yourself — 307 MB against
+581 MB on a 180 MB Parquet file:
+
+```python
+profile("events.parquet")            # streamed
+profile(pd.read_parquet("events.parquet"))  # loaded first
+```
+
+Anything else — Excel, a SQL cursor, a Dask partition — goes through pandas or
+polars first. See [Arrow, Parquet and DuckDB](data-sources.md).
+
+### Is there a command line?
+
+Yes, three subcommands:
+
+```bash
+pysuricata profile data.csv --output report.html
+pysuricata summarize data.csv --output stats.json
+pysuricata check data.parquet --baseline baseline.json
+```
+
+`check` is the one worth knowing about: it compares a dataset against a stored
+baseline and **exits non-zero** when a threshold is crossed, so the same single
+pass runs in a notebook and in CI. See [the CLI reference](cli.md) and
+[Gating CI on drift](data-checks.md).
+
+### How do I see what changed between two datasets?
+
+`compare(a, b)` reports every delta — schema, dataset and per column — as a
+description rather than a verdict:
+
+```python
+import numpy as np
+import pandas as pd
+
+from pysuricata import compare
+
+rng = np.random.default_rng(0)
+last_month = pd.DataFrame({"amount": rng.lognormal(3, 1.0, 2_000)})
+this_month = pd.DataFrame({"amount": rng.lognormal(3.4, 1.0, 2_000)})
+
+diff = compare(last_month, this_month)
+diff.columns["amount"].median_shift_sigma
+```
+
+See [Comparing two datasets](comparing.md).
 
 ### How does PySuricata handle missing values?
 

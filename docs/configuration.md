@@ -38,22 +38,73 @@ ProfileConfig
 └── render: RenderOptions    # Display parameters
 ```
 
-## Quick Start
+## Three ways to configure, in order of effort
 
-```python
-from pysuricata import profile, ProfileConfig
+Most settings never need touching. When one does, reach for the cheapest form
+that says what you mean.
 
-# Create config
-config = ProfileConfig()
+=== "Keyword options"
 
-# Customize settings
-config.compute.chunk_size = 250_000
-config.compute.random_seed = 42
-config.compute.compute_correlations = True
+    Seven settings without the nesting. This is the common case.
 
-# Generate report
-report = profile(df, config=config)
-```
+    ```python
+    from pysuricata import profile
+
+    report = profile(df, seed=42, correlations=False, title="Q4 2024")
+    ```
+
+    | keyword | sets |
+    |---|---|
+    | `chunk_size` | `compute.chunk_size` |
+    | `columns` | `compute.columns` |
+    | `sample` | `compute.numeric_sample_size` |
+    | `correlations` | `compute.compute_correlations` |
+    | `seed` | `compute.random_seed` |
+    | `progress` | `compute.progress` |
+    | `title` | `render.title` |
+
+    Anything else is rejected by name, and the error points at the keyword that
+    does what you were reaching for.
+
+=== "A preset"
+
+    One word for an intent, rather than working out which of twenty-two knobs to
+    turn.
+
+    ```python
+    from pysuricata import profile
+
+    report = profile(df, preset="fast")
+    ```
+
+    | | `fast` | `thorough` |
+    |---|---|---|
+    | `numeric_sample_size` | 5,000 | 50,000 |
+    | `max_uniques` | 1,024 | 8,192 |
+    | `top_k` | 20 | 100 |
+    | `compute_correlations` | off | on |
+    | `corr_threshold` | — | 0.0 (report everything) |
+
+    A preset and keyword options combine, and the keywords win.
+
+=== "A `ProfileConfig`"
+
+    The escape hatch, for anything the other two do not reach.
+
+    ```python
+    from pysuricata import profile, ProfileConfig
+
+    config = ProfileConfig()
+    config.compute.max_uniques = 8_192
+    config.compute.force_column_types = {"grade": "categorical"}
+
+    report = profile(df, config=config)
+    ```
+
+    `config=` **cannot be combined** with `preset=` or the keyword options. It
+    takes everything, and a caller who built one means it.
+
+Precedence, lowest to highest: defaults, then the preset, then keyword options.
 
 ## ComputeOptions
 
@@ -83,12 +134,18 @@ Analyze only specific columns. If `None`, analyze all.
 config.compute.columns = ["age", "income", "city"]
 ```
 
-**`random_seed: Optional[int] = None`**
+**`random_seed: int | None = 0`**
 
-Random seed for deterministic sampling. Set for reproducibility.
+Seed for the reservoir sampling and the row-hash sketches.
+
+The default is `0`, not `None` — PySuricata is **reproducible unless you ask for
+otherwise**, so re-running a report over unchanged data is a no-op rather than a
+set of sampling wobbles. `compare()` relies on this. Set a different integer to
+pin a different sample, or `None` for a fresh one each run.
 
 ```python
-config.compute.random_seed = 42  # Same report every run
+config.compute.random_seed = 42   # a different, still-fixed sample
+config.compute.random_seed = None # non-deterministic
 ```
 
 ### Numeric Configuration
@@ -131,6 +188,57 @@ Number of top values to track (Misra-Gries algorithm).
 ```python
 config.compute.top_k = 100  # Track top 100
 ```
+
+### Progress Reporting
+
+**`progress: bool | str | Callable = False`**
+
+Report how far a long run has got. Four shapes:
+
+| value | behaviour |
+|---|---|
+| `False` | silent (default) |
+| `True` | always report |
+| `"auto"` | report only when stderr is a terminal |
+| a callable | called with chunks, rows and elapsed time |
+
+Progress always goes to **stderr**, never stdout, so a piped
+`pysuricata summarize data.csv > stats.json` stays parseable.
+
+```python
+from pysuricata import profile
+
+report = profile("events.parquet", progress="auto")
+```
+
+### Type Inference
+
+**`force_column_types: dict[str, str] | None = None`**
+
+Override the inferred type for named columns. Valid values are `"numeric"`,
+`"categorical"`, `"datetime"` and `"boolean"`.
+
+Worth knowing on a streamed source: a numeric column holding few enough distinct
+whole numbers is reclassified as categorical, and on a stream that decision is
+made from the first batch and never revisited. `force_column_types` is how you
+settle it.
+
+```python
+config.compute.force_column_types = {"grade": "categorical", "zip": "categorical"}
+```
+
+**`enable_auto_boolean_detection: bool = True`**
+
+Treat a 0/1 numeric column as boolean. Three parameters tune it:
+
+| | default | meaning |
+|---|---|---|
+| `boolean_detection_min_samples` | `100` | fewer values than this, and the column is left numeric |
+| `boolean_detection_max_zero_ratio` | `0.80` | above this share of zeros, the column is left numeric — a mostly-zero counter is not a flag |
+| `boolean_detection_require_name_pattern` | `False` | when `True`, only names like `is_`, `has_`, `can_` are eligible |
+
+The name pattern is **off** by default, so detection runs on the values whatever
+the column is called.
 
 ### Correlation Configuration
 
@@ -184,7 +292,21 @@ config = ProfileConfig(compute=ComputeOptions(
 
 ### Checkpointing Configuration
 
-For long-running profiles overriding millions of rows across many chunks, you can save periodic lightweight states to disk to prevent data loss.
+For long-running profiles over millions of rows across many chunks, you can save
+periodic lightweight states to disk so an interrupted job is not lost.
+
+Five of the twenty-two options serve this one concern. They are also reachable
+as a named group, which is usually the more legible way to write them:
+
+```python
+options = ProfileConfig().compute
+options.checkpoint.every_n_chunks = 10
+options.checkpoint.dir = "./checkpoints"
+options.checkpoint.write_html = True
+```
+
+`options.checkpoint` is a view, not a nested object — the fields below are the
+same fields, under shorter names.
 
 **`checkpoint_every_n_chunks: int = 0`**
 
@@ -257,15 +379,34 @@ Key metrics:
 
 **`include_sample: bool = True`**
 
-Include sample rows in report.
+Whether the report shows a handful of sample rows.
 
 ```python
-config.render.include_sample = False  # Exclude sample
+config.render.include_sample = False  # no sample table in the output
 ```
+
+!!! warning "This is not a redaction switch"
+
+    It removes the sample table, and only the sample table. Raw values still
+    reach the page from four other places:
+
+    | card | what it prints verbatim |
+    |---|---|
+    | categorical | the top-value labels |
+    | categorical | *Shortest seen* and *Longest seen* |
+    | numeric | the smallest and largest values |
+    | datetime | the earliest and latest timestamps |
+
+    Turning the sample off removes the largest block of raw data from a report
+    and is worth doing on a frame you are circulating. It does not make the
+    report safe to circulate. If that is what you need, profile a redacted
+    frame, or use `columns=` to leave the sensitive ones out of the pass
+    entirely — which also means they never enter an accumulator.
 
 **`sample_rows: int = 10`**
 
-Number of sample rows to show (if `include_sample=True`).
+How many rows the sample shows, when it is shown. Ignored if `include_sample`
+is `False`.
 
 ```python
 config.render.sample_rows = 20  # Show 20 rows
@@ -298,13 +439,17 @@ config.compute.corr_threshold = 0.0  # All correlations
 
 ### Speed Optimized
 
+This is what `preset="fast"` already does; the long form is here for when you
+want to vary one part of it.
+
 ```python
 from pysuricata import ProfileConfig
 config = ProfileConfig()
-config.compute.chunk_size = 500_000  # Large chunks
-config.compute.numeric_sample_size = 10_000  # Small samples
-config.compute.compute_correlations = False  # Skip correlations
-config.compute.top_k = 20  # Few top values
+config.compute.numeric_sample_size = 5_000   # Small samples
+config.compute.max_uniques = 1_024           # Smaller sketches
+config.compute.top_k = 20                    # Few top values
+config.compute.compute_correlations = False  # Skip the O(p^2) step
+# chunk_size is deliberately absent: raising it costs memory and buys nothing.
 ```
 
 ### Reproducible Reports
@@ -326,7 +471,7 @@ from pysuricata import ProfileConfig
 # Only check specific columns
 config = ProfileConfig()
 config.compute.columns = ["customer_id", "transaction_amount", "timestamp"]
-config.render.include_sample = False  # No PII in reports
+config.render.include_sample = False  # drop the sample table -- see the note above
 
 # Generate stats only (no HTML)
 from pysuricata import summarize
@@ -337,22 +482,27 @@ assert stats["dataset"]["missing_cells_pct"] < 5.0
 assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 ```
 
-## Legacy EngineConfig
+## Deprecated names
 
-Older versions used `EngineConfig`. It's still supported but deprecated.
+`ReportConfig` is an alias for `ProfileConfig`. It warns on **use** rather than
+on import, and it is removed in **0.3.0**:
 
 ```python
-# Old way (deprecated)
-from pysuricata.config import EngineConfig
-cfg = EngineConfig(chunk_size=50_000, numeric_sample_k=20_000)
-
-# New way (recommended)
-from pysuricata import ProfileConfig
-
-config = ProfileConfig()
-config.compute.chunk_size = 50_000
-config.compute.numeric_sample_size = 20_000
+# DeprecationWarning on use, naming 0.3.0 as the release that removes it
+from pysuricata import ReportConfig
 ```
+
+```python
+# the name to use
+from pysuricata import ProfileConfig
+```
+
+`pysuricata.config.EngineConfig` is not deprecated and not part of the public
+API — it is the engine's internal configuration, built from `ComputeOptions` by
+the boundary and not meant to be constructed by hand. Some of its fields have no
+`ProfileConfig` counterpart; that is deliberate, not an omission to work around.
+
+See [Versioning](versioning.md) for what a deprecation commits us to.
 
 ## Environment Variables
 
@@ -360,20 +510,38 @@ Not currently supported. All configuration via code.
 
 ## Configuration Validation
 
-Invalid configurations raise `ValueError`:
+Every invariant is checked in one place, `ComputeOptions.validate()`, and that
+one place is called **twice**: once at construction, and again when the options
+reach the engine.
 
 ```python
-from pysuricata import ProfileConfig
+from pysuricata import ComputeOptions, ConfigurationError, ProfileConfig, profile
+
+try:
+    ComputeOptions(chunk_size=0)
+except ValueError as e:
+    print(e)  # chunk_size must be positive
+
 config = ProfileConfig()
-config.compute.chunk_size = -1  # Invalid
-# Raises: ValueError: chunk_size must be positive
+config.compute.chunk_size = -1  # accepted -- the dataclass is mutable
+try:
+    profile(df, config=config)
+except ConfigurationError as e:
+    print(e)  # invalid compute options: chunk_size must be positive
 ```
+
+The second call is the one that matters, because mutating a config after
+building it is the path most people take. Validating only at construction
+guarded a door nobody walks through.
+
+`ConfigurationError` subclasses `ValueError`, so `except ValueError` still
+catches it.
 
 ## Performance Impact
 
 | Parameter | Increase → | Impact |
 |-----------|-----------|--------|
-| `chunk_size` | ↑ | Faster, more memory |
+| `chunk_size` | ↑ | More memory, usually *slower* — see above |
 | `numeric_sample_size` | ↑ | More accurate quantiles, more memory |
 | `max_uniques` | ↑ | More accurate distinct, more memory |
 | `top_k` | ↑ | More top values, more memory |

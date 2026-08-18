@@ -228,70 +228,38 @@ sequenceDiagram
     Note over Accumulator: O(chunk_count) - Process metadata<br/>Space: O(min(chunk_count, max_chunks)) bounded
 ```
 
-## Memory Monitoring Integration
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Tracemalloc
-    participant Psutil
-    participant Process
-    participant Profile
-    participant Accumulator
-
-    User->>Tracemalloc: start()
-    Note over Tracemalloc: O(1) - Start memory tracking
-
-    User->>Psutil: Process(os.getpid())
-    Note over Psutil: O(1) - Get process handle
-
-    User->>Process: memory_info().rss
-    Note over Process: O(1) - Get initial memory
-
-    User->>Profile: profile(data, config)
-    Note over Profile: O(n) - Process data
-
-    loop During processing
-        Profile->>Accumulator: update(chunk)
-        Note over Accumulator: O(n) - Process chunk
-
-        User->>Process: memory_info().rss
-        Note over Process: O(1) - Monitor memory
-
-        User->>Tracemalloc: get_traced_memory()
-        Note over Tracemalloc: O(1) - Get traced memory
-    end
-
-    Profile->>User: Report
-    Note over Profile: O(1) - Return results
-
-    User->>Process: memory_info().rss
-    Note over Process: O(1) - Get final memory
-
-    User->>Tracemalloc: get_traced_memory()
-    Note over Tracemalloc: O(1) - Get peak memory
-
-    User->>Tracemalloc: stop()
-    Note over Tracemalloc: O(1) - Stop tracking
-```
-
 ## Complexity Summary
 
-### Time Complexity
-- **Per Element**: O(1) for basic operations, O(log k) for heap operations
-- **Per Chunk**: O(n) where n is chunk size
-- **Total**: O(N) where N is total dataset size
+### Time
 
-### Space Complexity
-- **KMV**: O(k) bounded (was O(n) unbounded)
-- **ExtremeTracker**: O(k) bounded (was O(k × chunks) temporary)
-- **Chunk Metadata**: O(min(num_chunks, max_chunks)) bounded (was O(num_chunks) unbounded)
-- **Total**: O(k + s + c) where k=sketch_size, s=sample_size, c=max_chunks
+- **Per element**: O(1) for the moments and the sketch updates; O(log k) where a
+  heap is involved
+- **Per chunk**: O(n) in the chunk size
+- **Total**: O(N) in the dataset — a single pass, each row read once
 
-### Memory Efficiency
-- **Before Fixes**: O(n) growth for low-cardinality columns
-- **After Fixes**: O(1) constant growth
-- **Memory per Row**: <1KB (typically <0.1KB)
-- **Peak Memory**: <200MB for 1M rows
+### Space
 
-The memory leak fixes successfully transform PySuricata from a memory-intensive system to a truly streaming system with bounded memory usage.
+Every bound below is **per column**:
+
+| structure | space | set by |
+|---|---|---|
+| streaming moments | O(1) | — |
+| reservoir sample | O(s) | `numeric_sample_size` (20,000) |
+| KMV sketch | O(k) | `max_uniques` (2,048) |
+| Misra-Gries table | O(k) | `top_k` (50) |
+| extreme tracker | O(k) | — |
+| chunk metadata | O(min(chunks, max_chunks)) | — |
+
+Total: **O(cols × (s + k))**. Nothing in that expression is the row count, which
+is the whole claim — memory is flat in rows.
+
+It is **not** flat in columns. Multiplying by `cols` is not a rounding error: at
+roughly 3 MB per column, a 20,000 × 600 frame costs far more than a
+5,000,000 × 8 one on less data. That is a known limit, tracked in
+[#207](https://github.com/alvarodiez20/pysuricata/issues/207), and it is the
+honest reading of the table above.
+
+Measure it rather than taking a figure from this page:
+`python -m benchmarks.kernels` prints the per-kernel memory roofline, and
+`tests/test_memory_stress.py` asserts the row-axis flatness in subprocesses on
+every run.

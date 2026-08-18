@@ -53,9 +53,36 @@ config.render.description = """
 report = profile(df, config=config)
 ```
 
+## Streaming a Source Directly
+
+Before hand-rolling a generator, check whether the input is one PySuricata
+already streams. A path, an Arrow table or reader, and a DuckDB relation are all
+read a batch at a time without being materialised:
+
+```python
+import duckdb
+
+from pysuricata import profile, summarize
+
+profile("events.parquet")
+
+con = duckdb.connect()
+relation = con.sql('''
+    SELECT o.*, c.segment
+    FROM 'orders/*.parquet' o
+    JOIN 'customers.parquet' c USING (customer_id)
+    WHERE o.created_at > '2026-01-01'
+''')
+summarize(relation)
+```
+
+That last one is a query that has not run yet — a filtered join across several
+Parquet files, profiled without any of it existing as a frame. See
+[Arrow, Parquet and DuckDB](data-sources.md).
+
 ## Streaming from Multiple Sources
 
-Combine data from multiple sources:
+For anything the built-in readers do not cover, combine sources yourself:
 
 ```python
 from pysuricata import profile
@@ -128,6 +155,12 @@ acc1.merge(acc2)
 final_stats = acc1.finalize()
 ```
 
+This is exact, not an approximation of a single-machine run. The moments merge
+by Pébay's formulas and the sketches by construction, so **the merged result
+equals the result of one pass over the concatenation** —
+`benchmarks/accuracy.py` asserts it. It is also why the order the partitions
+arrive in does not matter.
+
 ## Conditional Profiling
 
 Profile only rows meeting criteria:
@@ -155,19 +188,20 @@ from pysuricata import ProfileConfig, profile
 rng = np.random.default_rng(0)
 
 config = ProfileConfig()
-# Checkpoint roughly every 10 million rows assuming chunk_size is 500,000
-config.compute.chunk_size = 500_000
-config.compute.checkpoint_every_n_chunks = 20
-config.compute.checkpoint_dir = "/tmp/pysuricata/nightly"
+# Checkpoint roughly every million rows at the default 50,000-row chunk. Leave
+# chunk_size alone -- raising it costs memory and time both, and checkpoint
+# frequency is what you are actually setting here.
+config.compute.checkpoint.every_n_chunks = 20
+config.compute.checkpoint.dir = "/tmp/pysuricata/nightly"
 # Optionally dump a preview HTML page alongside the serialized pickle state
-config.compute.checkpoint_write_html = True
+config.compute.checkpoint.write_html = True
 
 
 
 def multi_source_generator():
     """Yield one chunk per source file, never holding more than one."""
     for i in range(4):
-        yield pd.DataFrame({"amount": rng.lognormal(3, 1, 500_000)})
+        yield pd.DataFrame({"amount": rng.lognormal(3, 1, 200_000)})
 
 
 report = profile(multi_source_generator(), config=config)
@@ -175,6 +209,7 @@ report = profile(multi_source_generator(), config=config)
 
 ## See Also
 
+- [Arrow, Parquet and DuckDB](data-sources.md) - Sources that stream themselves
 - [Configuration](configuration.md) - All parameters
 - [Performance Tips](performance.md) - Optimization
 - [Examples](examples.md) - More use cases

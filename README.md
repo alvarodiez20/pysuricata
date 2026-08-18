@@ -122,7 +122,7 @@ Each column is analyzed based on its type:
 - **Numeric** — Mean, variance, skewness, kurtosis, quantiles, histogram, outlier detection (IQR, MAD, z-score), correlations
 - **Categorical** — Top values, distinct count, entropy, Gini impurity, string length statistics
 - **DateTime** — Temporal range, hour/day/month distributions, monotonicity detection
-- **Boolean** — True/false ratios, entropy, balance score
+- **Boolean** — True/false counts and ratios, entropy
 
 Plus dataset-level metrics: row/column counts, memory usage, missing value percentages, and duplicate row estimates.
 
@@ -142,22 +142,27 @@ report = profile(read_in_chunks())
 report.save_html("large_report.html")
 ```
 
-A Parquet path, an Arrow IPC file, a DuckDB relation or an Arrow source can be streamed directly, without loading the whole thing:
+A Parquet path, an Arrow IPC file, a DuckDB relation or an Arrow source needs no generator at all — hand it over and it is read a batch at a time, without ever existing as one frame:
 
 ```python
 import duckdb
 from pysuricata import profile
-from pysuricata.sources import stream_duckdb, stream_ipc, stream_parquet
 
-report = profile(stream_parquet("data/events.parquet"))
+report = profile("data/events.parquet")
 
 # Written by arrow::write_ipc_file() in R, Arrow.write() in Julia, or the
 # arrow crate in Rust. The framing is read from the file, not its extension.
-report = profile(stream_ipc("data/events.arrow"))
+report = profile("data/events.arrow")
 
+# A relation is a query that has not run yet, so a filtered join across
+# several files is profiled without any of it being landed.
 relation = duckdb.connect("warehouse.db").sql("SELECT * FROM events")
-report = profile(stream_duckdb(relation))
+report = profile(relation)
 ```
+
+Measured on a 4,000,000 × 6 frame written as a 180 MB Parquet file, above a 118 MB bare-import floor: **307 MB** for `profile(path)` against **581 MB** for `profile(pd.read_parquet(path))`.
+
+The readers behind that — `stream_parquet`, `stream_ipc`, `stream_arrow`, `stream_duckdb` — are exported from `pysuricata.sources` for when you want the batches rather than a profile.
 
 ## Statistics Only (No HTML)
 
@@ -182,9 +187,15 @@ print(f"Mean age: {stats['columns']['age']['mean']:.1f}")
 ```python
 from pysuricata import compare
 
-last_week, this_week = df.iloc[:3], df.iloc[3:]
-diff = compare(last_week, this_week).to_dict()
+last_week, this_week = df.iloc[:400], df.iloc[400:]
+diff = compare(last_week, this_week)
+
+diff.schema.added                       # columns that appeared
+diff.columns["fare"].median_shift_sigma # in baseline standard deviations
+diff.to_dict()                          # JSON-safe, three sections
 ```
+
+Every delta, whether or not it crosses a threshold — it is a description, not a verdict. `pysuricata check` is the same arithmetic with a threshold and an exit code.
 
 ## Configuration
 
@@ -248,7 +259,12 @@ pysuricata check data.csv --baseline baseline.json --max-missing-pct 5
 - [Quick Start](https://alvarodiez20.github.io/pysuricata/quickstart/)
 - [User Guide](https://alvarodiez20.github.io/pysuricata/usage/)
 - [Configuration](https://alvarodiez20.github.io/pysuricata/configuration/)
-- [API Reference](https://alvarodiez20.github.io/pysuricata/api/)
+- [Arrow, Parquet and DuckDB](https://alvarodiez20.github.io/pysuricata/data-sources/)
+- [Command Line](https://alvarodiez20.github.io/pysuricata/cli/)
+- [Gating CI on drift](https://alvarodiez20.github.io/pysuricata/data-checks/)
+- [Comparing two datasets](https://alvarodiez20.github.io/pysuricata/comparing/)
+- [API Reference](https://alvarodiez20.github.io/pysuricata/api/) · [generated reference](https://alvarodiez20.github.io/pysuricata/reference/)
+- [The `summarize()` schema](https://alvarodiez20.github.io/pysuricata/summary-schema/)
 - [Statistical Methods](https://alvarodiez20.github.io/pysuricata/stats/overview/)
 - [Examples](https://alvarodiez20.github.io/pysuricata/examples/)
 

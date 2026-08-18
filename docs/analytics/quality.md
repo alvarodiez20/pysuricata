@@ -28,6 +28,14 @@ PySuricata computes several data quality metrics automatically.
     )
     ```
 
+!!! tip "Acting on these numbers"
+
+    The thresholds on this page are conventions, not defaults the library
+    enforces. To fail a build when one is crossed, `pysuricata check` applies
+    thresholds you set to the same numbers and exits non-zero — see
+    [Gating CI on drift](../data-checks.md) and the
+    [CLI reference](../cli.md#check).
+
 ## Dataset-Level Metrics
 
 ### Missing Cells Percentage

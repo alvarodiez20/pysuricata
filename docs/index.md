@@ -46,7 +46,7 @@ PySuricata generates self-contained HTML reports for pandas and polars DataFrame
 
     ---
 
-    Full API documentation generated from source code.
+    `profile()`, `summarize()`, `compare()` and every option they take.
 
     [:octicons-arrow-right-24: API Docs](api.md)
 
@@ -54,12 +54,15 @@ PySuricata generates self-contained HTML reports for pandas and polars DataFrame
 
 ## Features
 
-- **Streaming processing** — Data is processed in configurable chunks, keeping memory usage bounded. Useful for datasets that don't fit in RAM.
-- **Mathematically grounded** — Uses Welford's algorithm for numerically stable moments, Pébay's formulas for mergeable statistics, KMV sketches for distinct count estimation, and Misra-Gries for heavy hitters.
+- **Streaming processing** — Data is processed in configurable chunks, keeping memory bounded in rows regardless of dataset size. Useful for datasets that don't fit in RAM.
+- **Reads a source, not just a frame** — A path, an Arrow table or reader, anything exporting `__arrow_c_stream__`, or a DuckDB relation, all a batch at a time and never materialised. 307 MB against 581 MB on a 180 MB Parquet file.
+- **Numbers without the HTML** — `summarize()` returns the same statistics as a **versioned** JSON payload, so a consumer can read it without parsing a report.
+- **A gate, not just a report** — `pysuricata check` compares a dataset against a stored baseline and exits non-zero when a threshold is crossed, so the same single pass runs in a notebook and in CI.
+- **A diff between two datasets** — `compare(a, b)` reports every delta: schema, dataset and per column, with the approximate ones marked.
+- **Mathematically grounded** — Welford's algorithm for numerically stable moments, Pébay's formulas for mergeable statistics, KMV sketches for distinct counts, Misra-Gries for heavy hitters — each with its error bound published rather than hidden.
 - **Pandas and Polars support** — Works natively with both `pandas.DataFrame` and `polars.DataFrame` / `polars.LazyFrame`.
-- **Self-contained reports** — Generates a single HTML file with inline CSS, JS, and SVG charts. No external assets or dependencies needed to view.
-- **Configurable** — Control chunk sizes, sample sizes, sketch parameters, correlation thresholds, and rendering options via `ProfileConfig`.
-- **Reproducible** — Seeded random sampling produces deterministic results across runs.
+- **Self-contained reports** — A single HTML file with inline CSS, JS and SVG charts. No external assets or dependencies needed to view.
+- **Reproducible by default** — The seed is `0`, not `None`, so re-running over unchanged data is a no-op rather than a set of sampling wobbles.
 
 ## Installation
 
@@ -98,6 +101,12 @@ report = profile(df)
 report.save_html("titanic_report.html")
 ```
 
+Or from a shell, without writing a script:
+
+```bash
+pysuricata profile titanic.csv --output titanic_report.html
+```
+
 This is the actual report generated from the code above (Titanic dataset, 891 rows × 12 columns):
 
 <div style="border: 2px solid #7CB342; border-radius: 8px; overflow: hidden; margin: 2rem 0;">
@@ -119,7 +128,50 @@ PySuricata reads data in chunks and updates lightweight accumulators for each co
 | **Accuracy** | Exact for moments (mean, variance, skewness, kurtosis); approximate with known error bounds for distinct counts and top-k |
 | **Mergeability** | Accumulators can be merged across chunks or machines |
 
+Memory is bounded **in rows**. It is not bounded in columns — state is per
+column at roughly 3 MB each — which is a known limit, tracked in
+[#207](https://github.com/alvarodiez20/pysuricata/issues/207).
+
 Reports include per-column statistics, histograms, correlation chips, missing value analysis, outlier detection, and more — all computed during the single streaming pass.
+
+## Beyond the Report
+
+<div class="grid cards" markdown>
+
+-   **Gate a build on drift**
+
+    ---
+
+    `pysuricata check` compares against a stored baseline and exits non-zero
+    when a threshold is crossed.
+
+    [:octicons-arrow-right-24: Gating CI on drift](data-checks.md)
+
+-   **Read a source, not a frame**
+
+    ---
+
+    Parquet, Arrow IPC and DuckDB relations, a batch at a time.
+
+    [:octicons-arrow-right-24: Arrow, Parquet and DuckDB](data-sources.md)
+
+-   **Diff two datasets**
+
+    ---
+
+    `compare(a, b)` reports every delta, with the approximate ones marked.
+
+    [:octicons-arrow-right-24: Comparing two datasets](comparing.md)
+
+-   **Read the numbers directly**
+
+    ---
+
+    A versioned JSON payload with no HTML in the way.
+
+    [:octicons-arrow-right-24: The summarize() schema](summary-schema.md)
+
+</div>
 
 ## Next Steps
 

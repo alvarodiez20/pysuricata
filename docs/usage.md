@@ -41,6 +41,45 @@ report.save_html("report.html")
 
 Open `report.html` in any browser. The file is self-contained — no external assets needed.
 
+## Profiling a File Without Loading It
+
+`profile()` takes a path as readily as a frame, and reads it a batch at a time:
+
+```python
+from pysuricata import profile
+
+report = profile("events.parquet")
+report.save_html("report.html")
+```
+
+CSV, Parquet, JSON and Arrow IPC (`.arrow`, `.feather`, `.ipc`) all work, as do
+an Arrow table or reader and a DuckDB relation. The file never exists as one
+frame, which is where the memory saving comes from — 307 MB against 581 MB on a
+180 MB Parquet file. See [Arrow, Parquet and DuckDB](data-sources.md).
+
+## Setting Options
+
+Most calls need nothing. When one does, the seven most-reached-for settings are
+keywords:
+
+```python
+from pysuricata import profile
+
+report = profile(df, seed=42, correlations=False, title="Q4 2024")
+```
+
+Or take a preset, and adjust from there:
+
+```python
+from pysuricata import profile
+
+report = profile(df, preset="fast")           # or "thorough"
+report = profile(df, preset="fast", sample=20_000)
+```
+
+A `ProfileConfig` is the escape hatch for everything else — see
+[Configuration](configuration.md).
+
 ## Using Polars
 
 PySuricata works natively with polars DataFrames and LazyFrames. Install polars support with:
@@ -141,6 +180,32 @@ assert stats["dataset"]["missing_cells_pct"] < 5.0
 assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 ```
 
+The payload's keys are a versioned contract — see
+[the `summarize()` schema](summary-schema.md). If you want a build gate with an
+exit code rather than an assertion, `pysuricata check` does the same single pass
+from a shell; see [Gating CI on drift](data-checks.md).
+
+## Comparing Two Datasets
+
+`compare(a, b)` reports what moved — schema, dataset and per column — as a
+description rather than a verdict:
+
+```python
+import numpy as np
+import pandas as pd
+
+from pysuricata import compare
+
+rng = np.random.default_rng(0)
+before = pd.DataFrame({"amount": rng.lognormal(3, 1.0, 5_000)})
+after = pd.DataFrame({"amount": rng.lognormal(3.4, 1.0, 5_000)})
+
+diff = compare(before, after)
+print(diff.columns["amount"].median_shift_sigma)
+```
+
+See [Comparing two datasets](comparing.md).
+
 ## Saving Stats as JSON
 
 ```python
@@ -151,17 +216,18 @@ report.save_json("stats.json")
 
 ## Reproducible Reports
 
-Set `random_seed` to make histogram sampling deterministic across runs:
+They already are. `random_seed` defaults to `0`, so the same data produces the
+same report — re-running is a no-op rather than a set of sampling wobbles.
+
+Pass `seed=` to pin a different sample:
 
 ```python
-from pysuricata import profile, ProfileConfig
+from pysuricata import profile
 
-config = ProfileConfig()
-config.compute.random_seed = 42
-
-report = profile(df, config=config)
-# Same report every time with the same data
+report = profile(df, seed=42)
 ```
+
+`seed=None` gives a fresh sample each run, if that is what you want.
 
 ## End-to-End Example
 
@@ -169,7 +235,7 @@ A complete example covering all four column types:
 
 ```python
 import pandas as pd
-from pysuricata import profile, ProfileConfig
+from pysuricata import profile
 
 df = pd.DataFrame({
     "amount": [1.0, 2.5, None, 4.0, 5.5],
@@ -178,10 +244,7 @@ df = pd.DataFrame({
     "flag": [True, False, True, None, False],
 })
 
-config = ProfileConfig()
-config.compute.random_seed = 0
-
-report = profile(df, config=config)
+report = profile(df, title="Four column kinds")
 report.save_html("report.html")
 ```
 
@@ -190,10 +253,11 @@ This generates a report with:
 - **amount** analyzed as numeric (mean, std, histogram, outliers)
 - **country** analyzed as categorical (top values, distinct count, entropy)
 - **ts** analyzed as datetime (range, day-of-week distribution)
-- **flag** analyzed as boolean (true/false ratio, balance score)
+- **flag** analyzed as boolean (true/false counts and ratios, entropy)
 
 ## See Also
 
 - [Configuration Guide](configuration.md) — All available options
 - [Advanced Features](advanced.md) — Streaming from multiple sources, distributed processing
 - [Examples Gallery](examples.md) — More real-world use cases
+- [Command Line](cli.md) — the same operations from a shell

@@ -335,6 +335,222 @@ quoted when both sides were measured in the same round-robin run.
 [#253]: https://github.com/alvarodiez20/pysuricata/issues/253
 [#258]: https://github.com/alvarodiez20/pysuricata/issues/258
 
+### Added
+
+- **`RenderOptions.include_sample` and `.sample_rows` now exist** ([#266]).
+  They were documented on four pages — including as `config.render.include_sample
+  = False  # No PII in reports`, inside a recipe headed *Production Data Quality
+  Checks* — and `RenderOptions` had exactly two fields, `title` and
+  `description`. It is a plain dataclass with no slots, so the assignment
+  succeeded, was discarded, and the sample rows rendered anyway.
+
+  A silent no-op is bad; a silent no-op sold as a privacy control is worse. The
+  sample is the **only place raw values appear** in a report — every other
+  number is an aggregate — so somebody following that recipe was shipping the
+  thing they had just asked to withhold, with nothing to say so.
+
+  Implemented rather than deleted, because `EngineConfig` already carried both
+  fields and the adapters already read `sample_rows`. What was missing was two
+  fields on the public options object, two lines in `_to_engine_config`, and —
+  the part passing the value through would not have fixed on its own — a guard
+  in `sample_section_html` on **both** adapters, since `include_sample` was a
+  field nothing read.
+
+  | | report bytes | sample |
+  |---|---:|---|
+  | default | 261,592 | present |
+  | `include_sample=False` | 260,554 | gone |
+
+### Changed
+
+- **The documentation describes the library that shipped** ([#266]–[#282]).
+  A page-by-page audit of all 39 pages against the code. The drift had
+  concentrated in the older pages while the four newest — `data-checks`,
+  `data-sources`, `comparing`, `summary-schema` — were accurate and unreachable
+  from the home page.
+
+  **Advice that contradicted the measurements.** Four pages told readers to
+  raise `chunk_size` for speed ([#267]); the sketch merges are superlinear in
+  batch size, so it costs memory *and* time, and `configuration.md` contradicted
+  itself 240 lines apart. `performance.md`'s benchmark table ([#271]) quoted
+  ~5,500 rows/s, "1M rows ≈ 3 min" and 50 MB flat, with no provenance and
+  matching neither `adr/memory-budget.md` nor the roadmap — deleted in favour of
+  the harness commands, since two published ratios have already been retracted
+  for exactly this. `random_seed` was documented as defaulting to `None` in two
+  places ([#272]) when it is `0`, so reproducible-by-default was sold as opt-in
+  on six pages. `architecture.md` said the report renders through a Jinja2
+  template ([#274]); Jinja2 is not a dependency and is imported nowhere.
+
+  **Features that were shipped and undocumented.** `preset=`, the seven keyword
+  options and `progress=` appeared on **zero** documentation pages ([#268]) —
+  only in the README — while 24 snippets taught the `ProfileConfig` ceremony
+  they were added to replace. New `cli.md` ([#273]), because `pysuricata check`'s
+  sixteen flags and three exit codes existed only in `--help`. New
+  `reference.md` ([#269]), which finally uses the mkdocstrings handler
+  configured in `mkdocs.yml` and never invoked — `index.md` had been advertising
+  "Full API documentation generated from source code" beside a hand-written
+  page. `faq.md` told readers to load into a DataFrame first ([#270]), which is
+  the opposite of the thing the README leads with.
+
+  **Content dropped.** Eight *"planned for future release"* sections across six
+  reference pages ([#276]), none with an issue behind it — a roadmap the roadmap
+  had never heard of. Each is now a stated reason rather than a promise: no
+  balance test because at n=10⁶ a true rate of 0.501 gives Z=2; no uniformity
+  test because it would be a χ² over Misra-Gries lower bounds; no correlation
+  p-values because 1,225 pairs makes Bonferroni useless and not correcting is
+  misleading. Six invented *Implementation Details* classes ([#277]) — the
+  clearest had `BooleanAccumulator.update(values: pd.Series)`, getting the
+  central invariant backwards, and a `BooleanSummary` with four fields that do
+  not exist, two of which the same page advertised as provided. And 1,824 lines
+  of finished planning documents ([#279]) moved out of the published tree to
+  `docs/internal/`, one of them a docs audit whose "87 mechanical errors"
+  headline the current checker contradicts with 0.
+
+  **`contributing.md`** ([#278]) taught `pytest -n auto`, hypothesis and mypy —
+  none of them dependencies, and the first is the second thing anyone tries —
+  and named none of the gates that exist: the accuracy oracle, the docs checker,
+  the three two-way ratchets, the data-invariance harness, the browser group
+  that skips itself into a false green, pre-commit, the native crate.
+
+  Three `ComputeOptions` docstring defaults disagreed with their fields
+  ([#275]), which is what a generated reference would have published.
+
+- **`check_docs.py` gains two corrections.** Its name-based
+  `_NOT_DOCUMENTATION` allowlist becomes the `internal/` directory, so the
+  nav-coverage check means what it says rather than carrying four exemptions.
+  And a path literal handed to `profile()` is now skipped like `read_parquet` —
+  `profile("events.parquet")` is the shortest way to show the streaming input,
+  now used on six pages, and was reported as broken code for want of a fixture.
+
+  `check_docs --strict` went from 1 warning to **0 errors, 0 warnings** across
+  40 pages.
+
+[#266]: https://github.com/alvarodiez20/pysuricata/issues/266
+[#267]: https://github.com/alvarodiez20/pysuricata/issues/267
+[#268]: https://github.com/alvarodiez20/pysuricata/issues/268
+[#269]: https://github.com/alvarodiez20/pysuricata/issues/269
+[#270]: https://github.com/alvarodiez20/pysuricata/issues/270
+[#271]: https://github.com/alvarodiez20/pysuricata/issues/271
+[#272]: https://github.com/alvarodiez20/pysuricata/issues/272
+[#273]: https://github.com/alvarodiez20/pysuricata/issues/273
+[#274]: https://github.com/alvarodiez20/pysuricata/issues/274
+[#275]: https://github.com/alvarodiez20/pysuricata/issues/275
+[#276]: https://github.com/alvarodiez20/pysuricata/issues/276
+[#277]: https://github.com/alvarodiez20/pysuricata/issues/277
+[#278]: https://github.com/alvarodiez20/pysuricata/issues/278
+[#279]: https://github.com/alvarodiez20/pysuricata/issues/279
+[#280]: https://github.com/alvarodiez20/pysuricata/issues/280
+[#281]: https://github.com/alvarodiez20/pysuricata/issues/281
+[#282]: https://github.com/alvarodiez20/pysuricata/issues/282
+
+### Fixed
+
+- **`include_sample=False` left an empty Sample card behind** ([#266]). The
+  section shell — the heading, the `Hide sample` toggle and the header's
+  `#sample` nav link — lived in the template with only the table as a
+  placeholder, so turning the sample off produced a control for content that was
+  not there, and a nav link to a section no longer in the document. That second
+  one is the dead-anchor failure `tests/test_js_selectors_match_markup.py`
+  exists to catch.
+
+  The wrapper moved into `render/html.py`, because a template can only
+  interpolate and not omit. The default report is byte-identical apart from one
+  fewer HTML comment.
+
+- **The documentation oversold what `include_sample=False` removes** ([#285]).
+  It was described, in five places, as leaving a report with no raw values in
+  it — "the sample is the **only place raw values appear**". That is false, and
+  the test written for [#266] is what caught it: it asserted the claim and
+  failed.
+
+  With the sample off, `alice@example.invalid` still appears on the page as the
+  categorical card's *Shortest seen*. Four places print raw values: a
+  categorical card's top-value labels and its shortest/longest exemplars, and
+  the numeric and datetime extremes.
+
+  So the switch does what its name says and nothing more. `configuration.md`
+  now carries the list, and says what to reach for instead — profile a redacted
+  frame, or use `columns=` so the sensitive ones never enter an accumulator.
+  A test pins the limitation, so the claim cannot be re-derived: if a future
+  change genuinely does redact the cards, that test failing is the signal to
+  revisit the warning.
+
+- **The docs checker was blind to a third of the config** ([#284]). `CFG_ATTR`
+  matched `config.(compute|output|report).X`, and `ProfileConfig` has never had
+  an `output` or a `report` group — it has `compute` and **`render`**. Two
+  thirds of the pattern matched nothing and the third that exists went
+  unchecked, which is how `config.render.include_sample` stayed documented on
+  four pages while `RenderOptions` had two fields.
+
+### Added
+
+- **`check_docs.py` gains two checks** ([#284]), because three of the sixteen
+  findings in the documentation sweep were mechanical and none of them was
+  caught.
+
+  **Option defaults.** Every ``**`name: type = default`**`` heading — 22 of them
+  in `configuration.md` — and every row of a table with a Default column is
+  resolved against `dataclasses.fields()` of `ComputeOptions` and
+  `RenderOptions`. `dataclasses.fields()` rather than `dir()` on an instance is
+  the point: a plain dataclass has no slots, so a populated instance reports an
+  attribute nobody declared, and `dir()` cannot tell a real field from one the
+  documentation invented. Defaults are compared through `ast.literal_eval`, so
+  `50_000`, `50000` and `50,000` all match.
+
+  A bare first cell in a table is *not* treated as a config option — `cli.md`
+  and `data-checks.md` both have Default columns over positionals and threshold
+  categories — but `compute.x` / `render.x` is an unambiguous claim and is
+  checked as one.
+
+  **CLI flags.** `cli.md`'s `--flag` tokens, per subcommand, against what
+  `create_parser()` actually defines. A documented flag the parser lacks is an
+  error; a parser flag documented nowhere is a warning. The page transcribes 31
+  options and its whole value is being exhaustive, so it would have gone stale
+  on the first rename.
+
+  Verified by reverting each of the three original defects in the working tree:
+
+  ```
+  configuration.md:137  `random_seed` documented as None, actual default 0
+  architecture.md:221   `nonexistent_field` is not a field of ComputeOptions or RenderOptions
+  cli.md:75             `--warn-onlyy` is documented under `check` but the parser has no such flag
+  ```
+
+### Changed
+
+- **The README and two pages stop describing a report that is not rendered**
+  ([#287]). There is no donut anywhere in a report — #104 replaced the 135px
+  dtype donut with a composition bar, and the categorical card draws a `cat-svg`
+  bar chart. `architecture-diagrams.md` still had `DonutChartRenderer` and
+  `render_dtype_donut` as steps in the live rendering pipeline; neither exists
+  as a file or a symbol.
+
+  The same table in `why-pysuricata.md` also still listed **balance score** and
+  **imbalance ratio** for boolean columns, and so did the README's *What's in a
+  Report*, and `stats/overview.md` as "Entropy and balance metrics" /
+  "Imbalance detection". [#276] had corrected `stats/boolean.md`; these were the
+  third, fourth and fifth copies of one list, found across three separate
+  passes.
+
+  Five copies and no source is the defect underneath, and it is the same shape
+  as the roadmap drift [#251] is open about — a fact restated in several places,
+  none of them authoritative, and nothing that fails when they disagree.
+  `summary-schema.md` is the one copy tied to the code by a test. Folded into
+  [#251] rather than fixed by hand a fourth time.
+
+  While in the README: the streaming section taught
+  `profile(stream_parquet(path))` when `profile(path)` does the same thing, so
+  the readers now appear as the escape hatch they are, beside the 307/581 MB
+  measurement; the `compare()` example split 800 rows 3/797, which illustrates
+  nothing, and now shows what the object carries; and the documentation index
+  was missing `cli`, `reference`, `data-sources`, `data-checks`, `comparing` and
+  `summary-schema`.
+
+[#284]: https://github.com/alvarodiez20/pysuricata/issues/284
+[#285]: https://github.com/alvarodiez20/pysuricata/issues/285
+[#251]: https://github.com/alvarodiez20/pysuricata/issues/251
+[#287]: https://github.com/alvarodiez20/pysuricata/issues/287
+
 ## [0.1.2] - 2026-08-17
 
 ### Added

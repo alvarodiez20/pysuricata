@@ -1,3 +1,9 @@
+> **Superseded.** This audit is a snapshot at 0.0.26 and its headline — "87
+> mechanical errors across 21 pages" — no longer describes the tree;
+> `python -m benchmarks.check_docs --strict` currently reports **0 errors** over
+> 39 pages. The findings it did not cover were re-audited and filed as #266–#281.
+> Kept as a record of the method. Not documentation, not published.
+
 # Documentation audit and visual plan
 
 Generated from a mechanical pass over all 31 pages at 0.0.26 (`52e13cd`), plus a

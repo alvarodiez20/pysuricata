@@ -22,7 +22,7 @@
 
         <nav class="quick" aria-label="Report sections">
           <a href="#summary">Summary</a>
-          <a href="#sample">Sample</a>
+          {sample_nav_link}
           <a href="#vars">Variables</a>
           <a href="#correlations">Correlations</a>
           <a href="#missing-values"><span class="nav-long">Missing Values</span><span class="nav-short">Missing</span></a>
@@ -164,23 +164,7 @@
           </div>
         </section>
         <hr class="section-divider">
-        <!-- Sample Section -->
-        <section id="sample" class="collapsible-card">
-          <span id="dataset-sample" class="anchor-alias"></span>
-          <h2 class="section-title">Sample</h2>
-          <!-- open by default (#103): the sample is the fastest way to see
-               whether the profile matches the data, and hiding it behind a
-               click meant most readers never looked. -->
-          <details class="card" id="sample-details" open>
-            <summary>
-              <span id="sample-toggle-text">Hide sample</span>
-              <span class="chev" aria-hidden="true">▸</span>
-            </summary>
-            <div class="card-content">
-              {dataset_sample_section}
-            </div>
-          </details>
-        </section>
+        {sample_section}
         <!-- Variables Section -->
         <hr class="section-divider">
         <section id="vars">

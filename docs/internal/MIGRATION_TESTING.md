@@ -1,3 +1,8 @@
+> **Retired — this harness exists.** The tests described here landed with the
+> redesign; three of them are now ratchets (`tests/test_report_layout.py`,
+> `tests/test_colour_tokens.py`, `tests/test_processed_bytes_placement.py`).
+> Kept as a record of the reasoning. Not documentation, not published.
+
 # Testing the report UI migration
 
 The integration plan is seventeen commits across fourteen stylesheets and fifteen

@@ -279,6 +279,12 @@ class PolarsAdapter(BaseAdapter):
         Returns:
             HTML string for sample section.
         """
+        if not getattr(cfg, "include_sample", True):
+            # An empty section renders as no section (#266). Note the scope:
+            # this governs the sample table, not raw values in general -- the
+            # cards still print category labels and extremes (#285).
+            return ""
+
         if not isinstance(first, pl.DataFrame):
             return ""
 

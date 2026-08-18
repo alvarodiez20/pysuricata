@@ -144,6 +144,11 @@ where \(d\) = distinct count, \(n\) = total count.
 
 ### Concentration Ratio
 
+!!! note "Derived, not published"
+    Not a key in the payload. Sum the counts in `top_items` if you want it — and
+    remember those counts are Misra-Gries **lower bounds**, so the ratio is one
+    too.
+
 Fraction of observations in the top \(k\) values:
 
 \[
@@ -306,30 +311,25 @@ d_{\text{trim}} = |\{v.\text{strip}() : v \in \text{values}\}|
 - \(d_{\text{trim}} < d\): whitespace variants present
 - \(d_{\text{trim}} = d\): no trim variants
 
-## Chi-Square Uniformity Test
+## Why There Is No Uniformity Test
 
-Test if the distribution is uniform (all categories equally likely).
+A chi-square test of \(p(v_1) = \cdots = p(v_d) = 1/d\) is the obvious next
+step, and PySuricata does not run one. Two reasons, and the second is the one
+that settles it:
 
-**Null hypothesis:** \(p(v_1) = p(v_2) = \cdots = p(v_d) = 1/d\)
+**It would be testing a sketch.** The counts come from Misra-Gries, which keeps
+bounded counters and reports **lower bounds** — a reported count never
+overstates, the counters do not partition the column, and they do not sum to the
+row count. A \(\chi^2\) statistic over numbers with that shape is not the
+statistic anyone means by it.
 
-**Test statistic:**
+**At profiling scale it always rejects.** With a large \(n\), any real column
+is significantly non-uniform, so a p-value on every categorical card would be a
+function of the row count rather than a fact about the data.
 
-\[
-\chi^2 = \sum_{i=1}^{d} \frac{(f(v_i) - E)^2}{E}
-\]
-
-where \(E = n/d\) is the expected frequency under uniformity.
-
-**Distribution under \(H_0\):** \(\chi^2_{d-1}\) (chi-square with \(d-1\) degrees of freedom)
-
-**P-value:** \(P(\chi^2_{d-1} > \chi^2_{\text{obs}})\)
-
-**Interpretation:**
-- Small p-value (< 0.05): reject uniformity (distribution is skewed)
-- Large p-value: consistent with uniform distribution
-
-!!! note "Not implemented in current version"
-    Chi-square test is planned for future release.
+`entropy`, `gini_impurity` and `diversity_ratio` answer the question a reader
+actually has — *how concentrated is this* — as magnitudes rather than as a
+verdict.
 
 ## Cardinality Categories
 
@@ -387,48 +387,22 @@ report = profile(df, config=config)
 
 ## Implementation Details
 
-### CategoricalAccumulator Class
+`CategoricalAccumulator` lives in `pysuricata/accumulators/categorical.py`. The
+shape, rather than a sketch of the code that can drift from it:
 
-```python
-class CategoricalAccumulator:
-    def __init__(self, name: str, config: CategoricalConfig):
-        self.name = name
-        self.count = 0
-        self.missing = 0
+- `update()` takes a **numpy array of values**, never a frame or a Series — the
+  adapter has already converted the column.
+- Bounded state, four structures: a Misra-Gries table of `top_k` counters, three
+  KMV sketches (raw values, case-folded, whitespace-trimmed — which is how
+  `case_variants_est` and `trim_variants_est` are computed), and running string
+  length statistics.
+- `merge()` combines each of those. Misra-Gries and KMV are both mergeable by
+  construction, which is what keeps chunked results equal to unchunked ones.
+- Every value it publishes that rests on a sketch is marked approximate, both on
+  the card and in the payload.
 
-        # Top-k values
-        self._topk = MisraGries(config.top_k_size)
-
-        # Distinct count
-        self._uniques = KMV(config.uniques_sketch_size)
-        self._uniques_lower = KMV(config.uniques_sketch_size)  # Case-insensitive
-        self._uniques_strip = KMV(config.uniques_sketch_size)  # Trimmed
-
-        # String lengths
-        self._len_sum = 0
-        self._len_n = 0
-        self._len_sample = ReservoirSampler(config.length_sample_size)
-
-        # Special values
-        self._empty_count = 0
-
-    def update(self, values: pd.Series):
-        """Update with chunk of values"""
-        # Filter out missing
-        # Update top-k
-        # Update distinct sketches (original, lower, strip)
-        # Track string lengths
-        # Count empty strings
-        pass
-
-    def finalize(self) -> CategoricalSummary:
-        """Compute final statistics"""
-        # Get top values from Misra-Gries
-        # Estimate distinct from KMV
-        # Compute entropy and Gini
-        # Compute string length stats
-        return CategoricalSummary(...)
-```
+See [Sketch Algorithms](../algorithms/sketches.md) for the structures and their
+error bounds.
 
 ## Validation
 

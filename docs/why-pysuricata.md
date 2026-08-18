@@ -31,7 +31,7 @@ This page explains the design decisions behind PySuricata and when it might be a
 
 <figure class="ps-figure" markdown="0">
   <iframe src="../assets/diagrams/figures.html?only=memory-curve" title="Peak memory against dataset size" loading="lazy"></iframe>
-  <figcaption>Illustrative curve, not a measurement. The published figures are pending a re-run of <code>benchmarks/end_to_end.py</code> on the reference environment (<a href="https://github.com/alvarodiez20/pysuricata/issues/68">#68</a>).</figcaption>
+  <figcaption>Illustrative curve, not a measurement. Run <code>python -m benchmarks.end_to_end --markdown results.md</code> for figures from your own machine; publishing a comparison table is <a href="https://github.com/alvarodiez20/pysuricata/issues/38">#38</a>.</figcaption>
 </figure>
 
 Most profiling tools load the entire dataset into memory to compute statistics. PySuricata takes a different approach — it processes data **one chunk at a time**, updating lightweight accumulators as it goes.
@@ -182,13 +182,24 @@ config.compute.max_uniques = 4096 # KMV sketch size
 # Rendering
 config.render.title = "My Report"
 config.render.description = "Custom **markdown** description"
-config.render.include_sample = True
+config.render.include_sample = True   # show the sample table
 config.render.sample_rows = 10
 
 report = profile(df, config=config)
 ```
 
-Setting `random_seed` makes reports **reproducible** — the same data with the same seed produces the same output.
+Most of that is unnecessary. The seven settings people actually reach for are
+keywords, and two presets cover the common intents:
+
+```python
+from pysuricata import profile
+
+report = profile(df, preset="thorough", seed=42, title="My Report")
+```
+
+Reports are **reproducible by default** — `random_seed` is `0`, not `None`, so
+the same data produces the same output and re-running is a no-op. Pass a
+different `seed=` to pin a different sample.
 
 ---
 
@@ -199,9 +210,9 @@ PySuricata detects the type of each column and applies specialized analysis:
 | Column Type | Statistics | Visualization |
 |-------------|-----------|---------------|
 | **Numeric** | Mean, variance, skewness, kurtosis, quantiles, IQR/MAD/z-score outliers | Histogram (SVG) |
-| **Categorical** | Top-k values, distinct count, entropy, Gini impurity, string length stats | Donut chart (SVG) |
+| **Categorical** | Top-k values, distinct count, entropy, Gini impurity, string length stats | Bar chart (SVG) |
 | **DateTime** | Range, hour/day/month distributions, monotonicity coefficient | Timeline (SVG) |
-| **Boolean** | True/false ratios, entropy, balance score, imbalance ratio | Balance bar (SVG) |
+| **Boolean** | True/false counts and ratios, entropy | Balance bar (SVG) |
 
 Additionally, PySuricata computes:
 
@@ -276,11 +287,68 @@ report  # Auto-displays inline
 report.display_in_notebook(height="800px")
 ```
 
+### Gating a Build on Drift
+
+The same single pass runs in CI. `pysuricata check` compares a dataset against a
+stored baseline and **exits non-zero** when a threshold is crossed:
+
+```bash
+pysuricata check data/extract.parquet \
+  --baseline baselines/extract.json \
+  --max-missing-pct 5 \
+  --require-fresh
+```
+
+`--require-fresh` is the one worth knowing about: stale data is not drifted
+data. An extract that simply did not run looks identical to yesterday's, and
+every distributional check passes.
+
+See [Gating CI on drift](data-checks.md).
+
 ---
 
+## Reading a Source Without Loading It
+
+`profile()` and `summarize()` take more than a frame: a path, an Arrow table or
+reader, anything exporting `__arrow_c_stream__`, or a DuckDB relation. Those are
+read a **batch at a time** and never exist as one frame.
+
+```python
+from pysuricata import summarize
+
+summarize("events.parquet")
+```
+
+Peak RSS on a 4,000,000 x 6 frame written as a 180 MB Parquet file, above a
+118 MB bare-import floor:
+
+| | above floor |
+|---|---:|
+| `profile(pd.read_parquet(path))` | 581 MB |
+| `profile(path)` | 307 MB |
+
+The DuckDB path goes further — a relation is a query that has not run yet, so a
+join across several Parquet files, filtered, can be profiled without any of it
+existing as a frame. See [Arrow, Parquet and DuckDB](data-sources.md).
 
 ---
 
+## What It Does Not Do
+
+Worth saying plainly, since the rest of this page is a case for the design.
+
+- **Memory is bounded in rows, not in columns.** State is per column at roughly
+  3 MB each, so a 20,000 x 600 frame costs more than a 5,000,000 x 8 one on less
+  data. Tracked in
+  [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
+- **Quantiles come from a sample.** Exact below the reservoir size, approximate
+  above it, with the error bound published rather than hidden.
+- **Category churn and distinct counts are sketch estimates.** They are marked
+  approximate everywhere they appear, including in the JSON payload.
+- **There is no HTML view for `compare()` yet** — the JSON contract and the text
+  rendering are what it ships with.
+
+---
 
 ## Learn More
 
@@ -289,3 +357,4 @@ report.display_in_notebook(height="800px")
 - [Statistical Methods](stats/overview.md) — Algorithm details and formulas
 - [Architecture Diagrams](architecture-diagrams.md) — Visual overview of the processing pipeline
 - [API Reference](api.md) — Function signatures and parameters
+- [Command Line](cli.md) — `profile`, `summarize` and `check` from a shell

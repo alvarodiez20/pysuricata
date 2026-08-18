@@ -386,9 +386,14 @@ Q(p) \approx x_{(\lceil p \cdot k \rceil)}
 **Pros:** Exact for small datasets, unbiased estimator
 **Cons:** \(O(k)\) memory, \(O(k \log k)\) sort cost
 
-### Approximate Quantiles (KLL Sketch)
+### Approximate Quantiles (KLL Sketch) — not used here
 
-For massive datasets, use **KLL sketch** (Karnin, Lang, Liberty):
+An alternative PySuricata does not take. **KLL** (Karnin, Lang, Liberty) buys a
+much smaller footprint at a fixed \(\epsilon\); the reservoir keeps something
+KLL cannot, which is that **below the sample size it holds every value and the
+quantiles are exact**. Most columns in most frames are below 20,000 distinct
+observations, so the common case is exact rather than \(\epsilon\)-close, and
+the payload's `approx` flag can say which case a given column is in.
 
 **Properties:**
 - **Space:** \(O(\frac{1}{\epsilon} \log \log \frac{1}{\delta})\)
@@ -399,9 +404,11 @@ For massive datasets, use **KLL sketch** (Karnin, Lang, Liberty):
 
 **Reference:** Karnin, Z., Lang, K., Liberty, E. (2016), "Optimal Quantile Approximation in Streams", arXiv:1603.05346.
 
-### T-Digest (Alternative)
+### T-Digest — not used here
 
-**T-digest** (Dunning & Ertl) provides excellent **tail accuracy**:
+**T-digest** (Dunning & Ertl) provides excellent **tail accuracy**, which is the
+strongest argument against the reservoir, and the one to revisit if extreme
+quantiles ever become a headline:
 
 **Properties:**
 - Better accuracy for extreme quantiles (P99, P99.9)
@@ -535,48 +542,28 @@ report = profile(df, config=config)
 
 ## Implementation Details
 
-### NumericAccumulator Class
+`NumericAccumulator` lives in `pysuricata/accumulators/numeric.py`. Rather than
+a sketch of the code that can drift from it, the shape:
 
-```python
-class NumericAccumulator:
-    def __init__(self, name: str, config: NumericConfig):
-        self.name = name
-        self.count = 0
-        self.missing = 0
-        self.zeros = 0
-        self.negatives = 0
-        self.inf = 0
+- `update()` takes a **numpy array**, never a frame or a Series — the adapter
+  has already converted the column. That is what makes the accumulator testable
+  in isolation and mergeable across machines.
+- Bounded state, five structures, each described above:
+  `StreamingMoments` (Welford/Pébay), `ReservoirSampler`, a `KMV` sketch, a
+  `MisraGries` table and an `ExtremeTracker`. Plus counters for missing, zeros,
+  negatives and non-finite values.
+- `merge()` combines all five. The moments merge by Pébay's formulas, the
+  sketches by construction, the extremes by comparison — so **chunked results
+  equal unchunked results**, an invariant `benchmarks/accuracy.py` asserts.
+- The reservoir's seed belongs to the accumulator instance. Nothing here touches
+  the global RNG, which is why two columns in one frame do not correlate their
+  samples and why a re-run reproduces.
+- `finalize()` derives everything the summary publishes; `chunk_metadata`
+  carries the per-chunk bookkeeping the report's chunk strip is drawn from.
 
-        # Streaming moments
-        self._moments = StreamingMoments()
-
-        # Reservoir sample for quantiles
-        self._sample = ReservoirSampler(config.sample_size)
-
-        # KMV for distinct count
-        self._uniques = KMV(config.uniques_sketch_size)
-
-        # Min/max tracking
-        self._extremes = ExtremeTracker()
-
-    def update(self, values: np.ndarray):
-        """Update with chunk of values"""
-        # Filter out missing/NaN/Inf
-        # Update moments
-        # Update sample
-        # Update KMV
-        # Track extremes
-        pass
-
-    def finalize(self) -> NumericSummary:
-        """Compute final statistics"""
-        # Compute mean, variance, skewness, kurtosis from moments
-        # Compute quantiles from sample
-        # Estimate distinct count from KMV
-        # Build histogram
-        # Detect outliers
-        return NumericSummary(...)
-```
+Every field the accumulator computes is either in the `summarize()` payload or
+listed in `pysuricata.report.SUMMARY_FIELDS_WITHHELD` with a reason. A test
+walks that list and fails if a statistic is neither.
 
 ## Validation
 

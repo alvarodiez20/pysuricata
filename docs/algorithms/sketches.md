@@ -192,8 +192,12 @@ where:
 - **Mergeable**: Element-wise max of bucket values
 - **Production-ready**: Used in Redis, BigQuery
 
-!!! note "Not implemented in current version"
-    PySuricata uses KMV instead of HLL. HLL may be added in future for even lower memory.
+!!! note "Not used here"
+    PySuricata uses KMV. HLL is asymptotically cheaper, but at the sketch sizes
+    that matter here — `uniques_k` of a few thousand — the difference is a few
+    kilobytes per column, and KMV's error is a closed form (\(1/\sqrt{k}\))
+    that can be printed next to the estimate. A bound you can quote beat a
+    footprint nobody was short of.
 
 ## Reservoir Sampling
 
@@ -285,8 +289,11 @@ k &= \frac{m}{n} \ln 2
 
 **Example**: \(n=10^6\), \(P_{\text{fp}}=0.01\) → \(m \approx 9.6\) Mb, \(k=7\)
 
-!!! note "Not implemented in current version"
-    Bloom filters are not currently used in PySuricata but may be added for duplicate detection optimization.
+!!! note "Not used here"
+    A Bloom filter answers *have I seen this*, one item at a time. Duplicate
+    detection needs *how many did I see twice*, which is a cardinality question,
+    so `RowKMV` over row hashes answers it directly and carries an error bound
+    while doing so.
 
 ## Count-Min Sketch
 
@@ -315,8 +322,12 @@ where \(w = \lceil e / \epsilon \rceil\) and \(d = \lceil \ln(1/\delta) \rceil\)
 - **Count-Min**: Point queries, any item
 - **Misra-Gries**: Top-k queries, only frequent items
 
-!!! note "Not implemented in current version"
-    PySuricata uses Misra-Gries for top-k. Count-Min Sketch may be added for full frequency queries.
+!!! note "Not used here"
+    Count-Min answers point queries for any item; a profile only ever asks for
+    the head of the distribution, which is exactly what Misra-Gries is for. It
+    also has the better error direction: Misra-Gries counts are **lower
+    bounds**, so a reported count never overstates, while Count-Min
+    over-estimates.
 
 ## Choosing Algorithms
 

@@ -148,7 +148,7 @@ Two counters (true, false) plus missing count.
 
 | Parameter | Effect on memory | Effect on accuracy |
 |-----------|-----------------|-------------------|
-| `chunk_size` ↑ | More rows in memory per iteration | No effect on final accuracy |
+| `chunk_size` ↑ | More rows in memory per iteration | No effect — chunked results equal unchunked ones. Note it is not a speed lever either: the sketch merges are superlinear in batch size |
 | `numeric_sample_size` ↑ | Larger reservoir per numeric column | Better quantile estimates |
 | `max_uniques` ↑ | Larger KMV sketch per column | Better distinct count accuracy |
 | `top_k` ↑ | More frequent values tracked | More comprehensive top-k |
@@ -156,9 +156,10 @@ Two counters (true, false) plus missing count.
 
 ---
 
-## Performance Optimizations (v0.0.14)
+## Vectorised Hot Paths
 
-Several hot paths were vectorized to reduce per-value Python overhead:
+Where the per-value Python overhead was removed, and what replaced it. These are
+the current implementations, not a changelog:
 
 | Optimization | Change |
 |---|---|
