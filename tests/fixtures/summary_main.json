@@ -426,7 +426,9 @@
       "trim_variants_est": 2,
       "type": "categorical",
       "unique_est": 2,
-      "unique_est_exact": true
+      "unique_est_exact": true,
+      "singleton_levels": 0,
+      "exact_levels": 2
     },
     "empty": {
       "approx": false,
@@ -447,7 +449,9 @@
       "trim_variants_est": null,
       "type": "categorical",
       "unique_est": 0,
-      "unique_est_exact": null
+      "unique_est_exact": null,
+      "singleton_levels": null,
+      "exact_levels": null
     },
     "fare": {
       "approx": true,
@@ -784,7 +788,9 @@
       "trim_variants_est": 599,
       "type": "categorical",
       "unique_est": 599,
-      "unique_est_exact": true
+      "unique_est_exact": true,
+      "singleton_levels": 589,
+      "exact_levels": 599
     },
     "sex": {
       "approx": false,
@@ -814,7 +820,9 @@
       "trim_variants_est": 2,
       "type": "categorical",
       "unique_est": 2,
-      "unique_est_exact": true
+      "unique_est_exact": true,
+      "singleton_levels": 0,
+      "exact_levels": 2
     },
     "survived": {
       "count": 891,

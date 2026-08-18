@@ -16,7 +16,7 @@ import numpy as np
 from .chunking import ChunkTracker
 from .config import CategoricalConfig
 from .protocols import AccumulatorKind, PicklableAccumulator
-from .sketches import KMV, MisraGries, ReservoirSampler
+from .sketches import KMV, MisraGries, ReservoirSampler, SingletonCounter
 
 
 @dataclass
@@ -77,6 +77,18 @@ class CategoricalSummary:
     #: datetime. Defaulting it to `None` rather than `[]` keeps "this column
     #: tracked nothing" distinguishable from "this column ran as one chunk".
     chunk_metadata: list[tuple[int, int, int]] | None = None
+    #: Levels seen exactly once, and the exact level total they are out of.
+    #:
+    #: Both `None` together, never one without the other: they come from the
+    #: same exact counting, and a singleton count is only readable against a
+    #: total counted the same way. `unique_est` is KMV and carries ~2.2% of
+    #: error, which is enough to make `119 of 147` arithmetic that does not
+    #: quite work on the page.
+    #:
+    #: `None` means the column had more levels than the counter's capacity, so
+    #: the answer is unknown rather than zero (#297).
+    singleton_levels: int | None = None
+    exact_levels: int | None = None
 
 
 #: Distinct lengths above this are grouped into the widest bins the range
@@ -207,6 +219,12 @@ class CategoricalAccumulator(PicklableAccumulator):
             else None
         )
         self._topk = MisraGries(self.config.top_k_size)
+        # #297. Exact level counts while the column stays inside the sketch
+        # capacity, so a many-level column can say how many of its levels occur
+        # exactly once. Sized off the same knob as the distinct sketch: past
+        # that many levels the card's sentence is "every value is different"
+        # and the singleton count has nothing to add.
+        self._levels = SingletonCounter(self.config.uniques_sketch_size)
 
         # String length tracking with memory-efficient sampling
         self._len_sum = 0
@@ -348,6 +366,8 @@ class CategoricalAccumulator(PicklableAccumulator):
                 # MisraGries supports weighted add for frequency counting
                 self._topk.add(value, w=int(count))
 
+                self._levels.add(value, w=int(count))
+
                 # Variant tracking — one add per unique variant is sufficient for KMV
                 if self.config.enable_case_variants and self._uniques_lower:
                     self._uniques_lower.add(value.lower())
@@ -397,6 +417,7 @@ class CategoricalAccumulator(PicklableAccumulator):
         """
         self._uniques.add(value)
         self._topk.add(value)
+        self._levels.add(value)
 
         if self.config.enable_case_variants and self._uniques_lower:
             self._uniques_lower.add(value.lower())
@@ -595,6 +616,8 @@ class CategoricalAccumulator(PicklableAccumulator):
             most_common_ratio=most_common_ratio,
             diversity_ratio=diversity_ratio,
             chunk_metadata=per_column_chunks or chunk_metadata,
+            singleton_levels=self._levels.singletons(),
+            exact_levels=self._levels.levels(),
         )
 
     def _calculate_percentile(
@@ -768,6 +791,7 @@ class CategoricalAccumulator(PicklableAccumulator):
 
         self._topk.merge(other._topk)
         self._uniques.merge(other._uniques)
+        self._levels.merge(other._levels)
         # The case- and whitespace-folded sketches drive the "looks like a
         # variant of another value" flags. They were not merged at all, so a
         # merged column silently lost the evidence for them.
@@ -799,6 +823,7 @@ class CategoricalAccumulator(PicklableAccumulator):
         if self._uniques_strip:
             self._uniques_strip = KMV(self.config.uniques_sketch_size)
         self._topk = MisraGries(self.config.top_k_size)
+        self._levels = SingletonCounter(self.config.uniques_sketch_size)
         if self._len_sample:
             self._len_sample = ReservoirSampler(
                 self.config.length_sample_size, rng=self._rng

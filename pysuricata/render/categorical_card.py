@@ -76,6 +76,9 @@ def describe_high_cardinality(stats: CategoricalStats) -> dict | None:
         "coverage": coverage,
         "distinct_ratio": distinct_ratio,
         "identifier_like": distinct_ratio >= _NEAR_UNIQUE,
+        #: Exact, and `None` together when the column outgrew the counter.
+        "singletons": getattr(stats, "singleton_levels", None),
+        "levels": getattr(stats, "exact_levels", None),
     }
 
 
@@ -106,17 +109,47 @@ def high_cardinality_sentence(facts: dict) -> str:
     if facts["coverage"] is None:
         # The counters were never kept, so the coverage is unmeasured. Saying
         # so is shorter than the alternative and does not invent a number.
-        return (
+        opening = (
             f"{unique:,} distinct values in {count:,} rows -- "
             f"{per_level:.1f} rows per level. The top-values counters are not "
             "kept for a column this varied, so there is no ranking to plot."
         )
-    return (
-        f"{unique:,} distinct values in {count:,} rows -- {per_level:.1f} rows "
-        f"per level, and the five most common cover "
-        f"{facts['coverage'] * 100:.1f}% of them. A top-values chart would be "
-        "a row of slivers, so there is nothing worth plotting."
-    )
+    else:
+        opening = (
+            f"{unique:,} distinct values in {count:,} rows -- {per_level:.1f} "
+            f"rows per level, and the five most common cover "
+            f"{facts['coverage'] * 100:.1f}% of them. A top-values chart would "
+            "be a row of slivers, so there is nothing worth plotting."
+        )
+    return f"{opening}{_singleton_clause(facts)}"
+
+
+def _singleton_clause(facts: dict) -> str:
+    """The thing the chart structurally cannot say (#297).
+
+    *119 of 147 levels occur exactly once* separates the two columns that a
+    distinct count alone cannot: a handful of crowded levels, and a drift of
+    near-singletons. Both are "high cardinality" and only one of them is a
+    column where a top-values ranking would have meant anything.
+
+    Stated as a count of levels against the level total, both exact and both
+    from the same counting -- `unique_est` is KMV and would make `119 of 147`
+    arithmetic that does not quite add up on the page.
+
+    Silent when the count is unknown, and silent when it is zero: no level
+    occurring exactly once is the ordinary case, and a clause saying so on
+    every high-cardinality column is noise.
+    """
+    singletons = facts.get("singletons")
+    levels = facts.get("levels")
+    if not singletons or not levels:
+        return ""
+    if singletons == levels:
+        # Every level a singleton, which `identifier_like` usually catches
+        # first -- but not always, since that arm is a ratio against rows and
+        # this is a count against levels.
+        return f" All {levels:,} levels occur exactly once."
+    return f" {singletons:,} of {levels:,} levels occur exactly once."
 
 
 # `Entropy`, `Rare levels` and `Top 5 coverage` all describe how a distribution
