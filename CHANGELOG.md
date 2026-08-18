@@ -16,6 +16,25 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The demo page's hero and prose sit on one measure, with room around them.**
+  The reading column is one 720px grid track, but the blocks inside it carried
+  caps of their own — 20ch on the h1, 52ch on the lede, 56ch on the closing note
+  — so each stopped short of the status line and the log between them. One left
+  edge, four right edges. The caps are gone: everything from the hero down ends
+  where the console ends.
+
+  The top padding on `main` had never applied. `.col` sets the horizontal gutter
+  in a `padding` shorthand and a class selector outranks a bare element one, so
+  `main { padding: clamp(40px, 12vw, 84px) 0 64px }` was silently zeroed and the
+  hero sat flush against the header rule. Moved to `main.col` as `padding-block`.
+
+  A phone needed the floors raised rather than the clamps retuned: 15vw is 59px
+  at 390px wide, under the minimum of every clamp involved, so a phone landed on
+  the floor wherever a desktop landed on the ceiling. Measured in Chromium after
+  the change — above the hero 84/115/120/120px and closing-note-to-footer
+  108/120/120/120px at 390/768/1280/1440px, with the lede, the log and the
+  closing note the same width as each other at every one.
+
 - **The demo page's desktop composition is one centred column, not four widths
   down the left.** Giving every block the shell's left edge fixed the measure
   and broke the composition: prose at 52ch, the panes at 760px, the control row
