@@ -127,6 +127,13 @@ class Thresholds:
         max_missing_pct: Absolute gate. Any column missing more than this
             percentage fails, with or without a baseline.
         min_rows: Absolute gate. Fewer rows than this fails.
+        max_duplicate_pct: Absolute gate. Gated on `duplicate_rows_hi`, not
+            `duplicate_rows_est` (#329): the estimate is suppressed to `0`
+            below the sketch's own resolution, and a gate reading it alone
+            would pass a frame whose true duplicate rate is merely unknown
+            rather than actually low. `duplicate_rows_hi` is the same bound
+            the report prints, so this fails on the possibility the report
+            would have raised, not a looser one invented for the gate.
         max_rows_drift_pct: Row count change against the baseline. Off by
             default: appending rows is not drift.
         max_missing_drift_pp: Change in a column's missing rate, in
@@ -159,6 +166,7 @@ class Thresholds:
 
     max_missing_pct: float | None = None
     min_rows: int | None = None
+    max_duplicate_pct: float | None = None
     max_rows_drift_pct: float | None = None
     max_missing_drift_pp: float | None = 5.0
     max_unique_drift_pct: float | None = 25.0
@@ -246,7 +254,7 @@ class Finding:
 
     Attributes:
         kind: Machine-readable category — `schema`, `rows`, `missing`,
-            `cardinality`, `distribution`, `range` or `boolean`.
+            `duplicates`, `cardinality`, `distribution`, `range` or `boolean`.
         column: Column name, or None for dataset-level findings.
         message: One line, naming what moved and by how much.
         baseline: The baseline value, when there is one.
@@ -490,6 +498,28 @@ def _absolute_findings(current: Mapping[str, Any], limits: Thresholds) -> list[F
                         ),
                         baseline=limits.max_missing_pct,
                         current=pct,
+                    )
+                )
+
+    if limits.max_duplicate_pct is not None:
+        rows = _number(dataset.get("rows_est"))
+        hi = _number(dataset.get("duplicate_rows_hi"))
+        if rows and hi is not None:
+            pct_hi = hi / rows * 100.0
+            if pct_hi > limits.max_duplicate_pct:
+                out.append(
+                    Finding(
+                        kind="duplicates",
+                        column=None,
+                        message=(
+                            f"up to {pct_hi:.2f}% duplicate rows, above the "
+                            f"limit of {limits.max_duplicate_pct:g}% -- gated "
+                            "on the upper bound, since a count below the "
+                            "sketch's resolution is not the same as zero"
+                        ),
+                        baseline=limits.max_duplicate_pct,
+                        current=pct_hi,
+                        approximate=True,
                     )
                 )
     return out

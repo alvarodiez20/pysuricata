@@ -80,6 +80,8 @@ kind. Those four are safe to read without checking `type` first.
 | `duplicate_rows_est` | int | **Approximate.** From a row-level KMV sketch. `0` when the estimate is below the sketch's own resolution — see below |
 | `duplicate_rows_pct_est` | float | **Approximate.** As above |
 | `duplicate_rows_uncertainty` | int | One standard deviation on the count, in rows. `0` when the count is exact |
+| `duplicate_rows_lo` | int | Lower bound of the plausible range, in rows. `0` whenever the count is suppressed |
+| `duplicate_rows_hi` | int | Upper bound of the plausible range, in rows — the same figure the HTML report prints when it suppresses the count |
 | `memory_bytes` | int | Approximate in-memory size of the source |
 | `top_missing` | list | Up to five `{column, pct, count}`, worst first |
 
@@ -94,20 +96,29 @@ inside spec, and the duplicate count came back 47% high.
 So `duplicate_rows_est` is suppressed to `0` when it does not clear **3**
 standard deviations of uncertainty, not 1 — a 1-sigma gate published a
 duplicate count on a clean, duplicate-free frame about one run in ten (#248).
-`duplicate_rows_uncertainty` is exported as one sigma either way; the ceiling
-below which nothing is resolvable is `math.ceil(3 * duplicate_rows_uncertainty)`,
-not `duplicate_rows_uncertainty` itself. Read the two together:
+That suppression is exactly what makes `duplicate_rows_est == 0` ambiguous on
+its own: it means either "exactly none" or "nothing resolvable" (#329), and a
+CI gate reading only that field cannot tell the two apart — the same
+assertion passes on a clean frame and on one whose duplicates are merely
+unconfirmed.
 
-| `est` | `uncertainty` | Ceiling (`3 × uncertainty`, rounded up) | Means |
-|---|---|---|---|
-| `0` | `0` | — | Exactly none. The distinct count was exact, not estimated |
-| `0` | `2201` | `6603` | Nothing resolvable. The true count is somewhere below roughly 6,603 |
-| `50602` | `1651` | — | About 50,602, give or take 1,651 — cleared the ceiling, so no suppression |
+`duplicate_rows_lo` / `duplicate_rows_hi` resolve the ambiguity without any
+arithmetic of your own: they are the same interval the report already
+computed, published directly rather than left to be reconstructed from
+`duplicate_rows_uncertainty` and a multiple documented only in prose.
 
-Gating on `duplicate_rows_est > 0` is therefore safe against false positives and
-will not fire on a count the sketch cannot support. If you need to fail on the
-*possibility* of duplicates, gate on `duplicate_rows_uncertainty` instead — it
-is nonzero exactly when `duplicate_rows_est` could be suppressing a real count.
+| `est` | `uncertainty` | `lo` | `hi` | Means |
+|---|---|---|---|---|
+| `0` | `0` | `0` | `0` | Exactly none. The distinct count was exact, not estimated |
+| `0` | `2201` | `0` | `6603` | Nothing resolvable. The true count is somewhere below roughly 6,603 |
+| `50602` | `1651` | `48951` | `52253` | About 50,602, give or take 1,651 — cleared the ceiling, so no suppression |
+
+Gating on `duplicate_rows_est > 0` is safe against false positives and will not
+fire on a count the sketch cannot support — but it fails **open**: a real
+duplicate rate the sketch has not yet confirmed reads identically to a clean
+frame. Gate on `duplicate_rows_hi` instead when the cost of missing a real
+duplication matters more than the cost of a false alarm; `pysuricata check
+--max-duplicate-pct` does exactly this.
 
 ## `columns[name]["type"]`
 
