@@ -934,9 +934,13 @@ attr::col_name::count	10
 attr::col_name::count	302
 attr::col_name::count	489
 attr::col_name::count	90
+kv::::boolean	1
+kv::::categorical	4
 kv::::columns	8
+kv::::datetime	1
 kv::::duplicates	0
 kv::::missing	21.9%
+kv::::numeric	2
 kv::::rows	891
 kv::col_age::coeff. of var	0.5569
 kv::col_age::count	891
@@ -980,14 +984,14 @@ kv::col_age::variance	529.3
 kv::col_age::zeros	0
 kv::col_age::zeros	0%
 kv::col_booked::business hours	24.2%
-kv::col_booked::business hrs %	24.2%
+kv::col_booked::business hours	24.2%
 kv::col_booked::count	891
 kv::col_booked::missing	0
 kv::col_booked::missing	0%
 kv::col_booked::unique (≈)	891
 kv::col_booked::unique timestamps (≈)	891
-kv::col_booked::weekend %	27.3%
 kv::col_booked::weekend ratio	27.3%
+kv::col_booked::weekend share	27.3%
 kv::col_cabin::count	219
 kv::col_cabin::empty or zero	0
 kv::col_cabin::entropy	0.9855

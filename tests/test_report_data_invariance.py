@@ -32,6 +32,20 @@ Deliberate fact changes so far, each with the reason it was allowed:
   go negative. 82 facts moved, all of them `count` and `pct` on the two numeric
   columns; **no fact was added or removed**, and no bin moved by more than one
   row. The old numbers were wrong, so this fixture records the corrected ones.
+* **#291/#292, the datetime card face.** `Weekend %` and `Business hrs %` left
+  the stat grid to become bars drawn against the flat-calendar share, and `Avg
+  interval`/`Interval std` moved into the Statistics pane. **No number
+  changed**, and no number left the report: 27.3% and 24.2% are still asserted
+  by the Statistics pane (`weekend ratio`, `business hours`) and now also by
+  the baseline panel (`weekend share`, `business hours`). What the fixture
+  recorded and this run does not is the two *labels* the face no longer uses.
+
+  The extractor was loosened first, not the fixture -- `report_fingerprint.py`
+  knew table cells and `.vstat` rows but not the panel's `__label`/`__value`
+  spans, so it collected nothing from the new shape and two displayed facts
+  read as removed. That is the #114 over-fitting again. Loosening it also
+  brought the summary composition counts into the fingerprint, which is four
+  facts checked that never were.
 """
 
 from __future__ import annotations
