@@ -417,3 +417,121 @@ class TestTheGateIsThreeSigma:
         sketch.update_from_pandas(frame)
 
         assert sketch.duplicates().rows == 0
+
+
+class TestAPartialHashIsNotCalledExact:
+    """#312's second half. `exact` was a claim about the sketch's own sigma.
+
+    When a chunk's rows cannot be hashed, `_degraded_update` feeds the sketch a
+    sample and records the shortfall, so the distinct count is an underestimate
+    and the duplicate count an overestimate of unknown size. Sigma says nothing
+    about that -- it measures the error of a sketch that saw everything -- so a
+    frame that had lost rows to the fallback still printed `exact` underneath
+    its duplicate count.
+    """
+
+    #: Bigger than `_HASH_FALLBACK_SAMPLE`, and that is the whole point: the
+    #: fallback stringifies the first 2,000 rows, so a chunk at or below that
+    #: is fully seen and the count is *not* degraded. Only the shortfall sets
+    #: the flag, which the first version of this test got wrong by using 40
+    #: rows and reading the resulting `False` as the patch not having taken.
+    ROWS = 3_000
+
+    @staticmethod
+    def _refuse_hashing(monkeypatch: pytest.MonkeyPatch) -> None:
+        """Break the one call that can send `RowKMV` down the degraded path."""
+        import pandas as pd_module
+
+        def _refuse(*args, **kwargs):
+            raise RuntimeError("hashing is unavailable for this chunk")
+
+        monkeypatch.setattr(pd_module.util, "hash_pandas_object", _refuse)
+
+    @classmethod
+    def _frame(cls) -> pd.DataFrame:
+        return pd.DataFrame({"a": list(range(cls.ROWS)), "b": ["x"] * cls.ROWS})
+
+    @classmethod
+    def _degraded_report(cls, monkeypatch: pytest.MonkeyPatch) -> str:
+        cls._refuse_hashing(monkeypatch)
+        return profile(cls._frame(), seed=0).html
+
+    def test_the_tile_says_the_hash_was_partial(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        html = self._degraded_report(monkeypatch)
+
+        text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", html))
+        assert "partial hash · overestimate" in text
+
+    def test_the_payload_says_so_too(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """A consumer of the JSON cannot see the tile, and the figure is just
+        as unreliable for them."""
+        self._refuse_hashing(monkeypatch)
+
+        payload = summarize(self._frame(), seed=0)
+
+        assert payload["dataset"]["duplicates_degraded"] is True
+
+    def test_a_chunk_the_fallback_covers_whole_is_not_degraded(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Hashing failing is not the same as rows going unseen. Below the
+        fallback sample the stringified rows are *all* of them, so the count is
+        as good as it ever was and the flag stays down."""
+        self._refuse_hashing(monkeypatch)
+
+        payload = summarize(pd.DataFrame({"a": list(range(40))}), seed=0)
+
+        assert payload["dataset"]["duplicates_degraded"] is False
+
+    def test_an_ordinary_frame_is_still_exact(self) -> None:
+        """The label has to keep meaning something where nothing went wrong."""
+        text = re.sub(
+            r"\s+",
+            " ",
+            re.sub(r"<[^>]+>", " ", profile(_frame(50, duplicates=0), seed=0).html),
+        )
+
+        assert "partial hash" not in text
+
+
+class TestAColumnlessPolarsFrameTakesTheSameBranch:
+    """The pandas and polars paths answering differently is how #312 survived.
+
+    A polars frame with no columns has height 0 today, so this guard is not
+    reachable through the public API -- which is exactly why it is exercised
+    directly rather than left as an untested line that looks live. Both paths
+    now route to `_offer_zero_column_rows`, so both mint one identity per row
+    and report no duplicates instead of one signature for the lot.
+    """
+
+    def test_it_counts_the_rows_and_claims_no_duplicates(self) -> None:
+        from pysuricata.accumulators.sketches import RowKMV
+
+        class _Columnless:
+            width = 0
+            height = 10
+
+        sketch = RowKMV()
+        sketch.update_from_polars(_Columnless())
+
+        assert sketch.rows == 10
+        assert sketch.approx_duplicates() == (0, 0.0)
+        assert sketch.duplicates_degraded is False
+
+    def test_two_chunks_do_not_duplicate_each_other(self) -> None:
+        """The identities are minted from a running counter, so the second
+        chunk cannot reuse the first chunk's and read as ten repeats."""
+        from pysuricata.accumulators.sketches import RowKMV
+
+        class _Columnless:
+            width = 0
+            height = 10
+
+        sketch = RowKMV()
+        sketch.update_from_polars(_Columnless())
+        sketch.update_from_polars(_Columnless())
+
+        assert sketch.rows == 20
+        assert sketch.approx_duplicates() == (0, 0.0)

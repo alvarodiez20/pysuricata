@@ -485,10 +485,10 @@ assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 ## Deprecated names
 
 `ReportConfig` is an alias for `ProfileConfig`. It warns on **use** rather than
-on import, and it is removed in **0.3.0**:
+on import, and it is removed in **1.0.0**:
 
 ```python
-# DeprecationWarning on use, naming 0.3.0 as the release that removes it
+# DeprecationWarning on use, naming 1.0.0 as the release that removes it
 from pysuricata import ReportConfig
 ```
 
