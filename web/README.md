@@ -79,6 +79,21 @@ failure modes are named rather than rendered: a sheet whose first row is a title
 or a blank spacer comes back as `Unnamed: n` columns and raises a warning, and a
 workbook with no data in any sheet is refused with a reason.
 
+## Layout
+
+Two widths, not one. `--shell` (1120px) is the page column — the header, the
+hero, the controls and the report iframe all share its left edge, and below
+1120px it simply fills the window. `--pane` (760px) caps the blocks that get
+worse when stretched: a mono log and a label/value ledger read badly at 1120px
+whatever the window is doing.
+
+It was one 600px column until it wasn't. That is a reading measure on a phone
+and a phone on a monitor, and nothing in the stylesheet widened it — the report
+breaking out to 1120px underneath was the only wide thing on the page.
+`tests/test_web_demo_layout.py` measures the column, the shared left edge, the
+pane caps and horizontal overflow in Chromium at seven widths, because a width
+that never widens is invisible to every check that is not a browser.
+
 ## Guardrails
 
 Memory is bounded in rows, not in columns: roughly 1.5 MB of RAM and 66 KB of HTML
