@@ -28,6 +28,24 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The demo page was a phone layout on a desktop.** Every block sat in one
+  column capped at 600px with no wider breakpoint anywhere in the stylesheet,
+  so a 1440px monitor got a phone-width strip with 420px of empty paper on
+  either side — while the report iframe broke out to 1120px underneath it,
+  which made the narrow column above read as a mistake rather than a choice.
+
+  The page now carries two widths rather than one. `--shell` (1120px) is the
+  column the chrome, the hero and the report all share a left edge in, and it
+  fills the window below that; `--pane` (760px) caps the blocks that get worse
+  stretched — the mono log and the label/value ledger. The report's centring
+  hack is gone with it, so the frame lines up with the text above instead of
+  sitting 56px to its left.
+
+  A phone renders identically: every element's box at 390px is unchanged, to
+  the pixel. `tests/test_web_demo_layout.py` measures it in Chromium — the bug
+  was a width that never widened, which no Python check could see, and it fails
+  ten ways against the old stylesheet.
+
 - **The browser demo now installs the release PyPI is actually serving.**
   `micropip.install("pysuricata")` means "newest" only as far as the resolver
   can see: when the newest release will not install inside the pinned Pyodide,

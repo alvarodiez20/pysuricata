@@ -31,7 +31,13 @@
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
     --gutter: clamp(22px, 6vw, 28px);
-    --measure: 600px;
+    /* Two widths, not one. `--shell` is the page column — the chrome, the hero
+       and the report all share its left edge; `--pane` caps the blocks that
+       become unreadable stretched, a mono log and a label/value ledger above
+       all. A single 600px column looked deliberate on a phone and looked like a
+       phone on a 1440px monitor, which is what it was: nothing widened it. */
+    --shell: 1120px;
+    --pane: 760px;
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -73,7 +79,11 @@
     * { animation: none !important; transition: none !important; }
   }
 
-  .col { width: 100%; max-width: var(--measure); margin: 0 auto; padding: 0 var(--gutter); }
+  .col { width: 100%; max-width: var(--shell); margin: 0 auto; padding: 0 var(--gutter); }
+
+  /* Below the shell width there is nothing to cap: the gutters already own the
+     edges, so a phone renders exactly as it did before these two widths split. */
+  .status, .log, .note, .ledger, .result-actions { max-width: var(--pane); }
 
   /* Micro-label: mono, uppercase, wide-tracked. The one recurring device. */
   .label {
@@ -195,13 +205,11 @@
     overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
 
-  /* The report earns more width than the reading column: it is the payoff, and
-     at 600px its own cards would wrap to one per row. Breaks out of .col. */
-  .frame-wrap {
-    margin-top: 20px;
-    width: min(1120px, calc(100vw - 2 * var(--gutter)));
-    margin-left: 50%; transform: translateX(-50%);
-  }
+  /* The report is the payoff and gets the whole shell — at 600px its own cards
+     would wrap to one per row. It used to break out of a narrower column with a
+     centring hack; now the column is the shell, so it simply fills it and its
+     left edge lines up with the hero above. */
+  .frame-wrap { margin-top: 20px; width: 100%; }
   iframe#report {
     display: block; width: 100%; height: min(72vh, 620px); min-height: 420px;
     border: 1px solid var(--rule); border-radius: 3px; background: var(--paper);
@@ -214,7 +222,7 @@
      100dvh, not 100vh, so a mobile URL bar cannot push the bar off-screen. */
   .frame-wrap.max {
     position: fixed; inset: 0; z-index: 40;
-    width: auto; height: 100dvh; margin: 0; transform: none;
+    width: auto; height: 100dvh; margin: 0;
     display: flex; flex-direction: column; background: var(--paper);
   }
   .frame-wrap.max iframe#report {
