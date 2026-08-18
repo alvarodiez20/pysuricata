@@ -14,18 +14,7 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
-### Changed
-
-- **The numeric card says when its outlier count is an estimate.** `Unique`
-  already renders `(≈)` when its distinct count came from the sketch. Above
-  `numeric_sample_size` rows `Outliers` is a reservoir count scaled to the
-  column (#327), not a count of anything, and it sat unmarked between `Zeros`
-  and `Negatives`, both of which are exact, borrowing their confidence.
-
-  The fence pane now names the sample it counted in. The pane counts crossings
-  in the reservoir while the card scales that count to the column, so past the
-  reservoir size the two legitimately differ by the sampling ratio and nothing
-  said which was which.
+## [0.2.0] - 2026-08-19
 
 ### Added
 
@@ -204,6 +193,17 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **The numeric card says when its outlier count is an estimate.** `Unique`
+  already renders `(≈)` when its distinct count came from the sketch. Above
+  `numeric_sample_size` rows `Outliers` is a reservoir count scaled to the
+  column (#327), not a count of anything, and it sat unmarked between `Zeros`
+  and `Negatives`, both of which are exact, borrowing their confidence.
+
+  The fence pane now names the sample it counted in. The pane counts crossings
+  in the reservoir while the card scales that count to the column, so past the
+  reservoir size the two legitimately differ by the sampling ratio and nothing
+  said which was which.
+
 - **The `ReportConfig` deprecation now names 1.0.0 as its removal, not 0.3.0.**
   Removing a public name is a break and a break costs a major bump, so the old
   date was a deadline that could not happen: it was set under the Cargo-style
@@ -315,6 +315,35 @@ quoted when both sides were measured in the same round-robin run.
   `outliers_mod_zscore` is **published again** beside `outliers_mod_zscore_est`
   rather than replaced by it, and goes at 1.0.0. Nothing reading the payload
   today has to change.
+
+- **The datetime timeline draws bars instead of a line** (design 14b, phase
+  5e.4, #293). A `<polyline>` through bucket centres draws a continuous slope
+  between "84 records on 8 Jan" and "83 on 9 Jan", asserting every value in
+  between — and the data holds values only at the buckets. A bucket count is a
+  quantity per interval, which is what a bar means and what a line does not, so
+  the report now has one encoding for counts across the numeric histogram, the
+  temporal panes and the timeline.
+
+  The issue was filed as a decision, and the plan proposed keeping the line
+  above ~180 buckets where bars go sub-pixel. Two measurements settled it
+  against that. **The threshold could not have fired**: the bucket count is
+  fixed at 60 and is not reachable from `ProfileConfig` or `ComputeOptions`, so
+  the line branch would have been unreachable code. And **the sub-pixel risk is
+  a viewport width, not a bucket count** — those 60 buckets are 12.5px each at
+  1240 and 3.8px at 390, which a static report cannot branch on, and which is
+  the width the numeric histogram already draws bars at on the same screen.
+
+  An empty bucket now draws nothing, where the line sloped through it. On a
+  column with two bursts ten months apart that is 56 of 60 buckets: the line
+  drew a gradual decline and recovery across ten months in which nothing
+  happened. Every bucket keeps its full-height hover target, so an empty
+  stretch still answers `0 rows` — the design proposed merging the two, and
+  merging them would have made exactly those buckets unhoverable.
+
+  Deleted with the polyline: its stylesheet rules, and a whole unused
+  pixel-space coordinate system in the renderer — margins, an inner box, `sx`,
+  `sy`, bin centres and a `pts` string that nothing read. `render/*` carries a
+  per-file `F841` ignore, so ruff never mentioned it.
 
 ### Removed
 
@@ -639,37 +668,6 @@ quoted when both sides were measured in the same round-robin run.
   alongside the ADR's model prediction for the same shape (119 MB, a real
   gap: the model was fitted on numeric columns only, and this frame is
   deliberately text-heavy).
-
-### Changed
-
-- **The datetime timeline draws bars instead of a line** (design 14b, phase
-  5e.4, #293). A `<polyline>` through bucket centres draws a continuous slope
-  between "84 records on 8 Jan" and "83 on 9 Jan", asserting every value in
-  between — and the data holds values only at the buckets. A bucket count is a
-  quantity per interval, which is what a bar means and what a line does not, so
-  the report now has one encoding for counts across the numeric histogram, the
-  temporal panes and the timeline.
-
-  The issue was filed as a decision, and the plan proposed keeping the line
-  above ~180 buckets where bars go sub-pixel. Two measurements settled it
-  against that. **The threshold could not have fired**: the bucket count is
-  fixed at 60 and is not reachable from `ProfileConfig` or `ComputeOptions`, so
-  the line branch would have been unreachable code. And **the sub-pixel risk is
-  a viewport width, not a bucket count** — those 60 buckets are 12.5px each at
-  1240 and 3.8px at 390, which a static report cannot branch on, and which is
-  the width the numeric histogram already draws bars at on the same screen.
-
-  An empty bucket now draws nothing, where the line sloped through it. On a
-  column with two bursts ten months apart that is 56 of 60 buckets: the line
-  drew a gradual decline and recovery across ten months in which nothing
-  happened. Every bucket keeps its full-height hover target, so an empty
-  stretch still answers `0 rows` — the design proposed merging the two, and
-  merging them would have made exactly those buckets unhoverable.
-
-  Deleted with the polyline: its stylesheet rules, and a whole unused
-  pixel-space coordinate system in the renderer — margins, an inner box, `sx`,
-  `sy`, bin centres and a `pts` string that nothing read. `render/*` carries a
-  per-file `F841` ignore, so ruff never mentioned it.
 
 ## [0.1.5] - 2026-08-18
 
@@ -4038,7 +4036,12 @@ First release to PyPI.
 *Entries for 0.0.1 – 0.0.12 were reconstructed from the git history in August 2026
 and are deliberately brief; the releases predate this changelog.*
 
-[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/alvarodiez20/pysuricata/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.5...v0.2.0
+[0.1.5]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.4...v0.1.5
+[0.1.4]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.3...v0.1.4
+[0.1.3]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.2...v0.1.3
+[0.1.2]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/alvarodiez20/pysuricata/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/alvarodiez20/pysuricata/compare/0.0.73...v0.1.0
 [0.0.61]: https://github.com/alvarodiez20/pysuricata/compare/0.0.60...0.0.61
