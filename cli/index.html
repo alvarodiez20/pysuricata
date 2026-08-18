@@ -6,13 +6,17 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Exploratory data analysis reports for pandas DataFrames">
+        <meta name="description" content="The pysuricata command line — profile, summarize and check">
       
       
       
-        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/DOCS_PLAN/">
+        <link rel="canonical" href="https://alvarodiez20.github.io/pysuricata/cli/">
       
       
+        <link rel="prev" href="../data-sources/">
+      
+      
+        <link rel="next" href="../data-checks/">
       
       
       <link rel="icon" href="../assets/favicon.ico">
@@ -20,7 +24,7 @@
     
     
       
-        <title>Documentation audit and visual plan - PySuricata</title>
+        <title>CLI Reference - PySuricata</title>
       
     
     
@@ -76,7 +80,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#documentation-audit-and-visual-plan" class="md-skip">
+        <a href="#cli-reference" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +115,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Documentation audit and visual plan
+              CLI Reference
             
           </span>
         </div>
@@ -257,10 +261,12 @@
   
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../usage/" class="md-tabs__link">
           
   
@@ -609,8 +615,10 @@
       
   
   
+    
   
   
+  
     
     
       
@@ -628,23 +636,28 @@
       
         
       
+        
+      
     
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
             
   
   
@@ -657,7 +670,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             User Guide
@@ -760,6 +773,167 @@
                 
   
   
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    Command Line
+    
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command Line
+    
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#profile" class="md-nav__link">
+    <span class="md-ellipsis">
+      profile
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summarize" class="md-nav__link">
+    <span class="md-ellipsis">
+      summarize
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#check" class="md-nav__link">
+    <span class="md-ellipsis">
+      check
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="check">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#exit-codes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Exit codes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#baseline" class="md-nav__link">
+    <span class="md-ellipsis">
+      Baseline
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#thresholds" class="md-nav__link">
+    <span class="md-ellipsis">
+      Thresholds
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#freshness" class="md-nav__link">
+    <span class="md-ellipsis">
+      Freshness
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#output-and-streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output and streaming
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#in-github-actions" class="md-nav__link">
+    <span class="md-ellipsis">
+      In GitHub Actions
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
   
   
     <li class="md-nav__item">
@@ -853,6 +1027,8 @@
       
         
       
+        
+      
     
     
     
@@ -902,6 +1078,29 @@
   
   <span class="md-ellipsis">
     API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Generated Reference
     
   </span>
   
@@ -990,10 +1189,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
             
   
   
@@ -1006,8 +1205,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             Statistical Methods
           </label>
@@ -1166,10 +1365,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
             
   
   
@@ -1182,8 +1381,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             Advanced Analytics
           </label>
@@ -1317,10 +1516,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
         
           
-          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
             
   
   
@@ -1333,8 +1532,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             Algorithms
           </label>
@@ -1791,407 +1990,320 @@
   
 
 
-<h1 id="documentation-audit-and-visual-plan">Documentation audit and visual plan</h1>
-<p>Generated from a mechanical pass over all 31 pages at 0.0.26 (<code>52e13cd</code>), plus a
-read of the pages a checker cannot judge. Re-run the audit with:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.check_docs<span class="w"> </span>--quiet-info<span class="w">      </span><span class="c1"># report</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.check_docs<span class="w"> </span>--strict<span class="w">          </span><span class="c1"># exit 1 on any ERROR (for CI)</span>
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.check_docs<span class="w"> </span>--json<span class="w"> </span>out.json<span class="w">   </span><span class="c1"># every finding with a line number</span>
+<h1 id="cli-reference">CLI Reference</h1>
+<p>Installing PySuricata puts a <code>pysuricata</code> command on your path. It does the same
+three things the library does, without writing a script:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>pysuricata<span class="w"> </span>profile<span class="w">   </span>data.csv<span class="w"> </span>--output<span class="w"> </span>report.html<span class="w">   </span><span class="c1"># an HTML report</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>pysuricata<span class="w"> </span>summarize<span class="w"> </span>data.csv<span class="w"> </span>--output<span class="w"> </span>stats.json<span class="w">    </span><span class="c1"># the numbers, as JSON</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>pysuricata<span class="w"> </span>check<span class="w">     </span>data.parquet<span class="w"> </span>--baseline<span class="w"> </span>b.json<span class="w">  </span><span class="c1"># a gate, with an exit code</span>
 </span></code></pre></div>
+<p><code>pysuricata --version</code> prints the installed version. <code>pysuricata &lt;command&gt;
+--help</code> prints the options below.</p>
+<p>All three take a <strong>path</strong> and stream it — the file is read a batch at a time and
+never exists as one frame. CSV, Parquet, JSON and Arrow IPC (<code>.arrow</code>,
+<code>.feather</code>, <code>.ipc</code>) are read directly; see
+<a href="../data-sources/">Arrow, Parquet and DuckDB</a>.</p>
 <hr />
-<h2 id="where-things-stand">Where things stand</h2>
-<table>
-<thead>
-<tr>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Pages</td>
-<td>31, ~8,500 lines</td>
-</tr>
-<tr>
-<td>Mechanical errors</td>
-<td><strong>87</strong> across 21 pages</td>
-</tr>
-<tr>
-<td>Broken examples</td>
-<td>33 fences raise when pasted</td>
-</tr>
-<tr>
-<td>Conceptual pages with a diagram</td>
-<td><strong>0 of 17</strong></td>
-</tr>
-<tr>
-<td>Pages stamped "Last updated: 2025-10-12"</td>
-<td>8</td>
-</tr>
-</tbody>
-</table>
-<p><code>performance.md</code> has 16 errors — the most of any page, and it is the page that
-carries the positioning claim you are about to link from a blog post. Every
-configuration example on it is broken and every timing predates three rounds of
-optimisation. Fix it before publishing anything.</p>
-<hr />
-<h2 id="five-failure-classes">Five failure classes</h2>
-<h3 id="1-config-options-that-do-not-exist-17-occurrences-real-api-drift">1. Config options that do not exist — 17 occurrences, real API drift</h3>
-<p>Seven pages document <code>config.compute.uniques_sketch_size</code> and
-<code>config.compute.top_k_size</code>. <strong>Neither exists.</strong> The real names are <code>uniques_k</code>
-and <code>topk_k</code> on the config object (<code>max_uniques</code> / <code>top_k</code> on <code>ComputeOptions</code>).
-A reader following the docs gets a silently ignored setting rather than an error,
-which is worse.</p>
-<p>Affected: <code>configuration.md</code>, <code>api.md</code>, <code>performance.md</code>, <code>stats/numeric.md</code>,
-<code>stats/categorical.md</code>, <code>why-pysuricata.md</code>.</p>
-<h3 id="2-renamed-summary-keys-10-occurrences-real-api-drift">2. Renamed summary keys — 10 occurrences, real API drift</h3>
-<p><code>summarize()["dataset"]["rows"]</code> is now <code>rows_est</code>. Nine pages show the old key
-and the example raises <code>KeyError</code>. The accuracy oracle caught this rename; the
-tests were updated and the docs were not.</p>
-<h3 id="3-fences-missing-their-imports-25-occurrences">3. Fences missing their imports — 25 occurrences</h3>
-<p>Blocks calling <code>profile()</code>, <code>summarize()</code> or <code>ProfileConfig(...)</code> with no import
-line. A reader who copies the block gets a <code>NameError</code>. Every fence should stand
-alone or be explicitly marked as a fragment.</p>
-<p>(The docs used to teach <code>ReportConfig</code>, which was a live alias. It now warns on
-use and goes in 0.3.0 (#210), so every fence was migrated to <code>ProfileConfig</code>.)</p>
-<h3 id="4-output-tagged-as-python-9-occurrences">4. Output tagged as <code>python</code> — 9 occurrences</h3>
-<p>Console output and shell transcripts inside <code>```python</code> fences.
-<code>quickstart.md</code>, <code>usage.md</code> and <code>why-pysuricata.md</code> have three each. Re-tag as
-<code>text</code> or <code>console</code>.</p>
-<h3 id="5-prose-describing-behaviour-you-removed">5. Prose describing behaviour you removed</h3>
-<p>Needs reading, not a checker. Confirmed:</p>
-<ul>
-<li><code>architecture-diagrams.md:109</code> — "ExtremeTracker … Every 5th chunk only". That
-  throttle was removed in 0.0.26; extremes are exact now.</li>
-<li><code>architecture-diagrams.md:190</code> — "Type inference … first chunk only". Now gated
-  on <code>first_chunk_is_whole</code>.</li>
-<li><code>algorithms/sampling.md</code> — documents <strong>Algorithm R</strong> in full, with a proof. The
-  library implements <strong>Algorithm L</strong> with a bulk scheduler. 68 lines teaching the
-  wrong algorithm.</li>
-<li><code>algorithms/sketches.md:63</code> — teaches KMV using <code>hashlib.md5</code>. The library uses
-  blake2b for bytes and a vectorised splitmix64 for numeric arrays.</li>
-</ul>
-<h3 id="also-nothing-documents-the-last-three-months">Also: nothing documents the last three months</h3>
-<p>No page mentions the accuracy oracle, the chunked-equals-unchunked invariant, the
-vendored native crate, or the CI gate. <code>changelog.md</code> is excellent and current and
-is the only place any of it exists. "We assert chunked == unchunked in CI" is a
-selling point, and it is invisible.</p>
-<hr />
-<h2 id="per-page-triage">Per-page triage</h2>
-<table>
-<thead>
-<tr>
-<th>Page</th>
-<th style="text-align: right;">errors</th>
-<th>Dominant problem</th>
-<th>Action</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>performance.md</code></td>
-<td style="text-align: right;">16</td>
-<td>10 broken examples, 6 bad config names, 5 stale timings</td>
-<td>rewrite</td>
-</tr>
-<tr>
-<td><code>configuration.md</code></td>
-<td style="text-align: right;">10</td>
-<td>7 config names that do not exist</td>
-<td>rewrite</td>
-</tr>
-<tr>
-<td><code>quickstart.md</code></td>
-<td style="text-align: right;">8</td>
-<td>4 broken examples, 3 mis-tagged fences</td>
-<td>rewrite</td>
-</tr>
-<tr>
-<td><code>why-pysuricata.md</code></td>
-<td style="text-align: right;">8</td>
-<td>mis-tagged fences, bad config, stale keys</td>
-<td>rewrite</td>
-</tr>
-<tr>
-<td><code>stats/categorical.md</code></td>
-<td style="text-align: right;">7</td>
-<td>4 bad config names</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>api.md</code></td>
-<td style="text-align: right;">6</td>
-<td>examples + config + <code>rows</code> key</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>examples.md</code></td>
-<td style="text-align: right;">6</td>
-<td>examples needing files; <code>rows</code> key</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>usage.md</code></td>
-<td style="text-align: right;">6</td>
-<td>mis-tagged fences, missing imports</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>faq.md</code>, <code>stats/numeric.md</code></td>
-<td style="text-align: right;">4</td>
-<td>examples, config names</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>analytics/correlations.md</code>, <code>stats/boolean.md</code></td>
-<td style="text-align: right;">3</td>
-<td>examples, <code>rows</code> key</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>advanced.md</code>, <code>stats/datetime.md</code></td>
-<td style="text-align: right;">2</td>
-<td>examples</td>
-<td>patch</td>
-</tr>
-<tr>
-<td><code>changelog.md</code>, <code>install.md</code></td>
-<td style="text-align: right;">1</td>
-<td>one mis-tagged fence each</td>
-<td>trivial</td>
-</tr>
-<tr>
-<td><code>architecture-diagrams.md</code></td>
-<td style="text-align: right;">0</td>
-<td>mechanically clean, <strong>semantically stale</strong></td>
-<td>merge &amp; redraw</td>
-</tr>
-<tr>
-<td><code>algorithms/*.md</code></td>
-<td style="text-align: right;">0</td>
-<td>clean; wrong algorithm, no visuals</td>
-<td>rewrite + illustrate</td>
-</tr>
-</tbody>
-</table>
-<p>A page can be mechanically clean and still be the most wrong page in the set:
-<code>algorithms/sampling.md</code> has zero errors and documents an algorithm you do not
-use. The checker buys you the boring half so your attention goes to this half.</p>
-<p>Also: <code>docs/roadmap.md</code> is on disk but not in the mkdocs nav, so it is never
-rendered. Add it or move it out of <code>docs/</code>.</p>
-<hr />
-<h2 id="the-plan">The plan</h2>
-<h3 id="phase-0-make-drift-impossible-to-reintroduce-1-hour">Phase 0 — Make drift impossible to reintroduce (1 hour)</h3>
-<p>Land <code>benchmarks/check_docs.py</code> in CI with <code>--strict</code>. From then on a renamed
-config option or a moved summary key fails a PR instead of rotting for ten
-months. Fix the nav orphan.</p>
-<p><strong>Exit:</strong> CI red on the current tree, which is the point.</p>
-<h3 id="phase-1-mechanical-sweep-23-hours">Phase 1 — Mechanical sweep (2–3 hours)</h3>
-<p>Three global replacements are most of the count:</p>
-<ul>
-<li><code>uniques_sketch_size</code> → <code>uniques_k</code></li>
-<li><code>top_k_size</code> → <code>topk_k</code></li>
-<li><code>["dataset"]["rows"]</code> → <code>["dataset"]["rows_est"]</code></li>
-</ul>
-<p>Then re-tag the nine output-as-python fences and add imports to the 25 orphan
-fences. Re-run until only INFO remains.</p>
-<p><strong>Exit:</strong> <code>check_docs --strict</code> green.</p>
-<h3 id="phase-2-the-four-pages-that-carry-the-story-1-weekend">Phase 2 — The four pages that carry the story (1 weekend)</h3>
-<p><code>index.md</code>, <code>why-pysuricata.md</code>, <code>quickstart.md</code>, <code>performance.md</code>. Rewrite with
-current numbers (13.3× vs ydata-profiling, 12× less marginal memory), the
-bounded-memory claim stated plainly, and the chunked-equals-unchunked invariant
-named. Delete every hardcoded timing you cannot regenerate.</p>
-<p><strong>Exit:</strong> a stranger reads <code>index.md</code> and can say what the library is for.</p>
-<h3 id="phase-3-rewrite-the-algorithms-trilogy-with-visuals-1-weekend">Phase 3 — Rewrite the algorithms trilogy, with visuals (1 weekend)</h3>
-<p><code>sampling.md</code> to Algorithm L (and say why: bit-identical across chunk sizes).
-<code>sketches.md</code> to the real hashing plus the threshold idea. <code>streaming.md</code> to
-Pébay's merge and the reason it exists. This is where the animations go. It is
-also the most defensible content you have — nobody else's docs explain this.</p>
-<h3 id="phase-4-collapse-three-architecture-pages-into-one-half-weekend">Phase 4 — Collapse three architecture pages into one (half weekend)</h3>
-<p><code>architecture.md</code>, <code>architecture-diagrams.md</code> and
-<code>sequence-diagrams-complexity.md</code> overlap heavily and two carry removed claims.
-One page, one chunk-lifecycle diagram, one complexity table.</p>
-<p><strong>Exit:</strong> no diagram asserts anything the code does not do.</p>
-<h3 id="phase-5-reference-pages-ongoing">Phase 5 — Reference pages (ongoing)</h3>
-<p><code>stats/*</code> and <code>analytics/*</code> — 2,900 lines, mechanically patched in phase 1,
-illustrated with annotated card screenshots as you go. Drop the "Last updated"
-footers on eight pages: generate them from git or remove them, because a wrong
-date is worse than no date.</p>
-<hr />
-<h2 id="what-would-benefit-most-from-diagrams-and-animations">What would benefit most from diagrams and animations</h2>
-<p>The distribution today is exactly inverted. Pages that describe <em>processes</em> have
-no visuals; the only pages with diagrams describe module layout, which a
-directory listing already conveys.</p>
-<table>
-<thead>
-<tr>
-<th>Section</th>
-<th style="text-align: right;">Pages</th>
-<th style="text-align: right;">Lines</th>
-<th style="text-align: right;">Diagrams</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><code>algorithms/</code></td>
-<td style="text-align: right;">3</td>
-<td style="text-align: right;">857</td>
-<td style="text-align: right;"><strong>0</strong></td>
-</tr>
-<tr>
-<td><code>stats/</code></td>
-<td style="text-align: right;">5</td>
-<td style="text-align: right;">2,184</td>
-<td style="text-align: right;"><strong>0</strong></td>
-</tr>
-<tr>
-<td><code>analytics/</code></td>
-<td style="text-align: right;">4</td>
-<td style="text-align: right;">910</td>
-<td style="text-align: right;"><strong>0</strong></td>
-</tr>
-<tr>
-<td><code>sequence-diagrams-complexity.md</code></td>
-<td style="text-align: right;">1</td>
-<td style="text-align: right;">297</td>
-<td style="text-align: right;">6</td>
-</tr>
-<tr>
-<td><code>architecture.md</code></td>
-<td style="text-align: right;">1</td>
-<td style="text-align: right;">219</td>
-<td style="text-align: right;">5</td>
-</tr>
-<tr>
-<td><code>architecture-diagrams.md</code></td>
-<td style="text-align: right;">1</td>
-<td style="text-align: right;">197</td>
-<td style="text-align: right;">4 (2 stale)</td>
-</tr>
-</tbody>
-</table>
-<p><strong>The test for "does this need an animation?" is: does the idea have a time
-axis?</strong> A streaming algorithm is a state machine walking a sequence — a moving
-picture by nature, and prose is the wrong medium. A formula is not.</p>
-<h3 id="ranked">Ranked</h3>
-<p><strong>1. Reservoir sampling — <code>algorithms/sampling.md</code> — animate.</strong>
-The best candidate in the set, and you are rewriting the page anyway. Two panels,
-same stream. Left, Algorithm R: every element tested, the reservoir flickering
-constantly early then almost never. Right, Algorithm L: a pointer leaping over
-the elements it will never select, landing only on acceptances. The viewer <em>sees</em>
-the work disappear — which is the whole point of Algorithm L and something the
-current proof sketch cannot convey. Plus a static chart: retention probability vs
-stream position, a flat line at k/n. That is what the proof is trying to say.</p>
-<p><strong>2. KMV on the unit interval — <code>algorithms/sketches.md</code> — animate.</strong>
-Possibly the most elegant animation in streaming statistics, currently two pages
-of prose. Hashes land on <code>[0,1)</code>; the k smallest stay lit; the k-th smallest <em>t</em>
-creeps toward zero; the estimate <code>(k-1)/t</code> converges. Duplicates land on existing
-marks and change nothing — the intuition for why a distinct-count sketch works.
-Draw the admission threshold as a gate and everything beyond it as excluded: that
-<em>is</em> the pre-filter optimisation on the roadmap, so the diagram documents the code
-and motivates it at once. <strong>A working version of this ships in
-<code>scripts/build_docs_assets.py</code> — 18 KB, generated from a real <code>KMV</code> run.</strong>
-Second animation on the same page: Misra-Gries eviction — counters fill, a new key
-arrives, everything decrements, the zeros drop out. Hard to follow in text,
-trivial as a picture.</p>
-<p><strong>3. The memory curve — <code>index.md</code> and <code>why-pysuricata.md</code> — static chart.</strong>
-Not a diagram, an <em>asset</em>. Two lines, rows on x, peak RSS on y: yours flat, the
-incumbent's linear until it stops at a MemoryError. The single picture that makes
-"bounded memory" concrete, the one that travels on social media, and your front
-page currently has no chart at all. Generate it from <code>benchmarks/end_to_end.py</code> so
-it is a measurement rather than an illustration.</p>
-<p><strong>4. Annotated report cards — <code>stats/*.md</code> — screenshots.</strong>
-2,184 lines explaining what the numbers on a card mean, with no picture of the
-card. A reader of these pages has the report open in another tab. One annotated
-screenshot per column type replaces several screens of prose. Cheapest high-value
-item here — you already generate the report; script the capture with Playwright.</p>
-<p><strong>5. The chunk lifecycle — merged architecture page — mermaid.</strong>
-One sequence diagram: source → adapter → chunk → consume → per-column accumulators
-→ merge → finalize → render, with the bounded-memory boundary drawn explicitly
-(what is O(1), what is O(n)). Replaces three overlapping pages, two of which
-currently lie.</p>
-<p><strong>6. Welford → Pébay merge — <code>algorithms/streaming.md</code> — static.</strong>
-Two partitions with their own means and moments combining into one, with the
-<code>δ²·n_a·n_b/n</code> correction drawn as the thing accounting for the gap between the
-means. Static is right; there is no time axis, just a decomposition. This is also
-the diagram that explains <em>why</em> chunked equals unchunked.</p>
-<p><strong>7. Missingness matrix — <code>analytics/missing-values.md</code> — screenshot.</strong>
-309 lines describing a visualisation without showing it.</p>
-<h3 id="what-not-to-animate">What not to animate</h3>
-<p>Formulas, config tables, the FAQ, the API reference. Motion on a static idea is
-decoration, costs bytes, and fights the reader. <code>stats/overview.md</code> already uses
-MathJax for ten formulas and is better for it.</p>
-<hr />
-<h2 id="how-to-build-them-without-creating-new-drift">How to build them without creating new drift</h2>
-<p><strong>The trap:</strong> you have just spent three rounds fixing documentation that went
-stale because nothing checked it. Twenty hand-drawn diagrams would recreate that
-problem in a medium nobody can diff. <strong>Generate the visuals, do not draw them.</strong></p>
-<table>
-<thead>
-<tr>
-<th>Need</th>
-<th>Use</th>
-<th>Not</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Flow, sequence, state</td>
-<td><strong>Mermaid</strong> — already enabled, stays text in git, diffable in review</td>
-<td>an exported image</td>
-</tr>
-<tr>
-<td>Algorithm animation</td>
-<td><strong>Inline SVG with CSS/SMIL</strong> — a few KB, scales, inherits theme through CSS variables so dark mode works free, honours <code>prefers-reduced-motion</code></td>
-<td><strong>GIF</strong> — megabytes, fixed palette, wrong on dark backgrounds, invisible to screen readers, unreviewable in a PR</td>
-</tr>
-<tr>
-<td>Charts from measurements</td>
-<td><strong>SVG emitted by a script</strong> reading <code>benchmarks/*.json</code></td>
-<td>a screenshot of a notebook</td>
-</tr>
-<tr>
-<td>Report cards</td>
-<td><strong>Playwright screenshots</strong> of a freshly generated report, cropped and annotated by the same script</td>
-<td>a manual screen grab</td>
-</tr>
-</tbody>
-</table>
-<h3 id="the-shape-of-it">The shape of it</h3>
-<div class="language-text highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>scripts/build_docs_assets.py          # one entry point, regenerates everything
-</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>docs/assets/generated/
-</span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    kmv-unit-interval.svg             # SHIPPED — animated, from the real KMV
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    reservoir-r-vs-l.svg              # next
-</span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    misra-gries-eviction.svg
-</span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    memory-curve.svg                  # from end_to_end.py results
-</span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    card-numeric.png                  # Playwright, annotated
-</span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    MANIFEST.json                     # digest per asset
+<h2 id="profile"><code>profile</code></h2>
+<p>Analyse a dataset and write a self-contained HTML report.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>pysuricata<span class="w"> </span>profile<span class="w"> </span>data.csv<span class="w"> </span>--output<span class="w"> </span>report.html
+</span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>pysuricata<span class="w"> </span>profile<span class="w"> </span>data.parquet<span class="w"> </span>-o<span class="w"> </span>report.html<span class="w"> </span>--seed<span class="w"> </span><span class="m">42</span><span class="w"> </span>--no-correlations
 </span></code></pre></div>
-<p><code>python scripts/build_docs_assets.py --check</code> fails if any committed asset no
-longer matches what the code generates — the same trick as a snapshot test. A
-change to <code>ReservoirSampler</code> that invalidates the animation shows up as a red
-build, not as a diagram that quietly starts lying.</p>
-<h3 id="two-details-worth-getting-right">Two details worth getting right</h3>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>default</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>file</code></td>
+<td>—</td>
+<td>path to the data file (positional, required)</td>
+</tr>
+<tr>
+<td><code>--output</code>, <code>-o</code></td>
+<td>—</td>
+<td>where to write the HTML (<strong>required</strong>)</td>
+</tr>
+<tr>
+<td><code>--title</code>, <code>-t</code></td>
+<td>package default</td>
+<td>custom title for the report</td>
+</tr>
+<tr>
+<td><code>--seed</code>, <code>-s</code></td>
+<td><code>0</code></td>
+<td>random seed; leave it alone for a reproducible report</td>
+</tr>
+<tr>
+<td><code>--chunk-size</code></td>
+<td><code>100000</code></td>
+<td>rows per chunk while streaming</td>
+</tr>
+<tr>
+<td><code>--sample-size</code></td>
+<td><code>20000</code></td>
+<td>reservoir size for quantiles and histograms</td>
+</tr>
+<tr>
+<td><code>--no-correlations</code></td>
+<td>off</td>
+<td>skip the <span class="arithmatex">\(O(p^2)\)</span> correlation step</td>
+</tr>
+<tr>
+<td><code>--quiet</code>, <code>-q</code></td>
+<td>off</td>
+<td>suppress progress output</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="summarize"><code>summarize</code></h2>
+<p>Analyse a dataset and emit the statistics as JSON. No HTML is rendered, so this
+is the faster path when you only want the numbers.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>pysuricata<span class="w"> </span>summarize<span class="w"> </span>data.csv<span class="w">                     </span><span class="c1"># to stdout</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>pysuricata<span class="w"> </span>summarize<span class="w"> </span>data.csv<span class="w"> </span>--output<span class="w"> </span>stats.json<span class="w"> </span><span class="c1"># to a file</span>
+</span></code></pre></div>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>default</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>file</code></td>
+<td>—</td>
+<td>path to the data file (positional, required)</td>
+</tr>
+<tr>
+<td><code>--output</code>, <code>-o</code></td>
+<td>stdout</td>
+<td>where to write the JSON</td>
+</tr>
+<tr>
+<td><code>--seed</code>, <code>-s</code></td>
+<td><code>0</code></td>
+<td>random seed</td>
+</tr>
+<tr>
+<td><code>--chunk-size</code></td>
+<td><code>100000</code></td>
+<td>rows per chunk while streaming</td>
+</tr>
+<tr>
+<td><code>--quiet</code>, <code>-q</code></td>
+<td>off</td>
+<td>suppress progress output</td>
+</tr>
+</tbody>
+</table>
+<p>Progress goes to <strong>stderr</strong>, never stdout, so <code>pysuricata summarize data.csv |
+jq .dataset</code> stays parseable without <code>--quiet</code>.</p>
+<p>The payload's keys are a versioned contract — see
+<a href="../summary-schema/">the <code>summarize()</code> schema</a>.</p>
+<hr />
+<h2 id="check"><code>check</code></h2>
+<p>Compare a dataset against a stored baseline and exit non-zero when a threshold
+is crossed. This is the piece that makes the same single pass usable as a CI
+gate. <a href="../data-checks/">Gating CI on drift</a> is the guide; this is the reference.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>pysuricata<span class="w"> </span>check<span class="w"> </span>data.parquet<span class="w"> </span>--write-baseline<span class="w"> </span>baseline.json<span class="w">   </span><span class="c1"># record</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>pysuricata<span class="w"> </span>check<span class="w"> </span>data.parquet<span class="w"> </span>--baseline<span class="w"> </span>baseline.json<span class="w">         </span><span class="c1"># compare</span>
+</span></code></pre></div>
+<h3 id="exit-codes">Exit codes</h3>
+<table>
+<thead>
+<tr>
+<th>code</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>0</code></td>
+<td>passed — nothing crossed a threshold</td>
+</tr>
+<tr>
+<td><code>1</code></td>
+<td>a threshold was crossed</td>
+</tr>
+<tr>
+<td><code>2</code></td>
+<td>the check could not run (missing file, unreadable baseline, schema mismatch)</td>
+</tr>
+</tbody>
+</table>
+<p><code>2</code> is deliberately distinct from <code>1</code>: a broken check is not a passing one, and
+it is not a failing dataset either.</p>
+<h3 id="baseline">Baseline</h3>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>default</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>file</code></td>
+<td>—</td>
+<td>path to the data file (positional, required)</td>
+</tr>
+<tr>
+<td><code>--baseline</code>, <code>-b</code></td>
+<td>—</td>
+<td>baseline JSON to compare against</td>
+</tr>
+<tr>
+<td><code>--write-baseline</code></td>
+<td>—</td>
+<td>write a baseline from this dataset and exit</td>
+</tr>
+</tbody>
+</table>
+<p><code>check</code> reads <code>schema_version</code> off a stored baseline and <strong>refuses</strong> to compare
+against one written by a different version, rather than quietly matching
+whatever keys still line up.</p>
+<h3 id="thresholds">Thresholds</h3>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>default</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--thresholds</code></td>
+<td>—</td>
+<td>a <code>.json</code> or <code>.toml</code> file overriding the defaults</td>
+</tr>
+<tr>
+<td><code>--max-missing-pct</code></td>
+<td>—</td>
+<td>fail if any column is missing more than this percentage</td>
+</tr>
+<tr>
+<td><code>--min-rows</code></td>
+<td>—</td>
+<td>fail if the dataset has fewer rows than this</td>
+</tr>
+<tr>
+<td><code>--max-rows-drift-pct</code></td>
+<td>—</td>
+<td>fail if the row count moved more than this percentage from the baseline</td>
+</tr>
+<tr>
+<td><code>--fail-on-new-column</code></td>
+<td>off</td>
+<td>treat an added column as a breach</td>
+</tr>
+<tr>
+<td><code>--fail-on-range-expansion</code></td>
+<td>off</td>
+<td>treat a new minimum or maximum outside the baseline range as a breach</td>
+</tr>
+</tbody>
+</table>
+<p>A thresholds file keeps the rules with the repository rather than in a workflow
+argument list, which is usually what you want once there is more than one.</p>
+<h3 id="freshness">Freshness</h3>
+<p>Stale data is not drifted data — an extract that simply did not run looks
+identical to yesterday's, and every distributional check passes.</p>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>default</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--max-age</code></td>
+<td>—</td>
+<td>fail if the newest timestamp in a datetime column is older than this, e.g. <code>26h</code>, <code>3d</code>, <code>90m</code>. Needs no baseline</td>
+</tr>
+<tr>
+<td><code>--require-fresh</code></td>
+<td>off</td>
+<td>fail if a datetime column's newest timestamp did not advance past the baseline's — catches a re-run of yesterday's extract</td>
+</tr>
+</tbody>
+</table>
+<h3 id="output-and-streaming">Output and streaming</h3>
+<table>
+<thead>
+<tr>
+<th>option</th>
+<th>default</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>--json</code></td>
+<td>off</td>
+<td>emit the result as JSON on stdout instead of text</td>
+</tr>
+<tr>
+<td><code>--warn-only</code></td>
+<td>off</td>
+<td>report findings but always exit <code>0</code></td>
+</tr>
+<tr>
+<td><code>--seed</code>, <code>-s</code></td>
+<td><code>0</code></td>
+<td>random seed, so a re-run of the same data is a no-op</td>
+</tr>
+<tr>
+<td><code>--chunk-size</code></td>
+<td><code>100000</code></td>
+<td>rows per chunk while streaming</td>
+</tr>
+<tr>
+<td><code>--quiet</code>, <code>-q</code></td>
+<td>off</td>
+<td>suppress progress output</td>
+</tr>
+</tbody>
+</table>
+<p><code>--warn-only</code> is for the period between adding a check and trusting it: you see
+what it would have caught without turning the build red.</p>
+<hr />
+<h2 id="in-github-actions">In GitHub Actions</h2>
+<div class="language-yaml highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Check the daily extract</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="w">  </span><span class="nt">run</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">|</span>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="no">pysuricata check data/extract.parquet \</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="w">      </span><span class="no">--baseline baselines/extract.json \</span>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="w">      </span><span class="no">--max-missing-pct 5 \</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="w">      </span><span class="no">--require-fresh</span>
+</span></code></pre></div>
+<p>A non-zero exit fails the step. Full workflow, including how to keep the
+baseline current, in <a href="../data-checks/">Gating CI on drift</a>.</p>
+<hr />
+<h2 id="see-also">See Also</h2>
 <ul>
-<li><strong>Animate from the real thing.</strong> The KMV asset replays an actual <code>KMV</code> run with
-  a fixed seed, using the library's own hash. The picture is evidence, and it
-  changes when the algorithm changes.</li>
-<li><strong>Give every animation a still first frame and a caption that stands alone.</strong>
-  Print, screen readers, <code>prefers-reduced-motion</code> and the skimming reader all need
-  the static version to carry the point.</li>
+<li><a href="../data-checks/">Gating CI on drift</a> — the workflow <code>check</code> was built for</li>
+<li><a href="../summary-schema/">The <code>summarize()</code> schema</a> — what the JSON contains</li>
+<li><a href="../api/">High-Level API</a> — the same three operations from Python</li>
 </ul>
-<h3 id="order">Order</h3>
-<p>Checker into CI → mechanical sweep → the four story pages with the memory curve →
-the algorithms trilogy with the two animations → everything else. The first two
-are hours, not weekends, and they stop the bleeding. The memory curve and the KMV
-animation are the two assets that will do work for you outside the docs — in the
-README, in post #3, and in the Show HN thumbnail.</p>
 
 
 
 
 
 
+
+  
+  
 
 
 

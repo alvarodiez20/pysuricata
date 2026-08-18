@@ -5,18 +5,6 @@
          <lastmod>2026-08-18</lastmod>
     </url>
     <url>
-         <loc>https://alvarodiez20.github.io/pysuricata/DIAGRAM_PROMPTS/</loc>
-         <lastmod>2026-08-18</lastmod>
-    </url>
-    <url>
-         <loc>https://alvarodiez20.github.io/pysuricata/DOCS_PLAN/</loc>
-         <lastmod>2026-08-18</lastmod>
-    </url>
-    <url>
-         <loc>https://alvarodiez20.github.io/pysuricata/MIGRATION_TESTING/</loc>
-         <lastmod>2026-08-18</lastmod>
-    </url>
-    <url>
          <loc>https://alvarodiez20.github.io/pysuricata/about-suricatas/</loc>
          <lastmod>2026-08-18</lastmod>
     </url>
@@ -38,6 +26,10 @@
     </url>
     <url>
          <loc>https://alvarodiez20.github.io/pysuricata/changelog/</loc>
+         <lastmod>2026-08-18</lastmod>
+    </url>
+    <url>
+         <loc>https://alvarodiez20.github.io/pysuricata/cli/</loc>
          <lastmod>2026-08-18</lastmod>
     </url>
     <url>
@@ -77,15 +69,15 @@
          <lastmod>2026-08-18</lastmod>
     </url>
     <url>
-         <loc>https://alvarodiez20.github.io/pysuricata/integration/</loc>
-         <lastmod>2026-08-18</lastmod>
-    </url>
-    <url>
          <loc>https://alvarodiez20.github.io/pysuricata/performance/</loc>
          <lastmod>2026-08-18</lastmod>
     </url>
     <url>
          <loc>https://alvarodiez20.github.io/pysuricata/quickstart/</loc>
+         <lastmod>2026-08-18</lastmod>
+    </url>
+    <url>
+         <loc>https://alvarodiez20.github.io/pysuricata/reference/</loc>
          <lastmod>2026-08-18</lastmod>
     </url>
     <url>
@@ -142,10 +134,6 @@
     </url>
     <url>
          <loc>https://alvarodiez20.github.io/pysuricata/analytics/quality/</loc>
-         <lastmod>2026-08-18</lastmod>
-    </url>
-    <url>
-         <loc>https://alvarodiez20.github.io/pysuricata/design/handoff-README/</loc>
          <lastmod>2026-08-18</lastmod>
     </url>
     <url>

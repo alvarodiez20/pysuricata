@@ -634,6 +634,8 @@
       
         
       
+        
+      
     
     
     
@@ -769,6 +771,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../data-checks/" class="md-nav__link">
         
   
@@ -859,6 +884,8 @@
       
         
       
+        
+      
     
     
     
@@ -908,6 +935,29 @@
   
   <span class="md-ellipsis">
     API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Generated Reference
     
   </span>
   
@@ -996,10 +1046,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
             
   
   
@@ -1012,8 +1062,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             Statistical Methods
           </label>
@@ -1172,10 +1222,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
             
   
   
@@ -1188,8 +1238,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             Advanced Analytics
           </label>
@@ -1323,10 +1373,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
         
           
-          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
             
   
   
@@ -1339,8 +1389,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             Algorithms
           </label>
@@ -1949,11 +1999,22 @@
     style C fill:#A5D6A7,stroke:#2E7D32,color:#1B5E20
     style D fill:#81C784,stroke:#2E7D32,color:#1B5E20
     style E fill:#66BB6A,stroke:#2E7D32,color:#fff</code></pre>
-<p><strong>Data Sources</strong> → pandas DataFrames, polars DataFrames, or any iterable of DataFrames (for streaming).</p>
+<p><strong>Data Sources</strong> → pandas or polars frames; a path to a CSV, Parquet, JSON or
+Arrow IPC file; an Arrow table or reader, or anything exporting
+<code>__arrow_c_stream__</code>; a DuckDB relation; or any iterable of frames. The middle
+three are read a batch at a time and never materialised.</p>
 <p><strong>Chunk Iterator</strong> → If a single DataFrame is passed, it is treated as one chunk. Generators are consumed chunk-by-chunk to bound memory.</p>
 <p><strong>Typed Accumulators</strong> → Each column is assigned a specialized accumulator based on its inferred type. All accumulators are streaming: they accept one chunk at a time and maintain bounded state.</p>
 <p><strong>Summary Metrics</strong> → After all chunks are consumed, accumulators are finalized and dataset-wide metrics (missingness, duplicates, etc.) are computed.</p>
-<p><strong>HTML Renderer</strong> → A single-file Jinja2 template with inline CSS/JS produces a portable, self-contained HTML report.</p>
+<p><strong>HTML Renderer</strong> → One template, <code>templates/report_template.html</code>, carrying
+bare <code>{identifier}</code> placeholders — no templating engine and no dependency for
+one. They are filled in a <strong>single regex pass</strong>, not by <code>str.format</code> and not by
+sequential <code>replace()</code>, and both halves of that matter: the inlined CSS and JS
+contain braces (<code>{--var-name}</code>, every JS block) that <code>.format()</code> would read as
+placeholders and raise <code>KeyError</code> on, while sequential replacement would rescan
+a value it had already substituted — a user-supplied title containing
+<code>{report_date}</code> would be expanded by a later pass. CSS, JS and SVG are inlined,
+producing a portable, self-contained file.</p>
 <hr />
 <h2 id="accumulator-architecture">Accumulator Architecture</h2>
 <pre class="mermaid"><code>classDiagram
@@ -1996,9 +2057,15 @@
     BaseAccumulator &lt;|-- BooleanAccumulator</code></pre>
 <p>Each accumulator follows the same interface:</p>
 <ol>
-<li><strong><code>update(chunk)</code></strong> — process a batch of values, update internal state</li>
+<li><strong><code>update(values)</code></strong> — fold a batch of values into internal state. The
+   accumulator never sees a frame, only an array; the adapter has already
+   converted the column</li>
+<li><strong><code>merge(other)</code></strong> — combine two partial states into one</li>
 <li><strong><code>finalize()</code></strong> — compute final statistics from accumulated state</li>
 </ol>
+<p><code>merge</code> is the one the whole design rests on. Because it exists and is exact,
+<strong>chunked results equal unchunked results</strong> — an invariant asserted in
+<code>benchmarks/accuracy.py</code>, and the thing most likely to break.</p>
 <hr />
 <h2 id="data-flow">Data Flow</h2>
 <pre class="mermaid"><code>sequenceDiagram
@@ -2062,7 +2129,7 @@
 <h2 id="rendering-pipeline">Rendering Pipeline</h2>
 <pre class="mermaid"><code>flowchart TB
     A["Finalized Summaries"] --&gt; B["Dataset-Level Metrics"]
-    B --&gt; C["Jinja2 Template"]
+    B --&gt; C["report_template.html"]
     C --&gt; D["Inline CSS + JS"]
     C --&gt; E["Summary Cards"]
     C --&gt; F["Variable Cards"]
@@ -2142,13 +2209,13 @@
 </tr>
 <tr>
 <td><code>random_seed</code></td>
-<td><code>None</code></td>
-<td>Deterministic sampling</td>
+<td><code>0</code></td>
+<td>Deterministic sampling — reproducible unless you ask otherwise</td>
 </tr>
 <tr>
-<td><code>include_sample</code></td>
+<td><code>render.include_sample</code></td>
 <td><code>True</code></td>
-<td>Include data sample in report</td>
+<td>Show sample rows (the table only — cards still print labels and extremes)</td>
 </tr>
 </tbody>
 </table>
@@ -2161,10 +2228,27 @@
 <li><strong>Reproducibility</strong> — set <code>random_seed</code> for deterministic results</li>
 </ul>
 <h2 id="extending">Extending</h2>
+<p>Where the seams are, and what already sits in them.</p>
+<p><strong>Already connected through the chunk iterator.</strong> polars, Arrow (anything
+exporting <code>__arrow_c_stream__</code>) and DuckDB relations are adapters over the same
+interface — <code>pysuricata/sources.py</code> and <code>compute/adapters/</code>. A new backend is a
+new reader yielding frames, not a change to the engine.</p>
+<p><strong>Already built on the summary payload.</strong> <code>summarize()</code> and <code>Report.save_json()</code>
+are the JSON export; <code>compare()</code> is the drift comparison; <code>pysuricata check</code> is
+the gate. All three read the same finalized summaries the renderer does, which
+is why a gate and a diff cannot disagree about what a number means.</p>
+<p><strong>Still open:</strong></p>
 <ul>
-<li><strong>Backends</strong> — polars/Arrow/DuckDB can be connected via the chunk iterator interface</li>
-<li><strong>Quantile sketches</strong> — t-digest or KLL can replace the default reservoir</li>
-<li><strong>New sections</strong> — drift comparisons, JSON export, CLI wrapper</li>
+<li><strong>Quantile sketches</strong> — t-digest or KLL could replace the reservoir, trading a
+  fixed error bound for a distribution-dependent one</li>
+<li><strong>A native core</strong> — the accumulator boundary was prepared for a second
+  implementation in Rust and measured at 0.97–1.01x, so the preparation cost
+  nothing (<a href="https://github.com/alvarodiez20/pysuricata/issues/44">#44</a>)</li>
+<li><strong>The column axis</strong> — state is per column at roughly 3 MB each, so bounded
+  memory is a claim about rows and not yet about columns
+  (<a href="https://github.com/alvarodiez20/pysuricata/issues/207">#207</a>)</li>
+<li><strong>An HTML view for <code>compare()</code></strong>
+  (<a href="https://github.com/alvarodiez20/pysuricata/issues/121">#121</a>)</li>
 </ul>
 
 

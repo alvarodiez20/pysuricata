@@ -528,6 +528,15 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#beyond-the-report" class="md-nav__link">
+    <span class="md-ellipsis">
+      Beyond the Report
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#next-steps" class="md-nav__link">
     <span class="md-ellipsis">
       Next Steps
@@ -737,6 +746,8 @@
       
         
       
+        
+      
     
     
     
@@ -872,6 +883,29 @@
   
   
     <li class="md-nav__item">
+      <a href="cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="data-checks/" class="md-nav__link">
         
   
@@ -962,6 +996,8 @@
       
         
       
+        
+      
     
     
     
@@ -1011,6 +1047,29 @@
   
   <span class="md-ellipsis">
     API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Generated Reference
     
   </span>
   
@@ -1099,10 +1158,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
             
   
   
@@ -1115,8 +1174,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             Statistical Methods
           </label>
@@ -1275,10 +1334,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
             
   
   
@@ -1291,8 +1350,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             Advanced Analytics
           </label>
@@ -1426,10 +1485,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
         
           
-          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="0">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="0">
             
   
   
@@ -1442,8 +1501,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             Algorithms
           </label>
@@ -1937,19 +1996,22 @@
 <li>
 <p><strong>API Reference</strong></p>
 <hr />
-<p>Full API documentation generated from source code.</p>
+<p><code>profile()</code>, <code>summarize()</code>, <code>compare()</code> and every option they take.</p>
 <p><a href="api/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> API Docs</a></p>
 </li>
 </ul>
 </div>
 <h2 id="features">Features</h2>
 <ul>
-<li><strong>Streaming processing</strong> — Data is processed in configurable chunks, keeping memory usage bounded. Useful for datasets that don't fit in RAM.</li>
-<li><strong>Mathematically grounded</strong> — Uses Welford's algorithm for numerically stable moments, Pébay's formulas for mergeable statistics, KMV sketches for distinct count estimation, and Misra-Gries for heavy hitters.</li>
+<li><strong>Streaming processing</strong> — Data is processed in configurable chunks, keeping memory bounded in rows regardless of dataset size. Useful for datasets that don't fit in RAM.</li>
+<li><strong>Reads a source, not just a frame</strong> — A path, an Arrow table or reader, anything exporting <code>__arrow_c_stream__</code>, or a DuckDB relation, all a batch at a time and never materialised. 307 MB against 581 MB on a 180 MB Parquet file.</li>
+<li><strong>Numbers without the HTML</strong> — <code>summarize()</code> returns the same statistics as a <strong>versioned</strong> JSON payload, so a consumer can read it without parsing a report.</li>
+<li><strong>A gate, not just a report</strong> — <code>pysuricata check</code> compares a dataset against a stored baseline and exits non-zero when a threshold is crossed, so the same single pass runs in a notebook and in CI.</li>
+<li><strong>A diff between two datasets</strong> — <code>compare(a, b)</code> reports every delta: schema, dataset and per column, with the approximate ones marked.</li>
+<li><strong>Mathematically grounded</strong> — Welford's algorithm for numerically stable moments, Pébay's formulas for mergeable statistics, KMV sketches for distinct counts, Misra-Gries for heavy hitters — each with its error bound published rather than hidden.</li>
 <li><strong>Pandas and Polars support</strong> — Works natively with both <code>pandas.DataFrame</code> and <code>polars.DataFrame</code> / <code>polars.LazyFrame</code>.</li>
-<li><strong>Self-contained reports</strong> — Generates a single HTML file with inline CSS, JS, and SVG charts. No external assets or dependencies needed to view.</li>
-<li><strong>Configurable</strong> — Control chunk sizes, sample sizes, sketch parameters, correlation thresholds, and rendering options via <code>ProfileConfig</code>.</li>
-<li><strong>Reproducible</strong> — Seeded random sampling produces deterministic results across runs.</li>
+<li><strong>Self-contained reports</strong> — A single HTML file with inline CSS, JS and SVG charts. No external assets or dependencies needed to view.</li>
+<li><strong>Reproducible by default</strong> — The seed is <code>0</code>, not <code>None</code>, so re-running over unchanged data is a no-op rather than a set of sampling wobbles.</li>
 </ul>
 <h2 id="installation">Installation</h2>
 <div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">uv (Recommended)</label><label for="__tabbed_1_2">pip</label></div>
@@ -1979,6 +2041,9 @@
 </span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="c1"># Generate report</span>
 </span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
 </span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">report</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;titanic_report.html&quot;</span><span class="p">)</span>
+</span></code></pre></div>
+<p>Or from a shell, without writing a script:</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>pysuricata<span class="w"> </span>profile<span class="w"> </span>titanic.csv<span class="w"> </span>--output<span class="w"> </span>titanic_report.html
 </span></code></pre></div>
 <p>This is the actual report generated from the code above (Titanic dataset, 891 rows × 12 columns):</p>
 <div style="border: 2px solid #7CB342; border-radius: 8px; overflow: hidden; margin: 2rem 0;">
@@ -2017,7 +2082,40 @@
 </tr>
 </tbody>
 </table>
+<p>Memory is bounded <strong>in rows</strong>. It is not bounded in columns — state is per
+column at roughly 3 MB each — which is a known limit, tracked in
+<a href="https://github.com/alvarodiez20/pysuricata/issues/207">#207</a>.</p>
 <p>Reports include per-column statistics, histograms, correlation chips, missing value analysis, outlier detection, and more — all computed during the single streaming pass.</p>
+<h2 id="beyond-the-report">Beyond the Report</h2>
+<div class="grid cards">
+<ul>
+<li>
+<p><strong>Gate a build on drift</strong></p>
+<hr />
+<p><code>pysuricata check</code> compares against a stored baseline and exits non-zero
+when a threshold is crossed.</p>
+<p><a href="data-checks/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Gating CI on drift</a></p>
+</li>
+<li>
+<p><strong>Read a source, not a frame</strong></p>
+<hr />
+<p>Parquet, Arrow IPC and DuckDB relations, a batch at a time.</p>
+<p><a href="data-sources/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Arrow, Parquet and DuckDB</a></p>
+</li>
+<li>
+<p><strong>Diff two datasets</strong></p>
+<hr />
+<p><code>compare(a, b)</code> reports every delta, with the approximate ones marked.</p>
+<p><a href="comparing/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Comparing two datasets</a></p>
+</li>
+<li>
+<p><strong>Read the numbers directly</strong></p>
+<hr />
+<p>A versioned JSON payload with no HTML in the way.</p>
+<p><a href="summary-schema/"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> The summarize() schema</a></p>
+</li>
+</ul>
+</div>
 <h2 id="next-steps">Next Steps</h2>
 <div class="grid cards">
 <ul>

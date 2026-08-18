@@ -634,6 +634,8 @@
       
         
       
+        
+      
     
     
     
@@ -769,6 +771,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../data-checks/" class="md-nav__link">
         
   
@@ -861,6 +886,8 @@
       
         
       
+        
+      
     
     
     
@@ -913,6 +940,29 @@
   
   <span class="md-ellipsis">
     API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Generated Reference
     
   </span>
   
@@ -1004,10 +1054,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
             
   
   
@@ -1020,8 +1070,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             Statistical Methods
           </label>
@@ -1185,10 +1235,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   
@@ -1201,8 +1251,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             Advanced Analytics
           </label>
@@ -1495,9 +1545,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#littles-mcar-test" class="md-nav__link">
+  <a href="#why-there-is-no-mcar-test" class="md-nav__link">
     <span class="md-ellipsis">
-      Little's MCAR Test
+      Why There Is No MCAR Test
     </span>
   </a>
   
@@ -1699,10 +1749,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
         
           
-          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="">
             
   
   
@@ -1715,8 +1765,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             Algorithms
           </label>
@@ -2197,12 +2247,17 @@ scope. Paste this first to follow along:</p>
 <h2 id="overview">Overview</h2>
 <p>Missing data is ubiquitous in real-world datasets. PySuricata provides:</p>
 <ul>
-<li><strong>Intelligent display</strong>: Adaptive limits based on dataset size</li>
-<li><strong>Chunk-level tracking</strong>: See missing data distribution across chunks</li>
-<li><strong>Pattern detection</strong>: Identify systematic missingness</li>
-<li><strong>Smart filtering</strong>: Show only significant missing columns</li>
-<li><strong>Expandable UI</strong>: Progressive disclosure for many columns</li>
+<li><strong>Per-column counts and percentages</strong>, exact, from the single pass</li>
+<li><strong>Chunk-level tracking</strong>: where in the stream the missing values fell, which
+  is what turns "8% missing" into "the third file was empty"</li>
+<li><strong>Intelligent display</strong>: adaptive limits based on dataset size</li>
+<li><strong>Smart filtering</strong>: show only columns above a threshold</li>
+<li><strong>Expandable UI</strong>: progressive disclosure for many columns</li>
 </ul>
+<p>What it does <strong>not</strong> do is cross-column pattern analysis — which columns go
+missing <em>together</em>. That needs the joint missingness matrix, which is quadratic
+in columns and not available from a bounded single pass. The two sections below
+say why, and what to do instead.</p>
 <h2 id="missing-data-mechanisms">Missing Data Mechanisms</h2>
 <h3 id="mar-mcar-mnar">MAR, MCAR, MNAR</h3>
 <p><strong>Missing Completely At Random (MCAR)</strong>:
@@ -2235,8 +2290,15 @@ H_{\text{pattern}} = -\sum_{i=1}^{k} p_i \log_2 p_i
 <p><strong>High entropy</strong>: Many different patterns (complex missingness)<br />
 <strong>Low entropy</strong>: Few patterns (systematic missingness)</p>
 <div class="admonition note">
-<p class="admonition-title">Not implemented</p>
-<p>Pattern entropy computation is planned for future release.</p>
+<p class="admonition-title">Not computed</p>
+<p>Pattern entropy is over <em>joint</em> patterns — the <span class="arithmatex">\(2^p\)</span> possible
+combinations of which columns are missing in a row. Counting them needs
+either that many counters or a distinct-value sketch over row-level
+bitmasks, and either way the answer describes co-missingness, which is a
+cross-column question this single pass does not ask.</p>
+<p>What is published is per-column and per-chunk: <code>missing</code> and
+<code>missing_cells_pct</code>, plus the chunk strip. If two columns go missing in the
+same chunks, the strip shows it.</p>
 </div>
 <h2 id="intelligent-display-system">Intelligent Display System</h2>
 <h3 id="dynamic-limits">Dynamic Limits</h3>
@@ -2364,18 +2426,20 @@ H_{\text{pattern}} = -\sum_{i=1}^{k} p_i \log_2 p_i
 <p><strong>Actions:</strong>
 - Investigate recent changes
 - Alert data engineering team</p>
-<h2 id="littles-mcar-test">Little's MCAR Test</h2>
-<p>Statistical test for MCAR assumption.</p>
-<p><strong>Null hypothesis</strong>: Data is MCAR</p>
-<p><strong>Test statistic</strong>: Compare means of subgroups defined by missing patterns</p>
-<p><strong>P-value interpretation</strong>:
-- Large p-value: Consistent with MCAR
-- Small p-value: Reject MCAR (MAR or MNAR)</p>
-<div class="admonition note">
-<p class="admonition-title">Not implemented</p>
-<p>Little's test is planned for future release. Currently, users must perform external analysis.</p>
-</div>
-<p><strong>Reference</strong>: Little, R.J.A. (1988), "A Test of Missing Completely at Random for Multivariate Data with Missing Values", <em>JASA</em>, 83(404): 1198–1202.</p>
+<h2 id="why-there-is-no-mcar-test">Why There Is No MCAR Test</h2>
+<p>Little's test (1988) compares the means of subgroups defined by missing pattern
+under <span class="arithmatex">\(H_0\)</span>: the data is missing completely at random. PySuricata does not
+run it, and this one is not a "not yet".</p>
+<p>It needs the <strong>joint</strong> pattern structure — subgroups of rows sharing a
+missingness signature, and each subgroup's mean vector across every column. That
+is a second pass over data grouped by something you only know after the first
+one, which is the shape of computation this profiler is built not to do.</p>
+<p>It is also the wrong altitude. Whether missingness is MCAR, MAR or MNAR is a
+modelling judgement about <em>your</em> domain, made once, deliberately, with the
+column semantics in hand. A profiler's job is to hand you the evidence — which
+columns, how much, and where in the stream — not to return a verdict on it.</p>
+<p><strong>Reference</strong>: Little, R.J.A. (1988), "A Test of Missing Completely at Random
+for Multivariate Data with Missing Values", <em>JASA</em>, 83(404): 1198–1202.</p>
 <h2 id="imputation-considerations">Imputation Considerations</h2>
 <h3 id="meanmedian-imputation">Mean/Median Imputation</h3>
 <div class="arithmatex">\[

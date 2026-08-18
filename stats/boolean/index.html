@@ -634,6 +634,8 @@
       
         
       
+        
+      
     
     
     
@@ -769,6 +771,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../data-checks/" class="md-nav__link">
         
   
@@ -861,6 +886,8 @@
       
         
       
+        
+      
     
     
     
@@ -913,6 +940,29 @@
   
   <span class="md-ellipsis">
     API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Generated Reference
     
   </span>
   
@@ -1006,10 +1056,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
             
   
   
@@ -1022,8 +1072,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             Statistical Methods
           </label>
@@ -1298,26 +1348,11 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#statistical-tests" class="md-nav__link">
+  <a href="#why-there-is-no-balance-test" class="md-nav__link">
     <span class="md-ellipsis">
-      Statistical Tests
+      Why There Is No Balance Test
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Statistical Tests">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#binomial-test-for-balance" class="md-nav__link">
-    <span class="md-ellipsis">
-      Binomial Test for Balance
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1345,21 +1380,6 @@
       Implementation Details
     </span>
   </a>
-  
-    <nav class="md-nav" aria-label="Implementation Details">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#booleanaccumulator-class" class="md-nav__link">
-    <span class="md-ellipsis">
-      BooleanAccumulator Class
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
   
 </li>
       
@@ -1590,10 +1610,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   
@@ -1606,8 +1626,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             Advanced Analytics
           </label>
@@ -1744,10 +1764,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
         
           
-          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="">
             
   
   
@@ -1760,8 +1780,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             Algorithms
           </label>
@@ -2243,27 +2263,50 @@ scope. Paste this first to follow along:</p>
 <p>PySuricata treats <strong>boolean variables</strong> as columns with two distinct values (True/False, 1/0, Yes/No). Analysis focuses on balance, information content, and missing patterns.</p>
 <h3 id="key-features">Key Features</h3>
 <ul>
-<li><strong>True/False counts</strong> with percentages</li>
-<li><strong>Balance ratio</strong> (distribution symmetry)</li>
-<li><strong>Entropy</strong> (information content)</li>
-<li><strong>Information per value</strong> (bits)</li>
-<li><strong>Imbalance detection</strong> (skewed distributions)</li>
+<li><strong>True/False counts</strong> and ratios</li>
+<li><strong>Entropy</strong> (information content, in bits)</li>
 <li><strong>Missing value handling</strong></li>
 </ul>
 <h2 id="summary-statistics-provided">Summary Statistics Provided</h2>
-<p>For each boolean column:</p>
-<ul>
-<li><strong>Count</strong>: total non-null values</li>
-<li><strong>True count</strong>: number of True values</li>
-<li><strong>False count</strong>: number of False values</li>
-<li><strong>Missing count</strong>: number of missing/null values</li>
-<li><strong>True percentage</strong>: <span class="arithmatex">\(p = n_{\text{true}} / n\)</span></li>
-<li><strong>False percentage</strong>: <span class="arithmatex">\(1 - p\)</span></li>
-<li><strong>Missing percentage</strong>: <span class="arithmatex">\(n_{\text{missing}} / n_{\text{total}}\)</span></li>
-<li><strong>Entropy</strong>: Shannon entropy in bits</li>
-<li><strong>Balance score</strong>: measure of distribution symmetry</li>
-<li><strong>Imbalance ratio</strong>: deviation from 50/50 split</li>
-</ul>
+<p>Exactly what <code>summarize()</code> publishes for a boolean column, and nothing else:</p>
+<table>
+<thead>
+<tr>
+<th>key</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>count</code></td>
+<td>non-missing values</td>
+</tr>
+<tr>
+<td><code>missing</code></td>
+<td>missing values</td>
+</tr>
+<tr>
+<td><code>true</code>, <code>false</code></td>
+<td>counts</td>
+</tr>
+<tr>
+<td><code>true_ratio</code>, <code>false_ratio</code></td>
+<td><span class="arithmatex">\(p = n_{\text{true}} / n\)</span>, and <span class="arithmatex">\(1 - p\)</span></td>
+</tr>
+<tr>
+<td><code>entropy</code></td>
+<td>Shannon entropy, in bits</td>
+</tr>
+<tr>
+<td><code>mem_bytes</code>, <code>dtype</code></td>
+<td>bookkeeping</td>
+</tr>
+</tbody>
+</table>
+<p>The derived quantities below — imbalance ratio, balance score, information
+content per value — are <strong>not</strong> in the payload. They are one line of arithmetic
+from <code>true_ratio</code>, and they are documented here because reading a boolean column
+means reasoning about them, not because PySuricata computes them for you.</p>
 <h2 id="mathematical-definitions">Mathematical Definitions</h2>
 <h3 id="basic-counts">Basic Counts</h3>
 <p>Let the boolean column have:
@@ -2291,7 +2334,11 @@ R = \frac{n_{\text{true}}}{n_{\text{false}}}
 - <span class="arithmatex">\(R &lt; 1\)</span>: more False than True
 - <span class="arithmatex">\(R \to \infty\)</span>: nearly all True
 - <span class="arithmatex">\(R \to 0\)</span>: nearly all False</p>
-<h3 id="imbalance-ratio">Imbalance Ratio</h3>
+<h3 data-derived="data-derived" id="imbalance-ratio">Imbalance Ratio</h3>
+<div class="admonition note">
+<p class="admonition-title">Derived, not published</p>
+<p>Not a key in the payload. Compute it from <code>true_ratio</code> if you want it.</p>
+</div>
 <p>Measures deviation from balanced distribution:</p>
 <div class="arithmatex">\[
 I = \frac{|n_{\text{true}} - n_{\text{false}}|}{n} = |2p - 1|
@@ -2305,7 +2352,11 @@ I = \frac{|n_{\text{true}} - n_{\text{false}}|}{n} = |2p - 1|
 - <span class="arithmatex">\(0.2 \le I &lt; 0.6\)</span>: moderately imbalanced
 - <span class="arithmatex">\(I \ge 0.6\)</span>: severely imbalanced
 - <span class="arithmatex">\(I &gt; 0.9\)</span>: nearly constant</p>
-<h3 id="balance-score">Balance Score</h3>
+<h3 data-derived="data-derived" id="balance-score">Balance Score</h3>
+<div class="admonition note">
+<p class="admonition-title">Derived, not published</p>
+<p>Not a key in the payload. Compute it from <code>true_ratio</code> if you want it.</p>
+</div>
 <p>Alternative measure of balance:</p>
 <div class="arithmatex">\[
 B = 1 - |0.5 - p|
@@ -2369,7 +2420,11 @@ H = -p \log_2(p) - (1-p) \log_2(1-p)
 </tr>
 </tbody>
 </table>
-<h3 id="information-content-per-true-value">Information Content per True Value</h3>
+<h3 data-derived="data-derived" id="information-content-per-true-value">Information Content per True Value</h3>
+<div class="admonition note">
+<p class="admonition-title">Derived, not published</p>
+<p>Not a key in the payload.</p>
+</div>
 <p>Average information conveyed by each True observation:</p>
 <div class="arithmatex">\[
 IC_{\text{true}} = -\log_2(p) \text{ bits}
@@ -2379,31 +2434,28 @@ IC_{\text{true}} = -\log_2(p) \text{ bits}
 - <span class="arithmatex">\(p = 0.1\)</span>: <span class="arithmatex">\(IC = 3.32\)</span> bits (rare event, informative)
 - <span class="arithmatex">\(p = 0.01\)</span>: <span class="arithmatex">\(IC = 6.64\)</span> bits (very rare, very informative)</p>
 <p><strong>Use case:</strong> In imbalanced classification, rare class has higher information content.</p>
-<h3 id="information-content-per-false-value">Information Content per False Value</h3>
+<h3 data-derived="data-derived" id="information-content-per-false-value">Information Content per False Value</h3>
+<div class="admonition note">
+<p class="admonition-title">Derived, not published</p>
+<p>Not a key in the payload.</p>
+</div>
 <div class="arithmatex">\[
 IC_{\text{false}} = -\log_2(1 - p) \text{ bits}
 \]</div>
-<h2 id="statistical-tests">Statistical Tests</h2>
-<h3 id="binomial-test-for-balance">Binomial Test for Balance</h3>
-<p>Test if <span class="arithmatex">\(p = 0.5\)</span> (balanced distribution).</p>
-<p><strong>Null hypothesis:</strong> <span class="arithmatex">\(H_0: p = 0.5\)</span></p>
-<p><strong>Test statistic:</strong></p>
+<h2 id="why-there-is-no-balance-test">Why There Is No Balance Test</h2>
+<p>A binomial test of <span class="arithmatex">\(H_0: p = 0.5\)</span> is the obvious next step, and PySuricata
+does not run one. Deliberately:</p>
 <div class="arithmatex">\[
-Z = \frac{\hat{p} - 0.5}{\sqrt{0.5 \cdot 0.5 / n}}
+Z = \frac{\hat{p} - 0.5}{\sqrt{0.25 / n}}
 \]</div>
-<p>Under <span class="arithmatex">\(H_0\)</span> and large <span class="arithmatex">\(n\)</span>, <span class="arithmatex">\(Z \sim N(0, 1)\)</span>.</p>
-<p><strong>P-value (two-tailed):</strong></p>
-<div class="arithmatex">\[
-\text{p-value} = 2 \cdot \Phi(-|Z|)
-\]</div>
-<p>where <span class="arithmatex">\(\Phi\)</span> is the standard normal CDF.</p>
-<p><strong>Interpretation:</strong>
-- Small p-value (&lt; 0.05): reject balance hypothesis (distribution is skewed)
-- Large p-value: consistent with balanced distribution</p>
-<div class="admonition note">
-<p class="admonition-title">Not implemented in current version</p>
-<p>Statistical tests are planned for future release.</p>
-</div>
+<p>At profiling scale that statistic is not informative. With <span class="arithmatex">\(n = 10^6\)</span>, a true
+rate of 0.501 — a difference nobody cares about — gives <span class="arithmatex">\(Z = 2\)</span> and a
+"significant" result. The test answers <em>is this exactly 0.5</em>, which is never the
+question; the question is <em>is this far enough from 0.5 to matter</em>, and that is
+<code>true_ratio</code> against a threshold you choose.</p>
+<p>Running it anyway would put a p-value on every boolean card that is essentially
+a function of the row count. If you want the test, you have <span class="arithmatex">\(n\)</span> and
+<span class="arithmatex">\(\hat{p}\)</span> in the payload.</p>
 <h2 id="computational-complexity">Computational Complexity</h2>
 <table>
 <thead>
@@ -2448,103 +2500,65 @@ Z = \frac{\hat{p} - 0.5}{\sqrt{0.5 \cdot 0.5 / n}}
 </span><span id="__span-1-8"><a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="implementation-details">Implementation Details</h2>
-<h3 id="booleanaccumulator-class">BooleanAccumulator Class</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">BooleanAccumulator</span><span class="p">:</span>
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">config</span><span class="p">:</span> <span class="n">BooleanConfig</span><span class="p">):</span>
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">missing</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">true_count</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">false_count</span> <span class="o">=</span> <span class="mi">0</span>
-</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
-</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">):</span>
-</span><span id="__span-2-10"><a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Update with chunk of values&quot;&quot;&quot;</span>
-</span><span id="__span-2-11"><a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="c1"># Filter out missing</span>
-</span><span id="__span-2-12"><a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="c1"># Count True values</span>
-</span><span id="__span-2-13"><a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="c1"># Count False values</span>
-</span><span id="__span-2-14"><a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>        <span class="k">pass</span>
-</span><span id="__span-2-15"><a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
-</span><span id="__span-2-16"><a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">finalize</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BooleanSummary</span><span class="p">:</span>
-</span><span id="__span-2-17"><a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute final statistics&quot;&quot;&quot;</span>
-</span><span id="__span-2-18"><a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>        <span class="c1"># Compute percentages</span>
-</span><span id="__span-2-19"><a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>        <span class="c1"># Compute entropy</span>
-</span><span id="__span-2-20"><a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>        <span class="c1"># Compute balance scores</span>
-</span><span id="__span-2-21"><a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>        <span class="c1"># Detect imbalance</span>
-</span><span id="__span-2-22"><a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>        <span class="k">return</span> <span class="n">BooleanSummary</span><span class="p">(</span>
-</span><span id="__span-2-23"><a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>            <span class="n">count</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">,</span>
-</span><span id="__span-2-24"><a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>            <span class="n">missing</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">missing</span><span class="p">,</span>
-</span><span id="__span-2-25"><a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>            <span class="n">true_count</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">true_count</span><span class="p">,</span>
-</span><span id="__span-2-26"><a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>            <span class="n">false_count</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">false_count</span><span class="p">,</span>
-</span><span id="__span-2-27"><a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>            <span class="n">true_pct</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">true_count</span> <span class="o">/</span> <span class="nb">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span><span class="p">),</span>
-</span><span id="__span-2-28"><a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>            <span class="n">entropy</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compute_entropy</span><span class="p">(),</span>
-</span><span id="__span-2-29"><a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>            <span class="n">balance_score</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compute_balance</span><span class="p">(),</span>
-</span><span id="__span-2-30"><a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>            <span class="n">imbalance_ratio</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_compute_imbalance</span><span class="p">(),</span>
-</span><span id="__span-2-31"><a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>        <span class="p">)</span>
-</span><span id="__span-2-32"><a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>
-</span><span id="__span-2-33"><a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_entropy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="__span-2-34"><a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-2-35"><a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>            <span class="k">return</span> <span class="mf">0.0</span>
-</span><span id="__span-2-36"><a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">true_count</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span>
-</span><span id="__span-2-37"><a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>        <span class="k">if</span> <span class="n">p</span> <span class="o">==</span> <span class="mf">0.0</span> <span class="ow">or</span> <span class="n">p</span> <span class="o">==</span> <span class="mf">1.0</span><span class="p">:</span>
-</span><span id="__span-2-38"><a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>            <span class="k">return</span> <span class="mf">0.0</span>
-</span><span id="__span-2-39"><a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>        <span class="k">return</span> <span class="o">-</span><span class="p">(</span><span class="n">p</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">)</span> <span class="o">*</span> <span class="n">math</span><span class="o">.</span><span class="n">log2</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">p</span><span class="p">))</span>
-</span><span id="__span-2-40"><a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>
-</span><span id="__span-2-41"><a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_balance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="__span-2-42"><a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-2-43"><a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>            <span class="k">return</span> <span class="mf">0.0</span>
-</span><span id="__span-2-44"><a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">true_count</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span>
-</span><span id="__span-2-45"><a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a>        <span class="k">return</span> <span class="mf">1.0</span> <span class="o">-</span> <span class="nb">abs</span><span class="p">(</span><span class="mf">0.5</span> <span class="o">-</span> <span class="n">p</span><span class="p">)</span>
-</span><span id="__span-2-46"><a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a>
-</span><span id="__span-2-47"><a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_compute_imbalance</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
-</span><span id="__span-2-48"><a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a>        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-</span><span id="__span-2-49"><a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a>            <span class="k">return</span> <span class="mf">0.0</span>
-</span><span id="__span-2-50"><a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a>        <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">true_count</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">false_count</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">count</span>
-</span></code></pre></div>
+<p><code>BooleanAccumulator</code> lives in <code>pysuricata/accumulators/boolean.py</code> and
+<code>BooleanSummary</code> beside it. Rather than a sketch that can drift, the shape:</p>
+<ul>
+<li>It subclasses <code>PicklableAccumulator</code>, so a long run can be checkpointed.</li>
+<li><code>update()</code> takes a <strong>numpy array</strong>, never a frame or a Series — the adapter
+  has already converted the column. That is what makes the accumulator testable
+  in isolation and mergeable across machines.</li>
+<li>State is four integers: <code>count</code>, <code>missing</code>, <code>true_n</code>, <code>false_n</code>. Everything on
+  the summary is derived from those at <code>finalize()</code>, which is why the whole
+  column kind is <span class="arithmatex">\(O(1)\)</span> in space.</li>
+<li><code>merge()</code> adds the four counters. Exact, order-independent, and the reason
+  chunked results equal unchunked ones.</li>
+<li><code>chunk_metadata</code> carries <code>(start_row, end_row, missing_in_chunk)</code> per chunk,
+  which is what the Missing Values pane is drawn from.</li>
+</ul>
 <h2 id="examples">Examples</h2>
 <h3 id="basic-usage">Basic Usage</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
-</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
-</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
-</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="p">})</span>
-</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>
-</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="n">report</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
+</span><span id="__span-2-6"><a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="p">})</span>
+</span><span id="__span-2-7"><a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+</span><span id="__span-2-8"><a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-2-9"><a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="n">report</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="s2">&quot;report.html&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="imbalanced-boolean">Imbalanced Boolean</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
-</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
-</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
-</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="c1"># Highly imbalanced (10% True)</span>
-</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
-</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="s2">&quot;is_fraud&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="mi">90</span> <span class="o">+</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="mi">10</span>
-</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a><span class="p">})</span>
-</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>
-</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># Will show low entropy, high imbalance</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+</span><span id="__span-3-3"><a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+</span><span id="__span-3-4"><a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>
+</span><span id="__span-3-5"><a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="c1"># Highly imbalanced (10% True)</span>
+</span><span id="__span-3-6"><a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+</span><span id="__span-3-7"><a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="s2">&quot;is_fraud&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">False</span><span class="p">]</span> <span class="o">*</span> <span class="mi">90</span> <span class="o">+</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span> <span class="o">*</span> <span class="mi">10</span>
+</span><span id="__span-3-8"><a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="p">})</span>
+</span><span id="__span-3-9"><a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>
+</span><span id="__span-3-10"><a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-3-11"><a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="c1"># Will show low entropy and a true_ratio near 0.1</span>
 </span></code></pre></div>
 <h3 id="access-statistics">Access Statistics</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
-</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
-</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>
-</span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">]})</span>
-</span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-</span><span id="__span-5-7"><a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="n">active_stats</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">][</span><span class="s2">&quot;is_active&quot;</span><span class="p">]</span>
-</span><span id="__span-5-8"><a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
-</span><span id="__span-5-9"><a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;True count:  </span><span class="si">{</span><span class="n">active_stats</span><span class="p">[</span><span class="s1">&#39;true&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-5-10"><a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;False count: </span><span class="si">{</span><span class="n">active_stats</span><span class="p">[</span><span class="s1">&#39;false&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-5-11"><a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;True %:      </span><span class="si">{</span><span class="n">active_stats</span><span class="p">[</span><span class="s1">&#39;true&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">active_stats</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-</span><span id="__span-5-12"><a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing:     </span><span class="si">{</span><span class="n">active_stats</span><span class="p">[</span><span class="s1">&#39;missing&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+</span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+</span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
+</span><span id="__span-4-4"><a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>
+</span><span id="__span-4-5"><a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;is_active&quot;</span><span class="p">:</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">]})</span>
+</span><span id="__span-4-6"><a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-4-7"><a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">active_stats</span> <span class="o">=</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">][</span><span class="s2">&quot;is_active&quot;</span><span class="p">]</span>
+</span><span id="__span-4-8"><a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+</span><span id="__span-4-9"><a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;True count:  </span><span class="si">{</span><span class="n">active_stats</span><span class="p">[</span><span class="s1">&#39;true&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-10"><a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;False count: </span><span class="si">{</span><span class="n">active_stats</span><span class="p">[</span><span class="s1">&#39;false&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-11"><a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;True %:      </span><span class="si">{</span><span class="n">active_stats</span><span class="p">[</span><span class="s1">&#39;true&#39;</span><span class="p">]</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="n">active_stats</span><span class="p">[</span><span class="s1">&#39;count&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.1%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</span><span id="__span-4-12"><a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing:     </span><span class="si">{</span><span class="n">active_stats</span><span class="p">[</span><span class="s1">&#39;missing&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="interpreting-results">Interpreting Results</h2>
 <h3 id="well-balanced-p-05">Well-Balanced (p ≈ 0.5)</h3>
 <ul>
-<li><strong>Entropy</strong> ≈ 1.0 bit</li>
-<li><strong>Balance score</strong> &gt; 0.9</li>
-<li><strong>Imbalance ratio</strong> &lt; 0.2</li>
+<li><code>true_ratio</code> between 0.4 and 0.6</li>
+<li><code>entropy</code> ≈ 1.0 bit</li>
 </ul>
 <p><strong>Implications:</strong>
 - High information content
@@ -2553,9 +2567,8 @@ Z = \frac{\hat{p} - 0.5}{\sqrt{0.5 \cdot 0.5 / n}}
 <p><strong>Example:</strong> Fair coin flip, A/B test with even split.</p>
 <h3 id="imbalanced-p-05-or-p-05">Imbalanced (p &lt;&lt; 0.5 or p &gt;&gt; 0.5)</h3>
 <ul>
-<li><strong>Entropy</strong> &lt; 0.5 bits</li>
-<li><strong>Balance score</strong> &lt; 0.7</li>
-<li><strong>Imbalance ratio</strong> &gt; 0.6</li>
+<li><code>true_ratio</code> below 0.2 or above 0.8</li>
+<li><code>entropy</code> &lt; 0.5 bits</li>
 </ul>
 <p><strong>Implications:</strong>
 - Low information content
@@ -2564,9 +2577,8 @@ Z = \frac{\hat{p} - 0.5}{\sqrt{0.5 \cdot 0.5 / n}}
 <p><strong>Example:</strong> Fraud detection (1% positive), rare disease (0.1% positive).</p>
 <h3 id="nearly-constant-p-001-or-p-099">Nearly Constant (p &lt; 0.01 or p &gt; 0.99)</h3>
 <ul>
-<li><strong>Entropy</strong> &lt; 0.1 bits</li>
-<li><strong>Balance score</strong> ≈ 0.5</li>
-<li><strong>Imbalance ratio</strong> &gt; 0.98</li>
+<li><code>true_ratio</code> below 0.01 or above 0.99</li>
+<li><code>entropy</code> &lt; 0.1 bits</li>
 </ul>
 <p><strong>Implications:</strong>
 - Almost no information
@@ -2598,9 +2610,8 @@ Z = \frac{\hat{p} - 0.5}{\sqrt{0.5 \cdot 0.5 / n}}
 <h2 id="special-cases">Special Cases</h2>
 <h3 id="all-true-or-all-false">All True or All False</h3>
 <ul>
-<li>Entropy = 0 (no information)</li>
-<li>Balance score = 0.5 (worst)</li>
-<li>Imbalance ratio = 1.0 (complete)</li>
+<li><code>entropy</code> = 0 (no information)</li>
+<li><code>true_ratio</code> is 1.0 or 0.0</li>
 </ul>
 <p><strong>Recommendation:</strong> Remove column (constant value).</p>
 <h3 id="all-missing">All Missing</h3>

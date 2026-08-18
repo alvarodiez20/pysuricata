@@ -634,6 +634,8 @@
       
         
       
+        
+      
     
     
     
@@ -769,6 +771,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../data-checks/" class="md-nav__link">
         
   
@@ -861,6 +886,8 @@
       
         
       
+        
+      
     
     
     
@@ -913,6 +940,29 @@
   
   <span class="md-ellipsis">
     API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Generated Reference
     
   </span>
   
@@ -1006,10 +1056,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" checked>
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
             
   
   
@@ -1022,8 +1072,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             Statistical Methods
           </label>
@@ -1338,10 +1388,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   
@@ -1354,8 +1404,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             Advanced Analytics
           </label>
@@ -1492,10 +1542,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
         
           
-          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="">
             
   
   
@@ -1508,8 +1558,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             Algorithms
           </label>
@@ -2015,9 +2065,8 @@ M = \frac{n_{\uparrow}}{n - 1}, \quad r = \frac{n}{\Delta t}
 <h3 id="boolean-variables">Boolean Variables</h3>
 <p><strong>Binary analysis:</strong></p>
 <ul>
-<li>True/False proportions</li>
-<li>Entropy and balance metrics</li>
-<li>Imbalance detection</li>
+<li>True/False counts and proportions</li>
+<li>Entropy</li>
 </ul>
 <p><strong>Key formulas:</strong></p>
 <div class="arithmatex">\[
@@ -2071,11 +2120,44 @@ r_{xy} = \frac{\text{Cov}(X, Y)}{s_X \cdot s_Y}
 </tbody>
 </table>
 <h2 id="guarantees">Guarantees</h2>
-<ul>
-<li><strong>Exact:</strong> moments (mean, variance, skewness, kurtosis), min/max, counts</li>
-<li><strong>Approximate:</strong> quantiles (within ±1 percentile), distinct count (~2.2% error with default k=2048)</li>
-<li><strong>Deterministic:</strong> set <code>random_seed</code> for reproducible reservoir sampling</li>
-</ul>
+<p><strong>Exact:</strong> moments (mean, variance, skewness, kurtosis), min/max, counts, and
+every missing-value count.</p>
+<p><strong>Approximate, each with its bound published beside it:</strong></p>
+<table>
+<thead>
+<tr>
+<th>value</th>
+<th>from</th>
+<th>error</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>quantiles (<code>q1</code>, <code>median</code>, <code>q3</code>, and IQR/MAD)</td>
+<td>reservoir sample</td>
+<td><span class="arithmatex">\(\approx 1/\sqrt{k}\)</span> — about <strong>0.7%</strong> at the default 20,000, and 3.2% at 1,000. <strong>Exact</strong> below the sample size, and <code>approx</code> says which</td>
+</tr>
+<tr>
+<td><code>unique_est</code>, variant counts</td>
+<td>KMV sketch</td>
+<td><span class="arithmatex">\(\approx 1/\sqrt{k}\)</span> — about <strong>2.2%</strong> at the default <code>uniques_k=2048</code></td>
+</tr>
+<tr>
+<td><code>duplicate_rows_est</code></td>
+<td>KMV over row hashes</td>
+<td>reported with <code>duplicate_rows_uncertainty</code></td>
+</tr>
+<tr>
+<td><code>top_items</code> counts</td>
+<td>Misra-Gries</td>
+<td><strong>lower bounds</strong> — a count never overstates, and the counters neither partition the column nor sum to the row count</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Deterministic:</strong> reproducible by default. <code>random_seed</code> is <code>0</code>, not <code>None</code>, so
+the same data gives the same report.</p>
+<p>Full detail, including what is deliberately withheld from the payload, in
+<a href="../../summary-schema/">the <code>summarize()</code> schema</a>.</p>
 <h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="../../algorithms/streaming/">Streaming Algorithms</a> — Algorithm details</li>

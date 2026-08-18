@@ -634,6 +634,8 @@
       
         
       
+        
+      
     
     
     
@@ -769,6 +771,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../data-checks/" class="md-nav__link">
         
   
@@ -861,6 +886,8 @@
       
         
       
+        
+      
     
     
     
@@ -913,6 +940,29 @@
   
   <span class="md-ellipsis">
     API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Generated Reference
     
   </span>
   
@@ -1004,10 +1054,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
             
   
   
@@ -1020,8 +1070,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             Statistical Methods
           </label>
@@ -1183,10 +1233,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   
@@ -1199,8 +1249,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             Advanced Analytics
           </label>
@@ -1339,10 +1389,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" checked>
         
           
-          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="">
             
   
   
@@ -1355,8 +1405,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             Algorithms
           </label>
@@ -2438,8 +2488,12 @@ as distinct values.</p>
 <li><strong>Production-ready</strong>: Used in Redis, BigQuery</li>
 </ul>
 <div class="admonition note">
-<p class="admonition-title">Not implemented in current version</p>
-<p>PySuricata uses KMV instead of HLL. HLL may be added in future for even lower memory.</p>
+<p class="admonition-title">Not used here</p>
+<p>PySuricata uses KMV. HLL is asymptotically cheaper, but at the sketch sizes
+that matter here — <code>uniques_k</code> of a few thousand — the difference is a few
+kilobytes per column, and KMV's error is a closed form (<span class="arithmatex">\(1/\sqrt{k}\)</span>)
+that can be printed next to the estimate. A bound you can quote beat a
+footprint nobody was short of.</p>
 </div>
 <h2 id="reservoir-sampling">Reservoir Sampling</h2>
 <h3 id="purpose_3">Purpose</h3>
@@ -2516,8 +2570,11 @@ k &amp;= \frac{m}{n} \ln 2
 \]</div>
 <p><strong>Example</strong>: <span class="arithmatex">\(n=10^6\)</span>, <span class="arithmatex">\(P_{\text{fp}}=0.01\)</span> → <span class="arithmatex">\(m \approx 9.6\)</span> Mb, <span class="arithmatex">\(k=7\)</span></p>
 <div class="admonition note">
-<p class="admonition-title">Not implemented in current version</p>
-<p>Bloom filters are not currently used in PySuricata but may be added for duplicate detection optimization.</p>
+<p class="admonition-title">Not used here</p>
+<p>A Bloom filter answers <em>have I seen this</em>, one item at a time. Duplicate
+detection needs <em>how many did I see twice</em>, which is a cardinality question,
+so <code>RowKMV</code> over row hashes answers it directly and carries an error bound
+while doing so.</p>
 </div>
 <h2 id="count-min-sketch">Count-Min Sketch</h2>
 <h3 id="purpose_5">Purpose</h3>
@@ -2541,8 +2598,12 @@ k &amp;= \frac{m}{n} \ln 2
 <li><strong>Misra-Gries</strong>: Top-k queries, only frequent items</li>
 </ul>
 <div class="admonition note">
-<p class="admonition-title">Not implemented in current version</p>
-<p>PySuricata uses Misra-Gries for top-k. Count-Min Sketch may be added for full frequency queries.</p>
+<p class="admonition-title">Not used here</p>
+<p>Count-Min answers point queries for any item; a profile only ever asks for
+the head of the distribution, which is exactly what Misra-Gries is for. It
+also has the better error direction: Misra-Gries counts are <strong>lower
+bounds</strong>, so a reported count never overstates, while Count-Min
+over-estimates.</p>
 </div>
 <h2 id="choosing-algorithms">Choosing Algorithms</h2>
 <table>

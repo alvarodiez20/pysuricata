@@ -634,6 +634,8 @@
       
         
       
+        
+      
     
     
     
@@ -769,6 +771,29 @@
   
   
     <li class="md-nav__item">
+      <a href="../../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Command Line
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../data-checks/" class="md-nav__link">
         
   
@@ -861,6 +886,8 @@
       
         
       
+        
+      
     
     
     
@@ -913,6 +940,29 @@
   
   <span class="md-ellipsis">
     API Reference
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Generated Reference
     
   </span>
   
@@ -1004,10 +1054,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_4" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" >
         
           
-          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
             
   
   
@@ -1020,8 +1070,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_4">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
             <span class="md-nav__icon md-icon"></span>
             Statistical Methods
           </label>
@@ -1185,10 +1235,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_5" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" checked>
         
           
-          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
             
   
   
@@ -1201,8 +1251,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="true">
-          <label class="md-nav__title" for="__nav_4_5">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4_6">
             <span class="md-nav__icon md-icon"></span>
             Advanced Analytics
           </label>
@@ -1329,9 +1379,18 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#exact-vs-approximate" class="md-nav__link">
+  <a href="#reading-the-number" class="md-nav__link">
     <span class="md-ellipsis">
-      Exact vs Approximate
+      Reading the Number
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#getting-an-exact-count" class="md-nav__link">
+    <span class="md-ellipsis">
+      Getting an Exact Count
     </span>
   </a>
   
@@ -1417,10 +1476,10 @@
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_6" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4_7" >
         
           
-          <label class="md-nav__link" for="__nav_4_6" id="__nav_4_6_label" tabindex="">
+          <label class="md-nav__link" for="__nav_4_7" id="__nav_4_7_label" tabindex="">
             
   
   
@@ -1433,8 +1492,8 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_6_label" aria-expanded="false">
-          <label class="md-nav__title" for="__nav_4_6">
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_7">
             <span class="md-nav__icon md-icon"></span>
             Algorithms
           </label>
@@ -1927,15 +1986,42 @@ DR = \frac{n - d}{n} = 1 - \frac{d}{n}
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">n_distinct</span> <span class="o">=</span> <span class="n">kmv</span><span class="o">.</span><span class="n">estimate</span><span class="p">()</span>
 </span><span id="__span-1-7"><a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">duplicate_rate</span> <span class="o">=</span> <span class="p">(</span><span class="n">n_total</span> <span class="o">-</span> <span class="n">n_distinct</span><span class="p">)</span> <span class="o">/</span> <span class="n">n_total</span>
 </span></code></pre></div>
-<h2 id="exact-vs-approximate">Exact vs Approximate</h2>
-<p><strong>Exact</strong> (for small datasets):
+<h2 id="reading-the-number">Reading the Number</h2>
+<p>The duplicate count is <code>rows − distinct</code>. <code>rows</code> is exact and <code>distinct</code> is a
+sketch estimate, so <strong>the whole absolute error of the distinct estimate lands on
+the duplicate count</strong> — a quantity that is usually far smaller. On 200,000 rows
+with 2,000 genuine duplicates, a 1% error on the distinct count is 2,000 rows:
+inside spec for the sketch, and 100% wrong about the answer.</p>
+<p>So the payload publishes two keys, and they are meant to be read together:</p>
+<table>
+<thead>
+<tr>
+<th>key</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>duplicate_rows_est</code></td>
+<td>the estimate, <strong>suppressed to <code>0</code></strong> when it does not exceed its own uncertainty</td>
+</tr>
+<tr>
+<td><code>duplicate_rows_uncertainty</code></td>
+<td>one standard deviation on that count, in rows; <code>0</code> when the count is exact</td>
+</tr>
+</tbody>
+</table>
+<p>An <code>est</code> of <code>0</code> beside a large <code>uncertainty</code> means <em>we cannot tell</em>, not <em>there
+are none</em>. Full table in
+<a href="../../summary-schema/#reading-the-duplicate-count">the <code>summarize()</code> schema</a>.</p>
+<h2 id="getting-an-exact-count">Getting an Exact Count</h2>
+<p>If the frame fits in memory and you need certainty rather than a bound, pandas
+will tell you exactly — at the cost of holding every row:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">exact_duplicates</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">duplicated</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
 </span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">dup_pct</span> <span class="o">=</span> <span class="p">(</span><span class="n">exact_duplicates</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))</span> <span class="o">*</span> <span class="mi">100</span>
-</span></code></pre></div></p>
-<p><strong>Approximate</strong> (PySuricata for large datasets):
-- Uses KMV sketch
-- ~2% error with default settings
-- Constant memory</p>
+</span></code></pre></div>
+<p>The sketch exists for the case where that is not available: constant memory,
+whatever the row count.</p>
 <h2 id="see-also">See Also</h2>
 <ul>
 <li><a href="../../algorithms/sketches/">Sketch Algorithms</a> - KMV details</li>
