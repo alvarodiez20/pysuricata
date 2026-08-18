@@ -122,6 +122,7 @@ _snapshot.tar.gz
 # check_docs runs every self-contained fence, and several call save_html().
 /*_report.html
 /report.html
+/out.html
 /reports/
 /stats.json
 /baseline.json
