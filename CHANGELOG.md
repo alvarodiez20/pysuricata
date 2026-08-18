@@ -16,6 +16,22 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The demo page's desktop composition is one centred column, not four widths
+  down the left.** Giving every block the shell's left edge fixed the measure
+  and broke the composition: prose at 52ch, the panes at 760px, the control row
+  and the report at 1064px, all starting at the same x with an empty right half
+  beside them. Left edges only compose when the blocks are close in width.
+
+  The reading column is now a 720px grid track centred in the shell, and the
+  report — with the control row that labels it — fills the shell on the same
+  axis. A track rather than a cap per block, because capping each block centres
+  each on its own width, and a 20ch heading beside a 52ch lede would give the
+  page two left edges where it has one.
+
+  A phone and a tablet are untouched: every element's box at 390px and 768px is
+  identical to the pixel. `tests/test_web_demo_layout.py` swaps the shared-left-
+  edge invariant for a shared-centre one and gains the track width.
+
 - **`summarize()` returned `{}` for a zero-row frame** (#315), and the same
   frame rendered a 221-byte unstyled page reading `Empty source.` (#313). Both
   came from one cause: a frame with columns and no rows was treated as an

@@ -81,18 +81,36 @@ workbook with no data in any sheet is refused with a reason.
 
 ## Layout
 
-Two widths, not one. `--shell` (1120px) is the page column — the header, the
-hero, the controls and the report iframe all share its left edge, and below
-1120px it simply fills the window. `--pane` (760px) caps the blocks that get
-worse when stretched: a mono log and a label/value ledger read badly at 1120px
-whatever the window is doing.
+Two widths on one axis. `--shell` (1120px) is the page: the header and footer
+frame it, and the report iframe fills it. `--measure` (720px) is the reading
+column inside it — the hero, the controls, the log and the ledger — centred on
+the same axis, so the report is visibly wider than the text without either one
+hugging an edge. Below 1120px the shell fills the window; below 720px the
+reading column does, so a phone is one column and nothing else.
 
-It was one 600px column until it wasn't. That is a reading measure on a phone
-and a phone on a monitor, and nothing in the stylesheet widened it — the report
-breaking out to 1120px underneath was the only wide thing on the page.
-`tests/test_web_demo_layout.py` measures the column, the shared left edge, the
-pane caps and horizontal overflow in Chromium at seven widths, because a width
-that never widens is invisible to every check that is not a browser.
+The reading column is a **grid track**, not a `max-width` per block. Capping
+each block would centre each on its own width, and a 20ch heading beside a 52ch
+lede would leave the page with two left edges where it has one.
+
+It took three passes to get here, and the middle one is the instructive part.
+The page began as a single 600px column: a reading measure on a phone, and a
+phone on a monitor, with nothing in the stylesheet to widen it. Left-aligning
+everything in a 1120px shell fixed the measure and broke the composition —
+prose at 52ch, the panes at 760px and the report at 1064px, four widths all
+starting at the same x down the left of an empty screen. Left edges only
+compose when the blocks are close in width; past that, a shared centre is what
+reads as deliberate.
+
+Two blocks stay with the report rather than with the reading: the frame itself
+and the control row that labels it, which is why `another file` ends where the
+report ends. On a phone the frame alone breaks out of the page gutter, because
+the report has gutters of its own and paying twice cost it 47px it did not
+have.
+
+`tests/test_web_demo_layout.py` measures the column, the shared centre, the
+track width, the control row, the phone full-bleed and horizontal overflow in
+Chromium at seven widths — a width that never widens is invisible to every
+check that is not a browser.
 
 ## Guardrails
 
