@@ -2722,6 +2722,32 @@ quoted when both sides were measured in the same round-robin run.</p>
   other way to fix this, and that field is what became of the second copy.</p>
 <h3 id="changed">Changed</h3>
 <ul>
+<li><strong>The categorical card no longer prints statistics that cannot say anything</strong>
+  (design 16b, phase 5f.1, #295). Categorical is the most common column type —
+  eight of Titanic's twelve — and one card face was doing duty for four
+  different things: a boolean in a string, a true category, a sparse identifier
+  and a primary key. <code>Entropy</code>, <code>Rare levels</code> and <code>Top 5 coverage</code> describe how
+  a distribution spreads across its levels, and they were written for the
+  second of those four.</li>
+</ul>
+<p><code>Sex</code> reported entropy 0.936, rare levels 0 and top-5 coverage 100% — three
+  confident figures about the spread of a distribution with two members and no
+  spread. None of them was <em>wrong</em>, which is what made them hard to see: on a
+  two-level column the top <strong>five</strong> levels are both of them, so 100% was
+  arithmetic wearing the clothes of a measurement.</p>
+<p>Each of the three is now dropped where its own arithmetic stops carrying
+  information, so the rule is per statistic and there is no level boundary to
+  argue about: <code>Sex</code> renders nine slots instead of twelve, <code>Embarked</code> loses only
+  top-5 coverage, and a column with eight well-spread levels keeps all three. A
+  suppressed statistic leaves <strong>no cell</strong> rather than an empty one — an em dash
+  means <em>the sketch could not answer</em>, and that is a different statement this
+  report already makes elsewhere and should not blur.</p>
+<p>The level count is read from the top-k sketch summing to the row count, not
+  from the distinct-count estimate. Misra-Gries counters only fall below the
+  true count, and only when an eviction runs, so that sum is proof the sketch
+  holds every level exactly — where an estimate would let a card change shape
+  between runs of the same data.</p>
+<ul>
 <li><strong>The two datetime calendar shares are drawn against the baseline that makes
   them readable</strong> (redesign phase 5e.2, #291). The card printed <code>Weekend %
   27.0</code> and <code>Business hrs % 24.3</code> bare. A flat calendar gives <strong>28.6%</strong> (2 of
@@ -2769,11 +2795,30 @@ quoted when both sides were measured in the same round-robin run.</p>
   carrying an issue.</p>
 <h3 id="fixed_1">Fixed</h3>
 <ul>
-<li><strong>The demo page was a phone layout on a desktop.</strong> Every block sat in one
+<li>
+<p><strong>Every categorical column claimed to have processed <code>0.0 B</code>.</strong> The stat row
+  read <code>mem_bytes</code> from the derived-stats dict, which has never had that key,
+  so the fallback rendered. <code>Sex</code> in the Titanic report is 11.1 KB. This is the
+  third field in the same function to go the same way — <code>avg_len</code> and <code>len_p90</code>
+  were the first two, fixed in 5c.2 — and the code that computed the right
+  number from the right object was still sitting a few lines above, its result
+  discarded.</p>
+</li>
+<li>
+<p><strong>A short stat row left the card underlined for a fraction of its width.</strong>
+  Each cell draws its own bottom rule, so a last row that does not fill the grid
+  stops the rule early; <code>Age</code> renders thirteen cells and has shipped a
+  quarter-width stub under it since the numeric restack. The last cell now takes
+  whatever tracks the row has left, at both breakpoints. Suppression made this
+  visible by giving <code>Sex</code> nine cells, but it was not the cause.</p>
+</li>
+<li>
+<p><strong>The demo page was a phone layout on a desktop.</strong> Every block sat in one
   column capped at 600px with no wider breakpoint anywhere in the stylesheet,
   so a 1440px monitor got a phone-width strip with 420px of empty paper on
   either side — while the report iframe broke out to 1120px underneath it,
-  which made the narrow column above read as a mistake rather than a choice.</li>
+  which made the narrow column above read as a mistake rather than a choice.</p>
+</li>
 </ul>
 <p>The page now carries two widths rather than one. <code>--shell</code> (1120px) is the
   column the chrome, the hero and the report all share a left edge in, and it
