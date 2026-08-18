@@ -2755,11 +2755,32 @@ quoted when both sides were measured in the same round-robin run.</p>
   stop that fix taking them along.</p>
 <h3 id="fixed">Fixed</h3>
 <ul>
-<li><strong>A log-scale histogram labelled its x axis in log units</strong> (#264). <code>Fare</code>'s
+<li>
+<p><strong>The demo handed the report a viewport no phone has.</strong> The report is a
+  document with its own gutters, and it sat inside the page's gutter as well, so
+  a 390px phone spent 47px on the page's margins before the report spent 40px on
+  its own — and the report rendered at <strong>341px</strong>. Its layout criteria are
+  measured at 390, 768 and 1240, so the one width a visitor actually saw it at
+  was the one width nobody had checked; its nav clipped <code>Missing Values</code>
+  mid-word there. At and below the tablet breakpoint the frame now breaks out to
+  the window edge and the report gets the width the device has — 390px, and a
+  card 318px wide instead of 269px. Above it the frame keeps the shell's left
+  edge, which is what it was given one for.</p>
+</li>
+<li>
+<p><strong>The report's own control row stopped 300px short of it.</strong> <code>Report / Full
+  window / Download the report / JSON / another file</code> was capped at the reading
+  measure while the frame it labels ran to the shell, so one block carried two
+  right edges. The controls now end where the report ends. The log and the
+  ledger keep their cap — they are reading blocks, not controls for the frame.</p>
+</li>
+<li>
+<p><strong>A log-scale histogram labelled its x axis in log units</strong> (#264). <code>Fare</code>'s
   log view captioned its peak bin <code>0.603–0.688</code> — those are log₁₀(4.01) and
   log₁₀(4.87), and <strong>no fare is 0.603</strong>. The axis ran roughly 0.6 to 2.7 for a
   column whose values run 4 to 512, with nothing saying the numbers were
-  exponents. It now reads <code>peak 60 rows at 4.0–4.9</code>.</li>
+  exponents. It now reads <code>peak 60 rows at 4.0–4.9</code>.</p>
+</li>
 </ul>
 <p>The bars are still laid out in log space, because that is what makes the
   axis linear in the log of the value. What changed is that everything a
