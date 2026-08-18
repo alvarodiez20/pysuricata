@@ -226,13 +226,23 @@ class TestTheCoverageNote:
         note = re.search(r'class="coverage-note">([^<]+)<', card)
         assert note, "no coverage note"
         assert "levels shown" in note.group(1)
-        assert "of non-missing rows" in note.group(1)
+        # Of the *non-missing* rows, and it names the denominator (#296).
+        # `Cabin` is 77.1% empty, so the same bars are 5.9% of its non-missing
+        # rows and 1.3% of the frame; a coverage figure without its denominator
+        # cannot distinguish those.
+        assert "non-missing rows" in note.group(1)
+        assert re.search(
+            r"covers [\d.]+% of the [\d,]+ non-missing rows", note.group(1)
+        )
 
     def test_a_two_level_column_reads_correctly(self, titanic_shaped):
         card = _card(titanic_shaped, "sex")
         note = re.search(r'class="coverage-note">([^<]+)<', card).group(1)
         assert note.startswith("2 of 2 levels shown")
-        assert "100%" in note
+        # `100%`, not `100.0%` -- a whole percentage carries nothing in its
+        # decimal. The fractional case keeps one, which is what makes 5.9%
+        # distinguishable from 6%.
+        assert "covers 100% of the" in note
 
     def test_a_single_level_column_says_level_not_levels(self):
         out = profile(pd.DataFrame({"c": ["only"] * 300}), seed=0).html

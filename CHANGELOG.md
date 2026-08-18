@@ -16,6 +16,27 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **Every level bar is read against an even split** (redesign phase 5f.2,
+  #296). `Embarked`'s S at 72.4% is a number; against a rule at 33.3% it is a
+  finding — *dominated by one port*, with no arithmetic asked of the reader.
+  The same device as the flat-calendar rule on the datetime card and the
+  outlier fence on the numeric one, which is the point: one reading convention
+  across the report rather than three. **Nothing new is computed** — the rule
+  is `100 / n_levels`, and the level count was already on the card.
+
+  `even_split_pct()` shipped with the flag reference in 4b.2 and had **zero
+  callers** until now.
+
+  The mark comes from the column's level count rather than the chart's bar
+  count, so every Top-N variant of a column is read against the same rule; one
+  that slid when a reader switched Top-5 to Top-10 would be measuring the chart
+  instead of the data.
+
+  The coverage note under the chart now names its denominator: `3 of 3 levels
+  shown · covers 100% of the 891 non-missing rows · rule at 33.3%, an even
+  split`. Of the **non-missing** rows, because `Cabin` is 77.1% empty and the
+  same bars are 5.9% of its non-missing rows against 1.3% of the frame.
+
 - **Degenerate frames are covered by tests for the first time** (#299) — one
   column, zero rows, one row, all-one-type, zero columns, all-missing, and a
   constant column. **No behaviour changed here**; these shapes were absent from

@@ -541,3 +541,19 @@
     gap: 2px;
   }
 }
+
+/* The even-split rule (phase 5f.2, #296).
+
+   `Embarked`'s S at 72.4% against a 33.3% mark says "dominated by one port"
+   without asking the reader to divide anything — the same device as the
+   flat-calendar rule on the datetime card and the fence on the numeric one,
+   so the report has one reading convention rather than three.
+
+   --ink, and drawn before the bars in source order. Rule 2 in the token file:
+   a mark crossing a data fill must protrude onto the paper or paint underneath
+   it. This does both, which is also what keeps it visible at 390px. */
+#pysuricata-report .cat-svg .cat-even {
+  stroke: var(--ink);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}

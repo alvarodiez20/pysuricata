@@ -6,6 +6,7 @@ from collections.abc import Sequence
 from .card_base import CardRenderer
 from .card_config import DEFAULT_CAT_CONFIG, DEFAULT_CHART_DIMS
 from .card_types import BarData, CategoricalStats, QualityFlags
+from .flag_reference import even_split_pct
 from .format_utils import ordinal_number
 from .triage import annotate_flags
 
@@ -255,7 +256,12 @@ class CategoricalCardRenderer(CardRenderer):
             # would render no chart at all.
             chart_levels = topn_list or [max(1, len(items))]
             chart_html = self._build_categorical_variants(
-                col_id, items, total, chart_levels, default_topn
+                col_id,
+                items,
+                total,
+                chart_levels,
+                default_topn,
+                n_levels=self._distinct_levels(stats, items),
             ) + self._build_coverage_note(stats, items)
         # A high-cardinality column has no ranking to show, so `Common values`
         # is replaced rather than kept: ten bars of one row each imply a
@@ -791,6 +797,28 @@ class CategoricalCardRenderer(CardRenderer):
             "</div>"
         )
 
+    @staticmethod
+    def _trim(pct: float) -> str:
+        """`100`, not `100.0`; `5.9`, not `6`.
+
+        A whole percentage carries no information in its decimal, and a
+        fractional one loses the difference between 5.9% and 6% -- which on a
+        147-level column is the difference between the bars covering a
+        twentieth of the data and appearing to cover more.
+        """
+        return f"{pct:.1f}".removesuffix(".0")
+
+    @staticmethod
+    def _distinct_levels(stats: CategoricalStats, items: Sequence) -> int:
+        """Levels in the column, not levels in the chart.
+
+        The sketch estimate can come in below the number of levels actually
+        held, so it is floored at what the chart already shows -- a column
+        cannot have fewer levels than the bars drawn for it.
+        """
+        shown = len(items)
+        return max(int(getattr(stats, "unique_est", shown) or shown), shown)
+
     def _build_coverage_note(self, stats: CategoricalStats, items: list) -> str:
         """How much of the column the bars actually account for.
 
@@ -801,12 +829,24 @@ class CategoricalCardRenderer(CardRenderer):
         if not items or count <= 0:
             return ""
         shown = len(items)
-        total_levels = max(int(getattr(stats, "unique_est", shown) or shown), shown)
+        total_levels = self._distinct_levels(stats, items)
         covered = sum(c for _, c in items) / count * 100.0
         levels = "level" if total_levels == 1 else "levels"
+        # Of the **non-missing** rows, and it says so. `Cabin` is 77.1% empty,
+        # so the same bars are 5.9% of its 204 non-missing rows and 1.3% of the
+        # frame -- a share of the whole would say something quite different
+        # from what it appears to say (#296).
+        # The rule's value, said once per column rather than in a tooltip on
+        # every chart variant. Only when there is a rule to explain.
+        mark = ""
+        if total_levels >= 2:
+            mark = (
+                f" · rule at {self._trim(even_split_pct(total_levels))}%, an even split"
+            )
         return (
             f'<p class="coverage-note">{shown:,} of {total_levels:,} {levels} shown '
-            f"· covers {covered:.0f}% of non-missing rows</p>"
+            f"· covers {self._trim(covered)}% of the {count:,} non-missing rows"
+            f"{mark}</p>"
         )
 
     def _build_categorical_variants(
@@ -816,6 +856,7 @@ class CategoricalCardRenderer(CardRenderer):
         total: int,
         topn_list: list[int],
         default_topn: int,
+        n_levels: int | None = None,
     ) -> str:
         """Build categorical chart variants."""
         parts = []
@@ -828,7 +869,13 @@ class CategoricalCardRenderer(CardRenderer):
             else:
                 data = list(items[:n])
 
-            svg = self._build_categorical_bar_svg(data, total=max(1, int(total)))
+            # `n_levels` and not `len(data)`: every variant of the same column
+            # is read against the same mark, so switching Top-5 to Top-10 moves
+            # the bars and not the rule. A mark that moved with the control
+            # would be measuring the chart rather than the column.
+            svg = self._build_categorical_bar_svg(
+                data, total=max(1, int(total)), n_levels=n_levels
+            )
             active_class = " active" if n == default_topn else ""
             parts.append(
                 f'<div class="cat variant{active_class}" id="{col_id}-cat-top-{n}" data-topn="{n}">{svg}</div>'
@@ -841,7 +888,12 @@ class CategoricalCardRenderer(CardRenderer):
         """
 
     def _build_categorical_bar_svg(
-        self, items: list[tuple[str, int]], total: int, *, scale: str = "count"
+        self,
+        items: list[tuple[str, int]],
+        total: int,
+        *,
+        scale: str = "count",
+        n_levels: int | None = None,
     ) -> str:
         """Build categorical bar chart SVG."""
         if total <= 0 or not items:
@@ -849,13 +901,34 @@ class CategoricalCardRenderer(CardRenderer):
                 "cat-svg", self.chart_dims.width, self.chart_dims.height
             )
 
-        bar_data = self._prepare_bar_data(items, total, scale)
+        bar_data = self._prepare_bar_data(items, total, scale, n_levels)
         return self._render_bar_svg(bar_data)
 
     def _prepare_bar_data(
-        self, items: list[tuple[str, int]], total: int, scale: str
+        self,
+        items: list[tuple[str, int]],
+        total: int,
+        scale: str,
+        n_levels: int | None = None,
     ) -> BarData:
-        """Prepare bar chart data."""
+        """Prepare bar chart data, and the even-split mark to read it against.
+
+        `Embarked`'s S at 72.4% against a 33.3% rule says *dominated by one
+        port* without asking the reader to divide anything (phase 5f.2, #296).
+        It is the same device as the flat-calendar rule on the datetime card
+        and the fence on the numeric one, which is the point: one reading
+        convention across the report.
+
+        Nothing new is computed -- `even_split_pct` is arithmetic on the level
+        count, and the level count is already on the card.
+
+        Args:
+            n_levels: Distinct levels in the *column*, which is not
+                ``len(items)`` when the chart is a top-N with an ``Other``
+                bucket. The rule answers "what would each level hold if this
+                column were even", so it is the column's count that matters,
+                not the chart's.
+        """
         labels = [self.safe_html_escape(str(k)) for k, _ in items]
         counts = [int(c) for _, c in items]
         pcts = [(c / total * 100.0) for c in counts]
@@ -865,7 +938,23 @@ class CategoricalCardRenderer(CardRenderer):
         else:
             values = counts
 
-        return BarData(labels=labels, counts=counts, percentages=pcts, values=values)
+        # One level splits evenly into itself, so the rule would sit exactly on
+        # the only bar and say nothing. Below two, draw none.
+        even_value: float | None = None
+        even_share: float | None = None
+        levels = int(n_levels or len(items))
+        if levels >= 2:
+            even_share = even_split_pct(levels)
+            even_value = even_share if scale == "pct" else total * even_share / 100.0
+
+        return BarData(
+            labels=labels,
+            counts=counts,
+            percentages=pcts,
+            values=values,
+            even_split_value=even_value,
+            even_split_share=even_share,
+        )
 
     def _render_bar_svg(self, bar_data: BarData) -> str:
         """Render bar chart SVG.
@@ -905,6 +994,36 @@ class CategoricalCardRenderer(CardRenderer):
         parts = [
             f'<svg class="cat-svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}" role="img" aria-label="Top categories">'
         ]
+
+        # The even-split rule, drawn **before** the bars. Rule 2 in the token
+        # file: a mark crossing a data fill must protrude onto the paper or
+        # paint underneath it. Source order is the "underneath" half, so a bar
+        # reaching past the mark occludes it rather than crossing it; the 3px
+        # of protrusion above and below each bar is the other half, and is what
+        # keeps it findable at 390px.
+        #
+        # Off the right edge when the column is even enough that the mark would
+        # land past the longest bar -- there is nothing to compare against
+        # there, and a rule outside the plot is a rendering artefact.
+        even_value = bar_data.even_split_value
+        even_share = bar_data.even_split_share
+        if even_value is not None and even_share is not None and 0 < even_value <= vmax:
+            ex = sx(float(even_value))
+            # Nothing but geometry on this element. It carried a `<title>` and
+            # a `data-even-pct`, and both went the way 4b.2 sent the chip
+            # tooltips: a measure repeated on every mark cost 5,548 bytes to
+            # say fourteen distinct things, and a tooltip is invisible on a
+            # phone and absent from paper. The rule's value is stated once per
+            # column in the coverage note, where it can be read; nothing reads
+            # the attribute (`report_fingerprint.py` keys on `data-pct`, and
+            # neither the stylesheet nor `functionality.js` mentions it).
+            #
+            # One decimal on x, none on y. The viewBox is in pixels here rather
+            # than 0..100, so the second decimal was a hundredth of a pixel.
+            parts.append(
+                f'<line class="cat-even" x1="{ex:.1f}" y1="{margin_top - 3:.0f}" '
+                f'x2="{ex:.1f}" y2="{height - margin_bottom + 3:.0f}"/>'
+            )
 
         for i, (label, c, p, val) in enumerate(
             zip(
