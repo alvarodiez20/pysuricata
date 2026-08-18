@@ -140,6 +140,30 @@ def _to_bool_array_pandas(s: pd.Series) -> list[bool | None]:
         arr = s.astype("boolean").tolist()
         return [None if x is pd.NA else bool(x) for x in arr]
 
+    # A numeric column promoted to boolean by `should_reclassify_numeric_as_
+    # boolean`, which only promotes columns holding exactly 0 and 1.
+    #
+    # Without this branch it fell through to the string coercion below, where
+    # `astype(str)` turns a float 1.0 into `"1.0"` -- which is in neither the
+    # true set nor the false set, so **every row became None**. A column of
+    # 0.0/1.0 floats was reported as 100% missing against a frame with no gaps.
+    # An integer 0/1 column escaped only because `str(1)` is `"1"`, which is in
+    # the set: the two dtypes disagreed about the same data.
+    #
+    # Compared against 1 and 0 rather than passed through `bool()`, so a value
+    # the promotion rule would have rejected does not silently become True here
+    # if it ever reaches this function by another route.
+    from pandas.api import types as pdt  # type: ignore
+
+    if pdt.is_numeric_dtype(s.dtype):
+        values = s.to_numpy(dtype="float64", na_value=np.nan, copy=False)
+        result: list[bool | None] = [None] * len(values)
+        for index in np.flatnonzero(values == 1.0):
+            result[index] = True
+        for index in np.flatnonzero(values == 0.0):
+            result[index] = False
+        return result
+
     # Vectorized boolean coercion using pandas string operations
     try:
         lower = s.astype(str).str.strip().str.lower()
@@ -150,7 +174,7 @@ def _to_bool_array_pandas(s: pd.Series) -> list[bool | None]:
         # Default None, set True/False based on masks
         true_np = true_mask.to_numpy()
         false_np = false_mask.to_numpy()
-        result: list[bool | None] = [None] * len(s)
+        result = [None] * len(s)
         true_indices = np.where(true_np)[0]
         false_indices = np.where(false_np)[0]
         for i in true_indices:
