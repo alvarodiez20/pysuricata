@@ -2737,6 +2737,32 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...HEAD">Unreleased</a></h2>
 <h3 id="fixed">Fixed</h3>
 <ul>
+<li><strong><code>outliers_iqr_est</code> was a reservoir count published against a population
+  denominator, so it read 49x low at a million rows</strong> (#327). The IQR fence is
+  fitted inside the 20,000-value sample and the crossings counted there; that
+  count went out unscaled beside a <code>count</code> that means the whole column. The
+  ratio between them was exactly <code>numeric_sample_size / n</code>, which is the
+  signature of the mechanism rather than of the data: on a lognormal column,
+  1,495 outliers reported against a true 77,221 at 1M rows.</li>
+</ul>
+<p>The percentage was the part that hurt. Both render sites divide the count by
+  <code>stats.count</code>, and the <code>many outliers</code> flag is keyed off that percentage, so a
+  column that is genuinely 7.7% outliers printed 0.2% and <strong>the warning went
+  quiet on exactly the large frames where it matters</strong>. It failed silent, not
+  loud. A third site had the same slip and was not in the report: the outlier
+  pane's own header read <code>N of {count} values</code>, a sample numerator over a
+  population total.</p>
+<p>Both counts are now scaled by the <code>sample_scale</code> that already existed thirty
+  lines below them, and measure within 4% of the exact count at 10k, 50k, 200k
+  and 1M rows. The sampled counts are kept beside them as
+  <code>outliers_iqr_sample</code> / <code>outliers_mod_zscore_sample</code>, because the fence pane
+  lists those very rows and its table must sum to its own header; the pane now
+  says <code>of 20,000 sampled values</code> when that is what it means.</p>
+<p><code>outliers_mod_zscore</code> is renamed <code>outliers_mod_zscore_est</code> and
+  <strong><code>schema_version</code> is 2</strong>. Note which half bought the bump: by the rule in
+  <code>docs/versioning.md</code>, correcting a wrong value is a bug fix and does not bump
+  the schema (decided on <code>duplicate_rows_est</code>, #202). The rename does.</p>
+<ul>
 <li><strong>The per-column memory figure in the README and seven docs pages was wrong,
   and the README screenshot was two releases stale.</strong> Three different numbers
   were in circulation for the same fact: 3 MB per column across the docs, 1.5 MB

@@ -1036,6 +1036,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Stability policy">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-changed-in-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      What changed in 2
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -2024,7 +2039,7 @@ and what a version bump means.</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
 </span><span id="__span-1-2"><a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
 </span><span id="__span-1-3"><a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;schema_version&quot;</span><span class="p">]</span>                     <span class="c1"># 1</span>
+</span><span id="__span-1-4"><a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;schema_version&quot;</span><span class="p">]</span>                     <span class="c1"># 2</span>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">][</span><span class="s2">&quot;rows_est&quot;</span><span class="p">]</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">][</span><span class="s2">&quot;amount&quot;</span><span class="p">][</span><span class="s2">&quot;median&quot;</span><span class="p">]</span>
 </span></code></pre></div>
@@ -2043,6 +2058,13 @@ documented example and would have broken every downstream consumer.</p>
 <p><code>pysuricata check</code> reads <code>schema_version</code> off a stored baseline and <strong>refuses</strong>
 to compare against one written by a different version, rather than quietly
 matching whatever keys still line up.</p>
+<h3 id="what-changed-in-2">What changed in 2</h3>
+<p><code>outliers_mod_zscore</code> is now <code>outliers_mod_zscore_est</code>, which is the rename that
+bought the bump. Both outlier counts also changed value: they were the number of
+crossings found <em>inside</em> the 20,000-value reservoir and are now estimates for the
+column, so above <code>numeric_sample_size</code> rows they are roughly <code>n / 20,000</code> times
+larger than before (#327). By the rule above, that correction on its own would
+<strong>not</strong> have bumped the version. The rename is what did.</p>
 <p>Every column carries <code>type</code>, <code>count</code>, <code>missing</code> and <code>mem_bytes</code>, whatever its
 kind. Those four are safe to read without checking <code>type</code> first.</p>
 <h2 id="top-level">Top level</h2>
@@ -2262,9 +2284,9 @@ the numbers mean.</p>
 <td><code>(value, count)</code>. <strong><code>None</code> means not tracked</strong></td>
 </tr>
 <tr>
-<td><code>outliers_iqr_est</code>, <code>outliers_mod_zscore</code></td>
+<td><code>outliers_iqr_est</code>, <code>outliers_mod_zscore_est</code></td>
 <td>int</td>
-<td><strong>From the sample</strong>, scaled</td>
+<td><strong>Approximate.</strong> Counted in the sample, scaled to the column</td>
 </tr>
 <tr>
 <td><code>mono_inc</code>, <code>mono_dec</code></td>
