@@ -86,6 +86,13 @@ class NumericSummary:
     max: float
     zeros: int
     negatives: int
+    # Population estimates, not sample counts. The fence is fitted inside the
+    # reservoir and the crossings counted there, so an unscaled count answers
+    # "how many of 20,000 sampled values crossed" while `count` beside it
+    # answers for the whole column: two scales in one struct, and the ratio
+    # between them is exactly `numeric_sample_size / n` (#327). The sampled
+    # counts are kept beside them for the fence pane, which lists those very
+    # rows and would otherwise show a table that cannot sum to its own header.
     outliers_iqr: int
     outliers_mod_zscore: int
     approx: bool
@@ -118,6 +125,9 @@ class NumericSummary:
     dtype_str: str = "numeric"
     corr_top: list[tuple[str, float]] = field(default_factory=list)
     sample_scale: float = 1.0
+    #: What the reservoir itself held, before `sample_scale` was applied.
+    outliers_iqr_sample: int = 0
+    outliers_mod_zscore_sample: int = 0
     # Extremes with global indices
     min_items: list[tuple[Any, float]] = field(default_factory=list)
     max_items: list[tuple[Any, float]] = field(default_factory=list)
@@ -526,8 +536,14 @@ class NumericAccumulator(PicklableAccumulator):
         if self._monotonicity:
             mono_inc, mono_dec = self._monotonicity.get_monotonicity()
 
+        # How many values the reservoir stands in for. Computed here rather
+        # than beside the histogram below, because the outlier counts need it
+        # too and reading it from thirty lines further down is what let them
+        # go unscaled for five releases (#327).
+        sample_scale = self.count / len(sample_values) if sample_values else 1.0
+
         # Get outlier detection results if enabled
-        outliers_iqr, outliers_mod_zscore = 0, 0
+        outliers_iqr_sample, outliers_mod_zscore_sample = 0, 0
         # Bound up front: a column of nothing but inf leaves sample_values empty,
         # and the branch below never runs.
         mad_val = 0.0
@@ -544,8 +560,8 @@ class NumericAccumulator(PicklableAccumulator):
                 iqr = q3 - q1
                 lower_bound = q1 - 1.5 * iqr
                 upper_bound = q3 + 1.5 * iqr
-                outliers_iqr = np.sum(
-                    (sample_arr < lower_bound) | (sample_arr > upper_bound)
+                outliers_iqr_sample = int(
+                    np.sum((sample_arr < lower_bound) | (sample_arr > upper_bound))
                 )
 
             if "mad" in methods:
@@ -554,7 +570,14 @@ class NumericAccumulator(PicklableAccumulator):
                     mod_z_score = (
                         0.6745 * (sample_arr - np.median(sample_arr)) / mad_val
                     )
-                    outliers_mod_zscore = np.sum(np.abs(mod_z_score) > 3.5)
+                    outliers_mod_zscore_sample = int(np.sum(np.abs(mod_z_score) > 3.5))
+
+        # Both counts are of *occurrences* past a fence, so they scale with the
+        # sampling ratio the same way histogram bin counts do. Rounded, not
+        # truncated: at a low rate the truncation of a 0.6-value estimate is
+        # the difference between "some" and "none".
+        outliers_iqr = int(round(outliers_iqr_sample * sample_scale))
+        outliers_mod_zscore = int(round(outliers_mod_zscore_sample * sample_scale))
 
         # Compute advanced analytics metrics.
         #
@@ -582,10 +605,6 @@ class NumericAccumulator(PicklableAccumulator):
         # sketched `unique_est` -- asserting an exactness that value did not
         # have.
         approx = len(sample_values) < self.count or not self._uniques.is_exact
-
-        # Calculate sample scale for histogram rendering
-        # This is crucial for chunk mode to scale histogram counts to full dataset size
-        sample_scale = self.count / len(sample_values) if sample_values else 1.0
 
         # Compute confidence intervals if enabled
         ci_lo, ci_hi = self._compute_confidence_interval(
@@ -680,6 +699,8 @@ class NumericAccumulator(PicklableAccumulator):
             heap_pct=heap_pct,
             top_values=top_values,
             sample_scale=sample_scale,
+            outliers_iqr_sample=outliers_iqr_sample,
+            outliers_mod_zscore_sample=outliers_mod_zscore_sample,
             chunk_metadata=final_chunk_metadata,
         )
 

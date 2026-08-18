@@ -971,7 +971,14 @@ class NumericCardRenderer(CardRenderer):
             )
 
         name = self.safe_html_escape(stats.name)
-        pct = (fence.n_outliers / fence.n_total * 100.0) if fence.n_total else 0.0
+        # `n_outliers` was counted inside the reservoir, so it is a share of
+        # the reservoir. Over `n_total` it read 0.2% for a column that is 10%
+        # outliers at a million rows, and the flag keyed off it stayed silent
+        # on exactly the datasets where it matters (#327).
+        denom = fence.n_sampled or fence.n_total
+        pct = (fence.n_outliers / denom * 100.0) if denom else 0.0
+        sampled = fence.n_sampled and fence.n_sampled < fence.n_total
+        of_what = "sampled values" if sampled else "values"
 
         header = (
             '<div class="fence-head">'
@@ -979,7 +986,7 @@ class NumericCardRenderer(CardRenderer):
             '<span class="fence-head__rule"></span>'
             f'<span class="fence-head__count" data-col="{col_id}" '
             f'data-count="{fence.n_outliers}" data-pct="{pct:.1f}">'
-            f"{fence.n_outliers:,} of {fence.n_total:,} values · {pct:.1f}%</span>"
+            f"{fence.n_outliers:,} of {denom:,} {of_what} · {pct:.1f}%</span>"
             "</div>"
         )
         lede = f'<p class="fence-lede">{fence_verdict(fence, self.format_number)}</p>'
@@ -1672,7 +1679,13 @@ class NumericCardRenderer(CardRenderer):
         if lows or highs:
             counts["extremes"] = f"{max(lows, highs):,}"
 
-        outliers = int(getattr(stats, "outliers_iqr", 0) or 0)
+        # The sampled count, not the scaled estimate on the card face: this
+        # badge labels the fence pane, and that pane lists the very rows it is
+        # counting. A badge reading 74,750 above a table of 1,495 marks is a
+        # strip that contradicts the pane it opens (#327).
+        outliers = int(getattr(stats, "outliers_iqr_sample", 0) or 0) or int(
+            getattr(stats, "outliers_iqr", 0) or 0
+        )
         if outliers:
             counts["outliers"] = f"{outliers:,}"
 
