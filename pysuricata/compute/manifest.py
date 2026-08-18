@@ -26,9 +26,14 @@ def duplicate_fields(row_kmv: Any) -> dict[str, Any]:
     `docs/versioning.md` and the payload is.
 
     `duplicate_rows_uncertainty` is what makes a zero readable. Zero with an
-    uncertainty of zero is "exactly none"; zero with an uncertainty of 2,225 is
-    "nothing resolvable below about 2,225". Without the second key a consumer
-    had no way to reach the answer the report already had.
+    uncertainty of zero is "exactly none"; zero with a nonzero uncertainty is
+    "nothing resolvable" -- and the bound is not the uncertainty itself. The
+    resolvability gate is `DUPLICATE_RESOLUTION_SIGMAS` (3) standard
+    deviations (#248), so a suppressed count's ceiling is
+    `math.ceil(3 * duplicate_rows_uncertainty)`, the same figure `render/html.py`
+    prints. The field stays one sigma rather than exporting the ceiling
+    directly, so the multiple can move without bumping `schema_version`;
+    `docs/summary-schema.md` states the multiple for consumers who need it.
     """
     if not hasattr(row_kmv, "duplicates"):
         return {

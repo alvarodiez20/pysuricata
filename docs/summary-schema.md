@@ -74,19 +74,23 @@ the duplicate count** — a quantity that is usually far smaller. On 200,000 row
 containing exactly 2,000 duplicates the distinct estimate was 0.48% off, well
 inside spec, and the duplicate count came back 47% high.
 
-So `duplicate_rows_est` is suppressed to `0` when it does not exceed its own
-uncertainty, and `duplicate_rows_uncertainty` carries the ceiling. Read the two
-together:
+So `duplicate_rows_est` is suppressed to `0` when it does not clear **3**
+standard deviations of uncertainty, not 1 — a 1-sigma gate published a
+duplicate count on a clean, duplicate-free frame about one run in ten (#248).
+`duplicate_rows_uncertainty` is exported as one sigma either way; the ceiling
+below which nothing is resolvable is `math.ceil(3 * duplicate_rows_uncertainty)`,
+not `duplicate_rows_uncertainty` itself. Read the two together:
 
-| `est` | `uncertainty` | Means |
-|---|---|---|
-| `0` | `0` | Exactly none. The distinct count was exact, not estimated |
-| `0` | `2201` | Nothing resolvable. The true count is somewhere below roughly 2,201 |
-| `50602` | `1651` | About 50,602, give or take 1,651 |
+| `est` | `uncertainty` | Ceiling (`3 × uncertainty`, rounded up) | Means |
+|---|---|---|---|
+| `0` | `0` | — | Exactly none. The distinct count was exact, not estimated |
+| `0` | `2201` | `6603` | Nothing resolvable. The true count is somewhere below roughly 6,603 |
+| `50602` | `1651` | — | About 50,602, give or take 1,651 — cleared the ceiling, so no suppression |
 
 Gating on `duplicate_rows_est > 0` is therefore safe against false positives and
 will not fire on a count the sketch cannot support. If you need to fail on the
-*possibility* of duplicates, gate on `duplicate_rows_uncertainty` instead.
+*possibility* of duplicates, gate on `duplicate_rows_uncertainty` instead — it
+is nonzero exactly when `duplicate_rows_est` could be suppressing a real count.
 
 ## `columns[name]["type"]`
 

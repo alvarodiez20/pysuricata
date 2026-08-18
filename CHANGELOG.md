@@ -16,6 +16,24 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The duplicate-row estimate could false-alarm on a clean frame** (#248).
+  `RowKMV.duplicates()` suppressed its count when the estimate did not exceed
+  its own uncertainty — an implicit 1-sigma gate. Measured over 40 frames of
+  200,000 guaranteed-unique rows, that published a nonzero duplicate count
+  about 1 run in 10, because the normal-tail rate at 1 sigma is ~15.9% and
+  `approx_duplicates()` rectifies at zero for the rest.
+
+  The gate is now `DUPLICATE_RESOLUTION_SIGMAS = 3`
+  (`pysuricata/accumulators/sketches.py`), matching the normal-tail rate down
+  to ~0.13%. `DuplicateEstimate` gained a `ceiling` field so the report and
+  the `summarize()` payload state the same bound: the report prints
+  `math.ceil(3 * uncertainty)` directly, and the payload's exported
+  `duplicate_rows_uncertainty` stays one sigma so a consumer computes the same
+  ceiling — documented in `docs/summary-schema.md` — without a
+  `schema_version` bump. The asymmetry is intentional: a missed 2-sigma
+  duplication is a number a human notices on the next look, and a false
+  alarm is a pipeline that failed overnight on a dataset that was fine.
+
 - **The demo page's desktop composition is one centred column, not four widths
   down the left.** Giving every block the shell's left edge fixed the measure
   and broke the composition: prose at 52ch, the panes at 760px, the control row

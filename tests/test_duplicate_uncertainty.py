@@ -18,6 +18,7 @@ is worse than none**, because it turns a naked estimate into a confident one.
 
 from __future__ import annotations
 
+import math
 import re
 
 import numpy as np
@@ -25,7 +26,10 @@ import pandas as pd
 import pytest
 
 from pysuricata import profile, summarize
-from pysuricata.accumulators.sketches import RowKMV
+from pysuricata.accumulators.sketches import (
+    DUPLICATE_RESOLUTION_SIGMAS,
+    RowKMV,
+)
 
 
 def _frame(n: int, duplicates: int) -> pd.DataFrame:
@@ -130,7 +134,15 @@ class TestBelowResolutionStatesACeiling:
 
 class TestAResolvableCountCarriesItsBound:
     def test_the_note_states_the_bound(self):
-        value, note = _duplicates_stat(profile(_frame(200_000, 2_000), seed=0).html)
+        """50,000 duplicates in 200,000 rows: about 23 sigma, so it publishes.
+
+        This case used to be 2,000 duplicates, which is 0.9 sigma and was
+        published under the old 1-sigma gate on the strength of a draw that
+        happened to land high (2,942 reported for a true 2,000). It is
+        suppressed now, and correctly -- see
+        `TestTheGateIsThreeSigma.test_a_one_percent_rate_is_below_resolution`.
+        """
+        value, note = _duplicates_stat(profile(_frame(200_000, 50_000), seed=0).html)
         assert re.fullmatch(r"[\d,]+", value)
         assert re.match(r"± [\d,]+ · KMV sketch", note), note
 
@@ -184,8 +196,13 @@ class TestTheReportAndThePayloadAgree:
         )
         assert stats["duplicate_rows_pct_est"] == 0.0
         # The ceiling the report prints is the uncertainty the payload exports,
-        # so a consumer can reach the same conclusion the reader can.
-        assert value == f"&lt; {stats['duplicate_rows_uncertainty']:,}"
+        # times the multiple the gate applies, so a consumer can reach the same
+        # conclusion the reader can. `docs/summary-schema.md` states it, which
+        # is what makes the payload readable without the report beside it.
+        ceiling = math.ceil(
+            DUPLICATE_RESOLUTION_SIGMAS * stats["duplicate_rows_uncertainty"]
+        )
+        assert value == f"&lt; {ceiling:,}"
 
     def test_a_resolvable_count_reaches_the_payload_intact(self):
         """Suppression must not become a blanket zero: 50,000 duplicates in
@@ -247,3 +264,102 @@ class TestTheUncertaintyIsExported:
         assert exact["duplicate_rows_est"] == unresolved["duplicate_rows_est"] == 0
         assert exact["duplicate_rows_uncertainty"] == 0
         assert unresolved["duplicate_rows_uncertainty"] > 0
+
+
+class TestTheGateIsThreeSigma:
+    """#248. The gate was an implicit `>` — one sigma — and a clean frame
+    published a duplicate count about one run in ten.
+
+    The rate is what the issue measured; the *multiple* is what these assert.
+    Separating 0.13% from 2.3% by simulation needs thousands of frames and
+    still buys a flaky test; the multiple is one number and it is the thing
+    that was wrong.
+    """
+
+    class _Sketch(RowKMV):
+        """A sketch with the two inputs to the gate forced.
+
+        The gate reads exactly `approx_duplicates()` and `duplicates_uncertainty()`,
+        so driving those directly tests the boundary at a chosen number of sigma
+        rather than at whatever a 200,000-row draw happened to produce.
+        """
+
+        def __init__(self, duplicates: int, sigma: int) -> None:
+            super().__init__()
+            self.rows = 1_000_000
+            self._duplicates = duplicates
+            self._sigma = sigma
+
+        def approx_duplicates(self):
+            return self._duplicates, self._duplicates / self.rows * 100.0
+
+        def duplicates_uncertainty(self):
+            return self._sigma
+
+        def kmv_is_exact(self):
+            return False
+
+    def test_the_multiple_is_a_named_constant(self):
+        assert DUPLICATE_RESOLUTION_SIGMAS == 3.0
+
+    @pytest.mark.parametrize("sigmas", [0.5, 1.0, 1.5, 2.0, 2.9])
+    def test_below_the_multiple_is_suppressed(self, sigmas):
+        sketch = self._Sketch(int(1_000 * sigmas), 1_000)
+        assert not sketch.duplicates_are_resolvable()
+        assert sketch.duplicates().rows == 0
+
+    @pytest.mark.parametrize("sigmas", [3.1, 4.0, 10.0])
+    def test_above_the_multiple_is_published(self, sigmas):
+        sketch = self._Sketch(int(1_000 * sigmas), 1_000)
+        assert sketch.duplicates_are_resolvable()
+        assert sketch.duplicates().rows == int(1_000 * sigmas)
+
+    def test_the_ceiling_is_the_multiple_not_one_sigma(self):
+        """The bound printed for a suppressed count has to be above the count
+        it suppressed, or the report contradicts itself."""
+        sketch = self._Sketch(2_500, 1_000)
+        estimate = sketch.duplicates()
+
+        assert estimate.resolvable is False
+        assert estimate.uncertainty == 1_000, "the exported sigma stays one sigma"
+        assert estimate.ceiling == 3_000
+        assert estimate.ceiling > 2_500
+
+    def test_a_resolvable_count_carries_no_ceiling(self):
+        assert self._Sketch(10_000, 1_000).duplicates().ceiling == 0
+
+    def test_an_exact_count_has_no_ceiling_either(self):
+        """Below `k` distinct values KMV counts exactly, so there is no bound
+        to state and "exactly none" must not be dressed up as one."""
+        sketch = _sketch(891, 0)
+        assert sketch.duplicates_ceiling() == 0
+        assert sketch.duplicates() == (0, 0.0, 0, True, 0)
+
+    def test_a_one_percent_rate_is_below_resolution(self):
+        """200,000 rows with 2,000 duplicates is 0.9 sigma on a 2,048-value
+        sketch. The old gate published it — as 2,942, 47% high — because the
+        draw landed above one sigma. That is the false alarm, not a detection.
+        """
+        sketch = _sketch(200_000, 2_000)
+        assert not sketch.duplicates_are_resolvable()
+        assert sketch.duplicates().rows == 0
+
+    @pytest.mark.parametrize("seed", range(25))
+    def test_a_clean_frame_raises_no_alarm(self, seed):
+        """The measurement from the issue, re-run at the new multiple.
+
+        At 1 sigma this fired on 4 of 40 seeds. At 3 the normal-tail rate is
+        0.13%, so 25 clean frames failing here is a real regression rather than
+        an unlucky day — and the seeds are fixed, so it is the same 25 frames
+        every run.
+        """
+        rng = np.random.default_rng(1_000 + seed)
+        frame = pd.DataFrame(
+            {"a": rng.permutation(200_000), "b": rng.normal(size=200_000)}
+        )
+        assert frame.duplicated().sum() == 0
+
+        sketch = RowKMV()
+        sketch.update_from_pandas(frame)
+
+        assert sketch.duplicates().rows == 0

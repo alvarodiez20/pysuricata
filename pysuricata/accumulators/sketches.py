@@ -14,20 +14,26 @@ class DuplicateEstimate(NamedTuple):
         rows: Estimated duplicate rows, or 0 when the estimate is below the
             sketch's own resolution. Never a figure the sketch cannot support.
         pct: `rows` as a percentage of the rows seen, suppressed in step.
-        uncertainty: One standard deviation on the count, in rows. When
-            `resolvable` is False this is the ceiling: the true count is
-            somewhere below roughly this many. Zero when the distinct count is
-            exact, which is the common case for frames smaller than `k`.
-        resolvable: Whether the count exceeded its own uncertainty. False means
-            `rows` is 0 because nothing could be resolved, not because the data
-            is known to be free of duplicates -- the two are distinguishable
-            only by reading `uncertainty` alongside it.
+        uncertainty: One standard deviation on the count, in rows. Zero when
+            the distinct count is exact, which is the common case for frames
+            smaller than `k`.
+        resolvable: Whether the count cleared `DUPLICATE_RESOLUTION_SIGMAS`
+            standard deviations. False means `rows` is 0 because nothing could
+            be resolved, not because the data is known to be free of
+            duplicates -- the two are distinguishable only by reading
+            `ceiling` alongside it.
+        ceiling: The bound the count could not clear, in rows, when
+            `resolvable` is False; 0 otherwise. The true count is somewhere
+            below it. Carried here rather than left to each caller to
+            reconstruct from `uncertainty`, because a caller that multiplied by
+            the wrong number would print a bound below the figure it suppressed.
     """
 
     rows: int
     pct: float
     uncertainty: int
     resolvable: bool
+    ceiling: int = 0
 
 
 if TYPE_CHECKING:
@@ -46,6 +52,21 @@ _SCHEDULE_BLOCK = 2048
 # Rows stringified into the sketch when vectorised row hashing fails. This
 # bounds the sketch's input only -- never the row count.
 _HASH_FALLBACK_SAMPLE = 2000
+
+#: How many standard deviations a duplicate count must clear before it is
+#: published as a figure rather than as a ceiling (#248).
+#:
+#: The gate was an implicit `>` -- one sigma -- which on 40 frames of 200,000
+#: guaranteed-unique rows published a non-zero duplicate count 4 times. The
+#: normal-tail rates are ~15.9% at 1 sigma, 2.3% at 2 and 0.13% at 3; the
+#: measured rate is lower than the first of those because `approx_duplicates()`
+#: rectifies at zero and over half the draws land there.
+#:
+#: 3 is the conventional choice for a go/no-go gate, and this figure is used as
+#: one. What it costs is a real 2-sigma duplication reported as "below
+#: resolution" -- which is not much of a signal, and which the ceiling still
+#: exposes to anyone who wants to gate on the possibility rather than the fact.
+DUPLICATE_RESOLUTION_SIGMAS = 3.0
 
 
 # splitmix64 finalisation constants (Steele et al.). A distinct-count sketch
@@ -889,22 +910,43 @@ class RowKMV:
         values = getattr(kmv, "_values", None)
         return values is not None and len(values) < getattr(kmv, "k", 0)
 
-    def duplicates_are_resolvable(self) -> bool:
-        """Whether the duplicate count is larger than its own uncertainty.
+    def duplicates_ceiling(self) -> int:
+        """The bound below which a duplicate count cannot be resolved, in rows.
 
-        When it is not, the honest report is a ceiling rather than a figure:
+        ``DUPLICATE_RESOLUTION_SIGMAS`` standard deviations, rounded up. This is
+        the figure to print or gate on when :meth:`duplicates_are_resolvable`
+        is False: the true count is somewhere below it, and zero is inside that
+        interval. Zero when the distinct count is exact, since then there is no
+        estimation error to bound.
+        """
+        uncertainty = self.duplicates_uncertainty()
+        if uncertainty <= 0:
+            return 0
+        return int(math.ceil(DUPLICATE_RESOLUTION_SIGMAS * uncertainty))
+
+    def duplicates_are_resolvable(self) -> bool:
+        """Whether the duplicate count clears ``DUPLICATE_RESOLUTION_SIGMAS``.
+
+        When it does not, the honest report is a ceiling rather than a figure:
         printing ``2,942`` for a quantity that could be anything from zero to
         twice that invites a conclusion the sketch cannot support.
+
+        The multiple is 3, not 1 (#248). A 1-sigma gate published a count on a
+        frame with **no duplicate rows at all** about one run in ten, measured
+        over 40 frames of 200,000 unique rows. The two errors are not symmetric
+        for what this figure is used for: a missed 2-sigma duplication is a
+        number a human notices on the next look, and a false alarm is a
+        pipeline that failed overnight on a dataset that was fine.
 
         Always true when the distinct count is exact -- including when the
         answer is zero, because "exactly none" is a resolved result and must not
         be presented as "fewer than some bound".
         """
-        uncertainty = self.duplicates_uncertainty()
-        if uncertainty <= 0:
+        ceiling = self.duplicates_ceiling()
+        if ceiling <= 0:
             return True
         d, _ = self.approx_duplicates()
-        return d > uncertainty
+        return d > ceiling
 
     def duplicates(self) -> DuplicateEstimate:
         """The duplicate figure with its resolvability already applied.
@@ -924,11 +966,11 @@ class RowKMV:
         rows, pct = self.approx_duplicates()
         uncertainty = self.duplicates_uncertainty()
         if self.duplicates_are_resolvable():
-            return DuplicateEstimate(rows, pct, uncertainty, True)
+            return DuplicateEstimate(rows, pct, uncertainty, True, 0)
         # Below the sketch's resolution. The count is not distinguishable from
-        # zero, so zero is what is reported, and `uncertainty` carries the
-        # ceiling that makes the zero interpretable.
-        return DuplicateEstimate(0, 0.0, uncertainty, False)
+        # zero, so zero is what is reported, and `ceiling` carries the bound
+        # that makes the zero interpretable.
+        return DuplicateEstimate(0, 0.0, uncertainty, False, self.duplicates_ceiling())
 
 
 class StreamingHistogram:
