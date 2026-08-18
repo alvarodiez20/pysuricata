@@ -201,7 +201,7 @@ class TestNoStaleRenameArtifacts:
     def test_it_teaches_the_current_config_name(self, readme):
         assert "ProfileConfig" in readme
         assert "ReportConfig" not in readme, (
-            "ReportConfig warns since 0.1.1 and goes in 0.3.0 (#210); the README "
+            "ReportConfig warns since 0.1.1 and goes in 1.0.0 (#210); the README "
             "should not teach a name with a removal date"
         )
 

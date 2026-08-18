@@ -113,9 +113,14 @@ Publishing is triggered by **pushing a tag**, not by merging.
 
 ```bash
 # after the version bump and changelog section have merged to main
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.6
+git push origin v0.1.6
 ```
+
+The current release is **0.1.5**, so the next patch is the tag above. Under the
+rule at the top of this page the number after it is a choice about *what
+changed*, not about how much: additions take `0.2.0`, and nothing takes `1.0.0`
+until a break is worth making.
 
 That is the whole reform, and everything else follows from it. Until 0.0.72,
 `cd.yml` triggered on `push: branches: [main]` while `version-check` required a
@@ -183,9 +188,14 @@ Deliberately about evidence rather than dates.
 
 1. **Two consecutive minor releases with no breaking change, unforced.** A
    settled shape, not a freeze.
-2. **The deprecation queue is empty.** `ReportConfig` is aliased to
-   `ProfileConfig` and now warns on use, naming **0.3.0** as the release that
-   removes it (#210). The queue is not empty until that removal happens.
+2. **The deprecation queue is drained *by* 1.0.0, not before it.** This gate
+   used to read "the queue is empty", which the rule at the top of this page
+   turns into a circle: removing a deprecated name is a break, a break costs
+   the major bump, so the queue cannot empty until the release it is a
+   precondition for. What it asks instead is that every entry has warned for
+   long enough to be removable, and that 1.0.0 is the release that removes
+   them. Currently one entry: `ReportConfig`, aliased to `ProfileConfig` and
+   warning on use since 0.1.1 (#210).
 3. **Every approximate value carries its error bound.** The quantiles (#146) and
    the duplicate count (#161) are done; the distinct count already was.
 4. **No known correctness bug in a covered path.**

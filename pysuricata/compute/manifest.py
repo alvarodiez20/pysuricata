@@ -52,6 +52,7 @@ def duplicate_fields(row_kmv: Any) -> dict[str, Any]:
             "duplicate_rows_est": 0,
             "duplicate_rows_pct_est": 0.0,
             "duplicate_rows_uncertainty": 0,
+            "duplicates_degraded": False,
             "duplicate_rows_lo": 0,
             "duplicate_rows_hi": 0,
         }
@@ -66,6 +67,11 @@ def duplicate_fields(row_kmv: Any) -> dict[str, Any]:
         "duplicate_rows_est": int(estimate.rows),
         "duplicate_rows_pct_est": float(estimate.pct),
         "duplicate_rows_uncertainty": int(estimate.uncertainty),
+        # True when some chunk's rows could not be hashed, so the sketch saw
+        # fewer rows than were counted and the figure above is an overestimate
+        # of unknown size. The report labelled such a count `exact` because the
+        # label was derived from the sketch's own error alone (#312).
+        "duplicates_degraded": bool(getattr(row_kmv, "duplicates_degraded", False)),
         "duplicate_rows_lo": int(lo),
         "duplicate_rows_hi": int(hi),
     }

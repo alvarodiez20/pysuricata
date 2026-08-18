@@ -230,12 +230,24 @@ def render_html_snapshot(
     else:  # pragma: no cover - a row sketch that predates `duplicates()`
         dup_rows, dup_pct = row_kmv.approx_duplicates()
         dup_sigma, dup_resolvable, dup_ceiling = 0, True, 0
+    degraded = bool(getattr(row_kmv, "duplicates_degraded", False))
     if dup_resolvable:
         duplicates_value = f"{dup_rows:,}"
         # No bound when the count is exact -- KMV counts exactly until it has
         # seen k distinct values, so most frames have no estimation error here
         # and "± 0" would be noise.
-        duplicates_note = f"± {dup_sigma:,} · KMV sketch" if dup_sigma else "exact"
+        #
+        # `exact` is a claim about the *whole* count, not just the sketch's
+        # error on it. When a chunk could not be hashed the sketch saw fewer
+        # rows than were counted, so the figure is an overestimate of unknown
+        # size, and the tile said `exact` regardless because it only ever
+        # consulted sigma (#312).
+        if degraded:
+            duplicates_note = "partial hash · overestimate"
+        elif dup_sigma:
+            duplicates_note = f"± {dup_sigma:,} · KMV sketch"
+        else:
+            duplicates_note = "exact"
         duplicates_overall = f"{dup_rows:,} ({dup_pct:.1f}%)"
     else:
         # Below the resolution of the sketch. A figure here would invite a

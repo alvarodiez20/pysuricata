@@ -971,6 +971,14 @@ class RowKMV:
             self._degraded_update(len(df), df.head(_HASH_FALLBACK_SAMPLE))
 
     def update_from_polars(self, df: pl.DataFrame) -> None:
+        # The pandas path answers a columnless frame explicitly, and the two
+        # paths disagreeing is how #312 went unnoticed. A polars frame with no
+        # columns has height 0 today, so this is a guard rather than a live
+        # case.
+        if getattr(df, "width", None) == 0:
+            self._offer_zero_column_rows(int(getattr(df, "height", 0) or 0))
+            return
+
         try:
             # Polars' hash_rows() is already correct - hashes entire rows properly
             if hasattr(df, "hash_rows"):
