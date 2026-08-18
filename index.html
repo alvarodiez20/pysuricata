@@ -1973,8 +1973,15 @@
 <h1 id="pysuricata">PySuricata</h1>
 <p><strong>Exploratory data analysis for Python, built on streaming algorithms.</strong></p>
 <p>PySuricata generates self-contained HTML reports for pandas and polars DataFrames. It processes data in chunks using streaming algorithms, so memory usage stays bounded regardless of dataset size.</p>
+<p><a href="https://pysuricata.pages.dev"><strong>Try it in your browser</strong></a> with no install: drop a CSV, Parquet file or Excel workbook and get the real report back. The profiler is compiled to WebAssembly and runs in the page, so nothing is uploaded.</p>
 <div class="grid cards">
 <ul>
+<li>
+<p><strong>Live Demo</strong></p>
+<hr />
+<p>Profile your own file in a browser tab. No install, no upload.</p>
+<p><a href="https://pysuricata.pages.dev"><span class="twemoji"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13.22 19.03a.75.75 0 0 1 0-1.06L18.19 13H3.75a.75.75 0 0 1 0-1.5h14.44l-4.97-4.97a.749.749 0 0 1 .326-1.275.75.75 0 0 1 .734.215l6.25 6.25a.75.75 0 0 1 0 1.06l-6.25 6.25a.75.75 0 0 1-1.06 0"/></svg></span> Open the Demo</a></p>
+</li>
 <li>
 <p><strong>Quick Start</strong></p>
 <hr />
@@ -2082,8 +2089,9 @@
 </tr>
 </tbody>
 </table>
-<p>Memory is bounded <strong>in rows</strong>. It is not bounded in columns — state is per
-column at roughly 3 MB each — which is a known limit, tracked in
+<p>Memory is bounded <strong>in rows</strong>. It is not bounded in columns: state is per
+column at roughly 1.2 MB each, and a 20,000 x 600 frame costs 797 MB against
+52 MB for a 1,000,000 x 14 one on more cells. That is a known limit, tracked in
 <a href="https://github.com/alvarodiez20/pysuricata/issues/207">#207</a>.</p>
 <p>Reports include per-column statistics, histograms, correlation chips, missing value analysis, outlier detection, and more — all computed during the single streaming pass.</p>
 <h2 id="beyond-the-report">Beyond the Report</h2>

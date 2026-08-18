@@ -2314,8 +2314,9 @@ reads the load average, refuses to run above one process per core without
   <span class="arithmatex">\(T(n) \approx k \cdot n\)</span>.</li>
 <li><strong>Memory is flat in rows.</strong> Four float64 columns cost the same above the
   import floor at 500,000 rows and at 8,400,000.</li>
-<li><strong>Memory is <em>not</em> flat in columns.</strong> It grows at roughly 3 MB per column, so a
-  20,000 x 600 frame costs far more than a 5,000,000 x 8 one on less data. This
+<li><strong>Memory is <em>not</em> flat in columns.</strong> It grows at roughly 1.2 MB per column, so
+  a 20,000 x 600 frame costs 797 MB against 52 MB for a 1,000,000 x 14 one on
+  more cells. This
   is a known limit, tracked in
   <a href="https://github.com/alvarodiez20/pysuricata/issues/207">#207</a>.</li>
 <li><strong><code>summarize()</code> skips rendering entirely</strong>, so it is the faster path whenever
