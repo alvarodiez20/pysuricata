@@ -267,7 +267,14 @@ class TestTheReportIsOneFile:
 #: cannot act on is not presentation. Unlike #291, the report being weighed is
 #: the one that benefits -- Titanic raises seven flagged columns, and the
 #: reordering is visible on it.
-BYTES_BASELINE = 487_000
+#:
+#: 487,000 -> 487,500 on the rebase, and the 81 bytes are not this branch's:
+#: #338 landed underneath it and publishes a top-k error bound. Rounded up to
+#: leave the headroom the #246/#252 note above asks for, so the next rebase
+#: does not spend an afternoon on the same 3 bytes.
+#:
+#: Net against the 499,500 this branch started from: 12,419 bytes returned.
+BYTES_BASELINE = 487_500
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
