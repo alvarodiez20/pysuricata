@@ -16,7 +16,17 @@
 
 PySuricata generates self-contained HTML reports for pandas and polars DataFrames. It processes data in chunks using streaming algorithms, so memory usage stays bounded regardless of dataset size.
 
+[**Try it in your browser**](https://pysuricata.pages.dev) with no install: drop a CSV, Parquet file or Excel workbook and get the real report back. The profiler is compiled to WebAssembly and runs in the page, so nothing is uploaded.
+
 <div class="grid cards" markdown>
+
+-   **Live Demo**
+
+    ---
+
+    Profile your own file in a browser tab. No install, no upload.
+
+    [:octicons-arrow-right-24: Open the Demo](https://pysuricata.pages.dev)
 
 -   **Quick Start**
 
@@ -128,8 +138,9 @@ PySuricata reads data in chunks and updates lightweight accumulators for each co
 | **Accuracy** | Exact for moments (mean, variance, skewness, kurtosis); approximate with known error bounds for distinct counts and top-k |
 | **Mergeability** | Accumulators can be merged across chunks or machines |
 
-Memory is bounded **in rows**. It is not bounded in columns — state is per
-column at roughly 3 MB each — which is a known limit, tracked in
+Memory is bounded **in rows**. It is not bounded in columns: state is per
+column at roughly 1.2 MB each, and a 20,000 x 600 frame costs 797 MB against
+52 MB for a 1,000,000 x 14 one on more cells. That is a known limit, tracked in
 [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
 
 Reports include per-column statistics, histograms, correlation chips, missing value analysis, outlier detection, and more — all computed during the single streaming pass.

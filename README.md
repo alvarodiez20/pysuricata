@@ -14,7 +14,7 @@
 
   <h3>Exploratory Data Analysis for Python, Built on Streaming Algorithms</h3>
 
-  <p><strong>One pass over your data. A self-contained HTML report, a versioned JSON payload, or a CI gate — from the same pass.</strong></p>
+  <p><strong>One pass over your data. A self-contained HTML report, a versioned JSON payload, or a CI gate: all from the same pass.</strong></p>
 
   <p>
     <a href="https://pysuricata.pages.dev"><strong>Live Demo</strong></a> •
@@ -29,11 +29,11 @@
 ## See it before you install it
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/docs/assets/report-screenshot.png" alt="A PySuricata report: the dataset summary, the five columns that need a look, and a numeric column card with its histogram and bin controls" width="900">
+  <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/docs/assets/report-screenshot.png" alt="A PySuricata report: the dataset summary, the columns flagged as needing a look with the threshold each one crossed, and a numeric column card with its histogram and bin controls" width="900">
 </div>
 
-- **[Run it in your browser →](https://pysuricata.pages.dev)** — drop a CSV, Parquet file or Excel workbook and get the real report back. The profiler is compiled to WebAssembly and runs in the page, so **nothing is uploaded**.
-- **[Open a finished report →](https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html)** — the Titanic dataset, as PySuricata renders it.
+- **[Run it in your browser →](https://pysuricata.pages.dev)**: drop a CSV, Parquet file or Excel workbook and get the real report back. The profiler is compiled to WebAssembly and runs in the page, so **nothing is uploaded**.
+- **[Open a finished report →](https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html)**: the Titanic dataset, as PySuricata renders it.
 
 ## Quick Start
 
@@ -59,11 +59,11 @@ uv add "pysuricata[system]"   # psutil-backed memory reporting
 ## Why PySuricata
 
 **It reads your data once.**
-Data is processed in chunks using streaming algorithms, so memory usage stays bounded **in the number of rows** — a million rows costs no more than twenty thousand. It is *not* bounded in the number of columns: each column keeps its own sketches for the whole run and gets its own card in the report, so both memory and report size grow linearly with the width of the frame. Measured at 20,000 rows: **~1.3 MB of RSS and ~59 KB of report per column**, so a 600-column frame needs roughly 850 MB. See [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
+Data is processed in chunks using streaming algorithms, so memory usage stays bounded **in the number of rows**: a million rows costs no more than twenty thousand. It is *not* bounded in the number of columns, which is a real limit rather than a footnote. See [Where the bound stops holding](#where-the-bound-stops-holding).
 
 **It is not only a report.** The same pass gives three outputs: `profile()` for the HTML, `summarize()` for a versioned JSON payload with no markup in the way, and `pysuricata check` for a CI gate that exits non-zero when a threshold is crossed. Most profilers give you the first and stop.
 
-**Arrow is the boundary, not pandas.** Anything exporting the Arrow C stream interface (`__arrow_c_stream__`) is profiled without materialising it, whatever library produced it — and Arrow IPC is what R, Julia and Rust write, so a file from another runtime is read directly.
+**Arrow is the boundary, not pandas.** Anything exporting the Arrow C stream interface (`__arrow_c_stream__`) is profiled without materialising it, whatever library produced it. Arrow IPC is what R, Julia and Rust write, so a file from another runtime is read directly.
 
 **Approximations say so.** Quantiles, distinct counts and duplicate estimates come from sketches. The report labels them and carries their error bound rather than printing an estimate as an exact integer.
 
@@ -71,21 +71,21 @@ Data is processed in chunks using streaming algorithms, so memory usage stays bo
 
 ### Everything else
 
-- **Streaming architecture** — Data is processed in configurable chunks, keeping memory bounded in rows (not in columns — see above). Useful for datasets with more rows than fit in RAM.
-- **Pandas and Polars** — Works natively with `pandas.DataFrame`, `polars.DataFrame` and `polars.LazyFrame`, plus Parquet files, Arrow IPC files (`.arrow`, `.feather`, `.ipc`), DuckDB relations and Arrow batches.
-- **Configurable** — Control chunk size, sample size, correlations and more with keyword options, a `preset=`, or a `ProfileConfig`.
-- **Reproducible** — Seeded random sampling produces deterministic results across runs.
-- **Typed** — Ships `py.typed`; `summarize()` returns a payload carrying a `schema_version`.
-- **CLI tool** — `profile`, `summarize` and `check` from the command line.
+- **Streaming architecture**: data is processed in configurable chunks, keeping memory bounded in rows, though not in columns (see above). Useful for datasets with more rows than fit in RAM.
+- **Pandas and Polars**: works natively with `pandas.DataFrame`, `polars.DataFrame` and `polars.LazyFrame`, plus Parquet files, Arrow IPC files (`.arrow`, `.feather`, `.ipc`), DuckDB relations and Arrow batches.
+- **Configurable**: control chunk size, sample size, correlations and more with keyword options, a `preset=`, or a `ProfileConfig`.
+- **Reproducible**: seeded random sampling produces deterministic results across runs.
+- **Typed**: ships `py.typed`; `summarize()` returns a payload carrying a `schema_version`.
+- **CLI tool**: `profile`, `summarize` and `check` from the command line.
 
 ## What's in a Report
 
 Each column is analyzed based on its type:
 
-- **Numeric** — Mean, variance, skewness, kurtosis, quantiles, histogram, outlier detection (IQR, MAD, z-score), correlations
-- **Categorical** — Top values, distinct count, entropy, Gini impurity, string length statistics
-- **DateTime** — Temporal range, hour/day/month distributions, monotonicity detection
-- **Boolean** — True/false counts and ratios, entropy
+- **Numeric**: mean, variance, skewness, kurtosis, quantiles, histogram, outlier detection (IQR, MAD, z-score), correlations
+- **Categorical**: top values, distinct count, entropy, Gini impurity, string length statistics
+- **DateTime**: temporal range, hour/day/month distributions, monotonicity detection
+- **Boolean**: true/false counts and ratios, entropy
 
 Plus dataset-level metrics: row/column counts, memory usage, missing value percentages, and duplicate row estimates.
 
@@ -141,7 +141,7 @@ report = profile(read_in_chunks())
 report.save_html("large_report.html")
 ```
 
-A Parquet path, an Arrow IPC file, a DuckDB relation or an Arrow source needs no generator at all — hand it over and it is read a batch at a time, without ever existing as one frame:
+A Parquet path, an Arrow IPC file, a DuckDB relation or an Arrow source needs no generator at all. Hand it over and it is read a batch at a time, without ever existing as one frame:
 
 ```python
 import duckdb
@@ -161,7 +161,19 @@ report = profile(relation)
 
 Measured on a 4,000,000 × 6 frame written as a 180 MB Parquet file, above a 118 MB bare-import floor: **307 MB** for `profile(path)` against **581 MB** for `profile(pd.read_parquet(path))`.
 
-The readers behind that — `stream_parquet`, `stream_ipc`, `stream_arrow`, `stream_duckdb` — are exported from `pysuricata.sources` for when you want the batches rather than a profile.
+The readers behind that (`stream_parquet`, `stream_ipc`, `stream_arrow` and `stream_duckdb`) are exported from `pysuricata.sources` for when you want the batches rather than a profile.
+
+### Where the bound stops holding
+
+Bounded memory is a claim about **rows**, not about columns. Each column keeps its own
+sketches for the whole run and gets its own card in the report, so both memory and report
+size grow linearly with the width of the frame.
+
+Measured with `python -m benchmarks.columns` at 20,000 rows, taking the slope from 100
+columns to 600: **1.2 MB of resident memory and 59 KB of report per column**. A
+20,000 x 600 frame costs 797 MB and emits a 35 MB report, while a 1,000,000 x 14 frame
+holds 1.2x the cells for 52 MB. Wide frames are the axis the streaming design does not
+yet cover, tracked in [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
 
 ## Comparing Two Datasets
 
@@ -178,7 +190,7 @@ diff.columns["fare"].median_shift_sigma # in baseline standard deviations
 diff.to_dict()                          # JSON-safe, three sections
 ```
 
-Every delta, whether or not it crosses a threshold — it is a description, not a verdict. `pysuricata check` is the same arithmetic with a threshold and an exit code.
+It reports every delta, whether or not it crosses a threshold, because it is a description and not a verdict. `pysuricata check` is the same arithmetic with a threshold and an exit code.
 
 ## Configuration
 
@@ -197,7 +209,7 @@ report = profile(
 )
 ```
 
-Or start from a preset — `"fast"` or `"thorough"`:
+Or start from a preset, `"fast"` or `"thorough"`:
 
 ```python
 from pysuricata import profile
@@ -235,7 +247,7 @@ pysuricata check data.csv --write-baseline baseline.json
 pysuricata check data.csv --baseline baseline.json --max-missing-pct 5
 ```
 
-`check` exits `0` on pass, `1` when a threshold is crossed, and `2` when the check could not run — so it drops into CI without a wrapper.
+`check` exits `0` on pass, `1` when a threshold is crossed, and `2` when the check could not run, so it drops into CI without a wrapper.
 
 ## How It Works
 
@@ -287,9 +299,9 @@ MIT License. See [LICENSE](LICENSE) for details.
 
 Built using algorithms from:
 
-- Welford, B.P. (1962) — Streaming moments
-- Pébay, P. (2008) — Parallel merging of moments
-- Bar-Yossef, Z. et al. (2002) — KMV distinct count estimation
-- Misra, J. & Gries, D. (1982) — Streaming heavy hitters
+- Welford, B.P. (1962): streaming moments
+- Pébay, P. (2008): parallel merging of moments
+- Bar-Yossef, Z. et al. (2002): KMV distinct count estimation
+- Misra, J. & Gries, D. (1982): streaming heavy hitters
 
-Named after **suricatas (meerkats)** — small, vigilant animals that work cooperatively and thrive in harsh environments with limited resources.
+Named after **suricatas (meerkats)**: small, vigilant animals that work cooperatively and thrive in harsh environments with limited resources.
