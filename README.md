@@ -5,7 +5,6 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/pysuricata.svg)](https://github.com/alvarodiez20/pysuricata)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/alvarodiez20/pysuricata/branch/main/graph/badge.svg)](https://codecov.io/gh/alvarodiez20/pysuricata)
-[![Live demo](https://img.shields.io/badge/demo-run%20it%20in%20your%20browser-2C4A62.svg)](https://pysuricata.pages.dev)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://alvarodiez20.github.io/pysuricata/)
 [![Downloads](https://static.pepy.tech/badge/pysuricata)](https://pepy.tech/project/pysuricata)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-alvarodiez20-blue?logo=linkedin)](https://www.linkedin.com/in/alvarodiez20/)
@@ -14,6 +13,8 @@
   <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/pysuricata/static/images/logo_suricata_transparent.png" alt="PySuricata Logo" width="300">
 
   <h3>Exploratory Data Analysis for Python, Built on Streaming Algorithms</h3>
+
+  <p><strong>One pass over your data. A self-contained HTML report, a versioned JSON payload, or a CI gate — from the same pass.</strong></p>
 
   <p>
     <a href="https://pysuricata.pages.dev"><strong>Live Demo</strong></a> •
@@ -25,58 +26,70 @@
 
 ---
 
-## What It Does
+## See it before you install it
 
-PySuricata generates **self-contained HTML reports** from pandas or polars DataFrames. Reports include per-column statistics, histograms, correlation chips, missing value analysis, and outlier detection.
+<div align="center">
+  <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/docs/assets/report-screenshot.png" alt="A PySuricata report: the dataset summary, the five columns that need a look, and a numeric column card with its histogram and bin controls" width="900">
+</div>
 
-Data is processed in chunks using streaming algorithms, so memory usage stays bounded **in the number of rows** — a million rows costs no more than twenty thousand. It is *not* bounded in the number of columns: each column keeps its own sketches for the whole run and gets its own card in the report, so both memory and report size grow linearly with the width of the frame. Measured at 20,000 rows: **~1.3 MB of RSS and ~59 KB of report per column**, so a 600-column frame needs roughly 850 MB. See [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
-
-It also does two things a profiler usually does not: `summarize()` returns the same numbers as a versioned JSON payload with no HTML in the way, and `pysuricata check` compares a dataset against a stored baseline and exits non-zero when a threshold is crossed — so the same single pass can run in a notebook and in CI.
-
-### Try it without installing anything
-
-[**pysuricata.pages.dev**](https://pysuricata.pages.dev) runs the profiler itself — not a
-screenshot of it — inside your browser. Drop a CSV, a Parquet file or an Excel workbook and
-you get the real report back. There is no server: the library is compiled to WebAssembly and
-runs in the page, so **your data never leaves your machine**.
+- **[Run it in your browser →](https://pysuricata.pages.dev)** — drop a CSV, Parquet file or Excel workbook and get the real report back. The profiler is compiled to WebAssembly and runs in the page, so **nothing is uploaded**.
+- **[Open a finished report →](https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html)** — the Titanic dataset, as PySuricata renders it.
 
 ## Quick Start
 
-### Installation
-
 ```bash
-# using uv (recommended)
-uv add pysuricata
-
-# or using pip
-pip install pysuricata
+uv add pysuricata      # or: pip install pysuricata
 ```
-
-With polars support (optional):
-
-```bash
-uv add pysuricata[polars]
-# or: pip install pysuricata[polars]
-```
-
-### Generate a Report
 
 ```python
 import pandas as pd
 from pysuricata import profile
 
-url = "https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv"
-df = pd.read_csv(url)
-
-report = profile(df)
-report.save_html("titanic_report.html")
+df = pd.read_csv("titanic.csv")
+profile(df).save_html("report.html")
 ```
 
-**[▶ See a live example report →](https://alvarodiez20.github.io/pysuricata/assets/titanic_report.html)**
+That is the whole API for the common case. Optional extras:
 
-<div align="center">
-  <img src="https://raw.githubusercontent.com/alvarodiez20/pysuricata/main/docs/assets/report-screenshot.png" alt="A PySuricata report: the dataset summary, the five columns that need a look, and a numeric column card with its histogram and bin controls" width="900">
-</div>
+```bash
+uv add "pysuricata[polars]"   # polars.DataFrame and LazyFrame
+uv add "pysuricata[system]"   # psutil-backed memory reporting
+```
+
+## Why PySuricata
+
+**It reads your data once.**
+Data is processed in chunks using streaming algorithms, so memory usage stays bounded **in the number of rows** — a million rows costs no more than twenty thousand. It is *not* bounded in the number of columns: each column keeps its own sketches for the whole run and gets its own card in the report, so both memory and report size grow linearly with the width of the frame. Measured at 20,000 rows: **~1.3 MB of RSS and ~59 KB of report per column**, so a 600-column frame needs roughly 850 MB. See [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
+
+**It is not only a report.** The same pass gives three outputs: `profile()` for the HTML, `summarize()` for a versioned JSON payload with no markup in the way, and `pysuricata check` for a CI gate that exits non-zero when a threshold is crossed. Most profilers give you the first and stop.
+
+**Arrow is the boundary, not pandas.** Anything exporting the Arrow C stream interface (`__arrow_c_stream__`) is profiled without materialising it, whatever library produced it — and Arrow IPC is what R, Julia and Rust write, so a file from another runtime is read directly.
+
+**Approximations say so.** Quantiles, distinct counts and duplicate estimates come from sketches. The report labels them and carries their error bound rather than printing an estimate as an exact integer.
+
+**One file, no assets.** A report is a single HTML file with inline CSS, JS and SVG. It opens from a mail attachment on a machine with no network.
+
+### Everything else
+
+- **Streaming architecture** — Data is processed in configurable chunks, keeping memory bounded in rows (not in columns — see above). Useful for datasets with more rows than fit in RAM.
+- **Pandas and Polars** — Works natively with `pandas.DataFrame`, `polars.DataFrame` and `polars.LazyFrame`, plus Parquet files, Arrow IPC files (`.arrow`, `.feather`, `.ipc`), DuckDB relations and Arrow batches.
+- **Configurable** — Control chunk size, sample size, correlations and more with keyword options, a `preset=`, or a `ProfileConfig`.
+- **Reproducible** — Seeded random sampling produces deterministic results across runs.
+- **Typed** — Ships `py.typed`; `summarize()` returns a payload carrying a `schema_version`.
+- **CLI tool** — `profile`, `summarize` and `check` from the command line.
+
+## What's in a Report
+
+Each column is analyzed based on its type:
+
+- **Numeric** — Mean, variance, skewness, kurtosis, quantiles, histogram, outlier detection (IQR, MAD, z-score), correlations
+- **Categorical** — Top values, distinct count, entropy, Gini impurity, string length statistics
+- **DateTime** — Temporal range, hour/day/month distributions, monotonicity detection
+- **Boolean** — True/false counts and ratios, entropy
+
+Plus dataset-level metrics: row/column counts, memory usage, missing value percentages, and duplicate row estimates.
+
+---
 
 The examples below assume a `df` in scope. The Quick Start frame works, or anything of your own:
 
@@ -96,44 +109,21 @@ df = pd.DataFrame(
 )
 ```
 
-## Features
+## Statistics Only (No HTML)
 
-- **Streaming architecture** — Data is processed in configurable chunks, keeping memory bounded in rows (not in columns — see above). Useful for datasets with more rows than fit in RAM.
-- **Pandas and Polars** — Works natively with `pandas.DataFrame`, `polars.DataFrame` and `polars.LazyFrame`, plus Parquet files, Arrow IPC files (`.arrow`, `.feather`, `.ipc`), DuckDB relations and Arrow batches.
-- **Arrow is the boundary, not pandas** — anything exporting the Arrow C stream interface (`__arrow_c_stream__`) is profiled without materialising it, whatever library produced it. Arrow IPC is what R, Julia and Rust write, so a file from another runtime is read directly.
-- **Self-contained HTML** — Single file with inline CSS, JS, and SVG charts. No external assets needed.
-- **Configurable** — Control chunk size, sample size, correlations and more with keyword options, a `preset=`, or a `ProfileConfig`.
-- **Reproducible** — Seeded random sampling produces deterministic results across runs.
-- **Typed** — Ships `py.typed`; `summarize()` returns a payload carrying a `schema_version`.
-- **CLI tool** — `profile`, `summarize` and `check` from the command line.
+Use `summarize()` for CI/CD quality checks. The payload carries a `schema_version` and is treated as a contract:
 
-## How It Works
+```python
+from pysuricata import summarize
 
-PySuricata uses well-known streaming algorithms from the academic literature:
+stats = summarize(df)
 
-| Algorithm | Purpose | Time | Space |
-|-----------|---------|------|-------|
-| **Welford/Pébay** | Exact mean, variance, skewness, kurtosis | O(1) per value | O(1) |
-| **KMV sketch** | Distinct count estimation (~2.2% error) | O(log k) per value | O(k) |
-| **Misra-Gries** | Top-k frequent values | O(1) amortized | O(k) |
-| **Reservoir sampling** | Uniform random sample for quantiles | O(1) per value | O(s) |
+assert stats["schema_version"] == 1
+assert stats["dataset"]["missing_cells_pct"] < 5.0
+assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 
-*k = sketch size (`max_uniques`, default 2048), s = sample size (`numeric_sample_size`, default 20 000)*
-
-KMV's relative standard error is `1/sqrt(k - 2)`, which is where the ~2.2% comes from. Approximate values are labelled approximate in the report and carry their error bound rather than being printed as exact integers.
-
-All statistics are computed in a **single pass** over the data.
-
-## What's in a Report
-
-Each column is analyzed based on its type:
-
-- **Numeric** — Mean, variance, skewness, kurtosis, quantiles, histogram, outlier detection (IQR, MAD, z-score), correlations
-- **Categorical** — Top values, distinct count, entropy, Gini impurity, string length statistics
-- **DateTime** — Temporal range, hour/day/month distributions, monotonicity detection
-- **Boolean** — True/false counts and ratios, entropy
-
-Plus dataset-level metrics: row/column counts, memory usage, missing value percentages, and duplicate row estimates.
+print(f"Mean age: {stats['columns']['age']['mean']:.1f}")
+```
 
 ## Streaming Large Datasets
 
@@ -172,22 +162,6 @@ report = profile(relation)
 Measured on a 4,000,000 × 6 frame written as a 180 MB Parquet file, above a 118 MB bare-import floor: **307 MB** for `profile(path)` against **581 MB** for `profile(pd.read_parquet(path))`.
 
 The readers behind that — `stream_parquet`, `stream_ipc`, `stream_arrow`, `stream_duckdb` — are exported from `pysuricata.sources` for when you want the batches rather than a profile.
-
-## Statistics Only (No HTML)
-
-Use `summarize()` for CI/CD quality checks. The payload carries a `schema_version` and is treated as a contract:
-
-```python
-from pysuricata import summarize
-
-stats = summarize(df)
-
-assert stats["schema_version"] == 1
-assert stats["dataset"]["missing_cells_pct"] < 5.0
-assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
-
-print(f"Mean age: {stats['columns']['age']['mean']:.1f}")
-```
 
 ## Comparing Two Datasets
 
@@ -262,6 +236,23 @@ pysuricata check data.csv --baseline baseline.json --max-missing-pct 5
 ```
 
 `check` exits `0` on pass, `1` when a threshold is crossed, and `2` when the check could not run — so it drops into CI without a wrapper.
+
+## How It Works
+
+PySuricata uses well-known streaming algorithms from the academic literature:
+
+| Algorithm | Purpose | Time | Space |
+|-----------|---------|------|-------|
+| **Welford/Pébay** | Exact mean, variance, skewness, kurtosis | O(1) per value | O(1) |
+| **KMV sketch** | Distinct count estimation (~2.2% error) | O(log k) per value | O(k) |
+| **Misra-Gries** | Top-k frequent values | O(1) amortized | O(k) |
+| **Reservoir sampling** | Uniform random sample for quantiles | O(1) per value | O(s) |
+
+*k = sketch size (`max_uniques`, default 2048), s = sample size (`numeric_sample_size`, default 20 000)*
+
+KMV's relative standard error is `1/sqrt(k - 2)`, which is where the ~2.2% comes from. Approximate values are labelled approximate in the report and carry their error bound rather than being printed as exact integers.
+
+All statistics are computed in a **single pass** over the data.
 
 ## Documentation
 
