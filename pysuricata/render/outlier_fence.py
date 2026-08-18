@@ -110,10 +110,15 @@ class Fence:
     value_lo: float
     value_hi: float
     n_total: int
-    #: Occurrences beyond the fence, which is what `stats.outliers_iqr` counts
-    #: and therefore what the card face and the tab badge already say. The rows
-    #: below are *distinct values*, so the two figures differ whenever a value
-    #: repeats -- hence `n_distinct` alongside it, and the note in the table.
+    #: How many values the fence was actually fitted over: the reservoir, which
+    #: is the whole column only below `numeric_sample_size`. `n_outliers` is a
+    #: count *within* it, so this is the denominator its percentage takes.
+    #: Dividing by `n_total` instead reported a 10% outlier column as 0.2% at a
+    #: million rows, the same sample-over-population slip as #327 itself.
+    n_sampled: int
+    #: Occurrences beyond the fence, counted in the sample above. The card face
+    #: and the payload carry the scaled population estimate; this pane stays on
+    #: the sample, because the rows below are those very values.
     n_outliers: int
     n_low: int
     n_high: int
@@ -302,6 +307,7 @@ def build_fence(stats, quantiles=None) -> Fence | None:
         value_lo=value_lo,
         value_hi=value_hi,
         n_total=int(getattr(stats, "count", 0) or 0),
+        n_sampled=len(sample),
         n_outliers=n_low + n_high,
         n_low=n_low,
         n_high=n_high,

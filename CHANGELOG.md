@@ -108,6 +108,34 @@ quoted when both sides were measured in the same round-robin run.
   duplication is a number a human notices on the next look, and a false
   alarm is a pipeline that failed overnight on a dataset that was fine.
 
+- **`outliers_iqr_est` was a reservoir count published against a population
+  denominator, so it read 49x low at a million rows** (#327). The IQR fence is
+  fitted inside the 20,000-value sample and the crossings counted there; that
+  count went out unscaled beside a `count` that means the whole column. The
+  ratio between them was exactly `numeric_sample_size / n`, which is the
+  signature of the mechanism rather than of the data: on a lognormal column,
+  1,495 outliers reported against a true 77,221 at 1M rows.
+
+  The percentage was the part that hurt. Both render sites divide the count by
+  `stats.count`, and the `many outliers` flag is keyed off that percentage, so a
+  column that is genuinely 7.7% outliers printed 0.2% and **the warning went
+  quiet on exactly the large frames where it matters**. It failed silent, not
+  loud. A third site had the same slip and was not in the report: the outlier
+  pane's own header read `N of {count} values`, a sample numerator over a
+  population total.
+
+  Both counts are now scaled by the `sample_scale` that already existed thirty
+  lines below them, and measure within 4% of the exact count at 10k, 50k, 200k
+  and 1M rows. The sampled counts are kept beside them as
+  `outliers_iqr_sample` / `outliers_mod_zscore_sample`, because the fence pane
+  lists those very rows and its table must sum to its own header; the pane now
+  says `of 20,000 sampled values` when that is what it means.
+
+  `outliers_mod_zscore` is renamed `outliers_mod_zscore_est` and
+  **`schema_version` is 2**. Note which half bought the bump: by the rule in
+  `docs/versioning.md`, correcting a wrong value is a bug fix and does not bump
+  the schema (decided on `duplicate_rows_est`, #202). The rename does.
+
 - **The per-column memory figure in the README and seven docs pages was wrong,
   and the README screenshot was two releases stale.** Three different numbers
   were in circulation for the same fact: 3 MB per column across the docs, 1.5 MB

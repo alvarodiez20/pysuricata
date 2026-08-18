@@ -51,7 +51,7 @@ from .render.identifier import looks_like_identifier as _looks_like_identifier
 #
 # The promise: adding a key does not change this number, because a consumer
 # reading known keys is unaffected. Renaming or removing one bumps the major.
-SUMMARY_SCHEMA_VERSION = 1
+SUMMARY_SCHEMA_VERSION = 2
 
 # The payload key each summary-dataclass field is published under, where the two
 # names differ. Every other field is published under its own name.
@@ -65,6 +65,7 @@ SUMMARY_SCHEMA_VERSION = 1
 SUMMARY_FIELD_ALIASES = {
     "dtype_str": "dtype",
     "outliers_iqr": "outliers_iqr_est",
+    "outliers_mod_zscore": "outliers_mod_zscore_est",
     "true_n": "true",
     "false_n": "false",
 }
@@ -77,6 +78,12 @@ SUMMARY_FIELDS_WITHHELD = {
     "sample_vals": "the reservoir itself, up to 20,000 values, not a statistic",
     "sample_ts": "the datetime reservoir, same reasoning",
     "sample_scale": "a scale factor the renderer applies to sampled counts",
+    "outliers_iqr_sample": (
+        "the crossings found inside the reservoir, before scaling. The pane "
+        "that lists those rows needs it; a consumer of the payload wants the "
+        "population estimate, which is `outliers_iqr_est`"
+    ),
+    "outliers_mod_zscore_sample": "the same, for the modified z-score fence",
     "chunk_metadata": "per-chunk bookkeeping used to draw the chunk strip",
     "corr_threshold": "an echo of the caller's own configuration",
     "hist_counts": "legacy field, superseded by true_histogram_counts",
@@ -440,6 +447,9 @@ class ReportOrchestrator:
                     "max": _f(s.max),
                     "zeros": _i(s.zeros),
                     "negatives": _i(s.negatives),
+                    # A population estimate since schema 2. It used to be the
+                    # count inside the reservoir, published beside a population
+                    # `count`, so it read 49x low at a million rows (#327).
                     "outliers_iqr_est": _i(s.outliers_iqr),
                     "approx": bool(s.approx),
                     "mem_bytes": _i(s.mem_bytes),
@@ -484,7 +494,7 @@ class ReportOrchestrator:
                     "ci_lo": _f(s.ci_lo),
                     "ci_hi": _f(s.ci_hi),
                     "jb_chi2": _f(s.jb_chi2),
-                    "outliers_mod_zscore": int(s.outliers_mod_zscore),
+                    "outliers_mod_zscore_est": int(s.outliers_mod_zscore),
                     "heap_pct": _f(s.heap_pct),
                     "bimodal": bool(s.bimodal),
                     "gran_decimals": _i(s.gran_decimals),

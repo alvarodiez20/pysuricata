@@ -198,13 +198,23 @@ class TestTheDocumentedKeys:
 class TestAddingKeysIsNotBreaking:
     """The stated policy, exercised rather than asserted in prose."""
 
-    def test_this_release_added_keys_without_bumping_the_version(self, payload):
+    def test_added_keys_are_there_and_did_not_cost_a_version(self, payload):
         """Numeric gained skew, kurtosis, extremes and the histogram; datetime
         gained fifteen fields. A consumer reading the old keys is unaffected,
         which is exactly what the policy says."""
         stats = _column_of_type(payload, "numeric")
         assert {"skew", "kurtosis", "iqr", "true_histogram_counts"} <= set(stats)
-        assert payload["schema_version"] == 1
+
+    def test_the_version_moved_when_a_key_changed_meaning(self, payload):
+        """Schema 2, and what bought it.
+
+        `outliers_iqr_est` kept its name and changed what it counts: it was the
+        number of crossings inside the 20,000-value reservoir, published beside
+        a population `count`, and is now an estimate for the column (#327).
+        Adding keys is free under the policy; redefining one is not, and this
+        is the case the version number exists for.
+        """
+        assert payload["schema_version"] == SUMMARY_SCHEMA_VERSION == 2
 
     def test_the_keys_that_existed_before_still_exist(self, payload):
         """The 0.0.38 numeric key set, pinned. Removing one of these is what

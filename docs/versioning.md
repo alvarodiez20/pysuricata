@@ -52,6 +52,11 @@ major bump at 1.0 and after.
   is now right is a bug fix; pinning it under the schema would mean the contract
   guaranteed the bug.
 
+`outliers_iqr_est` is the same call made again (#327): it was a count inside the
+reservoir published beside a population `count`, 49x low at a million rows, and
+correcting it did not bump anything. Schema 2 was bought by the rename that
+travelled with it, `outliers_mod_zscore` to `outliers_mod_zscore_est`.
+
 That last rule was decided on `duplicate_rows_est` (#202), which is the case
 worth recording because it looks like a break and is not. The figure was
 published raw while the HTML report suppressed it below the sketch's resolution,

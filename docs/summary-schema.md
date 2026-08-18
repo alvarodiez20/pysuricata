@@ -18,7 +18,7 @@ and what a version bump means.
 from pysuricata import summarize
 
 stats = summarize(df)
-stats["schema_version"]                     # 1
+stats["schema_version"]                     # 2
 stats["dataset"]["rows_est"]
 stats["columns"]["amount"]["median"]
 ```
@@ -40,6 +40,15 @@ documented example and would have broken every downstream consumer.
 `pysuricata check` reads `schema_version` off a stored baseline and **refuses**
 to compare against one written by a different version, rather than quietly
 matching whatever keys still line up.
+
+### What changed in 2
+
+`outliers_mod_zscore` is now `outliers_mod_zscore_est`, which is the rename that
+bought the bump. Both outlier counts also changed value: they were the number of
+crossings found *inside* the 20,000-value reservoir and are now estimates for the
+column, so above `numeric_sample_size` rows they are roughly `n / 20,000` times
+larger than before (#327). By the rule above, that correction on its own would
+**not** have bumped the version. The rename is what did.
 
 Every column carries `type`, `count`, `missing` and `mem_bytes`, whatever its
 kind. Those four are safe to read without checking `type` first.
@@ -125,7 +134,7 @@ Quality and structure:
 | `unique_est` | int | **Approximate.** KMV sketch |
 | `unique_ratio_approx` | float | **Approximate.** `unique_est / count` |
 | `top_values` | list \| None | `(value, count)`. **`None` means not tracked** |
-| `outliers_iqr_est`, `outliers_mod_zscore` | int | **From the sample**, scaled |
+| `outliers_iqr_est`, `outliers_mod_zscore_est` | int | **Approximate.** Counted in the sample, scaled to the column |
 | `mono_inc`, `mono_dec` | bool | Monotonic over the stream as it arrived |
 | `int_like` | bool | Every value is a whole number |
 | `heap_pct` | float | Share sitting on round numbers — heaping |
