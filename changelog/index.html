@@ -3064,7 +3064,27 @@ quoted when both sides were measured in the same round-robin run.</p>
 </ul>
 <h3 id="fixed">Fixed</h3>
 <ul>
-<li><strong>A duplicate count from a partial hash was still labelled <code>exact</code>.</strong> The
+<li><strong>A column scaled to [0, 1] was reported as 100% missing.</strong> Found while
+  replacing the demo dataset (#150), where <code>temp</code>, <code>feels_like</code> and <code>humidity</code>
+  each came back <code>count=0, missing=17,379</code> against a frame pandas says has no
+  gaps at all — three of twelve columns, silently emptied.</li>
+</ul>
+<p>Two independent defects. The rule deciding whether a numeric column is really
+  boolean read <code>{int(v) for v in unique_values}</code>, and <code>int()</code> on a float
+  truncates: <code>int(0.24)</code> is 0 and <code>int(1.0)</code> is 1, so every value of a
+  normalised column collapsed onto {0, 1} and the column was promoted. A column
+  maxing at 0.85 escaped only because nothing in it truncated to 1.</p>
+<p>Then, once promoted, <code>_to_bool_array_pandas</code> fell through to a string
+  coercion where <code>astype(str)</code> turns 1.0 into <code>"1.0"</code> — in neither the true set
+  nor the false set, so every row became None. That half is independent: a
+  genuine 0.0/1.0 float column, which <em>should</em> be promoted, was also reported
+  entirely missing, while an integer 0/1 column escaped because <code>str(1)</code> is
+  <code>"1"</code>.</p>
+<p>So the same data profiled differently as <code>int</code> and as <code>float</code>, and the two
+  adapters disagreed as well — polars casts with <code>cast(pl.Boolean,
+  strict=False)</code> and has been right all along, which is why nothing caught it.
+  The regression test pins both halves, both dtypes and both adapters.
+- <strong>A duplicate count from a partial hash was still labelled <code>exact</code>.</strong> The
   label came from the sketch's own sigma, which measures the error of a sketch
   that saw every row -- it says nothing about rows that never reached it. When
   a chunk cannot be hashed, <code>RowKMV</code> feeds the sketch the first 2,000 rows and
@@ -3073,8 +3093,7 @@ quoted when both sides were measured in the same round-robin run.</p>
   hash · overestimate</code>, and <code>duplicates_degraded</code> is published in the dataset
   payload, since a consumer of the JSON cannot see the tile and the figure is
   just as unreliable for them. This is the second half of #312; the count
-  itself was fixed in #345.</li>
-</ul>
+  itself was fixed in #345.</p>
 <p>Note what the flag does <em>not</em> mean: hashing failing is not the same as rows
   going unseen. Below the fallback sample the stringified rows are all of them,
   so the count is as good as it ever was and the flag stays down.
