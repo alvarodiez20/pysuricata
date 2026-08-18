@@ -14,7 +14,7 @@
    A rust bar and a rust warning chip sat in the same card meaning
    unrelated things. Data is now blue; type is a word.
 
-   Every ratio below was measured, in both themes. Three rules at the
+   Every ratio below was measured, in both themes. Five rules at the
    bottom of this file are NOT expressible as a token pair, so
    test_contrast.py cannot catch them — each one was a real defect
    found in review before it was written down.
@@ -61,10 +61,13 @@
   --on-data-4:    var(--ink);
 
   /* ---- data quality: never used for data ---------------- */
-  --q-good:       #4A5D1E;  /* passes a check. on paper 6.9:1 */
-  --q-warn-text:  #8F6417;  /* warning AS TEXT. on paper 5.0:1 */
-  --q-warn-fill:  #A2731A;  /* warning AS FILL/BORDER. on paper 4.0:1 — clears the 3:1 non-text minimum, FAILS as text */
-  --q-bad:        #963F1C;  /* fails a check. on paper 6.6:1 */
+  --q-good:       #4A5D1E;  /* passes a check. on paper 6.9:1 · paper on it 6.9:1 */
+  --q-warn-text:  #8F6417;  /* warning AS TEXT on paper, 5.0:1 · ALSO the fill for a warm
+                               segment that carries a label: paper on it is 5.0:1 */
+  --q-warn-fill:  #A2731A;  /* warning as an UNLABELLED fill or border. on paper 4.0:1 —
+                               clears the 3:1 non-text floor, and carries NO text in either
+                               direction (ink 3.87, paper 3.99). Same trap as --data-3. */
+  --q-bad:        #963F1C;  /* fails a check. on paper 6.6:1 · paper on it 6.6:1 */
 
   /* ---- type ---------------------------------------------- */
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -114,11 +117,16 @@
 }
 
 /* =============================================================
-   THREE RULES A CONTRAST TEST CANNOT CHECK
+   FIVE RULES A CONTRAST TEST CANNOT CHECK
 
-   test_contrast.py asserts token PAIRS. These three are about which
-   surface a mark lands on, what order marks paint in, and what a
-   zero value should draw. Each was a real defect caught in review.
+   test_contrast.py asserts token PAIRS. These are about which surface
+   a mark lands on, what order marks paint in, what a zero value draws,
+   where text lives, and how a gap is made. Each was a real defect
+   caught in review — two of them twice.
+
+   One more that no rule below catches: test_contrast.py checks tokens
+   against --paper only. A foreground on a TINTED surface — a section
+   canvas, a coloured segment — has to be measured by hand.
    ============================================================= */
 
 /* -------------------------------------------------------------
@@ -148,9 +156,64 @@
      c) a legend swatch must be the colour actually drawn. A swatch
         naming a mark the reader cannot find is worse than no legend.
 
+   d) a POINT mark that may land on another mark carries a 1.5px
+      --paper halo (an SVG stroke, or a box-shadow on an HTML mark).
+      This is the general form of (a) and (b): it holds for any
+      geometry, including a column whose extremes fall inside the
+      whisker range, so it needs no re-reasoning per dataset.
+
+   e) marks closer together than one mark diameter COLLAPSE into a
+      single capsule labelled with how many values it holds. Five
+      values inside 0.41 years drawn as five marks is one blob that
+      contradicts a header promising five.
+
    How it goes wrong: it looks correct in the code and vanishes in
    the render, and the mark disappears over exactly the bars that
    cross the reference — the interesting ones.
+   ------------------------------------------------------------- */
+
+/* -------------------------------------------------------------
+   RULE 4 — Text never lives inside a scaled SVG.
+
+   Two independent reasons pointing the same way:
+
+   * Scale. A uniformly scaled SVG makes text size track the
+     viewport — 11px ticks render at 28.8px in a 1,099px container.
+     A non-uniformly scaled one stretches glyphs (x by 2.6, y by
+     1.05). One static SVG cannot be 1:1 at both 1,099px and 284px.
+   * Tooling. In the design files a {{ }} hole inside <text> or
+     <title> renders 0x0: the runtime wraps content interpolations
+     in an HTML <span>, which is invalid inside SVG. Attribute holes
+     are fine — which is why the bars always drew and the labels
+     never did.
+
+   So: bars, gridlines and axis lines go in an SVG with
+   preserveAspectRatio="none" and vector-effect="non-scaling-stroke".
+   Every label, caption, unit and tooltip goes in HTML positioned at
+   PERCENTAGE offsets over and beside the plot. Percentages are
+   scale-independent, so they are correct at any width.
+
+   Side effect worth having: it takes all text out of the histogram
+   SVGs, which are 23% of the report's bytes today, most of that
+   label markup.
+   ------------------------------------------------------------- */
+
+/* -------------------------------------------------------------
+   RULE 5 — A bar gap is not geometry.
+
+   Under preserveAspectRatio="none" a 1-unit gap scales with x:
+   1.1px at 1,100px, 0.28px at 284px, where bars visibly merge.
+   Draw bars EDGE TO EDGE and separate them with a --paper stroke
+   carrying vector-effect="non-scaling-stroke" — adjacent bars
+   contribute half a pixel each, so the separator is exactly 1px at
+   every width.
+
+   This also retires the max(1, bar_width - 1) floor, which today
+   makes a 50-bin bar 1 unit wide on a 420-unit canvas and drops the
+   gap to zero anyway.
+
+   Caveat: a --paper stroke is invisible on any other background, so
+   a highlighted or selected bar needs the stroke reconsidered.
    ------------------------------------------------------------- */
 
 /* -------------------------------------------------------------
@@ -170,10 +233,16 @@
    MISSING-VALUE SEVERITY — the one place data uses the warm scale,
    because the encoding IS severity: Cabin at 77% should look worse
    than Embarked at 0.2%.
-     >= 50%  --q-bad
-     >=  5%  --q-warn-fill
+     >  20%  --q-bad
+     >=  5%  --q-warn-fill   (--q-warn-text if the bar carries a label,
+                              and for any TEXT beside a warn-filled mark)
      >   0%  --q-good
      ==  0%  --muted
+
+   The break is at 20, not 50. missing_columns.py already classifies at
+   <=5 / <=20 / >20 and the missing section prints that split in a legend
+   the reader can see, so the report is self-consistent and an earlier
+   draft of this file was the outlier. Aligned to the code.
    ------------------------------------------------------------- */
 
 /* -------------------------------------------------------------

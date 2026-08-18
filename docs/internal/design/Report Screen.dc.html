@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<style>
+  body { margin: 0; background: #DFDACF; }
+  a { color: #4A5D1E; text-decoration: none; }
+  a:hover { color: #22201C; text-decoration: underline; }
+  [data-navrail]::-webkit-scrollbar { display: none; }
+</style>
+</helmet>
+
+<section style="padding: 56px 56px 64px; background: #D7D1C4; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 44px;">
+
+  <div style="display: flex; flexDirection: column; gap: 12px; maxWidth: 880px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #4E4941;">Turn 11 · summary · missing by column</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">What happens when many columns are missing</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #413D36; textWrap: pretty;">A gap in my own design — I specified the row and said "9 columns complete →" underneath, and never said what the list does at 47 affected columns. The current renderer answers it silently, which is the part worth fixing first.</p>
+  </div>
+
+  <div style="width: 1240px; flexShrink: 0; background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 24px 24px; display: flex; flexDirection: column; gap: 14px;">
+    <div style="display: flex; alignItems: center; gap: 14px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">What it does today</span>
+      <span style="flex: 1; height: 1px; background: #E2DCD1;"></span>
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">missing_columns.py</span>
+    </div>
+    <div style="display: grid; gridTemplateColumns: 30px 1fr; gap: 14px 16px; alignItems: start;">
+      <sc-for list="{{ todayFacts }}" as="f" hint-placeholder-count="4">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #57524A; paddingTop: 2px;">{{ f.n }}</span>
+        <div style="display: flex; flexDirection: column; gap: 4px; borderBottom: 1px solid #E2DCD1; paddingBottom: 12px;">
+          <span style="fontSize: 14.5px; fontWeight: 600; color: #22201C;">{{ f.title }}</span>
+          <span style="fontSize: 13.5px; lineHeight: 1.55; color: #413D36;">{{ f.body }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display: flex; flexWrap: wrap; gap: 34px; alignItems: flex-start;">
+
+    <div id="11a" style="display: flex; flexDirection: column; gap: 14px; width: 600px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">11a</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">Keep the list, admit the truncation</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #413D36;">Same five rows, plus a footer that says how many were left out and routes to the section that holds them all.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 22px 22px; display: flex; flexDirection: column; gap: 12px;">
+        <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Missing by column</div>
+        <div style="display: flex; flexDirection: column;">
+          <sc-for list="{{ manyTop }}" as="m" hint-placeholder-count="5">
+            <div style="display: grid; gridTemplateColumns: 118px 1fr 96px; alignItems: center; gap: 14px; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ m.col }}</span>
+              <span style="height: 6px; background: #EDE6DA; display: block;">
+                <span style="display: block; height: 6px; width: {{ m.pct }}; background: {{ m.fill }};"></span>
+              </span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; textAlign: right; color: {{ m.color }};">{{ m.stat }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 16px; flexWrap: wrap; paddingTop: 4px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">worst 5 of 47 affected · 166 complete</span>
+          <a href="#missing" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px;">all 47 →</a>
+        </div>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #413D36;">One line of change. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">total_significant</span> is already computed and thrown away, so the renderer knows the number and simply does not print it. Fixed height whatever the dataset.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #413D36;">Five names out of 47 is a sample presented in the place a summary belongs. It cannot tell you whether the other 42 are all at 40% or all at 0.3% — which is the difference between a broken pipeline and a few optional fields.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="11b" style="display: flex; flexDirection: column; gap: 14px; width: 600px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">11b</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">Switch to a distribution once the list stops summarising</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #413D36;">Under about eight affected columns, the list as designed — it fits and every name is useful. Above it, count the columns per severity band and name only the worst three.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 22px 22px; display: flex; flexDirection: column; gap: 16px;">
+        <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Missing by column</div>
+        <p style="margin: 0; fontSize: 15.5px; lineHeight: 1.5; color: #22201C; maxWidth: 46ch; textWrap: pretty;"><span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 14.5px; fontWeight: 600;">47</span> of 213 columns carry missing values. Most are minor; <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 14.5px; fontWeight: 600;">6</span> are over 20%.</p>
+        <div style="display: flex; flexDirection: column; gap: 10px;">
+          <div style="display: flex; height: 26px; width: 100%; overflow: hidden;">
+            <sc-for list="{{ bands }}" as="b" hint-placeholder-count="3">
+              <div title="{{ b.title }}" style="width: {{ b.w }}; background: {{ b.fill }}; display: flex; alignItems: center; justifyContent: center;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: {{ b.ink }};">{{ b.n }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; flexWrap: wrap; gap: 16px;">
+            <sc-for list="{{ bands }}" as="b" hint-placeholder-count="3">
+              <span style="display: inline-flex; alignItems: center; gap: 7px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #413D36;">
+                <span style="width: 9px; height: 9px; background: {{ b.fill }};"></span>{{ b.label }}
+              </span>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display: flex; flexDirection: column; gap: 8px; borderTop: 1px solid #22201C; paddingTop: 12px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Worst three</span>
+          <sc-for list="{{ worst3 }}" as="m" hint-placeholder-count="3">
+            <div style="display: grid; gridTemplateColumns: 1fr 96px; alignItems: baseline; gap: 14px; padding: 5px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ m.col }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; textAlign: right; color: {{ m.color }};">{{ m.stat }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <a href="#missing" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; alignSelf: flex-start;">all 47 →</a>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #413D36;">Answers the question the summary is for: concentrated or diffuse. Three rows characterise 47 columns as well as they characterise 470, so the block never grows. The bands are the severity classes the renderer already assigns, just counted instead of coloured.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #413D36;">Two layouts for one block, and the switch point is a judgement — at nine affected columns a reader loses six names they would have had at eight. Mid-severity columns become a count with no identity until you scroll to the section.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="width: 1240px; flexShrink: 0; borderTop: 1px solid #BDB5A6; paddingTop: 22px; display: flex; gap: 44px; flexWrap: wrap;">
+    <div style="maxWidth: 62ch; display: flex; flexDirection: column; gap: 12px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #4E4941;">What I'd do</span>
+      <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #413D36; textWrap: pretty;"><a href="#11b">11b</a>, with the switch at eight. Titanic and most everyday frames stay on the list and nothing changes for them; a 200-column warehouse table gets a block that actually summarises. Ship <a href="#11a">11a</a>'s footer first regardless — silent truncation is the defect, and the count is already sitting in <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">total_significant</span> unused.</p>
+    </div>
+    <div style="maxWidth: 56ch; display: flex; flexDirection: column; gap: 12px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #8F6417;">One I got wrong — since corrected</span>
+      <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #413D36; textWrap: pretty;">An earlier draft of my <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">tokens.css</span> set the severity break at <strong>50%</strong>. Your renderer uses <strong>20%</strong> and prints that split in a legend the reader can see, so the report was self-consistent and my token file was the outlier. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">tokens.css</span> is now aligned to 20 — no action needed.</p>
+    </div>
+  </div>
+</section>
+
+<section style="padding: 56px; background: #DFDACF; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 40px;">
+
+  <div style="display: flex; flexDirection: column; gap: 10px; maxWidth: 760px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Turn 3 · assembled</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">Header, Summary and Sample as one screen</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">2a header, 1c summary, 1e sample, running continuously. Desktop at 1240px and the same report at 390px, so the two can be read against each other.</p>
+  </div>
+
+  <div style="display: flex; gap: 44px; alignItems: flex-start; flexWrap: wrap;">
+
+    <div id="3a" style="display: flex; flexDirection: column; gap: 12px;">
+      <div style="display: flex; alignItems: baseline; gap: 12px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">3a</span>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">1240 px</span>
+      </div>
+
+      <div style="width: 1240px; background: #FBF9F5; border: 1px solid #CFC7B8;">
+
+        <div style="display: flex; alignItems: center; gap: 20px; padding: 0 28px; height: 52px; borderBottom: 1px solid #E2DCD1; position: sticky; top: 0; background: #FBF9F5; zIndex: 5;">
+          <div style="display: flex; alignItems: center; gap: 9px; flexShrink: 0;">
+            <img src="../../../pysuricata/static/images/logo_mark.svg" alt="" style="height: 30px; width: auto; display: block;" />
+            <span style="fontSize: 15.5px; fontWeight: 600; letterSpacing: -0.005em;">pysuricata</span>
+          </div>
+          <span style="width: 1px; height: 20px; background: #CFC7B8;"></span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; color: #57524A; whiteSpace: nowrap; overflow: hidden; textOverflow: ellipsis;">{{ datasetName }}</span>
+          <nav style="display: flex; gap: 22px; marginLeft: auto; alignItems: center;">
+            <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+              <a href="#3a" style="fontSize: 13.5px; fontWeight: 500; color: {{ n.color }}; paddingBottom: 3px; borderBottom: 2px solid {{ n.rule }};">{{ n.label }}</a>
+            </sc-for>
+            <span style="width: 1px; height: 16px; background: #CFC7B8;"></span>
+            <a href="#3a" title="Download this report as HTML" aria-label="Download report" style="width: 30px; height: 30px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D; borderRadius: 3px;">
+              <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="display: block;">
+                <path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z"></path>
+                <path fill="currentColor" d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z"></path>
+              </svg>
+            </a>
+            <a href="#3a" title="Switch to dark mode" aria-label="Toggle dark mode" style="width: 30px; height: 30px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D; borderRadius: 3px;">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </a>
+          </nav>
+        </div>
+
+        <div style="padding: 26px 28px 34px; display: flex; flexDirection: column; gap: 30px;">
+
+          <div style="display: flex; flexDirection: column; gap: 14px;">
+            <h2 style="margin: 0; fontSize: 27px; fontWeight: 600; letterSpacing: -0.015em;">EDA Report</h2>
+            <div style="display: flex; alignItems: center; gap: 16px; flexWrap: wrap; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; borderTop: 1px solid #E2DCD1; paddingTop: 12px;">
+              <span style="color: #57524A;">Generated <span style="color: #22201C;">2026-03-01 00:15:48</span></span>
+              <span style="width: 1px; height: 11px; background: #CFC7B8;"></span>
+              <span style="color: #57524A;">Profiled in <span style="color: #22201C;">0.06 s</span></span>
+              <span style="width: 1px; height: 11px; background: #CFC7B8;"></span>
+              <span style="color: #57524A;">Shape <span style="color: #22201C;">891 rows × 12 columns</span></span>
+              <span style="width: 1px; height: 11px; background: #CFC7B8;"></span>
+              <a href="#3a">pysuricata 0.0.43</a>
+            </div>
+          </div>
+
+          <div style="display: flex; flexDirection: column; gap: 22px;">
+            <div style="display: flex; alignItems: center; gap: 14px;">
+              <h3 style="margin: 0; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 500; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Summary</h3>
+              <span style="flex: 1; height: 1px; background: #E2DCD1;"></span>
+            </div>
+
+            <div style="display: grid; gridTemplateColumns: repeat(5, 1fr); borderTop: 1px solid #22201C; borderBottom: 1px solid #E2DCD1;">
+              <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="5">
+                <div style="padding: 15px 20px 17px; borderLeft: 1px solid #E2DCD1; display: flex; flexDirection: column; gap: 9px;">
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ k.label }}</span>
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 29px; letterSpacing: -0.02em; lineHeight: 1;">{{ k.value }}</span>
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ k.subColor }};">{{ k.sub }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display: grid; gridTemplateColumns: 1.1fr 1fr; gap: 44px;">
+              <div style="display: flex; flexDirection: column; gap: 12px;">
+                <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Column types</div>
+                <div style="display: flex; height: 34px; width: 100%; overflow: hidden;">
+                  <sc-for list="{{ types }}" as="t" hint-placeholder-count="3">
+                    <div title="{{ t.title }}" style="width: {{ t.pct }}; background: {{ t.color }}; display: flex; alignItems: center; justifyContent: center;">
+                      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #FBF9F5;">{{ t.n }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display: flex; flexWrap: wrap; gap: 18px;">
+                  <sc-for list="{{ typesFull }}" as="t" hint-placeholder-count="4">
+                    <span style="display: inline-flex; alignItems: center; gap: 7px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ t.textColor }};">
+                      <span style="width: 9px; height: 9px; background: {{ t.color }};"></span>{{ t.label }} {{ t.n }}
+                    </span>
+                  </sc-for>
+                </div>
+                <div style="marginTop: 6px; paddingTop: 14px; borderTop: 1px solid #E2DCD1; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; lineHeight: 1.9; color: #4A453D;">12 unique · 0 constant · 2 high-cardinality · 8 text (avg len 5.8) · no date range</div>
+              </div>
+
+              <div style="display: flex; flexDirection: column; gap: 12px;">
+                <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Missing by column</div>
+                <div style="display: flex; flexDirection: column;">
+                  <sc-for list="{{ missing }}" as="m" hint-placeholder-count="3">
+                    <div style="display: grid; gridTemplateColumns: 104px 1fr 100px; alignItems: center; gap: 14px; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+                      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ m.col }}</span>
+                      <span style="height: 6px; background: #EDE6DA; display: block;">
+                        <span style="display: block; height: 6px; width: {{ m.pct }}; background: {{ m.color }};"></span>
+                      </span>
+                      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; textAlign: right; color: #4A453D;">{{ m.stat }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <a href="#3a" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; alignSelf: flex-start;">9 columns complete →</a>
+              </div>
+            </div>
+
+            <div style="display: flex; alignItems: baseline; justifyContent: space-between; gap: 20px; borderTop: 1px solid #E2DCD1; paddingTop: 14px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Description</span>
+              <a href="#3a" style="fontSize: 13.5px;">Add a note about this dataset →</a>
+            </div>
+          </div>
+
+          <div style="display: flex; flexDirection: column; gap: 16px;">
+            <div style="display: flex; alignItems: center; gap: 14px;">
+              <h3 style="margin: 0; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 500; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Sample</h3>
+              <span style="flex: 1; height: 1px; background: #E2DCD1;"></span>
+            </div>
+            <div style="display: flex; alignItems: baseline; justifyContent: space-between; gap: 20px;">
+              <span style="fontSize: 13.5px; color: #4A453D;">{{ sampleCaption }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">12 cols · scroll →</span>
+            </div>
+            <div style="overflowX: auto; borderTop: 1px solid #22201C;">
+              <table style="borderCollapse: collapse; width: 100%; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">
+                <thead>
+                  <tr>
+                    <sc-for list="{{ cols }}" as="c" hint-placeholder-count="13">
+                      <th style="padding: 9px 14px; textAlign: {{ c.align }}; fontWeight: 500; fontSize: 10.5px; letterSpacing: 0.09em; textTransform: uppercase; color: #57524A; borderBottom: 1px solid #CFC7B8; whiteSpace: nowrap; background: #FBF9F5;">{{ c.label }}</th>
+                    </sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ rows }}" as="row" hint-placeholder-count="10">
+                    <tr>
+                      <sc-for list="{{ row }}" as="cell" hint-placeholder-count="13">
+                        <td style="padding: 9px 14px; textAlign: {{ cell.align }}; borderBottom: 1px solid #E2DCD1; color: {{ cell.color }}; whiteSpace: nowrap; maxWidth: 260px; overflow: hidden; textOverflow: ellipsis;">{{ cell.v }}</td>
+                      </sc-for>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div style="borderTop: 1px solid #E2DCD1; paddingTop: 16px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">Generated by <a href="#3a">pysuricata</a> 0.0.43 · streaming single pass</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="3b" style="display: flex; flexDirection: column; gap: 12px;">
+      <div style="display: flex; alignItems: baseline; gap: 12px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">3b</span>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">390 px</span>
+      </div>
+
+      <div style="width: 390px; background: #FBF9F5; border: 1px solid #CFC7B8;">
+
+        <div style="display: flex; alignItems: center; gap: 9px; padding: 0 14px; height: 48px; borderBottom: 1px solid #E2DCD1;">
+          <img src="../../../pysuricata/static/images/logo_mark.svg" alt="" style="height: 26px; width: auto; display: block;" />
+          <span style="fontSize: 14.5px; fontWeight: 600;">pysuricata</span>
+          <span style="marginLeft: auto; display: flex; gap: 2px;">
+            <a href="#3b" aria-label="Download report" style="width: 32px; height: 32px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D;">
+              <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="display: block;">
+                <path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z"></path>
+                <path fill="currentColor" d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z"></path>
+              </svg>
+            </a>
+            <a href="#3b" aria-label="Toggle dark mode" style="width: 32px; height: 32px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D;">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </a>
+          </span>
+        </div>
+
+        <div data-navrail="true" style="display: flex; gap: 13px; padding: 0 12px; minHeight: 44px; alignItems: center; overflowX: auto; scrollbarWidth: none; borderBottom: 1px solid #E2DCD1;">
+          <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+            <a href="#3b" style="fontSize: 13.5px; fontWeight: 500; color: {{ n.color }}; whiteSpace: nowrap; paddingBottom: 3px; borderBottom: 2px solid {{ n.rule }};">{{ n.label }}</a>
+          </sc-for>
+        </div>
+
+        <div style="padding: 18px 14px 24px; display: flex; flexDirection: column; gap: 26px;">
+
+          <div style="display: flex; flexDirection: column; gap: 12px;">
+            <h2 style="margin: 0; fontSize: 22px; fontWeight: 600; letterSpacing: -0.015em;">EDA Report</h2>
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; borderTop: 1px solid #E2DCD1; paddingTop: 10px; lineHeight: 1.85; color: #57524A;">
+              {{ datasetName }} · Shape <span style="color: #22201C;">891 × 12</span><br />
+              Generated <span style="color: #22201C;">2026-03-01 00:15</span><br />
+              Profiled in <span style="color: #22201C;">0.06 s</span> · <a href="#3b">v0.0.43</a>
+            </div>
+          </div>
+
+          <div style="display: flex; flexDirection: column; gap: 18px;">
+            <div style="display: flex; alignItems: center; gap: 12px;">
+              <h3 style="margin: 0; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; fontWeight: 500; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Summary</h3>
+              <span style="flex: 1; height: 1px; background: #E2DCD1;"></span>
+            </div>
+
+            <div style="display: grid; gridTemplateColumns: 1fr 1fr; borderTop: 1px solid #22201C;">
+              <sc-for list="{{ kpisMobile }}" as="k" hint-placeholder-count="6">
+                <div style="padding: 12px 12px 13px 0; borderBottom: 1px solid #E2DCD1; display: flex; flexDirection: column; gap: 6px;">
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ k.label }}</span>
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 23px; letterSpacing: -0.02em; lineHeight: 1;">{{ k.value }}</span>
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: {{ k.subColor }};">{{ k.sub }}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display: flex; flexDirection: column; gap: 10px;">
+              <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Column types</div>
+              <div style="display: flex; height: 32px; width: 100%; overflow: hidden;">
+                <sc-for list="{{ types }}" as="t" hint-placeholder-count="3">
+                  <div title="{{ t.title }}" style="width: {{ t.pct }}; background: {{ t.color }}; display: flex; alignItems: center; justifyContent: center;">
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #FBF9F5;">{{ t.n }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: flex; flexWrap: wrap; gap: 12px;">
+                <sc-for list="{{ typesFull }}" as="t" hint-placeholder-count="4">
+                  <span style="display: inline-flex; alignItems: center; gap: 6px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: {{ t.textColor }};">
+                    <span style="width: 8px; height: 8px; background: {{ t.color }};"></span>{{ t.label }} {{ t.n }}
+                  </span>
+                </sc-for>
+              </div>
+              <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; lineHeight: 1.8; color: #4A453D; paddingTop: 6px;">12 unique · 0 constant · 2 high-card · 8 text (avg 5.8)</div>
+            </div>
+
+            <div style="display: flex; flexDirection: column; gap: 8px;">
+              <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Missing by column</div>
+              <sc-for list="{{ missing }}" as="m" hint-placeholder-count="3">
+                <div style="display: flex; flexDirection: column; gap: 5px; padding: 7px 0; borderBottom: 1px solid #E2DCD1;">
+                  <div style="display: flex; justifyContent: space-between; gap: 10px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">
+                    <span>{{ m.col }}</span><span style="color: #4A453D;">{{ m.stat }}</span>
+                  </div>
+                  <span style="height: 6px; background: #EDE6DA; display: block;">
+                    <span style="display: block; height: 6px; width: {{ m.pct }}; background: {{ m.color }};"></span>
+                  </span>
+                </div>
+              </sc-for>
+              <a href="#3b" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; alignSelf: flex-start; paddingTop: 4px;">9 columns complete →</a>
+            </div>
+
+            <div style="display: flex; alignItems: baseline; justifyContent: space-between; gap: 14px; borderTop: 1px solid #E2DCD1; paddingTop: 12px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Description</span>
+              <a href="#3b" style="fontSize: 13px;">Add a note →</a>
+            </div>
+          </div>
+
+          <div style="display: flex; flexDirection: column; gap: 12px;">
+            <div style="display: flex; alignItems: center; gap: 12px;">
+              <h3 style="margin: 0; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; fontWeight: 500; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Sample</h3>
+              <span style="flex: 1; height: 1px; background: #E2DCD1;"></span>
+            </div>
+            <div style="display: flex; alignItems: baseline; justifyContent: space-between; gap: 10px;">
+              <span style="fontSize: 12.5px; color: #4A453D;">{{ sampleCaptionShort }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A; whiteSpace: nowrap;">12 cols →</span>
+            </div>
+            <div style="display: flex; alignItems: flex-start; borderTop: 1px solid #22201C; marginLeft: -14px; marginRight: -14px;">
+              <table style="borderCollapse: collapse; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; flexShrink: 0; borderRight: 1px solid #CFC7B8; background: #F3EDE3;">
+                <thead>
+                  <tr><th style="padding: 8px 10px; fontWeight: 500; fontSize: 10px; letterSpacing: 0.09em; color: #57524A; borderBottom: 1px solid #CFC7B8; textAlign: right;">#</th></tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ indexCol }}" as="ix" hint-placeholder-count="10">
+                    <tr><td style="padding: 8px 10px; borderBottom: 1px solid #E2DCD1; color: #57524A; textAlign: right;">{{ ix }}</td></tr>
+                  </sc-for>
+                </tbody>
+              </table>
+              <div style="position: relative; flex: 1; minWidth: 0;">
+                <div data-navrail="true" style="overflowX: auto; scrollbarWidth: none;">
+                  <table style="borderCollapse: collapse; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px;">
+                    <thead>
+                      <tr>
+                        <sc-for list="{{ colsNoIndex }}" as="c" hint-placeholder-count="12">
+                          <th style="padding: 8px 12px; textAlign: {{ c.align }}; fontWeight: 500; fontSize: 10px; letterSpacing: 0.09em; textTransform: uppercase; color: #57524A; borderBottom: 1px solid #CFC7B8; whiteSpace: nowrap;">{{ c.label }}</th>
+                        </sc-for>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <sc-for list="{{ rowsNoIndex }}" as="row" hint-placeholder-count="10">
+                        <tr>
+                          <sc-for list="{{ row }}" as="cell" hint-placeholder-count="12">
+                            <td style="padding: 8px 12px; textAlign: {{ cell.align }}; borderBottom: 1px solid #E2DCD1; color: {{ cell.color }}; whiteSpace: nowrap; maxWidth: 150px; overflow: hidden; textOverflow: ellipsis;">{{ cell.v }}</td>
+                          </sc-for>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+                <span aria-hidden="true" style="position: absolute; right: 0; top: 0; bottom: 0; width: 26px; background: linear-gradient(to right, rgba(251,249,245,0), #FBF9F5 75%); pointerEvents: none;"></span>
+              </div>
+            </div>
+          </div>
+
+          <div style="borderTop: 1px solid #E2DCD1; paddingTop: 14px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">Generated by <a href="#3b">pysuricata</a> 0.0.43</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1820, &quot;height&quot;: 1500}, &quot;datasetName&quot;: {&quot;editor&quot;: &quot;text&quot;, &quot;default&quot;: &quot;titanic.csv&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Report&quot;}, &quot;sampleRowCount&quot;: {&quot;editor&quot;: &quot;int&quot;, &quot;default&quot;: 10, &quot;min&quot;: 3, &quot;max&quot;: 10, &quot;tsType&quot;: &quot;number&quot;, &quot;section&quot;: &quot;Sample&quot;}, &quot;nanDisplay&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;—&quot;, &quot;nan&quot;, &quot;null&quot;, &quot;NA&quot;], &quot;default&quot;: &quot;—&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Sample&quot;}}">
+const OLIVE = "#4A5D1E", RUST = "#963F1C", BLUE = "#4A6E8A", OCHRE = "#A2731A";
+const INK = "#22201C", MUTED = "#57524A", BODY = "#4A453D";
+
+const COLS = ["", "PassengerId", "Survived", "Pclass", "Name", "Sex", "Age", "SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked"];
+const RAW = [
+  [495, 496, 0, 3, "Yousseff, Mr. Gerious", "male", null, 0, 0, "2627", 14.4583, null, "C"],
+  [648, 649, 0, 3, "Willey, Mr. Edward", "male", null, 0, 0, "S.O./P.P. 751", 7.55, null, "S"],
+  [278, 279, 0, 3, "Rice, Master. Eric", "male", 7.0, 4, 1, "382652", 29.125, null, "Q"],
+  [31, 32, 1, 1, "Spencer, Mrs. William Augustus (Marie Eugenie)", "female", null, 1, 0, "PC 17569", 146.5208, "B78", "C"],
+  [255, 256, 1, 3, "Touma, Mrs. Darwis (Hanne Youssef Razi)", "female", 29.0, 0, 2, "2650", 15.2458, null, "C"],
+  [298, 299, 1, 1, "Saalfeld, Mr. Adolphe", "male", null, 0, 0, "19988", 30.5, "C106", "S"],
+  [609, 610, 1, 1, "Shutes, Miss. Elizabeth W", "female", 40.0, 0, 0, "PC 17582", 153.4625, "C125", "S"],
+  [318, 319, 1, 1, "Wick, Miss. Mary Natalie", "female", 31.0, 0, 2, "36928", 164.8667, "C7", "S"],
+  [484, 485, 1, 1, "Bishop, Mr. Dickinson H", "male", 25.0, 1, 0, "11967", 91.0792, "B49", "C"],
+  [367, 368, 1, 3, "Moussa, Mrs. (Mantoura Boulos)", "female", null, 0, 0, "2626", 7.2292, null, "C"],
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    const nanText = this.props.nanDisplay ?? "—";
+    const n = Math.max(1, Math.min(10, this.props.sampleRowCount ?? 10));
+    const cell = (v) => v === null
+      ? { v: nanText, align: "right", color: MUTED }
+      : { v: String(v), align: typeof v === "number" ? "right" : "left", color: INK };
+
+    const raw = RAW.slice(0, n);
+    const rows = raw.map((r) => r.map(cell));
+    const cols = COLS.map((c, i) => ({
+      label: c || "#",
+      align: i === 0 || [1, 2, 3, 6, 7, 8, 10].includes(i) ? "right" : "left",
+    }));
+    const navLabels = ["Summary", "Sample", "Variables", "Correlations", "Missing"];
+
+    return {
+      datasetName: this.props.datasetName ?? "titanic.csv",
+      sampleCaption: n + " rows drawn at random from the first chunk",
+      sampleCaptionShort: n + " random rows, first chunk",
+      nav: navLabels.map((label, i) => ({
+        label,
+        color: i === 0 ? INK : BODY,
+        rule: i === 0 ? OLIVE : "transparent",
+      })),
+      kpis: [
+        { label: "Rows", value: "891", sub: "single pass", subColor: MUTED },
+        { label: "Columns", value: "12", sub: "3 num · 8 cat · 1 bool", subColor: MUTED },
+        { label: "Missing", value: "8.1%", sub: "866 cells", subColor: RUST },
+        { label: "Duplicates", value: "0", sub: "≈ KMV sketch", subColor: MUTED },
+        { label: "Processed", value: "121 KB", sub: "0.06 s", subColor: MUTED },
+      ],
+      kpisMobile: [
+        { label: "Rows", value: "891", sub: "", subColor: MUTED },
+        { label: "Columns", value: "12", sub: "", subColor: MUTED },
+        { label: "Missing", value: "8.1%", sub: "866 cells", subColor: RUST },
+        { label: "Duplicates", value: "0", sub: "≈", subColor: MUTED },
+        { label: "Processed", value: "121 KB", sub: "", subColor: MUTED },
+        { label: "Elapsed", value: "0.06 s", sub: "", subColor: MUTED },
+      ],
+      types: [
+        { label: "categorical", n: 8, pct: "66.67%", color: OLIVE, title: "Categorical — 8 of 12 columns (66.7%)" },
+        { label: "numeric", n: 3, pct: "25%", color: BLUE, title: "Numeric — 3 of 12 columns (25%)" },
+        { label: "boolean", n: 1, pct: "8.33%", color: RUST, title: "Boolean — 1 of 12 columns (8.3%)" },
+      ],
+      typesFull: [
+        { label: "categorical", n: 8, color: OLIVE, textColor: INK },
+        { label: "numeric", n: 3, color: BLUE, textColor: INK },
+        { label: "boolean", n: 1, color: RUST, textColor: INK },
+        { label: "datetime", n: 0, color: "#EDE6DA", textColor: MUTED },
+      ],
+      todayFacts: [
+        { n: "1", title: "It shows five, and never says so",
+          body: "MAX_DISPLAY = 5, hard truncation. The analyzer computes total_significant and total_insignificant, stores both on the result, and the renderer prints neither — so a frame with 47 affected columns shows 5 and reads as if that were all of them." },
+        { n: "2", title: "Two different thresholds depending on how it is built",
+          body: "MissingColumnsAnalyzer.MIN_THRESHOLD_PCT is 0.0, but the create_missing_columns_renderer factory defaults to 0.5. At 0.5, Embarked at 0.2% drops out of the Titanic summary; at 0.0 it stays. The example report shows Embarked, so the class default is the live path and the factory default is misleading." },
+        { n: "3", title: "No missing data renders as a fake row",
+          body: "The empty case emits a <code class=\"missing-col\">No missing data</code> row with 0 (0.0%) and a zero-width bar — a data row asserting a column by that name. It should be a sentence, and by rule 3 the zero-width bar should not be drawn at all." },
+        { n: "4", title: "A 0.2% bar is sub-pixel",
+          body: "width is set to the raw percentage, so Embarked draws 0.2% of a ~300px track — under one pixel. This is exactly what a 1px floor is for: non-zero must be visible, zero must not be drawn." },
+      ],
+      manyTop: [
+        { col: "raw_payload", stat: "94.2%", pct: "94.2%", fill: RUST, color: RUST },
+        { col: "device_id", stat: "71.8%", pct: "71.8%", fill: RUST, color: RUST },
+        { col: "referrer", stat: "63.1%", pct: "63.1%", fill: RUST, color: RUST },
+        { col: "utm_campaign", stat: "38.4%", pct: "38.4%", fill: RUST, color: RUST },
+        { col: "last_seen_at", stat: "22.9%", pct: "22.9%", fill: RUST, color: RUST },
+      ],
+      // One stacked bar over the 47 affected columns, so the segments sum to the
+      // whole and the encoding needs no caption. A max-relative scale would draw
+      // the concentrated case — a few catastrophic columns — as the calmest picture.
+      bands: [
+        { label: "over 20%", n: "6", w: "12.77%", fill: RUST, ink: "#FBF9F5", title: "6 of 47 affected columns are over 20% missing" },
+        // --q-warn-fill (#A2731A) carries no text either way — ink 3.87, paper 3.99.
+        // A labelled warm segment must use the darker --q-warn-text as its fill.
+        { label: "5 – 20%", n: "14", w: "29.79%", fill: "#8F6417", ink: "#FBF9F5", title: "14 of 47 affected columns are 5–20% missing" },
+        { label: "under 5%", n: "27", w: "57.45%", fill: OLIVE, ink: "#FBF9F5", title: "27 of 47 affected columns are under 5% missing" },
+      ],
+      worst3: [
+        { col: "raw_payload", stat: "94.2%", color: RUST },
+        { col: "device_id", stat: "71.8%", color: RUST },
+        { col: "referrer", stat: "63.1%", color: RUST },
+      ],
+      missing: [
+        { col: "Cabin", stat: "687 · 77.1%", pct: "77.1%", color: RUST },
+        { col: "Age", stat: "177 · 19.9%", pct: "19.9%", color: OCHRE },
+        { col: "Embarked", stat: "2 · 0.2%", pct: "0.2%", color: OLIVE },
+      ],
+      cols,
+      colsNoIndex: cols.slice(1),
+      rows,
+      rowsNoIndex: rows.map((r) => r.slice(1)),
+      indexCol: raw.map((r) => String(r[0])),
+    };
+  }
+}
+</script>
+</body>
+</html>

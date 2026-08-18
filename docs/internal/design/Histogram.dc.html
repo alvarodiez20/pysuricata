@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<style>
+  body { margin: 0; background: #DFDACF; }
+  a { color: #4A5D1E; text-decoration: none; }
+  a:hover { color: #22201C; text-decoration: underline; }
+</style>
+</helmet>
+
+<section style="padding: 56px 56px 64px; background: #DFDACF; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 46px;">
+
+  <div style="display: flex; flexDirection: column; gap: 12px; maxWidth: 880px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Turn 13 · histogram geometry</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">The chart got the width. It should not take all of it.</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">Your chosen approach is right, and I have already built it — the tails and outlier charts in <a href="#note">Details</a> are SVG bars with HTML labels at percentage offsets, for exactly this reason. So this turn takes your five questions as the brief rather than re-arguing the architecture, and adds one defect the split will otherwise introduce.</p>
+    <div style="display: inline-flex; alignSelf: flex-start; alignItems: flex-start; gap: 8px; padding: 8px 12px; border: 1px dashed #CFC7B8; background: #E8E3D8; maxWidth: 82ch;">
+      <span id="note" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; textTransform: uppercase; color: #57524A; paddingTop: 2px;">Note</span>
+      <span style="fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Every 25-bin chart below is the real <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">Age</span> output — 714 values, 0.42 to 80 years, peak 83 — drawn in the proposed architecture at the width shown, and the frames are literal widths. The 50-bin series in <a href="#13b">13b</a> is derived by splitting those bins, so its counts are illustrative; its axis max is recomputed from its own peak, as the renderer does.</span>
+    </div>
+  </div>
+
+  <div style="display: flex; alignItems: center; gap: 14px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">1 · Composition at wide widths</span>
+    <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+  </div>
+
+  <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; maxWidth: 84ch; textWrap: pretty;">A 1,100 × 210 plot is 5.2:1. At that ratio the average slope of any distribution flattens toward horizontal, and every column starts to look like a gentle mound — the letterbox is doing the same damage the blank space was, just less visibly. But the fix is not height: twelve columns each 400px tall is a report nobody scrolls.</p>
+  <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; maxWidth: 84ch; textWrap: pretty;">The width past about 800px also buys very little. At 800px, 50 bins is 16px each; at 1,100px it is 22px. Nobody reads a 22px bar more accurately than a 16px one. So the question is what to do with the 300px, and the answer is not "stretch the bars into it".</p>
+
+  <div style="display: flex; flexDirection: column; gap: 30px;">
+
+    <div id="13a" style="display: flex; flexDirection: column; gap: 13px;">
+      <div style="display: flex; alignItems: baseline; gap: 12px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">13a</span>
+        <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Cap the plot, spend the remainder on the controls</h3>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A5D1E;">recommended</span>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 84ch;">Plot area <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">max-width: 820px</span>, left-aligned. The scale and bin controls move into the freed column, where they sit beside the thing they change instead of below it — and the row height drops, because controls no longer need their own line.</p>
+
+      <div style="width: 1240px; flexShrink: 0; background: #FBF9F5; border: 1px solid #CFC7B8; padding: 24px 26px 26px; display: flex; flexDirection: column; gap: 16px;">
+        <div style="display: flex; alignItems: center; gap: 10px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 16px; fontWeight: 600;">Age</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">numeric · float64</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; padding: 2px 6px; border: 1px solid #A2731A; color: #8F6417;">19.9% missing</span>
+        </div>
+
+        <div style="display: grid; gridTemplateColumns: minmax(0, 820px) 1fr; gap: 34px; alignItems: start;">
+          <div style="display: flex; flexDirection: column; gap: 9px;">
+            <div style="display: grid; gridTemplateColumns: 44px 1fr; columnGap: 8px;">
+              <div style="position: relative; height: 210px;">
+                <sc-for list="{{ yTicks }}" as="t" hint-placeholder-count="5">
+                  <span style="position: absolute; right: 0; top: {{ t.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ t.label }}</span>
+                </sc-for>
+                <span style="position: absolute; right: 0; top: -17px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; color: #57524A;">ROWS</span>
+              </div>
+              <div>
+                <svg viewBox="0 0 1000 210" width="100%" height="210" preserveAspectRatio="none" role="img" aria-label="Age distribution, 25 bins, rows per bin, peak 83 rows at 26 to 29 years" style="display: block;">
+                  <sc-for list="{{ grid }}" as="g" hint-placeholder-count="4">
+                    <line x1="0" y1="{{ g.y }}" x2="1000" y2="{{ g.y }}" stroke="#E2DCD1" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                  </sc-for>
+                  <sc-for list="{{ bars25 }}" as="b" hint-placeholder-count="25">
+                    <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#3E6280" stroke="#FBF9F5" stroke-width="1" vector-effect="non-scaling-stroke"></rect>
+                  </sc-for>
+                </svg>
+                <div style="height: 1px; background: #8F8474;"></div>
+                <div style="position: relative; height: 17px; marginTop: 5px;">
+                  <sc-for list="{{ xTicks9 }}" as="t" hint-placeholder-count="9">
+                    <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ t.label }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A; paddingLeft: 52px;">age in years · 25 bins · peak 83 rows at 26–29</span>
+          </div>
+
+          <div style="display: flex; flexDirection: column; gap: 18px; paddingTop: 2px;">
+            <sc-for list="{{ controls }}" as="c" hint-placeholder-count="2">
+              <div style="display: flex; flexDirection: column; gap: 6px;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ c.label }}</span>
+                <div style="display: flex; gap: 4px; flexWrap: wrap;">
+                  <sc-for list="{{ c.options }}" as="o" hint-placeholder-count="3">
+                    <a href="#13a" style="minWidth: 44px; minHeight: 44px; padding: 0 10px; display: inline-flex; alignItems: center; justifyContent: center; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: {{ o.color }};">
+                      <span style="paddingBottom: 3px; boxShadow: {{ o.rule }};">{{ o.label }}</span>
+                    </a>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <p style="margin: 0; fontSize: 12.5px; lineHeight: 1.5; color: #57524A; maxWidth: 30ch;">At 1240px the plot is 820px and this column is 386px. Below 1180px the grid collapses and the controls return under the chart.</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px; maxWidth: 92ch;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Pure CSS — one <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">max-width</span> and one grid, no variants, no bytes. The plot ratio settles at about 4:1 instead of 5.2:1, and the blank space becomes a column with a job rather than an absence. Card height drops by roughly 40px per numeric column, which on a 40-column frame is 1,600px of scroll.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Deliberately leaves width unused at 1600px+, which will read as a bug to anyone who filed the original issue. And a second column means a second breakpoint to maintain, at 1180px, where the controls have to move back.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="13b" style="display: flex; flexDirection: column; gap: 13px;">
+      <div style="display: flex; alignItems: baseline; gap: 12px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">13b</span>
+        <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Full bleed, height tracks width</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 84ch;">Take the whole card and hold the ratio near 4:1 with <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">height: clamp(170px, 21vw, 290px)</span>. Because text now lives in HTML, height is free to change — nothing scales with it.</p>
+
+      <div style="width: 1240px; flexShrink: 0; background: #FBF9F5; border: 1px solid #CFC7B8; padding: 24px 26px 26px; display: flex; flexDirection: column; gap: 14px;">
+        <div style="display: flex; alignItems: center; gap: 10px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 16px; fontWeight: 600;">Age</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">numeric · float64 · 50 bins</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; padding: 2px 6px; border: 1px dashed #A2731A; color: #8F6417;">illustrative counts</span>
+        </div>
+        <div style="display: grid; gridTemplateColumns: 44px 1fr; columnGap: 8px;">
+          <div style="position: relative; height: 272px;">
+            <sc-for list="{{ yTicks50 }}" as="t" hint-placeholder-count="6">
+              <span style="position: absolute; right: 0; top: {{ t.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ t.label }}</span>
+            </sc-for>
+            <span style="position: absolute; right: 0; top: -17px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; color: #57524A;">ROWS</span>
+          </div>
+          <div>
+            <svg viewBox="0 0 1000 272" width="100%" height="272" preserveAspectRatio="none" role="img" aria-label="Age distribution, 50 bins, rows per bin" style="display: block;">
+              <sc-for list="{{ grid272 }}" as="g" hint-placeholder-count="4">
+                <line x1="0" y1="{{ g.y }}" x2="1000" y2="{{ g.y }}" stroke="#E2DCD1" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+              </sc-for>
+              <sc-for list="{{ bars50 }}" as="b" hint-placeholder-count="50">
+                <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#3E6280" stroke="#FBF9F5" stroke-width="1" vector-effect="non-scaling-stroke"></rect>
+              </sc-for>
+            </svg>
+            <div style="height: 1px; background: #8F8474;"></div>
+            <div style="position: relative; height: 17px; marginTop: 5px;">
+              <sc-for list="{{ xTicks9 }}" as="t" hint-placeholder-count="9">
+                <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ t.label }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A; paddingLeft: 52px;">age in years · 50 bins · 21px per bin · counts derived from the 25-bin output</span>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px; maxWidth: 92ch;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Answers the filed issue literally — the plot fills its width at every viewport and the ratio never letterboxes. One <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">clamp()</span>, no breakpoint, no second column to maintain. This is the cheaper of the two to build.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Costs 60–80px of height per numeric column at desktop, on the one axis a profiling report is already long in. It also spends the full width on resolution past the point it helps, which is the same mistake as the letterbox with the sign flipped.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; alignItems: center; gap: 14px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">2 · Tick density, decided by CSS</span>
+    <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+  </div>
+
+  <div id="13c" style="display: flex; flexDirection: column; gap: 14px;">
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; maxWidth: 84ch; textWrap: pretty;">This one has a clean answer, and it only exists because the labels are now HTML. <strong>Render every tick you would ever want, tag the optional ones, and let a media query drop them.</strong> The renderer writes 9 x-ticks and marks alternates <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">data-tier="2"</span>; a third pass marks the ones that survive to 3. CSS picks the tier for the width. No variants, no JS, and the extra bytes are four short strings per column.</p>
+
+    <div style="background: #22201C; padding: 16px 20px; width: 1240px; flexShrink: 0;">
+      <pre style="margin: 0; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; lineHeight: 1.7; color: #E8E3D8; whiteSpace: pre-wrap;">/* 9 ticks written once. Tier 1 always shows. */
+@media (max-width: 760px) { .hist-x [data-tier="2"] { display: none } }  /* → 5 */
+@media (max-width: 440px) { .hist-x [data-tier="3"] { display: none } }  /* → 3 */</pre>
+    </div>
+
+    <div style="display: flex; gap: 26px; alignItems: flex-start; flexWrap: wrap;">
+      <sc-for list="{{ densityFrames }}" as="f" hint-placeholder-count="3">
+        <div style="width: {{ f.frame }}; flexShrink: 0; display: flex; flexDirection: column; gap: 9px;">
+          <div style="display: flex; alignItems: baseline; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ f.label }}</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #22201C;">{{ f.ticks }}</span>
+          </div>
+          <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 16px 16px 18px;">
+            <div style="display: grid; gridTemplateColumns: 40px 1fr; columnGap: 8px;">
+              <div style="position: relative; height: {{ f.h }};">
+                <sc-for list="{{ f.yTicks }}" as="t" hint-placeholder-count="5">
+                  <span style="position: absolute; right: 0; top: {{ t.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ t.label }}</span>
+                </sc-for>
+                <span style="position: absolute; right: 0; top: -16px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.1em; color: #57524A;">ROWS</span>
+              </div>
+              <div>
+                <svg viewBox="0 0 1000 {{ f.vh }}" width="100%" height="{{ f.h }}" preserveAspectRatio="none" role="img" aria-label="Age distribution at {{ f.label }}" style="display: block;">
+                  <sc-for list="{{ f.grid }}" as="g" hint-placeholder-count="4">
+                    <line x1="0" y1="{{ g.y }}" x2="1000" y2="{{ g.y }}" stroke="#E2DCD1" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+                  </sc-for>
+                  <sc-for list="{{ f.bars }}" as="b" hint-placeholder-count="25">
+                    <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#3E6280" stroke="#FBF9F5" stroke-width="1" vector-effect="non-scaling-stroke"></rect>
+                  </sc-for>
+                </svg>
+                <div style="height: 1px; background: #8F8474;"></div>
+                <div style="position: relative; height: 16px; marginTop: 4px;">
+                  <sc-for list="{{ f.xTicks }}" as="t" hint-placeholder-count="5">
+                    <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ t.label }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <span style="display: block; marginTop: 8px; paddingLeft: 48px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; color: #57524A;">{{ f.caption }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flexDirection: column; gap: 8px; maxWidth: 92ch;">
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Density responds to width with no renderer knowledge of the viewport, which is the constraint you named. Tiering by <em>importance</em> rather than by index also means the first and last tick — the range, the thing a reader most needs — are always tier 1 and never dropped.</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">The breakpoints are viewport-wide, but the plot's width depends on the card and on <a href="#13a">13a</a>'s second column, so the two can disagree — a wide viewport with a narrow card gets nine ticks in 300px. Container queries fix it exactly and are the right tool if you are willing to require a 2023+ browser.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; alignItems: center; gap: 14px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">3 · The gutter · 4 · Where the captions live</span>
+    <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+  </div>
+
+  <div style="display: flex; gap: 34px; alignItems: flex-start; flexWrap: wrap;">
+
+    <div id="13d" style="width: 600px; flexShrink: 0; display: flex; flexDirection: column; gap: 13px;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">13d</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">44px, because counts abbreviate</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D;">A y tick is a row count, and nobody reads seven significant figures off an axis. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">1,234,567</span> should never appear there — <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">1.2M</span> should. Cap the label at four glyphs and the gutter is a constant.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 22px 22px; display: flex; flexDirection: column; gap: 14px;">
+        <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ gutterRows }}" as="g" hint-placeholder-count="4">
+            <div style="display: grid; gridTemplateColumns: 116px 78px 1fr; gap: 14px; alignItems: baseline; padding: 8px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #57524A;">{{ g.raw }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; textAlign: right; color: #22201C;">{{ g.shown }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ g.color }};">{{ g.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin: 0; fontSize: 14px; lineHeight: 1.55; color: #22201C; maxWidth: 50ch; textWrap: pretty;">Four glyphs of 11px mono is 27px, plus a 5px tick and 8px of air: <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">--hist-gutter: 44px</span>. Fixed at every width, so the plot's left edge never moves between columns and the bars of two cards line up down the page.</p>
+        <div style="display: grid; gridTemplateColumns: 62px 1fr; gap: 12px; alignItems: start; borderLeft: 2px solid #4A5D1E; paddingLeft: 14px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.13em; textTransform: uppercase; color: #4A5D1E; paddingTop: 3px;">Exact</span>
+          <span style="fontSize: 13.5px; lineHeight: 1.55; color: #22201C;">The precise peak stays in the caption — <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">peak 83 rows at 26–29</span> — so abbreviating the axis loses nothing.</span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">A reader cannot tell 1.2M from 1,249,999, and on a bar chart of counts that occasionally matters. It also needs <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">_format_tick_label_standardized</span> to guarantee four glyphs rather than merely prefer them — today it can emit <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">12.5K</span>, which is five.</p>
+      </div>
+    </div>
+
+    <div id="13e" style="width: 600px; flexShrink: 0; display: flex; flexDirection: column; gap: 13px;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">13e</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">The x unit moves. ROWS stays.</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D;"><span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">ROWS</span> is anchored to the gutter, so it survives any width — it is 44px from its axis whatever happens. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">YEARS</span> at the right end does not: at 1,100px the two captions are a metre apart and stop reading as a pair.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 22px 22px; display: flex; flexDirection: column; gap: 18px;">
+        <div style="display: flex; flexDirection: column; gap: 7px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Today, at 1100px</span>
+          <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 12px; border: 1px dashed #CFC7B8; padding: 10px 12px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; color: #57524A;">ROWS</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; color: #57524A;">YEARS</span>
+          </div>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #963F1C;">two labels, no relationship visible between them</span>
+        </div>
+        <div style="display: flex; flexDirection: column; gap: 7px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Proposed</span>
+          <div style="border: 1px solid #CFC7B8; padding: 10px 12px; display: flex; flexDirection: column; gap: 8px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; color: #57524A;">ROWS</span>
+            <span style="height: 1px; background: #8F8474;"></span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">age in years · 25 bins · peak 83 rows at 26–29</span>
+          </div>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #4A5D1E;">one caption under the axis, left-aligned to the plot origin</span>
+        </div>
+        <p style="margin: 0; fontSize: 14px; lineHeight: 1.55; color: #22201C; maxWidth: 50ch; textWrap: pretty;">It reads as a sentence, it carries the bin count and the peak alongside the unit, and it is where a reader's eye already goes after the axis. This is the line <a href="#13a">13a</a> and <a href="#13b">13b</a> both use.</p>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">A caption below the axis is further from the x labels than an in-axis unit was, so on a very tall stack it can read as belonging to the next element. It also puts the unit in prose, where <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">derive_x_unit</span> returning <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">None</span> now has to read gracefully — <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">25 bins · peak 83</span>, with no unit clause at all.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; alignItems: center; gap: 14px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">5 · 50 bins on a phone · and the defect the split introduces</span>
+    <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+  </div>
+
+  <div style="display: flex; gap: 34px; alignItems: flex-start; flexWrap: wrap;">
+
+    <div id="13f" style="width: 600px; flexShrink: 0; display: flex; flexDirection: column; gap: 13px;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">13f</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">Yes — hide it, and say why</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D;">A control offering an option that cannot be read is worse than a shorter control. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">display: none</span> on the 50 option under 560px is legal, cheap, and CSS-only. But hide it <em>with a reason</em>, or the desktop and mobile reports look like different products.</p>
+
+      <div style="width: 358px; background: #FBF9F5; border: 1px solid #CFC7B8; padding: 16px 14px 18px; display: flex; flexDirection: column; gap: 12px;">
+        <div style="display: flex; alignItems: center; gap: 8px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Age</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; color: #57524A;">numeric · float64</span>
+        </div>
+        <div style="display: grid; gridTemplateColumns: 44px 1fr; columnGap: 6px;">
+          <div style="position: relative; height: 150px;">
+            <sc-for list="{{ yTicks3 }}" as="t" hint-placeholder-count="3">
+              <span style="position: absolute; right: 0; top: {{ t.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ t.label }}</span>
+            </sc-for>
+            <span style="position: absolute; right: 0; top: -16px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.1em; color: #57524A;">ROWS</span>
+          </div>
+          <div>
+            <svg viewBox="0 0 1000 150" width="100%" height="150" preserveAspectRatio="none" role="img" aria-label="Age distribution, 25 bins, on a narrow screen" style="display: block;">
+              <sc-for list="{{ grid150 }}" as="g" hint-placeholder-count="2">
+                <line x1="0" y1="{{ g.y }}" x2="1000" y2="{{ g.y }}" stroke="#E2DCD1" stroke-width="1" vector-effect="non-scaling-stroke"></line>
+              </sc-for>
+              <sc-for list="{{ bars25m }}" as="b" hint-placeholder-count="25">
+                <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#3E6280" stroke="#FBF9F5" stroke-width="1" vector-effect="non-scaling-stroke"></rect>
+              </sc-for>
+            </svg>
+            <div style="height: 1px; background: #8F8474;"></div>
+            <div style="position: relative; height: 16px; marginTop: 4px;">
+              <sc-for list="{{ xTicks3 }}" as="t" hint-placeholder-count="3">
+                <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ t.label }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; color: #57524A; paddingLeft: 50px;">age in years · 25 bins · peak 83</span>
+        <div style="display: flex; alignItems: center; gap: 6px; flexWrap: wrap; borderTop: 1px solid #E2DCD1; paddingTop: 6px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">Bins</span>
+          <a href="#13f" style="minWidth: 44px; minHeight: 44px; display: inline-flex; alignItems: center; justifyContent: center; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #4A453D;"><span style="paddingBottom: 3px;">10</span></a>
+          <a href="#13f" style="minWidth: 44px; minHeight: 44px; display: inline-flex; alignItems: center; justifyContent: center; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #22201C;"><span style="paddingBottom: 3px; boxShadow: inset 0 -2px 0 #4A5D1E;">25</span></a>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; color: #57524A; marginLeft: 4px;">50 needs a wider screen</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Seven words turn a missing feature into an explained one, and they occupy space the two remaining buttons were not using. Both targets stay 44×44.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">The 50-bin SVG is still in the file, so hiding the control saves no bytes — it is a usability fix, not a size one. Someone on a phone who genuinely wants 50 bins now cannot get there at all.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="13g" style="width: 600px; flexShrink: 0; display: flex; flexDirection: column; gap: 13px;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #963F1C; color: #FBF9F5; borderRadius: 3px;">13g</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">The gap between bars will vanish</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">Not in your brief, and it will bite on the first mobile render. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">_render_bars</span> sets <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">bar_w = max(1, bar_width - 1)</span> — a 1-unit gap in viewBox space. Under <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">preserveAspectRatio="none"</span> that unit scales with x like everything else.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 22px 22px; display: flex; flexDirection: column; gap: 14px;">
+        <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+          <div style="display: grid; gridTemplateColumns: 92px 88px 1fr; gap: 14px; paddingBottom: 7px; borderBottom: 1px solid #E2DCD1; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">
+            <span>Plot width</span><span style="textAlign: right;">x scale</span><span>1-unit gap becomes</span>
+          </div>
+          <sc-for list="{{ gapRows }}" as="g" hint-placeholder-count="3">
+            <div style="display: grid; gridTemplateColumns: 92px 88px 1fr; gap: 14px; alignItems: baseline; padding: 8px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">{{ g.w }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; textAlign: right; color: #57524A;">{{ g.scale }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ g.color }};">{{ g.gap }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: grid; gridTemplateColumns: 62px 1fr; gap: 12px; alignItems: start; borderLeft: 2px solid #4A5D1E; paddingLeft: 14px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.13em; textTransform: uppercase; color: #4A5D1E; paddingTop: 3px;">Fix</span>
+          <span style="fontSize: 13.5px; lineHeight: 1.55; color: #22201C;">Stop drawing the gap. Draw the bars edge to edge and separate them with a <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">--paper</span> stroke carrying <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">vector-effect: non-scaling-stroke</span>. Adjacent bars contribute half a pixel each, so the separator is exactly 1px at every width — the same trick you already planned for the gridlines. Every chart on this page is drawn that way.</span>
+        </div>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; textWrap: pretty;">It also removes the <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">max(1, …)</span> floor, which today silently makes a 50-bin bar 1 unit wide on a 420-unit canvas and drops the gap to zero anyway.</p>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">A paper-coloured stroke is invisible against any other background, so a bar overlapping something else — a highlighted bin, a selection — needs the stroke reconsidered. Nothing does that today.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="borderTop: 1px solid #CFC7B8; paddingTop: 22px; maxWidth: 92ch; display: flex; flexDirection: column; gap: 12px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Answers, in one place</span>
+    <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+      <sc-for list="{{ answers }}" as="a" hint-placeholder-count="6">
+        <div style="display: grid; gridTemplateColumns: 26px 210px 1fr; gap: 16px; alignItems: start; padding: 10px 0; borderBottom: 1px solid #E2DCD1;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #57524A;">{{ a.n }}</span>
+          <span style="fontSize: 14px; fontWeight: 600; color: #22201C;">{{ a.q }}</span>
+          <span style="fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">{{ a.a }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">One thing your byte budget may like: with text out of the SVGs, the six variants per numeric column (10/25/50 bins × lin/log) share an identical x range, so the x-tick HTML layer can be written <strong>twice per column</strong> rather than six times — only the y layer changes with bin count, because <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">y_max</span> does. At roughly 7.1 KB per histogram SVG today, most of it label markup, that is the direction of travel toward 250 KB rather than against it.</p>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1400, &quot;height&quot;: 1500}}">
+const INK = "#22201C", BODY = "#4A453D", MUTED = "#57524A";
+const D2 = "#3E6280", GOOD = "#4A5D1E", WARN = "#8F6417", BAD = "#963F1C";
+
+// Real Age output: 25 bins over 0.42–80 years, y_max 100 from nice_ticks(0, 83, 5).
+const B25 = [30, 17, 15, 9, 29, 64, 67, 70, 83, 62, 51, 40, 35, 27, 35, 23, 15, 9, 11, 11, 4, 2, 3, 1, 1];
+const V0 = 0.42, V1 = 80;
+
+// Mirrors nice_ticks(0, actual_max, 5) at histogram_svg.py:263 — the renderer
+// recomputes the axis max per render, so a chart's scale must come from ITS OWN
+// counts. A shared constant makes a 50-bin chart draw a peak of 50 against a
+// 100 axis, i.e. exactly the blank space this document argues against.
+function niceScale(peak) {
+  const best = { n: 99, step: 0 };
+  for (let m = 1; m <= 1e7; m *= 10) {
+    for (const s of [1, 2, 2.5, 5, 10]) {
+      const step = s * m;
+      if (!Number.isInteger(step)) continue;      // counts are integers
+      const n = Math.ceil(peak / step);
+      if (n >= 4 && n <= 6 && n < best.n) { best.n = n; best.step = step; }
+    }
+  }
+  const n = best.n === 99 ? 4 : best.n;
+  const step = best.step || peak / 4;
+  const ticks = [];
+  for (let i = n; i >= 0; i--) {
+    ticks.push({ pct: ((1 - i / n) * 100).toFixed(2) + "%", label: String(step * i) });
+  }
+  return { max: step * n, ticks, n };
+}
+
+// A narrow frame keeps only the range and its midpoint.
+function coarse(peak) {
+  const s = niceScale(peak);
+  return { max: s.max, ticks: s.ticks.filter((t, i) => i % 2 === 0), n: 2 };
+}
+
+// Bars are drawn edge to edge in a 1000-unit box; separation comes from a
+// non-scaling paper stroke, so the gap is 1px at every rendered width (13g).
+function bars(counts, vh, yMax) {
+  const slot = 1000 / counts.length;
+  return counts.map((c, i) => {
+    const h = c === 0 ? 0 : (c / yMax) * vh;
+    return { x: (i * slot).toFixed(2), y: (vh - h).toFixed(2), w: slot.toFixed(2), h: h.toFixed(2) };
+  });
+}
+// One gridline per interior tick, so grid and labels always agree.
+function grid(vh, n) {
+  const out = [];
+  for (let i = 1; i < n; i++) out.push({ y: (vh * (1 - i / n)).toFixed(1) });
+  return out;
+}
+const shift = (p) => (p <= 3 ? "0%" : p >= 97 ? "-100%" : "-50%");
+function xTicks(vals) {
+  return vals.map((v) => {
+    const p = ((v - V0) / (V1 - V0)) * 100;
+    return { pct: p.toFixed(3) + "%", tx: shift(p), label: String(v) };
+  });
+}
+
+// 9 ticks written once; tier 2 drops at 760px, tier 3 at 440px (13c).
+const T1 = [0.42, 40, 80];
+const T2 = [0.42, 20, 40, 60, 80];
+const T3 = [0.42, 10, 20, 30, 40, 50, 60, 70, 80];
+
+class Component extends DCLogic {
+  renderVals() {
+    // Splitting 25 real bins into 50 halves every peak. Derived, not profiler
+    // output — labelled wherever it is drawn.
+    const b50 = [];
+    for (let i = 0; i < 50; i++) {
+      const a = B25[Math.floor(i / 2)], nx = B25[Math.min(24, Math.floor(i / 2) + 1)];
+      b50.push(Math.round((i % 2 ? (a * 0.45 + nx * 0.15) : a * 0.6)));
+    }
+
+    const s25 = niceScale(Math.max.apply(null, B25));   // peak 83 → max 100
+    const s50 = niceScale(Math.max.apply(null, b50));   // peak 50 → max 50
+    const s25c = coarse(Math.max.apply(null, B25));
+
+    const frame = (frameW, label, ticks, tierNote, vh, caption) => {
+      const sc = vh > 180 ? s25 : s25c;
+      return {
+        frame: frameW, label, ticks: tierNote, h: vh + "px", vh: String(vh),
+        bars: bars(B25, vh, sc.max), grid: grid(vh, sc.n),
+        xTicks: xTicks(ticks), yTicks: sc.ticks, caption,
+      };
+    };
+
+    return {
+      bars25: bars(B25, 210, s25.max),
+      bars50: bars(b50, 272, s50.max),
+      bars25m: bars(B25, 150, s25c.max),
+      grid: grid(210, s25.n),
+      grid272: grid(272, s50.n),
+      grid150: grid(150, s25c.n),
+      xTicks9: xTicks(T3),
+      xTicks3: xTicks(T1),
+      yTicks: s25.ticks,
+      yTicks50: s50.ticks,
+      yTicks3: s25c.ticks,
+      controls: [
+        { label: "Scale", options: [
+          { label: "linear", color: INK, rule: "inset 0 -2px 0 #4A5D1E" },
+          { label: "log", color: BODY, rule: "none" },
+        ] },
+        { label: "Bins", options: [
+          { label: "10", color: BODY, rule: "none" },
+          { label: "25", color: INK, rule: "inset 0 -2px 0 #4A5D1E" },
+          { label: "50", color: BODY, rule: "none" },
+        ] },
+      ],
+      densityFrames: [
+        frame("560px", "820px plot", T3, "9 ticks · tier 1–3", 190, "one label every 10 years"),
+        frame("400px", "700px plot", T2, "5 ticks · tier 1–2", 170, "tier 3 dropped at 760px"),
+        frame("270px", "300px plot", T1, "3 ticks · tier 1", 150, "range plus midpoint only"),
+      ],
+      gutterRows: [
+        { raw: "83", shown: "83", note: "unchanged", color: MUTED },
+        { raw: "12,480", shown: "12K", note: "3 glyphs", color: GOOD },
+        { raw: "234,109", shown: "234K", note: "4 glyphs", color: GOOD },
+        { raw: "1,234,567", shown: "1.2M", note: "4 glyphs · was 9", color: GOOD },
+      ],
+      gapRows: [
+        { w: "1,100px", scale: "×1.10", gap: "1.1px — fine", color: GOOD },
+        { w: "560px", scale: "×0.56", gap: "0.56px — thin", color: WARN },
+        { w: "284px", scale: "×0.28", gap: "0.28px — bars merge", color: BAD },
+      ],
+      answers: [
+        { n: "1", q: "Composition at wide widths", a: "Cap the plot at 820px and give the remainder to the controls (13a). The width past ~800px buys 6px per bin at 50 bins, which no reader uses. 13b if you would rather answer the filed issue literally." },
+        { n: "2", q: "Tick density", a: "Write 9, tag them tier 1–3 by importance, drop tiers with a media query at 760px and 440px. Range ticks are always tier 1. Container queries are the exact tool if you can require them." },
+        { n: "3", q: "The gutter", a: "44px fixed, because a count label is capped at four glyphs — 1.2M, never 1,234,567. Fixed means bars line up between cards down the page. The exact peak lives in the caption." },
+        { n: "4", q: "Where the captions live", a: "ROWS stays in the gutter; it is anchored 44px from its axis at any width. The x unit joins the caption under the axis, with the bin count and the peak." },
+        { n: "5", q: "50 bins on a phone", a: "Hide it under 560px, and print 50 needs a wider screen where it was. Saves no bytes — the variant is still in the file — but a control that offers an unreadable option is worse than a short one." },
+        { n: "6", q: "Not asked", a: "The 1-unit bar gap scales with x under preserveAspectRatio none, so it is 0.28px at 284px and the bars merge. Draw bars edge to edge with a non-scaling paper stroke instead (13g)." },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
