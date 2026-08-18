@@ -25,10 +25,14 @@ not it crosses any threshold — it is a description, not a verdict.
 from pysuricata import compare
 
 diff = compare(df, new_df)
-diff.schema.added                          # {"extra": "numeric"}
+diff.schema.unchanged                      # ("amount", "region")
 diff.columns["amount"].median_shift_sigma  # 0.24
 diff.columns["region"].categories_added    # ("west",)
+diff.columns["region"].categories_removed  # ("east",)
 ```
+
+`pysuricata.comparison.render(diff)` turns that into text. Over the two frames
+above, verbatim:
 
 ```text
 rows: 20,000 → 20,000 (+0.0%)
@@ -36,8 +40,10 @@ rows: 20,000 → 20,000 (+0.0%)
   amount: spread ×1.70
   region: new categories: west (approx)
   region: gone: east (approx)
-  seen_at: newest value moved +31.0 days
 ```
+
+A frame that gained a column would show it under `diff.schema.added`, and a
+datetime column would add a line like `seen_at: newest value moved +31.0 days`.
 
 Both sides accept anything `profile()` does — frames, paths, Arrow tables,
 DuckDB relations — or a `summarize()` payload you already have, which is not
@@ -135,4 +141,5 @@ Three sections — `dataset`, `schema`, `columns` — mirroring the object.
 
 There is no HTML view yet. The JSON contract and the text rendering are what
 this ships with; the report side of it belongs with the wider work on the
-report's presentation rather than bolted on beside it.
+report's presentation rather than bolted on beside it. Tracked as
+[#121](https://github.com/alvarodiez20/pysuricata/issues/121).

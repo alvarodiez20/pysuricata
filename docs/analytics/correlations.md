@@ -134,114 +134,52 @@ y_valid = y[mask]
 # Update with valid pairs only
 ```
 
-## Statistical Significance
+## Why There Are No P-Values
 
-### t-test for Correlation
-
-Test \(H_0: \rho = 0\) (no correlation in population).
-
-**Test statistic:**
+The t-test for \(H_0: \rho = 0\),
 
 \[
-t = r \sqrt{\frac{n-2}{1-r^2}}
+t = r \sqrt{\frac{n-2}{1-r^2}}, \qquad t \sim t_{n-2},
 \]
 
-Under \(H_0\), \(t \sim t_{n-2}\) (Student's t-distribution with \(n-2\) degrees of freedom).
+is cheap to compute from numbers PySuricata already has, and it is not reported.
+Two reasons.
 
-**P-value:**
+**At profiling scale it is always significant.** With \(n = 10^6\), an
+\(|r|\) of 0.002 clears \(p < 0.05\). A p-value column would say "yes" beside
+every pair, which is not information. What a reader needs is the *magnitude*,
+which is what `corr_threshold` filters on.
 
-\[
-p = 2 \cdot P(T_{n-2} > |t|)
-\]
+**The multiplicity is severe and unfixable here.** Testing every pair means
+\(m = \binom{p}{2}\) tests — 1,225 for 50 columns, so a Bonferroni-adjusted
+\(\alpha\) of \(0.05/1225 \approx 4 \times 10^{-5}\). Correcting honestly
+makes the test useless; not correcting makes it misleading. Neither is worth
+putting on a card.
 
-**Reject \(H_0\) if** \(p < \alpha\) (e.g., \(\alpha = 0.05\)).
-
-!!! note "Not implemented in current version"
-    Significance tests are planned for future release. Current version reports raw correlations.
-
-### Multiple Testing Correction
-
-When testing \(m = \binom{p}{2}\) pairs, use **Bonferroni correction**:
-
-\[
-\alpha_{\text{adj}} = \frac{\alpha}{m}
-\]
-
-Or **False Discovery Rate (FDR)** control via Benjamini-Hochberg procedure.
-
-**Example:** 50 columns → 1,225 pairs
-- Bonferroni: \(\alpha_{\text{adj}} = 0.05/1225 \approx 0.00004\)
-- Very conservative
+Correlations are reported as what they are: a magnitude, above a threshold you
+set, with the pair count visible so you can see how many comparisons produced
+it.
 
 ## Implementation
 
-### StreamingCorr Class
+`StreamingCorr` lives in `pysuricata/compute/analysis/correlation.py`. It holds
+**sufficient statistics**, not the data: per column \(\sum x\) and
+\(\sum x^2\), and per pair \(\sum xy\) and a joint count. Everything above
+is recovered from those at finalize time.
 
-```python
-class StreamingCorr:
-    def __init__(self, columns: List[str]):
-        self.cols = columns
-        self.pairs = {}  # (col1, col2) -> {n, sx, sy, sxx, syy, sxy}
+That is what makes it streamable and mergeable — adding two sets of sums gives
+the same answer as one pass over the concatenation, so chunked results equal
+unchunked ones here as everywhere else.
 
-    def update(self, df: pd.DataFrame):
-        """Update with chunk of data"""
-        for i, col1 in enumerate(self.cols):
-            for j in range(i+1, len(self.cols)):
-                col2 = self.cols[j]
+Two details worth knowing:
 
-                # Extract values
-                x = df[col1].to_numpy()
-                y = df[col2].to_numpy()
-
-                # Filter valid pairs
-                mask = np.isfinite(x) & np.isfinite(y)
-                x_valid = x[mask]
-                y_valid = y[mask]
-
-                if len(x_valid) == 0:
-                    continue
-
-                # Update sufficient statistics
-                key = (col1, col2)
-                if key not in self.pairs:
-                    self.pairs[key] = {
-                        'n': 0, 'sx': 0, 'sy': 0,
-                        'sxx': 0, 'syy': 0, 'sxy': 0
-                    }
-
-                stats = self.pairs[key]
-                stats['n'] += len(x_valid)
-                stats['sx'] += float(np.sum(x_valid))
-                stats['sy'] += float(np.sum(y_valid))
-                stats['sxx'] += float(np.sum(x_valid ** 2))
-                stats['syy'] += float(np.sum(y_valid ** 2))
-                stats['sxy'] += float(np.sum(x_valid * y_valid))
-
-    def finalize(self, threshold: float = 0.0) -> Dict:
-        """Compute final correlations"""
-        results = {}
-
-        for (col1, col2), stats in self.pairs.items():
-            n = stats['n']
-            if n < 2:
-                continue
-
-            # Compute correlation
-            num = n * stats['sxy'] - stats['sx'] * stats['sy']
-            den1 = n * stats['sxx'] - stats['sx'] ** 2
-            den2 = n * stats['syy'] - stats['sy'] ** 2
-
-            if den1 <= 0 or den2 <= 0:
-                continue
-
-            r = num / (math.sqrt(den1) * math.sqrt(den2))
-
-            # Filter by threshold
-            if abs(r) >= threshold:
-                results[(col1, col2)] = r
-
-        return results
-```
+- **Missing values are handled pairwise.** A pair's count is the number of rows
+  where *both* columns are finite, so two columns with different missingness
+  still get a correct \(r\) rather than one computed against a mismatched
+  \(n\).
+- **The finite masks are computed once per column** and reused across every pair
+  it appears in, rather than recomputed per pair. On a wide frame that is most
+  of the saving.
 
 ## Complexity
 
@@ -391,8 +329,12 @@ where \(d_i\) is the rank difference for observation \(i\).
 - Requires sorting (more expensive)
 - Not streamable (needs ranks)
 
-!!! note "Not implemented in current version"
-    Spearman correlation is planned for future release.
+!!! note "Not computed"
+    Spearman needs ranks, and ranks need the whole column — a streaming pass
+    cannot produce them in bounded memory. It could be approximated from the
+    reservoir samples, at an error nobody has characterised, which is exactly
+    the kind of unlabelled estimate this project avoids. Pearson on the full
+    column beats Spearman on a sample.
 
 ### Kendall Tau
 

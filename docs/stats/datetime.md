@@ -112,6 +112,11 @@ M = \frac{n_{\uparrow}}{n - 1}
 
 ### Temporal Entropy
 
+!!! note "Derived, not published"
+    Not a key in the payload. The bin counts it needs are: `by_hour`, `by_dow`,
+    `by_month` and `by_year` are all published, so this is one line over
+    whichever binning you care about.
+
 Distribution entropy over time bins:
 
 \[
@@ -123,28 +128,23 @@ where \(p_b\) is the proportion of timestamps in bin \(b\).
 **High entropy**: events spread uniformly over time  
 **Low entropy**: events concentrated in specific periods
 
-### Seasonality Detection
+### Seasonality
 
-Detect periodic patterns using **Fourier analysis** or **autocorrelation**.
+`seasonal_pattern` is published, and it is derived from the binned
+distributions — the hour, day-of-week, month and year counts — not from an
+autocorrelation.
 
-**Autocorrelation at lag \(\tau\):**
+Autocorrelation at lag \(\tau\),
 
 \[
 \rho(\tau) = \frac{\text{Cov}(X_t, X_{t+\tau})}{\text{Var}(X_t)}
 \]
 
-For count time series \(X_t\) (observations per time unit).
-
-**Significant autocorrelation** at lag \(\tau\) suggests periodicity with period \(\tau\).
-
-**Common periods:**
-- Daily: \(\tau = 1\) day
-- Weekly: \(\tau = 7\) days
-- Monthly: \(\tau \approx 30\) days
-- Yearly: \(\tau = 365\) days
-
-!!! note "Not fully implemented"
-    Seasonality detection via autocorrelation is planned for future release. Current version shows hour/day/month distributions which reveal patterns manually.
+would be the stronger method, and it is not a streaming one: it needs the count
+series \(X_t\) held in full at a resolution nobody can pick in advance. The
+binned distributions are what a single bounded-memory pass can honestly offer,
+and they reveal a daily, weekly or yearly shape by inspection. Anything finer
+belongs to a tool that gets to hold the series.
 
 ## Temporal Distributions
 
@@ -208,37 +208,28 @@ Temporal histogram showing observation density over time:
 - Burst periods (high activity)
 - Data quality issues (missing periods)
 
-## Gap Analysis
+## Intervals, and Why There Is No Gap List
 
-Detect missing time periods in temporal data.
+Two interval statistics are published:
 
-**Expected interval:**
+| key | meaning |
+|---|---|
+| `avg_interval_seconds` | mean gap between consecutive timestamps |
+| `interval_std_seconds` | its standard deviation |
 
-\[
-\Delta_{\text{exp}} = \text{median}(\{t_{i+1} - t_i : i = 1, \ldots, n-1\})
-\]
+Together they answer *is this regular*: a nightly extract has a std near zero
+against an average near 86,400, and one that has been missing days does not.
 
-**Gap threshold:**
+A **list of gaps** is not published. Finding
+\(G = \{(t_i, t_{i+1}) : t_{i+1} - t_i > \theta\}\) needs consecutive
+timestamps in order, and a stream offers neither — chunks arrive in whatever
+order the source yields them, and the column need not be sorted. Reporting gaps
+from a sample would produce a list that changes between runs, which is worse
+than no list.
 
-\[
-\theta = c \cdot \Delta_{\text{exp}}
-\]
-
-where \(c > 1\) (e.g., \(c = 2\) or \(c = 5\)).
-
-**Gaps:**
-
-\[
-G = \{(t_i, t_{i+1}) : t_{i+1} - t_i > \theta\}
-\]
-
-**Gap statistics:**
-- Number of gaps: \(|G|\)
-- Total missing time: \(\sum_{(t_i, t_{i+1}) \in G} (t_{i+1} - t_i - \theta)\)
-- Longest gap: \(\max_{(t_i, t_{i+1}) \in G} (t_{i+1} - t_i)\)
-
-!!! note "Not implemented in current version"
-    Gap analysis is planned for future release.
+`mono_inc` and `mono_dec` tell you whether the column *is* ordered, which is the
+precondition for the question. If it is, and you need the gaps, you have the
+column.
 
 ## Timezone Handling
 
@@ -285,45 +276,17 @@ report = profile(df, config=config)
 
 ## Implementation Details
 
-### DatetimeAccumulator Class
+`DatetimeAccumulator` lives in `pysuricata/accumulators/datetime.py`. The shape:
 
-```python
-class DatetimeAccumulator:
-    def __init__(self, name: str, config: DatetimeConfig):
-        self.name = name
-        self.count = 0
-        self.missing = 0
-
-        # Range tracking
-        self.min_ts = None
-        self.max_ts = None
-
-        # Distribution counters
-        self.hour_counts = [0] * 24
-        self.weekday_counts = [0] * 7
-        self.month_counts = [0] * 12
-
-        # Monotonicity tracking
-        self.prev_ts = None
-        self.monotonic_inc = 0
-        self.monotonic_dec = 0
-
-    def update(self, values: pd.Series):
-        """Update with chunk of timestamps"""
-        # Convert to UTC
-        # Update min/max
-        # Count by hour/day/month
-        # Track monotonicity
-        pass
-
-    def finalize(self) -> DatetimeSummary:
-        """Compute final statistics"""
-        # Compute span
-        # Compute monotonicity coefficient
-        # Format distributions
-        # Build timeline
-        return DatetimeSummary(...)
-```
+- `update()` takes a **numpy array** of epoch-nanosecond integers, never a frame
+  or a Series.
+- Bounded state: min and max timestamps, fixed-width count arrays for hour,
+  day-of-week, month and year, a monotonicity tracker, and a running interval
+  accumulator. None of it grows with the number of rows.
+- `merge()` takes element-wise sums of the count arrays and the extremes of the
+  bounds — exact, and order-independent.
+- Timestamps are normalised to UTC for the arithmetic; the original zone is
+  reported as `source_timezone`.
 
 ## Examples
 

@@ -34,27 +34,27 @@ PySuricata treats **boolean variables** as columns with two distinct values (Tru
 
 ### Key Features
 
-- **True/False counts** with percentages
-- **Balance ratio** (distribution symmetry)
-- **Entropy** (information content)
-- **Information per value** (bits)
-- **Imbalance detection** (skewed distributions)
+- **True/False counts** and ratios
+- **Entropy** (information content, in bits)
 - **Missing value handling**
 
 ## Summary Statistics Provided
 
-For each boolean column:
+Exactly what `summarize()` publishes for a boolean column, and nothing else:
 
-- **Count**: total non-null values
-- **True count**: number of True values
-- **False count**: number of False values
-- **Missing count**: number of missing/null values
-- **True percentage**: \(p = n_{\text{true}} / n\)
-- **False percentage**: \(1 - p\)
-- **Missing percentage**: \(n_{\text{missing}} / n_{\text{total}}\)
-- **Entropy**: Shannon entropy in bits
-- **Balance score**: measure of distribution symmetry
-- **Imbalance ratio**: deviation from 50/50 split
+| key | meaning |
+|---|---|
+| `count` | non-missing values |
+| `missing` | missing values |
+| `true`, `false` | counts |
+| `true_ratio`, `false_ratio` | \(p = n_{\text{true}} / n\), and \(1 - p\) |
+| `entropy` | Shannon entropy, in bits |
+| `mem_bytes`, `dtype` | bookkeeping |
+
+The derived quantities below — imbalance ratio, balance score, information
+content per value — are **not** in the payload. They are one line of arithmetic
+from `true_ratio`, and they are documented here because reading a boolean column
+means reasoning about them, not because PySuricata computes them for you.
 
 ## Mathematical Definitions
 
@@ -94,7 +94,10 @@ R = \frac{n_{\text{true}}}{n_{\text{false}}}
 - \(R \to \infty\): nearly all True
 - \(R \to 0\): nearly all False
 
-### Imbalance Ratio
+### Imbalance Ratio { data-derived }
+
+!!! note "Derived, not published"
+    Not a key in the payload. Compute it from `true_ratio` if you want it.
 
 Measures deviation from balanced distribution:
 
@@ -113,7 +116,10 @@ I = \frac{|n_{\text{true}} - n_{\text{false}}|}{n} = |2p - 1|
 - \(I \ge 0.6\): severely imbalanced
 - \(I > 0.9\): nearly constant
 
-### Balance Score
+### Balance Score { data-derived }
+
+!!! note "Derived, not published"
+    Not a key in the payload. Compute it from `true_ratio` if you want it.
 
 Alternative measure of balance:
 
@@ -161,7 +167,10 @@ By convention, \(0 \log_2(0) = 0\).
 | 0.9 | 0.47 | Low entropy, mostly True |
 | 1.0 | 0.00 | No information (constant True) |
 
-### Information Content per True Value
+### Information Content per True Value { data-derived }
+
+!!! note "Derived, not published"
+    Not a key in the payload.
 
 Average information conveyed by each True observation:
 
@@ -176,42 +185,33 @@ IC_{\text{true}} = -\log_2(p) \text{ bits}
 
 **Use case:** In imbalanced classification, rare class has higher information content.
 
-### Information Content per False Value
+### Information Content per False Value { data-derived }
+
+!!! note "Derived, not published"
+    Not a key in the payload.
 
 \[
 IC_{\text{false}} = -\log_2(1 - p) \text{ bits}
 \]
 
-## Statistical Tests
+## Why There Is No Balance Test
 
-### Binomial Test for Balance
-
-Test if \(p = 0.5\) (balanced distribution).
-
-**Null hypothesis:** \(H_0: p = 0.5\)
-
-**Test statistic:**
+A binomial test of \(H_0: p = 0.5\) is the obvious next step, and PySuricata
+does not run one. Deliberately:
 
 \[
-Z = \frac{\hat{p} - 0.5}{\sqrt{0.5 \cdot 0.5 / n}}
+Z = \frac{\hat{p} - 0.5}{\sqrt{0.25 / n}}
 \]
 
-Under \(H_0\) and large \(n\), \(Z \sim N(0, 1)\).
+At profiling scale that statistic is not informative. With \(n = 10^6\), a true
+rate of 0.501 — a difference nobody cares about — gives \(Z = 2\) and a
+"significant" result. The test answers *is this exactly 0.5*, which is never the
+question; the question is *is this far enough from 0.5 to matter*, and that is
+`true_ratio` against a threshold you choose.
 
-**P-value (two-tailed):**
-
-\[
-\text{p-value} = 2 \cdot \Phi(-|Z|)
-\]
-
-where \(\Phi\) is the standard normal CDF.
-
-**Interpretation:**
-- Small p-value (< 0.05): reject balance hypothesis (distribution is skewed)
-- Large p-value: consistent with balanced distribution
-
-!!! note "Not implemented in current version"
-    Statistical tests are planned for future release.
+Running it anyway would put a p-value on every boolean card that is essentially
+a function of the row count. If you want the test, you have \(n\) and
+\(\hat{p}\) in the payload.
 
 ## Computational Complexity
 
@@ -240,60 +240,20 @@ report = profile(df, config=config)
 
 ## Implementation Details
 
-### BooleanAccumulator Class
+`BooleanAccumulator` lives in `pysuricata/accumulators/boolean.py` and
+`BooleanSummary` beside it. Rather than a sketch that can drift, the shape:
 
-```python
-class BooleanAccumulator:
-    def __init__(self, name: str, config: BooleanConfig):
-        self.name = name
-        self.count = 0
-        self.missing = 0
-        self.true_count = 0
-        self.false_count = 0
-
-    def update(self, values: pd.Series):
-        """Update with chunk of values"""
-        # Filter out missing
-        # Count True values
-        # Count False values
-        pass
-
-    def finalize(self) -> BooleanSummary:
-        """Compute final statistics"""
-        # Compute percentages
-        # Compute entropy
-        # Compute balance scores
-        # Detect imbalance
-        return BooleanSummary(
-            count=self.count,
-            missing=self.missing,
-            true_count=self.true_count,
-            false_count=self.false_count,
-            true_pct=self.true_count / max(1, self.count),
-            entropy=self._compute_entropy(),
-            balance_score=self._compute_balance(),
-            imbalance_ratio=self._compute_imbalance(),
-        )
-
-    def _compute_entropy(self) -> float:
-        if self.count == 0:
-            return 0.0
-        p = self.true_count / self.count
-        if p == 0.0 or p == 1.0:
-            return 0.0
-        return -(p * math.log2(p) + (1-p) * math.log2(1-p))
-
-    def _compute_balance(self) -> float:
-        if self.count == 0:
-            return 0.0
-        p = self.true_count / self.count
-        return 1.0 - abs(0.5 - p)
-
-    def _compute_imbalance(self) -> float:
-        if self.count == 0:
-            return 0.0
-        return abs(self.true_count - self.false_count) / self.count
-```
+- It subclasses `PicklableAccumulator`, so a long run can be checkpointed.
+- `update()` takes a **numpy array**, never a frame or a Series — the adapter
+  has already converted the column. That is what makes the accumulator testable
+  in isolation and mergeable across machines.
+- State is four integers: `count`, `missing`, `true_n`, `false_n`. Everything on
+  the summary is derived from those at `finalize()`, which is why the whole
+  column kind is \(O(1)\) in space.
+- `merge()` adds the four counters. Exact, order-independent, and the reason
+  chunked results equal unchunked ones.
+- `chunk_metadata` carries `(start_row, end_row, missing_in_chunk)` per chunk,
+  which is what the Missing Values pane is drawn from.
 
 ## Examples
 
@@ -324,7 +284,7 @@ df = pd.DataFrame({
 })
 
 report = profile(df)
-# Will show low entropy, high imbalance
+# Will show low entropy and a true_ratio near 0.1
 ```
 
 ### Access Statistics
@@ -348,9 +308,8 @@ print(f"Missing:     {active_stats['missing']}")
 
 ### Well-Balanced (p ≈ 0.5)
 
-- **Entropy** ≈ 1.0 bit
-- **Balance score** > 0.9
-- **Imbalance ratio** < 0.2
+- `true_ratio` between 0.4 and 0.6
+- `entropy` ≈ 1.0 bit
 
 **Implications:**
 - High information content
@@ -361,9 +320,8 @@ print(f"Missing:     {active_stats['missing']}")
 
 ### Imbalanced (p << 0.5 or p >> 0.5)
 
-- **Entropy** < 0.5 bits
-- **Balance score** < 0.7
-- **Imbalance ratio** > 0.6
+- `true_ratio` below 0.2 or above 0.8
+- `entropy` < 0.5 bits
 
 **Implications:**
 - Low information content
@@ -374,9 +332,8 @@ print(f"Missing:     {active_stats['missing']}")
 
 ### Nearly Constant (p < 0.01 or p > 0.99)
 
-- **Entropy** < 0.1 bits
-- **Balance score** ≈ 0.5
-- **Imbalance ratio** > 0.98
+- `true_ratio` below 0.01 or above 0.99
+- `entropy` < 0.1 bits
 
 **Implications:**
 - Almost no information
@@ -420,9 +377,8 @@ Low entropy boolean features (\(H < 0.5\)):
 
 ### All True or All False
 
-- Entropy = 0 (no information)
-- Balance score = 0.5 (worst)
-- Imbalance ratio = 1.0 (complete)
+- `entropy` = 0 (no information)
+- `true_ratio` is 1.0 or 0.0
 
 **Recommendation:** Remove column (constant value).
 

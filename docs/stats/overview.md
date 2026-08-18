@@ -111,9 +111,23 @@ All statistics use **single-pass streaming algorithms** with bounded memory:
 
 ## Guarantees
 
-- **Exact:** moments (mean, variance, skewness, kurtosis), min/max, counts
-- **Approximate:** quantiles (within ±1 percentile), distinct count (~2.2% error with default k=2048)
-- **Deterministic:** set `random_seed` for reproducible reservoir sampling
+**Exact:** moments (mean, variance, skewness, kurtosis), min/max, counts, and
+every missing-value count.
+
+**Approximate, each with its bound published beside it:**
+
+| value | from | error |
+|---|---|---|
+| quantiles (`q1`, `median`, `q3`, and IQR/MAD) | reservoir sample | \(\approx 1/\sqrt{k}\) — about **0.7%** at the default 20,000, and 3.2% at 1,000. **Exact** below the sample size, and `approx` says which |
+| `unique_est`, variant counts | KMV sketch | \(\approx 1/\sqrt{k}\) — about **2.2%** at the default `uniques_k=2048` |
+| `duplicate_rows_est` | KMV over row hashes | reported with `duplicate_rows_uncertainty` |
+| `top_items` counts | Misra-Gries | **lower bounds** — a count never overstates, and the counters neither partition the column nor sum to the row count |
+
+**Deterministic:** reproducible by default. `random_seed` is `0`, not `None`, so
+the same data gives the same report.
+
+Full detail, including what is deliberately withheld from the payload, in
+[the `summarize()` schema](../summary-schema.md).
 
 ## See Also
 

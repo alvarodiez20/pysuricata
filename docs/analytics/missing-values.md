@@ -32,11 +32,17 @@ Comprehensive guide to PySuricata's intelligent missing values analysis with ada
 
 Missing data is ubiquitous in real-world datasets. PySuricata provides:
 
-- **Intelligent display**: Adaptive limits based on dataset size
-- **Chunk-level tracking**: See missing data distribution across chunks
-- **Pattern detection**: Identify systematic missingness
-- **Smart filtering**: Show only significant missing columns
-- **Expandable UI**: Progressive disclosure for many columns
+- **Per-column counts and percentages**, exact, from the single pass
+- **Chunk-level tracking**: where in the stream the missing values fell, which
+  is what turns "8% missing" into "the third file was empty"
+- **Intelligent display**: adaptive limits based on dataset size
+- **Smart filtering**: show only columns above a threshold
+- **Expandable UI**: progressive disclosure for many columns
+
+What it does **not** do is cross-column pattern analysis — which columns go
+missing *together*. That needs the joint missingness matrix, which is quadratic
+in columns and not available from a bounded single pass. The two sections below
+say why, and what to do instead.
 
 ## Missing Data Mechanisms
 
@@ -82,8 +88,16 @@ where \(p_i\) is the proportion of rows with pattern \(i\).
 **High entropy**: Many different patterns (complex missingness)  
 **Low entropy**: Few patterns (systematic missingness)
 
-!!! note "Not implemented"
-    Pattern entropy computation is planned for future release.
+!!! note "Not computed"
+    Pattern entropy is over *joint* patterns — the \(2^p\) possible
+    combinations of which columns are missing in a row. Counting them needs
+    either that many counters or a distinct-value sketch over row-level
+    bitmasks, and either way the answer describes co-missingness, which is a
+    cross-column question this single pass does not ask.
+
+    What is published is per-column and per-chunk: `missing` and
+    `missing_cells_pct`, plus the chunk strip. If two columns go missing in the
+    same chunks, the strip shows it.
 
 ## Intelligent Display System
 
@@ -221,22 +235,24 @@ More missing in later chunks:
 - Investigate recent changes
 - Alert data engineering team
 
-## Little's MCAR Test
+## Why There Is No MCAR Test
 
-Statistical test for MCAR assumption.
+Little's test (1988) compares the means of subgroups defined by missing pattern
+under \(H_0\): the data is missing completely at random. PySuricata does not
+run it, and this one is not a "not yet".
 
-**Null hypothesis**: Data is MCAR
+It needs the **joint** pattern structure — subgroups of rows sharing a
+missingness signature, and each subgroup's mean vector across every column. That
+is a second pass over data grouped by something you only know after the first
+one, which is the shape of computation this profiler is built not to do.
 
-**Test statistic**: Compare means of subgroups defined by missing patterns
+It is also the wrong altitude. Whether missingness is MCAR, MAR or MNAR is a
+modelling judgement about *your* domain, made once, deliberately, with the
+column semantics in hand. A profiler's job is to hand you the evidence — which
+columns, how much, and where in the stream — not to return a verdict on it.
 
-**P-value interpretation**:
-- Large p-value: Consistent with MCAR
-- Small p-value: Reject MCAR (MAR or MNAR)
-
-!!! note "Not implemented"
-    Little's test is planned for future release. Currently, users must perform external analysis.
-
-**Reference**: Little, R.J.A. (1988), "A Test of Missing Completely at Random for Multivariate Data with Missing Values", *JASA*, 83(404): 1198–1202.
+**Reference**: Little, R.J.A. (1988), "A Test of Missing Completely at Random
+for Multivariate Data with Missing Values", *JASA*, 83(404): 1198–1202.
 
 ## Imputation Considerations
 
