@@ -14,6 +14,19 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- **The numeric card says when its outlier count is an estimate.** `Unique`
+  already renders `(≈)` when its distinct count came from the sketch. Above
+  `numeric_sample_size` rows `Outliers` is a reservoir count scaled to the
+  column (#327), not a count of anything, and it sat unmarked between `Zeros`
+  and `Negatives`, both of which are exact, borrowing their confidence.
+
+  The fence pane now names the sample it counted in. The pane counts crossings
+  in the reservoir while the card scales that count to the column, so past the
+  reservoir size the two legitimately differ by the sampling ratio and nothing
+  said which was which.
+
 ### Added
 
 - **`profile()` and `summarize()` read Excel workbooks** (#4) — `.xlsx`,
