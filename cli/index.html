@@ -2172,6 +2172,11 @@ whatever keys still line up.</p>
 <td>fail if the dataset has fewer rows than this</td>
 </tr>
 <tr>
+<td><code>--max-duplicate-pct</code></td>
+<td>—</td>
+<td>fail if duplicate rows could be above this percentage — gated on the upper bound, so a count below the sketch's own resolution fails closed rather than passing as zero</td>
+</tr>
+<tr>
 <td><code>--max-rows-drift-pct</code></td>
 <td>—</td>
 <td>fail if the row count moved more than this percentage from the baseline</td>

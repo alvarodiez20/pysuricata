@@ -2122,6 +2122,16 @@ kind. Those four are safe to read without checking <code>type</code> first.</p>
 <td>One standard deviation on the count, in rows. <code>0</code> when the count is exact</td>
 </tr>
 <tr>
+<td><code>duplicate_rows_lo</code></td>
+<td>int</td>
+<td>Lower bound of the plausible range, in rows. <code>0</code> whenever the count is suppressed</td>
+</tr>
+<tr>
+<td><code>duplicate_rows_hi</code></td>
+<td>int</td>
+<td>Upper bound of the plausible range, in rows — the same figure the HTML report prints when it suppresses the count</td>
+</tr>
+<tr>
 <td><code>memory_bytes</code></td>
 <td>int</td>
 <td>Approximate in-memory size of the source</td>
@@ -2142,15 +2152,22 @@ inside spec, and the duplicate count came back 47% high.</p>
 <p>So <code>duplicate_rows_est</code> is suppressed to <code>0</code> when it does not clear <strong>3</strong>
 standard deviations of uncertainty, not 1 — a 1-sigma gate published a
 duplicate count on a clean, duplicate-free frame about one run in ten (#248).
-<code>duplicate_rows_uncertainty</code> is exported as one sigma either way; the ceiling
-below which nothing is resolvable is <code>math.ceil(3 * duplicate_rows_uncertainty)</code>,
-not <code>duplicate_rows_uncertainty</code> itself. Read the two together:</p>
+That suppression is exactly what makes <code>duplicate_rows_est == 0</code> ambiguous on
+its own: it means either "exactly none" or "nothing resolvable" (#329), and a
+CI gate reading only that field cannot tell the two apart — the same
+assertion passes on a clean frame and on one whose duplicates are merely
+unconfirmed.</p>
+<p><code>duplicate_rows_lo</code> / <code>duplicate_rows_hi</code> resolve the ambiguity without any
+arithmetic of your own: they are the same interval the report already
+computed, published directly rather than left to be reconstructed from
+<code>duplicate_rows_uncertainty</code> and a multiple documented only in prose.</p>
 <table>
 <thead>
 <tr>
 <th><code>est</code></th>
 <th><code>uncertainty</code></th>
-<th>Ceiling (<code>3 × uncertainty</code>, rounded up)</th>
+<th><code>lo</code></th>
+<th><code>hi</code></th>
 <th>Means</th>
 </tr>
 </thead>
@@ -2158,27 +2175,32 @@ not <code>duplicate_rows_uncertainty</code> itself. Read the two together:</p>
 <tr>
 <td><code>0</code></td>
 <td><code>0</code></td>
-<td>—</td>
+<td><code>0</code></td>
+<td><code>0</code></td>
 <td>Exactly none. The distinct count was exact, not estimated</td>
 </tr>
 <tr>
 <td><code>0</code></td>
 <td><code>2201</code></td>
+<td><code>0</code></td>
 <td><code>6603</code></td>
 <td>Nothing resolvable. The true count is somewhere below roughly 6,603</td>
 </tr>
 <tr>
 <td><code>50602</code></td>
 <td><code>1651</code></td>
-<td>—</td>
+<td><code>48951</code></td>
+<td><code>52253</code></td>
 <td>About 50,602, give or take 1,651 — cleared the ceiling, so no suppression</td>
 </tr>
 </tbody>
 </table>
-<p>Gating on <code>duplicate_rows_est &gt; 0</code> is therefore safe against false positives and
-will not fire on a count the sketch cannot support. If you need to fail on the
-<em>possibility</em> of duplicates, gate on <code>duplicate_rows_uncertainty</code> instead — it
-is nonzero exactly when <code>duplicate_rows_est</code> could be suppressing a real count.</p>
+<p>Gating on <code>duplicate_rows_est &gt; 0</code> is safe against false positives and will not
+fire on a count the sketch cannot support — but it fails <strong>open</strong>: a real
+duplicate rate the sketch has not yet confirmed reads identically to a clean
+frame. Gate on <code>duplicate_rows_hi</code> instead when the cost of missing a real
+duplication matters more than the cost of a false alarm; <code>pysuricata check
+--max-duplicate-pct</code> does exactly this.</p>
 <h2 id="columnsnametype"><code>columns[name]["type"]</code></h2>
 <p>One of <code>numeric</code>, <code>categorical</code>, <code>datetime</code>, <code>boolean</code>, <code>identifier</code>.</p>
 <p><code>identifier</code> is a numeric column that is monotonic, integer-like and has a

@@ -2739,12 +2739,31 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...HEAD">Unreleased</a></h2>
 <h3 id="added">Added</h3>
 <ul>
-<li><strong><code>profile()</code> and <code>summarize()</code> read Excel workbooks</strong> (#4) — <code>.xlsx</code>,
+<li>
+<p><strong><code>duplicate_rows_lo</code> / <code>duplicate_rows_hi</code> in the <code>summarize()</code> payload,
+  and a <code>pysuricata check --max-duplicate-pct</code> gate that reads them</strong> (#329).
+  <code>duplicate_rows_est == 0</code> cannot be told from "below the sketch's own
+  resolution" without also reading <code>duplicate_rows_uncertainty</code> and
+  reconstructing the bound <code>render/html.py</code> already prints — and the
+  README's own CI-gate example gated on the suppressed estimate, so it
+  passed identically on a clean frame and on one whose duplicates were
+  merely unconfirmed. The two new fields publish that arithmetic directly:
+  <code>duplicate_rows_hi</code> is <code>estimate.ceiling</code> when suppressed (the same figure
+  the report prints, not a second computation of it) and <code>rows ± uncertainty</code>
+  when resolved. <code>--max-duplicate-pct</code> gates on <code>duplicate_rows_hi</code>, not the
+  point estimate, so a frame whose duplicates are merely unresolved fails
+  the check instead of passing it by accident. The README's own example is
+  fixed to match. Adding keys does not move <code>schema_version</code>
+  (<code>docs/versioning.md</code>).</p>
+</li>
+<li>
+<p><strong><code>profile()</code> and <code>summarize()</code> read Excel workbooks</strong> (#4) — <code>.xlsx</code>,
   <code>.xlsm</code>, <code>.xlsb</code>, <code>.xls</code> and <code>.ods</code> — which the browser demo already did
   (<code>web/README.md</code>) while the library itself raised <code>UnsupportedDataError</code>
   for the same file. Publishing the demo widened that gap rather than
   revealing it: a workbook the demo profiled in the browser had no path
-  through the package underneath it.</li>
+  through the package underneath it.</p>
+</li>
 </ul>
 <p><code>python-calamine</code> is tried first — one dependency across all five formats,
   and the engine the demo settled on for the same reason — falling back to
@@ -2891,12 +2910,45 @@ quoted when both sides were measured in the same round-robin run.</p>
 </ul>
 <h3 id="fixed">Fixed</h3>
 <ul>
-<li><strong>Top-k counts claimed to be exact in exactly the case they were most
+<li><strong>A zero-column frame reported 90% duplicate rows; pandas reports none</strong>
+  (#312). <code>RowKMV.update_from_pandas</code> seeded its row hash from <code>columns[0]</code>,
+  which raises <code>IndexError</code> on a frame with no columns and fell into
+  <code>_degraded_update</code> -- built for content that failed to hash, not for
+  content that never existed. Joining zero columns per row produced the
+  same empty-string signature for every row, so a 10-row, 0-column frame
+  (<code>pd.DataFrame(index=range(10))</code>) reported 9 duplicates, labelled <code>exact</code>
+  because nothing was actually degraded from the sketch's point of view,
+  only from the data's.</li>
+</ul>
+<p>Nothing can differ between such rows, but that is not the question a
+  duplicate count answers: pandas' own <code>duplicated()</code> reports zero for this
+  shape, since there is nothing to key a comparison on and every row counts
+  as its own, unrepeated observation. <code>RowKMV</code> now matches it directly
+  (<code>_offer_zero_column_rows</code>) by feeding the sketch a synthetic per-row
+  identity -- a running counter passed through the same <code>splitmix64</code> mixer
+  the real row hashes use, so it stays uniformly distributed and does not
+  bias the sketch's error bound -- kept cumulative across chunks so two
+  chunks' rows can never collide with each other. All-missing and
+  constant-column frames are unaffected: they are genuinely duplicate rows,
+  as they were before.</p>
+<ul>
+<li>
+<p><strong>README credited Misra-Gries with the wrong knob</strong> (#330). The footnote
+  said <code>k</code> (the top-k budget) was <code>max_uniques</code> (default 2048); it is
+  <code>top_k</code> (default 50) -- <code>max_uniques</code> sizes the unrelated KMV
+  distinct-count sketch. A reader sizing expectations from that table got
+  exact counts up to 2048 distinct values and wrong ones from 51, which is
+  the wrong mental model that made #328 invisible in the first place: the
+  counts looked like they should be exact, so nobody checked.</p>
+</li>
+<li>
+<p><strong>Top-k counts claimed to be exact in exactly the case they were most
   wrong</strong> (#328). Misra-Gries keeps 50 counters; above 50 distinct values every
   new value evicts weight from every counter, so a reported count is a lower
   bound and the <em>ranking</em> goes with it. On a near-uniform column of 1,000
   categories over a million rows, the true top value held 1,107 occurrences and
-  the report named a different value with 35.</li>
+  the report named a different value with 35.</p>
+</li>
 </ul>
 <p>The flag meant to warn about this read <code>len(top_items) &gt;= top_k_size</code>, which
   is the dangerous case backwards: eviction <em>deletes</em> counters, so the list
@@ -2927,6 +2979,28 @@ quoted when both sides were measured in the same round-robin run.</p>
   columns exact and costs ~490 MB of counters across 600 columns, trading a
   correctness bug for the memory regression #207 is about. The bound ships; the
   budget stays.</p>
+<ul>
+<li><strong><code>benchmarks/versions.py</code> could silently measure the same code four times
+  under four different version labels</strong> (#249). <code>RUNNER</code>'s subprocess script
+  imported <code>pysuricata</code> after <code>sys.path.insert(0, REPO)</code> had already put this
+  checkout ahead of the throwaway venv's own installation, and <code>python -c</code>
+  additionally puts the caller's cwd at <code>sys.path[0]</code> — so running from the
+  repo root shadowed every venv's install with the local working tree even
+  without the insert. <code>pysuricata.__version__</code> could not have caught it: it
+  resolves through <code>importlib.metadata</code>, which reports the <em>installed</em>
+  distribution regardless of what actually imported. Only <code>pysuricata.__file__</code>
+  tells the truth.</li>
+</ul>
+<p><code>REPO</code> is now appended to <code>sys.path</code> rather than inserted at the front (it
+  can no longer outrank a venv's own site-packages), the subprocess runs with
+  <code>cwd</code> set away from <code>REPO</code>, and — the belt-and-suspenders fix, since some
+  other path-pollution source could still reach this — <code>RUNNER</code> checks
+  <code>pysuricata.__file__</code> against the venv it meant to measure before timing
+  anything, refusing the entire run with both paths named if they disagree.
+  Caught for real in testing: an incidental empty <code>pysuricata/</code> directory
+  elsewhere on the machine resolved as an implicit namespace package with
+  <code>__file__ is None</code>, which the first version of this check crashed on
+  (<code>realpath(None)</code>) rather than refusing cleanly — fixed alongside it.</p>
 <ul>
 <li><strong>The duplicate-row estimate could false-alarm on a clean frame</strong> (#248).
   <code>RowKMV.duplicates()</code> suppressed its count when the estimate did not exceed
