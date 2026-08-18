@@ -114,7 +114,7 @@ check that is not a browser.
 
 ## Guardrails
 
-Memory is bounded in rows, not in columns: roughly 1.5 MB of RAM and 66 KB of HTML
+Memory is bounded in rows, not in columns: roughly 1.2 MB of RAM and 59 KB of HTML
 per column. A wide frame exhausts a tab long before a tall one does, so the page
 refuses files above `MAX_COLUMNS` (250) with an explanation, and caps file size at
 600 MB (40 MB for workbooks, above).

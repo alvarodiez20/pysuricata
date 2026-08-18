@@ -16,6 +16,27 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The per-column memory figure in the README and seven docs pages was wrong,
+  and the README screenshot was two releases stale.** Three different numbers
+  were in circulation for the same fact: 3 MB per column across the docs, 1.5 MB
+  in `web/README.md`, 1.3 MB in the README. `python -m benchmarks.columns`, the
+  harness written for exactly this claim, puts it at **1.2 MB of resident memory
+  and 59 KB of report per column** measured as the slope from 100 columns to 600
+  at 20,000 rows. A 20,000 x 600 frame costs 797 MB and emits a 35 MB report;
+  a 1,000,000 x 14 frame holds 1.2x the cells for 52 MB. Every copy of the
+  figure now says the measured one, and the claim moved out of the README's
+  opening pitch into a section of its own, since a limit stated in passing in a
+  sales paragraph is a limit nobody reads.
+
+  The README screenshot was captured at 0.1.1 and predated the threshold chips,
+  the flag legend and the sort control on the variables list, so the picture
+  advertising the project showed a report it no longer emits. Recaptured at
+  0.1.5 with `scripts/capture_report_screenshot.py`, and its alt text no longer
+  hardcodes how many columns the Titanic frame happens to flag.
+
+  The README also has no em dashes left in it, and the docs landing page now
+  links the browser demo, which it had never mentioned.
+
 - **The demo page's hero and prose sit on one measure, with room around them.**
   The reading column is one 720px grid track, but the blocks inside it carried
   caps of their own — 20ch on the h1, 52ch on the lede, 56ch on the closing note

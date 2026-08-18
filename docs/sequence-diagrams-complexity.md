@@ -254,8 +254,8 @@ Total: **O(cols × (s + k))**. Nothing in that expression is the row count, whic
 is the whole claim — memory is flat in rows.
 
 It is **not** flat in columns. Multiplying by `cols` is not a rounding error: at
-roughly 3 MB per column, a 20,000 × 600 frame costs far more than a
-5,000,000 × 8 one on less data. That is a known limit, tracked in
+roughly 1.2 MB per column, a 20,000 × 600 frame costs 797 MB against 52 MB for
+a 1,000,000 × 14 one on more cells. That is a known limit, tracked in
 [#207](https://github.com/alvarodiez20/pysuricata/issues/207), and it is the
 honest reading of the table above.
 

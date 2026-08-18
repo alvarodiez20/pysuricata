@@ -197,8 +197,8 @@ flowchart TD
 | **Total** | **O(n × cols + n × m²)** | **O(cols × s)** | — |
 
 Note the space column: every bound is **per column**. Memory is flat in rows and
-linear in columns, at roughly 3 MB each — which is why a 20,000 × 600 frame
-costs more than a 5,000,000 × 8 one on less data
+linear in columns, at roughly 1.2 MB each — which is why a 20,000 × 600 frame
+costs 797 MB against 52 MB for a 1,000,000 × 14 one on more cells
 ([#207](https://github.com/alvarodiez20/pysuricata/issues/207)).
 
 Report size follows the same axis: one card per column, so it grows with width
