@@ -62,6 +62,14 @@ Deliberate fact changes so far, each with the reason it was allowed:
   **not** move: `col_name` keeps its entropy, because the fixture gives its head
   distinct counts and a column whose levels genuinely differ still has a spread
   worth reporting.
+
+* **#329, the duplicate-count interval.** `duplicate_rows_est == 0` cannot be
+  told from "below the sketch's own resolution" without also reading
+  `duplicate_rows_uncertainty` and reconstructing the bound in prose --
+  `duplicate_rows_lo` / `duplicate_rows_hi` publish that arithmetic directly, the
+  same interval the report already computed. **2 facts added, 0 changed, 0
+  removed**, both `0` on every fixture here since none of the three frames has
+  an unresolved or resolved duplicate count to bound.
 """
 
 from __future__ import annotations

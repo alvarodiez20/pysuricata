@@ -1340,6 +1340,36 @@
   min-width: 0;
 }
 
+/* Narrow screens: the controls slot drops onto its own line, so it needs the
+   gap a wrapped flex line does not give it. Moved here from
+   `_08-categorical.css` (#306) -- every card kind has a controls row, and that
+   partial now ships only when a categorical column exists. It has to sit after
+   the base rule above, which is why it is here and not beside its neighbours.
+
+   The two grid declarations it arrived with are gone: this is a flex
+   container, so `grid-template-columns` and `grid-column` never applied. */
+@media (max-width: 1024px) {
+  #pysuricata-report .card-controls .controls-slot {
+    margin-top: 6px;
+  }
+}
+
+/* Drawn by the numeric histogram, the categorical bars and the datetime
+   charts, so it is unconditional. Was in `_08-categorical.css` (#306). The
+   per-chart rules that override it -- `.hist-svg .axis`, `.dt-svg .axis`,
+   `.temporal-chart .axis` -- are all more specific, so they still win from
+   their own partials regardless of order. */
+#pysuricata-report .axis {
+  stroke: var(--axis);
+  stroke-width: 1.5;
+}
+
+/* Was in `_09-datetime.css` (#306), where it applied to every card kind from a
+   partial that now ships only for datetime frames. */
+#pysuricata-report .var-card__body .var-chart {
+  overflow: hidden;
+}
+
 #pysuricata-report .card-controls .details-slot,
 #pysuricata-report .card-controls .controls-slot {
   display: contents;

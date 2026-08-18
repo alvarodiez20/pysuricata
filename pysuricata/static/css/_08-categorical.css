@@ -114,18 +114,12 @@
   }
 }
 
-/*# Responsive tweak for controls row stacking on narrow screens*/
-@media (max-width: 1024px) {
-  #pysuricata-report .card-controls {
-    grid-template-columns: 1fr;
-  }
-
-  #pysuricata-report .card-controls .controls-slot {
-    grid-column: 1;
-    justify-self: start;
-    margin-top: 6px;
-  }
-}
+/* The narrow-screen controls tweak moved to `_06-cards.css` (#306). Every card
+   kind has a controls row, so it cannot ship only with categorical. Two of its
+   three declarations went nowhere and did not survive the move: `.card-controls`
+   is `display: flex`, and a flex container ignores `grid-template-columns` and
+   `grid-column` -- measured at 900px, where the computed display is `flex` and
+   only the `margin-top` had any effect. */
 
 
 /* =============================================
@@ -246,11 +240,9 @@
   opacity: 1;
 }
 
-/* Ensure axis lines are visible */
-#pysuricata-report .axis {
-  stroke: var(--axis);
-  stroke-width: 1.5;
-}
+/* `.axis` moved to `_06-cards.css` (#306): it is drawn by the numeric
+   histogram and the datetime charts as well, so it cannot live in the partial
+   that only ships when a categorical column exists. */
 
 /* =============================================
    ENHANCED COMMON VALUES TABLE STYLING

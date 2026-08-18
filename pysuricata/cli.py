@@ -179,6 +179,14 @@ For more information, visit: https://github.com/alvarodiez20/pysuricata
         help="Fail if the dataset has fewer rows than this",
     )
     check_parser.add_argument(
+        "--max-duplicate-pct",
+        type=float,
+        default=None,
+        help="Fail if duplicate rows could be above this percentage -- gated "
+        "on the upper bound, so a count below the sketch's own resolution "
+        "fails closed rather than passing as zero",
+    )
+    check_parser.add_argument(
         "--max-rows-drift-pct",
         type=float,
         default=None,
@@ -420,6 +428,7 @@ def _resolve_thresholds(args: argparse.Namespace) -> Thresholds:
     overrides = {
         "max_missing_pct": args.max_missing_pct,
         "min_rows": args.min_rows,
+        "max_duplicate_pct": args.max_duplicate_pct,
         "max_rows_drift_pct": args.max_rows_drift_pct,
     }
     given = {k: v for k, v in overrides.items() if v is not None}

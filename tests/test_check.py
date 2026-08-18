@@ -49,6 +49,15 @@ def _frame(n: int = 4_000, *, seed: int = 0, shift: float = 0.0) -> pd.DataFrame
     )
 
 
+def _frame_with_duplicates(n: int, duplicates: int) -> pd.DataFrame:
+    """Exactly ``duplicates`` duplicate rows, shuffled."""
+    base = np.arange(n - duplicates)
+    values = np.concatenate([base, base[:duplicates]])
+    rng = np.random.default_rng(0)
+    rng.shuffle(values)
+    return pd.DataFrame({"id": values})
+
+
 @pytest.fixture
 def base_summary():
     return summarize(_frame(), seed=0)
@@ -356,6 +365,45 @@ class TestAbsoluteThresholds:
             summarize(_frame(200), seed=0), None, Thresholds(min_rows=1_000)
         )
         assert [f.kind for f in result.findings] == ["rows"]
+
+    def test_max_duplicate_pct_gates_on_the_upper_bound(self):
+        """#329. A count below the sketch's own resolution suppresses
+        `duplicate_rows_est` to 0 -- gating on it alone would pass a frame
+        whose duplicate rate is merely unknown, not actually low. The gate
+        must read `duplicate_rows_hi` instead, which stays nonzero here."""
+        frame = _frame_with_duplicates(200_000, 2_000)
+        stats = summarize(frame, seed=0)
+        assert stats["dataset"]["duplicate_rows_est"] == 0, "suppressed by #248"
+
+        result = compare(stats, None, Thresholds(max_duplicate_pct=0.1))
+
+        assert [f.kind for f in result.findings] == ["duplicates"]
+        assert result.findings[0].approximate
+
+    def test_a_genuinely_clean_frame_passes_the_gate(self):
+        """Kept under the sketch's exact-counting budget (`k`, default 8,192)
+        on purpose: past it even a clean frame carries KMV noise of its own
+        (~2.2% at the default k), and this test is about the gate passing a
+        clean frame, not about re-deriving that error bound."""
+        frame = _frame_with_duplicates(5_000, 0)
+        stats = summarize(frame, seed=0)
+        assert stats["dataset"]["duplicate_rows_hi"] == 0, "exact, not estimated"
+
+        result = compare(stats, None, Thresholds(max_duplicate_pct=0.1))
+
+        assert result.passed
+
+    def test_a_resolved_duplicate_count_still_gates(self):
+        """Above the sketch's resolution the estimate is not suppressed, and
+        the gate must still fire on it -- `duplicate_rows_hi` widening the
+        bound must not accidentally raise it past a genuine breach either."""
+        frame = _frame_with_duplicates(200_000, 50_000)
+        stats = summarize(frame, seed=0)
+        assert stats["dataset"]["duplicate_rows_est"] > 0
+
+        result = compare(stats, None, Thresholds(max_duplicate_pct=1.0))
+
+        assert [f.kind for f in result.findings] == ["duplicates"]
 
     def test_nothing_configured_means_nothing_to_say(self):
         assert compare(summarize(_frame(), seed=0), None).passed
