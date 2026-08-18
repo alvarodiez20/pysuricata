@@ -1,10 +1,3 @@
-> **Retired — this plan is done.** Phases 1–9 of the report redesign landed and
-> the redesign is closed out. Kept as a record of what was decided and why; it
-> is not documentation and is not published. Paths it names may no longer exist
-> — `examples/titanic_report.html` in particular was removed in #165, and the
-> example report is now generated at docs-build time by
-> `scripts/regenerate_example_report.py`.
-
 # pysuricata report UI — integration plan
 
 Design decisions settled with the designer, written for implementation in the
@@ -41,6 +34,10 @@ depends on.
 | `Palette.dc.html` | the colour system, and the two-dataset comparison |
 | `Correlations and Missing.dc.html` | correlations (three states) and missing values (two options) |
 | `Details.dc.html` | the details panes for all four types, plus an audit of what landed. Newest turn at the top |
+| `Histogram.dc.html` | histogram geometry: the width problem, tick density, the gutter, captions, bins on a phone |
+| `Datetime Card.dc.html` | the datetime card face — timezone, the two unjudgeable ratios, the line-vs-bars question |
+| `Categorical Card.dc.html` | the categorical card face — one face asked to serve four kinds of column |
+| `Variables Section.dc.html` | everything between the Variables heading and the first card, plus the pagination defect |
 | `Variables.dc.html` | superseded exploration of three variables layouts. Kept for the reasoning; 4b won |
 
 Every figure in the designs comes from your own output: the Titanic report for
@@ -58,20 +55,21 @@ the code. **Regenerate them**; an audit should be able to read the report.
 
 | Phase | State |
 | --- | --- |
-| 1 · tokens, typography, micro-label | **landed.** Verbatim, plus an `--axis` token split out of `--rule-strong` |
+| 1 · tokens, typography, micro-label | **landed.** Verbatim, plus an `--axis` token split out of `--rule-strong` — a better call than the original spec, since a hairline and a chart axis want different minimums |
 | 5.1 · numeric card restack | **landed** (`numeric_card.py` emits `vstat-row`) |
-| 5.1 · categorical, datetime, boolean cards | **still open** — `categorical_card.py:672`, `datetime_card.py:842`, `boolean_card.py:539` still emit `.triple-row`. Tracked as #158 |
-| 5.7 · flag chips show their value | **landed** since this audit (#137). Chips render `20.0% missing`, with the threshold in a `title` |
-| 6.1 · correlations empty state | **landed** since this audit (#138) |
-| 6.4 · remove emoji | **partly landed.** Gone from `correlations_section.py` (#138). `💡` and `ℹ️` remain in the numeric outlier and context notes — #157 |
-| 7 · missing values, drop the tabs | **landed** since this audit (#140). The by-chunk half is blocked on #139 |
-| — · details behind a toggle | **kept.** Still worth revisiting once the panes are worth opening — phases 5b (#154) and 5c (#155) |
-
-> **Note on this table.** The handoff audited a snapshot from before phases 2–7 landed, so
-> four of its rows read "not applied" for work that has since shipped. Every row above was
-> re-verified against `main` at `ae9d2e8` by rendering a report and reading the markup,
-> not by reading the handoff. Where the handoff was still right — the three unrestacked
-> card types, the surviving emoji — an issue is linked.
+| 5.1 · categorical, datetime, boolean cards | **not applied.** `categorical_card.py:672`, `datetime_card.py:842`, `boolean_card.py:539` still emit `.triple-row`, so three of four types keep the squeezed chart |
+| 5.7 · flag chips show their value | **not applied.** Still renders `>Missing</li>` with `data-value="19.9%"` beside it. The test exists; the renderer does not use it |
+| 6.1 · correlations empty state | **not applied** (`correlations_section.py:375`) |
+| 6.4 · remove emoji | **not applied.** `📊` in correlations, `📈` `📉` in the outlier pane headers, `💡` and `ℹ️` in its notes |
+| 7 · missing values, drop the tabs | **not applied.** Still `.missing-tabs` |
+| — · details behind a toggle | **new, not designed.** Every card now has a Details button collapsing the whole pane. Reasonable, but the tab set is invisible until clicked — see 5b.8 |
+| 5c.4, 5c.5 · datetime details | **landed.** `_interval_sentence` and `_build_temporal_distributions` are both in, and the sentence is better written than the design specified |
+| 5c.2 · the `NaN` length bug | **landed**, and the diagnosis was better than mine: `avg_len` and `len_p90` were being read off the wrong object, so **every** categorical column printed `NaN`, not just `Embarked`. `_unknown_cell` — a dash that carries its reason in a `title` — is a better pattern than the bare dash I asked for |
+| 5c.3 · the one-option Top-N chooser | **landed.** `Sex` was shipping three buttons all reading `2` |
+| 5d.1, 5d.7 · histogram architecture | **landed** in both `histogram_svg.py` and `datetime_card.py`, including `preserveAspectRatio="none"` and `vector-effect="non-scaling-stroke"` throughout |
+| 6.2, 6.3 · correlations list and matrix | **landed** — diverging bar, lower triangle only |
+| 7 · missing values routing | **landed.** Routes on chunk count; the legend lives once. Two dead methods left behind — see the code findings |
+| 1 · tokens | **landed with one violation in shipped code** — see the code findings |
 
 ---
 
@@ -121,8 +119,10 @@ Two rules worth a comment in the CSS, because they are why the palette looks lik
    Two values of one column get two steps of one hue.
 
 One exception: **missing-value bars keep the warm scale**, because their encoding *is*
-severity. `Cabin` at 77% should look worse than `Embarked` at 0.2%. Thresholds are in
-`tokens.css`.
+severity. `Cabin` at 77% should look worse than `Embarked` at 0.2%. Thresholds are in `tokens.css`, and the break is at **20%**, not 50 —
+`missing_columns.py` already classifies at `<=5 / <=20 / >20` and the missing section
+prints that split in a visible legend, so the code is self-consistent and the first draft
+of the token file was the outlier.
 
 ### Typography
 
@@ -311,6 +311,109 @@ the output; `nan` never appears as a literal in a rendered cell.
 
 ---
 
+## Phase 4b — The variables section, above the cards
+
+Files: `render/triage.py`, `render/html.py`, `static/js/pagination.js`, `_13-utilities.css`
+
+Design: `Variables Section.dc.html`, options 15a–15d.
+
+Between the `Variables` heading and the first card there are four things: the
+needs-attention block, a count sentence, a search-and-filter row, and a page control. The
+attention block is the best-designed piece in the report; its **chips** are the problem.
+
+### 4b.1 The `display: none` pagination defect — fix this first
+
+`pagination.js:163` hides off-page cards with `card.style.display = 'none'`. On a 60-column
+frame that removes 50 cards from the document, and four things break at once:
+
+| Breaks | Why it matters |
+| --- | --- |
+| **Ctrl+F** | A browser find cannot match text in a `display: none` subtree, so searching for a column name silently fails for 50 of 60 columns — the primary action in a profiling report |
+| **Anchor links** | The attention block and the summary missing list both link to `#col_<name>`. If the target is off-page the jump lands nowhere and the reader sees no change |
+| **Print / PDF** | Only the current page prints. A 60-column profile exports as 10 columns with nothing saying so — the page control does not print either |
+| **Deep links** | A URL ending `#col_Fare` opens on page 1 regardless, so a shared link does not land on the column it names |
+
+The print case is the worst because it is **silent**: the reader has no way to tell that
+fifty columns are missing.
+
+**Fix: collapse, do not hide** (15d). Every column keeps a row in the document; beyond the
+first ten the row is the card header — `+`, name, type, flags — at 44px, and the body folds.
+Find works, anchors land, print expands everything. Fifty collapsed rows is a readable index
+of the rest of the frame, which a page number never was.
+
+Cost to state honestly: fifty rows is ~2,200px of scroll where the page control was 40px. It
+changes nothing about file size — the charts were always in the file.
+
+### 4b.2 Make the chips mean something (15a chips + 15b reference)
+
+The block currently renders, for `Fare`:
+
+```
+Fare    33.20 heavy-tailed 13.0% many outliers
+```
+
+Six problems in one row:
+
+1. **Two chips read as one string.** They are adjacent `<li>` with no border, background or
+   separator.
+2. **The threshold is in a `title`.** `annotate_flags` puts the value on the face and the
+   limit in a tooltip — invisible on a phone, absent from a PDF. So `33.20` has nothing to be
+   judged against.
+3. **`33.20` of what.** The value carries no unit and the label names a conclusion rather
+   than a measure. Nobody can tell it is kurtosis, or that normal is near 0.
+4. **"Need a look" for what.** Two of the five flagged columns are identifiers and want
+   *excluding*, not looking at.
+5. **The column name sits below its chips**, on a different baseline, so the eye reads the
+   flags then travels back to find the column.
+6. **An instruction, not an affordance** — "Click a column to jump to its card" tells rather
+   than shows, and is untrue in print.
+
+**Do:** border the chips and put the threshold on the face —
+`33.20 kurtosis · limit 10`, `77.1% missing · limit 20%`. That is a change to
+`annotate_flags` plus CSS, and it closes the meaning gap without the profiler giving advice.
+
+**Then:** a flag reference rendered from the flags the report actually raised (15b) — flag,
+what is measured, what fires it, what it means. Four rows on Titanic, nothing on a clean
+frame. It is the tooltip content, printed, plus the sentence the tooltip never had.
+
+**Hold:** 15a's *grouping by action* ("drop or impute", "exclude — identifiers, not
+variables", "transform before use") until you decide whether pysuricata should recommend
+actions at all. It is the highest-value option in that file and the only one making a claim
+beyond the data — "drop before modelling" is wrong for a reader who is not modelling.
+
+### 4b.3 The 20% cliff — decide this regardless
+
+`Age` is missing **19.9%** of its values and **does not appear in the attention block at
+all**; its row lists only outliers. `actionable_chips` keeps `bad` plus selected `warn`
+slugs, and the missing chip only reaches `bad` above 20%. A fifth of the passengers have no
+age — arguably the most consequential fact in the dataset — and it misses the cut by one
+tenth of a point.
+
+Either the missing chip is actionable at `warn` too, or the block grows a quieter tier for
+values just under a limit. A threshold artefact should not read as a judgement.
+
+### 4b.4 The toolbar says what it is showing (15c)
+
+- **Drop the count sentence.** "Analyzing 12 variables (3 numeric, 8 categorical, 1 datetime,
+  0 boolean)" duplicates the composition bar in Summary, and prints `0 boolean` for a type
+  with no columns — the same zero-segment problem as phase 3.2.
+- **A tab per type that exists, with its count**: `All 12 · Numeric 3 · Categorical 8 ·
+  Boolean 1`. Titanic has no datetime columns and currently gets a Datetime tab that filters
+  to an empty grid with no explanation. Same rule as the zero-width donut segment and the
+  one-option Top-N chooser.
+- **One result line covering all three mechanisms**: `3 numeric columns · 10 expanded, 2
+  collapsed`, with `clear filter` beside it. `Showing 1-10 of 12` cannot describe search +
+  filter + page.
+- **Sort**: dataset order (default), most missing, most flagged, name. The attention block
+  already ranks worst-first internally; this exposes it for the full list. Keep dataset order
+  the default — it is what someone reading alongside their dataframe expects.
+
+**Acceptance:** no card is ever `display: none`; `#col_<name>` resolves for every column;
+printing a 60-column report yields 60 cards; every chip shows its threshold without a hover;
+no tab for a type with zero columns; `Age` at 19.9% missing appears in the attention block.
+
+---
+
 ## Phase 5 — Variables
 
 Files: `render/card_base.py`, `numeric_card.py`, `categorical_card.py`, `boolean_card.py`,
@@ -479,9 +582,72 @@ Keep the **order fixed** so a tab never moves, only appears or not.
 | Datetime · Statistics | seven rows repeat the card's own tables word for word | keep only the four peak lines and the two ratios; rename it **Patterns** |
 | Boolean · Breakdown | a two-row table under a card already showing the same split | drop it (see 5c.4) |
 
+### 5b.5 Min/Max — draw the fence, cluster the marks (12a)
+
+Two tables of index and value, ten numbers, no context. A reader cannot see that **every
+one of the five maxima is an outlier and not one of the five minima is** — the whole story
+of this column's tails, and already computable from the fence.
+
+- Same value axis as 5b.1 and 5b.2, so a reader who has opened one pane can read this one.
+- A **position** column per row (`moderate`, `high · 2.0× IQR`, `below P1`) replacing the
+  bare index/value pair. Severity words and colours must match the Outliers pane exactly —
+  a value that is `moderate` there cannot be `high` here.
+- **Mark ties.** `Age` has 0.75 twice and 71 twice; the current pane lists them as separate
+  rows without comment.
+- Rule 2(e): all five low values fall inside 0.41 years, narrower than one mark, so they
+  collapse to one capsule labelled `×5` with the row ids in its `title`.
+
+Open question for the designer: on `Age` this pane and Outliers plot the same points,
+because its five highest values all happen to be outliers. On a column with no outliers
+they are entirely different panes. Folding them into one **Tails** tab removes the overlap
+and costs the plain "what are the biggest values" question, which is asked more often.
+
+### 5b.6 Correlations — show every partner (12b)
+
+The per-column pane repeats the section-level empty state inside a card. But `Age` has
+exactly two numeric partners in this frame, so listing both is *complete* information in two
+rows — nothing is withheld. "Both partners are weak, the stronger is Fare at +0.096" is a
+finding; "no significant correlations" is a shrug.
+
+Same diverging bar as phase 6.2, so sign stays position and never colour. **Cap at 5** with
+a `35 more below 0.50` line, or a 40-column frame renders 39 rows. Needs the sub-threshold
+pairs kept per column, which `_collect_correlations` filters away before returning.
+
+### 5b.7 Missing — one bar, and only when chunks exist (12c)
+
+The pane states one fact four times: a `Present` stat, a `Missing` stat, a two-segment bar,
+and a one-segment chunk spectrum — under a header already flagging `19.9% missing`. Then a
+three-item legend, on every card with any missing at all.
+
+Tighten 5b.4's rule: render the tab when **missing > 0 AND chunks > 1**. That is the only
+condition under which this pane knows something the card face does not — where in the read
+the gaps fall. On Titanic every numeric card loses a tab and nothing goes with it.
+
+When it does render: one chunk strip, severity per chunk on the warm scale, and a spread
+line (`18.4 – 21.5% per chunk`, `Spread 3.1 pp`) so "steady" is a number rather than an
+impression. Pick the threshold for calling it steady; nobody has.
+
+### 5b.8 The strip — say what is behind the button (12d)
+
+A `Details` button toggles `hidden` on the whole section, and inside it six tabs. Two levels
+of disclosure, and the word "Details" promises nothing — so a reader opens every card to
+learn whether opening was worth it. **The tab set is known at render time. Print it.**
+
+```
+Details ▾   statistics · 10 common values · 5 lowest and highest · 11 outliers · 2 correlations
+```
+
+- `11 outliers` beside the button is the reason to open; its absence is the reason not to.
+- Open, each tab carries its count, so a reader picks the right one first time.
+- Tabs never reorder — they appear or they do not.
+- Mobile: the rail uses `min-height`, not `height`, with a right-edge mask.
+- **The active-tab underline goes on an inner span wrapping the label**, not on the 44px tap
+  box, or the rule paints ~29px below the text and reads as a doubled hairline.
+
 **Acceptance:** no pane repeats a value shown on its card face; a column with 0 missing has
-no Missing tab; the low-outlier sentence is generated for all four cases; no emoji in
-`numeric_card.py` or its panes.
+no Missing tab; a column with 1 chunk has no Missing tab; the low-outlier sentence is
+generated for all four cases; severity words agree between Min/Max and Outliers; no emoji in
+`numeric_card.py` or its panes; the closed `Details` row names its panes.
 
 ---
 
@@ -587,6 +753,277 @@ the chart changes — so it needs a caveat line, and I would not build it before
 below three distinct lengths; `avg_len` never `NaN`; no year chart when the span is inside
 one year; month chart has 12 slots and **zero counts draw nothing** (rule 3); boolean has no
 details section.
+
+---
+
+## Phase 5d — Histogram geometry
+
+Files: `render/histogram_svg.py`, `static/css/_07-histogram.css`
+
+Design: `Histogram.dc.html`, options 13a–13g. **Supersedes the axis half of phase 5.2** —
+build 5.2's units and tick logic on this geometry, not on the 420×200 canvas.
+
+### The measured problem
+
+The card was restacked so the chart could be full width. The chart did not get it. At a
+1240px viewport the `<svg>` element is 1,099px and the bars occupy **356px** — 68% of the
+element is blank, because `preserveAspectRatio` defaults to `xMidYMid meet`, the container
+is `height: 210px`, and height is therefore the limiting dimension.
+
+The trap, stated plainly:
+
+> Uniform scale ⇒ text size varies with viewport.
+> Fixed text size ⇒ the canvas must be ~1:1 with its display size.
+> One static SVG cannot be 1:1 at both 1,099px and 284px.
+
+### 5d.1 Split the coordinate systems
+
+**Rule 4 in `tokens.css`.** Bars, gridlines and axis lines in an SVG with
+`preserveAspectRatio="none"` and `vector-effect="non-scaling-stroke"`; every label, caption,
+unit and tooltip in HTML at **percentage offsets**. Nothing else in this phase works without
+it, and it takes all text out of the SVGs — 23% of report bytes today, mostly label markup.
+
+### 5d.2 Composition — cap the plot (13a)
+
+Width past ~800px buys almost nothing: at 800px, 50 bins is 16px each; at 1,100px, 22px.
+Nobody reads a 22px bar more accurately.
+
+- Plot area `max-width: 820px`, left-aligned. Ratio settles near 4:1 instead of 5.2:1.
+- The freed ~386px takes the **scale and bin controls**, beside what they change rather than
+  below it. Card height drops ~40px per numeric column — 1,600px of scroll on a 40-column frame.
+- Second breakpoint at 1180px, where the controls return under the chart.
+
+Alternative **13b**: full bleed with `height: clamp(170px, 21vw, 290px)`. Cheaper (one
+`clamp`, no breakpoint, no second column), answers the filed issue literally, and costs
+60–80px of height per numeric column on the axis a profiling report is already long in.
+
+### 5d.3 Tick density, decided by CSS (13c)
+
+The renderer cannot know the viewport, so **write every tick you would ever want and tag it
+by importance.** Nine x-ticks, alternates `data-tier="2"`, the next drop `data-tier="3"`:
+
+```css
+@media (max-width: 760px) { .hist-x [data-tier="2"] { display: none } }  /* → 5 */
+@media (max-width: 440px) { .hist-x [data-tier="3"] { display: none } }  /* → 3 */
+```
+
+No variants, no JS; the cost is four short strings per column. Tiering by **importance**
+rather than index means the first and last tick — the range — are always tier 1 and never
+drop. Container queries are the exact tool and fix the case where a wide viewport has a
+narrow card; use them if a 2023+ browser is acceptable.
+
+### 5d.4 The gutter — 44px, because counts abbreviate (13d)
+
+A y tick is a row count and nobody reads seven significant figures off an axis.
+`1,234,567` must render `1.2M`. **Cap the label at four glyphs** and the gutter is a
+constant: 27px of 11px mono + 5px tick + 8px air = `--hist-gutter: 44px`. Fixed at every
+width, so the plot's left edge never moves between columns and bars line up down the page.
+
+`_format_tick_label_standardized(v, is_count=True)` must **guarantee** four glyphs, not
+prefer them — it can currently emit `12.5K`, which is five. The exact peak stays in the
+caption, so abbreviating loses nothing.
+
+### 5d.5 Where the captions live (13e)
+
+`ROWS` stays in the gutter — anchored 44px from its axis at any width. The x unit does
+**not** stay at the right end of the axis: at 1,100px the two captions are a metre apart and
+stop reading as a pair. Move it into one caption under the axis, left-aligned to the plot
+origin, carrying the bin count and the peak:
+
+```
+age in years · 25 bins · peak 83 rows at 26–29
+```
+
+`derive_x_unit` returning `None` must read gracefully — `25 bins · peak 83`, no unit clause.
+
+### 5d.6 Bins on a phone (13f)
+
+At 284px, 50 bins is ~5.7px each. Hide the option under 560px and **print the reason**
+(`50 needs a wider screen`) in the space the two remaining buttons are not using — otherwise
+the mobile and desktop reports look like different products. Saves no bytes: the variant is
+still in the file. Both remaining targets stay 44×44.
+
+### 5d.7 The bar gap will vanish (13g)
+
+**Rule 5 in `tokens.css`, and this one is not optional.** `_render_bars` sets
+`bar_w = max(1, bar_width - 1)` — a 1-unit gap in viewBox space, which under
+`preserveAspectRatio="none"` scales with x:
+
+| Plot width | x scale | 1-unit gap becomes |
+| --- | --- | --- |
+| 1,100px | ×1.10 | 1.1px — fine |
+| 560px | ×0.56 | 0.56px — thin |
+| 284px | ×0.28 | 0.28px — bars merge |
+
+Draw bars edge to edge and separate them with a `--paper` non-scaling stroke.
+
+### 5d.8 Derive the axis max per chart
+
+`render_histogram_from_bins` already does this right at lines 263–266 — `nice_ticks(0,
+actual_max, 5)` per render — and it matters more once the plot fills its width. Changing the
+bin count changes the peak: 25 bins peaks at 83 (axis 100, 83% fill), 50 bins peaks near 50
+(axis 50, full fill). A shared max across variants would draw the 50-bin chart half empty,
+which is the same defect as the letterbox. **Do not hoist the max out of the per-render path.**
+
+### Bytes
+
+The six variants per numeric column (10/25/50 × lin/log) share an identical **x range**, so
+with text out of the SVG the x-tick HTML layer can be written **twice per column** instead of
+six times. Only the y layer changes with bin count, because `y_max` does. At ~7.1 KB per
+histogram SVG today, most of it label markup, this phase moves toward the 250 KB target
+rather than against it.
+
+**Acceptance:** no `<text>` in any histogram SVG; bars occupy ≥95% of the plot width at
+1240px and at 390px; tick labels measure 11px at every viewport; bar separators measure 1px
+at 1240px and at 390px; a 50-bin chart's tallest bar reaches its top gridline; no y label
+exceeds four glyphs.
+
+---
+
+## Phase 5e — Datetime card face
+
+Files: `render/datetime_card.py`, `accumulators/datetime.py`, `_09-datetime.css`
+
+Design: `Datetime Card.dc.html`, options 14a–14c. The restack, the histogram architecture
+and the interval sentence have all landed here — this phase is what is left, and none of it
+is layout.
+
+### 5e.1 The timezone is a literal — correctness, fix first
+
+`_left_stats` emits `("Timezone", "UTC", None)`: a hardcoded string, never read from the
+column. `DateTimeStats` **already carries `source_timezone`**, and the accumulator populates
+it by parsing `datetime64[ns, US/Eastern]` out of the dtype string
+(`accumulators/datetime.py:191–209`). A column stored in Eastern is labelled UTC on the
+card, and `_format_timestamp` appends `UTC` to min and max as well.
+
+Three wrong labels from one unused field. One line in `_left_stats`, one in
+`_format_timestamp`. A naive column has no timezone and should say so rather than claim UTC.
+
+### 5e.2 Two percentages nobody can judge (14a)
+
+`Weekend % 27.0` and `Business hrs % 24.3` print bare. A flat calendar gives:
+
+| Ratio | Flat baseline | Arithmetic |
+| --- | --- | --- |
+| Weekend share | **28.6%** | 2 of 7 days |
+| Business hours | **23.8%** | 8 of 24 hours on 5 of 7 days |
+
+So both are noise — and the renderer knows it: the flag threshold beside them carries the
+comment *"expected ~28.5%"*. The baseline is in a code comment instead of on the card, which
+is the Jarque–Bera problem exactly.
+
+Draw each share as a bar with a **rule at the flat value**, and read the verdict off it:
+`flat · −1.6pp vs 28.6%`. Both baselines are constants, so this costs no new statistics. The
+rule stays at 390px even when its label goes — position against a mark is readable without a
+caption.
+
+### 5e.3 Thirteen statistics become eight (14a)
+
+- **`Avg interval` and `Interval std` move to the pane.** `_interval_sentence` already
+  interprets them, and it is better than they are. Promote the sentence to the card face,
+  above the chart, where it is read before the conclusions.
+- **`Min` and `Max` lose the `<br>`.** Two double-height cells in a 4-column grid make
+  every row in the grid taller.
+- **`Processed bytes (≈)` goes.** Engineering telemetry among data statistics.
+- Keep: count, missing, unique (≈), time span, min, max, density, timezone.
+
+Cost to state honestly: the lede is prose on a card face, so a frame with thirty datetime
+columns gains thirty paragraphs, and on the irregular branch the sentence is two lines. The
+baseline panel also takes ~300px that the chart could use, which conflicts with the 820px cap
+in 5d.2 — below the second breakpoint it moves under the chart.
+
+### 5e.4 A line asserts values the buckets do not hold (14b)
+
+The timeline is a `<polyline>` through bucket centres, so the slope between "84 records on 8
+Jan" and "83 on 9 Jan" is **drawn rather than measured**. The card's own temporal panes draw
+the same quantity as bars, so one card carries two encodings for counts.
+
+Proposal: bars while a bucket is at least 4px, which at the 820px cap is about 180 buckets —
+the renderer's own `min(bins, 180)` ceiling. A line above that, where bars would be
+sub-pixel. The existing hotspot rects become the bars rather than sitting invisibly on top of
+them.
+
+**This is the one genuine trade in the phase.** A line reads a trend better, and trend is
+often what a datetime column is for; on 180 near-equal buckets the bars are a grey slab where
+the line still shows drift. Two encodings behind one threshold is also a branch and a test.
+Worth looking at both charts in `Datetime Card.dc.html` before deciding.
+
+### 5e.5 The missing pane (14c)
+
+Phase 5b.7's condition applies unchanged: render when `missing > 0` **and** `chunks > 1`.
+When it does render, delete the per-card three-item legend (it lives once, in the Missing
+values section), the title-case headings, and `Hover over segments to see chunk details` —
+an instruction that is untrue on a phone and gone in a PDF. Lead with the finding a chunk
+strip exists to reveal: `the last two chunks hold 71% of them`.
+
+**Acceptance:** no hardcoded `"UTC"` anywhere in `datetime_card.py`; a naive column does not
+claim a timezone; both ratios render with their flat baseline; eight stats on the face; no
+per-card severity legend.
+
+---
+
+## Phase 5f — Categorical card face
+
+Files: `render/categorical_card.py`, `_08-categorical.css`
+
+Design: `Categorical Card.dc.html`, options 16a–16b. This is the most common column type —
+eight of Titanic's twelve — and the one card asked to be four different things.
+
+### The problem
+
+| Column | Levels | What the 12 stats do with it | What it is |
+| --- | --- | --- | --- |
+| `Sex` | 2 | Entropy 0.936, rare levels 0, top-5 coverage 100% — three statistics describing the spread of a distribution with two members and no spread | a boolean in a string |
+| `Embarked` | 3 | The one kind the twelve were written for. Even here, 72.4% mode share has nothing to be judged against | a true category |
+| `Cabin` | 147 | A top-10 bar chart covering 3.4% of rows, under a column that is 77.1% empty | a sparse identifier |
+| `Name` | 891 | Ten bars of one row each, 0.1% apiece. Entropy computed over values that never repeat | a primary key |
+
+`Entropy`, `Rare levels` and `Top 5 coverage` describe how a distribution spreads across
+levels. They are meaningful for **one** of those four kinds.
+
+### 5f.1 Suppress what cannot be true (16b) — take this
+
+One face, one code path. A statistic that cannot be true for this column is **not rendered**
+— the row closes up rather than printing a dash. Same principle as `_unknown_cell`, one step
+further: *absent* rather than *unknown*. `Sex` drops from twelve slots to six.
+
+Suppression is per statistic, so there is no arbitrary level boundary to defend and no
+argument about where a 12-level column belongs.
+
+Cost: a varying slot count makes the stat row a different height per column, so the page
+loses its rhythm — more subtly than three layouts would, but it does.
+
+### 5f.2 The even-split rule (from 16a) — take this too
+
+Beside each level bar, a rule at `100 / n_levels`. `Embarked`'s S at 72.4% against a 33.3%
+mark says *dominated by one port* with no arithmetic asked of the reader, and it is the same
+device as 5e.2's flat-calendar rule and 5b.1's fence. Nothing new is computed.
+
+State coverage honestly under the list: `3 of 3 levels shown · covers 100% of non-missing
+rows`, and for `Cabin`, `3 of 147 levels shown · covers 5.9% of the 204 non-missing rows`.
+
+### 5f.3 The many-level chart (from 16a) — a chart decision, not a face decision
+
+`Cabin`'s 147 levels are not a bar chart at any width: the top ten cover 16.7% of 204
+non-missing rows in a column that is 77.1% empty, so the chart describes a twentieth of the
+data. Report concentration instead — rows per level, singleton count, top-10 coverage — and
+say what the chart cannot: `119 of 147 levels occur exactly once`.
+
+This is phase 5.4's high-cardinality branch extended: 5.4 handled *levels ≈ rows*
+(`Name`), and this handles *many levels, few rows each* (`Cabin`), which the current code
+treats as an ordinary category.
+
+### 5f.4 Routing (16a) — hold
+
+Three faces routed on level count is the fuller answer and reads better per column, but it
+means eight categorical columns present three layouts, the boundaries are arbitrary (a
+12-level and a 22-level column are the same kind of thing), and it is three code paths where
+there is one. 5f.1 plus 5f.2 get the two real wins without that. Revisit if the suppression
+rule turns out to produce cards that still feel wrong.
+
+**Acceptance:** no statistic rendered that cannot be true for its column; every level bar
+carries its even-split rule; a column whose top-10 coverage is under ~20% gets concentration
+figures rather than a bar chart; coverage is stated as a share of non-missing rows.
 
 ---
 
@@ -765,6 +1202,20 @@ Once phases 2–7 land:
 
 ---
 
+## Code findings, independent of the phases
+
+Three things found while reading the source for turns 14–16. None is a design change; each is
+about ten minutes.
+
+| Where | What | Kind |
+| --- | --- | --- |
+| `correlations_section.py:169` | A below-threshold pair's diverging bar is filled with `var(--data-4)`. That step is **1.83:1 on the paper** and `tokens.css` documents it as stack-internal only — rule 1. The bar is invisible in print and close to invisible on screen. Use `--data-3`. | **rule violation** |
+| `correlations_section.py:364` | `_render_no_correlations_state` still prints a bare message in a div. Phase 6.1's enriched empty state landed on the path where pairs exist but not on this one, so a frame with fewer than two numeric columns still gets one line. | half-applied |
+| `missing_section.py:245–395` | `_build_completeness_tab` and `_build_chunk_tab` are the old two-tab implementation, unreachable since the chunk-count routing replaced them. ~150 lines, carrying their own `chunk-legend` with hardcoded severity colours that no longer match the tokens. | dead code |
+
+Take the `--data-4` one first: it violates a rule that is written down and shipped, and it
+stays invisible until someone looks at a below-threshold pair on paper.
+
 ## Commit sequence
 
 | # | Commit | Touches |
@@ -791,6 +1242,30 @@ Once phases 2–7 land:
 | 12h | details: temporal axes, drop the single-year chart, zero draws nothing (5c.4) | `temporal_charts.py`, `datetime_card.py` |
 | 12i | details: regularity line, max and median interval (5c.5) | `accumulators/datetime.py`, `datetime_card.py` |
 | 12j | details: drop the boolean pane (5c.6) | `boolean_card.py`, `_10-boolean.css` |
+| 12k | details: min/max pane — fence, position column, ties, clustering (5b.5) | `numeric_card.py`, `_06-cards.css` |
+| 12l | details: per-column correlations with every partner + cap (5b.6) | `numeric_card.py`, `correlations_section.py` |
+| 12m | details: missing pane only when chunks > 1 (5b.7) | `numeric_card.py`, `card_base.py` |
+| 12n | details: strip prints its panes; underline on an inner span (5b.8) | `card_base.py`, `_06-cards.css` |
+| 12o | histogram: split SVG bars from HTML labels (5d.1) | `histogram_svg.py`, `_07-histogram.css` |
+| 12p | histogram: cap the plot, controls beside it (5d.2) | `_07-histogram.css`, `numeric_card.py` |
+| 12q | histogram: tiered ticks, 44px gutter, caption line (5d.3–5d.5) | `histogram_svg.py`, `_07-histogram.css` |
+| 12r | histogram: non-scaling bar separator, hide 50 bins under 560px (5d.6–5d.7) | `histogram_svg.py`, `_07-histogram.css` |
+| 13a | **code finding:** `--data-4` → `--data-3` on the below-threshold bar | `correlations_section.py` |
+| 13b | **code finding:** enrich the remaining correlations empty state | `correlations_section.py` |
+| 13c | **code finding:** delete the two dead missing-section methods | `missing_section.py` |
+| 14a | datetime: read `source_timezone`; stop claiming UTC (5e.1) | `datetime_card.py` |
+| 14b | datetime: flat baselines on the two ratios (5e.2) | `datetime_card.py`, `_09-datetime.css` |
+| 14c | datetime: promote the interval sentence, 13 stats → 8 (5e.3) | `datetime_card.py` |
+| 14d | datetime: bars under 180 buckets, line above (5e.4) | `datetime_card.py` |
+| 14e | datetime: missing pane only when chunks > 1; drop the per-card legend (5e.5) | `datetime_card.py`, `_09-datetime.css` |
+| 15a | categorical: suppress statistics that cannot be true (5f.1) | `categorical_card.py` |
+| 15b | categorical: even-split rule on every level bar (5f.2) | `categorical_card.py`, `_08-categorical.css` |
+| 15c | categorical: concentration figures for many-level columns (5f.3) | `categorical_card.py` |
+| 16a | **variables: collapse instead of `display: none`** (4b.1) | `pagination.js`, `html.py`, `_13-utilities.css` |
+| 16b | variables: chips carry their threshold on the face (4b.2) | `triage.py`, `_13-utilities.css` |
+| 16c | variables: flag reference, rendered from flags raised (4b.2) | `triage.py` |
+| 16d | variables: the 20% cliff — `Age` at 19.9% must appear (4b.3) | `triage.py` |
+| 16e | variables: toolbar counts, no tab for absent types, one result line, sort (4b.4) | `html.py`, `functionality.js`, `_13-utilities.css` |
 | 13 | correlations: routing, empty state, diverging list, triangle matrix, no emoji | `correlations_section.py`, `_11-correlations.css` |
 | 14 | missing values: drop tabs, route on chunk count | `missing_section.py`, `missing_columns.py`, `_12-missing.css` |
 | 15 | remove the compatibility shim from `tokens.css` | `_00-tokens.css` |
@@ -817,6 +1292,22 @@ Once phases 2–7 land:
   summing to 100 and zero-count types emitting no segment.
 - `test_correlation.py` — add cases for the empty state text, the below-threshold cap,
   and triangle cell count.
+- `test_histogram_svg.py` — assert no `<text>` element is emitted, that bar rects are
+  edge-to-edge (`x[i+1] == x[i] + width[i]`), and that the axis max comes from the chart's
+  own peak so a 50-bin chart's tallest bar reaches the top tick.
+- A DOM-level check is worth having for rule 3: assert no `<rect>` in a generated report has
+  `height="1"` where its `data-count` is `0`.
+- **`test_pagination.py`** — assert no `.var-card` ends up with `display: none`, and that
+  every `#col_<name>` anchor in the attention block resolves to an element in the document.
+  That is the test 4b.1 exists for.
+- `test_datetime_card.py` — assert the timezone cell reads `source_timezone` (parametrise a
+  naive column, a UTC column and an `US/Eastern` column), and that no literal `"UTC"` string
+  is emitted for a naive one.
+- `test_categorical_card.py` — assert a 2-level column emits no entropy, rare-levels or
+  top-5-coverage cell, and that a 147-level column emits concentration figures rather than a
+  top-N chart.
+- `test_triage.py` — assert every chip carries its threshold in its rendered text, not only
+  in a `title`, and that a column at 19.9% missing appears in the attention block.
 - `test_missing_columns.py`, `test_missing_context.py`, `test_sections.py` — markup
   assertions.
 
@@ -838,3 +1329,12 @@ Once phases 2–7 land:
    test). It no longer changes the colour, but it changes whether one series should be
    visually subordinate.
 6. Whether `Age` should carry units in the sample table, or only in the variable card.
+7. **Should pysuricata recommend actions?** 15a groups flagged columns by what to do — "drop
+   or impute", "exclude — identifiers, not variables", "transform before use". It is the
+   highest-value option in the whole set and the only one that makes a claim beyond the data.
+   Everything else in this plan reports facts; that one gives advice. Decide it deliberately.
+8. **Bars or a line for the datetime timeline** (5e.4). The only genuine visual trade left.
+9. **Never designed at all**, in the order I would take them: dark mode (values proposed, never
+   looked at in situ), print/PDF as a whole (interacts with 4b.1), degenerate frames (one
+   column, zero rows, all one type), and the section-header system — Summary uses a bare
+   `<h2>` where the other four use `.section-title`.

@@ -14,6 +14,18 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- **The report redesign package moved into the repository**, at
+  `docs/internal/design/`. It lived in a folder on one laptop, so every issue
+  filed against it pointed at a path nobody else could open. Nothing here
+  reaches the published site — `mkdocs.yml` already excludes `internal/`.
+
+  Its status table was re-verified against the source rather than copied:
+  **five of its rows were stale**, all of them claiming work was outstanding
+  that had already landed. What is genuinely left is twelve items, each now
+  carrying an issue.
+
 ### Fixed
 
 - **The browser demo now installs the release PyPI is actually serving.**

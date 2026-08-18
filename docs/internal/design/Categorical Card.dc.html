@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<style>
+  body { margin: 0; background: #DFDACF; }
+  a { color: #4A5D1E; text-decoration: none; }
+  a:hover { color: #22201C; text-decoration: underline; }
+</style>
+</helmet>
+
+<section style="padding: 56px 56px 64px; background: #DFDACF; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 44px;">
+
+  <div style="display: flex; flexDirection: column; gap: 12px; maxWidth: 880px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Turn 16 · the categorical card</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">The most common column type, and the one asked to be four things</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">Eight of Titanic's twelve columns are categorical, and they are not one kind of thing. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">Sex</span> has two levels, <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">Embarked</span> three, <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">Cabin</span> 147 mostly-empty ones, <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">Name</span> 891 unique. One card face serves all four, so it is tuned for none of them — and twelve of its statistics are computed for a case that only sometimes exists.</p>
+    <div style="display: inline-flex; alignSelf: flex-start; alignItems: flex-start; gap: 8px; padding: 8px 12px; border: 1px dashed #CFC7B8; background: #E8E3D8; maxWidth: 80ch;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; textTransform: uppercase; color: #57524A; paddingTop: 2px;">Credit where due</span>
+      <span style="fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">The <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">NaN</span> length bug, the three-buttons-reading-2 chooser and the <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">_unknown_cell</span> pattern are all fixed, and that dash-that-says-why is better than what I specified. This turn is about what the card is <em>for</em>, not those.</span>
+    </div>
+  </div>
+
+  <div style="width: 1240px; flexShrink: 0; background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 24px 24px; display: flex; flexDirection: column; gap: 16px;">
+    <div style="display: flex; alignItems: center; gap: 14px; flexWrap: wrap;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">One face, four jobs</span>
+      <span style="flex: 1; height: 1px; background: #E2DCD1; minWidth: 20px;"></span>
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">12 stats on every one</span>
+    </div>
+    <div style="display: grid; gridTemplateColumns: 108px 78px 1fr 210px; gap: 16px; paddingBottom: 7px; borderBottom: 1px solid #22201C; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">
+      <span>Column</span><span style="textAlign: right;">Levels</span><span>What the 12 stats do with it</span><span>What it actually is</span>
+    </div>
+    <sc-for list="{{ kinds }}" as="k" hint-placeholder-count="4">
+      <div style="display: grid; gridTemplateColumns: 108px 78px 1fr 210px; gap: 16px; alignItems: baseline; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; color: #22201C;">{{ k.col }}</span>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; textAlign: right; color: #22201C;">{{ k.levels }}</span>
+        <span style="fontSize: 13.5px; lineHeight: 1.5; color: #4A453D;">{{ k.problem }}</span>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ k.tone }};">{{ k.is }}</span>
+      </div>
+    </sc-for>
+    <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 88ch; textWrap: pretty;">Three of the twelve — <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">Entropy</span>, <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">Rare levels</span>, <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">Top 5 coverage</span> — describe how a distribution spreads across levels. On a two-level column there is nothing to spread. On a fully-unique column there is no distribution. They are meaningful for exactly one of the four kinds.</p>
+  </div>
+
+  <div style="display: flex; alignItems: center; gap: 14px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">One face per kind</span>
+    <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+  </div>
+
+  <div id="16a" style="display: flex; flexDirection: column; gap: 14px; width: 1240px; flexShrink: 0;">
+    <div style="display: flex; alignItems: baseline; gap: 12px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">16a</span>
+      <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Route on level count, as the datetime card routes on chunks</h3>
+    </div>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.6; color: #4A453D; maxWidth: 88ch; textWrap: pretty;">The report already has this pattern in three places: missing values routes on chunk count, correlations on numeric column count, the datetime year chart on span. Do the same here — the level count is known before anything is drawn, and it decides which statistics can be true.</p>
+
+    <div style="display: flex; flexDirection: column; gap: 26px;">
+      <sc-for list="{{ faces }}" as="f" hint-placeholder-count="3">
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 24px 24px; display: flex; flexDirection: column; gap: 16px;">
+          <div style="display: flex; alignItems: center; gap: 12px; flexWrap: wrap;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 16px; fontWeight: 600;">{{ f.col }}</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">{{ f.meta }}</span>
+            <sc-for list="{{ f.flags }}" as="k" hint-placeholder-count="1">
+              <span title="{{ k.title }}" style="display: inline-flex; alignItems: baseline; gap: 6px; padding: 3px 8px; border: 1px solid {{ k.border }}; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: {{ k.tone }};"><span style="fontWeight: 600;">{{ k.value }}</span>{{ k.label }}<span style="color: #57524A;">{{ k.limit }}</span></span>
+            </sc-for>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; textTransform: uppercase; color: #57524A; marginLeft: auto;">{{ f.route }}</span>
+          </div>
+
+          <p style="margin: 0; fontSize: 15.5px; lineHeight: 1.5; color: #22201C; maxWidth: 78ch; textWrap: pretty;">{{ f.lede }}</p>
+
+          <sc-if value="{{ f.hasLevels }}" hint-placeholder-val="{{ true }}">
+            <div style="display: grid; gridTemplateColumns: 820px 1fr; gap: 30px; alignItems: start;">
+              <div style="display: flex; flexDirection: column;">
+                <sc-for list="{{ f.levels }}" as="v" hint-placeholder-count="3">
+                  <div style="display: grid; gridTemplateColumns: 128px 1fr 132px; alignItems: center; gap: 16px; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ v.label }}</span>
+                    <span style="position: relative; height: 14px; background: #EDE6DA; display: block;">
+                      <span style="display: block; height: 14px; width: {{ v.w }}; background: {{ v.fill }};"></span>
+                      <span title="{{ v.evenTitle }}" style="position: absolute; left: {{ f.even }}; top: -3px; height: 20px; borderLeft: 2px solid #22201C;"></span>
+                    </span>
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; textAlign: right; color: #4A453D;">{{ v.stat }}</span>
+                  </div>
+                </sc-for>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A; paddingTop: 10px;">{{ f.coverage }}</span>
+              </div>
+              <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 0 22px;">
+                <sc-for list="{{ f.stats }}" as="s" hint-placeholder-count="6">
+                  <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 10px; padding: 7px 0; borderBottom: 1px solid #E2DCD1;">
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">{{ s.k }}</span>
+                    <span title="{{ s.title }}" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ s.color }};">{{ s.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ f.noLevels }}" hint-placeholder-val="{{ true }}">
+            <div style="display: grid; gridTemplateColumns: 1fr 380px; gap: 30px; alignItems: start; borderTop: 1px solid #22201C; paddingTop: 16px;">
+              <div style="display: flex; flexDirection: column; gap: 11px;">
+                <sc-for list="{{ f.samples }}" as="s" hint-placeholder-count="4">
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #22201C; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ s }}</span>
+                </sc-for>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ f.sampleNote }}</span>
+              </div>
+              <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 0 22px;">
+                <sc-for list="{{ f.stats }}" as="s" hint-placeholder-count="6">
+                  <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 10px; padding: 7px 0; borderBottom: 1px solid #E2DCD1;">
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">{{ s.k }}</span>
+                    <span title="{{ s.title }}" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ s.color }};">{{ s.v }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+
+          <div style="display: flex; alignItems: center; gap: 16px; flexWrap: wrap; borderTop: 1px solid #E2DCD1; paddingTop: 12px;">
+            <a href="#16a" style="minHeight: 44px; display: inline-flex; alignItems: center; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: #22201C;"><span style="display: inline-flex; alignItems: center; gap: 8px; paddingBottom: 3px; boxShadow: inset 0 -2px 0 #4A5D1E;">Details<span style="color: #57524A;" aria-hidden="true">▾</span></span></a>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #57524A;">{{ f.panes }}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; flexDirection: column; gap: 8px; maxWidth: 92ch;">
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Every statistic shown is one that can be true for that column. The even-split rule beside each bar is what makes a share judgeable — <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">72.4%</span> against a 33.3% mark says "dominated by one port" without the reader computing anything, and it is the same device as the flat-calendar rule on the datetime card. Nothing new is computed: the level counts, the coverage and the extremes all already exist.</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Three faces means a reader scrolling eight categorical columns meets three different layouts, and the boundary cases are arbitrary — a 12-level column and a 22-level one are the same kind of thing but land either side of a line. It is also three code paths where there is one, and the stat row stops being comparable down the page.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flexWrap: wrap; gap: 34px; alignItems: flex-start;">
+
+    <div id="16b" style="display: flex; flexDirection: column; gap: 14px; width: 600px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">16b</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">Or keep one face and suppress per row</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">The conservative alternative. One layout, twelve slots, and a statistic that cannot be true for this column is simply not rendered — the row closes up rather than printing a dash. Same rule as <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">_unknown_cell</span>, one step further: absent instead of unknown.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 22px 22px; display: flex; flexDirection: column; gap: 15px;">
+        <div style="display: flex; alignItems: center; gap: 10px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Sex</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">categorical · object · 2 levels</span>
+        </div>
+        <div style="display: flex; height: 34px; width: 100%; overflow: hidden;">
+          <div title="male — 577 rows, 64.8%" style="width: 64.8%; background: #2C4A62; display: flex; alignItems: center; paddingLeft: 11px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #FBF9F5;">male 64.8%</span>
+          </div>
+          <div title="female — 314 rows, 35.2%" style="width: 35.2%; background: #7FA0B5; display: flex; alignItems: center; paddingLeft: 11px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #22201C;">female 35.2%</span>
+          </div>
+        </div>
+        <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 0 22px; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ suppressed }}" as="s" hint-placeholder-count="6">
+            <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 10px; padding: 7px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">{{ s.k }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ s.color }};">{{ s.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; lineHeight: 1.5; color: #57524A;">6 slots, not 12 — entropy, rare levels, top-5 coverage, mode % and processed bytes are gone, because a two-level column has no spread to describe and its mode share is on the bar</span>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">One layout and one code path, so eight categorical columns read alike and the grid stays comparable. The suppression rule is per statistic rather than per kind, which means no arbitrary level boundary and no argument about where 12 levels belongs.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">A varying number of slots makes the stat row a different height per column, so the page loses its rhythm in a subtler way than three layouts would. And it fixes only the false statistics — <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">Cabin</span> still gets a bar chart of 147 levels where a sentence would serve, because that is a chart decision and this is a stat-row rule.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="width: 390px; flexShrink: 0;">
+      <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px · few-level face</div>
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 16px 14px 18px; display: flex; flexDirection: column; gap: 13px;">
+        <div style="display: flex; flexDirection: column; gap: 7px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Embarked</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">categorical · object · 3 levels</span>
+        </div>
+        <p style="margin: 0; fontSize: 14px; lineHeight: 1.5; color: #22201C; textWrap: pretty;">Dominated by <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">S</span> at <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; fontWeight: 600;">72.4%</span> — an even split would be 33.3%.</p>
+        <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ embarked }}" as="v" hint-placeholder-count="3">
+            <div style="display: grid; gridTemplateColumns: 26px 1fr 96px; alignItems: center; gap: 10px; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">{{ v.label }}</span>
+              <span style="position: relative; height: 12px; background: #EDE6DA; display: block;">
+                <span style="display: block; height: 12px; width: {{ v.w }}; background: {{ v.fill }};"></span>
+                <span style="position: absolute; left: 33.333%; top: -3px; height: 18px; borderLeft: 2px solid #22201C;"></span>
+              </span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; textAlign: right; color: #4A453D;">{{ v.stat }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 0 16px;">
+          <sc-for list="{{ embarkedStats }}" as="s" hint-placeholder-count="6">
+            <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 8px; padding: 6px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; color: #57524A;">{{ s.k }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ s.color }};">{{ s.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; lineHeight: 1.45; color: #57524A;">rule stays at 390px, its label goes — same rule as the datetime baselines</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="width: 1240px; flexShrink: 0; background: #FBF9F5; border: 1px solid #963F1C; padding: 22px 24px 24px; display: flex; flexDirection: column; gap: 14px;">
+    <div style="display: flex; alignItems: center; gap: 14px; flexWrap: wrap;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #963F1C;">Three code findings, unrelated to the above</span>
+      <span style="flex: 1; height: 1px; background: #E2DCD1; minWidth: 20px;"></span>
+    </div>
+    <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+      <sc-for list="{{ codeFindings }}" as="c" hint-placeholder-count="3">
+        <div style="display: grid; gridTemplateColumns: 250px 1fr 132px; gap: 18px; alignItems: baseline; padding: 10px 0; borderBottom: 1px solid #E2DCD1;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #22201C;">{{ c.where }}</span>
+          <span style="fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">{{ c.body }}</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: {{ c.tone }};">{{ c.kind }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="borderTop: 1px solid #CFC7B8; paddingTop: 22px; maxWidth: 92ch; display: flex; flexDirection: column; gap: 12px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">What I'd do</span>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;"><a href="#16b">16b</a>, then the even-split rule from <a href="#16a">16a</a> on top of it. That gets the two real wins — no statistic that cannot be true, and a share the reader can judge — without three layouts or a level boundary to argue about. <a href="#16a">16a</a>'s <em>many-level</em> face is worth taking anyway as a chart decision rather than a face decision: <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">Cabin</span>'s 147 levels are not a bar chart at any width.</p>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">The three code findings are independent of both and each about ten minutes. The <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">--data-4</span> one I would take first, because it is a violation of a rule I wrote and shipped, and it is invisible until someone looks at a below-threshold pair on paper.</p>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1360, &quot;height&quot;: 1400}}">
+const INK = "#22201C", BODY = "#4A453D", MUTED = "#57524A";
+const D1 = "#2C4A62", D2 = "#3E6280", D3 = "#5C7F99";
+const BAD = "#963F1C", WARN = "#8F6417", WARN_FILL = "#A2731A", GOOD = "#4A5D1E";
+
+const chip = (value, label, limit, tone, title) => ({
+  value, label, limit: limit ? "· " + limit : "",
+  tone: tone === "bad" ? BAD : WARN,
+  border: tone === "bad" ? BAD : WARN_FILL,
+  title: title || "",
+});
+
+class Component extends DCLogic {
+  renderVals() {
+    // Real Titanic categorical output.
+    const embarked = [
+      { label: "S", w: "72.4%", fill: D1, stat: "644 · 72.4%", evenTitle: "An even split across 3 levels would be 33.3%" },
+      { label: "C", w: "18.9%", fill: D2, stat: "168 · 18.9%", evenTitle: "An even split across 3 levels would be 33.3%" },
+      { label: "Q", w: "8.7%", fill: D2, stat: "77 · 8.7%", evenTitle: "An even split across 3 levels would be 33.3%" },
+    ];
+
+    return {
+      kinds: [
+        { col: "Sex", levels: "2", tone: BAD,
+          problem: "Entropy 0.936, rare levels 0, top-5 coverage 100% — three statistics describing the spread of a distribution that has two members and no spread.",
+          is: "a boolean in a string" },
+        { col: "Embarked", levels: "3", tone: GOOD,
+          problem: "The one kind the twelve statistics were written for. Even here, 72.4% mode share has nothing to be judged against.",
+          is: "a true category" },
+        { col: "Cabin", levels: "147", tone: WARN,
+          problem: "A bar chart of the top 10 of 147, covering 3.4% of rows, under a column that is 77.1% empty. The chart describes a twentieth of the data.",
+          is: "a sparse identifier" },
+        { col: "Name", levels: "891", tone: BAD,
+          problem: "Ten bars of one row each, 0.1% apiece. Entropy and top-5 coverage are computed over values that never repeat.",
+          is: "a primary key" },
+      ],
+      faces: [
+        {
+          col: "Embarked", meta: "categorical · object · 3 levels", route: "2–20 levels · full face",
+          flags: [chip("2", "missing", "", "warn", "2 of 891 rows")],
+          lede: "Dominated by S at 72.4%, where an even split across three levels would be 33.3%.",
+          hasLevels: true, noLevels: false, even: "33.333%",
+          levels: embarked,
+          coverage: "3 of 3 levels shown · covers 100% of non-missing rows · rule marks an even split",
+          stats: [
+            { k: "Count", v: "889", color: INK, title: "Non-missing rows" },
+            { k: "Missing", v: "2 · 0.2%", color: GOOD, title: "Below the 5% threshold" },
+            { k: "Levels", v: "3", color: INK, title: "Distinct values" },
+            { k: "Mode", v: "S", color: INK, title: "Most frequent level" },
+            { k: "Entropy", v: "0.796 of 1", color: INK, title: "Normalised against log2(3) — 1.0 would be an even split" },
+            { k: "Label length", v: "1 char", color: INK, title: "All three labels are one character" },
+          ],
+          panes: "normalization · missing",
+        },
+        {
+          col: "Cabin", meta: "categorical · object · 147 levels", route: "over 20 levels · concentration face",
+          flags: [chip("77.1%", "missing", "limit 20%", "bad", "687 of 891 rows"), chip("147", "levels", "", "warn", "")],
+          lede: "77.1% empty, and the 204 rows that do have a cabin spread across 147 values — the most common covers 4 of them.",
+          hasLevels: true, noLevels: false, even: "0.68%",
+          levels: [
+            { label: "B96 B98", w: "1.96%", fill: D2, stat: "4 · 2.0%", evenTitle: "An even split across 147 levels would be 0.7%" },
+            { label: "C23 C25 C27", w: "1.96%", fill: D2, stat: "4 · 2.0%", evenTitle: "An even split across 147 levels would be 0.7%" },
+            { label: "G6", w: "1.96%", fill: D2, stat: "4 · 2.0%", evenTitle: "An even split across 147 levels would be 0.7%" },
+          ],
+          coverage: "3 of 147 levels shown · covers 5.9% of the 204 non-missing rows · a top-10 chart would cover 16.7%",
+          stats: [
+            { k: "Count", v: "204", color: INK, title: "Non-missing rows" },
+            { k: "Missing", v: "687 · 77.1%", color: BAD, title: "Above the 20% threshold" },
+            { k: "Levels", v: "147", color: INK, title: "Distinct values among 204 rows" },
+            { k: "Rows per level", v: "1.4", color: WARN, title: "204 rows over 147 levels" },
+            { k: "Singletons", v: "119 · 81%", color: WARN, title: "119 levels occur exactly once" },
+            { k: "Top-10 cover", v: "16.7%", color: WARN, title: "The ten most common levels cover 34 of 204 rows" },
+          ],
+          panes: "length · normalization · missing",
+        },
+        {
+          col: "Name", meta: "categorical · object · 891 levels", route: "levels ≈ rows · identifier face",
+          flags: [chip("100%", "distinct", "limit 90%", "bad", "891 distinct values in 891 rows")],
+          lede: "Every value is different, so there is no distribution to describe. What can be described is the form the values take.",
+          hasLevels: false, noLevels: true, even: "0%",
+          samples: [
+            "Braund, Mr. Owen Harris",
+            "Heikkinen, Miss. Laina",
+            "Allen, Mr. William Henry",
+            "Sandstrom, Miss. Marguerite Rut",
+          ],
+          sampleNote: "four values as they appear, in dataset order — not a ranking, because there is none",
+          stats: [
+            { k: "Count", v: "891", color: INK, title: "Non-missing rows" },
+            { k: "Missing", v: "0 · 0.0%", color: MUTED, title: "No missing values" },
+            { k: "Distinct", v: "891 of 891", color: BAD, title: "Clamped to the row count — the KMV sketch estimated 892" },
+            { k: "Repeats", v: "none", color: INK, title: "No value occurs twice" },
+            { k: "Label length", v: "12–82 chars", color: INK, title: "Mean 26.97, p90 39" },
+            { k: "Empty strings", v: "0", color: INK, title: "No zero-length values" },
+          ],
+          panes: "length · missing",
+        },
+      ],
+      suppressed: [
+        { k: "Count", v: "891", color: INK },
+        { k: "Missing", v: "0 · 0.0%", color: MUTED },
+        { k: "Levels", v: "2", color: INK },
+        { k: "Mode", v: "male", color: INK },
+        { k: "Label length", v: "4–6 chars", color: INK },
+        { k: "Empty strings", v: "0", color: INK },
+      ],
+      embarked,
+      embarkedStats: [
+        { k: "Count", v: "889", color: INK },
+        { k: "Missing", v: "2 · 0.2%", color: GOOD },
+        { k: "Levels", v: "3", color: INK },
+        { k: "Mode", v: "S", color: INK },
+        { k: "Entropy", v: "0.796 of 1", color: INK },
+        { k: "Length", v: "1 char", color: INK },
+      ],
+      codeFindings: [
+        {
+          where: "correlations_section.py:169",
+          body: "A below-threshold pair's diverging bar is filled with var(--data-4). That step is 1.83:1 on the paper and is documented in tokens.css as stack-internal only — rule 1, which I wrote. The bar is invisible in print and close to invisible on screen. Use --data-3.",
+          kind: "rule violation", tone: BAD,
+        },
+        {
+          where: "correlations_section.py:364",
+          body: "_render_no_correlations_state still prints a bare message in a div. The enriched empty state — pair count, strongest value, the list below threshold — landed on the path where pairs exist but not on this one, so a frame with fewer than two numeric columns still gets one line.",
+          kind: "half-applied", tone: WARN,
+        },
+        {
+          where: "missing_section.py:245–395",
+          body: "_build_completeness_tab and _build_chunk_tab are the old two-tab implementation, unreachable since the chunk-count routing replaced them. About 150 lines, carrying their own chunk-legend with hardcoded severity colours that no longer match the tokens.",
+          kind: "dead code", tone: WARN,
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

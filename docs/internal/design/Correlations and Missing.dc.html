@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<style>
+  body { margin: 0; background: #DFDACF; }
+  a { color: #4A5D1E; text-decoration: none; }
+  a:hover { color: #22201C; text-decoration: underline; }
+  [data-navrail]::-webkit-scrollbar { display: none; }
+</style>
+</helmet>
+
+<section style="padding: 56px; background: #DFDACF; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 48px;">
+
+  <div style="display: flex; flexDirection: column; gap: 12px; maxWidth: 860px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Turn 8 · correlations &amp; missing values</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">The last two sections</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">You remembered right — correlations already has two views in <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">correlations_section.py</span>: a matrix when there are 15 or fewer numeric columns, a ranked list above that. Both are below, plus the state your own Titanic report actually hits. Then two options for missing values.</p>
+    <div style="display: inline-flex; alignSelf: flex-start; alignItems: center; gap: 8px; padding: 7px 11px; border: 1px dashed #BDB5A6; background: #E8E3D8;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; textTransform: uppercase; color: #57524A;">Note</span>
+      <span style="fontSize: 13.5px; color: #4A453D;"><a href="#8a">8a</a> and the missing-values options use your real Titanic output. <a href="#8b">8b</a> and <a href="#8c">8c</a> need correlations above 0.5, which Titanic has none of, so their values are illustrative.</span>
+    </div>
+  </div>
+
+  <div style="display: flex; alignItems: center; gap: 14px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Correlations</span>
+    <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+  </div>
+
+  <div id="8a" style="display: flex; flexDirection: column; gap: 14px; width: 1240px; flexShrink: 0;">
+    <div style="display: flex; alignItems: baseline; gap: 12px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">8a</span>
+      <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">The empty state — which is the common case</h3>
+    </div>
+    <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 76ch; textWrap: pretty;">Your Titanic report prints one line: an emoji and "No significant correlations found (threshold: 0.50)". Both of your example reports hit it. But nothing was missing — three pairs were computed and all three came back weak, which is a finding, not an absence. Report the result instead of the emptiness.</p>
+
+    <div style="display: flex; gap: 32px; alignItems: flex-start;">
+      <div style="flex: 1; minWidth: 0; display: flex; flexDirection: column; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Today</span>
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 24px;">
+          <div style="fontSize: 20px; fontWeight: 700; marginBottom: 14px;">Correlations</div>
+          <div style="display: flex; flexDirection: column; alignItems: center; gap: 10px; padding: 34px 0;">
+            <span style="fontSize: 30px; opacity: 0.5;">▦</span>
+            <span style="fontSize: 14px; color: #57524A;">No significant correlations found (threshold: 0.50)</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: 1.25; minWidth: 0; display: flex; flexDirection: column; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Proposed</span>
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 24px 24px; display: flex; flexDirection: column; gap: 18px;">
+          <div style="display: flex; alignItems: center; gap: 14px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 500; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Correlations</span>
+            <span style="flex: 1; height: 1px; background: #E2DCD1;"></span>
+          </div>
+          <p style="margin: 0; fontSize: 19px; lineHeight: 1.5; letterSpacing: -0.005em; maxWidth: 44ch; textWrap: pretty;">All <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontWeight: 600;">3</span> numeric pairs are weakly related. The strongest is <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontWeight: 600;">0.096</span>, well under the <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontWeight: 600;">0.50</span> reporting threshold.</p>
+          <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+            <sc-for list="{{ weakPairs }}" as="p" hint-placeholder-count="3">
+              <div style="display: grid; gridTemplateColumns: 300px 1fr 78px; alignItems: center; gap: 18px; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ p.pair }}</span>
+                <span style="position: relative; height: 8px; background: #EDE6DA; display: block;">
+                  <span style="position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: #CFC7B8;"></span>
+                  <span style="position: absolute; top: 0; height: 8px; left: {{ p.left }}; width: {{ p.width }}; background: #7FA0B5;"></span>
+                </span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; textAlign: right; color: #4A453D;">{{ p.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 16px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">
+            <span>bar runs left of centre for negative, right for positive</span>
+            <span>3 numeric of 12 columns</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flexDirection: column; gap: 8px; maxWidth: 92ch;">
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Says what was checked and what came back, so "nothing here" is trustworthy rather than suspicious. Three weak pairs listed with their actual values is more useful than the word "none", and it costs about 80px. Showing all pairs is free — they were computed anyway.</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Only free while the pair count is small. With 40 numeric columns there are 780 pairs, so this needs a cap — show the top 10 below threshold and say how many were checked.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="8b" style="display: flex; flexDirection: column; gap: 14px; width: 1240px; flexShrink: 0;">
+    <div style="display: flex; alignItems: baseline; gap: 12px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">8b</span>
+      <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Ranked list — over 15 numeric columns</h3>
+    </div>
+    <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 76ch; textWrap: pretty;">Same structure you have, restyled. Two changes that matter: sign is shown by <em>which side of centre</em> the bar sits, and the three strength bands become three steps of one blue rather than three hues. Rank badges go — the list is already ordered.</p>
+
+    <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 24px 24px; display: flex; flexDirection: column; gap: 16px;">
+      <div style="display: flex; alignItems: center; gap: 14px; flexWrap: wrap;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 500; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Correlations</span>
+        <span style="flex: 1; height: 1px; background: #E2DCD1; minWidth: 40px;"></span>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">7 pairs above 0.50, of 190 checked</span>
+      </div>
+      <div style="display: flex; gap: 20px; flexWrap: wrap; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;">
+        <sc-for list="{{ bands }}" as="b" hint-placeholder-count="3">
+          <span style="display: inline-flex; alignItems: center; gap: 7px;"><span style="width: 10px; height: 10px; background: {{ b.fill }};"></span>{{ b.label }}</span>
+        </sc-for>
+      </div>
+      <div style="display: grid; gridTemplateColumns: 340px 1fr 84px; gap: 18px; paddingBottom: 6px; borderBottom: 1px solid #22201C; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">
+        <span>Pair</span><span style="textAlign: center;">− 1.0 &nbsp; ← &nbsp; 0 &nbsp; → &nbsp; + 1.0</span><span style="textAlign: right;">r</span>
+      </div>
+      <div style="display: flex; flexDirection: column;">
+        <sc-for list="{{ ranked }}" as="p" hint-placeholder-count="7">
+          <div style="display: grid; gridTemplateColumns: 340px 1fr 84px; alignItems: center; gap: 18px; padding: 10px 0; borderBottom: 1px solid #E2DCD1;">
+            <span style="display: flex; alignItems: center; gap: 8px; minWidth: 0; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">
+              <span style="overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ p.a }}</span>
+              <span style="color: #57524A; flexShrink: 0;">↔</span>
+              <span style="overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ p.b }}</span>
+            </span>
+            <span style="position: relative; height: 14px; background: #EDE6DA; display: block;">
+              <span style="position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: #CFC7B8;"></span>
+              <span title="{{ p.title }}" style="position: absolute; top: 0; height: 14px; left: {{ p.left }}; width: {{ p.width }}; background: {{ p.fill }};"></span>
+            </span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; textAlign: right;">{{ p.value }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; flexDirection: column; gap: 8px; maxWidth: 92ch;">
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Sign is read from position, so it survives greyscale and needs no legend — and it stops the report using red for "negative", which reads as "bad" when a negative correlation is often the interesting one. Scales to hundreds of pairs; a phone gets the same list with the pair stacked over the bar.</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Half the bar track is empty for any given row, so it uses more width than a left-anchored bar. Long column names truncate at 340px and need the <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">title</span> to recover.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="8c" style="display: flex; flexDirection: column; gap: 14px; width: 1240px; flexShrink: 0;">
+    <div style="display: flex; alignItems: baseline; gap: 12px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">8c</span>
+      <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Matrix — 15 numeric columns or fewer</h3>
+    </div>
+    <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 76ch; textWrap: pretty;">Only the lower triangle is drawn. The full square repeats every pair twice and spends a diagonal saying 1.00 six times — half the ink for none of the information. Cell tint is <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">|r|</span> in steps of blue; the sign is in the printed number.</p>
+
+    <div style="display: flex; gap: 36px; alignItems: flex-start; flexWrap: wrap;">
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 24px 24px; display: flex; flexDirection: column; gap: 16px;">
+        <div style="display: flex; alignItems: center; gap: 14px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 500; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Correlation matrix</span>
+          <span style="flex: 1; height: 1px; background: #E2DCD1; minWidth: 30px;"></span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">6 numeric · 15 pairs</span>
+        </div>
+        <table style="borderCollapse: collapse; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px;">
+          <tbody>
+            <sc-for list="{{ matrix }}" as="row" hint-placeholder-count="5">
+              <tr>
+                <th style="padding: 0 14px 0 0; textAlign: right; fontWeight: 500; fontSize: 11.5px; color: #22201C; whiteSpace: nowrap;">{{ row.label }}</th>
+                <sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="5">
+                  <td title="{{ c.title }}" style="width: 74px; height: 42px; textAlign: center; background: {{ c.fill }}; color: {{ c.ink }}; borderRight: 2px solid #FBF9F5; borderBottom: 2px solid #FBF9F5;">{{ c.value }}</td>
+                </sc-for>
+              </tr>
+            </sc-for>
+            <tr>
+              <th></th>
+              <sc-for list="{{ matrixCols }}" as="c" hint-placeholder-count="5">
+                <td style="paddingTop: 8px; textAlign: center; fontSize: 11.5px; color: #22201C; whiteSpace: nowrap;">{{ c }}</td>
+              </sc-for>
+            </tr>
+          </tbody>
+        </table>
+        <div style="display: flex; alignItems: center; gap: 10px; paddingTop: 4px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">|r| 0</span>
+          <span style="display: flex; height: 12px;">
+            <sc-for list="{{ scale }}" as="s" hint-placeholder-count="4">
+              <span style="width: 42px; height: 12px; background: {{ s }};"></span>
+            </sc-for>
+          </span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">1.0 · sign printed in the cell</span>
+        </div>
+      </div>
+
+      <div style="width: 390px; flexShrink: 0;">
+        <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px · matrix falls back to the list</div>
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 16px 14px 18px; display: flex; flexDirection: column; gap: 12px;">
+          <div style="display: flex; alignItems: center; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; fontWeight: 500; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Correlations</span>
+            <span style="flex: 1; height: 1px; background: #E2DCD1;"></span>
+          </div>
+          <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+            <sc-for list="{{ rankedMobile }}" as="p" hint-placeholder-count="5">
+              <div style="display: flex; flexDirection: column; gap: 5px; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+                <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 10px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px;">
+                  <span style="overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ p.a }} ↔ {{ p.b }}</span>
+                  <span style="flexShrink: 0;">{{ p.value }}</span>
+                </div>
+                <span style="position: relative; height: 10px; background: #EDE6DA; display: block;">
+                  <span style="position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: #CFC7B8;"></span>
+                  <span style="position: absolute; top: 0; height: 10px; left: {{ p.left }}; width: {{ p.width }}; background: {{ p.fill }};"></span>
+                </span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">a 6×6 grid of 74px cells needs 444px — under 640px, use the list</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: flex; flexDirection: column; gap: 8px; maxWidth: 92ch;">
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Shows structure a list cannot — a column correlated with everything shows up as a dark row, which is how you spot a leaked or duplicated feature. Triangle-only halves the cells and removes the pointless diagonal.</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Does not fit a phone at all, so you maintain two layouts — and the 15-column ceiling is generous: at 15 columns the cells are 30px and the labels no longer fit. I would drop the matrix threshold to about 10 and use the list above it.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; alignItems: center; gap: 14px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Missing values</span>
+    <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+  </div>
+
+  <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; maxWidth: 84ch; textWrap: pretty;">Today this is two tabs — <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">Data Completeness</span> and <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">Missing per Chunk</span> — over three rows. The Titanic report has one chunk, so the second tab is a single full-width block per column: a tab that hides nothing behind a click. Both options below keep the per-chunk data, which is the genuinely valuable part for streaming, and drop the tabs.</p>
+
+  <div style="display: flex; flexWrap: wrap; gap: 36px; alignItems: flex-start;">
+
+    <div id="8d" style="display: flex; flexDirection: column; gap: 14px; width: 600px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">8d</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">One row per column, chunks inline</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D;">Completeness and the chunk spectrum on the same row: the bar <em>is</em> the chunk strip. With one chunk it is one block; with forty it is forty, and you see where the gaps cluster.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 22px 22px; display: flex; flexDirection: column; gap: 16px;">
+        <div style="display: flex; alignItems: center; gap: 12px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 500; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Missing values</span>
+          <span style="flex: 1; height: 1px; background: #E2DCD1; minWidth: 20px;"></span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">3 of 12 columns · 1 chunk</span>
+        </div>
+        <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ missing }}" as="m" hint-placeholder-count="3">
+            <div style="display: grid; gridTemplateColumns: 92px 1fr 110px; alignItems: center; gap: 14px; padding: 11px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ m.col }}</span>
+              <span title="{{ m.title }}" style="display: flex; height: 14px; background: #EDE6DA;">
+                <span style="width: {{ m.pct }}; background: {{ m.fill }}; display: block;"></span>
+              </span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; textAlign: right; color: {{ m.text }};">{{ m.stat }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 16px; flexWrap: wrap;">
+          <div style="display: flex; gap: 16px; flexWrap: wrap; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;">
+            <sc-for list="{{ severity }}" as="s" hint-placeholder-count="3">
+              <span style="display: inline-flex; alignItems: center; gap: 7px;"><span style="width: 10px; height: 10px; background: {{ s.fill }};"></span>{{ s.label }}</span>
+            </sc-for>
+          </div>
+          <a href="#8d" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px;">9 complete columns →</a>
+        </div>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">One view, no tabs, no click to reach the streaming information. Same row shape as the Summary missing list, so the reader learns it once. Fits a phone unchanged.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">One bar carries two meanings — total percentage and per-chunk pattern — which is fine at one chunk and ambiguous at forty, where a reader may read bar length as a total when it is a sequence.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="8e" style="display: flex; flexDirection: column; gap: 14px; width: 600px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">8e</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">Split the two questions apart</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D;">A share bar for <em>how much</em>, and a separate strip for <em>where</em>. Same data, two encodings, neither doing the other's job.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 22px 22px; display: flex; flexDirection: column; gap: 18px;">
+        <div style="display: flex; alignItems: center; gap: 12px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 500; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Missing values</span>
+          <span style="flex: 1; height: 1px; background: #E2DCD1; minWidth: 20px;"></span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">3 of 12 columns</span>
+        </div>
+        <div style="display: grid; gridTemplateColumns: 92px 1fr 110px 1fr; gap: 14px; paddingBottom: 6px; borderBottom: 1px solid #22201C; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">
+          <span>Column</span><span>Share missing</span><span style="textAlign: right;">Count</span><span>By chunk →</span>
+        </div>
+        <div style="display: flex; flexDirection: column;">
+          <sc-for list="{{ missing }}" as="m" hint-placeholder-count="3">
+            <div style="display: grid; gridTemplateColumns: 92px 1fr 110px 1fr; alignItems: center; gap: 14px; padding: 11px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ m.col }}</span>
+              <span title="{{ m.title }}" style="display: flex; height: 10px; background: #EDE6DA;">
+                <span style="width: {{ m.pct }}; background: {{ m.fill }}; display: block;"></span>
+              </span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; textAlign: right; color: {{ m.text }};">{{ m.stat }}</span>
+              <span style="display: flex; gap: 2px; height: 18px;">
+                <sc-for list="{{ m.chunks }}" as="c" hint-placeholder-count="6">
+                  <span title="{{ c.title }}" style="flex: 1; height: 18px; background: {{ c.fill }}; display: block;"></span>
+                </sc-for>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 16px; flexWrap: wrap;">
+          <div style="display: flex; gap: 16px; flexWrap: wrap; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;">
+            <sc-for list="{{ severity }}" as="s" hint-placeholder-count="3">
+              <span style="display: inline-flex; alignItems: center; gap: 7px;"><span style="width: 10px; height: 10px; background: {{ s.fill }};"></span>{{ s.label }}</span>
+            </sc-for>
+          </div>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">1 chunk of 891 rows</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Each encoding answers one question, so neither is ambiguous at forty chunks. The chunk strip is where streaming earns its keep — a column that is fine early and empty later is a pipeline problem, and this is the only place in the report that shows it.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Four columns is too many for 390px, so mobile has to stack the strip under the row — a second layout. And at one chunk the strip is a single flat block, which looks like a bug until you read the footnote.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="borderTop: 1px solid #CFC7B8; paddingTop: 20px; maxWidth: 84ch; display: flex; flexDirection: column; gap: 10px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">What I'd do</span>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">Correlations: <a href="#8a">8a</a> for the empty state regardless, since it is what most reports show. Then <a href="#8b">8b</a> as the default view and <a href="#8c">8c</a> only above 640px with ten or fewer numeric columns.</p>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">Missing values: <a href="#8d">8d</a> when the report has one chunk, <a href="#8e">8e</a> when it has more than one. That is the same conditional you already have between the two correlation views, and it means neither layout is ever shown in the case that makes it look broken.</p>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1360, &quot;height&quot;: 1400}}">
+const D1 = "#2C4A62", D2 = "#3E6280", D3 = "#7FA0B5", D4 = "#A8BECD";
+const GOOD = "#4A5D1E", WARN_FILL = "#A2731A", WARN_TEXT = "#8F6417", BAD = "#963F1C";
+const INK = "#22201C", PAPER = "#FBF9F5", MUTED = "#57524A", BODY = "#4A453D";
+
+// Diverging bar: 0 sits at 50%, negative runs left, positive runs right.
+const diverge = (r) => {
+  const half = Math.min(Math.abs(r), 1) * 50;
+  return { left: (r < 0 ? 50 - half : 50).toFixed(2) + "%", width: half.toFixed(2) + "%" };
+};
+const bandFill = (abs) => (abs >= 0.9 ? D1 : abs >= 0.7 ? D2 : abs >= 0.5 ? D3 : D4);
+const sign = (r) => (r > 0 ? "+" : "−") + Math.abs(r).toFixed(3);
+
+// Illustrative pairs — Titanic has no correlation above the 0.5 threshold.
+const RANKED = [
+  ["total_charges", "monthly_charges", 0.972],
+  ["tenure_months", "total_charges", 0.826],
+  ["support_calls", "churn_score", 0.741],
+  ["discount_pct", "monthly_charges", -0.702],
+  ["tenure_months", "churn_score", -0.658],
+  ["login_count", "session_minutes", 0.611],
+  ["support_calls", "satisfaction", -0.534],
+];
+
+const MATRIX_COLS = ["tenure", "monthly", "total", "logins", "calls", "churn"];
+const MATRIX_R = [
+  [0.31],
+  [0.83, 0.97],
+  [0.44, 0.12, 0.28],
+  [-0.22, 0.19, 0.05, -0.41],
+  [-0.66, 0.24, 0.09, -0.38, 0.74],
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    const ranked = RANKED.map(([a, b, r]) => {
+      const d = diverge(r);
+      return {
+        a, b, value: sign(r), left: d.left, width: d.width,
+        fill: bandFill(Math.abs(r)),
+        title: a + " ↔ " + b + ": " + sign(r),
+      };
+    });
+
+    // Real Titanic numeric pairs, all below the 0.50 threshold.
+    const weak = [
+      ["PassengerId ↔ Fare", 0.013],
+      ["Age ↔ Fare", 0.096],
+      ["PassengerId ↔ Age", 0.037],
+    ];
+
+    const matrix = MATRIX_R.map((row, i) => ({
+      label: MATRIX_COLS[i + 1],
+      cells: row.map((r, j) => {
+        const abs = Math.abs(r);
+        const fill = abs >= 0.7 ? D1 : abs >= 0.5 ? D2 : abs >= 0.3 ? D3 : abs >= 0.15 ? D4 : "#EDE6DA";
+        return {
+          value: (r > 0 ? "+" : "−") + Math.abs(r).toFixed(2),
+          fill,
+          ink: abs >= 0.5 ? PAPER : INK,
+          title: MATRIX_COLS[i + 1] + " ↔ " + MATRIX_COLS[j] + ": " + (r > 0 ? "+" : "−") + Math.abs(r).toFixed(2),
+        };
+      }),
+    }));
+
+    const chunkFill = (pct) => (pct >= 20 ? BAD : pct >= 5 ? WARN_FILL : GOOD);
+
+    return {
+      ranked,
+      rankedMobile: ranked.slice(0, 5),
+      weakPairs: weak.map(([pair, r]) => {
+        const d = diverge(r);
+        return { pair, value: sign(r), left: d.left, width: d.width };
+      }),
+      bands: [
+        { label: "≥ 0.9", fill: D1 },
+        { label: "0.7 – 0.9", fill: D2 },
+        { label: "0.5 – 0.7", fill: D3 },
+      ],
+      matrix,
+      matrixCols: MATRIX_COLS.slice(0, 5),
+      scale: [D4, D3, D2, D1],
+      severity: [
+        { label: "≤ 5%", fill: GOOD },
+        { label: "5 – 20%", fill: WARN_FILL },
+        { label: "> 20%", fill: BAD },
+      ],
+      missing: [
+        {
+          col: "Cabin", pct: "77.1%", stat: "687 · 77.1%", fill: BAD, text: BAD,
+          title: "Cabin — 687 of 891 missing (77.1%)",
+          chunks: [77.1].map((p) => ({ fill: chunkFill(p), title: "Chunk 1, rows 0–890: 687 missing (77.1%)" })),
+        },
+        {
+          col: "Age", pct: "19.9%", stat: "177 · 19.9%", fill: WARN_FILL, text: WARN_TEXT,
+          title: "Age — 177 of 891 missing (19.9%)",
+          chunks: [19.9].map((p) => ({ fill: chunkFill(p), title: "Chunk 1, rows 0–890: 177 missing (19.9%)" })),
+        },
+        {
+          col: "Embarked", pct: "0.2%", stat: "2 · 0.2%", fill: GOOD, text: BODY,
+          title: "Embarked — 2 of 890 missing (0.2%)",
+          chunks: [0.2].map((p) => ({ fill: chunkFill(p), title: "Chunk 1, rows 0–889: 2 missing (0.2%)" })),
+        },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

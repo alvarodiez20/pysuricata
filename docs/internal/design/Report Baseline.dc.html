@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  body { margin: 0; background: #f9f9f9; }
+  a { color: #1e90ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+</style>
+</helmet>
+<div style="font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; color: #333;">
+
+  <header style="background: rgba(249,249,249,0.86); backdropFilter: blur(8px); borderBottom: 1px solid rgba(0,0,0,0.08); position: sticky; top: 0; zIndex: 50;">
+    <div style="maxWidth: 1200px; margin: 0 auto; padding: 0.2rem 1rem; display: grid; gridTemplateColumns: 78px 1fr; gridTemplateRows: auto auto; gridTemplateAreas: 'logo title' 'logo meta'; columnGap: 0.5rem; rowGap: 0.2rem; alignItems: center;">
+      <div style="gridArea: logo; display: flex; alignItems: center; justifyContent: center; height: 60px; width: 100%;">
+        <img src="../../../pysuricata/static/images/logo_suricata_transparent.png" alt="PySuricata" style="height: 54px; width: auto; display: block;" />
+      </div>
+
+      <div style="gridArea: title; display: flex; alignItems: center; justifyContent: space-between; gap: 1rem;">
+        <h1 style="fontSize: 1.4rem; fontWeight: 700; margin: 0; color: inherit;">PySuricata EDA Report</h1>
+        <div style="display: flex; alignItems: center; gap: 0.5rem;">
+          <nav style="display: flex; gap: 0.5rem; flexWrap: wrap; alignItems: center;">
+            <a href="#summary" style="color: inherit; fontWeight: 600; fontSize: 0.9rem; padding: 0.25rem 0.6rem; borderRadius: 9999px; background: rgba(59,130,246,0.1); color: #3b82f6;">Summary</a>
+            <a href="#sample" style="color: inherit; fontWeight: 600; fontSize: 0.9rem; padding: 0.25rem 0.6rem; borderRadius: 9999px;">Sample</a>
+            <a href="#vars" style="color: inherit; fontWeight: 600; fontSize: 0.9rem; padding: 0.25rem 0.6rem; borderRadius: 9999px;">Variables</a>
+            <a href="#correlations" style="color: inherit; fontWeight: 600; fontSize: 0.9rem; padding: 0.25rem 0.6rem; borderRadius: 9999px;">Correlations</a>
+            <a href="#missing-values" style="color: inherit; fontWeight: 600; fontSize: 0.9rem; padding: 0.25rem 0.6rem; borderRadius: 9999px;">Missing Values</a>
+            <a href="#download" title="Download this report as HTML" style="color: inherit; fontWeight: 600; fontSize: 0.9rem; padding: 0.25rem 0.6rem; borderRadius: 9999px; display: inline-flex; alignItems: center;">
+              <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="verticalAlign: text-bottom;">
+                <path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z"></path>
+                <path fill="currentColor" d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z"></path>
+              </svg>
+            </a>
+          </nav>
+          <button aria-label="Toggle dark mode" style="border: none; background: transparent; fontSize: 1.2rem; cursor: pointer; padding: 0.3rem; borderRadius: 50%; color: inherit; lineHeight: 1;">
+            <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div style="gridArea: meta; display: flex; alignItems: center; justifyContent: flex-start; gap: 0.4rem; flexWrap: wrap; fontSize: 0.85rem; opacity: 0.9;">
+        <span style="padding: 0.35rem 0.6rem; borderRadius: 9999px; fontSize: 0.85rem; lineHeight: 1; background: rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08);">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#0ea5e9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="verticalAlign: text-bottom;">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg> 2026-03-01 00:15:48</span>
+        <span style="padding: 0.35rem 0.6rem; borderRadius: 9999px; fontSize: 0.85rem; lineHeight: 1; background: rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08);">
+          <svg aria-hidden="true" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="verticalAlign: text-bottom;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polyline points="12 6 12 12 16 14"></polyline>
+          </svg> 0.06 s</span>
+        <a href="https://github.com/alvarodiez20/pysuricata" style="padding: 0.35rem 0.6rem; borderRadius: 9999px; fontSize: 0.85rem; lineHeight: 1; background: rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08);">
+          <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="verticalAlign: text-bottom;">
+            <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path>
+          </svg>
+          pysuricata v0.0.43
+        </a>
+        <button title="Unpin header" aria-label="Unpin header" style="marginLeft: auto; border: 1px solid rgba(0,0,0,0.08); background: transparent; borderRadius: 9999px; width: 32px; height: 24px; display: inline-flex; alignItems: center; justifyContent: center; cursor: pointer; color: inherit;">
+          <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16">
+            <g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4.2" y="1.2" width="7.6" height="2.2" rx="1.1"></rect>
+              <path d="M6.0 3.8 L6.6 8.8"></path>
+              <path d="M10.0 3.8 L9.4 8.8"></path>
+              <rect x="2.0" y="8.6" width="12.0" height="4.6" rx="2.3"></rect>
+              <path d="M8 13.2 V 15.2"></path>
+            </g>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main style="maxWidth: 1200px; margin: 0 auto; padding: 0.75rem 1rem;">
+    <div>
+
+      <section id="summary" style="margin: 0.05rem 0;">
+        <h2 style="margin: 0 0 0.75rem; fontSize: 1.25rem; lineHeight: 1.25; fontWeight: 700;">Summary</h2>
+
+        <div style="display: grid; gridTemplateColumns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+          <sc-for list="{{ kpis }}" as="kpi" hint-placeholder-count="5">
+            <div style="padding: 14px; borderRadius: 10px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02);">
+              <div style="fontSize: 0.8rem; opacity: 0.8; margin: 0 0 12px;">{{ kpi.label }}</div>
+              <div style="fontWeight: 600; fontSize: 1.1rem;">{{ kpi.value }}</div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display: grid; gridTemplateColumns: repeat(3, minmax(180px, 1fr)); gridAutoFlow: dense; gap: 12px; marginTop: 12px;">
+
+          <div style="padding: 14px; borderRadius: 10px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02); minHeight: 280px; display: flex; flexDirection: column; justifyContent: space-between;">
+            <div style="fontSize: 0.8rem; opacity: 0.8; margin: 0 0 12px;">Column types</div>
+            <svg viewBox="0 0 135 135" width="135" height="135" role="img" aria-label="Column type distribution" style="display: block; margin: 8px auto; borderRadius: 50%; overflow: visible;">
+              <circle cx="67.5" cy="67.5" r="67.5" fill="#f0f0f0" opacity="0.15"></circle>
+              <path d="M67.5 67.5 L67.5 0 A67.5 67.5 0 0 1 135 67.5 Z" fill="#4ea3f1"></path>
+              <path d="M67.5 67.5 L135 67.5 A67.5 67.5 0 1 1 33.75 9.04 Z" fill="#8ac926"></path>
+              <path d="M67.5 67.5 L33.75 9.04 A67.5 67.5 0 0 1 67.5 0 Z" fill="#ff595e"></path>
+              <path d="M67.5 67.5 L67.5 15.5 A52 52 0 0 1 119.5 67.5 Z" fill="rgba(0,0,0,0.06)"></path>
+              <path d="M67.5 67.5 L119.5 67.5 A52 52 0 1 1 41.5 22.47 Z" fill="rgba(0,0,0,0.06)"></path>
+              <path d="M67.5 67.5 L41.5 22.47 A52 52 0 0 1 67.5 15.5 Z" fill="rgba(0,0,0,0.06)"></path>
+            </svg>
+            <ul style="listStyle: none; padding: 0; margin: 0; display: grid; gridTemplateColumns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+              <sc-for list="{{ dtypes }}" as="d" hint-placeholder-count="4">
+                <li style="display: flex; flexDirection: column; alignItems: center; justifyContent: center; gap: 6px; padding: 16px 10px; borderRadius: 10px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02);">
+                  <span style="display: block; width: 14px; height: 14px; borderRadius: 3px; marginBottom: 6px; border: 1px solid rgba(0,0,0,0.08); background: {{ d.color }};"></span>
+                  <span style="fontWeight: 700; fontSize: 1.2rem;">{{ d.n }}</span>
+                  <span style="fontSize: 0.8rem; opacity: 0.8;">{{ d.label }}</span>
+                </li>
+              </sc-for>
+            </ul>
+          </div>
+
+          <div style="padding: 14px; borderRadius: 10px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02); minHeight: 280px; display: flex; flexDirection: column;">
+            <div style="fontSize: 0.8rem; opacity: 0.8; margin: 0 0 12px;">Top missing columns</div>
+            <ul style="listStyle: none; margin: 0; padding: 0; display: flex; flexDirection: column; justifyContent: flex-start; gap: 16px;">
+              <sc-for list="{{ missing }}" as="m" hint-placeholder-count="3">
+                <li style="display: grid; gridTemplateRows: auto 8px; rowGap: 4px; listStyle: none;">
+                  <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 8px; margin: 0;">
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fontSize: 0.82rem; padding: 0.15rem 0.4rem; borderRadius: 6px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.12); display: inline-block; whiteSpace: nowrap;">{{ m.col }}</span>
+                    <span style="fontWeight: 500; whiteSpace: nowrap;">{{ m.stat }}</span>
+                  </div>
+                  <div style="position: relative; height: 10px; borderRadius: 6px; background: linear-gradient(to right, rgba(0,0,0,0.03), rgba(0,0,0,0.05)); overflow: hidden; boxShadow: inset 0 1px 3px rgba(0,0,0,0.1); border: 1px solid rgba(0,0,0,0.08);">
+                    <span style="position: absolute; left: 0; top: 0; height: 100%; display: block; boxShadow: 0 1px 2px rgba(0,0,0,0.1); background: {{ m.fill }}; width: {{ m.pct }};"></span>
+                  </div>
+                </li>
+              </sc-for>
+            </ul>
+          </div>
+
+          <div style="padding: 14px; borderRadius: 10px; border: 1px solid rgba(0,0,0,0.08); background: rgba(0,0,0,0.02); minHeight: 280px; display: flex; flexDirection: column;">
+            <div style="fontSize: 0.8rem; opacity: 0.8; margin: 0 0 12px;">Quick insights</div>
+            <ul style="display: flex; flexWrap: wrap; gap: 8px; listStyle: none; padding: 0; margin: 0; alignContent: flex-start;">
+              <sc-for list="{{ insights }}" as="t" hint-placeholder-count="5">
+                <li style="padding: 0.3rem 0.6rem; borderRadius: 9999px; background: rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.08);">{{ t }}</li>
+              </sc-for>
+            </ul>
+          </div>
+        </div>
+
+        <div style="margin: 12px 0 0.05rem;">
+          <details style="border: 1px solid rgba(0,0,0,0.08); borderRadius: 10px; background: rgba(0,0,0,0.02);">
+            <summary style="listStyle: none; cursor: pointer; padding: 12px 14px; display: flex; alignItems: center; justifyContent: space-between; gap: 12px; borderRadius: 10px;">
+              <span style="fontSize: 0.8rem; opacity: 0.8; fontWeight: normal;">Description</span>
+              <span aria-hidden="true">▸</span>
+            </summary>
+            <div style="padding: 12px 14px; borderTop: 1px solid rgba(0,0,0,0.08); borderRadius: 0 0 10px 10px;">
+              <div style="opacity: 0.6;">Click to add description...</div>
+            </div>
+          </details>
+        </div>
+      </section>
+
+      <hr style="border: none; borderTop: 1px solid rgba(0,0,0,0.08); margin: 0.05rem 0; opacity: 0.6;" />
+
+      <section id="sample" style="margin: 0.05rem 0;">
+        <h2 style="margin: 0 0 0.75rem; fontSize: 1.25rem; lineHeight: 1.25; fontWeight: 700;">Sample</h2>
+        <details open="{{ true }}" style="border: 1px solid rgba(0,0,0,0.08); borderRadius: 10px; background: rgba(0,0,0,0.02);">
+          <summary style="listStyle: none; cursor: pointer; padding: 12px 14px; display: flex; alignItems: center; justifyContent: space-between; gap: 12px; borderRadius: 10px 10px 0 0;">
+            <span style="fontSize: 0.8rem; opacity: 0.8; fontWeight: normal;">Hide sample</span>
+            <span aria-hidden="true" style="transform: rotate(90deg);">▸</span>
+          </summary>
+          <div style="padding: 12px 14px; borderTop: 1px solid rgba(0,0,0,0.08); borderRadius: 0 0 10px 10px;">
+            <div style="overflowX: auto; overflowY: visible; maxWidth: 100%; background: white; margin: 8px 0 0 0;">
+              <table style="borderCollapse: collapse; width: 100%; fontFamily: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; fontSize: 0.65rem; lineHeight: 1.3; background: white; border: none;">
+                <thead>
+                  <tr>
+                    <sc-for list="{{ sampleCols }}" as="c" hint-placeholder-count="13">
+                      <th style="background: rgba(0,0,0,0.02); fontWeight: 600; fontSize: 0.8rem; padding: 3px 8px; border: 1px solid rgba(0,0,0,0.08); borderBottom: 2px solid rgba(0,0,0,0.08); textAlign: center; fontFamily: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;">{{ c }}</th>
+                    </sc-for>
+                  </tr>
+                </thead>
+                <tbody>
+                  <sc-for list="{{ sampleRows }}" as="row" hint-placeholder-count="10">
+                    <tr>
+                      <sc-for list="{{ row }}" as="cell" hint-placeholder-count="13">
+                        <td style="padding: 6px 12px; border: 1px solid rgba(0,0,0,0.08); fontSize: 0.85rem; lineHeight: 1.3; fontFamily: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; textAlign: {{ cell.align }};">{{ cell.v }}</td>
+                      </sc-for>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+            <p style="opacity: 0.8; fontSize: 0.85rem;">Showing 10 randomly sampled rows from the first chunk.</p>
+          </div>
+        </details>
+      </section>
+
+      <hr style="border: none; borderTop: 1px solid rgba(0,0,0,0.08); margin: 0.05rem 0; opacity: 0.6;" />
+
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const RAW = [
+  [495,496,0,3,"Yousseff, Mr. Gerious","male","nan",0,0,"2627",14.4583,"nan","C"],
+  [648,649,0,3,"Willey, Mr. Edward","male","nan",0,0,"S.O./P.P. 751",7.55,"nan","S"],
+  [278,279,0,3,"Rice, Master. Eric","male",7.0,4,1,"382652",29.125,"nan","Q"],
+  [31,32,1,1,"Spencer, Mrs. William Augustus (Marie Eugenie)","female","nan",1,0,"PC 17569",146.5208,"B78","C"],
+  [255,256,1,3,"Touma, Mrs. Darwis (Hanne Youssef Razi)","female",29.0,0,2,"2650",15.2458,"nan","C"],
+  [298,299,1,1,"Saalfeld, Mr. Adolphe","male","nan",0,0,"19988",30.5,"C106","S"],
+  [609,610,1,1,"Shutes, Miss. Elizabeth W","female",40.0,0,0,"PC 17582",153.4625,"C125","S"],
+  [318,319,1,1,"Wick, Miss. Mary Natalie","female",31.0,0,2,"36928",164.8667,"C7","S"],
+  [484,485,1,1,"Bishop, Mr. Dickinson H","male",25.0,1,0,"11967",91.0792,"B49","C"],
+  [367,368,1,3,"Moussa, Mrs. (Mantoura Boulos)","female","nan",0,0,"2626",7.2292,"nan","C"],
+];
+
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      kpis: [
+        { label: "Rows", value: "891" },
+        { label: "Columns", value: "12" },
+        { label: "Processed bytes (≈)", value: "121.4 KB" },
+        { label: "Missing", value: "866 (8.1%)" },
+        { label: "Duplicates (≈)", value: "0 (0.0%)" },
+      ],
+      dtypes: [
+        { label: "Numeric", n: 3, color: "#4ea3f1" },
+        { label: "Categorical", n: 8, color: "#8ac926" },
+        { label: "Datetime", n: 0, color: "#ffca3a" },
+        { label: "Boolean", n: 1, color: "#ff595e" },
+      ],
+      missing: [
+        { col: "Cabin", stat: "687 (77.1%)", pct: "77.1%", fill: "linear-gradient(to right, #f15e4e, #f57365)" },
+        { col: "Age", stat: "177 (19.9%)", pct: "19.9%", fill: "linear-gradient(to right, #f1c54e, #f5d165)" },
+        { col: "Embarked", stat: "2 (0.2%)", pct: "0.2%", fill: "linear-gradient(to right, #4ea3f1, #5db3ff)" },
+      ],
+      insights: [
+        "Unique cols: 12", "Constant cols: 0", "High-card categoricals: 2",
+        "Date range: — → —", "Text cols: 8 (avg len 5.8)",
+      ],
+      sampleCols: ["", "PassengerId", "Survived", "Pclass", "Name", "Sex", "Age", "SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked"],
+      sampleRows: RAW.map((r) => r.map((v) => ({
+        v: String(v),
+        align: typeof v === "number" || v === "nan" ? "right" : "left",
+      }))),
+    };
+  }
+}
+</script>
+</body>
+</html>

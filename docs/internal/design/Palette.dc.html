@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<style>
+  body { margin: 0; background: #DFDACF; }
+  a { color: #4A5D1E; text-decoration: none; }
+  a:hover { color: #22201C; text-decoration: underline; }
+</style>
+</helmet>
+
+<section style="padding: 56px 56px 64px; background: #D7D1C4; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 40px;">
+
+  <div style="display: flex; flexDirection: column; gap: 12px; maxWidth: 860px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #4E4941;">Turn 7 · comparing two datasets</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">Yes — it changes the answer</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #413D36; textWrap: pretty;">Comparison adds a second thing colour has to encode, and it is more important than type: <em>which dataset is this</em>. Every chart now carries two series, so the four-step blue in <a href="#6b">6b</a> can no longer be spent on segments — the steps get eaten by the series. So the question becomes: two hues, or one hue against a neutral.</p>
+    <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #413D36; maxWidth: 84ch; textWrap: pretty;">Comparison also invents a third meaning — <em>went up</em> / <em>went down</em> — and that must not borrow olive and rust, because a delta is not a verdict. More rows is neutral. More missing values is not. Rule at the bottom.</p>
+    <div style="display: inline-flex; alignSelf: flex-start; alignItems: center; gap: 8px; padding: 7px 11px; border: 1px dashed #A79E8D; background: #E8E3D8;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; textTransform: uppercase; color: #4E4941;">Note</span>
+      <span style="fontSize: 13.5px; color: #413D36;">Series A is the real <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">Age</span> distribution. Series B is A shifted — illustrative, so you judge the colour, not the data.</span>
+    </div>
+  </div>
+
+  <div style="display: flex; flexWrap: wrap; gap: 36px; alignItems: flex-start;">
+
+    <div id="7a" style="display: flex; flexDirection: column; gap: 14px; width: 580px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">7a</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">Two hues — blue and brown</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #413D36;">Each dataset gets its own hue. Brown comes from the logo's own <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">#483018</span>, so it stays inside the brand.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px; display: flex; flexDirection: column; gap: 22px;">
+        <div style="display: flex; gap: 18px; alignItems: center;">
+          <sc-for list="{{ legendHue }}" as="s" hint-placeholder-count="2">
+            <span style="display: inline-flex; alignItems: center; gap: 8px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #413D36;">
+              <span style="width: 12px; height: 12px; background: {{ s.fill }};"></span>{{ s.label }}
+            </span>
+          </sc-for>
+        </div>
+
+        <div style="display: grid; gridTemplateColumns: 34px 1fr; columnGap: 8px;">
+          <div style="position: relative; height: 130px;">
+            <sc-for list="{{ paired.yLabels }}" as="l" hint-placeholder-count="5">
+              <span style="position: absolute; right: 0; top: {{ l.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A;">{{ l.label }}</span>
+            </sc-for>
+          </div>
+          <div>
+            <svg viewBox="0 0 480 130" width="100%" height="130" preserveAspectRatio="none" role="img" aria-label="Age distribution, both datasets" style="display: block; borderBottom: 1px solid #CFC7B8;">
+              <sc-for list="{{ paired.grid }}" as="g" hint-placeholder-count="4">
+                <line x1="0" y1="{{ g.y }}" x2="480" y2="{{ g.y }}" stroke="#EDE6DA" stroke-width="1"></line>
+              </sc-for>
+              <sc-for list="{{ paired.barsA }}" as="b" hint-placeholder-count="25">
+                <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#3E6280"></rect>
+              </sc-for>
+              <sc-for list="{{ paired.barsB }}" as="b" hint-placeholder-count="25">
+                <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#6B4A22"></rect>
+              </sc-for>
+            </svg>
+            <div style="position: relative; height: 16px; marginTop: 3px;">
+              <sc-for list="{{ paired.xLabels }}" as="t" hint-placeholder-count="4">
+                <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A;">{{ t.label }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ embarkedPair }}" as="v" hint-placeholder-count="3">
+            <div style="display: grid; gridTemplateColumns: 28px 1fr 118px; alignItems: center; gap: 12px; padding: 8px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">{{ v.label }}</span>
+              <span style="display: flex; flexDirection: column; gap: 3px;">
+                <span style="height: 9px; background: #EDE6DA; display: block;"><span style="display: block; height: 9px; width: {{ v.a }}; background: #3E6280;"></span></span>
+                <span style="height: 9px; background: #EDE6DA; display: block;"><span style="display: block; height: 9px; width: {{ v.b }}; background: #6B4A22;"></span></span>
+              </span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; textAlign: right; color: #413D36;">{{ v.stat }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #3E4F19; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #413D36;">Both datasets feel equally real, which is right when you are comparing train against test — neither is the reference.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #7E3417; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #413D36;">Brown sits next to rust and ochre in hue, so the page now has three warm colours where only two are warnings — exactly the collision we just removed. It is also the harder pair to tell apart in greyscale.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="7b" style="display: flex; flexDirection: column; gap: 14px; width: 580px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">7b</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">One hue against a neutral — recommended</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #413D36;">The reference is graphite, the dataset under inspection is blue. No new hue enters the report at all.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px; display: flex; flexDirection: column; gap: 22px;">
+        <div style="display: flex; gap: 18px; alignItems: center;">
+          <sc-for list="{{ legendNeutral }}" as="s" hint-placeholder-count="2">
+            <span style="display: inline-flex; alignItems: center; gap: 8px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #413D36;">
+              <span style="width: 12px; height: 12px; background: {{ s.fill }};"></span>{{ s.label }}
+            </span>
+          </sc-for>
+        </div>
+
+        <div style="display: grid; gridTemplateColumns: 34px 1fr; columnGap: 8px;">
+          <div style="position: relative; height: 130px;">
+            <sc-for list="{{ paired.yLabels }}" as="l" hint-placeholder-count="5">
+              <span style="position: absolute; right: 0; top: {{ l.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A;">{{ l.label }}</span>
+            </sc-for>
+          </div>
+          <div>
+            <svg viewBox="0 0 480 130" width="100%" height="130" preserveAspectRatio="none" role="img" aria-label="Age distribution, baseline against current" style="display: block; borderBottom: 1px solid #CFC7B8;">
+              <sc-for list="{{ paired.grid }}" as="g" hint-placeholder-count="4">
+                <line x1="0" y1="{{ g.y }}" x2="480" y2="{{ g.y }}" stroke="#EDE6DA" stroke-width="1"></line>
+              </sc-for>
+              <sc-for list="{{ paired.barsB }}" as="b" hint-placeholder-count="25">
+                <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#B6AFA2"></rect>
+              </sc-for>
+              <sc-for list="{{ paired.barsA }}" as="b" hint-placeholder-count="25">
+                <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#3E6280"></rect>
+              </sc-for>
+            </svg>
+            <div style="position: relative; height: 16px; marginTop: 3px;">
+              <sc-for list="{{ paired.xLabels }}" as="t" hint-placeholder-count="4">
+                <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A;">{{ t.label }}</span>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ embarkedPair }}" as="v" hint-placeholder-count="3">
+            <div style="display: grid; gridTemplateColumns: 28px 1fr 118px; alignItems: center; gap: 12px; padding: 8px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">{{ v.label }}</span>
+              <span style="display: flex; flexDirection: column; gap: 3px;">
+                <span style="height: 9px; background: #EDE6DA; display: block;"><span style="display: block; height: 9px; width: {{ v.a }}; background: #3E6280;"></span></span>
+                <span style="height: 9px; background: #EDE6DA; display: block;"><span style="display: block; height: 9px; width: {{ v.b }}; background: #B6AFA2;"></span></span>
+              </span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; textAlign: right; color: #413D36;">{{ v.stat }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #3E4F19; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #413D36;">Keeps the whole point of <a href="#6b">6b</a>: the only coloured things left are the data you are inspecting and the quality signals. Blue reads as foreground against grey without any legend at all, and it survives greyscale and photocopying. Nothing new to add to the palette.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #7E3417; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #413D36;">It takes a side: grey looks like context, blue looks like the subject. Wrong for a symmetric comparison such as train versus test, where neither dataset is the baseline. It also needs a rule for which dataset is which — first argument, or older timestamp.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="borderTop: 1px solid #BDB5A6; paddingTop: 24px; display: flex; flexWrap: wrap; gap: 40px; alignItems: flex-start;">
+    <div style="width: 580px; flexShrink: 0; display: flex; flexDirection: column; gap: 12px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #4E4941;">The delta is not a verdict</span>
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 18px 20px;">
+        <div style="display: grid; gridTemplateColumns: repeat(2, 1fr); borderTop: 1px solid #22201C;">
+          <sc-for list="{{ deltas }}" as="d" hint-placeholder-count="4">
+            <div style="padding: 11px 14px 13px 0; borderBottom: 1px solid #E2DCD1; display: flex; flexDirection: column; gap: 6px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ d.label }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 19px; letterSpacing: -0.02em; lineHeight: 1;">{{ d.value }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ d.color }};">{{ d.delta }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <div style="maxWidth: 60ch; display: flex; flexDirection: column; gap: 12px;">
+      <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #413D36; textWrap: pretty;">Three of those four moved, and only one is coloured. Rows went up 17.5% — that is a fact, printed in ink with an arrow, because nobody can say whether it is good. Missing values went from 8.1% to 11.3%, which crosses the warning threshold, so it turns ochre. Columns did not move and says so.</p>
+      <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #413D36; textWrap: pretty;">If every delta were green-up and red-down, the page would be shouting about the rows and whispering about the only number that matters. Direction goes in the glyph; colour stays reserved for crossing a threshold.</p>
+      <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #413D36; textWrap: pretty;">One question I can't answer for you: is your comparison <strong>asymmetric</strong> — yesterday's data against today's, production against a fixed baseline — or <strong>symmetric</strong>, like train against test? If it is asymmetric, take <a href="#7b">7b</a>. If it is genuinely symmetric, <a href="#7a">7a</a> is more honest and I would swap brown for a cool second hue rather than a warm one, so the warm range stays entirely for quality.</p>
+    </div>
+  </div>
+</section>
+
+<section style="padding: 56px; background: #DFDACF; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 44px;">
+
+  <div style="display: flex; flexDirection: column; gap: 12px; maxWidth: 820px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Turn 6 · colour</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">Should every chart just be blue?</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">Settled from last round: <a href="#6a">5b</a> axis treatment, 5f description. On colour — yes, and I think you've caught a real problem. Short answer below, then the two side by side.</p>
+  </div>
+
+  <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 36px; maxWidth: 1240px;">
+    <div style="display: flex; flexDirection: column; gap: 10px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Why they differ today</span>
+      <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">Inherited, not decided. Your current report already assigns a colour per type in the summary donut — numeric <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">#4ea3f1</span>, categorical <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">#8ac926</span>, datetime <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">#ffca3a</span>, boolean <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">#ff595e</span> — and I carried that into the per-column charts. In the donut it is doing work: four segments have to be told apart. In a card it is doing none, because the badge next to the column name already says which type it is.</p>
+    </div>
+    <div style="display: flex; flexDirection: column; gap: 10px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Why blue-only is better</span>
+      <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">Because right now one colour means two things. Olive means "categorical" on a chart and "passes" on a flag. Rust means "boolean" and also "bad". A red bar and a red warning chip sit in the same card meaning unrelated things. Painting all data blue frees olive, ochre and rust to mean one thing only — quality — so colour on the page becomes a signal instead of decoration.</p>
+    </div>
+  </div>
+
+  <div style="display: flex; flexWrap: wrap; gap: 36px; alignItems: flex-start;">
+
+    <div id="6a" style="display: flex; flexDirection: column; gap: 14px; width: 580px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">6a</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">A hue per type — as built</h3>
+      </div>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px; display: flex; flexDirection: column; gap: 24px;">
+        <div style="display: flex; flexDirection: column; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Column types</span>
+          <div style="display: flex; height: 32px; width: 100%; overflow: hidden;">
+            <sc-for list="{{ typesHue }}" as="t" hint-placeholder-count="3">
+              <div title="{{ t.title }}" style="width: {{ t.pct }}; background: {{ t.fill }}; display: flex; alignItems: center; justifyContent: center;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: {{ t.ink }};">{{ t.n }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; flexWrap: wrap; gap: 16px;">
+            <sc-for list="{{ typesHue }}" as="t" hint-placeholder-count="3">
+              <span style="display: inline-flex; alignItems: center; gap: 7px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;">
+                <span style="width: 9px; height: 9px; background: {{ t.fill }};"></span>{{ t.label }} {{ t.n }}
+              </span>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: flex; flexDirection: column; gap: 10px; borderTop: 1px solid #CFC7B8; paddingTop: 18px;">
+          <div style="display: flex; alignItems: center; gap: 8px; flexWrap: wrap;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Age</span>
+            <span style="display: inline-flex; alignItems: center; gap: 6px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #4A453D;"><span style="width: 8px; height: 8px; background: #4A6E8A;"></span>numeric</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; padding: 2px 6px; border: 1px solid #A2731A; color: #8F6417;">19.9% missing</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; padding: 2px 6px; border: 1px solid #4A5D1E; color: #4A5D1E;">positive-only</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; padding: 2px 6px; border: 1px solid #963F1C; color: #963F1C;">11 outliers</span>
+          </div>
+          <div style="display: grid; gridTemplateColumns: 34px 1fr; columnGap: 8px;">
+            <div style="position: relative; height: 120px;">
+              <sc-for list="{{ hist.yLabels }}" as="l" hint-placeholder-count="5">
+                <span style="position: absolute; right: 0; top: {{ l.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A;">{{ l.label }}</span>
+              </sc-for>
+            </div>
+            <div>
+              <svg viewBox="0 0 480 120" width="100%" height="120" preserveAspectRatio="none" role="img" aria-label="Age distribution, 25 bins" style="display: block; borderBottom: 1px solid #CFC7B8;">
+                <sc-for list="{{ hist.grid }}" as="g" hint-placeholder-count="4">
+                  <line x1="0" y1="{{ g.y }}" x2="480" y2="{{ g.y }}" stroke="#EDE6DA" stroke-width="1"></line>
+                </sc-for>
+                <sc-for list="{{ hist.bars }}" as="b" hint-placeholder-count="25">
+                  <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#4A6E8A"></rect>
+                </sc-for>
+              </svg>
+              <div style="position: relative; height: 16px; marginTop: 3px;">
+                <sc-for list="{{ hist.xLabels }}" as="t" hint-placeholder-count="4">
+                  <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A;">{{ t.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flexDirection: column; gap: 10px; borderTop: 1px solid #CFC7B8; paddingTop: 18px;">
+          <div style="display: flex; alignItems: center; gap: 8px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Embarked</span>
+            <span style="display: inline-flex; alignItems: center; gap: 6px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #4A453D;"><span style="width: 8px; height: 8px; background: #4A5D1E;"></span>categorical</span>
+          </div>
+          <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+            <sc-for list="{{ embarked }}" as="v" hint-placeholder-count="3">
+              <div style="display: grid; gridTemplateColumns: 28px 1fr 106px; alignItems: center; gap: 12px; padding: 8px 0; borderBottom: 1px solid #E2DCD1;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">{{ v.label }}</span>
+                <span style="height: 13px; background: #EDE6DA; display: block;">
+                  <span style="display: block; height: 13px; width: {{ v.pct }}; background: #4A5D1E;"></span>
+                </span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; textAlign: right; color: #4A453D;">{{ v.stat }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: flex; flexDirection: column; gap: 10px; borderTop: 1px solid #CFC7B8; paddingTop: 18px;">
+          <div style="display: flex; alignItems: center; gap: 8px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Survived</span>
+            <span style="display: inline-flex; alignItems: center; gap: 6px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #4A453D;"><span style="width: 8px; height: 8px; background: #963F1C;"></span>boolean</span>
+          </div>
+          <div style="display: flex; height: 36px; width: 100%; overflow: hidden; borderTop: 1px solid #22201C;">
+            <div style="width: 61.6%; background: #963F1C; display: flex; alignItems: center; paddingLeft: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #FBF9F5;">false 61.6%</span>
+            </div>
+            <div style="width: 38.4%; background: #4A5D1E; display: flex; alignItems: center; paddingLeft: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #FBF9F5;">true 38.4%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Four hues carry information the badges already carry, and two of them collide with the quality colours. Worst case is the last card: rust for <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">false</span> and olive for <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">true</span> reads as bad-versus-good, which is the report editorialising about someone's data.</p>
+      </div>
+    </div>
+
+    <div id="6b" style="display: flex; flexDirection: column; gap: 14px; width: 580px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">6b</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">All data blue — recommended</h3>
+      </div>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px; display: flex; flexDirection: column; gap: 24px;">
+        <div style="display: flex; flexDirection: column; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Column types</span>
+          <div style="display: flex; height: 32px; width: 100%; overflow: hidden;">
+            <sc-for list="{{ typesBlue }}" as="t" hint-placeholder-count="3">
+              <div title="{{ t.title }}" style="width: {{ t.pct }}; background: {{ t.fill }}; display: flex; alignItems: center; justifyContent: center;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: {{ t.ink }};">{{ t.n }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; flexWrap: wrap; gap: 16px;">
+            <sc-for list="{{ typesBlue }}" as="t" hint-placeholder-count="3">
+              <span style="display: inline-flex; alignItems: center; gap: 7px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;">
+                <span style="width: 9px; height: 9px; background: {{ t.fill }};"></span>{{ t.label }} {{ t.n }}
+              </span>
+            </sc-for>
+          </div>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">one hue, four steps — the segments are parts of one thing, so a sequence beats four unrelated colours</span>
+        </div>
+
+        <div style="display: flex; flexDirection: column; gap: 10px; borderTop: 1px solid #CFC7B8; paddingTop: 18px;">
+          <div style="display: flex; alignItems: center; gap: 8px; flexWrap: wrap;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Age</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">numeric · float64</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; padding: 2px 6px; border: 1px solid #A2731A; color: #8F6417;">19.9% missing</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; padding: 2px 6px; border: 1px solid #4A5D1E; color: #4A5D1E;">positive-only</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; padding: 2px 6px; border: 1px solid #963F1C; color: #963F1C;">11 outliers</span>
+          </div>
+          <div style="display: grid; gridTemplateColumns: 34px 1fr; columnGap: 8px;">
+            <div style="position: relative; height: 120px;">
+              <sc-for list="{{ hist.yLabels }}" as="l" hint-placeholder-count="5">
+                <span style="position: absolute; right: 0; top: {{ l.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A;">{{ l.label }}</span>
+              </sc-for>
+            </div>
+            <div>
+              <svg viewBox="0 0 480 120" width="100%" height="120" preserveAspectRatio="none" role="img" aria-label="Age distribution, 25 bins" style="display: block; borderBottom: 1px solid #CFC7B8;">
+                <sc-for list="{{ hist.grid }}" as="g" hint-placeholder-count="4">
+                  <line x1="0" y1="{{ g.y }}" x2="480" y2="{{ g.y }}" stroke="#EDE6DA" stroke-width="1"></line>
+                </sc-for>
+                <sc-for list="{{ hist.bars }}" as="b" hint-placeholder-count="25">
+                  <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#3E6280"></rect>
+                </sc-for>
+              </svg>
+              <div style="position: relative; height: 16px; marginTop: 3px;">
+                <sc-for list="{{ hist.xLabels }}" as="t" hint-placeholder-count="4">
+                  <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A;">{{ t.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; flexDirection: column; gap: 10px; borderTop: 1px solid #CFC7B8; paddingTop: 18px;">
+          <div style="display: flex; alignItems: center; gap: 8px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Embarked</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">categorical · object</span>
+          </div>
+          <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+            <sc-for list="{{ embarked }}" as="v" hint-placeholder-count="3">
+              <div style="display: grid; gridTemplateColumns: 28px 1fr 106px; alignItems: center; gap: 12px; padding: 8px 0; borderBottom: 1px solid #E2DCD1;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">{{ v.label }}</span>
+                <span style="height: 13px; background: #EDE6DA; display: block;">
+                  <span style="display: block; height: 13px; width: {{ v.pct }}; background: #3E6280;"></span>
+                </span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; textAlign: right; color: #4A453D;">{{ v.stat }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: flex; flexDirection: column; gap: 10px; borderTop: 1px solid #CFC7B8; paddingTop: 18px;">
+          <div style="display: flex; alignItems: center; gap: 8px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Survived</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">boolean · int64</span>
+          </div>
+          <div style="display: flex; height: 36px; width: 100%; overflow: hidden; borderTop: 1px solid #22201C;">
+            <div style="width: 61.6%; background: #3E6280; display: flex; alignItems: center; paddingLeft: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #FBF9F5;">false 61.6%</span>
+            </div>
+            <div style="width: 38.4%; background: #A8BECD; display: flex; alignItems: center; paddingLeft: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #22201C;">true 38.4%</span>
+            </div>
+          </div>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">two values of one column, so two steps of one hue — neither is "good"</span>
+        </div>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Colour now means exactly one thing: a coloured chip is a quality signal, everything blue is data. Scanning a long report, your eye goes straight to the three warnings rather than to eight bar charts. The type badge does the type-telling, in words, which also survives being printed in greyscale.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">The type dot goes away, so at a glance in the ledger you read a word instead of a colour. And the four-step blue in the composition bar needs care: the palest step is close to the empty-track grey, so a type with zero columns has to be shown as a label rather than a segment.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="borderTop: 1px solid #CFC7B8; paddingTop: 22px; maxWidth: 1240px; display: flex; flexDirection: column; gap: 14px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">The rule, if you take 6b</span>
+    <div style="display: grid; gridTemplateColumns: repeat(2, 1fr); gap: 28px;">
+      <div style="display: flex; flexDirection: column; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;">Data — one hue, four steps</span>
+        <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ blueScale }}" as="s" hint-placeholder-count="4">
+            <div style="display: grid; gridTemplateColumns: 64px 1fr 96px; alignItems: center; gap: 14px; padding: 8px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="height: 20px; background: {{ s.hex }}; display: block;"></span>
+              <span style="fontSize: 13.5px; color: #4A453D;">{{ s.use }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; textAlign: right; color: #57524A;">{{ s.hex }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display: flex; flexDirection: column; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;">Quality — never used for data</span>
+        <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ qualityScale }}" as="s" hint-placeholder-count="3">
+            <div style="display: grid; gridTemplateColumns: 64px 1fr 96px; alignItems: center; gap: 14px; padding: 8px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="height: 20px; background: {{ s.hex }}; display: block;"></span>
+              <span style="fontSize: 13.5px; color: #4A453D;">{{ s.use }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; textAlign: right; color: #57524A;">{{ s.hex }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+    <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 84ch; textWrap: pretty;">One exception worth keeping: the missing-value bars in Summary stay on the quality scale, because their whole point is severity — <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">Cabin</span> at 77% should look worse than <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">Embarked</span> at 0.2%. That is a judgement about data quality, not about the data.</p>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1360, &quot;height&quot;: 1300}}">
+const AGE_BINS = [30, 17, 15, 9, 29, 64, 67, 70, 83, 62, 51, 40, 35, 27, 35, 23, 15, 9, 11, 11, 4, 2, 3, 1, 1];
+const INK = "#22201C", PAPER = "#FBF9F5";
+
+const shift = (pct) => (pct <= 3 ? "0%" : pct >= 97 ? "-100%" : "-50%");
+const tick = (v, x0, x1, label) => {
+  const pct = ((v - x0) / (x1 - x0)) * 100;
+  return { pct: pct.toFixed(3) + "%", tx: shift(pct), label: label === undefined ? String(v) : label };
+};
+
+function plot(counts, W, H, yMax, gap) {
+  const slot = W / counts.length;
+  const bw = Math.max(1, slot - (gap === undefined ? 2 : gap));
+  const bars = counts.map((c, i) => {
+    const h = Math.max(1, (c / yMax) * H);
+    return { x: +(i * slot).toFixed(2), y: +(H - h).toFixed(2), w: +bw.toFixed(2), h: +h.toFixed(2) };
+  });
+  const grid = [];
+  for (let i = 1; i <= 4; i++) grid.push({ y: +(H * (1 - i / 4)).toFixed(1) });
+  const yLabels = [];
+  for (let i = 4; i >= 0; i--) yLabels.push({ pct: ((1 - i / 4) * 100).toFixed(2) + "%", label: String((yMax * i) / 4) });
+  return { bars, grid, yLabels };
+}
+
+// Two series side by side inside each bin, so neither hides the other.
+function pairedPlot(a, b, W, H, yMax) {
+  const slot = W / a.length;
+  const bw = Math.max(1, slot / 2 - 1);
+  const mk = (vals, offset) => vals.map((c, i) => {
+    const h = Math.max(1, (c / yMax) * H);
+    return { x: +(i * slot + offset).toFixed(2), y: +(H - h).toFixed(2), w: +bw.toFixed(2), h: +h.toFixed(2) };
+  });
+  const grid = [];
+  for (let i = 1; i <= 4; i++) grid.push({ y: +(H * (1 - i / 4)).toFixed(1) });
+  const yLabels = [];
+  for (let i = 4; i >= 0; i--) yLabels.push({ pct: ((1 - i / 4) * 100).toFixed(2) + "%", label: String((yMax * i) / 4) });
+  return { barsA: mk(a, 0), barsB: mk(b, slot / 2), grid, yLabels };
+}
+
+class Component extends DCLogic {
+  renderVals() {
+    const hist = plot(AGE_BINS, 480, 120, 100, 2);
+    hist.xLabels = [20, 40, 60, 80].map((v) => tick(v, 0.42, 80));
+
+    // Series B is A shifted three bins — illustrative only, labelled as such in the design.
+    const B_BINS = AGE_BINS.slice(3).concat([1, 1, 1]).map((v, i) => Math.round(v * (1 + (i % 5) * 0.04)));
+    const paired = pairedPlot(AGE_BINS, B_BINS, 480, 130, 100);
+    paired.xLabels = [20, 40, 60, 80].map((v) => tick(v, 0.42, 80));
+
+    return {
+      hist,
+      paired,
+      legendHue: [
+        { label: "titanic_2026-02.csv", fill: "#3E6280" },
+        { label: "titanic_2026-03.csv", fill: "#6B4A22" },
+      ],
+      legendNeutral: [
+        { label: "current", fill: "#3E6280" },
+        { label: "baseline", fill: "#B6AFA2" },
+      ],
+      embarkedPair: [
+        { label: "S", a: "72.4%", b: "68.1%", stat: "72.4% → 68.1%" },
+        { label: "C", a: "18.9%", b: "21.4%", stat: "18.9% → 21.4%" },
+        { label: "Q", a: "8.7%", b: "10.5%", stat: "8.7% → 10.5%" },
+      ],
+      deltas: [
+        { label: "Rows", value: "1,047", delta: "↑ 156 · 17.5%", color: "#413D36" },
+        { label: "Columns", value: "12", delta: "no change", color: "#57524A" },
+        { label: "Missing", value: "11.3%", delta: "↑ 3.2pp · over 10%", color: "#8F6417" },
+        { label: "Duplicates", value: "0", delta: "no change", color: "#57524A" },
+      ],
+      typesHue: [
+        { label: "categorical", n: 8, pct: "66.67%", fill: "#4A5D1E", ink: PAPER, title: "Categorical — 8 of 12 columns" },
+        { label: "numeric", n: 3, pct: "25%", fill: "#4A6E8A", ink: PAPER, title: "Numeric — 3 of 12 columns" },
+        { label: "boolean", n: 1, pct: "8.33%", fill: "#963F1C", ink: PAPER, title: "Boolean — 1 of 12 columns" },
+      ],
+      typesBlue: [
+        { label: "categorical", n: 8, pct: "66.67%", fill: "#2C4A62", ink: PAPER, title: "Categorical — 8 of 12 columns" },
+        { label: "numeric", n: 3, pct: "25%", fill: "#7FA0B5", ink: INK, title: "Numeric — 3 of 12 columns" },
+        { label: "boolean", n: 1, pct: "8.33%", fill: "#A8BECD", ink: INK, title: "Boolean — 1 of 12 columns" },
+      ],
+      embarked: [
+        { label: "S", pct: "72.4%", stat: "644 · 72.4%" },
+        { label: "C", pct: "18.9%", stat: "168 · 18.9%" },
+        { label: "Q", pct: "8.7%", stat: "77 · 8.7%" },
+      ],
+      blueScale: [
+        { hex: "#2C4A62", use: "largest share · paper text" },
+        { hex: "#3E6280", use: "default for every chart · paper text" },
+        { hex: "#7FA0B5", use: "second series · ink text" },
+        { hex: "#A8BECD", use: "third series · ink text" },
+      ],
+      qualityScale: [
+        { hex: "#4A5D1E", use: "passes a check" },
+        { hex: "#A2731A", use: "warning threshold" },
+        { hex: "#963F1C", use: "fails a check" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

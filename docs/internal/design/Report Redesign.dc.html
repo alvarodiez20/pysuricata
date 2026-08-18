@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<style>
+  body { margin: 0; background: #E7E2D8; }
+  a { color: #4A5D1E; text-decoration: none; }
+  a:hover { color: #22201C; text-decoration: underline; }
+  [data-navrail]::-webkit-scrollbar { display: none; }
+</style>
+</helmet>
+
+<section style="padding: 56px 56px 72px; background: #DFDACF; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 44px;">
+
+  <div style="display: flex; flexDirection: column; gap: 10px; maxWidth: 760px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Turn 2 · header, resolved</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">Icons, labelled metadata, and the logo question</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">You picked <a href="#1a">1a</a>, <a href="#1c">1c</a> and <a href="#1e">1e</a>. Two ways to label the metadata so nobody has to guess what a bare timestamp means — <a href="#2a">2a</a> inline, <a href="#2b">2b</a> stacked. Each also shows a different logo treatment, which is the real decision underneath.</p>
+  </div>
+
+  <div style="display: flex; flexWrap: wrap; gap: 40px; alignItems: flex-start;">
+
+    <div id="2a" style="display: flex; flexDirection: column; gap: 14px; width: 1040px;">
+      <div style="display: flex; alignItems: baseline; gap: 12px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">2a</span>
+        <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Mark only · metadata reads as a sentence</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 62ch;">The meerkat alone, name set in type. Each metadata value carries its own word in front of it, so the line reads plainly and needs no tooltip.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8;">
+        <div style="display: flex; alignItems: center; gap: 20px; padding: 0 24px; height: 52px; borderBottom: 1px solid #E2DCD1;">
+          <div style="display: flex; alignItems: center; gap: 9px; flexShrink: 0;">
+            <img src="../../../pysuricata/static/images/logo_mark.svg" alt="" style="height: 30px; width: auto; display: block;" />
+            <span style="fontSize: 15.5px; fontWeight: 600; letterSpacing: -0.005em;">pysuricata</span>
+          </div>
+          <span style="width: 1px; height: 20px; background: #CFC7B8;"></span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; color: #57524A; whiteSpace: nowrap; overflow: hidden; textOverflow: ellipsis;">titanic.csv</span>
+          <nav style="display: flex; gap: 22px; marginLeft: auto; alignItems: center;">
+            <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+              <a href="#2a" style="fontSize: 13.5px; fontWeight: 500; color: {{ n.color }}; paddingBottom: 3px; borderBottom: 2px solid {{ n.rule }};">{{ n.label }}</a>
+            </sc-for>
+            <span style="width: 1px; height: 16px; background: #CFC7B8;"></span>
+            <a href="#2a" title="Download this report as HTML" aria-label="Download report" style="width: 30px; height: 30px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D; borderRadius: 3px;">
+              <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="display: block;">
+                <path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z"></path>
+                <path fill="currentColor" d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z"></path>
+              </svg>
+            </a>
+            <a href="#2a" title="Switch to dark mode" aria-label="Toggle dark mode" style="width: 30px; height: 30px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D; borderRadius: 3px;">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </a>
+          </nav>
+        </div>
+        <div style="padding: 22px 24px 26px; display: flex; flexDirection: column; gap: 16px;">
+          <h2 style="margin: 0; fontSize: 26px; fontWeight: 600; letterSpacing: -0.015em;">EDA Report</h2>
+          <div style="display: flex; alignItems: center; gap: 16px; flexWrap: wrap; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; borderTop: 1px solid #E2DCD1; paddingTop: 12px;">
+            <span style="color: #57524A;">Generated <span style="color: #22201C;">2026-03-01 00:15:48</span></span>
+            <span style="width: 1px; height: 11px; background: #CFC7B8;"></span>
+            <span style="color: #57524A;">Profiled in <span style="color: #22201C;">0.06 s</span></span>
+            <span style="width: 1px; height: 11px; background: #CFC7B8;"></span>
+            <span style="color: #57524A;">Shape <span style="color: #22201C;">891 rows × 12 columns</span></span>
+            <span style="width: 1px; height: 11px; background: #CFC7B8;"></span>
+            <a href="#2a">pysuricata 0.0.43</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 24px; alignItems: flex-start;">
+        <div style="width: 390px; flexShrink: 0;">
+          <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px</div>
+          <div style="background: #FBF9F5; border: 1px solid #CFC7B8;">
+            <div style="display: flex; alignItems: center; gap: 9px; padding: 0 14px; height: 48px; borderBottom: 1px solid #E2DCD1;">
+              <img src="../../../pysuricata/static/images/logo_mark.svg" alt="" style="height: 26px; width: auto; display: block;" />
+              <span style="fontSize: 14.5px; fontWeight: 600;">pysuricata</span>
+              <span style="marginLeft: auto; display: flex; gap: 2px;">
+                <a href="#2a" aria-label="Download report" style="width: 32px; height: 32px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D;">
+                  <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="display: block;">
+                    <path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z"></path>
+                    <path fill="currentColor" d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z"></path>
+                  </svg>
+                </a>
+                <a href="#2a" aria-label="Toggle dark mode" style="width: 32px; height: 32px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D;">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                  </svg>
+                </a>
+              </span>
+            </div>
+            <div data-navrail="true" style="display: flex; gap: 13px; padding: 0 12px; minHeight: 44px; alignItems: center; overflowX: auto; scrollbarWidth: none; borderBottom: 1px solid #E2DCD1;">
+              <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+                <a href="#2a" style="fontSize: 13.5px; fontWeight: 500; color: {{ n.color }}; whiteSpace: nowrap; paddingBottom: 3px; borderBottom: 2px solid {{ n.rule }};">{{ n.label }}</a>
+              </sc-for>
+            </div>
+            <div style="padding: 16px 14px 20px; display: flex; flexDirection: column; gap: 12px;">
+              <h2 style="margin: 0; fontSize: 21px; fontWeight: 600; letterSpacing: -0.015em;">EDA Report</h2>
+              <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; borderTop: 1px solid #E2DCD1; paddingTop: 10px; lineHeight: 1.85; color: #57524A;">
+                titanic.csv · Shape <span style="color: #22201C;">891 × 12</span><br />
+                Generated <span style="color: #22201C;">2026-03-01 00:15</span><br />
+                Profiled in <span style="color: #22201C;">0.06 s</span> · <a href="#2a">v0.0.43</a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flexDirection: column; gap: 12px; paddingTop: 26px;">
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">"Generated", "Profiled in" and "Shape" are read at a glance and survive being printed to PDF — a tooltip does neither. Spelling out "891 rows × 12 columns" retires the mystery of the bare <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">891 × 12</span> entirely.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">The words roughly double the width of the line, so on a phone it wraps to three rows. Values are harder to scan for, because label and number share one weight of attention.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="2b" style="display: flex; flexDirection: column; gap: 14px; width: 1040px;">
+      <div style="display: flex; alignItems: baseline; gap: 12px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">2b</span>
+        <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Full lockup · metadata as labelled fields</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 62ch;">The stacked logo does the naming, so no typed wordmark. Metadata becomes three labelled fields — caption above, value below — the same pattern the summary stat row uses, so the report only teaches it once.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8;">
+        <div style="display: flex; alignItems: center; gap: 18px; padding: 0 24px; height: 64px; borderBottom: 1px solid #E2DCD1;">
+          <img src="../../../pysuricata/static/images/logo_suricata_transparent.png" alt="pysuricata" style="height: 54px; width: auto; display: block; flexShrink: 0;" />
+          <span style="width: 1px; height: 24px; background: #CFC7B8;"></span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; color: #57524A;">titanic.csv</span>
+          <nav style="display: flex; gap: 22px; marginLeft: auto; alignItems: center;">
+            <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+              <a href="#2b" style="fontSize: 13.5px; fontWeight: 500; color: {{ n.color }}; paddingBottom: 3px; borderBottom: 2px solid {{ n.rule }};">{{ n.label }}</a>
+            </sc-for>
+            <span style="width: 1px; height: 16px; background: #CFC7B8;"></span>
+            <a href="#2b" title="Download this report as HTML" aria-label="Download report" style="width: 30px; height: 30px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D;">
+              <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="display: block;">
+                <path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z"></path>
+                <path fill="currentColor" d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z"></path>
+              </svg>
+            </a>
+            <a href="#2b" title="Switch to dark mode" aria-label="Toggle dark mode" style="width: 30px; height: 30px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D;">
+              <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </a>
+          </nav>
+        </div>
+        <div style="padding: 22px 24px 26px; display: flex; flexDirection: column; gap: 18px;">
+          <h2 style="margin: 0; fontSize: 26px; fontWeight: 600; letterSpacing: -0.015em;">EDA Report</h2>
+          <div style="display: flex; borderTop: 1px solid #E2DCD1;">
+            <sc-for list="{{ metaFields }}" as="m" hint-placeholder-count="4">
+              <div style="padding: 12px 22px 2px; borderRight: 1px solid #E2DCD1; display: flex; flexDirection: column; gap: 5px;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ m.label }}</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; color: #22201C;">{{ m.value }}</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ m.hint }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 24px; alignItems: flex-start;">
+        <div style="width: 390px; flexShrink: 0;">
+          <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px</div>
+          <div style="background: #FBF9F5; border: 1px solid #CFC7B8;">
+            <div style="display: flex; alignItems: center; gap: 10px; padding: 0 14px; height: 56px; borderBottom: 1px solid #E2DCD1;">
+              <img src="../../../pysuricata/static/images/logo_suricata_transparent.png" alt="pysuricata" style="height: 46px; width: auto; display: block;" />
+              <span style="marginLeft: auto; display: flex; gap: 2px;">
+                <a href="#2b" aria-label="Download report" style="width: 32px; height: 32px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D;">
+                  <svg aria-hidden="true" viewBox="0 0 16 16" width="16" height="16" style="display: block;">
+                    <path fill="currentColor" d="M8 1.5a.75.75 0 0 1 .75.75v6.19l2.22-2.22a.75.75 0 1 1 1.06 1.06L8.53 10.78a.75.75 0 0 1-1.06 0L3.97 7.28a.75.75 0 1 1 1.06-1.06L7.25 8.44V2.25A.75.75 0 0 1 8 1.5z"></path>
+                    <path fill="currentColor" d="M2 13.25a.75.75 0 0 1 .75-.75h10.5a.75.75 0 0 1 0 1.5H2.75a.75.75 0 0 1-.75-.75z"></path>
+                  </svg>
+                </a>
+                <a href="#2b" aria-label="Toggle dark mode" style="width: 32px; height: 32px; display: inline-flex; alignItems: center; justifyContent: center; color: #4A453D;">
+                  <svg aria-hidden="true" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block;">
+                    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                  </svg>
+                </a>
+              </span>
+            </div>
+            <div data-navrail="true" style="display: flex; gap: 13px; padding: 0 12px; minHeight: 44px; alignItems: center; overflowX: auto; scrollbarWidth: none; borderBottom: 1px solid #E2DCD1;">
+              <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+                <a href="#2b" style="fontSize: 13.5px; fontWeight: 500; color: {{ n.color }}; whiteSpace: nowrap; paddingBottom: 3px; borderBottom: 2px solid {{ n.rule }};">{{ n.label }}</a>
+              </sc-for>
+            </div>
+            <div style="padding: 16px 14px 18px; display: flex; flexDirection: column; gap: 14px;">
+              <h2 style="margin: 0; fontSize: 21px; fontWeight: 600; letterSpacing: -0.015em;">EDA Report</h2>
+              <div style="display: grid; gridTemplateColumns: 1fr 1fr; borderTop: 1px solid #E2DCD1;">
+                <sc-for list="{{ metaFields }}" as="m" hint-placeholder-count="4">
+                  <div style="padding: 10px 10px 11px 0; display: flex; flexDirection: column; gap: 4px; borderBottom: 1px solid #E2DCD1;">
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ m.label }}</span>
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: #22201C;">{{ m.value }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flexDirection: column; gap: 12px; paddingTop: 26px;">
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">Values line up in a column, so scanning is fast, and the caption-over-value pattern matches the stat row directly below it. Room for a second line of explanation under each value.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">Costs a third row of height, and the stacked logo pushes the bar to 64px — undoing part of what made 1a compact. It also competes with the stat row it is trying to rhyme with.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="borderTop: 1px solid #CFC7B8; paddingTop: 26px; display: flex; gap: 44px; flexWrap: wrap; alignItems: flex-start;">
+    <div style="maxWidth: 60ch; display: flex; flexDirection: column; gap: 12px;">
+      <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">On the logo</div>
+      <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Use the mark in the bar, keep the lockup for covers</h3>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">The stacked logo is a vertical lockup, and an app bar is a horizontal space — fitting one inside the other is what forces today's header to 96px and a 78px logo column. The wordmark is also a hand-drawn display face rendered as a raster: at bar size its letters are about 8px tall and go soft, and it can't pick up <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">currentColor</span> in dark mode the way type can.</p>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">So: crop the meerkat out as its own asset and set the name in type beside it, as in <a href="#2a">2a</a>. The full lockup still earns its place where there is vertical room and no navigation to share it with — a PDF cover page, the docs site, the README, the favicon. Same brand, two lockups, which is normal practice rather than a compromise.</p>
+    </div>
+    <div style="display: flex; gap: 28px; alignItems: flex-end;">
+      <div style="display: flex; flexDirection: column; gap: 10px; alignItems: center;">
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 18px 22px; display: flex; alignItems: center; justifyContent: center; height: 92px; boxSizing: border-box;">
+          <img src="../../../pysuricata/static/images/logo_mark.svg" alt="" style="height: 52px; width: auto; display: block;" />
+        </div>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.11em; textTransform: uppercase; color: #57524A;">mark · bars, favicon</span>
+      </div>
+      <div style="display: flex; flexDirection: column; gap: 10px; alignItems: center;">
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 18px 22px; display: flex; alignItems: center; justifyContent: center; height: 92px; boxSizing: border-box;">
+          <img src="../../../pysuricata/static/images/logo_suricata_transparent.png" alt="" style="height: 66px; width: auto; display: block;" />
+        </div>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.11em; textTransform: uppercase; color: #57524A;">lockup · covers, docs</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding: 56px 56px 96px; background: #E7E2D8; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 56px;">
+
+  <div style="display: flex; flexDirection: column; gap: 10px; maxWidth: 760px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Turn 1 · pysuricata report</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">Header, Summary and Sample</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">Palette taken from the suricata logo's own pixels: sand <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">#F0D8C0</span>, dark brown <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">#483018</span>, olive <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">#486018</span>. Figures are monospace throughout, prose is system sans. Two options per section — <a href="#1a">1a</a> <a href="#1b">1b</a> header, <a href="#1c">1c</a> <a href="#1d">1d</a> summary, <a href="#1e">1e</a> <a href="#1f">1f</a> sample.</p>
+  </div>
+
+  <div style="display: flex; flexDirection: column; gap: 18px;">
+    <div style="display: flex; alignItems: center; gap: 14px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Section 1 — Header / app bar</span>
+      <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+    </div>
+
+    <div style="display: flex; flexWrap: wrap; gap: 40px; alignItems: flex-start;">
+
+      <div id="1a" style="display: flex; flexDirection: column; gap: 14px; width: 1040px;">
+        <div style="display: flex; alignItems: baseline; gap: 12px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">1a</span>
+          <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">One rule, no chips</h3>
+        </div>
+        <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 62ch;">A single 52px bar: mark, title, dataset name. Nav is plain text with an olive underline on the active section. The date / duration / version chips leave the header and become a hairline metadata line in the body.</p>
+
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; boxShadow: 0 1px 0 rgba(0,0,0,0.04);">
+          <div style="display: flex; alignItems: center; gap: 20px; padding: 0 24px; height: 52px; borderBottom: 1px solid #E2DCD1;">
+            <img src="../../../pysuricata/static/images/logo_suricata_transparent.png" alt="" style="height: 30px; width: auto; display: block; flexShrink: 0;" />
+            <div style="display: flex; alignItems: baseline; gap: 10px; minWidth: 0;">
+              <span style="fontSize: 15px; fontWeight: 600; letterSpacing: -0.01em; whiteSpace: nowrap;">PySuricata</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; color: #57524A; whiteSpace: nowrap; overflow: hidden; textOverflow: ellipsis;">titanic.csv</span>
+            </div>
+            <nav style="display: flex; gap: 22px; marginLeft: auto; alignItems: center;">
+              <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+                <a href="#1a" style="fontSize: 13.5px; fontWeight: 500; color: {{ n.color }}; paddingBottom: 3px; borderBottom: 2px solid {{ n.rule }};">{{ n.label }}</a>
+              </sc-for>
+              <span style="width: 1px; height: 16px; background: #CFC7B8;"></span>
+              <a href="#1a" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.1em; textTransform: uppercase; color: #57524A;">Dark</a>
+              <a href="#1a" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.1em; textTransform: uppercase; color: #57524A;">Save</a>
+            </nav>
+          </div>
+          <div style="padding: 22px 24px 26px; display: flex; flexDirection: column; gap: 16px;">
+            <h2 style="margin: 0; fontSize: 26px; fontWeight: 600; letterSpacing: -0.015em;">EDA Report</h2>
+            <div style="display: flex; alignItems: center; gap: 16px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #57524A; borderTop: 1px solid #E2DCD1; paddingTop: 12px;">
+              <span>2026-03-01 00:15:48</span>
+              <span style="width: 1px; height: 11px; background: #CFC7B8;"></span>
+              <span>0.06 s</span>
+              <span style="width: 1px; height: 11px; background: #CFC7B8;"></span>
+              <span>891 × 12</span>
+              <span style="width: 1px; height: 11px; background: #CFC7B8;"></span>
+              <a href="#1a">pysuricata 0.0.43</a>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 24px; alignItems: flex-start;">
+          <div style="width: 390px; flexShrink: 0;">
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px</div>
+            <div style="background: #FBF9F5; border: 1px solid #CFC7B8;">
+              <div style="display: flex; alignItems: center; gap: 12px; padding: 0 14px; height: 48px; borderBottom: 1px solid #E2DCD1;">
+                <img src="../../../pysuricata/static/images/logo_suricata_transparent.png" alt="" style="height: 26px; width: auto; display: block;" />
+                <span style="fontSize: 14px; fontWeight: 600;">PySuricata</span>
+                <span style="marginLeft: auto; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #57524A;">DARK</span>
+              </div>
+              <div data-navrail="true" style="display: flex; gap: 13px; padding: 0 12px; minHeight: 44px; alignItems: center; overflowX: auto; scrollbarWidth: none; borderBottom: 1px solid #E2DCD1;">
+                <sc-for list="{{ nav }}" as="n" hint-placeholder-count="5">
+                  <a href="#1a" style="fontSize: 13.5px; fontWeight: 500; color: {{ n.color }}; whiteSpace: nowrap; paddingBottom: 3px; borderBottom: 2px solid {{ n.rule }};">{{ n.label }}</a>
+                </sc-for>
+              </div>
+              <div style="padding: 16px 14px 20px; display: flex; flexDirection: column; gap: 12px;">
+                <h2 style="margin: 0; fontSize: 21px; fontWeight: 600; letterSpacing: -0.015em;">EDA Report</h2>
+                <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A; borderTop: 1px solid #E2DCD1; paddingTop: 10px; lineHeight: 1.7;">titanic.csv · 891 × 12<br />2026-03-01 · 0.06 s · v0.0.43</div>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flexDirection: column; gap: 12px; paddingTop: 26px;">
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">Header drops from ~96px to 52px, so on a phone you keep almost a full screen of data. Removing eight pill borders removes most of what reads as "dashboard template".</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">Metadata is no longer visible once you scroll past it. The scrolling nav row hides links off the right edge with no arrow to hint at them.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1b" style="display: flex; flexDirection: column; gap: 14px; width: 1040px;">
+        <div style="display: flex; alignItems: baseline; gap: 12px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">1b</span>
+          <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Masthead scrolls, tab rail sticks</h3>
+        </div>
+        <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 62ch;">The identity block is a normal masthead that scrolls away. Only a 44px tab rail is sticky, with the active section marked by a filled olive tab. Metadata sits right-aligned in the masthead as mono text.</p>
+
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8;">
+          <div style="display: flex; alignItems: flex-end; justifyContent: space-between; gap: 24px; padding: 20px 24px 18px;">
+            <div style="display: flex; alignItems: center; gap: 18px;">
+              <img src="../../../pysuricata/static/images/logo_suricata_transparent.png" alt="" style="height: 46px; width: auto; display: block;" />
+              <div style="display: flex; flexDirection: column; gap: 4px;">
+                <h2 style="margin: 0; fontSize: 25px; fontWeight: 600; letterSpacing: -0.015em;">EDA Report</h2>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: #57524A;">titanic.csv · 891 rows × 12 columns</span>
+              </div>
+            </div>
+            <div style="display: flex; flexDirection: column; alignItems: flex-end; gap: 4px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A; lineHeight: 1.6;">
+              <span>2026-03-01 00:15:48 · 0.06 s</span>
+              <span><a href="#1b">pysuricata 0.0.43</a> · <a href="#1b">download</a> · <a href="#1b">dark</a></span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 2px; padding: 0 24px; borderTop: 1px solid #E2DCD1; borderBottom: 1px solid #CFC7B8; background: #F3EDE3;">
+            <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+              <a href="#1b" style="height: 44px; display: inline-flex; alignItems: center; padding: 0 15px; fontSize: 13.5px; fontWeight: 500; color: {{ t.color }}; background: {{ t.bg }};">{{ t.label }}</a>
+            </sc-for>
+          </div>
+          <div style="padding: 22px 24px 26px;">
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Summary</div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 24px; alignItems: flex-start;">
+          <div style="width: 390px; flexShrink: 0;">
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px · scrolled</div>
+            <div style="background: #FBF9F5; border: 1px solid #CFC7B8;">
+              <div style="position: relative;">
+                <div data-navrail="true" style="display: flex; gap: 2px; padding: 0 6px; background: #F3EDE3; borderBottom: 1px solid #CFC7B8; overflowX: auto; scrollbarWidth: none;">
+                  <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="5">
+                    <a href="#1b" style="height: 44px; display: inline-flex; alignItems: center; padding: 0 13px; fontSize: 13.5px; fontWeight: 500; whiteSpace: nowrap; color: {{ t.color }}; background: {{ t.bg }};">{{ t.label }}</a>
+                  </sc-for>
+                </div>
+                <span aria-hidden="true" style="position: absolute; right: 0; top: 0; bottom: 1px; width: 36px; background: linear-gradient(to right, rgba(243,237,227,0), #F3EDE3 70%); pointerEvents: none;"></span>
+              </div>
+              <div style="padding: 16px 14px 20px; display: flex; flexDirection: column; gap: 10px;">
+                <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Summary</div>
+                <div style="height: 1px; background: #E2DCD1;"></div>
+                <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 32px; letterSpacing: -0.02em;">891</div>
+                <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Rows</div>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flexDirection: column; gap: 12px; paddingTop: 26px;">
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">On a phone the persistent chrome is a single 44px rail — the best content-to-chrome ratio of the two. The filled active tab survives being read at arm's length, unlike a 2px underline.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">Taller than 1a before you scroll, and the report title disappears — awkward if someone screenshots the middle of the report to share it.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flexDirection: column; gap: 18px;">
+    <div style="display: flex; alignItems: center; gap: 14px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Section 2 — Summary</span>
+      <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+    </div>
+
+    <div style="display: flex; flexWrap: wrap; gap: 40px; alignItems: flex-start;">
+
+      <div id="1c" style="display: flex; flexDirection: column; gap: 14px; width: 1040px;">
+        <div style="display: flex; alignItems: baseline; gap: 12px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">1c</span>
+          <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Instrument panel</h3>
+        </div>
+        <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 62ch;">Five bordered cards become one ruled stat row. The donut becomes a 100% stacked bar. Quick insights become a run of mono facts instead of five pills.</p>
+
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 28px 24px 26px; display: flex; flexDirection: column; gap: 28px;">
+          <div style="display: grid; gridTemplateColumns: repeat(5, 1fr); borderTop: 1px solid #22201C; borderBottom: 1px solid #E2DCD1;">
+            <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="5">
+              <div style="padding: 14px 18px 16px; borderLeft: 1px solid #E2DCD1; display: flex; flexDirection: column; gap: 8px;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ k.label }}</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 27px; letterSpacing: -0.02em; lineHeight: 1;">{{ k.value }}</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ k.subColor }};">{{ k.sub }}</span>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="display: grid; gridTemplateColumns: 1.15fr 1fr; gap: 40px;">
+            <div style="display: flex; flexDirection: column; gap: 12px;">
+              <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Column types</div>
+              <div style="display: flex; height: 34px; width: 100%; overflow: hidden;">
+                <sc-for list="{{ types }}" as="t" hint-placeholder-count="3">
+                  <div style="width: {{ t.pct }}; background: {{ t.color }}; display: flex; alignItems: center; justifyContent: center;">
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #FBF9F5;">{{ t.n }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: flex; flexWrap: wrap; gap: 18px;">
+                <sc-for list="{{ types }}" as="t" hint-placeholder-count="3">
+                  <span style="display: inline-flex; alignItems: center; gap: 7px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;">
+                    <span style="width: 9px; height: 9px; background: {{ t.color }};"></span>{{ t.label }} {{ t.n }}
+                  </span>
+                </sc-for>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">datetime 0</span>
+              </div>
+              <div style="marginTop: 6px; paddingTop: 14px; borderTop: 1px solid #E2DCD1; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; lineHeight: 1.9; color: #4A453D;">12 unique · 0 constant · 2 high-cardinality · 8 text (avg len 5.8) · no date range</div>
+            </div>
+
+            <div style="display: flex; flexDirection: column; gap: 12px;">
+              <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Missing by column</div>
+              <div style="display: flex; flexDirection: column;">
+                <sc-for list="{{ missing }}" as="m" hint-placeholder-count="3">
+                  <div style="display: grid; gridTemplateColumns: 96px 1fr 92px; alignItems: center; gap: 14px; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ m.col }}</span>
+                    <span style="height: 6px; background: #EDE6DA; display: block;">
+                      <span style="display: block; height: 6px; width: {{ m.pct }}; background: {{ m.color }};"></span>
+                    </span>
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; textAlign: right; color: #4A453D;">{{ m.stat }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <a href="#1c" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; alignSelf: flex-start;">9 columns complete →</a>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 24px; alignItems: flex-start;">
+          <div style="width: 390px; flexShrink: 0;">
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px</div>
+            <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 18px 14px; display: flex; flexDirection: column; gap: 22px;">
+              <div style="display: grid; gridTemplateColumns: 1fr 1fr; borderTop: 1px solid #22201C;">
+                <sc-for list="{{ kpisMobile }}" as="k" hint-placeholder-count="6">
+                  <div style="padding: 12px 12px 13px; borderBottom: 1px solid #E2DCD1; borderRight: 1px solid #E2DCD1; display: flex; flexDirection: column; gap: 6px;">
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ k.label }}</span>
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 22px; letterSpacing: -0.02em; lineHeight: 1;">{{ k.value }}</span>
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: {{ k.subColor }};">{{ k.sub }}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: flex; flexDirection: column; gap: 10px;">
+                <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Column types</div>
+                <div style="display: flex; height: 30px; width: 100%;">
+                  <sc-for list="{{ types }}" as="t" hint-placeholder-count="3">
+                    <div style="width: {{ t.pct }}; background: {{ t.color }}; display: flex; alignItems: center; justifyContent: center;">
+                      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #FBF9F5;">{{ t.n }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display: flex; flexWrap: wrap; gap: 12px;">
+                  <sc-for list="{{ types }}" as="t" hint-placeholder-count="3">
+                    <span style="display: inline-flex; alignItems: center; gap: 6px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #4A453D;">
+                      <span style="width: 8px; height: 8px; background: {{ t.color }};"></span>{{ t.label }} {{ t.n }}
+                    </span>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="display: flex; flexDirection: column; gap: 8px;">
+                <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Missing by column</div>
+                <sc-for list="{{ missing }}" as="m" hint-placeholder-count="3">
+                  <div style="display: flex; flexDirection: column; gap: 5px; padding: 7px 0; borderBottom: 1px solid #E2DCD1;">
+                    <div style="display: flex; justifyContent: space-between; gap: 10px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">
+                      <span>{{ m.col }}</span><span style="color: #4A453D;">{{ m.stat }}</span>
+                    </div>
+                    <span style="height: 6px; background: #EDE6DA; display: block;">
+                      <span style="display: block; height: 6px; width: {{ m.pct }}; background: {{ m.color }};"></span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flexDirection: column; gap: 12px; paddingTop: 26px;">
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">A stacked bar reads exact proportions at any width; a donut does not, and it stops working entirely below ~200px. The ruled grid reflows to 2×3 on a phone with no min-height hacks — today's cards force a 280px minimum each.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">You lose the donut, which is the report's one recognisable graphic. Dense — a non-technical reader gets no sentence telling them what they're looking at.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1d" style="display: flex; flexDirection: column; gap: 14px; width: 1040px;">
+        <div style="display: flex; alignItems: baseline; gap: 12px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">1d</span>
+          <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Headline first, donut kept</h3>
+        </div>
+        <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 62ch;">Leads with one plain sentence about the dataset, then a three-up grid. The donut survives as a thin ring with the column count in the hole. Cards lose their borders and keep only whitespace and a top rule.</p>
+
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 30px 24px 28px; display: flex; flexDirection: column; gap: 30px;">
+          <p style="margin: 0; fontSize: 25px; lineHeight: 1.45; fontWeight: 400; letterSpacing: -0.01em; maxWidth: 32ch; textWrap: pretty;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontWeight: 600;">891</span> rows across
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontWeight: 600;">12</span> columns.
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontWeight: 600; color: #963F1C;">8.1%</span> of cells are missing and
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontWeight: 600;">no</span> rows are duplicated.
+          </p>
+
+          <div style="display: grid; gridTemplateColumns: repeat(3, 1fr); gap: 36px;">
+            <div style="borderTop: 1px solid #22201C; paddingTop: 14px; display: flex; flexDirection: column; gap: 18px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Column types</span>
+              <div style="display: flex; alignItems: center; gap: 22px;">
+                <svg viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="12 columns by type" style="display: block; flexShrink: 0;">
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#EDE6DA" stroke-width="11"></circle>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#4A6E8A" stroke-width="11" stroke-dasharray="75.4 301.6" stroke-dashoffset="0" transform="rotate(-90 60 60)"></circle>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#4A5D1E" stroke-width="11" stroke-dasharray="201.1 301.6" stroke-dashoffset="-75.4" transform="rotate(-90 60 60)"></circle>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#963F1C" stroke-width="11" stroke-dasharray="25.1 301.6" stroke-dashoffset="-276.5" transform="rotate(-90 60 60)"></circle>
+                  <text x="60" y="58" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="26" fill="#22201C">12</text>
+                  <text x="60" y="74" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" letter-spacing="1.4" fill="#57524A">COLS</text>
+                </svg>
+                <div style="display: flex; flexDirection: column; gap: 9px;">
+                  <sc-for list="{{ typesFull }}" as="t" hint-placeholder-count="4">
+                    <span style="display: inline-flex; alignItems: center; gap: 8px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ t.textColor }};">
+                      <span style="width: 9px; height: 9px; background: {{ t.color }};"></span>{{ t.n }} {{ t.label }}
+                    </span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+
+            <div style="borderTop: 1px solid #22201C; paddingTop: 14px; display: flex; flexDirection: column; gap: 14px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Most incomplete</span>
+              <div style="display: flex; flexDirection: column; gap: 14px;">
+                <sc-for list="{{ missing }}" as="m" hint-placeholder-count="3">
+                  <div style="display: flex; flexDirection: column; gap: 6px;">
+                    <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 10px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">
+                      <span>{{ m.col }}</span>
+                      <span style="color: #4A453D;">{{ m.stat }}</span>
+                    </div>
+                    <span style="height: 7px; background: #EDE6DA; display: block;">
+                      <span style="display: block; height: 7px; width: {{ m.pct }}; background: {{ m.color }};"></span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <div style="borderTop: 1px solid #22201C; paddingTop: 14px; display: flex; flexDirection: column; gap: 14px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Worth knowing</span>
+              <div style="display: flex; flexDirection: column;">
+                <sc-for list="{{ facts }}" as="f" hint-placeholder-count="5">
+                  <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 12px; padding: 8px 0; borderBottom: 1px solid #E2DCD1; fontSize: 13.5px;">
+                    <span style="color: #4A453D;">{{ f.label }}</span>
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">{{ f.value }}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 24px; alignItems: flex-start;">
+          <div style="width: 390px; flexShrink: 0;">
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px</div>
+            <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 14px; display: flex; flexDirection: column; gap: 24px;">
+              <p style="margin: 0; fontSize: 19px; lineHeight: 1.5; letterSpacing: -0.01em; textWrap: pretty;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontWeight: 600;">891</span> rows across
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontWeight: 600;">12</span> columns.
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontWeight: 600; color: #963F1C;">8.1%</span> of cells are missing.
+              </p>
+              <div style="borderTop: 1px solid #22201C; paddingTop: 14px; display: flex; alignItems: center; gap: 18px;">
+                <svg viewBox="0 0 120 120" width="104" height="104" role="img" aria-label="12 columns by type" style="display: block; flexShrink: 0;">
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#EDE6DA" stroke-width="11"></circle>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#4A6E8A" stroke-width="11" stroke-dasharray="75.4 301.6" stroke-dashoffset="0" transform="rotate(-90 60 60)"></circle>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#4A5D1E" stroke-width="11" stroke-dasharray="201.1 301.6" stroke-dashoffset="-75.4" transform="rotate(-90 60 60)"></circle>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#963F1C" stroke-width="11" stroke-dasharray="25.1 301.6" stroke-dashoffset="-276.5" transform="rotate(-90 60 60)"></circle>
+                  <text x="60" y="58" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="26" fill="#22201C">12</text>
+                  <text x="60" y="74" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="9" letter-spacing="1.4" fill="#57524A">COLS</text>
+                </svg>
+                <div style="display: flex; flexDirection: column; gap: 8px;">
+                  <sc-for list="{{ typesFull }}" as="t" hint-placeholder-count="4">
+                    <span style="display: inline-flex; alignItems: center; gap: 8px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: {{ t.textColor }};">
+                      <span style="width: 8px; height: 8px; background: {{ t.color }};"></span>{{ t.n }} {{ t.label }}
+                    </span>
+                  </sc-for>
+                </div>
+              </div>
+              <div style="borderTop: 1px solid #22201C; paddingTop: 14px; display: flex; flexDirection: column; gap: 12px;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Most incomplete</span>
+                <sc-for list="{{ missing }}" as="m" hint-placeholder-count="3">
+                  <div style="display: flex; flexDirection: column; gap: 6px;">
+                    <div style="display: flex; justifyContent: space-between; gap: 10px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">
+                      <span>{{ m.col }}</span><span style="color: #4A453D;">{{ m.stat }}</span>
+                    </div>
+                    <span style="height: 7px; background: #EDE6DA; display: block;">
+                      <span style="display: block; height: 7px; width: {{ m.pct }}; background: {{ m.color }};"></span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flexDirection: column; gap: 12px; paddingTop: 26px;">
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">Anyone you send the file to understands the dataset from the first line. Smallest change to the Python side: the same four numbers, one new sentence, and the donut renderer keeps its job.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">Costs about 120px of vertical space before any data appears, and you still can't read exact proportions off a ring. The headline needs care when numbers are odd (0 rows, 1 column, 100% missing).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flexDirection: column; gap: 18px;">
+    <div style="display: flex; alignItems: center; gap: 14px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Section 3 — Sample</span>
+      <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+    </div>
+
+    <div style="display: flex; flexWrap: wrap; gap: 40px; alignItems: flex-start;">
+
+      <div id="1e" style="display: flex; flexDirection: column; gap: 14px; width: 1040px;">
+        <div style="display: flex; alignItems: baseline; gap: 12px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">1e</span>
+          <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Table, honest about its overflow</h3>
+        </div>
+        <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 62ch;">Still a table. Every cell border removed — one rule under the header, one under each row. Index column frozen, numerics right-aligned, <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">nan</span> shown as a muted dash. A mono line states how many columns are off-screen.</p>
+
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 0 18px;">
+          <div style="display: flex; alignItems: baseline; justifyContent: space-between; gap: 20px; padding: 0 24px 14px;">
+            <div style="display: flex; alignItems: baseline; gap: 12px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Sample</span>
+              <span style="fontSize: 13.5px; color: #4A453D;">10 rows drawn at random from the first chunk</span>
+            </div>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">12 cols · scroll →</span>
+          </div>
+          <div style="overflowX: auto; borderTop: 1px solid #22201C;">
+            <table style="borderCollapse: collapse; width: 100%; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">
+              <thead>
+                <tr>
+                  <sc-for list="{{ cols }}" as="c" hint-placeholder-count="13">
+                    <th style="padding: 9px 14px; textAlign: {{ c.align }}; fontWeight: 500; fontSize: 10.5px; letterSpacing: 0.09em; textTransform: uppercase; color: #57524A; borderBottom: 1px solid #CFC7B8; whiteSpace: nowrap; background: #FBF9F5;">{{ c.label }}</th>
+                  </sc-for>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ rows }}" as="row" hint-placeholder-count="10">
+                  <tr>
+                    <sc-for list="{{ row }}" as="cell" hint-placeholder-count="13">
+                      <td style="padding: 9px 14px; textAlign: {{ cell.align }}; borderBottom: 1px solid #E2DCD1; color: {{ cell.color }}; whiteSpace: nowrap; maxWidth: 240px; overflow: hidden; textOverflow: ellipsis;">{{ cell.v }}</td>
+                    </sc-for>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 24px; alignItems: flex-start;">
+          <div style="width: 390px; flexShrink: 0;">
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px · index frozen, rest scrolls</div>
+            <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 16px 0 14px; overflow: hidden;">
+              <div style="display: flex; alignItems: baseline; justifyContent: space-between; gap: 10px; padding: 0 14px 12px;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Sample</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">12 cols →</span>
+              </div>
+              <div style="display: flex; alignItems: flex-start; borderTop: 1px solid #22201C;">
+                <table style="borderCollapse: collapse; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; flexShrink: 0; borderRight: 1px solid #CFC7B8; background: #F3EDE3;">
+                  <thead>
+                    <tr><th style="padding: 8px 10px; fontWeight: 500; fontSize: 10px; letterSpacing: 0.09em; color: #57524A; borderBottom: 1px solid #CFC7B8; textAlign: right;">#</th></tr>
+                  </thead>
+                  <tbody>
+                    <sc-for list="{{ indexCol }}" as="ix" hint-placeholder-count="10">
+                      <tr><td style="padding: 8px 10px; borderBottom: 1px solid #E2DCD1; color: #57524A; textAlign: right;">{{ ix }}</td></tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+                <div style="overflowX: auto; flex: 1; minWidth: 0;">
+                  <table style="borderCollapse: collapse; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px;">
+                    <thead>
+                      <tr>
+                        <sc-for list="{{ colsNoIndex }}" as="c" hint-placeholder-count="12">
+                          <th style="padding: 8px 12px; textAlign: {{ c.align }}; fontWeight: 500; fontSize: 10px; letterSpacing: 0.09em; textTransform: uppercase; color: #57524A; borderBottom: 1px solid #CFC7B8; whiteSpace: nowrap;">{{ c.label }}</th>
+                        </sc-for>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <sc-for list="{{ rowsNoIndex }}" as="row" hint-placeholder-count="10">
+                        <tr>
+                          <sc-for list="{{ row }}" as="cell" hint-placeholder-count="12">
+                            <td style="padding: 8px 12px; textAlign: {{ cell.align }}; borderBottom: 1px solid #E2DCD1; color: {{ cell.color }}; whiteSpace: nowrap; maxWidth: 150px; overflow: hidden; textOverflow: ellipsis;">{{ cell.v }}</td>
+                          </sc-for>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display: flex; flexDirection: column; gap: 12px; paddingTop: 26px;">
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">Nothing to learn — it is the table you already have, minus 300 cell borders. The frozen index is what makes sideways scrolling survivable on a phone: you never lose your place in the row.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">Sideways scrolling on a phone is still sideways scrolling. Long text columns like <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">Name</span> get truncated, so the sample stops being a faithful look at the data.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="1f" style="display: flex; flexDirection: column; gap: 14px; width: 1040px;">
+        <div style="display: flex; alignItems: baseline; gap: 12px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">1f</span>
+          <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Table on desktop, records on mobile</h3>
+        </div>
+        <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 62ch;">Same table as <a href="#1e">1e</a> above 640px. Below it, each sampled row becomes one record: index, then field / value pairs in schema order. No horizontal scrolling anywhere. Records collapse to five fields with a link to open the rest.</p>
+
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 24px 22px; display: flex; flexDirection: column; gap: 16px;">
+          <div style="display: flex; alignItems: baseline; gap: 12px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Sample</span>
+            <span style="fontSize: 13.5px; color: #4A453D;">Above 640px this is exactly the table from 1e — unchanged</span>
+          </div>
+          <div style="overflowX: auto; borderTop: 1px solid #22201C;">
+            <table style="borderCollapse: collapse; width: 100%; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">
+              <thead>
+                <tr>
+                  <sc-for list="{{ cols }}" as="c" hint-placeholder-count="13">
+                    <th style="padding: 9px 14px; textAlign: {{ c.align }}; fontWeight: 500; fontSize: 10.5px; letterSpacing: 0.09em; textTransform: uppercase; color: #57524A; borderBottom: 1px solid #CFC7B8; whiteSpace: nowrap;">{{ c.label }}</th>
+                  </sc-for>
+                </tr>
+              </thead>
+              <tbody>
+                <sc-for list="{{ rowsShort }}" as="row" hint-placeholder-count="5">
+                  <tr>
+                    <sc-for list="{{ row }}" as="cell" hint-placeholder-count="13">
+                      <td style="padding: 9px 14px; textAlign: {{ cell.align }}; borderBottom: 1px solid #E2DCD1; color: {{ cell.color }}; whiteSpace: nowrap; maxWidth: 240px; overflow: hidden; textOverflow: ellipsis;">{{ cell.v }}</td>
+                    </sc-for>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 24px; alignItems: flex-start;">
+          <div style="width: 390px; flexShrink: 0;">
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px · no sideways scroll</div>
+            <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 16px 14px 14px; display: flex; flexDirection: column; gap: 14px;">
+              <div style="display: flex; alignItems: baseline; justifyContent: space-between;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Sample</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">10 records</span>
+              </div>
+              <sc-for list="{{ recordsMobile }}" as="r" hint-placeholder-count="3">
+                <div style="borderTop: 1px solid #22201C; paddingTop: 10px; display: flex; flexDirection: column; gap: 2px;">
+                  <div style="display: flex; justifyContent: space-between; alignItems: baseline; marginBottom: 4px;">
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.1em; color: #57524A;">ROW {{ r.idx }}</span>
+                    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ r.tag }}</span>
+                  </div>
+                  <sc-for list="{{ r.fields }}" as="f" hint-placeholder-count="5">
+                    <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 14px; padding: 6px 0; borderBottom: 1px solid #E2DCD1;">
+                      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A; whiteSpace: nowrap;">{{ f.k }}</span>
+                      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ f.color }}; textAlign: right; minWidth: 0;">{{ f.v }}</span>
+                    </div>
+                  </sc-for>
+                  <a href="#1f" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; paddingTop: 8px; paddingBottom: 6px;">7 more fields →</a>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="display: flex; flexDirection: column; gap: 12px; paddingTop: 26px;">
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">The only option here that is genuinely built for a phone: nothing is cut off, nothing scrolls sideways, and a full passenger name fits. Field names sit next to their values, so you don't scroll back to the header to know what a number means.</p>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+              <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D; maxWidth: 46ch;">You can no longer compare rows at a glance, which is most of why a sample table exists. Ten records × twelve fields is very tall, so it needs the collapse — and that is a second layout for the Python side to emit and keep in step.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 2280, &quot;height&quot;: 1600}}">
+const OLIVE = "#4A5D1E", RUST = "#963F1C", BLUE = "#4A6E8A", OCHRE = "#A2731A";
+const INK = "#22201C", MUTED = "#57524A", BODY = "#4A453D";
+
+const COLS = ["", "PassengerId", "Survived", "Pclass", "Name", "Sex", "Age", "SibSp", "Parch", "Ticket", "Fare", "Cabin", "Embarked"];
+const RAW = [
+  [495, 496, 0, 3, "Yousseff, Mr. Gerious", "male", null, 0, 0, "2627", 14.4583, null, "C"],
+  [648, 649, 0, 3, "Willey, Mr. Edward", "male", null, 0, 0, "S.O./P.P. 751", 7.55, null, "S"],
+  [278, 279, 0, 3, "Rice, Master. Eric", "male", 7.0, 4, 1, "382652", 29.125, null, "Q"],
+  [31, 32, 1, 1, "Spencer, Mrs. William Augustus (Marie Eugenie)", "female", null, 1, 0, "PC 17569", 146.5208, "B78", "C"],
+  [255, 256, 1, 3, "Touma, Mrs. Darwis (Hanne Youssef Razi)", "female", 29.0, 0, 2, "2650", 15.2458, null, "C"],
+  [298, 299, 1, 1, "Saalfeld, Mr. Adolphe", "male", null, 0, 0, "19988", 30.5, "C106", "S"],
+  [609, 610, 1, 1, "Shutes, Miss. Elizabeth W", "female", 40.0, 0, 0, "PC 17582", 153.4625, "C125", "S"],
+  [318, 319, 1, 1, "Wick, Miss. Mary Natalie", "female", 31.0, 0, 2, "36928", 164.8667, "C7", "S"],
+  [484, 485, 1, 1, "Bishop, Mr. Dickinson H", "male", 25.0, 1, 0, "11967", 91.0792, "B49", "C"],
+  [367, 368, 1, 3, "Moussa, Mrs. (Mantoura Boulos)", "female", null, 0, 0, "2626", 7.2292, null, "C"],
+];
+
+const cell = (v) => v === null
+  ? { v: "—", align: "right", color: MUTED }
+  : { v: String(v), align: typeof v === "number" ? "right" : "left", color: INK };
+
+class Component extends DCLogic {
+  renderVals() {
+    const rows = RAW.map((r) => r.map(cell));
+    const cols = COLS.map((c, i) => ({ label: c || "#", align: i === 0 || [1, 2, 3, 6, 7, 8, 10].includes(i) ? "right" : "left" }));
+    const navLabels = ["Summary", "Sample", "Variables", "Correlations", "Missing"];
+
+    const fieldsFor = (r, n) => COLS.slice(1, 1 + n).map((k, i) => {
+      const c = cell(r[i + 1]);
+      return { k, v: c.v, color: c.color };
+    });
+
+    return {
+      nav: navLabels.map((label, i) => ({
+        label,
+        color: i === 0 ? INK : BODY,
+        rule: i === 0 ? OLIVE : "transparent",
+      })),
+      metaFields: [
+        { label: "Generated", value: "2026-03-01 00:15:48", hint: "local time" },
+        { label: "Profiled in", value: "0.06 s", hint: "single pass" },
+        { label: "Shape", value: "891 × 12", hint: "rows × columns" },
+        { label: "Version", value: "pysuricata 0.0.43", hint: "" },
+      ],
+      tabs: navLabels.map((label, i) => ({
+        label,
+        color: i === 0 ? "#FBF9F5" : BODY,
+        bg: i === 0 ? OLIVE : "transparent",
+      })),
+      kpis: [
+        { label: "Rows", value: "891", sub: "single pass", subColor: MUTED },
+        { label: "Columns", value: "12", sub: "3 num · 8 cat · 1 bool", subColor: MUTED },
+        { label: "Missing", value: "8.1%", sub: "866 cells", subColor: RUST },
+        { label: "Duplicates", value: "0", sub: "≈ KMV sketch", subColor: MUTED },
+        { label: "Processed", value: "121 KB", sub: "0.06 s", subColor: MUTED },
+      ],
+      kpisMobile: [
+        { label: "Rows", value: "891", sub: "", subColor: MUTED },
+        { label: "Columns", value: "12", sub: "", subColor: MUTED },
+        { label: "Missing", value: "8.1%", sub: "866 cells", subColor: RUST },
+        { label: "Duplicates", value: "0", sub: "≈", subColor: MUTED },
+        { label: "Processed", value: "121 KB", sub: "", subColor: MUTED },
+        { label: "Elapsed", value: "0.06 s", sub: "", subColor: MUTED },
+      ],
+      types: [
+        { label: "categorical", n: 8, pct: "66.67%", color: OLIVE },
+        { label: "numeric", n: 3, pct: "25%", color: BLUE },
+        { label: "boolean", n: 1, pct: "8.33%", color: RUST },
+      ],
+      typesFull: [
+        { label: "categorical", n: 8, color: OLIVE, textColor: INK },
+        { label: "numeric", n: 3, color: BLUE, textColor: INK },
+        { label: "boolean", n: 1, color: RUST, textColor: INK },
+        { label: "datetime", n: 0, color: "#EDE6DA", textColor: MUTED },
+      ],
+      missing: [
+        { col: "Cabin", stat: "687 · 77.1%", pct: "77.1%", color: RUST },
+        { col: "Age", stat: "177 · 19.9%", pct: "19.9%", color: OCHRE },
+        { col: "Embarked", stat: "2 · 0.2%", pct: "0.2%", color: OLIVE },
+      ],
+      facts: [
+        { label: "Unique columns", value: "12" },
+        { label: "Constant columns", value: "0" },
+        { label: "High-cardinality", value: "2" },
+        { label: "Text columns", value: "8 · avg 5.8" },
+        { label: "Date range", value: "none" },
+      ],
+      cols,
+      colsNoIndex: cols.slice(1),
+      rows,
+      rowsNoIndex: rows.map((r) => r.slice(1)),
+      indexCol: RAW.map((r) => String(r[0])),
+      rowsShort: rows.slice(0, 5),
+      recordsMobile: RAW.slice(0, 2).map((r) => ({
+        idx: String(r[0]),
+        tag: r[2] === 1 ? "survived" : "did not survive",
+        fields: fieldsFor(r, 5),
+      })),
+    };
+  }
+}
+</script>
+</body>
+</html>
