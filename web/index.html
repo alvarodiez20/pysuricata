@@ -380,13 +380,13 @@
   </div>
 
   <p class="closing">
-    Reads CSV, TSV, Parquet and Excel — <code>.xlsx</code>, <code>.xlsm</code>,
+    Reads CSV, TSV, Parquet and Excel: <code>.xlsx</code>, <code>.xlsm</code>,
     <code>.xlsb</code>, <code>.xls</code> and <code>.ods</code>. CSV and Parquet are
     streamed in chunks; a spreadsheet has no chunked reader in pandas, so a workbook is
     read whole and capped at 40 MB here. Statistics come from streaming sketches, so
     memory tracks column count rather than row count. Counts and moments are exact;
     quantiles, distinct counts and duplicates are estimated, and the report marks each
-    one. Frames wider than 250 columns are refused here — run those locally.
+    one. Frames wider than 250 columns are refused here; run those locally.
   </p>
 
 </main>
