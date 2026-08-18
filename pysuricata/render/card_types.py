@@ -208,6 +208,19 @@ class BarData:
     counts: list[int]
     percentages: list[float]
     values: list[float]
+    #: Where an evenly-split column would put every bar, in the same units as
+    #: ``values`` -- so the renderer can place it with the same scale function
+    #: as the bars and cannot put the rule on a different axis from the data
+    #: it is read against (phase 5f.2, #296).
+    #:
+    #: ``None`` when there is nothing to compare to: one level, or a level
+    #: count the sketch never resolved.
+    even_split_value: float | None = None
+    #: The same mark as a share of the column, for the tooltip and for
+    #: `data-even-pct`. Kept beside the value rather than derived back out of
+    #: it: the value is in the chart's units and the round trip through `vmax`
+    #: is exactly the kind of arithmetic that goes wrong silently.
+    even_split_share: float | None = None
 
 
 @dataclass

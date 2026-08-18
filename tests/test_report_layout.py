@@ -207,7 +207,39 @@ class TestTheReportIsOneFile:
 #: -- turned out to be live, carried by the empty-state chart. That is the
 #: fixture trap in CLAUDE.md exactly. Absent from one fixture is not dead, and
 #: an audit that needs a per-class branch check is its own change.
-BYTES_BASELINE = 499_000
+#: 499,000 -> 499,500 for the even-split rule (phase 5f.2, #296). A rule at
+#: `100 / n_levels` beside every level bar: `Embarked`'s S at 72.4% against a
+#: 33.3% mark says *dominated by one port* with no arithmetic asked of the
+#: reader. Same argument as the two raises above it, and the same device as the
+#: flat-calendar rule and the outlier fence -- one reading convention across
+#: the report rather than three.
+#:
+#: **Unlike the #291 raise, the report being weighed is the one that benefits.**
+#: Titanic is eight-twelfths categorical, so five of its columns get the mark;
+#: the datetime raise bought a panel Titanic cannot render at all. That is the
+#: difference between paying for a feature and paying for someone else's.
+#:
+#: Paid down 505 of 824 bytes before raising, and what went is worth recording
+#: because it is the same lesson twice:
+#:
+#:   * a `<title>` on every rule -- 302 bytes to say one thing per column, and
+#:     4b.2 already established that a measure in a tooltip is invisible on a
+#:     phone and absent from paper. The value is stated once, visibly, in the
+#:     coverage note under the chart.
+#:   * `data-even-pct` on every rule -- 147 bytes with **no reader**.
+#:     `report_fingerprint.py` keys on `data-pct` and does not match this;
+#:     neither the stylesheet nor `functionality.js` mentions it. Checked
+#:     rather than assumed, since `data-col` looks equally redundant and is
+#:     load-bearing for exactly that file.
+#:   * a second decimal on coordinates in a pixel viewBox, i.e. hundredths of
+#:     a pixel.
+#:
+#: The residual 319 is seven `<line>` elements, the CSS rule, and the `of the
+#: 891` denominator the coverage note now carries -- which #296 asks for by
+#: name, because `Cabin` is 77.1% empty and a coverage figure without its
+#: denominator cannot distinguish 5.9% of the non-missing rows from 1.3% of
+#: the frame.
+BYTES_BASELINE = 499_500
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
