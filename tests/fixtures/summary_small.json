@@ -24,9 +24,11 @@
           21
         ]
       ],
+      "top_items_uncertainty": 0,
       "trim_variants_est": 2,
       "type": "categorical",
-      "unique_est": 2
+      "unique_est": 2,
+      "unique_est_exact": true
     },
     "x": {
       "approx": false,
@@ -102,6 +104,7 @@
       "mono_inc": false,
       "negatives": 23,
       "outliers_iqr_est": 2,
+      "outliers_mod_zscore": 1,
       "outliers_mod_zscore_est": 1,
       "q1": -0.5002485719057307,
       "q3": 0.521628383050338,
@@ -310,6 +313,7 @@
           1
         ]
       ],
+      "top_values_uncertainty": 0,
       "true_histogram_counts": [
         1,
         0,
@@ -367,6 +371,7 @@
       ],
       "type": "numeric",
       "unique_est": 50,
+      "unique_est_exact": true,
       "unique_ratio_approx": 1.0,
       "variance": 0.7922356343171694,
       "zeros": 0

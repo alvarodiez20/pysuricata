@@ -473,6 +473,9 @@ class ReportOrchestrator:
                         if s.top_values
                         else ([] if acc.tracks_top_values else None)
                     ),
+                    # The bound on those counts, same as the categorical side.
+                    "top_values_uncertainty": _i(s.top_values_uncertainty),
+                    "unique_est_exact": bool(s.unique_est_exact),
                     # Everything below is shown on the numeric card and used to
                     # be reachable only by reading the HTML.
                     "dtype": str(s.dtype_str),
@@ -495,6 +498,12 @@ class ReportOrchestrator:
                     "ci_hi": _f(s.ci_hi),
                     "jb_chi2": _f(s.jb_chi2),
                     "outliers_mod_zscore_est": int(s.outliers_mod_zscore),
+                    # The pre-0.1.6 name, kept beside the new one. Renaming a
+                    # published key outright is a break, and a break costs
+                    # 1.0.0 under `docs/versioning.md`; adding a name beside
+                    # the old one costs nothing and is what that page tells
+                    # you to do instead. Deprecated: it will go at 1.0.0.
+                    "outliers_mod_zscore": int(s.outliers_mod_zscore),
                     "heap_pct": _f(s.heap_pct),
                     "bimodal": bool(s.bimodal),
                     "gran_decimals": _i(s.gran_decimals),
@@ -523,6 +532,11 @@ class ReportOrchestrator:
                     "missing": _i(s.missing),
                     "unique_est": _i(s.unique_est),
                     "top_items": [(str(v), _i(c)) for v, c in (s.top_items or [])],
+                    # Every count above is a lower bound short by at most this
+                    # much, so a consumer can render `sku-0753: 37 - 1,149`
+                    # instead of a confident wrong 37. Zero means exact (#328).
+                    "top_items_uncertainty": _i(s.top_items_uncertainty),
+                    "unique_est_exact": bool(s.unique_est_exact),
                     "approx": bool(s.approx),
                     "mem_bytes": _i(s.mem_bytes),
                     "dtype": str(s.dtype_str),
