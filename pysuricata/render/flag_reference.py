@@ -250,6 +250,47 @@ BUSINESS_HOURS_FLAT_PCT: float = (
 #: direction, or every dataset reads as slightly weekend-heavy.
 FLAT_TOLERANCE_PP: float = 3.0
 
+#: When the weekend share is loud enough to raise the `Weekend-heavy` chip.
+#: 35% is roughly the flat share plus 6.4pp -- a little over twice the noise
+#: tolerance above, which is what makes it a finding rather than a wobble.
+WEEKEND_HEAVY_FLAG_PCT: float = 35.0
+
+#: When the business-hours share raises the `Business hours` chip. 50% is not
+#: baseline-plus-a-margin but *more than twice* the flat share: a column where
+#: half the rows fall in a fifth of the week is office-generated data, and the
+#: chip says so.
+BUSINESS_HOURS_FLAG_PCT: float = 50.0
+
+
+def flat_verdict(actual_pct: float, flat_pct: float) -> tuple[str, str]:
+    """Read a calendar share against the flat baseline it should be judged on.
+
+    ``Weekend % 27.0`` is not a finding — a flat calendar gives 28.6%, so 27.0
+    is the *absence* of a weekend effect. The card cannot say that without the
+    baseline, which is why this returns the verdict rather than the number
+    (phase 5e.2, #291).
+
+    Args:
+        actual_pct: The observed share, already in percent.
+        flat_pct: What a flat calendar would give, in percent. One of
+            :data:`WEEKEND_FLAT_PCT` or :data:`BUSINESS_HOURS_FLAT_PCT`.
+
+    Returns:
+        ``(verdict, tone)``. The verdict always states the gap in percentage
+        points against the baseline, so the reader can check the reading
+        against the mark. The tone is a quality slug — ``"good"`` when the
+        column is within :data:`FLAT_TOLERANCE_PP` of flat, ``"warn"``
+        otherwise — never a colour, so the token layer stays the one place a
+        colour is chosen.
+    """
+    delta = actual_pct - flat_pct
+    sign = "+" if delta >= 0 else "\u2212"
+    gap = f"{sign}{abs(delta):.1f}pp vs {flat_pct:.1f}%"
+    if abs(delta) < FLAT_TOLERANCE_PP:
+        return f"flat \u00b7 {gap}", "good"
+    direction = "over" if delta > 0 else "under"
+    return f"{direction}-represented \u00b7 {gap}", "warn"
+
 
 def even_split_pct(n_levels: int) -> float:
     """The share each level would hold if a categorical column were even.

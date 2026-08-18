@@ -182,7 +182,32 @@ class TestTheReportIsOneFile:
 #: `data-missing-pct` is one decimal now and is omitted entirely on a complete
 #: column, since the sort reads its absence as zero and most columns in most
 #: frames are complete.
-BYTES_BASELINE = 498_000
+#: 498,000 -> 499,000 for the datetime baseline panel (phases 5e.2/5e.3,
+#: #291 and #292). Two calendar shares were printed bare -- `Weekend % 27.0`
+#: against a flat calendar's 28.6% -- and a percentage nobody can judge is not
+#: information. Each is now a bar with a rule at the flat value and a verdict
+#: in percentage points. The same argument as #258's raise: a figure the
+#: reader cannot read is not presentation.
+#:
+#: Paid down first, and this one is worth recording because of *who* pays.
+#: Titanic has no datetime column, so every byte of this is stylesheet the
+#: example report carries and cannot use -- the report inlines its CSS into
+#: every document. The first cut cost 2,025 bytes; borrowing `.vstat__cap` and
+#: `.vstat__val` for the panel's caption and figure instead of defining a
+#: second pair that looked the same, and grouping five near-identical
+#: mono/size/colour blocks into one, brought it to 747. The remaining 747 is
+#: geometry -- the two-column face, the track, the rule, and two breakpoints.
+#:
+#: The structural fix is not a smaller panel, it is not shipping datetime CSS
+#: to a frame with no datetime column (#306). That is worth far more than this
+#: raise and belongs to #39 rather than here.
+#:
+#: A dead-CSS sweep was tried as the paydown and abandoned deliberately: it
+#: named 190 classes as never rendered, and the first one checked -- `dt-svg`
+#: -- turned out to be live, carried by the empty-state chart. That is the
+#: fixture trap in CLAUDE.md exactly. Absent from one fixture is not dead, and
+#: an audit that needs a per-class branch check is its own change.
+BYTES_BASELINE = 499_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
@@ -454,9 +479,38 @@ _INLINE_LINK_EXEMPTIONS = 3
 #: 1240 is the six nav links plus the three exempt inline ones.
 _KNOWN_UNDERSIZED = {390: 3, 768: 3, 1240: 9}
 
-#: #112 wants the summary under 560px at 390px. It is 620px. Recorded, not
+#: #112 wants the summary under 560px at 390px. It is 624px. Recorded, not
 #: waived.
-_SUMMARY_BASELINE = {390: 620, 768: 575, 1240: 340}
+#:
+#: 620/575/340 -> 624/579/344 for the section-heading system (#298). Summary
+#: was the only one of the five sections whose heading opted out of
+#: `.section-title`, carrying a near-copy rule in `_03-summary.css` instead --
+#: same size, same line height, an 8px bottom margin against the system's
+#: 12px. Joining the system costs exactly those 4px, at all three widths.
+#:
+#: The raise is against this ratchet's own direction, so the reason matters:
+#: this is not a new decision about spacing, it is the *removal* of an
+#: undecided one. `docs/internal/design/Report Baseline.dc.html:87` draws the
+#: Summary heading at `margin: 0 0 0.75rem`, which is exactly
+#: `.section-title`. The shipped 0.5rem was drift away from the design, and
+#: the heights recorded here were measuring the drift.
+#:
+#: **+4 and not more.** These numbers are CI's, and CI is the gate. Two
+#: developer machines measure this summary 2-7px taller than the recorded
+#: values *before any change* -- 342/580/627 against 340/575/620, at
+#: eb0523b with nothing applied -- so a baseline set from a local reading
+#: would have carried that machine's font rendering into the budget as
+#: permanent slack, and the ratchet would have stopped catching the next 7px.
+#: The change was therefore measured as a **delta** on one machine, which is
+#: environment-independent, and added to what CI records. It is +4px at every
+#: width, which is the margin and nothing else.
+#:
+#: The consequence is that these six cases fail locally on a machine that
+#: reads high, and pass in CI. That split predates this change and is #309.
+#:
+#: The 64px still between 624 and #112's 560 is unaffected by this and is
+#: where the work remains.
+_SUMMARY_BASELINE = {390: 624, 768: 579, 1240: 344}
 
 
 @pytest.mark.browser

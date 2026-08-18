@@ -433,3 +433,66 @@ class TestScriptCommentsStayInTheSource:
             f"{before - after:,} bytes saved of {before:,}; the comments have "
             "either gone from the source or stopped being stripped"
         )
+
+
+class TestEverySectionHeadingUsesOneSystem:
+    """Five sections, and Summary used to be the only one opting out (#298).
+
+    `<h2>Summary</h2>` against `<h2 class="section-title">` on the other four,
+    with a `#summary h2` rule in `_03-summary.css` that was a near-copy of
+    `.section-title` -- same size, same line height, a different bottom
+    margin. Either that difference is a decision, in which case it needs a
+    name, or it is drift. It was drift.
+
+    Summary is the first thing under the header, so the inconsistency was
+    visible without measuring anything.
+    """
+
+    #: The five top-level sections. `sample` is emitted from `html.py` rather
+    #: than the template, which is why a grep of the template alone missed it
+    #: when the redesign standardised the other three.
+    SECTIONS = ("Summary", "Sample", "Variables", "Correlations", "Missing Values")
+
+    def _headings(self) -> list[tuple[str, str]]:
+        import re
+
+        from pysuricata.utils import load_template
+
+        markup = load_template(
+            str(
+                __import__("pathlib").Path(__import__("pysuricata").__file__).parent
+                / "templates"
+                / "report_template.html"
+            )
+        )
+        from pysuricata.render import html as render_html
+
+        markup += render_html._sample_section("<table></table>")
+        return [
+            (m.group(2).strip(), m.group(1) or "")
+            for m in re.finditer(r"<h2([^>]*)>([^<]+)</h2>", markup)
+        ]
+
+    def test_no_section_heading_opts_out(self):
+        offenders = [
+            name
+            for name, attrs in self._headings()
+            if name in self.SECTIONS and "section-title" not in attrs
+        ]
+        assert not offenders, (
+            f"section headings not using `.section-title`: {offenders}. Either "
+            f"they join the system the other sections use, or the difference "
+            f"is deliberate and needs its own documented class (#298)."
+        )
+
+    def test_the_near_copy_rule_is_gone(self):
+        """A second rule doing what `.section-title` already does is how the
+        two drifted apart in the first place.
+
+        Comments stripped first. The note left where the rule stood names the
+        selector it replaced, and a check that cannot tell a selector from
+        prose about a selector would forbid explaining the removal.
+        """
+        from pysuricata.utils import strip_css_comments
+
+        assert "#summary h2" not in strip_css_comments(_concatenated_css())

@@ -16,6 +16,39 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **The two datetime calendar shares are drawn against the baseline that makes
+  them readable** (redesign phase 5e.2, #291). The card printed `Weekend %
+  27.0` and `Business hrs % 24.3` bare. A flat calendar gives **28.6%** (2 of
+  7 days) and **23.8%** (8 of 24 hours on 5 of 7 days), so both readings were
+  *noise wearing the clothes of a finding* — and the renderer already knew it,
+  carrying `expected ~28.5%` in a comment on the flag threshold twelve lines
+  away. That is the Jarque–Bera problem again: a number whose meaning lives
+  where the reader cannot reach it.
+
+  Each share is now a bar with a rule at the flat value and a verdict in
+  percentage points — `flat · −1.6pp vs 28.6%`. The baselines are arithmetic,
+  so **no new statistic is computed**; they live once, in
+  `render/flag_reference.py`, beside the flag thresholds that are set against
+  them. The rule is painted before the fill and stands 3px proud of the track,
+  so a bar reaching past it occludes it rather than crossing it — token rule 2,
+  since `--q-bad` on `--data-2` is 1.08:1.
+
+- **The datetime card face carries eight statistics instead of thirteen**
+  (phase 5e.3, #292). `Avg interval` and `Interval std` moved into the
+  Statistics pane, where they already had a home; the interval sentence that
+  interprets them — and interprets them better than the raw pair reads — was
+  promoted out of that pane to **lead the card face**, so it is read before the
+  conclusions rather than after them. `Min` and `Max` lost their `<br>`: two
+  double-height cells in a four-column grid made every row in the grid taller.
+
+- **Every section heading uses one system** (#298). `Summary` was the only one
+  of the five opting out of `.section-title`, with a near-copy rule in
+  `_03-summary.css` — same size, same line height, an 8px bottom margin against
+  the system's 12px. The design draws it at `0.75rem`, so the shipped value was
+  drift rather than a decision, and the recorded summary heights were measuring
+  the drift.
+
+
 - **The report redesign package moved into the repository**, at
   `docs/internal/design/`. It lived in a folder on one laptop, so every issue
   filed against it pointed at a path nobody else could open. Nothing here

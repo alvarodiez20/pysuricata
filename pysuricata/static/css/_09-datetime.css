@@ -326,3 +326,140 @@
   font-size: 11.5px;
   color: var(--muted);
 }
+
+/* =============================================================
+   THE CARD FACE — the lede, the chart, and the calendar baselines
+
+   Phase 5e.2/5e.3 (#291, #292). What this replaces: two percentages printed
+   bare in the stat grid. `Weekend % 27.0` looks like a finding and is noise —
+   a flat calendar gives 28.6% — and the renderer already knew the baseline,
+   in a comment beside the flag threshold. The number a reader cannot judge is
+   now a bar with a rule on it.
+
+   The panel borrows `.vstat__cap` and `.vstat__val` for its caption and its
+   figure rather than defining a second pair that would look the same. That is
+   not only tidiness: the report inlines its stylesheet into every document,
+   so this panel's CSS is paid by frames with no datetime column at all —
+   Titanic among them, which is exactly what `test_report_layout.py` weighs.
+   Two borrowed classes and one grouped rule where five near-identical
+   mono/size/colour blocks stood is most of the difference.
+   ============================================================= */
+
+/* The interval sentence, promoted out of the Statistics pane (#292). It is
+   the strongest thing the column knows, so it is read before the chart
+   rather than after the conclusions. */
+#pysuricata-report .dt-lede {
+  margin: 0 0 10px;
+}
+
+/* Chart and panel side by side. The chart takes what it can use up to the
+   820px cap from 5d.2; the panel is fixed, because its bars are read against
+   a rule at a fixed percentage rather than against each other. */
+#pysuricata-report .dt-face {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+#pysuricata-report .cal-base,
+#pysuricata-report .cal-base__row {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#pysuricata-report .cal-base {
+  gap: 12px;
+  padding-top: 4px;
+}
+
+#pysuricata-report .cal-base__row,
+#pysuricata-report .cal-base__note {
+  border-top: 1px solid var(--rule);
+  padding-top: 9px;
+}
+
+#pysuricata-report .cal-base__row {
+  gap: 5px;
+}
+
+/* Monospace like every other figure on the card: a column of percentages
+   aligns without font-variant-numeric, and the verdict cannot drift to a
+   different face than the figure it explains. */
+#pysuricata-report .cal-base__label,
+#pysuricata-report .cal-base__verdict,
+#pysuricata-report .cal-base__note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+#pysuricata-report .cal-base__note {
+  line-height: 1.5;
+}
+
+#pysuricata-report .cal-base__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+#pysuricata-report .cal-base__track {
+  position: relative;
+  height: 8px;
+  background: var(--track);
+}
+
+#pysuricata-report .cal-base__fill,
+#pysuricata-report .cal-base__rule {
+  position: absolute;
+  top: 0;
+  height: 8px;
+}
+
+#pysuricata-report .cal-base__fill {
+  left: 0;
+  background: var(--data-2);
+}
+
+/* Rule 2 in the token file: a mark crossing a data fill must protrude onto
+   the paper or paint underneath it. This does both — it is painted before the
+   fill in source order, so a bar reaching past it occludes it instead of
+   crossing it, and it stands 3px proud top and bottom, so the part a reader
+   sights along is on paper rather than on --data-2. That protrusion is also
+   what keeps it readable at 390px once the caption goes. */
+#pysuricata-report .cal-base__rule {
+  top: -3px;
+  height: 14px;
+  border-left: 2px solid var(--ink);
+}
+
+#pysuricata-report .cal-base__verdict.good {
+  color: var(--q-good);
+}
+
+/* --q-warn-text, not --q-warn-fill: this is text, and the fill variant fails
+   the 4.5:1 text minimum. */
+#pysuricata-report .cal-base__verdict.warn {
+  color: var(--q-warn-text);
+}
+
+/* Below this width the panel moves under the chart rather than squeezing it:
+   5d.2 caps the plot at 820px, and a 300px sidebar plus a chart worth reading
+   does not fit. 1024 rather than a value fitted to this panel — every
+   breakpoint in the report comes from one approved set. */
+@media (max-width: 1024px) {
+  #pysuricata-report .dt-face {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* At 390px the caption goes and the rule stays. Position against a mark is
+   readable without a caption; a wrapped line per column is not. */
+@media (max-width: 480px) {
+  #pysuricata-report .cal-base__note {
+    display: none;
+  }
+}
