@@ -42,6 +42,36 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **A zero-column frame reported 90% duplicate rows; pandas reports none**
+  (#312). `RowKMV.update_from_pandas` seeded its row hash from `columns[0]`,
+  which raises `IndexError` on a frame with no columns and fell into
+  `_degraded_update` -- built for content that failed to hash, not for
+  content that never existed. Joining zero columns per row produced the
+  same empty-string signature for every row, so a 10-row, 0-column frame
+  (`pd.DataFrame(index=range(10))`) reported 9 duplicates, labelled `exact`
+  because nothing was actually degraded from the sketch's point of view,
+  only from the data's.
+
+  Nothing can differ between such rows, but that is not the question a
+  duplicate count answers: pandas' own `duplicated()` reports zero for this
+  shape, since there is nothing to key a comparison on and every row counts
+  as its own, unrepeated observation. `RowKMV` now matches it directly
+  (`_offer_zero_column_rows`) by feeding the sketch a synthetic per-row
+  identity -- a running counter passed through the same `splitmix64` mixer
+  the real row hashes use, so it stays uniformly distributed and does not
+  bias the sketch's error bound -- kept cumulative across chunks so two
+  chunks' rows can never collide with each other. All-missing and
+  constant-column frames are unaffected: they are genuinely duplicate rows,
+  as they were before.
+
+- **README credited Misra-Gries with the wrong knob** (#330). The footnote
+  said `k` (the top-k budget) was `max_uniques` (default 2048); it is
+  `top_k` (default 50) -- `max_uniques` sizes the unrelated KMV
+  distinct-count sketch. A reader sizing expectations from that table got
+  exact counts up to 2048 distinct values and wrong ones from 51, which is
+  the wrong mental model that made #328 invisible in the first place: the
+  counts looked like they should be exact, so nobody checked.
+
 - **Top-k counts claimed to be exact in exactly the case they were most
   wrong** (#328). Misra-Gries keeps 50 counters; above 50 distinct values every
   new value evicts weight from every counter, so a reported count is a lower

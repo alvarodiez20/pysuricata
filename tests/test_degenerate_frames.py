@@ -8,19 +8,16 @@ suite, so nothing said whether they worked.
 
 The investigation found they mostly do. This file is what keeps that true.
 
-**What it deliberately does not assert.** Four defects were found and are filed
-rather than pinned here, because a test asserting today's wrong answer makes
-the wrong answer permanent:
+**What it deliberately does not assert.** One defect remains filed rather than
+pinned here, because a test asserting today's wrong answer makes the wrong
+answer permanent:
 
-* #312 -- a zero-column frame reports 9 duplicate rows where pandas reports 0
 * #314 -- flags that fire by construction, contradictory quick facts, and `-0`
 
-#313 and #315 were both fixed by treating a zero-row frame as a frame with a
-schema rather than as an empty source, and their cases below are ordinary
-assertions now rather than xfails.
-
-The cases below are written to pass **either** side of #312 and #313 landing,
-so they guard the shapes without freezing the bugs.
+#312, #313 and #315 are fixed -- a zero-column frame reporting duplicate rows
+pandas does not, a zero-row frame treated as an empty source rather than as a
+frame with a schema -- and their cases below are ordinary assertions now
+rather than xfails.
 """
 
 from __future__ import annotations
@@ -126,14 +123,18 @@ class TestNothingUndefinedReachesThePage:
 
 
 class TestTheDuplicateCountAgreesWithPandas:
-    """The neighbours of #312, which are correct and must stay correct.
-
-    All-missing rows and constant rows genuinely *are* duplicate rows, and
-    pandas says so. They look like the zero-column defect and are not it, so
-    they are pinned here to stop #312's fix taking them with it.
+    """#312 and its neighbours. All-missing rows and constant rows genuinely
+    *are* duplicate rows, and pandas says so; a zero-column frame looks like
+    the same shape of defect and is not -- there is nothing to key a
+    comparison on, so pandas counts every row as its own, unrepeated
+    observation, and `RowKMV` now does too (`_offer_zero_column_rows`)
+    rather than routing through the unhashable-chunk fallback, which landed
+    on one distinct signature for every row.
     """
 
-    @pytest.mark.parametrize("name", ["all_missing", "constant_column", "all_numeric"])
+    @pytest.mark.parametrize(
+        "name", ["all_missing", "constant_column", "all_numeric", "zero_columns"]
+    )
     def test_it_matches_pandas(self, name: str) -> None:
         frame = SHAPES[name]
         payload = summarize(frame)
@@ -141,17 +142,15 @@ class TestTheDuplicateCountAgreesWithPandas:
 
         assert dataset["duplicate_rows_est"] == int(frame.duplicated().sum())
 
-    @pytest.mark.xfail(
-        reason="#312: the zero-column frame routes through the unhashable-chunk "
-        "fallback, which lands on one distinct signature for every row",
-        strict=True,
-    )
-    def test_a_zero_column_frame_matches_pandas_too(self) -> None:
+    def test_the_zero_column_frame_is_reported_exact_not_degraded(self) -> None:
+        """The bug's second half: nothing about a zero-column frame could not
+        be hashed, so this must not be routed through the same "degraded"
+        path a genuinely unhashable chunk takes."""
         frame = SHAPES["zero_columns"]
         payload = summarize(frame)
         dataset = payload.get("dataset", payload)
 
-        assert dataset["duplicate_rows_est"] == int(frame.duplicated().sum()) == 0
+        assert dataset["duplicate_rows_uncertainty"] == 0
 
 
 class TestTheZeroRowFrame:

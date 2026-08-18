@@ -774,11 +774,44 @@ class RowKMV:
         # sketch has seen fewer rows than ``rows``. The row count stays exact
         # either way; only the duplicate estimate degrades.
         self.duplicates_degraded = False
+        # A running counter for the zero-column case below, kept cumulative
+        # across chunks so two different chunks never mint the same synthetic
+        # identity and get counted as duplicates of each other.
+        self._zero_col_rows_seen = 0
+
+    def _offer_zero_column_rows(self, n_rows: int) -> None:
+        """Record `n_rows` from a frame with no columns at all.
+
+        Nothing can differ between such rows, but that is not the question a
+        duplicate count answers: pandas' own `duplicated()` reports zero for
+        a frame shaped like this (#312) -- there is nothing to key a
+        comparison on, so every row counts as its own, unrepeated
+        observation, the same as a frame with a genuine key column. There is
+        also no *content* to hash, which is the case `_degraded_update`
+        exists for (content that failed to hash) -- routing here through it
+        instead produced 90% "duplicates" on a 10-row frame, labelled
+        `exact` because nothing was actually degraded from the sketch's point
+        of view, only from the data's.
+
+        A synthetic per-row identity stands in for content: `offer_u64` feeds
+        a KMV sketch, which needs its inputs uniformly spread over the 64-bit
+        space to keep its error bound, so a running counter is hashed through
+        `_mix64_array` rather than offered raw -- raw sequential integers are
+        about as far from uniform as a stream of values gets.
+        """
+        start = self._zero_col_rows_seen
+        identities = _mix64_array(np.arange(start, start + n_rows, dtype=np.uint64))
+        self.kmv.offer_u64(identities)
+        self._zero_col_rows_seen += n_rows
+        self.rows += n_rows
 
     def update_from_pandas(self, df: pd.DataFrame) -> None:
         try:
             import pandas as pd
         except ImportError:
+            return
+        if df.shape[1] == 0:
+            self._offer_zero_column_rows(len(df))
             return
         try:
             # Vectorized row hashing: combine column hashes using a polynomial hash

@@ -260,7 +260,7 @@ PySuricata uses well-known streaming algorithms from the academic literature:
 | **Misra-Gries** | Top-k frequent values | O(1) amortized | O(k) |
 | **Reservoir sampling** | Uniform random sample for quantiles | O(1) per value | O(s) |
 
-*k = sketch size (`max_uniques`, default 2048), s = sample size (`numeric_sample_size`, default 20 000)*
+*k = `top_k` (default 50) for Misra-Gries; `max_uniques` (default 2048) sizes the KMV distinct-count sketch; s = sample size (`numeric_sample_size`, default 20 000)*
 
 KMV's relative standard error is `1/sqrt(k - 2)`, which is where the ~2.2% comes from. Approximate values are labelled approximate in the report and carry their error bound rather than being printed as exact integers.
 
