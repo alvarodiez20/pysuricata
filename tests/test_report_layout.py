@@ -379,6 +379,25 @@ _MEASURE = (
     }
   }
 
+  // #319/#145. A card that is paginated away lays out at a stub height, so
+  // `offsetParent` decides what counts; the active `.variant` is the chart the
+  // container is actually holding.
+  const cards = [];
+  for (const card of document.querySelectorAll('.var-card')) {
+    if (card.offsetParent === null) continue;
+    const badge = card.querySelector('.badge');
+    const container = card.querySelector('.var-chart .hist-variants');
+    const chart = container ? container.querySelector('.variant.active') : null;
+    cards.push({
+      id: card.id,
+      kind: badge ? badge.textContent.trim() : '?',
+      height: Math.round(card.getBoundingClientRect().height),
+      container_height:
+        container ? Math.round(container.getBoundingClientRect().height) : null,
+      chart_height: chart ? Math.round(chart.getBoundingClientRect().height) : null,
+    });
+  }
+
   const summary = document.querySelector('#summary');
   return {
     header_height: header ? parseFloat(getComputedStyle(header).height) : null,
@@ -388,6 +407,7 @@ _MEASURE = (
       document.documentElement.scrollWidth - document.documentElement.clientWidth,
     summary_height: summary ? Math.round(summary.getBoundingClientRect().height) : null,
     strokes,
+    cards,
   };
 }"""
     # A plain replace, not %-format or .format(): the script is full of `{...}`
@@ -489,6 +509,62 @@ def measurements(report_html, tmp_path_factory):
     return out
 
 
+def _every_kind() -> pd.DataFrame:
+    """A frame carrying all four card kinds, which Titanic cannot: it has no
+    datetime column, so the only kind with a `time_span` has never been
+    measured. Same 891 rows and same generator as the invariance suite's
+    `_frame`, trimmed to one column per kind plus a second numeric."""
+    import numpy as np
+
+    rng = np.random.default_rng(0)
+    n = 891
+    return pd.DataFrame(
+        {
+            "age": rng.integers(1, 80, n).astype(float),
+            "fare": rng.gamma(2, 20, n),
+            "sex": rng.choice(["male", "female"], n),
+            "cabin": rng.choice([None, "C85", "B42"], n, p=[0.77, 0.12, 0.11]),
+            "survived": rng.integers(0, 2, n).astype(bool),
+            "booked": pd.date_range("2026-01-01", periods=n, freq="h"),
+        }
+    )
+
+
+@pytest.fixture(scope="module")
+def kind_measurements(tmp_path_factory):
+    """`_every_kind()` measured at every breakpoint, once.
+
+    Light theme only. `test_the_themes_do_not_change_the_layout` already
+    asserts that a theme moves no box, so measuring both here would buy a
+    second reading of the same geometry at twice the browser time.
+    """
+    playwright = pytest.importorskip(
+        "playwright.sync_api", reason="browser layout checks need Playwright"
+    )
+
+    page_file = tmp_path_factory.mktemp("kinds") / "report.html"
+    page_file.write_text(profile(_every_kind(), seed=0).html, encoding="utf-8")
+
+    launch = {}
+    if chrome := _chrome():
+        launch["executable_path"] = chrome
+
+    out = {}
+    with playwright.sync_playwright() as p:
+        try:
+            browser = p.chromium.launch(**launch)
+        except Exception as exc:  # no browser binary on this machine
+            pytest.skip(f"Chromium is not available: {exc}")
+        for width in BREAKPOINTS:
+            page = browser.new_page(viewport={"width": width, "height": 844})
+            page.goto(page_file.as_uri())
+            page.wait_for_timeout(900)
+            out[width] = page.evaluate(_MEASURE)["cards"]
+            page.close()
+        browser.close()
+    return out
+
+
 #: #111. The header is 48px on mobile and 52px from the first breakpoint up,
 #: plus a 1px rule that the budget does not count.
 _HEADER_BUDGET = {390: 48, 768: 48, 1240: 52}
@@ -543,6 +619,70 @@ _KNOWN_UNDERSIZED = {390: 3, 768: 3, 1240: 9}
 #: The 64px still between 624 and #112's 560 is unaffected by this and is
 #: where the work remains.
 _SUMMARY_BASELINE = {390: 624, 768: 579, 1240: 344}
+
+#: #145 — a height criterion for each of the four card kinds, which only the
+#: numeric card had. Measured on `_every_kind()` at 844px tall, details
+#: collapsed. Pinned to a dataset and a viewport, which is the thing #112 and
+#: #114 did not do and why their original figures could not be reproduced.
+#:
+#: The premise #145 was filed on no longer holds: it recorded categorical as
+#: the tallest kind at 923px against numeric's 820px. Categorical is now the
+#: *shortest* of the three non-boolean kinds (480px at 390px) because #308
+#: suppressed the statistics it could not say, and #319 took the padded 180px
+#: chart container out from under it. Numeric and datetime are what run tall.
+#:
+#: These are a developer machine's readings, and #309 records that such a
+#: machine measures 2-7px *taller* than CI. That direction is the safe one for
+#: an upper bound -- CI reads under it, and by well under the 6% `_SLACK`, so
+#: the lower branch does not fire either.
+_CARD_HEIGHT_BASELINE = {
+    390: {"Numeric": 883, "Categorical": 480, "Boolean": 343, "Datetime": 868},
+    768: {"Numeric": 803, "Categorical": 449, "Boolean": 332, "Datetime": 849},
+    1240: {"Numeric": 578, "Categorical": 405, "Boolean": 314, "Datetime": 551},
+}
+
+
+@pytest.mark.browser
+@pytest.mark.parametrize("width", BREAKPOINTS)
+class TestEveryCardKindHasAHeightCriterion:
+    """#145. Three of the four kinds had no recorded expectation at all, so
+    nothing distinguished "tall because it has more to say" from "tall because
+    something regressed"."""
+
+    @pytest.mark.parametrize("kind", sorted(_CARD_HEIGHT_BASELINE[390]))
+    def test_no_card_kind_gets_taller(self, kind_measurements, width, kind):
+        cards = [c for c in kind_measurements[width] if c["kind"] == kind]
+
+        assert cards, (
+            f"no {kind} card rendered at {width}px -- the fixture no longer "
+            f"covers this kind, so its criterion is measuring nothing"
+        )
+        tallest = max(cards, key=lambda c: c["height"])
+        _ratchet(
+            tallest["height"],
+            _CARD_HEIGHT_BASELINE[width][kind],
+            f"the tallest {kind} card at {width}px ({tallest['id']})",
+            "#145",
+        )
+
+
+@pytest.mark.browser
+@pytest.mark.parametrize("width", BREAKPOINTS)
+def test_no_chart_container_reserves_height_its_chart_does_not_use(measurements, width):
+    """#319. A fixed `height` on `.hist-variants` under the mobile breakpoint
+    forced every kind to 180px, which a two-level categorical chart (23px)
+    padded by 157px and a numeric one (213px) overflowed by 33px. The chart is
+    `height: auto` and sizes to the viewBox the renderer computed, so the
+    container must take the height the chart asks for -- in both directions."""
+    for card in measurements[(width, "light")]["cards"]:
+        if card["container_height"] is None or card["chart_height"] is None:
+            continue
+
+        assert card["container_height"] == card["chart_height"], (
+            f"{card['id']} ({card['kind']}) reserves "
+            f"{card['container_height']}px at {width}px for a "
+            f"{card['chart_height']}px chart"
+        )
 
 
 @pytest.mark.browser

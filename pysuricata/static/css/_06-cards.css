@@ -735,13 +735,14 @@
 
 /* ---- mobile ----------------------------------------------------
    Placed after the desktop rules on purpose: these have the same
-   specificity, so the later declaration wins. Sitting before them, the
-   180px chart never applied. */
-@media (max-width: 768px) {
-  #pysuricata-report .var-card__body .var-chart .hist-variants {
-    height: 180px;
-  }
+   specificity, so the later declaration wins.
 
+   No fixed height on `.hist-variants` here. One lived here and forced every
+   kind to 180px, which a two-level categorical chart (23px) padded and a
+   numeric one (213px) overflowed -- see #319. The chart is `height: auto` and
+   sizes to the viewBox the renderer computed, which is the same argument
+   `_08-categorical.css` makes for the bars one level down. */
+@media (max-width: 768px) {
   #pysuricata-report .vstat-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
