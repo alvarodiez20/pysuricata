@@ -2829,6 +2829,34 @@ quoted when both sides were measured in the same round-robin run.</p>
   redeploy and a broken demo cannot be un-shipped along with it.</p>
 <h3 id="changed">Changed</h3>
 <ul>
+<li><strong>A report ships only the card-kind CSS it can use</strong> (#306). <code>load_css_dir</code>
+  concatenated all fourteen partials into every document, so a frame with no
+  datetime column carried <code>_09-datetime.css</code> — not as a cache miss, but as
+  bytes, because the report inlines its stylesheet.</li>
+</ul>
+<p>Titanic drops <strong>5,600 bytes</strong> and is the <em>least</em> improved shape, since it has
+  three of the four kinds. A boolean-only frame saves 17,830 and a numeric-only
+  one 17,189.</p>
+<p><strong>The mapping is measured, not assumed.</strong> Every selector in every partial was
+  matched against the rendered DOM of a report built from each single-kind
+  frame, which found three rules misfiled — they named no element of their
+  partial's kind and applied to every report: <code>.axis</code> and the narrow-screen
+  <code>.controls-slot</code> gap in <code>_08-categorical.css</code>, and
+  <code>.var-card__body .var-chart</code> in <code>_09-datetime.css</code>. All three moved to
+  <code>_06-cards.css</code> before anything became conditional. Two declarations did not
+  survive the move because they had never done anything: <code>.card-controls</code> is
+  <code>display: flex</code>, and a flex container ignores <code>grid-template-columns</code> and
+  <code>grid-column</code>. A fourth rule, <code>--triple-right</code>, was deleted outright — read
+  by nothing, and the one bare <code>#pysuricata-report</code> selector in the datetime
+  partial.</p>
+<p>The correlations and missing-values partials stay unconditional: both are
+  sections rather than card kinds, both always render, and an empty state still
+  needs styling.</p>
+<p>Guarded by an equivalence rather than a spot check. <code>TestNothingThatMattered
+  WasDropped</code> renders each single-kind frame twice — once with the trimmed
+  stylesheet it ships, once with every partial forced back in — and requires
+  all ~20 computed properties of every element to match, at 390px and 1240px.</p>
+<ul>
 <li>
 <p><strong><code>docs/internal/integration.md</code> records the phase 4b decision</strong> it had been
   carrying only in the external design package (#149). Options 15a–15d for the
