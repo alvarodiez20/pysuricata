@@ -12,7 +12,131 @@ Each entry states what changed and, where it matters, **what was measured**.
 Numbers here come from the benchmark harness in `benchmarks/`; ratios are only
 quoted when both sides were measured in the same round-robin run.
 
-## [Unreleased]
+## [0.1.3] - 2026-08-18
+
+### Added
+
+- **Arrow IPC files load** ([#247]). `.arrow`, `.feather` and `.ipc` raised
+  `UnsupportedDataError`, and `pa.ipc.open_file(path)` raised `Cannot profile
+  RecordBatchFileReader`. The split fell exactly on the line between
+  *in-process* Arrow and *on-disk* Arrow: a `pa.Table` handed over inside one
+  process worked, and the file another runtime writes did not — which is the
+  line that matters, since `arrow::write_ipc_file()` in R, `Arrow.write()` in
+  Julia and the `arrow` crate in Rust all produce the latter. "Make Arrow the
+  boundary, not pandas" could not be documentation alone while the one format
+  it names by name was the one that did not load.
+
+  **Three framings can wear those extensions, and the extension does not say
+  which**, so the first bytes decide rather than the suffix. Measured, because
+  dispatching on the extension would have loaded R's output and failed on
+  Julia's:
+
+  | magic | framing | reader |
+  |---|---|---|
+  | `ARROW1` | IPC file, footer indexes every batch | `pa.ipc.open_file` |
+  | `\xff\xff\xff\xff` | IPC stream, forward-only | `pa.ipc.open_stream` |
+  | `FEA1` | Feather V1 — not IPC at all | `feather.read_table` |
+
+  Only the last materialises, and pyarrow deprecated writing it in 25.0.0.
+
+  `RecordBatchFileReader` needed its own branch: it is the one Arrow reader
+  that does not subclass `RecordBatchReader` and has no `to_batches`, because
+  the IPC file format's footer gives it random access — `num_record_batches`
+  and `get_batch(i)` — instead of an iterator. Reading by index keeps the
+  bounded-memory promise where the `read_all()` its API leads with would not.
+  `RecordBatchStreamReader` does subclass it and needed nothing.
+
+- **The Arrow C stream claim is stated where it can be read** ([#247]), in the
+  README and `docs/data-sources.md`. The claim is not "pyarrow is accepted" —
+  every profiler can be handed a converted frame. It is that anything
+  exporting `__arrow_c_stream__` is profiled without materialising it,
+  whatever produced it. Already true, and verified against an object that is
+  neither pandas, polars nor pyarrow: a bare class exporting only the capsule
+  is recognised by `is_arrow_source` and profiles.
+
+### Changed
+
+- **The correlations section says which kind of empty it is** ([#243]). Phase
+  6.1's enriched copy landed on the path where pairs exist and all come back
+  weak — the interesting case, and the one both example reports hit. The two
+  paths that mean *nothing to compare* kept a single bare sentence,
+  "Correlation analysis requires at least 2 numeric columns", and they are the
+  ones a small frame lands on.
+
+  That sentence states the rule and none of the case. A reader looking at a
+  correlations section already knows a correlation needs two things; what they
+  cannot see is how many this frame has, which one it is when it has one, or —
+  when it has several and still shows nothing — why. All three are in hand
+  where the message is written.
+
+  One numeric column now names it. None points at the typing rather than at the
+  data: **"no column in this report is profiled as numeric"**, not "this
+  dataset has no numeric columns", because the second is a claim about the
+  frame and it can be false — a column that never varies is reclassified as
+  categorical, so two constant float columns reached that branch and would have
+  been told the dataset holds no numbers. And numeric columns with no usable
+  pair now name the two reachable causes, a column that never varies and too
+  few rows with a value in both columns, instead of reporting the absence.
+
+- **The scripts' comments no longer ship with every report.** The same argument
+  that took 74,036 bytes of CSS comments out of the document, applied to the
+  half that was left out: **15,551 bytes, 20% of the inlined JavaScript**, sent
+  to every reader of every report. They stay in `static/js/`, which is the only
+  place anyone reads them.
+
+  A regex will not do this one. CSS has no construct in which `/*` means
+  something else; JavaScript has three, and all three are in these files — a
+  string holding a URL, a template literal, and a regex literal where `/` opens
+  a pattern rather than a comment. `strip_js_comments` is a scanner that tracks
+  which of those it is inside, and resolves regex-versus-division the way a
+  lexer does, from the last significant token. Every trap has a test, and all
+  four shipped scripts are checked with `node --check` after stripping, because
+  a byte saving is worthless if the script no longer runs.
+
+  This is what paid for the two fixes above. They cost 2,667 bytes and the
+  ratchet on report size refused them, correctly — the budget only goes down.
+  The way to afford a feature turned out to be six times larger than the
+  feature: **the Titanic report goes from 502,667 to 488,003 bytes**, and the
+  baseline drops from 500,000 to 489,000.
+
+- **`CLAUDE.md`'s priority list is back in line with what shipped** (part of
+  [#251]). It named `docs/roadmap.md` as *"v8"* — the file says v10, the working
+  roadmap is v15 — and pointed the next contributor at #122, #124 and #139,
+  all closed, plus an example report that has since been regenerated and put
+  under a byte ratchet. Rewritten against the issue tracker, because the two
+  roadmap documents disagree and neither is current; reconciling them is the
+  other half of #251 and is still open. Nothing about the library changed.
+
+### Removed
+
+- **The missing-values section's old two-tab implementation** ([#242]).
+  `_build_completeness_tab` and `_build_chunk_tab` have been unreachable since
+  the chunk-count routing replaced them — **157 lines with zero call sites**
+  anywhere in the package, the tests, the scripts or the docs.
+
+  They also carried a second copy of the `chunk-legend`, with severity colours
+  hardcoded beside the live one that reads its colours from the tokens. Dead
+  code that duplicates a thing which now lives once is worse than dead code:
+  it is a wrong answer waiting for someone to read it instead of the right one.
+
+  Every CSS class they used is still used by the live path, so nothing in the
+  stylesheets became dead with them. Verified inert rather than assumed: the
+  Titanic report is **byte-identical** before and after, and all **1,311 facts**
+  in `scripts/report_fingerprint.py` match.
+
+- **The browser demo's mocked `psutil` is gone.** `worker.js` registered a fake
+  distribution so micropip's resolver would not fail on a dependency with no
+  WASM wheel — `psutil` was declared as a runtime requirement while being
+  imported in no code path. It has since moved to the `pysuricata[system]`
+  extra, but the demo installs from PyPI and 0.1.0's metadata is immutable, so
+  the mock had to stay until a release carrying the corrected metadata was up.
+
+  0.1.2's `requires_dist` lists `psutil>=7.1.0; extra == "system"` and nothing
+  unconditional, so the resolver never reaches it. Verified the way the comment
+  asked for rather than by reading the metadata alone: a bare Pyodide session
+  with the mock deleted resolves `micropip.install("pysuricata")` in 2.2s,
+  reports **pysuricata 0.1.2**, and profiles the sample to 891 rows × 12
+  columns with no error and no lazy import.
 
 ### Fixed
 
@@ -57,78 +181,6 @@ quoted when both sides were measured in the same round-robin run.
   from the invariance guard rather than bytes from the report. Baseline raised
   489,000 → 491,000, the first rise, with the measurement recorded beside it.
 
-[#258]: https://github.com/alvarodiez20/pysuricata/issues/258
-
-### Added
-
-- **Arrow IPC files load** ([#247]). `.arrow`, `.feather` and `.ipc` raised
-  `UnsupportedDataError`, and `pa.ipc.open_file(path)` raised `Cannot profile
-  RecordBatchFileReader`. The split fell exactly on the line between
-  *in-process* Arrow and *on-disk* Arrow: a `pa.Table` handed over inside one
-  process worked, and the file another runtime writes did not — which is the
-  line that matters, since `arrow::write_ipc_file()` in R, `Arrow.write()` in
-  Julia and the `arrow` crate in Rust all produce the latter. "Make Arrow the
-  boundary, not pandas" could not be documentation alone while the one format
-  it names by name was the one that did not load.
-
-  **Three framings can wear those extensions, and the extension does not say
-  which**, so the first bytes decide rather than the suffix. Measured, because
-  dispatching on the extension would have loaded R's output and failed on
-  Julia's:
-
-  | magic | framing | reader |
-  |---|---|---|
-  | `ARROW1` | IPC file, footer indexes every batch | `pa.ipc.open_file` |
-  | `\xff\xff\xff\xff` | IPC stream, forward-only | `pa.ipc.open_stream` |
-  | `FEA1` | Feather V1 — not IPC at all | `feather.read_table` |
-
-  Only the last materialises, and pyarrow deprecated writing it in 25.0.0.
-
-  `RecordBatchFileReader` needed its own branch: it is the one Arrow reader
-  that does not subclass `RecordBatchReader` and has no `to_batches`, because
-  the IPC file format's footer gives it random access — `num_record_batches`
-  and `get_batch(i)` — instead of an iterator. Reading by index keeps the
-  bounded-memory promise where the `read_all()` its API leads with would not.
-  `RecordBatchStreamReader` does subclass it and needed nothing.
-
-- **The Arrow C stream claim is stated where it can be read** ([#247]), in the
-  README and `docs/data-sources.md`. The claim is not "pyarrow is accepted" —
-  every profiler can be handed a converted frame. It is that anything
-  exporting `__arrow_c_stream__` is profiled without materialising it,
-  whatever produced it. Already true, and verified against an object that is
-  neither pandas, polars nor pyarrow: a bare class exporting only the capsule
-  is recognised by `is_arrow_source` and profiles.
-
-[#247]: https://github.com/alvarodiez20/pysuricata/issues/247
-
-### Changed
-
-- **The correlations section says which kind of empty it is** ([#243]). Phase
-  6.1's enriched copy landed on the path where pairs exist and all come back
-  weak — the interesting case, and the one both example reports hit. The two
-  paths that mean *nothing to compare* kept a single bare sentence,
-  "Correlation analysis requires at least 2 numeric columns", and they are the
-  ones a small frame lands on.
-
-  That sentence states the rule and none of the case. A reader looking at a
-  correlations section already knows a correlation needs two things; what they
-  cannot see is how many this frame has, which one it is when it has one, or —
-  when it has several and still shows nothing — why. All three are in hand
-  where the message is written.
-
-  One numeric column now names it. None points at the typing rather than at the
-  data: **"no column in this report is profiled as numeric"**, not "this
-  dataset has no numeric columns", because the second is a claim about the
-  frame and it can be false — a column that never varies is reclassified as
-  categorical, so two constant float columns reached that branch and would have
-  been told the dataset holds no numbers. And numeric columns with no usable
-  pair now name the two reachable causes, a column that never varies and too
-  few rows with a value in both columns, instead of reporting the absence.
-
-[#243]: https://github.com/alvarodiez20/pysuricata/issues/243
-
-### Fixed
-
 - **A histogram bin reported a count of -1** ([#253]). Every variant of a
   numeric card's chart is re-binned from one set of 25 non-negative counts, so
   a negative could only be manufactured on the way — and it was. Re-binning
@@ -159,10 +211,6 @@ quoted when both sides were measured in the same round-robin run.
   the harness was written: **82 facts moved, all of them `count` and `pct`, and
   none added or removed.** The old numbers were wrong.
 
-[#253]: https://github.com/alvarodiez20/pysuricata/issues/253
-
-### Fixed
-
 - **A link to a column on another page did nothing** ([#240]). `pagination.js`
   hides off-page cards with `display: none`, which is not a rendering choice but
   a removal — the browser finds no target for a fragment link and stays put.
@@ -179,76 +227,6 @@ quoted when both sides were measured in the same round-robin run.
   looks complete. Nobody re-checks a PDF that looks finished. `@media print` now
   shows every card, keeps a card from splitting across sheets, and drops the
   controls that are instructions a reader on paper cannot follow.
-
-### Changed
-
-- **The scripts' comments no longer ship with every report.** The same argument
-  that took 74,036 bytes of CSS comments out of the document, applied to the
-  half that was left out: **15,551 bytes, 20% of the inlined JavaScript**, sent
-  to every reader of every report. They stay in `static/js/`, which is the only
-  place anyone reads them.
-
-  A regex will not do this one. CSS has no construct in which `/*` means
-  something else; JavaScript has three, and all three are in these files — a
-  string holding a URL, a template literal, and a regex literal where `/` opens
-  a pattern rather than a comment. `strip_js_comments` is a scanner that tracks
-  which of those it is inside, and resolves regex-versus-division the way a
-  lexer does, from the last significant token. Every trap has a test, and all
-  four shipped scripts are checked with `node --check` after stripping, because
-  a byte saving is worthless if the script no longer runs.
-
-  This is what paid for the two fixes above. They cost 2,667 bytes and the
-  ratchet on report size refused them, correctly — the budget only goes down.
-  The way to afford a feature turned out to be six times larger than the
-  feature: **the Titanic report goes from 502,667 to 488,003 bytes**, and the
-  baseline drops from 500,000 to 489,000.
-
-- **`CLAUDE.md`'s priority list is back in line with what shipped** (part of
-  [#251]). It named `docs/roadmap.md` as *"v8"* — the file says v10, the working
-  roadmap is v15 — and pointed the next contributor at #122, #124 and #139,
-  all closed, plus an example report that has since been regenerated and put
-  under a byte ratchet. Rewritten against the issue tracker, because the two
-  roadmap documents disagree and neither is current; reconciling them is the
-  other half of #251 and is still open. Nothing about the library changed.
-
-[#240]: https://github.com/alvarodiez20/pysuricata/issues/240
-
-### Removed
-
-- **The missing-values section's old two-tab implementation** ([#242]).
-  `_build_completeness_tab` and `_build_chunk_tab` have been unreachable since
-  the chunk-count routing replaced them — **157 lines with zero call sites**
-  anywhere in the package, the tests, the scripts or the docs.
-
-  They also carried a second copy of the `chunk-legend`, with severity colours
-  hardcoded beside the live one that reads its colours from the tokens. Dead
-  code that duplicates a thing which now lives once is worse than dead code:
-  it is a wrong answer waiting for someone to read it instead of the right one.
-
-  Every CSS class they used is still used by the live path, so nothing in the
-  stylesheets became dead with them. Verified inert rather than assumed: the
-  Titanic report is **byte-identical** before and after, and all **1,311 facts**
-  in `scripts/report_fingerprint.py` match.
-
-[#242]: https://github.com/alvarodiez20/pysuricata/issues/242
-
-### Removed
-
-- **The browser demo's mocked `psutil` is gone.** `worker.js` registered a fake
-  distribution so micropip's resolver would not fail on a dependency with no
-  WASM wheel — `psutil` was declared as a runtime requirement while being
-  imported in no code path. It has since moved to the `pysuricata[system]`
-  extra, but the demo installs from PyPI and 0.1.0's metadata is immutable, so
-  the mock had to stay until a release carrying the corrected metadata was up.
-
-  0.1.2's `requires_dist` lists `psutil>=7.1.0; extra == "system"` and nothing
-  unconditional, so the resolver never reaches it. Verified the way the comment
-  asked for rather than by reading the metadata alone: a bare Pyodide session
-  with the mock deleted resolves `micropip.install("pysuricata")` in 2.2s,
-  reports **pysuricata 0.1.2**, and profiles the sample to 891 rows × 12
-  columns with no error and no lazy import.
-
-### Fixed
 
 - **The datetime card no longer claims a timezone the column does not have**
   ([#241]). Two sites emitted the literal `("Timezone", "UTC", None)` and
@@ -296,8 +274,6 @@ quoted when both sides were measured in the same round-robin run.
   Correcting a wrong value, so `schema_version` stays at 1 per
   `docs/versioning.md`. Found only because a failing coverage check on the
   untested polars branch was worth taking seriously rather than waiving.
-
-### Fixed
 
 - **Every valued `warn` chip was being dropped from the attention block**
   ([#238]). `actionable_chips` admits everything `bad` plus eleven named `warn`
@@ -352,6 +328,12 @@ quoted when both sides were measured in the same round-robin run.
 
 [#238]: https://github.com/alvarodiez20/pysuricata/issues/238
 [#239]: https://github.com/alvarodiez20/pysuricata/issues/239
+[#240]: https://github.com/alvarodiez20/pysuricata/issues/240
+[#242]: https://github.com/alvarodiez20/pysuricata/issues/242
+[#243]: https://github.com/alvarodiez20/pysuricata/issues/243
+[#247]: https://github.com/alvarodiez20/pysuricata/issues/247
+[#253]: https://github.com/alvarodiez20/pysuricata/issues/253
+[#258]: https://github.com/alvarodiez20/pysuricata/issues/258
 
 ## [0.1.2] - 2026-08-17
 

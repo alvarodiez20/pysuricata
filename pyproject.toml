@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pysuricata"
-version = "0.1.2"
+version = "0.1.3"
 description = "Streaming EDA profiler: one pass over pandas or polars, bounded memory, a self-contained HTML report."
 authors = [
     {name = 'Alvaro Diez', email = 'alvarodiez20@gmail.com'},
