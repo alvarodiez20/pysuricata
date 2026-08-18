@@ -1858,6 +1858,30 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
+  <a href="#unreleased" class="md-nav__link">
+    <span class="md-ellipsis">
+      Unreleased
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Unreleased">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#fixed" class="md-nav__link">
+    <span class="md-ellipsis">
+      Fixed
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#013-2026-08-18" class="md-nav__link">
     <span class="md-ellipsis">
       [0.1.3] - 2026-08-18
@@ -1895,7 +1919,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed" class="md-nav__link">
+  <a href="#fixed_1" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -1922,7 +1946,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_1" class="md-nav__link">
+  <a href="#fixed_2" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -1982,7 +2006,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_2" class="md-nav__link">
+  <a href="#fixed_3" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2006,7 +2030,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fixed_3" class="md-nav__link">
+  <a href="#fixed_4" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2024,7 +2048,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_4" class="md-nav__link">
+  <a href="#fixed_5" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2042,7 +2066,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_5" class="md-nav__link">
+  <a href="#fixed_6" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2060,7 +2084,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_6" class="md-nav__link">
+  <a href="#fixed_7" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2087,7 +2111,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_7" class="md-nav__link">
+  <a href="#fixed_8" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2129,7 +2153,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_8" class="md-nav__link">
+  <a href="#fixed_9" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2156,7 +2180,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_9" class="md-nav__link">
+  <a href="#fixed_10" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2174,7 +2198,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_10" class="md-nav__link">
+  <a href="#fixed_11" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2252,7 +2276,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fixed_11" class="md-nav__link">
+  <a href="#fixed_12" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2294,7 +2318,7 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#fixed_12" class="md-nav__link">
+  <a href="#fixed_13" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2327,7 +2351,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fixed_13" class="md-nav__link">
+  <a href="#fixed_14" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2495,7 +2519,7 @@
       <ul class="md-nav__list">
         
           <li class="md-nav__item">
-  <a href="#fixed_14" class="md-nav__link">
+  <a href="#fixed_15" class="md-nav__link">
     <span class="md-ellipsis">
       Fixed
     </span>
@@ -2617,6 +2641,28 @@ treated as a contract.</p>
 <p>Each entry states what changed and, where it matters, <strong>what was measured</strong>.
 Numbers here come from the benchmark harness in <code>benchmarks/</code>; ratios are only
 quoted when both sides were measured in the same round-robin run.</p>
+<h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...HEAD">Unreleased</a></h2>
+<h3 id="fixed">Fixed</h3>
+<ul>
+<li><strong>The search strip and the "Hide sample" bar were taller than the 44px they
+  asked for</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/122">#122</a>). <code>min-height: var(--tap-min)</code> sizes the <em>content</em> box,
+  and the UA stylesheet leaves <code>&lt;input&gt;</code> and <code>&lt;summary&gt;</code> as <code>content-box</code>, so
+  the padding and border were added outside the target rather than fitting
+  inside it. Measured in Chromium at 1240px: the search field <strong>62px</strong> against
+  the 44 it declares (8px padding and a 1px border per edge), the sample's
+  summary bar <strong>68px</strong> (12px of padding). The filter tabs sitting beside the
+  search field are the control — same token, same shape of padding, exactly
+  44px, because a <code>&lt;button&gt;</code> is border-box already, which is also why the field
+  and the tabs did not line up.</li>
+</ul>
+<p>Both rules now say <code>box-sizing: border-box</code>, and both land on 44px. The
+  bordered controls box around the search row drops from 135px to 117px. No
+  target gets smaller than the accessibility pass intended — 44px is what #122
+  asked for and 44px is now what is painted.</p>
+<p><code>tests/test_target_size.py</code> could not catch this: it asserts the declarations
+  rather than measuring, and <em>at least</em> 44px is exactly what the old rules
+  guaranteed. It gains a check that the two content-box targets carry
+  <code>box-sizing: border-box</code>, so a target stays a size rather than a floor.</p>
 <h2 id="013-2026-08-18">[0.1.3] - 2026-08-18</h2>
 <h3 id="added">Added</h3>
 <ul>
@@ -2756,7 +2802,7 @@ quoted when both sides were measured in the same round-robin run.</p>
   with the mock deleted resolves <code>micropip.install("pysuricata")</code> in 2.2s,
   reports <strong>pysuricata 0.1.2</strong>, and profiles the sample to 891 rows × 12
   columns with no error and no lazy import.</p>
-<h3 id="fixed">Fixed</h3>
+<h3 id="fixed_1">Fixed</h3>
 <ul>
 <li><strong>The log histogram no longer discards more than half a column</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/258">#258</a>).
   <code>render_histogram_from_bins</code> computed its positive mask over <strong>edges</strong> and
@@ -3077,7 +3123,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 </ul>
 <p><code>check_docs --strict</code> went from 1 warning to <strong>0 errors, 0 warnings</strong> across
   40 pages.</p>
-<h3 id="fixed_1">Fixed</h3>
+<h3 id="fixed_2">Fixed</h3>
 <ul>
 <li><strong><code>include_sample=False</code> left an empty Sample card behind</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/266">#266</a>). The
   section shell — the heading, the <code>Hide sample</code> toggle and the header's
@@ -3467,7 +3513,7 @@ quoted when both sides were measured in the same round-robin run.</p>
 <p>Guarded by <code>TestABarPaysOnlyForWhatIsRead</code>, which asserts both directions:
   nothing constant creeps back on, and everything with a reader stays. All four
   mutations of it fail as they should.</p>
-<h3 id="fixed_2">Fixed</h3>
+<h3 id="fixed_3">Fixed</h3>
 <ul>
 <li><strong>The datetime timeline's tooltip was dead, and #219 killed it</strong> (<a href="https://github.com/alvarodiez20/pysuricata/issues/233">#233</a>).
   Sixty hotspots per timeline carried <code>data-count</code>, <code>data-pct</code> and a bucket
@@ -3591,7 +3637,7 @@ this file — zero removed, one added.</p>
 <p>The largest changes are in the report's HTML, which that page deliberately does
 not cover, and in the documentation, which is now checked against the live
 library instead of trusted.</p>
-<h3 id="fixed_3">Fixed</h3>
+<h3 id="fixed_4">Fixed</h3>
 <ul>
 <li><strong>The temporal distribution charts scaled their own labels</strong>, the same defect
   #217 found in the timeline, one pane over. The hour-of-day, day-of-week and
@@ -3850,7 +3896,7 @@ library instead of trusted.</p>
   control case (two uninterrupted runs must agree) so it cannot go green for
   the reason the original measurement went red. Verified against an injected
   RNG draw in <code>finalize()</code>, which it catches.</p>
-<h3 id="fixed_4">Fixed</h3>
+<h3 id="fixed_5">Fixed</h3>
 <ul>
 <li><strong><code>chunk_size</code> below 1,000 is honoured</strong> ([#173]). Anything smaller was
   silently raised to <code>min_chunk_size</code>, so a documented public option — one
@@ -3899,7 +3945,7 @@ library instead of trusted.</p>
   touch the old name and <code>dir()</code> still lists it without firing. All 127 uses of
   the old name across the documentation were migrated to <code>ProfileConfig</code>, since
   a deprecation the docs keep teaching is not one.</p>
-<h3 id="fixed_5">Fixed</h3>
+<h3 id="fixed_6">Fixed</h3>
 <ul>
 <li><strong>Datetime columns are read at their own resolution</strong> ([#203]). The pandas
   converter cast straight to <code>int64</code> and called the result nanoseconds, which
@@ -4100,7 +4146,7 @@ library instead of trusted.</p>
   background went with it: a filled tab competing with an underline says the
   same thing twice, and the tint was a colour on neither scale.</li>
 </ul>
-<h3 id="fixed_6">Fixed</h3>
+<h3 id="fixed_7">Fixed</h3>
 <ul>
 <li><strong>A second file in the same session profiles again</strong> ([#196]). WORKERFS leaves
   the mount point's child nodes behind on unmount, so mounting the second file
@@ -4248,7 +4294,7 @@ library instead of trusted.</p>
 </ul>
 <p>Note that release metadata on PyPI is immutable per version, so none of this
   changes the 0.1.0 page. It takes effect with the next release.</p>
-<h3 id="fixed_7">Fixed</h3>
+<h3 id="fixed_8">Fixed</h3>
 <ul>
 <li><strong>Every interactive target in the report is now at least 44×44</strong> at 390px
   (<a href="https://github.com/alvarodiez20/pysuricata/issues/122">#122</a>). Ten kinds were smaller — the card info links at 24×24, the filter
@@ -4319,7 +4365,7 @@ by up to two orders of magnitude; and the label-length statistics, which had
 been reading from a dict that never carried them and printing <code>NaN</code> for every
 categorical column in every report, now print the values the accumulator had all
 along.</p>
-<h3 id="fixed_8">Fixed</h3>
+<h3 id="fixed_9">Fixed</h3>
 <ul>
 <li><strong><code>--data-3</code> could not legally carry a standalone mark (#156).</strong> At <code>#7FA0B5</code> it was <strong>2.63:1</strong> on the paper — below the 3:1 non-text minimum (WCAG 1.4.11), which is the entire job a third step exists for. It is now <code>#5C7F99</code>.</li>
 </ul>
@@ -4358,7 +4404,7 @@ along.</p>
 </ul>
 <h3 id="note">Note</h3>
 <p>The handoff also proposed <code>#4A6E8A</code> for the <strong>dark</strong> <code>--data-4</code>. <strong>Not taken.</strong> It separates from <code>--data-2</code> by only <strong>1.95:1</strong>, and those two carry the two-dataset comparison, which needs 2:1; it is also 1.27:1 from <code>--data-3</code>, so two adjacent steps would be indistinguishable. The repo's <code>#2C4A62</code> gives 3.36 and 2.19 and is kept. The handoff labels its dark section <em>"PROPOSED, NOT YET VERIFIED as a whole"</em> — it measured each step against the surfaces, not the steps against each other. Every ratio above was recomputed here rather than copied.</p>
-<h3 id="fixed_9">Fixed</h3>
+<h3 id="fixed_10">Fixed</h3>
 <ul>
 <li><strong>Per-column per-chunk missing counts are now produced (#139).</strong> <code>mark_chunk_boundary()</code> was only ever called from <code>finalize()</code>, so the recorded boundaries counted <strong>renders</strong>, not chunks — one for an uninterrupted run, two for a checkpointed one, never the chunk count. The engine now marks a boundary after every chunk it consumes.</li>
 </ul>
@@ -4372,7 +4418,7 @@ along.</p>
 <li><strong>A details tab renders only when it has something to say (#154, 5b.4).</strong> The Missing Values pane rendered on <strong>every</strong> column, including ones with no missing values, where it drew a 100%-present bar and a one-segment chunk strip reading <code>0.0%</code>. A click to learn nothing. All four card types now drop it when the column is complete; the order of the remaining tabs is unchanged, so a tab appears or does not but never moves.</li>
 <li>The <strong>Correlations</strong> pane no longer repeats the section-level empty state inside a card. It renders only when the column has a correlation above the threshold.</li>
 </ul>
-<h3 id="fixed_10">Fixed</h3>
+<h3 id="fixed_11">Fixed</h3>
 <ul>
 <li><strong>The report was rendering 175.4% missing.</strong> Dropping the empty panes made the invariance fingerprint lose four facts, which is what sent me to look at them:</li>
 </ul>
@@ -4432,7 +4478,7 @@ along.</p>
 <a href="https://github.com/alvarodiez20/pysuricata/blob/main/docs/UX_ISSUES.md"><code>docs/UX_ISSUES.md</code></a> and
 <a href="https://github.com/alvarodiez20/pysuricata/blob/main/docs/integration.md"><code>docs/integration.md</code></a>.</p>
 <h2 id="0073-2026-08-16">[0.0.73] - 2026-08-16</h2>
-<h3 id="fixed_11">Fixed</h3>
+<h3 id="fixed_12">Fixed</h3>
 <ul>
 <li><strong>Label length printed as <code>NaN</code> for every categorical column (#155).</strong> <code>_right_stats</code> read <code>avg_len</code> and <code>len_p90</code> out of <code>cat_stats</code> — the dict <code>_compute_categorical_stats</code> builds — and that dict has never carried either key, so <code>.get(..., float("nan"))</code> and <code>.get(..., "—")</code> returned their defaults every time.</li>
 </ul>
@@ -4511,7 +4557,7 @@ along.</p>
 <ul>
 <li><strong>170 lines of dead CSS removed</strong> — the <code>.triple-row</code> grid and the <code>.stats-left</code> / <code>.stats-right</code> table rules, which styled boxes nothing emits any more.</li>
 </ul>
-<h3 id="fixed_12">Fixed</h3>
+<h3 id="fixed_13">Fixed</h3>
 <ul>
 <li>The boolean split bar was <code>height: 100%</code> inside a box that set a height. <code>.var-chart</code> does not, so it resolved against nothing and collapsed the bar to 29px. The height is now stated rather than inherited from a parent that stopped providing one.</li>
 </ul>
@@ -4523,7 +4569,7 @@ along.</p>
 <li>Type-specific chart rules were stripped before being rescoped, so datetime lost its chart sizing. Order matters: rescope, then strip.</li>
 </ol>
 <h2 id="0071-2026-08-16">[0.0.71] - 2026-08-16</h2>
-<h3 id="fixed_13">Fixed</h3>
+<h3 id="fixed_14">Fixed</h3>
 <ul>
 <li><strong><code>lint</code> and <code>test</code> had never run on <code>main</code> (#125).</strong> <code>ci.yml</code> triggered on <code>pull_request</code> only, so every check the project relies on ran against a <em>proposed</em> merge and never against the result. A PR is tested against <code>main</code> as it stood when the branch opened, so two individually green PRs can be red together and nothing would notice.</li>
 </ul>
@@ -4623,7 +4669,7 @@ along.</p>
 <li><code>_KNOWN_DEAD</code> in <code>tests/test_description_editor.py</code> is down to one entry. <code>compact-row</code> stays: it is not stale but ahead of its data (#139). An exemption is a promise to come back, not a place to leave things.</li>
 </ul>
 <h2 id="0066-2026-08-16">[0.0.66] - 2026-08-16</h2>
-<h3 id="fixed_14">Fixed</h3>
+<h3 id="fixed_15">Fixed</h3>
 <ul>
 <li><strong>The duplicate-row figure carried the wrong error bound (#161).</strong> <code>approx_duplicates()</code> returns <code>rows - distinct</code>. <code>rows</code> is exact and <code>distinct</code> is a sketch estimate, so the entire <em>absolute</em> error of the distinct estimate lands on a quantity that is usually far smaller — the relative error is multiplied by <code>distinct / duplicates</code>.</li>
 </ul>
@@ -4676,7 +4722,7 @@ along.</p>
 <h3 id="issues-filed-from-this-handoff-and-from-roadmap-v11">Issues filed from this handoff and from roadmap v11</h3>
 <h1 id="154-numeric-details-pane-155-categoricaldatetimeboolean-details-panes-156-data-3-value-change-and-the-three-untestable-rules-157-surviving-emoji-158-three-card-types-still-on-triple-row-159-the-release-pipeline-160-versioning-and-010-161-the-duplicate-counts-propagated-error">154 numeric details pane · #155 categorical/datetime/boolean details panes · #156 <code>--data-3</code> value change and the three untestable rules · #157 surviving emoji · #158 three card types still on <code>.triple-row</code> · #159 the release pipeline · #160 versioning and <code>0.1.0</code> · #161 the duplicate count's propagated error</h1>
 <h2 id="0064-2026-08-16">[0.0.64] - 2026-08-16</h2>
-<h3 id="fixed_15">Fixed</h3>
+<h3 id="fixed_16">Fixed</h3>
 <ul>
 <li><strong>The quantiles were sampled estimates printed as if exact (#146).</strong> <code>Q1</code>, <code>Median</code>, <code>Q3</code>, <code>IQR</code> and <code>MAD</code> come from a reservoir holding <code>numeric_sample_k</code> values; on a 60,000-row column that is a third of the data. They rendered to four significant figures in the same typography as <code>Min</code> and <code>Max</code>, which <strong>are</strong> exact — #118 made the extremes come from every value precisely so they would stop being sampled. On a standard normal column the report printed a median of <code>0.003684</code> where the true median is <code>-0.00252</code>: the right order of magnitude, the wrong sign, and four digits of implied precision.</li>
 </ul>
@@ -4701,7 +4747,7 @@ along.</p>
 <ul>
 <li><strong><code>docs/roadmap.md</code></strong> — v10. The redesign is finished as a body of work; the performance headline is re-measured (<strong>3.01×</strong>, which v7 and v8 both flagged as overdue); and the surface around the report is now the weakest part of the project.</li>
 </ul>
-<h3 id="fixed_16">Fixed</h3>
+<h3 id="fixed_17">Fixed</h3>
 <p>Two findings that did not survive being checked, both corrected before they reached a decision:</p>
 <ul>
 <li><strong>The published example report was never stale.</strong> <code>docs.yml</code> regenerates it before <code>mkdocs build</code> and deploys on every push to <code>main</code>, so the README's link serves current output (600,049 B, inline-SVG logo) — not the 1,178,450 B artifact committed at 0.0.17. The conclusion had been drawn from the committed file rather than the served URL, twice. What remains is repo hygiene, and the question is why a build artifact is committed at all (#143).</li>
@@ -4714,7 +4760,7 @@ along.</p>
 <li>Seven issues for the audit's verified findings: #145 card heights, #146 quantiles, #147 histogram width, #148 hex ratchet, #149 triage block, #150 demo dataset, #151 README.</li>
 </ul>
 <h2 id="0062-2026-08-16">[0.0.62] - 2026-08-16</h2>
-<h3 id="fixed_17">Fixed</h3>
+<h3 id="fixed_18">Fixed</h3>
 <ul>
 <li><strong><code>+ add a note</code> did nothing.</strong> Not slowly, not partially — nothing, with a clean console. The redesign renamed the description block from <code>.description-value</code> to <code>.description-block</code>, and <code>description-editor.js</code> was never updated. Every entry point in that file guards on a null container and returns quietly, so the rename turned a working control into an inert one and left no trace. It now finds the block by its <code>id</code>, which is what the template guarantees; the class is presentation and has moved once already.</li>
 <li><strong>Saving a note would have left it invisible.</strong> <code>.is-empty</code> sets <code>display: none</code> on <code>.description-content</code>, so fixing only the selector would have stored the note, escaped it, inserted it — and shown nothing. The class, the label (<em>Description</em> → <em>Note</em>) and the invitation (<em>+ add a note</em> → <em>edit</em>) now move together, on save and when a note is restored from <code>localStorage</code>.</li>
@@ -4745,7 +4791,7 @@ checking into a guard.</p>
 <li><strong>Fact coverage</strong> — 154 of 154 statistics appear on the page, floored at 90%. The real risk of restacking a card is not a wrong number, it is a <strong>missing</strong> one, and no snapshot diff shows that in a document where every line changed.</li>
 </ul>
 <p>Each guard was verified to fail: a changed value, a removed fact, a mutated payload, and a report showing nothing all trip it.</p>
-<h3 id="fixed_18">Fixed</h3>
+<h3 id="fixed_19">Fixed</h3>
 <p>Two things that would have made the harness flaky, both found by running it rather than by reading it:</p>
 <ul>
 <li><strong>The fingerprint captured wall-clock duration.</strong> <code>elapsed</code> moved from 0.02s to 0.04s simply by running the suite under load. A guard that fails for reasons nobody can act on trains its reader to re-baseline on red, which is the one habit this file exists to prevent.</li>
@@ -4814,7 +4860,7 @@ fingerprint.</p>
 <h2 id="0057-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.56...0.0.57">0.0.57</a> - 2026-08-16</h2>
 <p>Phases 5.5 and 5.6 of the report redesign (#117). Nothing removed or changed in
 the fact fingerprint.</p>
-<h3 id="fixed_19">Fixed</h3>
+<h3 id="fixed_20">Fixed</h3>
 <ul>
 <li><strong>The boolean bar's labels were illegible on the pale segment.</strong> Every one was <code>fill="white"</code>, which is fine on <code>--data-2</code> and about <strong>1.8:1</strong> on <code>--data-4</code> — against the 4.5:1 a label needs. <code>--on-data-*</code> exists to state which ink goes with which step, and it has to be used, not merely defined.</li>
 <li><strong>The bar was a 52px band</strong> for a column with two values. It is 38px now, in the 36–40 the design asks for. The height was a default argument in the renderer, so the 48 in the chart config had never taken effect.</li>
@@ -4856,7 +4902,7 @@ Nothing removed or changed in the fact fingerprint.</p>
 <li><strong>Bars carry no stroke, no <code>fill-opacity</code> and no rounded corners.</strong> Each of those changes a bar's apparent length, which is the one thing it encodes.</li>
 <li>Axis figures are monospace, like every other figure in the report.</li>
 </ul>
-<h3 id="fixed_20">Fixed</h3>
+<h3 id="fixed_21">Fixed</h3>
 <ul>
 <li><strong>Very large magnitudes no longer print in full.</strong> A tick read <code>-2,000,000,000,000,000</code> — 22 characters, wide enough to collide with its neighbours and too long to take in. Values past a million are compacted to <code>2M</code> / <code>2B</code> / <code>2T</code>, which is shorter than both that and <code>-2.0e+15</code>.</li>
 </ul>
@@ -4870,7 +4916,7 @@ on the page changes — nothing removed, nothing changed in the fact fingerprint
 <li><strong>The histogram takes the card's full width</strong>, above the stats rather than squeezed beside them. It was one third of a <code>240px 240px 1fr</code> row; full width it gains about 550px, which is what makes 50 bins legible and the log toggle worth using.</li>
 <li><strong>The two key/value tables became one stat row.</strong> <code>minmax(0, 1fr)</code>, not <code>1fr</code>: a grid track's default minimum is its content, so one long value — <code>-1.2345678e+18</code> is the case that does it — widens its own column and pushes the others out of alignment.</li>
 </ul>
-<h3 id="fixed_21">Fixed</h3>
+<h3 id="fixed_22">Fixed</h3>
 <ul>
 <li><strong>The page no longer scrolls sideways at 390px.</strong> <code>.card-controls</code> was a grid sized <code>var(--triple-left) var(--triple-right) 1fr</code> "to match <code>.triple-row</code>" — a layout the card no longer uses — so its centre track measured 361px inside 358px. A page that scrolls sideways makes every horizontal gesture ambiguous, including the one inside the sample table's own scroll pane.</li>
 <li><strong>Every control is a 44×44 target.</strong> The scale and bins toggles were inline links, so the target was the line box — about 20px, under even the 24px minimum of WCAG 2.5.8, on the controls a reader touches most. The Details toggle came along at 27px.</li>
@@ -4966,7 +5012,7 @@ the fact fingerprint is byte-identical across it, 598 facts.</p>
 <ul>
 <li>The decorative shadows and gradients — <code>--chart-shadow-*</code>, <code>--segment-shadow-*</code>, <code>--label-shadow-*</code>, <code>--legend-shadow-*</code> and the <code>--chart-bg-*</code> / <code>--svg-bg-*</code> gradient pairs. They were <strong>45 of the 80 lines</strong> of the old token file and none of them encoded anything.</li>
 </ul>
-<h3 id="fixed_22">Fixed</h3>
+<h3 id="fixed_23">Fixed</h3>
 <p>Three things found by inspecting a rendered report rather than the stylesheet, each of which a colour-literal grep passes straight over:</p>
 <ul>
 <li><strong><code>_06-cards.css</code> was redefining <code>--axis</code> and <code>--axis-text</code>.</strong> The stylesheets are concatenated in filename order, so it loaded after the token file and silently won: the report drew its axes in <code>rgba(0, 0, 0, 0.45)</code> while the token file — and the contrast test reading it — said <code>#8F8474</code>. A contrast guard that reads only token definitions is worth exactly as much as the guarantee that those definitions are the ones in force, so a test now fails if any other stylesheet reassigns a token.</li>
@@ -5033,7 +5079,7 @@ button finds its content by regex and fails silently.</p>
 <li><strong><code>scripts/report_fingerprint.py</code></strong> — reduces a rendered report to the set of <em>facts</em> it asserts, discarding colours, class names, element order and geometry. The redesign rewrites the render layer across seventeen commits, which makes an HTML snapshot test worthless: the diff is 100% churn on every commit, so nobody reads it, so a real regression rides in unnoticed. This holds the line that presentation may change on every commit while the numbers may not.</li>
 <li><strong><code>codecov.yml</code></strong>, so a docs-only or config-only pull request stops drawing a coverage comment that has nothing to report.</li>
 </ul>
-<h3 id="fixed_23">Fixed</h3>
+<h3 id="fixed_24">Fixed</h3>
 <ul>
 <li><strong><code>check_docs</code> read filenames out of YAML comments.</strong> <code>check_nav</code> regex-scans <code>mkdocs.yml</code> as raw text, so a comment mentioning <code>CHANGELOG.md</code> was taken for a nav entry and reported as a page missing from disk. Comments are stripped first now.</li>
 <li><strong><code>docs/integration.md</code> and <code>docs/MIGRATION_TESTING.md</code> are marked as planning documents</strong>, alongside <code>DOCS_PLAN.md</code>. They live in <code>docs/</code> for convenience but are not published, and their code fences illustrate test scaffolding rather than the public API — so the checker was executing <code>pytest</code> and <code>polars</code> snippets and reporting the resulting <code>NameError</code>s as documentation defects.</li>
@@ -5042,7 +5088,7 @@ button finds its content by regex and fails silently.</p>
 <p>The first of three things to fix before the redesign takes a screenshot of
 anything. Commit 0 of the report migration: correctness before presentation, so
 every baseline the migration measures against is taken from correct output.</p>
-<h3 id="fixed_24">Fixed</h3>
+<h3 id="fixed_25">Fixed</h3>
 <ul>
 <li><strong>The distinct count could exceed the row count, and claimed to be exact.</strong> 20,000 standard normals reported <strong>20,197 distinct</strong>, and a 20,000-row primary key reported 19,478 — both with <code>approx: False</code>.</li>
 </ul>
@@ -5093,7 +5139,7 @@ every baseline the migration measures against is taken from correct output.</p>
 <h2 id="0044-2026-08-16"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.43...0.0.44">0.0.44</a> - 2026-08-16</h2>
 <h1 id="98-100-101-and-102-none-of-these-is-a-wrong-number-all-of-them-cost">98, #100, #101 and #102. None of these is a wrong number; all of them cost</h1>
 <p>trust in the numbers.</p>
-<h3 id="fixed_25">Fixed</h3>
+<h3 id="fixed_26">Fixed</h3>
 <ul>
 <li><strong>A healthy column was flagged as a data-quality problem</strong> (#98). <code>age</code> — 68 distinct integers between 18 and 85 — was unflagged at 1,000 rows and <strong>Quasi-constant</strong> at 20,000, because the flag compared <code>unique_est / count</code> against 2%. That is the same unique-<em>ratio</em> reasoning the type classifier dropped in #84, left behind in the flag layer; and since #86 put the quality chips in a triage block at the top of the report, the false alarm had become the first thing a reader sees.</li>
 </ul>
@@ -5113,7 +5159,7 @@ generator was the one file failing <code>ruff check</code>.</p>
 <h2 id="0042-2026-08-15"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.41...0.0.42">0.0.42</a> - 2026-08-15</h2>
 <h1 id="95-and-33-the-bounded-memory-claim-now-holds-for-text-columns-and-row">95 and #33. The bounded-memory claim now holds for text columns, and row</h1>
 <p>signatures stop being re-hashed through a lossy conversion.</p>
-<h3 id="fixed_26">Fixed</h3>
+<h3 id="fixed_27">Fixed</h3>
 <ul>
 <li><strong>A text column's memory grew with the row count</strong> (#95), which contradicted the one claim the library is positioned on — and text-heavy frames are the ones people reach for this tool with. A single string column holding <strong>four distinct values</strong> reached 339 MB of peak RSS at 8.4M rows.</li>
 </ul>
@@ -5190,7 +5236,7 @@ thing in common: a code path nothing ran. <code>merge()</code> exists for distri
 and the pipeline never calls it; the adapters replace an accumulator only for
 forced or reclassified columns; the config fallback fires only when validation
 fails.</p>
-<h3 id="fixed_27">Fixed</h3>
+<h3 id="fixed_28">Fixed</h3>
 <ul>
 <li><strong><code>merge()</code> lost most of what it was merging</strong> (#67). It replayed one side's <em>reservoir buffer</em> through <code>add()</code>, treating 20,000 retained values as a 20,000-value stream. Merging a 90,000-row shard into a 60,000-row one reported a <strong>median of 0.17 where the true value was 4.03</strong>, and a distinct count of 83,514 against a true 154,923. The top-k counters were not merged at all, so a merged column reported only the left-hand side's common values.</li>
 </ul>
@@ -5231,7 +5277,7 @@ configuration at all.</p>
 <li><strong><code>progress=</code> on <code>profile()</code> and <code>summarize()</code>.</strong> A 1.8-million-cell profile produced 46 bytes of output, none of it progress — for the use case this library is positioned on, a hung process and a working one looked identical. <code>log_every_n_chunks</code> existed but routes to a logger that is off by default, so it is invisible unless you configure logging first, which is not what you think to do while waiting to find out whether anything is happening.</li>
 </ul>
 <p><code>True</code> reports; <code>"auto"</code> reports only when stderr is a terminal, so a redirect or a cron job stays quiet without being configured; a callable receives <code>chunks</code>, <code>rows</code> and <code>elapsed</code>. <strong>Everything goes to stderr and nothing to stdout</strong>, so a profile written to a pipe stays parseable. The line is throttled to stay readable and carries an ETA only when the row total is knowable — a generator source gets a counter and a rate, not an invented estimate.</p>
-<h3 id="fixed_28">Fixed</h3>
+<h3 id="fixed_29">Fixed</h3>
 <ul>
 <li><strong>A bad <code>progress</code> value could be silently discarded.</strong> <code>_to_engine_config</code> falls back to a direct mapping inside a bare <code>except Exception</code>, so a value that fails validation deeper in becomes a <em>different configuration</em> rather than an error. <code>progress</code> is now validated at the public boundary, where the caller sees it.</li>
 </ul>
@@ -5246,7 +5292,7 @@ did not expose it at all.</p>
 <li><strong><code>schema_version</code> on the <code>summarize()</code> payload.</strong> It had already drifted once — <code>dataset["rows"]</code> became <code>dataset["rows_est"]</code>, which silently broke every documented example and would have broken every downstream consumer. The promise: adding a key changes nothing, renaming or removing one bumps the major.</li>
 <li><strong>Numeric <code>top_values</code> reach the payload.</strong> The HTML rendered a "Common values" table from the Misra-Gries counters while <code>summarize()</code> omitted them, so a tool built on the payload saw strictly less than a reader of the report. <code>None</code> means <em>not tracked</em> — the sketch is gated off on columns too high-cardinality for the answer to mean anything — which is a different statement from an empty list.</li>
 </ul>
-<h3 id="fixed_29">Fixed</h3>
+<h3 id="fixed_30">Fixed</h3>
 <ul>
 <li><strong>The histogram ignored the log-scale flag the card itself computed.</strong> A lognormal column was correctly labelled <em>Positive-only · Skewed Right · Heavy-tailed · Log-scale?</em> and then drawn on a linear axis, where the whole distribution renders as one bar at the left edge. When the heuristic fires the chart now opens on a log axis; the toggle still switches both ways. Computing the right answer and displaying the wrong picture is worse than not detecting it, because it teaches the reader that the chips are cosmetic.</li>
 </ul>
@@ -5263,7 +5309,7 @@ the report had the answer and did not use it.</p>
 <ul>
 <li><strong>Monotonicity detection is on by default.</strong> It was off "for performance" when the detector looped over every value at 89 ns/value. As a sign test on <code>np.diff</code> it is 0.6 ns/value, and it is what lets the report recognise a key. The detector no longer re-filters an array the caller has already filtered — that redundant <code>isfinite</code> pass and copy, per numeric column per chunk, was the entire cost of turning it on (636 ms → 570 ms on mixed 200,000 × 14, against 573 ms with it off).</li>
 </ul>
-<h3 id="fixed_30">Fixed</h3>
+<h3 id="fixed_31">Fixed</h3>
 <ul>
 <li><strong>Search and the type filters did nothing on any report with ten columns or fewer.</strong> The pagination module returned early when a single page was enough and hid the whole controls row, so the search box and the Numeric/Categorical/Datetime/Boolean tabs were rendered but never wired. Only the page buttons are hidden now.</li>
 <li><strong>The distinct-count estimate on an identifier card is clamped to the row count.</strong> KMV carries about 2.2% error at k=2048, so a real key could report more distinct values than rows — arithmetically impossible, and it reads as a bug.</li>
@@ -5285,7 +5331,7 @@ regression reported as an improvement — and a <em>3.56x</em> headline is reall
 <strong>2.48x</strong>, from pairing a slow baseline run with a fast recent one.</p>
 <h2 id="0033-2026-08-15"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.32...0.0.33">0.0.33</a> - 2026-08-15</h2>
 <p>The first four of the twelve user-experience findings (#72, #79, #81, #83).</p>
-<h3 id="fixed_31">Fixed</h3>
+<h3 id="fixed_32">Fixed</h3>
 <ul>
 <li><strong>A numeric column's classification changed as the table grew.</strong> <code>age</code> with 67 distinct values profiled as <em>numeric</em> in a 1,000-row frame and <em>categorical</em> in a 20,000-row one, because the rule fired on <code>unique_ratio &lt; 0.05</code>. Every bounded integer — age, year, rating, day-of-month, HTTP status, state code — crossed the line purely by adding rows. The rule is now a cardinality <strong>ceiling</strong> (50 distinct, integral values only), which is stable under row count. For a profiler whose pitch is large data, a heuristic that degraded with scale was backwards.</li>
 <li><strong>Whether reclassification ran at all depended on <code>chunk_size</code>.</strong> The streaming guard asked whether the <em>first chunk</em> held every row, so an in-memory frame larger than one chunk was treated as a stream and skipped reclassification entirely — the same column came back categorical at 50,000 rows and numeric at 200,000. The question is about the source, not the chunk: an in-memory frame is fully known however the engine splits it. Streams are unaffected, and still stay numeric.</li>
@@ -5306,7 +5352,7 @@ regression reported as an improvement — and a <em>3.56x</em> headline is reall
 <h2 id="0032-2026-08-15"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.31...0.0.32">0.0.32</a> - 2026-08-15</h2>
 <p>Documentation only; no library changes. <strong>90 documented errors down to zero</strong>,
 and CI now fails a PR that reintroduces one.</p>
-<h3 id="fixed_32">Fixed</h3>
+<h3 id="fixed_33">Fixed</h3>
 <ul>
 <li><strong>Seven pages documented two configuration options that do not exist.</strong> <code>config.compute.uniques_sketch_size</code> and <code>config.compute.top_k_size</code> were never real names — they are <code>max_uniques</code> and <code>top_k</code> on <code>ComputeOptions</code>. A reader following the docs got a silently ignored setting rather than an error, which is worse. 27 occurrences across <code>configuration.md</code>, <code>api.md</code>, <code>performance.md</code>, <code>why-pysuricata.md</code>, <code>architecture.md</code>, <code>complexity-analysis.md</code>, <code>faq.md</code> and <code>quickstart.md</code>. The internal accumulator configs, where those names <em>are</em> real, are untouched.</li>
 <li><strong><code>summarize()</code> field names that do not exist in the payload.</strong> The docs promised <code>skewness</code>, <code>true_count</code>, <code>true_pct</code>, <code>balance_score</code>, <code>distinct</code>, <code>top_values</code>, <code>gini</code>, <code>entropy</code>, <code>hour_distribution</code> and <code>["dataset"]["rows"]</code>. The real fields are <code>unique_est</code>, <code>top_items</code>, <code>true</code>/<code>false</code>, <code>min_ts</code>/<code>max_ts</code> and <code>rows_est</code>; skew and entropy are not exposed at all. Every example now prints something the payload actually contains.</li>
@@ -5326,7 +5372,7 @@ and CI now fails a PR that reintroduces one.</p>
 <ul>
 <li><strong>Six interactive figures</strong>, embedded on the pages they explain: reservoir sampling (Algorithm R against Algorithm L), Misra-Gries eviction, the memory curve, the chunk lifecycle, the Welford-to-Pébay merge, and an annotated report card. Each runs the real algorithm in the browser with a fixed seed, so they are simulations rather than illustrations. They ship as plain HTML, SVG and vanilla JavaScript — no React, no CDN, no third-party requests, and they work offline.</li>
 </ul>
-<h3 id="fixed_33">Fixed</h3>
+<h3 id="fixed_34">Fixed</h3>
 <ul>
 <li><strong><code>docs/algorithms/sampling.md</code> documented an algorithm the library does not run.</strong> The page described Algorithm R — one random draw per element, testing every arrival — while <code>ReservoirSampler</code> has used Algorithm L with a bulk acceptance schedule since 0.0.23. The class name was the only accurate thing on the page; the constructor signature, the field names and the method were all wrong for anyone reading it to understand the code. Rewritten against the implementation, keeping Algorithm R as a labelled contrast.</li>
 <li><strong>The pre-commit test hook rebuilt the project on every commit.</strong> <code>uv run</code> re-resolved and reinstalled the package against a tree pre-commit had partially stashed, which hung commits and made a test-only hook report "files were modified by this hook". It also ran a three-file subset chosen for having no optional dependencies — 25 tests that could not catch an accumulator regression. It now runs the statistical core and the invariants most likely to break, and the whole hook suite takes 2.8 seconds.</li>
@@ -5336,7 +5382,7 @@ and CI now fails a PR that reintroduces one.</p>
 <p>Closes Phase 1. Mixed 200,000 x 14 is <strong>597 ms</strong>, down from 1,517 ms at 0.0.26
 on the same machine — <strong>2.54x</strong>. <code>NumericAccumulator.update</code> is <strong>83 ns/value</strong>,
 down from 1,278.</p>
-<h3 id="fixed_34">Fixed</h3>
+<h3 id="fixed_35">Fixed</h3>
 <ul>
 <li><strong>The reported minimum and maximum were sampled, not measured.</strong> They came from the reservoir, which holds 20,000 values, while the exact extremes sat in the tracker right beside them — so a numeric card could print a "Maximum" that disagreed with the first row of its own extreme-values table, and whether it did came down to whether the true extreme happened to be sampled. Both now come from the tracker. (0.0.26 made the extremes exact and their indices global; it did not connect them to these two fields.)</li>
 </ul>
@@ -5357,7 +5403,7 @@ since 0.0.26 on the same machine: <strong>2.31x</strong>.</p>
 <ul>
 <li><strong><code>DatetimeAccumulator.update</code> is vectorised.</strong> It was the most expensive column kind by a factor of two and the only accumulator never touched. Four per-row Python loops are gone: the validity mask, the <code>int()</code> conversion, the sketch/reservoir feed, and — the expensive one — a <code>datetime.fromtimestamp</code> object constructed per row to read four calendar fields off it. Calendar fields now come from integer division and <code>np.bincount</code>. The consume layer also stops building a <code>list[int | None]</code> per column: it hands over the int64 array it already had, since NaT's sentinel is outside the validity window anyway and needed no translation.</li>
 </ul>
-<h3 id="fixed_35">Fixed</h3>
+<h3 id="fixed_36">Fixed</h3>
 <ul>
 <li><strong>Hour and weekday tallies were computed in the machine's local timezone.</strong> <code>datetime.fromtimestamp()</code> without a <code>tz</code> argument uses the local zone, while the timestamps themselves are stored as UTC — so profiling the same file in London and in Tokyo produced different "peak hour" and weekend-ratio figures, with nothing to indicate the report depended on where it ran. Tallies are now UTC, matching the data as stored.</li>
 <li><strong>A single out-of-range timestamp discarded a whole chunk's temporal patterns.</strong> <code>fromtimestamp</code> raises <code>OSError</code> for some values on some platforms, and the handler caught it around the entire loop and moved on — so one bad row could empty the hour, weekday, month and year histograms for every row beside it.</li>
@@ -5377,7 +5423,7 @@ cards now say nothing where they used to say something untrue.</p>
 <li><strong><code>chunk_size</code> now defaults to 50,000 rows, down from 200,000.</strong> The old value was never exercised: until 0.0.25 the option was blended away, so nothing depended on it being right. Bigger is not faster — the sketch merges are superlinear in batch size, so one 200,000-row batch costs more than four 50,000-row ones. Measured optimum is 50,000, worth 1.13x on its own once the KMV pre-filter is in. A test now pins the chosen size to a band so the default cannot drift back.</li>
 <li><strong>KMV rejects hashes against its admission threshold before sorting them.</strong> Once the sketch is full, the kth smallest hash it holds is a hard bound — nothing at or above it can enter, now or later. Testing that first with one vectorised compare discards over 99.9% of a batch from a high-cardinality column, leaving <code>np.unique</code> and <code>np.union1d</code> to sort the survivors instead of the whole chunk. 51 -&gt; 17 ns/value; the retained set, and therefore every estimate, is identical by construction.</li>
 </ul>
-<h3 id="fixed_36">Fixed</h3>
+<h3 id="fixed_37">Fixed</h3>
 <ul>
 <li><strong>Pre-1906 timestamps were still dropped on the fallback path.</strong> The window widened in 0.0.26 missed <code>_update_fallback</code>, which kept the old <code>-2e18</code> bound. Same symptom as before — historical dates counted as missing — on the path taken when a timestamp resists array conversion.</li>
 </ul>
@@ -5387,7 +5433,7 @@ cards now say nothing where they used to say something untrue.</p>
 <li><strong>Sampling draws from per-column generators instead of the process-global RNG.</strong> <code>random_seed</code> used to be applied by calling <code>np.random.seed()</code> and <code>random.seed()</code>, which meant profiling reset the caller's generators; 0.0.18 papered over that by snapshotting and restoring them around each run. The sketches now each own a <code>numpy.random.Generator</code>, seeded per column as <code>blake2b(f"{run_seed}:{column}")</code>, and the snapshot/restore wrapper is gone — <code>profile()</code> neither reads nor writes global RNG state, seeded or not. Two consequences worth knowing: the same seed gives a <em>different</em> sample than it did in 0.0.26 (PCG64 rather than the legacy Mersenne Twister, and a per-column seed rather than one shared stream), and a column's sample no longer depends on which other columns are present, so profiling a subset now reproduces the numbers from profiling the whole frame. This is what per-column threading needs to be reproducible.</li>
 <li><strong>The sample-preview table is reproducible.</strong> It called <code>df.sample()</code> with no <code>random_state</code>, so the preview rows were drawn from the global RNG and ignored <code>random_seed</code> entirely. Both backends now take an explicit seed derived the same way.</li>
 </ul>
-<h3 id="fixed_37">Fixed</h3>
+<h3 id="fixed_38">Fixed</h3>
 <ul>
 <li><strong><code>Accumulator.update()</code> crashed on numpy arrays and pandas Series.</strong> The categorical, datetime and boolean accumulators guarded with <code>if not arr</code>, which raises <code>ValueError: truth value of an array ... is ambiguous</code> for exactly the array types the library passes internally — the categorical path even converts its input to a Series on the next line. Now guarded on length, as the numeric accumulator already was.</li>
 <li><strong><code>NumericAccumulator.reset()</code> raised <code>AttributeError</code> on the default configuration.</strong> It called <code>reset()</code> on three components that had none (<code>StreamingMoments</code>, <code>OutlierDetector</code>, <code>PerformanceMetrics</code>), two of which are enabled by default. Those methods now exist, and <code>reset()</code> also clears chunk metadata, which it was leaving in place for the next run to append to.</li>
@@ -5397,14 +5443,14 @@ cards now say nothing where they used to say something untrue.</p>
 <li><strong><code>NumericCardRenderer._simulate_chunk_distribution</code></strong> — dead code with no caller in the render path that fabricated plausible-looking chunk sizes and missing-value counts from a global-RNG draw. Invented data has no place in a report, and this was the last thing in the package touching the stdlib <code>random</code> module.</li>
 </ul>
 <h2 id="0026-2026-08-15"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.25...0.0.26">0.0.26</a> - 2026-08-15</h2>
-<h3 id="fixed_38">Fixed</h3>
+<h3 id="fixed_39">Fixed</h3>
 <ul>
 <li><strong>Timestamps before 1906-05-13 were counted as missing.</strong> The validity window's lower bound was <code>-2e18</code> ns, commented as "roughly 1900-2100". Birthdates and historical records fell outside it and were reclassified as nulls, so a column of 19th-century dates looked almost entirely missing rather than old — with the count, the missing percentage and the reported date range all wrong together, and nothing to indicate why. The window is now the range <code>datetime64[ns]</code> can actually represent: 1677-09-21 to 2262-04-11.</li>
 <li><strong>Extreme-value row indices were chunk-local.</strong> <code>NumericAccumulator.update</code> numbered rows with <code>np.arange(len(chunk))</code>, so "row 4,182 had the maximum" named a position inside whichever chunk the value arrived in — wrong for every chunk after the first. The engine already tracked a global row offset for chunk metadata; it now passes it down.</li>
 <li><strong>The reported minimum and maximum could miss the true ones.</strong> A second extreme-tracking pass in the consume layer ran only on every fifth chunk. It was also redundant, feeding the same tracker a duplicate chunk-local copy of each extreme — which is why one extreme value could appear twice under two different indices. That pass is removed; extremes come from the accumulator's own pass, on every chunk.</li>
 </ul>
 <h2 id="0025-2026-08-14"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.24...0.0.25">0.0.25</a> - 2026-08-14</h2>
-<h3 id="fixed_39">Fixed</h3>
+<h3 id="fixed_40">Fixed</h3>
 <ul>
 <li><strong><code>ComputeOptions.columns</code> now restricts what is profiled.</strong> It was documented and validated, but never reached the engine — asking for three columns of a hundred profiled all hundred. Applied per chunk, so it works for streaming sources too. Names that are not present are ignored rather than raising, since a stream may legitimately vary.</li>
 <li><strong><code>corr_max_cols</code> now caps correlation analysis.</strong> It was declared, documented, validated and copied into the config, then never read: a 1,000-column frame built 499,500 pairs despite a documented cap of 50. The cap is applied before pair construction, which is the quadratic part.</li>
@@ -5415,7 +5461,7 @@ cards now say nothing where they used to say something untrue.</p>
 <ul>
 <li><strong>Numeric columns are no longer reclassified as categorical from the first chunk of a stream.</strong> The heuristic reads the distinct-value ratio of the first chunk, which is evidence about the column only when the chunk <em>is</em> the column. On a stream it is not: a sorted column, or one with a leading run of a single value, presents a prefix that looks low-cardinality while the column is not — and nothing revisited the decision. A 285,000-row column with 244,255 distinct values was profiled as categorical because its first 45,000 rows held nine. Reclassification now runs only when the first chunk provably contains every row. The trade-off, stated plainly: a genuinely low-cardinality <em>streamed</em> column now renders a numeric card rather than a categorical one. Little is lost, since the numeric accumulator already tracks top values via Misra-Gries. In-memory frames are unaffected.</li>
 </ul>
-<h3 id="fixed_40">Fixed</h3>
+<h3 id="fixed_41">Fixed</h3>
 <ul>
 <li><strong>The row count silently truncated to 2,000 per chunk when row hashing failed</strong> — the fallback path stringified a 2,000-row sample to feed the duplicate sketch, and then counted <em>the sample</em> rather than the chunk. A 50,000-row chunk contributed 2,000 rows. That figure is what the report prints as "Rows" and what <code>missing_cells_pct</code> divides by, so a single unhashable column (one holding lists, say) corrupted the headline row count and every missing-value percentage in the report. The sample now bounds only what the sketch sees; every row is counted. Affected the pandas path and all three polars fallbacks.</li>
 <li><strong>The duplicate estimate is now marked as degraded</strong> when the sketch has seen less than the full data, via <code>RowKMV.duplicates_degraded</code>, and clamped so it can never exceed the row count.</li>
@@ -5440,7 +5486,7 @@ date parsing each under 5% of self time; they are now 0.7% and 0.3%.</p>
 <ul>
 <li><strong>Date sniffing no longer parses columns row by row</strong> — deciding whether an object column holds dates ran up to 10,000 rows through <code>pd.to_datetime(format="mixed")</code>, which disables pandas' vectorised parser and falls back to <code>dateutil</code> one row at a time: 166,302 <code>get_token</code> calls in a single 50,000-row profile, 20.7% of total runtime. It now probes 200 rows against a list of explicit formats, each of which takes the fast path, and only reaches for <code>mixed</code> when every fixed format has failed. Classification is unchanged, including for formats outside the fixed list.</li>
 </ul>
-<h3 id="fixed_41">Fixed</h3>
+<h3 id="fixed_42">Fixed</h3>
 <ul>
 <li><strong>Empty and all-null object columns no longer compute 0/0</strong> while sniffing, which produced a <code>RuntimeWarning</code> and a <code>nan</code> success rate.</li>
 </ul>
@@ -5457,13 +5503,13 @@ suite (200,000 x 14: 3.190s -&gt; 1.739s).</p>
 <li><strong>The distinct-count sketch no longer uses SHA-1</strong> — a cryptographic hash resisting preimage attacks was doing a job that needs uniformity and avalanche and nothing else, at roughly a third of total runtime. Numeric columns are now hashed by bit pattern with a vectorised splitmix64 finaliser, costing no Python object per row; byte input uses blake2b with an 8-byte digest, so there is no wider digest to slice. An avalanche test asserts a single input bit flip changes about half the output bits.</li>
 <li><strong>Reservoir sampling draws its uniforms in blocks</strong> — Algorithm L needs two draws per acceptance, and a scalar <code>np.random</code> call is dominated by interpreter overhead. Slot selection reuses the same buffer instead of a separate <code>randint</code> call.</li>
 </ul>
-<h3 id="fixed_42">Fixed</h3>
+<h3 id="fixed_43">Fixed</h3>
 <ul>
 <li><strong>Repeated values inflated the distinct count</strong> — the sketch kept its k retained hashes in a list that was never de-duplicated, so a value seen twice could occupy two slots. Since the estimator reads the retained count as a distinct count below k, 5,000 distinct values repeated 20x estimated as ~101,800. It now estimates 4,928 — 1.4% error, well inside the sketch's bound.</li>
 <li><strong>Leaving exact-counting mode double-counted the spill</strong> — every value counted so far was moved into the sketch and then offered to it a second time, so a 1,000-distinct-value column reported 1,100.</li>
 <li><strong><code>KMV.add()</code> disagreed with the batch path</strong> — it keyed the exact counter by the value's bytes while batches keyed by hash, so the same value could count twice depending on which path it arrived through; and on the branch that crossed the exact-tracking limit it inserted the current hash, then fell through and inserted it again.</li>
 </ul>
-<h3 id="fixed_43">Fixed</h3>
+<h3 id="fixed_44">Fixed</h3>
 <ul>
 <li><strong>Granularity detection crashed on very small numbers under numpy &gt;= 2.5</strong> — the step-size histogram guarded only that the spread was strictly positive. For values around 1e-15 the gaps between them differ by ~1e-31, which is narrower than one float64 ULP at that magnitude, so every computed bin edge rounds to the same value. numpy 2.5 rejects that outright (<code>Too many bins for data range</code>) where 2.1 silently returned degenerate bins, so profiling any column at that scale raised. Differences that are equal to within floating-point resolution now skip the histogram entirely — the granularity simply is that difference.</li>
 <li><strong>numpy floor for Python 3.14</strong> — numpy 2.1.3 publishes no cp314 wheels, so the resolver picked it on 3.14 and built it from source against a Python it never supported. The resulting binary computed <code>uint64</code> arithmetic wrongly for large arrays, collapsing every hash in the distinct-count sketch to the same value and reporting 300,000 distinct values as 1. Floored to <code>numpy&gt;=2.3.3</code> on 3.14, the first release with cp314 wheels.</li>
@@ -5492,7 +5538,7 @@ suite (200,000 x 14: 3.190s -&gt; 1.739s).</p>
 <p>Correctness release. <code>benchmarks/accuracy.py</code> — a new statistical oracle that
 checks chunked results against unchunked ones and against NumPy — shipped six
 <code>xfail</code>-marked tests, each naming a live bug. All six are fixed.</p>
-<h3 id="fixed_44">Fixed</h3>
+<h3 id="fixed_45">Fixed</h3>
 <ul>
 <li><strong>Generator sources silently dropped the first chunk</strong> <em>(critical)</em> — adapter sniffing consumed the first chunk of a generator, so the documented "stream chunks larger than RAM" API omitted chunk 0 from every statistic, and a single-chunk generator reported <code>Empty source</code>. Chunk counts, <code>min</code>/<code>max</code>, means and every sketch were wrong for streaming input.</li>
 <li><strong>Reservoir sampling was biased toward late elements</strong> <em>(critical)</em> — <code>add_many</code> used one uniform draw over the post-batch count instead of a denominator that grows within the batch, and the bias grew with chunk size. Replaced with Algorithm L (Li, 1994). Every quantile, the median, IQR, MAD, outlier count and the histogram derive from this reservoir; for a fixed seed the sample is now identical regardless of chunking, and Algorithm L also reduces random draws from one per row to roughly <code>k·ln(n/k)</code>.</li>
@@ -5552,7 +5598,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Polars string→boolean inference</strong> — Under the <code>AGGRESSIVE</code> strategy, string columns are now matched against an explicit token set (<code>true</code>/<code>false</code>/<code>1</code>/<code>0</code>/<code>yes</code>/<code>no</code>) rather than <code>cast(pl.Boolean, strict=False)</code>, aligning polars behavior with pandas</li>
 <li><strong>Quality flags</strong> — <code>case_variants</code> and <code>trim_variants</code> are now raised only when lowercasing or stripping actually reduces the unique count, so a disabled estimator no longer reports phantom variants</li>
 </ul>
-<h3 id="fixed_45">Fixed</h3>
+<h3 id="fixed_46">Fixed</h3>
 <ul>
 <li><strong>Duplicate column names no longer crash profiling</strong> — pandas frames with repeated column names are renamed with numeric suffixes (with a <code>UserWarning</code>). Suffix generation now skips names already present in the frame, so <code>["a", "a", "a_1"]</code> renames to <code>["a", "a_2", "a_1"]</code> instead of producing another duplicate and failing with <code>'DataFrame' object has no attribute 'dtype'</code></li>
 <li><strong>Boolean columns misclassified as numeric</strong> — pandas <code>is_numeric_dtype()</code> returns <code>True</code> for <code>bool</code> dtype, so the bool check now runs first in <code>_infer_pandas_series_type</code></li>
@@ -5583,7 +5629,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Changelog CI check</strong> — PRs now require a changelog entry</li>
 <li><strong>Mermaid architecture diagrams</strong> — Replaced ASCII art with 5 interactive diagrams</li>
 </ul>
-<h3 id="fixed_46">Fixed</h3>
+<h3 id="fixed_47">Fixed</h3>
 <ul>
 <li><strong>MathJax formula rendering</strong> — Fixed <code>ignoreHtmlClass</code> regex that prevented all formula rendering</li>
 <li><strong>Code/equation styling</strong> — Changed code and math colors from green to standard gray</li>
@@ -5609,7 +5655,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Polars LazyFrame support</strong> — LazyFrames are now automatically collected before profiling</li>
 <li><strong>ReportConfig alias</strong> — Added <code>ReportConfig</code> as an alias for <code>ProfileConfig</code> for better API discoverability</li>
 </ul>
-<h3 id="fixed_47">Fixed</h3>
+<h3 id="fixed_48">Fixed</h3>
 <ul>
 <li><strong>Self-contained HTML reports</strong> — HTML reports no longer depend on external CDN (Chart.js is now inlined)</li>
 </ul>
@@ -5624,7 +5670,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Comprehensive stress tests</strong> — New <code>test_complexity_analysis.py</code> with time/space profiling</li>
 <li><strong>Python 3.14 support</strong> — Officially supported in package metadata</li>
 </ul>
-<h3 id="fixed_48">Fixed</h3>
+<h3 id="fixed_49">Fixed</h3>
 <ul>
 <li><strong>Memory leak fixes</strong> — Resolved memory leaks in KMV sketch, ExtremeTracker, and chunk metadata</li>
 </ul>
@@ -5659,7 +5705,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <ul>
 <li><strong>Logging</strong> throughout the profiling run (<a href="https://github.com/alvarodiez20/pysuricata/pull/9">#9</a>).</li>
 </ul>
-<h3 id="fixed_49">Fixed</h3>
+<h3 id="fixed_50">Fixed</h3>
 <ul>
 <li>Documentation build.</li>
 </ul>
@@ -5683,12 +5729,12 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <li><strong>Overview, Sample and Variables sections</strong> in the HTML report — the three-part structure the report still uses.</li>
 </ul>
 <h2 id="004-2025-03-29"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.3...0.0.4">0.0.4</a> - 2025-03-29</h2>
-<h3 id="fixed_50">Fixed</h3>
+<h3 id="fixed_51">Fixed</h3>
 <ul>
 <li>Images were missing from the published package.</li>
 </ul>
 <h2 id="003-2025-03-29"><a href="https://github.com/alvarodiez20/pysuricata/compare/0.0.2...0.0.3">0.0.3</a> - 2025-03-29</h2>
-<h3 id="fixed_51">Fixed</h3>
+<h3 id="fixed_52">Fixed</h3>
 <ul>
 <li>Packaging of the HTML report template.</li>
 </ul>
@@ -5697,7 +5743,7 @@ checks chunked results against unchunked ones and against NumPy — shipped six
 <ul>
 <li><code>report_template.html</code>, and the first examples (<a href="https://github.com/alvarodiez20/pysuricata/pull/2">#2</a>).</li>
 </ul>
-<h3 id="fixed_52">Fixed</h3>
+<h3 id="fixed_53">Fixed</h3>
 <ul>
 <li>The HTML report was not included in the distributed package.</li>
 </ul>
