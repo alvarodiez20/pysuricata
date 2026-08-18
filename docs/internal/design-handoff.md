@@ -1,5 +1,8 @@
-> **Retired — the handoff is complete.** The redesign shipped. Kept as a record
-> of the design decisions. Not documentation, not published. Note that the
+> **Superseded.** This is the *first* handoff. A fourth one arrived on
+> 2026-08-17 and reopened the redesign — see `design/README.md` for what is
+> landed, what is open, and which issue tracks each remaining piece, and
+> `design/HANDOFF.md` for the current orientation note. Kept as a record of the
+> earlier design decisions. Not documentation, not published. Note that the
 > example reports it tells you to regenerate no longer exist as committed files:
 > the example report is generated at docs-build time by
 > `scripts/regenerate_example_report.py`, and `integration.md` moved here beside

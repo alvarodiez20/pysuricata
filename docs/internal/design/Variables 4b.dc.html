@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<style>
+  body { margin: 0; background: #DFDACF; }
+  a { color: #4A5D1E; text-decoration: none; }
+  a:hover { color: #22201C; text-decoration: underline; }
+  [data-navrail]::-webkit-scrollbar { display: none; }
+</style>
+</helmet>
+
+<section style="padding: 56px; background: #DFDACF; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 52px;">
+
+  <div style="display: flex; flexDirection: column; gap: 10px; maxWidth: 780px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Turn 5 · 4b in full</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">Axes, every column type, and the description</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">Three axis treatments for the histogram — <a href="#5a">5a</a> <a href="#5b">5b</a> <a href="#5c">5c</a>. Then 4b applied to all five column types your renderers produce. Then two answers on the description, which I did shrink and shouldn't have decided alone. Datetime numbers come from your <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">daily_2026-08-16</span> report; the rest from the Titanic one.</p>
+  </div>
+
+  <div style="display: flex; flexDirection: column; gap: 22px;">
+    <div style="display: flex; alignItems: center; gap: 14px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">The axis</span>
+      <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+    </div>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; maxWidth: 76ch; textWrap: pretty;">Today's histogram prints the column name inside the chart and bare numbers on both axes — <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">20 40 60</span> along the bottom, <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">0 20 40 60 80 100</span> up the side, and nothing saying which is years and which is rows. The name is redundant once the card header carries it, and the units are the part that's actually missing. Three ways to spend those marks:</p>
+
+    <div style="display: flex; flexWrap: wrap; gap: 32px; alignItems: flex-start;">
+
+      <div id="5a" style="display: flex; flexDirection: column; gap: 12px; width: 600px; flexShrink: 0;">
+        <div style="display: flex; alignItems: baseline; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">5a</span>
+          <h3 style="margin: 0; fontSize: 17px; fontWeight: 600;">Quiet</h3>
+        </div>
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 18px 20px 16px;">
+          <div style="display: grid; gridTemplateColumns: 38px 1fr; columnGap: 8px;">
+            <div style="position: relative; height: 170px;">
+              <sc-for list="{{ quiet.yLabels }}" as="l" hint-placeholder-count="2">
+                <span style="position: absolute; right: 0; top: {{ l.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A; whiteSpace: nowrap;">{{ l.label }}</span>
+              </sc-for>
+            </div>
+            <div>
+              <svg viewBox="0 0 520 170" width="100%" height="170" preserveAspectRatio="none" role="img" aria-label="Age distribution, 25 bins, peak 83 rows aged 26 to 29" style="display: block; borderBottom: 1px solid #CFC7B8;">
+                <sc-for list="{{ quiet.bars }}" as="b" hint-placeholder-count="25">
+                  <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#4A6E8A"></rect>
+                </sc-for>
+              </svg>
+              <div style="position: relative; height: 18px; marginTop: 4px;">
+                <sc-for list="{{ quiet.xLabels }}" as="t" hint-placeholder-count="4">
+                  <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A; whiteSpace: nowrap;">{{ t.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A; marginTop: 6px;">age in years, 25 bins · height is rows, peak 83</div>
+        </div>
+        <div style="display: flex; flexDirection: column; gap: 8px;">
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Two numbers instead of six on the y axis; the shape dominates. Reads well small, so the same chart works in the mobile card unchanged.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">You cannot read a middle bar's count — only estimate it. For a profiling report that is a real loss.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="5b" style="display: flex; flexDirection: column; gap: 12px; width: 600px; flexShrink: 0;">
+        <div style="display: flex; alignItems: baseline; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">5b</span>
+          <h3 style="margin: 0; fontSize: 17px; fontWeight: 600;">Ruled, with units on the axes</h3>
+        </div>
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 18px 20px 16px;">
+          <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; color: #57524A; marginBottom: 6px;">ROWS</div>
+          <div style="display: grid; gridTemplateColumns: 38px 1fr; columnGap: 8px;">
+            <div style="position: relative; height: 170px;">
+              <sc-for list="{{ ruled.yLabels }}" as="l" hint-placeholder-count="5">
+                <span style="position: absolute; right: 0; top: {{ l.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A; whiteSpace: nowrap;">{{ l.label }}</span>
+              </sc-for>
+            </div>
+            <div>
+              <svg viewBox="0 0 520 170" width="100%" height="170" preserveAspectRatio="none" role="img" aria-label="Age distribution, 25 bins, rows per bin against age in years" style="display: block; borderBottom: 1px solid #CFC7B8;">
+                <sc-for list="{{ ruled.grid }}" as="g" hint-placeholder-count="4">
+                  <line x1="0" y1="{{ g.y }}" x2="520" y2="{{ g.y }}" stroke="#EDE6DA" stroke-width="1"></line>
+                </sc-for>
+                <sc-for list="{{ ruled.bars }}" as="b" hint-placeholder-count="25">
+                  <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#4A6E8A"></rect>
+                </sc-for>
+              </svg>
+              <div style="position: relative; height: 18px; marginTop: 4px;">
+                <sc-for list="{{ ruled.xLabels }}" as="t" hint-placeholder-count="8">
+                  <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A; whiteSpace: nowrap;">{{ t.label }}</span>
+                </sc-for>
+              </div>
+              <div style="textAlign: right; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; color: #57524A;">YEARS</div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; flexDirection: column; gap: 8px;">
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Any bar's count is readable to about ±10 rows, and <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">ROWS</span> / <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">YEARS</span> answer the units question inside the chart, where the reader is looking. Units come from the dtype and the column name, so they need no new statistics.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Most marks of the three. For a unitless column the x label has nothing honest to say and has to be omitted, so the renderer needs that branch.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="5c" style="display: flex; flexDirection: column; gap: 12px; width: 600px; flexShrink: 0;">
+        <div style="display: flex; alignItems: baseline; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">5c</span>
+          <h3 style="margin: 0; fontSize: 17px; fontWeight: 600;">No axis, annotated instead</h3>
+        </div>
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 18px 20px 16px;">
+          <svg viewBox="0 0 540 150" width="100%" height="150" preserveAspectRatio="none" role="img" aria-label="Age distribution, 25 bins" style="display: block; borderBottom: 1px solid #22201C;">
+            <sc-for list="{{ bare.bars }}" as="b" hint-placeholder-count="25">
+              <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#4A6E8A"></rect>
+            </sc-for>
+          </svg>
+          <div style="position: relative; height: 22px; marginTop: 3px;">
+            <sc-for list="{{ bare.marks }}" as="m" hint-placeholder-count="3">
+              <span style="position: absolute; left: {{ m.pct }}; transform: translateX(-50%); display: flex; flexDirection: column; alignItems: center; gap: 2px;">
+                <span style="width: 1px; height: 6px; background: #8F6417;"></span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; color: #8F6417; whiteSpace: nowrap;">{{ m.label }}</span>
+              </span>
+            </sc-for>
+          </div>
+          <div style="display: flex; justifyContent: space-between; gap: 16px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A; marginTop: 8px;">
+            <span>0.42 years</span>
+            <span style="color: #22201C;">peak 83 rows at 26–29</span>
+            <span>80 years</span>
+          </div>
+        </div>
+        <div style="display: flex; flexDirection: column; gap: 8px;">
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Quartile marks put the median and IQR on the chart, so the shape and the summary statistics stop being two separate things to reconcile.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">No counts at all, and the annotations collide on skewed columns like <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">Fare</span>, where Q1, median and Q3 all land in the first fifth of the axis.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flexDirection: column; gap: 22px;">
+    <div style="display: flex; alignItems: center; gap: 14px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">4b · all five column types</span>
+      <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+    </div>
+
+    <div id="5d" style="width: 1240px; flexShrink: 0; background: #FBF9F5; border: 1px solid #CFC7B8; padding: 24px 24px 28px; display: flex; flexDirection: column; gap: 26px;">
+
+      <div style="display: flex; flexDirection: column; gap: 14px;">
+        <div style="display: flex; alignItems: center; gap: 10px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 16px; fontWeight: 600;">Age</span>
+          <span style="display: inline-flex; alignItems: center; gap: 7px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;"><span style="width: 8px; height: 8px; background: #4A6E8A;"></span>numeric</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #CFC7B8; color: #4A453D;">float64</span>
+          <span title="Above the 20% warning threshold" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #A2731A; color: #8F6417;">19.9% missing</span>
+          <span title="No negative values observed" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #4A5D1E; color: #4A5D1E;">positive-only</span>
+          <span title="1.5% of values fall outside the outlier bounds" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #963F1C; color: #963F1C;">11 outliers</span>
+          <a href="https://alvarodiez20.github.io/pysuricata/stats/numeric/" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; marginLeft: auto; minHeight: 44px; minWidth: 44px; display: inline-flex; alignItems: center; justifyContent: flex-end;">docs →</a>
+        </div>
+        <div style="borderTop: 1px solid #22201C; paddingTop: 12px; display: flex; flexDirection: column; gap: 4px;">
+          <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; color: #57524A;">ROWS</div>
+          <div style="display: grid; gridTemplateColumns: 40px 1fr; columnGap: 8px;">
+            <div style="position: relative; height: 200px;">
+              <sc-for list="{{ wide.yLabels }}" as="l" hint-placeholder-count="5">
+                <span style="position: absolute; right: 0; top: {{ l.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A; whiteSpace: nowrap;">{{ l.label }}</span>
+              </sc-for>
+            </div>
+            <div>
+              <svg viewBox="0 0 1120 200" width="100%" height="200" preserveAspectRatio="none" role="img" aria-label="Age distribution, 25 bins, rows per bin against age in years" style="display: block; borderBottom: 1px solid #CFC7B8;">
+                <sc-for list="{{ wide.grid }}" as="g" hint-placeholder-count="4">
+                  <line x1="0" y1="{{ g.y }}" x2="1120" y2="{{ g.y }}" stroke="#EDE6DA" stroke-width="1"></line>
+                </sc-for>
+                <sc-for list="{{ wide.bars }}" as="b" hint-placeholder-count="25">
+                  <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#4A6E8A"></rect>
+                </sc-for>
+              </svg>
+              <div style="position: relative; height: 18px; marginTop: 4px;">
+                <sc-for list="{{ wide.xLabels }}" as="t" hint-placeholder-count="8">
+                  <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A; whiteSpace: nowrap;">{{ t.label }}</span>
+                </sc-for>
+              </div>
+              <div style="textAlign: right; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; color: #57524A;">YEARS</div>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; alignItems: center; gap: 24px; flexWrap: wrap; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">
+          <div style="display: flex; alignItems: center; gap: 6px;">
+            <span>Scale</span>
+            <a href="#5d" style="minWidth: 44px; minHeight: 44px; padding: 0 8px; display: inline-flex; alignItems: center; justifyContent: center; color: #22201C; boxShadow: inset 0 -2px 0 #4A5D1E;">linear</a>
+            <a href="#5d" style="minWidth: 44px; minHeight: 44px; padding: 0 8px; display: inline-flex; alignItems: center; justifyContent: center;">log</a>
+          </div>
+          <div style="display: flex; alignItems: center; gap: 6px;">
+            <span>Bins</span>
+            <a href="#5d" style="minWidth: 44px; minHeight: 44px; padding: 0 8px; display: inline-flex; alignItems: center; justifyContent: center;">10</a>
+            <a href="#5d" style="minWidth: 44px; minHeight: 44px; padding: 0 8px; display: inline-flex; alignItems: center; justifyContent: center; color: #22201C; boxShadow: inset 0 -2px 0 #4A5D1E;">25</a>
+            <a href="#5d" style="minWidth: 44px; minHeight: 44px; padding: 0 8px; display: inline-flex; alignItems: center; justifyContent: center;">50</a>
+          </div>
+        </div>
+        <div style="display: grid; gridTemplateColumns: repeat(4, 1fr); gap: 0 28px; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ ageStats }}" as="s" hint-placeholder-count="14">
+            <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 12px; padding: 7px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">{{ s.k }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ s.color }};">{{ s.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: 20px; flexWrap: wrap;">
+          <sc-for list="{{ numericTabs }}" as="t" hint-placeholder-count="6">
+            <a href="#5d" style="minHeight: 44px; display: inline-flex; alignItems: center; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: {{ t.color }}; borderBottom: 2px solid {{ t.rule }};">{{ t.label }}</a>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="borderTop: 1px solid #CFC7B8; paddingTop: 24px; display: flex; flexDirection: column; gap: 14px;">
+        <div style="display: flex; alignItems: center; gap: 10px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 16px; fontWeight: 600;">signed_up</span>
+          <span style="display: inline-flex; alignItems: center; gap: 7px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;"><span style="width: 8px; height: 8px; background: #8F6417;"></span>datetime</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #CFC7B8; color: #4A453D;">datetime64[ns]</span>
+          <span title="Values only ever increase" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #4A5D1E; color: #4A5D1E;">monotonic ↑</span>
+          <span title="4,880 of 5,000 timestamps are distinct" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #A2731A; color: #8F6417;">high uniqueness</span>
+          <a href="https://alvarodiez20.github.io/pysuricata/stats/datetime/" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; marginLeft: auto; minHeight: 44px; minWidth: 44px; display: inline-flex; alignItems: center; justifyContent: flex-end;">docs →</a>
+        </div>
+        <div style="borderTop: 1px solid #22201C; paddingTop: 12px; display: flex; flexDirection: column; gap: 4px;">
+          <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.12em; color: #57524A;">RECORDS PER DAY</div>
+          <div style="display: grid; gridTemplateColumns: 40px 1fr; columnGap: 8px;">
+            <div style="position: relative; height: 160px;">
+              <sc-for list="{{ timeline.yLabels }}" as="l" hint-placeholder-count="5">
+                <span style="position: absolute; right: 0; top: {{ l.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A; whiteSpace: nowrap;">{{ l.label }}</span>
+              </sc-for>
+            </div>
+            <div>
+              <svg viewBox="0 0 1100 160" width="100%" height="160" preserveAspectRatio="none" role="img" aria-label="Records per day from 2024-01-01 to 2024-02-29" style="display: block; borderBottom: 1px solid #CFC7B8;">
+                <sc-for list="{{ timeline.grid }}" as="g" hint-placeholder-count="4">
+                  <line x1="0" y1="{{ g.y }}" x2="1100" y2="{{ g.y }}" stroke="#EDE6DA" stroke-width="1"></line>
+                </sc-for>
+                <sc-for list="{{ timeline.bars }}" as="b" hint-placeholder-count="60">
+                  <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#8F6417"></rect>
+                </sc-for>
+              </svg>
+              <div style="position: relative; height: 18px; marginTop: 4px;">
+                <sc-for list="{{ timeline.xLabels }}" as="t" hint-placeholder-count="5">
+                  <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A; whiteSpace: nowrap;">{{ t.label }}</span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="display: grid; gridTemplateColumns: repeat(4, 1fr); gap: 0 28px; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ dtStats }}" as="s" hint-placeholder-count="12">
+            <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 12px; padding: 7px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">{{ s.k }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ s.color }};">{{ s.v }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="display: grid; gridTemplateColumns: repeat(3, 1fr); gap: 28px; paddingTop: 6px;">
+          <sc-for list="{{ temporal }}" as="p" hint-placeholder-count="3">
+            <div style="display: flex; flexDirection: column; gap: 8px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ p.title }}</span>
+              <div style="display: grid; gridTemplateColumns: 34px 1fr; columnGap: 6px;">
+                <div style="position: relative; height: 62px;">
+                  <sc-for list="{{ p.yLabels }}" as="l" hint-placeholder-count="2">
+                    <span style="position: absolute; right: 0; top: {{ l.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A; whiteSpace: nowrap;">{{ l.label }}</span>
+                  </sc-for>
+                </div>
+                <div>
+                  <svg viewBox="0 0 320 62" width="100%" height="62" preserveAspectRatio="none" role="img" aria-label="{{ p.title }}" style="display: block; borderBottom: 1px solid #CFC7B8;">
+                    <sc-for list="{{ p.bars }}" as="b" hint-placeholder-count="12">
+                      <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#8F6417"></rect>
+                    </sc-for>
+                  </svg>
+                  <div style="position: relative; height: 16px; marginTop: 3px;">
+                    <sc-for list="{{ p.xLabels }}" as="t" hint-placeholder-count="5">
+                      <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A; whiteSpace: nowrap;">{{ t.label }}</span>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #57524A;">{{ p.note }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="borderTop: 1px solid #CFC7B8; paddingTop: 24px; display: flex; flexDirection: column; gap: 14px;">
+        <div style="display: flex; alignItems: center; gap: 10px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 16px; fontWeight: 600;">Embarked</span>
+          <span style="display: inline-flex; alignItems: center; gap: 7px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;"><span style="width: 8px; height: 8px; background: #4A5D1E;"></span>categorical</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #CFC7B8; color: #4A453D;">object</span>
+          <span title="2 of 891 rows are missing" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #4A5D1E; color: #4A5D1E;">2 missing</span>
+          <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; marginLeft: auto; minHeight: 44px; minWidth: 44px; display: inline-flex; alignItems: center; justifyContent: flex-end;">docs →</a>
+        </div>
+        <div style="display: grid; gridTemplateColumns: 1fr 460px; gap: 32px; alignItems: start;">
+          <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+            <sc-for list="{{ embarked }}" as="v" hint-placeholder-count="3">
+              <div style="display: grid; gridTemplateColumns: 96px 1fr 120px; alignItems: center; gap: 16px; padding: 10px 0; borderBottom: 1px solid #E2DCD1;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">{{ v.label }}</span>
+                <span style="height: 14px; background: #EDE6DA; display: block;">
+                  <span style="display: block; height: 14px; width: {{ v.pct }}; background: #4A5D1E;"></span>
+                </span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; textAlign: right; color: #4A453D;">{{ v.stat }}</span>
+              </div>
+            </sc-for>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A; paddingTop: 10px;">3 of 3 levels shown · covers 100% of non-missing rows</span>
+          </div>
+          <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 0 28px;">
+            <sc-for list="{{ embarkedStats }}" as="s" hint-placeholder-count="8">
+              <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 12px; padding: 6px 0; borderBottom: 1px solid #E2DCD1;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">{{ s.k }}</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ s.color }};">{{ s.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="borderTop: 1px solid #CFC7B8; paddingTop: 24px; display: flex; flexDirection: column; gap: 14px;">
+        <div style="display: flex; alignItems: center; gap: 10px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 16px; fontWeight: 600;">Survived</span>
+          <span style="display: inline-flex; alignItems: center; gap: 7px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;"><span style="width: 8px; height: 8px; background: #963F1C;"></span>boolean</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #CFC7B8; color: #4A453D;">int64</span>
+          <span title="Entropy 0.96 of a possible 1.0" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #4A5D1E; color: #4A5D1E;">well balanced</span>
+          <a href="https://alvarodiez20.github.io/pysuricata/stats/boolean/" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; marginLeft: auto; minHeight: 44px; minWidth: 44px; display: inline-flex; alignItems: center; justifyContent: flex-end;">docs →</a>
+        </div>
+        <div style="display: grid; gridTemplateColumns: 1fr 460px; gap: 32px; alignItems: start;">
+          <div style="display: flex; flexDirection: column; gap: 10px; borderTop: 1px solid #22201C; paddingTop: 14px;">
+            <div style="display: flex; height: 40px; width: 100%; overflow: hidden;">
+              <div title="False — 549 rows, 61.6%" style="width: 61.6%; background: #963F1C; display: flex; alignItems: center; paddingLeft: 12px;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: #FBF9F5;">false 61.6%</span>
+              </div>
+              <div title="True — 342 rows, 38.4%" style="width: 38.4%; background: #4A5D1E; display: flex; alignItems: center; paddingLeft: 12px;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: #FBF9F5;">true 38.4%</span>
+              </div>
+            </div>
+            <div style="display: flex; justifyContent: space-between; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">
+              <span>549 rows false</span><span>342 rows true</span>
+            </div>
+          </div>
+          <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 0 28px;">
+            <sc-for list="{{ boolStats }}" as="s" hint-placeholder-count="6">
+              <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 12px; padding: 6px 0; borderBottom: 1px solid #E2DCD1;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">{{ s.k }}</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ s.color }};">{{ s.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="borderTop: 1px solid #CFC7B8; paddingTop: 24px; display: flex; flexDirection: column; gap: 14px;">
+        <div style="display: flex; alignItems: center; gap: 10px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 16px; fontWeight: 600;">Name</span>
+          <span style="display: inline-flex; alignItems: center; gap: 7px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #4A453D;"><span style="width: 8px; height: 8px; background: #4A5D1E;"></span>categorical</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #CFC7B8; color: #4A453D;">object</span>
+          <span title="Distinct count is close to the row count — this column behaves like an identifier" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; padding: 3px 7px; border: 1px solid #A2731A; color: #8F6417;">identifier-like</span>
+        </div>
+        <div style="display: grid; gridTemplateColumns: 1fr 460px; gap: 32px; alignItems: start;">
+          <div style="borderTop: 1px solid #22201C; paddingTop: 16px; display: flex; flexDirection: column; gap: 12px;">
+            <p style="margin: 0; fontSize: 15px; lineHeight: 1.55; color: #22201C; maxWidth: 44ch; textWrap: pretty;">Every value is different. A top-values chart would be ten bars of one row each, so there is nothing to plot.</p>
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; lineHeight: 1.9; color: #4A453D;">Longest <span style="color: #22201C;">Penasco y Castellana, Mrs. Victor de Satode (Maria Josefa Perez de Soto y Vallejo)</span></div>
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; lineHeight: 1.9; color: #4A453D;">Shortest <span style="color: #22201C;">Kelly, Mr. James</span></div>
+          </div>
+          <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 0 28px;">
+            <sc-for list="{{ nameStats }}" as="s" hint-placeholder-count="8">
+              <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 12px; padding: 6px 0; borderBottom: 1px solid #E2DCD1;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">{{ s.k }}</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ s.color }};">{{ s.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #8F6417;">The distinct estimate of 892 exceeds the 891 rows — the KMV sketch carries about 2.2% error. Worth clamping to the row count in the renderer.</div>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 24px; alignItems: flex-start; flexWrap: wrap;">
+      <div style="width: 390px; flexShrink: 0;">
+        <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px · datetime</div>
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 16px 14px 18px; display: flex; flexDirection: column; gap: 12px;">
+          <div style="display: flex; alignItems: center; gap: 8px; flexWrap: wrap;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">signed_up</span>
+            <span style="display: inline-flex; alignItems: center; gap: 6px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #4A453D;"><span style="width: 7px; height: 7px; background: #8F6417;"></span>datetime</span>
+          </div>
+          <div style="display: flex; gap: 6px; flexWrap: wrap;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; padding: 2px 6px; border: 1px solid #CFC7B8; color: #4A453D;">datetime64[ns]</span>
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; padding: 2px 6px; border: 1px solid #4A5D1E; color: #4A5D1E;">monotonic ↑</span>
+          </div>
+          <div style="borderTop: 1px solid #22201C; paddingTop: 10px; display: flex; flexDirection: column; gap: 4px;">
+            <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.12em; color: #57524A;">RECORDS PER DAY</div>
+            <div style="display: grid; gridTemplateColumns: 30px 1fr; columnGap: 6px;">
+              <div style="position: relative; height: 130px;">
+                <sc-for list="{{ timeline.yLabels }}" as="l" hint-placeholder-count="5">
+                  <span style="position: absolute; right: 0; top: {{ l.pct }}; transform: translateY(-50%); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A; whiteSpace: nowrap;">{{ l.label }}</span>
+                </sc-for>
+              </div>
+              <div>
+                <svg viewBox="0 0 300 130" width="100%" height="130" preserveAspectRatio="none" role="img" aria-label="Records per day" style="display: block; borderBottom: 1px solid #CFC7B8;">
+                  <sc-for list="{{ timelineM.grid }}" as="g" hint-placeholder-count="4">
+                    <line x1="0" y1="{{ g.y }}" x2="300" y2="{{ g.y }}" stroke="#EDE6DA" stroke-width="1"></line>
+                  </sc-for>
+                  <sc-for list="{{ timelineM.bars }}" as="b" hint-placeholder-count="60">
+                    <rect x="{{ b.x }}" y="{{ b.y }}" width="{{ b.w }}" height="{{ b.h }}" fill="#8F6417"></rect>
+                  </sc-for>
+                </svg>
+                <div style="position: relative; height: 16px; marginTop: 3px;">
+                  <sc-for list="{{ timelineM.xLabels }}" as="t" hint-placeholder-count="3">
+                    <span style="position: absolute; left: {{ t.pct }}; transform: translateX({{ t.tx }}); fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; color: #57524A; whiteSpace: nowrap;">{{ t.label }}</span>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 0 18px; borderTop: 1px solid #22201C;">
+            <sc-for list="{{ dtStats }}" as="s" hint-placeholder-count="12">
+              <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 8px; padding: 6px 0; borderBottom: 1px solid #E2DCD1;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; color: #57524A;">{{ s.k }}</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ s.color }};">{{ s.v }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="width: 390px; flexShrink: 0;">
+        <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A; marginBottom: 8px;">390 px · categorical &amp; boolean</div>
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 16px 14px 18px; display: flex; flexDirection: column; gap: 22px;">
+          <div style="display: flex; flexDirection: column; gap: 10px;">
+            <div style="display: flex; alignItems: center; gap: 8px; flexWrap: wrap;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Embarked</span>
+              <span style="display: inline-flex; alignItems: center; gap: 6px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #4A453D;"><span style="width: 7px; height: 7px; background: #4A5D1E;"></span>categorical</span>
+            </div>
+            <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+              <sc-for list="{{ embarked }}" as="v" hint-placeholder-count="3">
+                <div style="display: grid; gridTemplateColumns: 28px 1fr 96px; alignItems: center; gap: 10px; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">{{ v.label }}</span>
+                  <span style="height: 12px; background: #EDE6DA; display: block;">
+                    <span style="display: block; height: 12px; width: {{ v.pct }}; background: #4A5D1E;"></span>
+                  </span>
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; textAlign: right; color: #4A453D;">{{ v.stat }}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 0 16px;">
+              <sc-for list="{{ embarkedStats }}" as="s" hint-placeholder-count="8">
+                <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 8px; padding: 5px 0; borderBottom: 1px solid #E2DCD1;">
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; color: #57524A;">{{ s.k }}</span>
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ s.color }};">{{ s.v }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+
+          <div style="display: flex; flexDirection: column; gap: 10px; borderTop: 1px solid #CFC7B8; paddingTop: 18px;">
+            <div style="display: flex; alignItems: center; gap: 8px; flexWrap: wrap;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px; fontWeight: 600;">Survived</span>
+              <span style="display: inline-flex; alignItems: center; gap: 6px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: #4A453D;"><span style="width: 7px; height: 7px; background: #963F1C;"></span>boolean</span>
+            </div>
+            <div style="display: flex; height: 36px; width: 100%; overflow: hidden; borderTop: 1px solid #22201C;">
+              <div title="False — 549 rows, 61.6%" style="width: 61.6%; background: #963F1C; display: flex; alignItems: center; paddingLeft: 8px;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #FBF9F5;">false 61.6%</span>
+              </div>
+              <div title="True — 342 rows, 38.4%" style="width: 38.4%; background: #4A5D1E; display: flex; alignItems: center; paddingLeft: 8px;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #FBF9F5;">true 38%</span>
+              </div>
+            </div>
+            <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 0 16px;">
+              <sc-for list="{{ boolStats }}" as="s" hint-placeholder-count="6">
+                <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 8px; padding: 5px 0; borderBottom: 1px solid #E2DCD1;">
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10.5px; color: #57524A;">{{ s.k }}</span>
+                  <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ s.color }};">{{ s.v }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; flexDirection: column; gap: 22px;">
+    <div style="display: flex; alignItems: center; gap: 14px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">The description</span>
+      <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+    </div>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; maxWidth: 76ch; textWrap: pretty;">You're right — I cut it to a one-line link without asking. It's the only human writing in the whole report, so it deserves a decision rather than a default. Today it is a collapsed card at the bottom of Summary that says "Description ▸" and, when opened, "Click to add description…". Two ways to treat it:</p>
+
+    <div style="display: flex; flexWrap: wrap; gap: 32px; alignItems: flex-start;">
+
+      <div id="5e" style="display: flex; flexDirection: column; gap: 12px; width: 600px; flexShrink: 0;">
+        <div style="display: flex; alignItems: baseline; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">5e</span>
+          <h3 style="margin: 0; fontSize: 17px; fontWeight: 600;">An abstract, above the numbers</h3>
+        </div>
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 22px 24px; display: flex; flexDirection: column; gap: 18px;">
+          <h2 style="margin: 0; fontSize: 25px; fontWeight: 600; letterSpacing: -0.015em;">EDA Report</h2>
+          <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #57524A; borderTop: 1px solid #E2DCD1; paddingTop: 10px;">Generated <span style="color: #22201C;">2026-03-01 00:15:48</span> · Shape <span style="color: #22201C;">891 rows × 12 columns</span></div>
+          <p style="margin: 0; fontSize: 16.5px; lineHeight: 1.6; color: #22201C; maxWidth: 56ch; textWrap: pretty;">Kaggle's Titanic training split, pulled 2026-02-28. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px;">Cabin</span> is mostly empty and should not be used as a feature without imputation. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px;">Age</span> is missing for a fifth of passengers.</p>
+          <a href="#5e" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; alignSelf: flex-start;">edit note</a>
+          <div style="borderTop: 1px solid #E2DCD1; paddingTop: 14px; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Summary</div>
+        </div>
+        <div style="background: #FBF9F5; border: 1px dashed #CFC7B8; padding: 18px 22px; display: flex; flexDirection: column; gap: 8px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">When nobody has written one</span>
+          <a href="#5e" style="fontSize: 16.5px; lineHeight: 1.6; color: #57524A;">Add a note — what this data is, where it came from, what to watch for.</a>
+        </div>
+        <div style="display: flex; flexDirection: column; gap: 8px;">
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">A warning like "Cabin is mostly empty" is read before the reader draws conclusions, not after. When you send the file to someone, the first thing they see is a person explaining the data rather than a wall of statistics.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Reports generated in a loop will never have one, so most readers meet an empty invitation above the data. It also pushes the first number about 90px down the page.</p>
+          </div>
+        </div>
+      </div>
+
+      <div id="5f" style="display: flex; flexDirection: column; gap: 12px; width: 600px; flexShrink: 0;">
+        <div style="display: flex; alignItems: baseline; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">5f</span>
+          <h3 style="margin: 0; fontSize: 17px; fontWeight: 600;">A margin note, where the numbers are</h3>
+        </div>
+        <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 22px 24px; display: flex; flexDirection: column; gap: 16px;">
+          <div style="display: flex; alignItems: center; gap: 14px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Summary</span>
+            <span style="flex: 1; height: 1px; background: #E2DCD1;"></span>
+          </div>
+          <div style="display: grid; gridTemplateColumns: repeat(3, 1fr); borderTop: 1px solid #22201C; borderBottom: 1px solid #E2DCD1;">
+            <sc-for list="{{ miniKpis }}" as="k" hint-placeholder-count="3">
+              <div style="padding: 12px 16px 14px; borderLeft: 1px solid #E2DCD1; display: flex; flexDirection: column; gap: 7px;">
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">{{ k.label }}</span>
+                <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 24px; letterSpacing: -0.02em; lineHeight: 1;">{{ k.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: grid; gridTemplateColumns: 88px 1fr; gap: 18px; alignItems: start; borderLeft: 2px solid #4A5D1E; paddingLeft: 16px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #4A5D1E; paddingTop: 3px;">Note</span>
+            <div style="display: flex; flexDirection: column; gap: 8px;">
+              <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.6; color: #22201C; textWrap: pretty;">Kaggle's Titanic training split, pulled 2026-02-28. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">Cabin</span> is mostly empty and should not be used as a feature without imputation.</p>
+              <a href="#5f" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px;">edit</a>
+            </div>
+          </div>
+        </div>
+        <div style="background: #FBF9F5; border: 1px dashed #CFC7B8; padding: 14px 22px; display: flex; alignItems: baseline; justifyContent: space-between; gap: 16px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">When empty</span>
+          <a href="#5f" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px;">+ add a note</a>
+        </div>
+        <div style="display: flex; flexDirection: column; gap: 8px;">
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Costs one 44px line when empty, so an automated report is not disfigured by an invitation nobody will accept. The olive rule marks it as the one human voice on the page without a card around it.</p>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+            <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Sits below the statistics, so a caveat written there can be missed by someone who already scrolled past to the variables.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="borderTop: 1px solid #CFC7B8; paddingTop: 20px; maxWidth: 76ch; display: flex; flexDirection: column; gap: 8px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">What I'd do</span>
+      <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">Both, driven by whether the field is empty. No note: the single 44px line from <a href="#5f">5f</a>, so a generated report stays clean. A note exists: promote it to the abstract position in <a href="#5e">5e</a>, because someone bothered to write it and it should be read first. One condition in the template, and the empty case stops costing anything.</p>
+    </div>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1400, &quot;height&quot;: 1400}}">
+const OLIVE = "#4A5D1E", RUST = "#963F1C", BLUE = "#4A6E8A", MUTED = "#57524A", INK = "#22201C";
+const OCHRE = "#8F6417";
+
+const AGE_BINS = [30, 17, 15, 9, 29, 64, 67, 70, 83, 62, 51, 40, 35, 27, 35, 23, 15, 9, 11, 11, 4, 2, 3, 1, 1];
+const DAILY = [84, 83, 83, 84, 83, 83, 84, 83, 83, 84, 83, 83, 84, 83, 83, 84, 83, 83, 84, 83, 83, 83, 84, 83, 83, 84,
+  83, 83, 84, 83, 83, 84, 83, 83, 84, 83, 83, 84, 83, 83, 83, 84, 83, 83, 84, 83, 83, 84, 83, 83, 84, 83, 83, 84, 83, 83, 84, 83, 83, 84];
+const HOURS = [211, 208, 208, 209, 208, 208, 208, 209, 207, 209, 208, 209, 207, 209, 208, 208, 208, 209, 208, 208, 209, 208, 208, 208];
+const DOW = [765, 763, 760, 680, 680, 676, 676];
+const MONTHS = [2626, 2374];
+
+const fmt = (v) => (v >= 1000 ? (v / 1000).toFixed(1) + "K" : String(Math.round(v)));
+
+// Plot-only geometry. Axis labels are HTML, positioned by percentage — interpolated
+// text inside an SVG <text> element does not paint, so no chart label lives in the SVG.
+function plot(counts, W, H, yMax, gap) {
+  const slot = W / counts.length;
+  const bw = Math.max(1, slot - (gap === undefined ? 2 : gap));
+  const bars = counts.map((c, i) => {
+    const h = Math.max(1, (c / yMax) * H);
+    return { x: +(i * slot).toFixed(2), y: +(H - h).toFixed(2), w: +bw.toFixed(2), h: +h.toFixed(2) };
+  });
+  const grid = [];
+  for (let i = 1; i <= 4; i++) grid.push({ y: +(H * (1 - i / 4)).toFixed(1) });
+  const yLabels = [];
+  for (let i = 4; i >= 0; i--) yLabels.push({ pct: ((1 - i / 4) * 100).toFixed(2) + "%", label: fmt((yMax * i) / 4) });
+  return { bars, grid, yLabels };
+}
+
+// Edge labels are clamped inside the plot instead of hanging off it.
+const shift = (pct) => (pct <= 3 ? "0%" : pct >= 97 ? "-100%" : "-50%");
+const tick = (v, x0, x1, label) => {
+  const pct = ((v - x0) / (x1 - x0)) * 100;
+  return { pct: pct.toFixed(3) + "%", tx: shift(pct), label: label === undefined ? String(v) : label };
+};
+const xPct = (v, x0, x1) => (((v - x0) / (x1 - x0)) * 100).toFixed(3) + "%";
+
+// Fixed categorical axis, as temporal_charts.py does: 24 hours / 7 days / 12 months,
+// so two populated months read as 2 of 12 rather than filling the plot.
+function temporalPlot(values, slots, labels, visibleIdx) {
+  const W = 320, H = 62;
+  const slot = W / slots;
+  const pad = Math.min(2.5, slot * 0.16);
+  const bw = Math.max(1, slot - pad * 2);
+  const max = Math.max.apply(null, values);
+  const bars = [];
+  for (let i = 0; i < slots; i++) {
+    const v = i < values.length ? values[i] : 0;
+    if (!v) continue;
+    const h = Math.max(1, (v / max) * H);
+    bars.push({ x: +(i * slot + pad).toFixed(2), y: +(H - h).toFixed(2), w: +bw.toFixed(2), h: +h.toFixed(2) });
+  }
+  return {
+    bars,
+    yLabels: [{ pct: "0%", label: fmt(max) }, { pct: "100%", label: "0" }],
+    xLabels: visibleIdx.map((i) => tick(i + 0.5, 0, slots, labels[i])),
+  };
+}
+
+const HOUR_LABELS = (function () { const o = []; for (let h = 0; h < 24; h++) o.push((h < 10 ? "0" + h : String(h)) + ":00"); return o; })();
+const MONTH_LABELS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DOW_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+class Component extends DCLogic {
+  renderVals() {
+    const ageX = (vals) => vals.map((v) => tick(v, 0.42, 80));
+
+    const quiet = plot(AGE_BINS, 520, 170, 83, 2);
+    quiet.yLabels = [{ pct: "0%", label: "83" }, { pct: "100%", label: "0" }];
+    quiet.xLabels = ageX([20, 40, 60, 80]);
+
+    const ruled = plot(AGE_BINS, 520, 170, 100, 2);
+    ruled.xLabels = ageX([10, 20, 30, 40, 50, 60, 70, 80]);
+
+    const wide = plot(AGE_BINS, 1120, 200, 100, 3);
+    wide.xLabels = ageX([10, 20, 30, 40, 50, 60, 70, 80]);
+
+    const bare = plot(AGE_BINS, 540, 150, 100, 2);
+    bare.marks = [
+      { pct: xPct(20.12, 0.42, 80), label: "Q1 20" },
+      { pct: xPct(28, 0.42, 80), label: "med 28" },
+      { pct: xPct(38, 0.42, 80), label: "Q3 38" },
+    ];
+
+    const dayLabels = [
+      { at: 0, label: "Jan 1" }, { at: 14, label: "Jan 15" }, { at: 29, label: "Jan 30" },
+      { at: 44, label: "Feb 14" }, { at: 59, label: "Feb 29" },
+    ];
+    const timeline = plot(DAILY, 1100, 160, 100, 3);
+    timeline.xLabels = dayLabels.map((d) => tick(d.at, 0, 59, d.label));
+
+    const timelineM = plot(DAILY, 300, 130, 100, 1);
+    timelineM.xLabels = [dayLabels[0], dayLabels[2], dayLabels[4]].map((d) => tick(d.at, 0, 59, d.label));
+
+    return {
+      quiet, ruled, wide, bare, timeline, timelineM,
+      temporal: [
+        Object.assign({ title: "Hour of day", note: "flat · peak 00:00 with 211" },
+          temporalPlot(HOURS, 24, HOUR_LABELS, [0, 6, 12, 18])),
+        Object.assign({ title: "Day of week", note: "Mon–Wed heavier than Thu–Sun" },
+          temporalPlot(DOW, 7, DOW_LABELS, [0, 1, 2, 3, 4, 5, 6])),
+        Object.assign({ title: "Month", note: "Jan 2,626 · Feb 2,374 — 2 of 12 months" },
+          temporalPlot(MONTHS, 12, MONTH_LABELS, [0, 3, 6, 9, 11])),
+      ],
+      ageStats: [
+        { k: "Count", v: "714", color: INK },
+        { k: "Missing", v: "177 · 19.9%", color: OCHRE },
+        { k: "Unique", v: "88", color: INK },
+        { k: "Outliers", v: "11 · 1.5%", color: RUST },
+        { k: "Min", v: "0.42", color: INK },
+        { k: "Q1", v: "20.12", color: INK },
+        { k: "Median", v: "28", color: INK },
+        { k: "Mean", v: "29.7", color: INK },
+        { k: "Q3", v: "38", color: INK },
+        { k: "Max", v: "80", color: INK },
+        { k: "Std dev", v: "14.53", color: INK },
+        { k: "IQR", v: "17.88", color: INK },
+        { k: "Skew", v: "0.3875", color: INK },
+        { k: "Kurtosis", v: "0.1598", color: INK },
+      ],
+      numericTabs: ["Statistics", "Common values", "Min/max", "Outliers", "Correlations", "Missing"].map((label, i) => ({
+        label, color: i === 0 ? INK : "#4A453D", rule: i === 0 ? OLIVE : "transparent",
+      })),
+      dtStats: [
+        { k: "Count", v: "5,000", color: INK },
+        { k: "Missing", v: "0 · 0.0%", color: MUTED },
+        { k: "Unique (≈)", v: "4,880", color: INK },
+        { k: "Timezone", v: "UTC", color: INK },
+        { k: "Min", v: "2024-01-01 00:00", color: INK },
+        { k: "Max", v: "2024-02-29 00:23", color: INK },
+        { k: "Time span", v: "2.0 months", color: INK },
+        { k: "Avg interval", v: "17.0 min", color: INK },
+        { k: "Density", v: "84.7 rec/day", color: INK },
+        { k: "Weekend", v: "27.0%", color: INK },
+        { k: "Business hrs", v: "24.3%", color: INK },
+        { k: "Peak day", v: "Mon · 765", color: INK },
+      ],
+      embarked: [
+        { label: "S", pct: "72.4%", stat: "644 · 72.4%" },
+        { label: "C", pct: "18.9%", stat: "168 · 18.9%" },
+        { label: "Q", pct: "8.7%", stat: "77 · 8.7%" },
+      ],
+      embarkedStats: [
+        { k: "Count", v: "889", color: INK },
+        { k: "Missing", v: "2 · 0.2%", color: OLIVE },
+        { k: "Unique", v: "3", color: INK },
+        { k: "Mode", v: "S", color: INK },
+        { k: "Mode %", v: "72.4%", color: INK },
+        { k: "Entropy", v: "1.097", color: INK },
+        { k: "Rare levels", v: "0", color: INK },
+        { k: "Top-5 cover", v: "100%", color: INK },
+      ],
+      boolStats: [
+        { k: "Count", v: "891", color: INK },
+        { k: "Missing", v: "0 · 0.0%", color: MUTED },
+        { k: "Unique", v: "2", color: INK },
+        { k: "True", v: "342 · 38.4%", color: INK },
+        { k: "False", v: "549 · 61.6%", color: INK },
+        { k: "Processed", v: "7.0 KB", color: INK },
+      ],
+      nameStats: [
+        { k: "Count", v: "891", color: INK },
+        { k: "Missing", v: "0 · 0.0%", color: MUTED },
+        { k: "Unique (≈)", v: "892", color: OCHRE },
+        { k: "Mode %", v: "0.1%", color: INK },
+        { k: "Entropy", v: "0.264", color: INK },
+        { k: "Rare levels", v: "24 · 2.7%", color: INK },
+        { k: "Top-5 cover", v: "0.6%", color: INK },
+        { k: "Empty strings", v: "0", color: INK },
+      ],
+      miniKpis: [
+        { label: "Rows", value: "891" },
+        { label: "Columns", value: "12" },
+        { label: "Missing", value: "8.1%" },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>

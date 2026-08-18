@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas" />
+<style>
+  body { margin: 0; background: #DFDACF; }
+  a { color: #4A5D1E; text-decoration: none; }
+  a:hover { color: #22201C; text-decoration: underline; }
+</style>
+</helmet>
+
+<section style="padding: 56px 56px 64px; background: #DFDACF; fontFamily: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; color: #22201C; display: flex; flexDirection: column; gap: 44px;">
+
+  <div style="display: flex; flexDirection: column; gap: 12px; maxWidth: 880px;">
+    <div style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Turn 15 · above the cards</div>
+    <h1 style="margin: 0; fontSize: 30px; fontWeight: 600; letterSpacing: -0.01em;">Making the flags mean something</h1>
+    <p style="margin: 0; fontSize: 15px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">You asked how a reader is meant to know what "5 of 12 columns need a look" means, and what each flagged thing means. They cannot, and the reason is structural rather than cosmetic: the block reports <em>measurements</em> and the reader needs <em>consequences</em>. Below is what is wrong with it, then two ways to close that gap, then the pagination problem sitting underneath.</p>
+  </div>
+
+  <div style="width: 1240px; flexShrink: 0; background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 24px 24px; display: flex; flexDirection: column; gap: 18px;">
+    <div style="display: flex; alignItems: center; gap: 14px; flexWrap: wrap;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">What the block says today</span>
+      <span style="flex: 1; height: 1px; background: #E2DCD1; minWidth: 20px;"></span>
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">triage.py · build_attention_block</span>
+    </div>
+
+    <div style="display: grid; gridTemplateColumns: 1fr 1fr; gap: 32px; alignItems: start;">
+      <div style="display: flex; flexDirection: column; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">As rendered</span>
+        <div style="border: 1px solid #E2DCD1; background: #F5F2EC; padding: 16px 18px; display: flex; flexDirection: column; gap: 12px;">
+          <span style="fontSize: 15px; fontWeight: 700; color: #22201C;">5 of 12 columns need a look</span>
+          <sc-for list="{{ asRendered }}" as="r" hint-placeholder-count="5">
+            <div style="display: flex; alignItems: flex-end; gap: 10px;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: #2C4A62; width: 66px; flexShrink: 0;">{{ r.col }}</span>
+              <span style="fontSize: 14.5px; color: #22201C; paddingBottom: 4px;">{{ r.flags }}</span>
+            </div>
+          </sc-for>
+          <span style="fontSize: 13px; color: #57524A;">Click a column to jump to its card, or a chip to filter the list below.</span>
+        </div>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; lineHeight: 1.5; color: #57524A;">redrawn from your screenshot — the chips really do run together like that</span>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Six problems</span>
+        <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ problems }}" as="p" hint-placeholder-count="6">
+            <div style="display: grid; gridTemplateColumns: 20px 1fr; gap: 12px; alignItems: start; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A; paddingTop: 2px;">{{ p.n }}</span>
+              <div style="display: flex; flexDirection: column; gap: 3px;">
+                <span style="fontSize: 13.5px; fontWeight: 600; color: #22201C;">{{ p.title }}</span>
+                <span style="fontSize: 13px; lineHeight: 1.5; color: #4A453D;">{{ p.body }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+
+    <div style="display: grid; gridTemplateColumns: 74px 1fr; gap: 16px; alignItems: start; borderLeft: 2px solid #963F1C; paddingLeft: 16px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 9.5px; letterSpacing: 0.13em; textTransform: uppercase; color: #963F1C; paddingTop: 3px;">The worst</span>
+      <p style="margin: 0; fontSize: 15px; lineHeight: 1.55; color: #22201C; maxWidth: 78ch; textWrap: pretty;"><span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 14px;">Age</span> is missing <strong>19.9%</strong> of its values and that does not appear in this block at all — look at its row, which lists only outliers. The missing chip is actionable at <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 14px;">bad</span>, and <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 14px;">bad</span> starts above 20%. A fifth of the passengers have no age, the single most consequential fact about this dataset, and it misses the cut by one tenth of a point.</p>
+    </div>
+  </div>
+
+  <div style="display: flex; alignItems: center; gap: 14px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Closing the gap</span>
+    <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+  </div>
+
+  <div id="15a" style="display: flex; flexDirection: column; gap: 14px; width: 1240px; flexShrink: 0;">
+    <div style="display: flex; alignItems: baseline; gap: 12px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">15a</span>
+      <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">Group by what to do, not by which column</h3>
+    </div>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.6; color: #4A453D; maxWidth: 88ch; textWrap: pretty;">A list of columns with flags asks the reader to work out the consequence for each one. A list of consequences with columns under them has already done that work. Same five columns, same chips, reordered so the heading of each group is the thing a reader would have had to conclude — and each chip now carries its threshold on its face instead of in a tooltip.</p>
+
+    <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 24px 26px 26px; display: flex; flexDirection: column; gap: 20px;">
+      <div style="display: flex; alignItems: baseline; gap: 14px; flexWrap: wrap;">
+        <h2 style="margin: 0; fontSize: 21px; fontWeight: 600; letterSpacing: -0.01em;">5 of 12 columns need work before modelling</h2>
+        <span style="flex: 1; height: 1px; background: #E2DCD1; minWidth: 20px;"></span>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">7 are clean</span>
+      </div>
+
+      <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+        <div style="display: grid; gridTemplateColumns: 300px 1fr; gap: 28px; alignItems: start; borderTop: 1px solid {{ g.rule }}; paddingTop: 14px;">
+          <div style="display: flex; flexDirection: column; gap: 6px;">
+            <div style="display: flex; alignItems: baseline; gap: 9px;">
+              <span style="width: 9px; height: 9px; background: {{ g.tone }}; flexShrink: 0;"></span>
+              <span style="fontSize: 15px; fontWeight: 600; lineHeight: 1.35; color: #22201C;">{{ g.action }}</span>
+            </div>
+            <span style="fontSize: 13px; lineHeight: 1.5; color: #4A453D; paddingLeft: 18px;">{{ g.why }}</span>
+          </div>
+          <div style="display: flex; flexDirection: column;">
+            <sc-for list="{{ g.cols }}" as="c" hint-placeholder-count="2">
+              <div style="display: grid; gridTemplateColumns: 122px 1fr; gap: 16px; alignItems: center; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+                <a href="#15a" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; color: #2C4A62; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ c.col }}</a>
+                <div style="display: flex; gap: 8px; flexWrap: wrap;">
+                  <sc-for list="{{ c.chips }}" as="k" hint-placeholder-count="2">
+                    <span style="display: inline-flex; alignItems: baseline; gap: 6px; padding: 3px 8px; border: 1px solid {{ k.border }}; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ k.tone }};">
+                      <span style="fontWeight: 600;">{{ k.value }}</span>{{ k.label }}<span style="color: #57524A;">{{ k.limit }}</span>
+                    </span>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+
+      <div style="display: flex; alignItems: baseline; gap: 16px; flexWrap: wrap; borderTop: 1px solid #E2DCD1; paddingTop: 14px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">every chip shows its threshold · click a column for its card, a chip to filter</span>
+        <a href="#15b" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; marginLeft: auto; minHeight: 44px; display: inline-flex; alignItems: center;">what these mean →</a>
+      </div>
+    </div>
+
+    <div style="display: flex; flexDirection: column; gap: 8px; maxWidth: 92ch;">
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">The reader learns what to do without knowing what kurtosis is. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">33.20 kurtosis · limit 10</span> is judgeable where <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">33.20 heavy-tailed</span> is not, and the threshold is already in <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">data-threshold</span> — it was only ever hidden in a <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">title</span>, which is invisible on a phone and absent from a PDF. Bordered chips also fix the run-together, and the four group headings replace the vague "need a look".</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">The group headings are advice, and a profiler giving modelling advice is a step beyond reporting facts — "drop or impute before modelling" is wrong for someone who is not modelling. It also needs a flag-to-group mapping maintained by hand, and a column with flags in three groups appears three times, which the current one-row-per-column form avoids.</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="15b" style="display: flex; flexDirection: column; gap: 14px; width: 1240px; flexShrink: 0;">
+    <div style="display: flex; alignItems: baseline; gap: 12px;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">15b</span>
+      <h3 style="margin: 0; fontSize: 19px; fontWeight: 600;">A flag reference, once per report</h3>
+    </div>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.6; color: #4A453D; maxWidth: 88ch; textWrap: pretty;">The conservative half of <a href="#15a">15a</a>: keep the block one row per column, and make the vocabulary decodable by writing it down once. Four columns — the flag, what was measured, the threshold that fired it, and what it means for the data. It is the tooltip content, printed, plus the sentence the tooltip never had.</p>
+
+    <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 22px 24px 24px; display: flex; flexDirection: column; gap: 12px;">
+      <div style="display: flex; alignItems: center; gap: 14px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">What the flags mean</span>
+        <span style="flex: 1; height: 1px; background: #E2DCD1;"></span>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">only the flags this report raised</span>
+      </div>
+      <div style="display: grid; gridTemplateColumns: 178px 200px 118px 1fr; gap: 18px; paddingBottom: 7px; borderBottom: 1px solid #22201C; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">
+        <span>Flag</span><span>What is measured</span><span>Fires above</span><span>What it means</span>
+      </div>
+      <sc-for list="{{ glossary }}" as="g" hint-placeholder-count="5">
+        <div style="display: grid; gridTemplateColumns: 178px 200px 118px 1fr; gap: 18px; alignItems: baseline; padding: 9px 0; borderBottom: 1px solid #E2DCD1;">
+          <span style="display: inline-flex; alignSelf: start; padding: 3px 8px; border: 1px solid {{ g.border }}; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: {{ g.tone }};">{{ g.flag }}</span>
+          <span style="fontSize: 13.5px; lineHeight: 1.45; color: #22201C;">{{ g.measured }}</span>
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: #4A453D;">{{ g.limit }}</span>
+          <span style="fontSize: 13.5px; lineHeight: 1.5; color: #4A453D;">{{ g.means }}</span>
+        </div>
+      </sc-for>
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; lineHeight: 1.5; color: #57524A; paddingTop: 4px;">rendered from the flags actually raised, so a clean report carries no glossary at all</span>
+    </div>
+
+    <div style="display: flex; flexDirection: column; gap: 8px; maxWidth: 92ch;">
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Says nothing the profiler cannot stand behind — measured, threshold, implication, no advice. Built from flags actually raised, so it is four rows on Titanic and empty on a clean frame, and it costs nothing to maintain beyond the string that already exists next to each threshold in the code.</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+        <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">A reference is a thing you have to go and read, and the reader who most needs it is the one least likely to. It also leaves the attention list itself unchanged, so "need a look" still does not say look for what.</p>
+      </div>
+    </div>
+  </div>
+
+  <div style="display: flex; alignItems: center; gap: 14px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Underneath · the toolbar and the pagination</span>
+    <span style="flex: 1; height: 1px; background: #CFC7B8;"></span>
+  </div>
+
+  <div style="width: 1240px; flexShrink: 0; background: #FBF9F5; border: 1px solid #963F1C; padding: 22px 24px 24px; display: flex; flexDirection: column; gap: 16px;">
+    <div style="display: flex; alignItems: center; gap: 14px; flexWrap: wrap;">
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #963F1C;">Fix before any visual work</span>
+      <span style="flex: 1; height: 1px; background: #E2DCD1; minWidth: 20px;"></span>
+      <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">pagination.js:163</span>
+    </div>
+    <p style="margin: 0; fontSize: 16.5px; lineHeight: 1.5; color: #22201C; maxWidth: 70ch; textWrap: pretty;">Pagination hides off-page cards with <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 15px;">card.style.display = 'none'</span>. On a 60-column frame that removes 50 cards from the document, and four things break at once.</p>
+    <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+      <sc-for list="{{ breakage }}" as="b" hint-placeholder-count="4">
+        <div style="display: grid; gridTemplateColumns: 176px 1fr; gap: 18px; alignItems: baseline; padding: 10px 0; borderBottom: 1px solid #E2DCD1;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: {{ b.tone }};">{{ b.what }}</span>
+          <span style="fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">{{ b.body }}</span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; maxWidth: 84ch; textWrap: pretty;">The print case is the worst because it is silent. Someone exports a 60-column profile to PDF, gets ten columns, and has nothing telling them fifty are absent — the page control does not print either. <strong>The fix is to collapse rather than hide:</strong> every column keeps its header row in the document, and only the body folds. Find works, anchors land, print shows all sixty.</p>
+  </div>
+
+  <div style="display: flex; flexWrap: wrap; gap: 34px; alignItems: flex-start;">
+
+    <div id="15c" style="display: flex; flexDirection: column; gap: 14px; width: 600px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">15c</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">The toolbar says what it is showing</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">Three mechanisms decide which cards you see — search, type filter, page — and their combined state is reported as <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px;">Showing 1-10 of 12</span>. Filter to datetime on Titanic and you get an empty grid with no explanation, because the tab renders whether or not the type exists.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 22px 22px; display: flex; flexDirection: column; gap: 16px;">
+        <div style="display: flex; gap: 10px; flexWrap: wrap; alignItems: center;">
+          <label for="v-search" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Search columns</label>
+          <input id="v-search" type="text" placeholder="Search 12 columns" style="flex: 1; minWidth: 180px; minHeight: 44px; padding: 0 12px; border: 1px solid #CFC7B8; background: #FBF9F5; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: #22201C; borderRadius: 0;" />
+        </div>
+        <div style="display: flex; gap: 20px; flexWrap: wrap; borderBottom: 1px solid #22201C;">
+          <sc-for list="{{ tabs }}" as="t" hint-placeholder-count="4">
+            <a href="#15c" style="minHeight: 44px; display: inline-flex; alignItems: center; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px; color: {{ t.color }};">
+              <span style="display: inline-flex; alignItems: baseline; gap: 6px; paddingBottom: 3px; boxShadow: {{ t.rule }};">{{ t.label }}<span style="fontSize: 11px; color: #57524A;">{{ t.count }}</span></span>
+            </a>
+          </sc-for>
+        </div>
+        <div style="display: flex; justifyContent: space-between; alignItems: baseline; gap: 16px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #22201C;">3 numeric columns · 10 expanded, 2 collapsed</span>
+          <a href="#15c" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px;">clear filter</a>
+        </div>
+        <div style="display: flex; flexDirection: column; gap: 9px; borderTop: 1px solid #E2DCD1; paddingTop: 14px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">Sort</span>
+          <div style="display: flex; gap: 18px; flexWrap: wrap;">
+            <sc-for list="{{ sorts }}" as="s" hint-placeholder-count="4">
+              <a href="#15c" style="minHeight: 44px; display: inline-flex; alignItems: center; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: {{ s.color }};">
+                <span style="paddingBottom: 3px; boxShadow: {{ s.rule }};">{{ s.label }}</span>
+              </a>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">A tab with a count tells you what filtering will do before you click, and a type with no columns gets no tab — the same rule as the zero-width donut segment and the one-option Top-N chooser. <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12.5px;">Most missing first</span> is the sort a profiling report is actually read in, and the attention block already ranks that way internally.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Sort is new interactive state on top of three existing mechanisms, and reordering cards means the report no longer matches the dataframe's own column order — which is the order someone reading alongside their code expects.</p>
+        </div>
+      </div>
+    </div>
+
+    <div id="15d" style="display: flex; flexDirection: column; gap: 14px; width: 600px; flexShrink: 0;">
+      <div style="display: flex; alignItems: baseline; gap: 10px;">
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; fontWeight: 700; letterSpacing: 0.08em; padding: 4px 8px; background: #22201C; color: #FBF9F5; borderRadius: 3px;">15d</span>
+        <h3 style="margin: 0; fontSize: 18px; fontWeight: 600;">A collapsed column still says something</h3>
+      </div>
+      <p style="margin: 0; fontSize: 14px; lineHeight: 1.6; color: #4A453D; textWrap: pretty;">What the eleventh column onward looks like when it is collapsed rather than removed. The header carries name, type and flags; the body folds. One tap expands it in place.</p>
+
+      <div style="background: #FBF9F5; border: 1px solid #CFC7B8; padding: 20px 22px 22px; display: flex; flexDirection: column; gap: 10px;">
+        <div style="display: flex; alignItems: baseline; gap: 12px; flexWrap: wrap;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; letterSpacing: 0.14em; textTransform: uppercase; color: #57524A;">Collapsed rows</span>
+          <span style="flex: 1; height: 1px; background: #E2DCD1; minWidth: 20px;"></span>
+          <a href="#15d" style="minHeight: 44px; display: inline-flex; alignItems: center; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px;">expand all 50</a>
+        </div>
+        <div style="display: flex; flexDirection: column; borderTop: 1px solid #22201C;">
+          <sc-for list="{{ collapsed }}" as="c" hint-placeholder-count="5">
+            <a href="#15d" style="display: grid; gridTemplateColumns: 16px 148px 108px 1fr; gap: 14px; alignItems: center; padding: 0; minHeight: 44px; borderBottom: 1px solid #E2DCD1; color: #22201C;">
+              <span aria-hidden="true" style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 12px; color: #57524A;">+</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13px; overflow: hidden; textOverflow: ellipsis; whiteSpace: nowrap;">{{ c.col }}</span>
+              <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11.5px; color: #57524A;">{{ c.type }}</span>
+              <span style="display: flex; gap: 8px; flexWrap: wrap;">
+                <sc-for list="{{ c.chips }}" as="k" hint-placeholder-count="1">
+                  <span style="display: inline-flex; alignItems: baseline; gap: 6px; padding: 2px 7px; border: 1px solid {{ k.border }}; fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; color: {{ k.tone }};">
+                    <span style="fontWeight: 600;">{{ k.value }}</span>{{ k.label }}
+                  </span>
+                </sc-for>
+              </span>
+            </a>
+          </sc-for>
+        </div>
+        <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 11px; lineHeight: 1.5; color: #57524A; paddingTop: 4px;">44px rows · in the document, so find and anchors reach them · print expands every one</span>
+      </div>
+
+      <div style="display: flex; flexDirection: column; gap: 8px;">
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #4A5D1E; paddingTop: 2px;">PRO</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">A collapsed row is more useful than a hidden one and more useful than a page number: fifty rows of name, type and flags is a readable index of the rest of the frame, and it is the same 44px row shape as the sample table and the missing list.</p>
+        </div>
+        <div style="display: flex; gap: 10px;">
+          <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.1em; color: #963F1C; paddingTop: 2px;">CON</span>
+          <p style="margin: 0; fontSize: 13.5px; lineHeight: 1.55; color: #4A453D;">Fifty rows is 2,200px of scroll where a page control was 40px, so the page gets longer even though it gets more honest. The cards' charts also stay in the file either way, so this changes nothing about report size — the 250 KB problem is elsewhere.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="borderTop: 1px solid #CFC7B8; paddingTop: 22px; maxWidth: 92ch; display: flex; flexDirection: column; gap: 12px;">
+    <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 10px; letterSpacing: 0.13em; textTransform: uppercase; color: #57524A;">What I'd do</span>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">Take <a href="#15b">15b</a>'s reference and put <a href="#15a">15a</a>'s <em>chips</em> in the existing block — value, label and threshold on the face, bordered so they stop running together. That fixes the "what does this mean" gap without the profiler giving modelling advice, and it is mostly a change to <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">annotate_flags</span> plus CSS.</p>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">Then the <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">display: none</span> fix, which is correctness. Then <a href="#15c">15c</a>. I would hold <a href="#15a">15a</a>'s grouping until you decide whether pysuricata should recommend actions at all — it is the highest-value option here and the only one that makes a claim beyond the data.</p>
+    <p style="margin: 0; fontSize: 14.5px; lineHeight: 1.65; color: #4A453D; textWrap: pretty;">Separately, and regardless: <strong>look at the 20% cliff.</strong> A column missing 19.9% of its values not appearing in the attention block is a threshold artefact, not a judgement. Either the missing chip is actionable at <span style="fontFamily: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; fontSize: 13.5px;">warn</span> too, or the block gains a quieter tier for things just under a limit.</p>
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;: {&quot;width&quot;: 1360, &quot;height&quot;: 1400}}">
+const INK = "#22201C", BODY = "#4A453D", MUTED = "#57524A";
+const BAD = "#963F1C", WARN = "#8F6417", WARN_FILL = "#A2731A", GOOD = "#4A5D1E";
+
+const chip = (value, label, limit, tone) => ({
+  value, label,
+  limit: limit ? "· " + limit : "",
+  tone: tone === "bad" ? BAD : WARN,
+  border: tone === "bad" ? BAD : WARN_FILL,
+});
+
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      // Redrawn from the user's screenshot: the chips are <li> in a span with no
+      // gap, border or delimiter, so two chips read as one string.
+      asRendered: [
+        { col: "Fare", flags: "33.20 heavy-tailed 13.0% many outliers" },
+        { col: "Age", flags: "1.5% many outliers" },
+        { col: "Cabin", flags: "77.1% missing" },
+        { col: "Name", flags: "High cardinality" },
+        { col: "Ticket", flags: "High cardinality" },
+      ],
+      problems: [
+        { n: "1", title: "Two chips read as one string",
+          body: "\u201c33.20 heavy-tailed 13.0% many outliers\u201d is two findings. No border, no background, no separator \u2014 just adjacent list items." },
+        { n: "2", title: "The threshold is in a tooltip",
+          body: "annotate_flags puts the value on the face and the limit in a title. So 33.20 has nothing to be judged against on a phone, and nothing at all in a PDF." },
+        { n: "3", title: "33.20 of what",
+          body: "The value carries no unit and the label names a conclusion, not a measure. A reader cannot tell that 33.20 is kurtosis or that normal is near 3." },
+        { n: "4", title: "\u201cNeed a look\u201d for what",
+          body: "The heading counts columns without naming a consequence, so the reader has to derive one per row. Two of these five are identifiers and want excluding, not looking at." },
+        { n: "5", title: "The names sit below their chips",
+          body: "Column name and chips are on different baselines, so the eye reads the flags first and has to travel back down to find which column they belong to." },
+        { n: "6", title: "An instruction instead of an affordance",
+          body: "\u201cClick a column to jump to its card, or a chip to filter\u201d tells rather than shows, and is untrue in print." },
+      ],
+      groups: [
+        {
+          action: "Drop or impute before modelling",
+          why: "Too little data to carry a feature, and imputation will dominate the signal.",
+          tone: BAD, rule: BAD,
+          cols: [{ col: "Cabin", chips: [chip("77.1%", "missing", "limit 20%", "bad")] }],
+        },
+        {
+          action: "Exclude \u2014 identifiers, not variables",
+          why: "Nearly every value is distinct, so there is no category to learn from.",
+          tone: BAD, rule: "#CFC7B8",
+          cols: [
+            { col: "Name", chips: [chip("100%", "distinct", "limit 90%", "bad")] },
+            { col: "Ticket", chips: [chip("76.4%", "distinct", "limit 90%", "warn")] },
+          ],
+        },
+        {
+          action: "Transform before use",
+          why: "The tail is long enough that a mean, a scaler or a linear fit will be led by a handful of rows.",
+          tone: WARN_FILL, rule: "#CFC7B8",
+          cols: [{
+            col: "Fare",
+            chips: [chip("33.20", "kurtosis", "limit 10", "warn"), chip("13.0%", "outliers", "limit 5%", "warn")],
+          }],
+        },
+        {
+          action: "Check, then decide",
+          why: "Under a limit but close to it, or few enough rows to inspect by hand.",
+          tone: WARN_FILL, rule: "#CFC7B8",
+          cols: [{
+            col: "Age",
+            chips: [chip("19.9%", "missing", "limit 20%", "warn"), chip("1.5%", "outliers", "limit 5%", "warn")],
+          }],
+        },
+      ],
+      glossary: [
+        {
+          flag: "missing", tone: BAD, border: BAD,
+          measured: "Share of rows with no value",
+          limit: "20%",
+          means: "Every use of the column has to say what happens to those rows. Above about half, imputation invents more data than it fills.",
+        },
+        {
+          flag: "high cardinality", tone: WARN, border: WARN_FILL,
+          measured: "Distinct values \u00f7 rows",
+          limit: "90%",
+          means: "The column identifies rows rather than grouping them. Useful as a key or a join, not as a category.",
+        },
+        {
+          flag: "kurtosis", tone: WARN, border: WARN_FILL,
+          measured: "Excess kurtosis of the values",
+          limit: "10",
+          means: "The tail is far heavier than a normal distribution, where this is 0. Means and standard deviations are pulled by a few extreme rows.",
+        },
+        {
+          flag: "outliers", tone: WARN, border: WARN_FILL,
+          measured: "Share beyond 1.5\u00d7 IQR from the quartiles",
+          limit: "5%",
+          means: "Values outside the usual range. They may be errors or may be real \u2014 the Outliers pane lists them so you can tell which.",
+        },
+        {
+          flag: "case variants", tone: WARN, border: WARN_FILL,
+          measured: "Levels that merge under lower()",
+          limit: "any",
+          means: "The same category is spelled two ways, so counts are split between them. Normalising would reduce the level count.",
+        },
+      ],
+      breakage: [
+        { what: "Ctrl+F", tone: BAD,
+          body: "A browser find cannot match text in a display: none subtree, so searching for a column name silently fails for 50 of 60 columns \u2014 the primary action in a profiling report." },
+        { what: "Anchor links", tone: BAD,
+          body: "The attention block and the summary missing list both link to #col_<name>. If the target is on another page the jump lands nowhere and the reader sees no change." },
+        { what: "Print and PDF", tone: BAD,
+          body: "Only the current page prints. A 60-column profile exports as 10 columns with nothing saying so, and the page control does not print either." },
+        { what: "Deep links", tone: WARN,
+          body: "A URL with #col_Fare opens on page 1 regardless, so a link shared with a colleague does not land on the column it names." },
+      ],
+      tabs: [
+        { label: "All", count: "12", color: INK, rule: "inset 0 -2px 0 #4A5D1E" },
+        { label: "Numeric", count: "3", color: BODY, rule: "none" },
+        { label: "Categorical", count: "8", color: BODY, rule: "none" },
+        { label: "Boolean", count: "1", color: BODY, rule: "none" },
+      ],
+      sorts: [
+        { label: "Dataset order", color: INK, rule: "inset 0 -2px 0 #4A5D1E" },
+        { label: "Most missing", color: BODY, rule: "none" },
+        { label: "Most flagged", color: BODY, rule: "none" },
+        { label: "Name", color: BODY, rule: "none" },
+      ],
+      collapsed: [
+        { col: "utm_campaign", type: "categorical", chips: [chip("38.4%", "missing", "", "bad")] },
+        { col: "last_seen_at", type: "datetime", chips: [chip("22.9%", "missing", "", "bad")] },
+        { col: "session_minutes", type: "numeric", chips: [chip("8.1%", "outliers", "", "warn")] },
+        { col: "plan_tier", type: "categorical", chips: [] },
+        { col: "is_trial", type: "boolean", chips: [] },
+      ],
+    };
+  }
+}
+</script>
+</body>
+</html>
