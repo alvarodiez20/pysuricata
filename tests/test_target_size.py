@@ -68,8 +68,15 @@ SIZED = [
     ("_06-cards.css", ".attention-col", "both"),
     ("_13-utilities.css", "#pysuricata-report .controls-row input", "height"),
     ("_13-utilities.css", "#pysuricata-report .tab", "height"),
-    ("_13-utilities.css", "#pysuricata-report .pagination button", "both"),
-    ("_13-utilities.css", "#pysuricata-report .page-number", "both"),
+    # The page control is gone (design 15d): a column past the limit collapses
+    # to its header row rather than being paged away. The row and the rail's
+    # expand-all are the targets that replaced the page buttons.
+    ("_13-utilities.css", "#pysuricata-report .linklike", "height"),
+    (
+        "_13-utilities.css",
+        "#pysuricata-report .var-card.is-collapsed .var-card__header",
+        "height",
+    ),
     ("_05-sample.css", "#pysuricata-report details.card>summary", "height"),
 ]
 
@@ -138,18 +145,31 @@ def test_the_icon_button_keeps_its_extended_hit_area():
     )
 
 
-def test_the_page_number_is_a_button():
-    """It was a `<span>` with a click listener: no role, no keyboard access, and
-    "2" as its whole accessible name. Sizing it would have left three of those
-    four problems in place.
+def test_a_collapsed_row_is_reachable_without_a_pointer():
+    """The page number was a `<span>` with a click listener: no role, no
+    keyboard access, and "2" as its whole accessible name. Sizing it would have
+    left three of those four problems in place.
+
+    It is gone, and what replaced it is a collapsed column -- a row the reader
+    opens. That row has the same four requirements, so they move with it: it is
+    focusable, it announces itself as a control, it says whether it is open,
+    and Enter or Space opens it.
     """
     source = (JS_DIR / "pagination.js").read_text(encoding="utf-8")
-    assert "<button" in source and 'class="page-number' in source, (
-        "page numbers are not rendered as buttons"
+
+    assert "setAttribute('tabindex', '0')" in source, (
+        "a collapsed row cannot be focused, so it is unreachable by keyboard"
     )
-    assert "aria-label=" in source, "the page number has no accessible name"
-    assert "aria-current=" in source, "the current page is not marked"
-    assert '<span class="page-number' not in source
+    assert "setAttribute('role', 'button')" in source, (
+        "a collapsed row announces itself as an article, not as a control"
+    )
+    assert "aria-expanded" in source, (
+        "nothing tells a screen reader whether the row is open"
+    )
+    assert "'Enter'" in source and "' '" in source, (
+        "Enter and Space do not open a focused row"
+    )
+    assert "page-number" not in source, "the page control is back"
 
 
 class TestReducedMotion:

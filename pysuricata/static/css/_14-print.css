@@ -2,21 +2,36 @@
    ==========================================================================
 
    The report had no print rules at all, which made paper the one output that
-   lied. Pagination hides off-page cards with `display: none` (see
-   `pagination.js`), and `display: none` is not printed -- so a 60-column
-   profile exported as **10 columns**, with nothing on the page saying the
-   other 50 existed. Silent truncation of an artefact that looks complete is
-   worse than a visible failure: nobody re-checks a PDF that looks finished.
+   lied: pagination hid off-page cards with `display: none`, which is not
+   printed, so a 60-column profile exported as **10 columns** with nothing on
+   the page saying the other 50 existed. Silent truncation of an artefact that
+   looks complete is worse than a visible failure -- nobody re-checks a PDF
+   that looks finished.
+
+   Columns are no longer hidden (design 15d): past the first ten they collapse
+   to their header row, so they are already in the printed document. What
+   print has to do now is *unfold* them, since a page of header rows answers
+   less than the cards do and paper has no affordance to expand one.
 
    The rules below are all overrides of screen behaviour. Nothing here changes
    what a browser shows. */
 
 @media print {
-  /* Every card, not the current page of them. `!important` because
-     `pagination.js` writes `display` as an inline style, which nothing else
-     can outrank. */
-  #pysuricata-report #cards-grid .var-card {
-    display: block !important;
+  /* Every card in full, not a page of them and not a fold of them. A card
+     the reader filtered away stays away: that one is an explicit choice, and
+     printing what someone just excluded is its own kind of wrong. */
+  #pysuricata-report #cards-grid .var-card.is-collapsed {
+    border-bottom: 0;
+    cursor: auto;
+  }
+
+  #pysuricata-report #cards-grid .var-card.is-collapsed > * {
+    display: revert;
+  }
+
+  /* The `+` is an affordance for a pointer that paper does not have. */
+  #pysuricata-report .var-card.is-collapsed .var-card__header::before {
+    content: none;
   }
 
   /* A card is one unit of reading. Splitting one across a page boundary puts
@@ -31,7 +46,7 @@
      type tabs, the theme toggle and the download button. They are not
      decoration to be dimmed -- on a sheet of paper they are instructions the
      reader cannot follow. */
-  #pysuricata-report .pagination,
+  #pysuricata-report .collapsed-rail,
   #pysuricata-report .vars-controls,
   #pysuricata-report .appbar .icon-btn,
   #pysuricata-report .attention-hint {

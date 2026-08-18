@@ -331,10 +331,22 @@ def render_html_snapshot(
             flags = " ".join(sorted({slug for _, _, slug in _actionable_chips(chips)}))
             card_id = _safe_col_id(name)
             column_chips.append((name, card_id, chips))
+            # The missing share, for the "most missing" sort (design 15c).
+            # Taken from `miss_list`, which is already computed above for the
+            # Summary's top-missing list -- recomputing it here would be a
+            # second definition of the same number, and those drift.
+            missing_pct = next((p for n, p, _ in miss_list if n == name), 0.0)
+            # One decimal, and omitted entirely when the column is complete.
+            # The sort reads a missing attribute as zero, so `data-missing-pct
+            # ="0.0000"` on every complete column is bytes spent to say what
+            # its absence already says -- and most columns in most frames are
+            # complete.
+            miss_attr = f' data-missing-pct="{missing_pct:.1f}"' if missing_pct else ""
             card_html = card_html.replace(
                 f'<article class="var-card" id="{card_id}">',
                 f'<article class="var-card" id="{card_id}" data-type="{data_type}"'
-                f' data-name="{_html.escape(name)}" data-flags="{flags}">',
+                f' data-name="{_html.escape(name)}" data-flags="{flags}"'
+                f"{miss_attr}>",
             )
             all_cards_list.append(card_html)
     # Build variables section with pagination and search
@@ -344,34 +356,68 @@ def render_html_snapshot(
         + len(kinds.datetime)
         + len(kinds.boolean)
     )
+    # A tab per type that *exists*, carrying its count (design 15c). Titanic
+    # has no datetime columns and used to get a Datetime tab that filtered to
+    # an empty grid with nothing saying why -- the same defect as a zero-width
+    # donut segment or a one-option Top-N chooser, which both got fixed.
+    #
+    # The count is on the tab because the sentence that used to carry it is
+    # gone: "Analyzing 12 variables (3 numeric, 8 categorical, 0 datetime, 1
+    # boolean)" duplicated the Summary composition bar and printed `0 datetime`
+    # for a type with no columns.
+    _counts = [
+        ("numeric", "Numeric", len(kinds.numeric)),
+        ("categorical", "Categorical", len(kinds.categorical)),
+        ("datetime", "Datetime", len(kinds.datetime)),
+        ("boolean", "Boolean", len(kinds.boolean)),
+    ]
+    type_tabs = (
+        f'<button class="tab active" data-filter="all">All'
+        f'<span class="tab__n">{total_variables}</span></button>'
+    ) + "".join(
+        f'<button class="tab" data-filter="{slug}">{label}'
+        f'<span class="tab__n">{count}</span></button>'
+        for slug, label, count in _counts
+        if count
+    )
+
     attention_html = _build_attention_block(column_chips)
     variables_section_html = f"""
           {attention_html}
-          <p class=\"muted small\">Analyzing {total_variables} variables ({len(kinds.numeric)} numeric, {len(kinds.categorical)} categorical, {len(kinds.datetime)} datetime, {len(kinds.boolean)} boolean).</p>
 
           <div class=\"vars-controls\">
             <div class=\"controls-row\">
               <label for=\"search-input\" class=\"sr-only\">Search columns</label>
               <input type=\"text\" placeholder=\"Search columns...\" id=\"search-input\" aria-label=\"Search columns\">
-              <div class=\"filter-buttons\">
-                <button class=\"tab active\" data-filter=\"all\">All</button>
-                <button class=\"tab\" data-filter=\"numeric\">Numeric</button>
-                <button class=\"tab\" data-filter=\"categorical\">Categorical</button>
-                <button class=\"tab\" data-filter=\"datetime\">Datetime</button>
-                <button class=\"tab\" data-filter=\"boolean\">Boolean</button>
-              </div>
+              <div class=\"filter-buttons\">{type_tabs}</div>
             </div>
-            <div class=\"info\" id=\"pagination-info\">Showing 1-{min(10, total_variables)} of {total_variables}</div>
+            <div class=\"info-row\">
+              <div class=\"info\" id=\"pagination-info\"></div>
+              <label class=\"sort-by\" for=\"sort-select\">
+                <span class=\"micro-label\">Sort</span>
+                <select id=\"sort-select\">
+                  <option value=\"dataset\" selected>dataset order</option>
+                  <option value=\"missing\">most missing</option>
+                  <option value=\"flagged\">most flagged</option>
+                  <option value=\"name\">name</option>
+                </select>
+              </label>
+              <button type=\"button\" class=\"linklike\" id=\"clear-filter\" hidden>clear filter</button>
+            </div>
           </div>
 
           <div class=\"cards-grid\" id=\"cards-grid\">
             {"".join(all_cards_list)}
           </div>
 
-          <div class=\"pagination\" id=\"pagination\">
-            <button id=\"prev-btn\" {"disabled" if total_variables <= 10 else ""}>←</button>
-            <div class=\"pages\" id=\"page-numbers\"></div>
-            <button id=\"next-btn\" {"disabled" if total_variables <= 10 else ""}>→</button>
+          <div class=\"collapsed-rail\" id=\"collapsed-rail\" hidden>
+            <div class=\"collapsed-rail__head\">
+              <span class=\"label\" id=\"collapsed-count\"></span>
+              <button type=\"button\" class=\"linklike\" id=\"expand-all\"></button>
+            </div>
+            <p class=\"collapsed-rail__note micro-label\">
+              Collapsed rows stay in the page, so find, anchors and print reach them.
+            </p>
           </div>
     """
 

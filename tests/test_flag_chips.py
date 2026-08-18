@@ -110,15 +110,22 @@ class TestTheChipsShowWhatTheyKnow:
         out = annotate_flags(
             '<li class="flag warn" data-threshold=">10%" data-value="19.9%">Missing</li>'
         )
-        assert ">19.9% missing<" in out
+        assert ">19.9% missing" in out
 
-    def test_the_threshold_moves_into_a_title(self):
-        """It answers a different question — *why is this flagged* rather than
-        *what is it* — and both on the face makes the chip a sentence."""
+    def test_the_threshold_goes_on_the_face_not_into_a_title(self):
+        """It used to move into a `title`, and this test used to require that.
+
+        A tooltip is invisible on a phone and absent from a printed report, so
+        `19.9%` had nothing to be judged against in either — and the reader who
+        cannot hover has the least context, not the most. Phase 4b.2 puts the
+        limit on the face and drops the tooltip entirely; what the number *is*
+        moves to the flag reference, stated once per flag.
+        """
         out = annotate_flags(
             '<li class="flag warn" data-threshold=">10%" data-value="19.9%">Missing</li>'
         )
-        assert 'title="threshold: &gt;10%"' in out
+        assert "19.9% missing · limit 20%" in out
+        assert "title=" not in out, "the tooltip is back"
 
     def test_a_threshold_containing_a_bracket_survives(self):
         """`data-threshold="|kurtosis| > 3"` ends the tag early for a naive
@@ -128,9 +135,12 @@ class TestTheChipsShowWhatTheyKnow:
             '<li class="flag bad" data-threshold="|kurtosis| > 3" '
             'data-value="9.1">Heavy‑tailed</li>'
         )
-        assert ">9.1 heavy‑tailed<" in out
-        # The face carries the value; the slug still says which flag it is.
-        assert extract_chips(out) == [("bad", "9.1 heavy‑tailed", "heavy-tailed")]
+        assert "9.1 heavy‑tailed" in out
+        # The face carries the value and the limit; the slug still says which
+        # flag it is.
+        assert extract_chips(out) == [
+            ("bad", "9.1 heavy‑tailed · limit 10", "heavy-tailed")
+        ]
 
     def test_a_chip_with_no_value_is_left_alone(self):
         """Not every flag is a measurement. `Monotonic ↑` has no number, and
@@ -198,3 +208,69 @@ class TestStatBadgesAreGone:
 
     def test_the_hide_rule_went_with_it(self):
         assert "Hide numeric header chips" not in CARDS_CSS
+
+
+class TestTheFlagReference:
+    """Design 15b. The chips name a conclusion — `heavy-tailed`, `dominant
+    category` — and that vocabulary is only decodable if it is written down.
+    Four columns: the flag, what was measured, the limit that fired it, and
+    what it means for the data.
+    """
+
+    @staticmethod
+    def _block(html: str) -> str:
+        found = re.search(r'<details class="flagref".*?</details>', html, re.S)
+        return found.group(0) if found else ""
+
+    def test_it_renders_only_the_flags_the_report_raised(self, frame):
+        html = profile(frame, seed=0).html
+        block = self._block(html)
+        assert block, "no flag reference in a report that raises flags"
+
+        listed = set(re.findall(r'<tr id="flagref-([^"]+)"', block))
+        raised = {slug for _, _, slug in extract_chips(html) if slug}
+        assert listed <= raised, sorted(listed - raised)
+        assert listed, "the reference is empty"
+
+    def test_a_clean_frame_carries_no_reference(self):
+        """Rendering the whole table regardless would put a glossary above the
+        first card of every report, including ones with nothing to explain."""
+        frame = pd.DataFrame({"a": np.arange(500.0), "b": np.arange(500.0) * 2})
+        html = profile(frame, seed=0).html
+        block = self._block(html)
+        if not block:
+            return
+        listed = set(re.findall(r'<tr id="flagref-([^"]+)"', block))
+        raised = {slug for _, _, slug in extract_chips(html) if slug}
+        assert listed <= raised
+
+    def test_every_row_states_a_measure_a_limit_and_a_meaning(self, frame):
+        block = self._block(profile(frame, seed=0).html)
+        rows = re.findall(r'<tr id="flagref-[^"]+">(.*?)</tr>', block, re.S)
+        assert rows, "no rows"
+        for row in rows:
+            cells = re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", row, re.S)
+            assert len(cells) == 4, cells
+            assert all(re.sub(r"<[^>]+>", "", c).strip() for c in cells), cells
+
+    def test_it_gives_no_advice(self, frame):
+        """Open question 7 of the design package: whether pysuricata should
+        recommend actions at all is undecided, so the reference states a
+        consequence for the data and stops. "Drop before modelling" is wrong
+        for a reader who is not modelling.
+        """
+        block = self._block(profile(frame, seed=0).html)
+        prose = re.sub(r"<[^>]+>", " ", block).lower()
+        for verb in ("you should", "drop the", "consider removing", "we recommend"):
+            assert verb not in prose, verb
+
+    def test_every_flag_the_renderers_can_raise_has_an_entry_or_is_dropped(self):
+        """A flag with no entry must not render a blank row. Adding a chip in a
+        card renderer should never be able to put an empty line in here.
+        """
+        from pysuricata.render.flag_reference import raised_flags
+
+        assert raised_flags(["not-a-real-flag"]) == []
+        assert [s for s, _ in raised_flags(["missing", "not-a-real-flag"])] == [
+            "missing"
+        ]

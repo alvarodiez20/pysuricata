@@ -2347,9 +2347,28 @@
   gap: 0.3rem;
 }
 
+/* Bordered, because two chips with no border read as one string. `Age` used
+   to render as `19.9% missing 1.5% many outliers`, which is one sentence with
+   no verb -- the card's own chips have always been bordered and only this
+   block's were not (phase 4b.2).
+
+   The border is the quality colour at reduced opacity rather than a second
+   token: a chip's severity is already in its fill, and a border that disagreed
+   with it would be a second, quieter opinion. */
 .needs-attention .flag {
   cursor: pointer;
   user-select: none;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+/* The chips are the row's content, so they set its baseline; the column name
+   was sitting on a different one, which made the eye read the flags and then
+   travel back to find out whose they were. */
+.attention-item {
+  align-items: center;
 }
 
 .needs-attention .flag.selected {
@@ -2386,4 +2405,102 @@
   font-size: 11px;
   color: var(--muted);
   margin-left: 10px;
+}
+
+/* The flag reference (design 15b).
+   ==========================================================================
+
+   Closed by default: a reference is something a reader goes to, and opening
+   it for everyone would put six rows of glossary above the first card on
+   every report that raises a flag. `<details>` because the disclosure is
+   native -- keyboard, screen reader and print all understand it without a
+   line of JavaScript. */
+.flagref {
+  margin-top: 14px;
+  border-top: 1px solid var(--rule);
+  padding-top: 10px;
+}
+
+.flagref > summary {
+  min-height: var(--tap-min);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.flagref > summary:hover {
+  color: var(--data-1);
+}
+
+.flagref__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 6px 0 0;
+  font-size: 13px;
+}
+
+.flagref__table caption {
+  text-align: left;
+  padding-bottom: 6px;
+}
+
+.flagref__table th,
+.flagref__table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 7px 12px 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.flagref__table thead th {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+/* The limit column is read down, comparing numbers, so it gets figures that
+   line up. */
+.flagref__limit {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* The table is four columns of prose at 1240px and unreadable at 390px, so
+   below the breakpoint each row becomes a labelled block. */
+@media (max-width: 768px) {
+  .flagref__table thead {
+    display: none;
+  }
+
+  .flagref__table tr {
+    display: block;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .flagref__table th,
+  .flagref__table td {
+    display: block;
+    border: 0;
+    padding: 2px 0;
+  }
+
+  .flagref__table td::before {
+    content: attr(data-label);
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: block;
+  }
 }

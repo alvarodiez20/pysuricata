@@ -51,6 +51,7 @@ their own job.
 from __future__ import annotations
 
 import re
+import tempfile
 from pathlib import Path
 
 import pandas as pd
@@ -166,7 +167,22 @@ class TestTheReportIsOneFile:
 #: So the rule stands and this is the exception it needs: a budget may not
 #: grow to hold more presentation, and a chart that omits 58% of a column is
 #: not presentation. #39 still wants 400,000.
-BYTES_BASELINE = 491_000
+#: 491,000 -> 494,000 for the flag reference (phase 4b.2). New content a
+#: reader asked for, not drift: six rows saying what each raised flag measures
+#: and means, 2,431 bytes, and nothing at all on a frame that raises none.
+#:
+#: Paid down first, which is the part worth recording. Putting the measure in
+#: a `title` on every chip cost **5,548 bytes to say fourteen distinct
+#: things** -- 154 copies across the report -- and a tooltip is exactly what
+#: 4b.2 removes, being invisible on a phone and absent from paper. Dropping it
+#: covered twice what the reference costs; the raise is the residue, mostly
+#: the `· limit 20%` now on each chip face.
+#: 494,000 -> 498,000 for the toolbar (phase 4b.4): a count on each type tab,
+#: the sort control, and the script behind them. Trimmed first, again --
+#: `data-missing-pct` is one decimal now and is omitted entirely on a complete
+#: column, since the sort reads its absence as zero and most columns in most
+#: frames are complete.
+BYTES_BASELINE = 498_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
@@ -534,14 +550,14 @@ def test_the_themes_do_not_change_the_layout(measurements):
 # --------------------------------------------------------------------------- #
 @pytest.mark.browser
 class TestAnOffPageCardIsStillReachable:
-    """#240. `pagination.js` hides off-page cards with `display: none`, which
-    is not a rendering choice but a removal: the browser finds no target for a
-    fragment link, and prints nothing at all.
+    """#240, then design 15d. Pagination hid the eleventh column onward with
+    `display: none`, which is not a rendering choice but a removal: a browser
+    find cannot match inside it, an anchor cannot land on it, and a printer
+    will not print it.
 
-    Four things broke on that, and two of them have universal fixes -- links
-    and paper. Both are asserted here. Browser find-in-page over hidden content
-    is the third and cannot be fixed while pagination hides cards; see the
-    issue.
+    Nothing is hidden now. A column past the limit keeps its row and folds its
+    body, so all four consequences go together -- including find, which the
+    first pass at this could not fix because it left the hiding in place.
     """
 
     @staticmethod
@@ -585,10 +601,10 @@ class TestAnOffPageCardIsStillReachable:
         page = self._page(None, browser, report_html, tmp_path)
         hidden = page.evaluate(
             "[...document.querySelectorAll('#cards-grid .var-card')]"
-            ".filter(c => c.style.display === 'none').map(c => c.id)"
+            ".filter(c => c.classList.contains('is-collapsed')).map(c => c.id)"
         )
         if not hidden:
-            pytest.skip("this frame fits on one page")
+            pytest.skip("every column in this frame is expanded")
         target = hidden[-1]
         page.evaluate(
             "id => document.querySelector(`a[href='#${id}']`)?.click()"
@@ -599,36 +615,46 @@ class TestAnOffPageCardIsStillReachable:
         assert page.evaluate(
             "id => document.getElementById(id).getBoundingClientRect().height > 0",
             target,
-        ), f"{target} is on another page and the link did not go there"
+        ), f"the link to {target} did not open it"
         page.close()
 
     def test_a_deep_link_opens_on_the_right_page(self, browser, report_html, tmp_path):
         page = self._page(None, browser, report_html, tmp_path)
         hidden = page.evaluate(
             "[...document.querySelectorAll('#cards-grid .var-card')]"
-            ".filter(c => c.style.display === 'none').map(c => c.id)"
+            ".filter(c => c.classList.contains('is-collapsed')).map(c => c.id)"
         )
         page.close()
         if not hidden:
-            pytest.skip("this frame fits on one page")
+            pytest.skip("every column in this frame is expanded")
         target = hidden[-1]
         fresh = self._page(None, browser, report_html, tmp_path, f"#{target}")
         assert fresh.evaluate(
             "id => document.getElementById(id).getBoundingClientRect().height > 0",
             target,
-        ), f"opening the report at #{target} left it on page 1"
+        ), f"opening the report at #{target} left it folded"
         fresh.close()
 
-    def test_print_shows_every_card(self, browser, report_html, tmp_path):
+    def test_print_unfolds_every_card(self, browser, report_html, tmp_path):
         """The worst of the four: a 60-column profile exported as 10 columns
         with nothing saying so. Read by re-targeting the print media query at
         the screen, which exercises the real cascade rather than the rule text.
+
+        A folded card is now *in* the printed document, so what print has to do
+        is unfold it -- a sheet of header rows answers less than the cards do,
+        and paper has no affordance to expand one.
         """
         page = self._page(None, browser, report_html, tmp_path)
         result = page.evaluate("""() => {
   const cards = [...document.querySelectorAll('#cards-grid .var-card')];
-  const visible = () => cards.filter(c => c.getBoundingClientRect().height > 0).length;
-  const onScreen = visible();
+  // A card counts as printed only when its *body* is laid out -- a folded
+  // header has a box too, and counting boxes would pass on a page of headers.
+  const body = c => [...c.children].find(x => !x.classList.contains('var-card__header'));
+  const unfolded = () => cards.filter(c => {
+    const b = body(c);
+    return b && getComputedStyle(b).display !== 'none';
+  }).length;
+  const onScreen = unfolded();
   let rule = null;
   for (const s of [...document.styleSheets]) {
     let rules; try { rules = s.cssRules; } catch { continue; }
@@ -639,16 +665,175 @@ class TestAnOffPageCardIsStillReachable:
   }
   if (!rule) return {error: 'no @media print block ships with the report'};
   rule.media.mediaText = 'screen';
-  const onPaper = visible();
-  const controls = getComputedStyle(document.querySelector('.pagination')).display;
+  const onPaper = unfolded();
+  const rail = document.getElementById('collapsed-rail');
+  const controls = rail ? getComputedStyle(rail).display : 'none';
   rule.media.mediaText = 'print';
   return {onScreen, onPaper, total: cards.length, controls};
 }""")
         page.close()
         assert "error" not in result, result.get("error")
         assert result["onPaper"] == result["total"], (
-            f"{result['onPaper']} of {result['total']} cards would print"
+            f"{result['onPaper']} of {result['total']} cards would print in full"
+        )
+        assert result["onScreen"] < result["total"], (
+            "nothing was folded on screen, so this proved nothing about print"
         )
         assert result["controls"] == "none", (
-            "the page buttons print as instructions the reader cannot follow"
+            "the expand control prints as an affordance the reader cannot use"
         )
+
+    def test_no_column_is_ever_removed_from_the_document(
+        self, browser, report_html, tmp_path
+    ):
+        """The property the whole mechanism exists for, and the one the first
+        attempt could not deliver.
+
+        A browser find matches rendered text. It cannot see into a
+        `display: none` subtree, so paging a column away made it unfindable —
+        and finding a column by name is the primary action in a profiling
+        report. Folding keeps the name, the type and the flags laid out; only
+        the charts, which nobody searches for, go.
+
+        Filtering is the one case that still removes a card, and that is the
+        intent: a reader who filtered a column away is asking not to see it.
+        """
+        page = self._page(None, browser, report_html, tmp_path)
+        result = page.evaluate("""() => {
+  const cards = [...document.querySelectorAll('#cards-grid .var-card')];
+  const laidOut = c => c.getBoundingClientRect().height > 0;
+  const nameShown = c => {
+    const n = c.querySelector('.colname');
+    return n && n.getBoundingClientRect().height > 0;
+  };
+  return {
+    total: cards.length,
+    laidOut: cards.filter(laidOut).length,
+    namesVisible: cards.filter(nameShown).length,
+    folded: cards.filter(c => c.classList.contains('is-collapsed')).length,
+    inlineDisplayNone: cards.filter(c => c.style.display === 'none').length,
+  };
+}""")
+        page.close()
+        assert result["laidOut"] == result["total"], (
+            f"{result['total'] - result['laidOut']} cards have no box, so a "
+            "browser find cannot reach them"
+        )
+        assert result["namesVisible"] == result["total"], (
+            "a column name is not laid out, which is the text a reader searches for"
+        )
+        assert result["inlineDisplayNone"] == 0, (
+            "a card is hidden with an inline display:none — the mechanism 15d replaced"
+        )
+        assert result["folded"] > 0, "nothing was folded, so this frame proved nothing"
+
+
+@pytest.mark.browser
+class TestTheToolbarSaysWhatItIsShowing:
+    """Design 15c, phase 4b.4. Three separate mechanisms narrow the variables
+    list — a search box, a type tab and the collapse limit — and the toolbar
+    described none of them. `Showing 1-10 of 12` describes a page, and there
+    are no pages.
+    """
+
+    @pytest.fixture(scope="class")
+    def page(self, request):
+        playwright = pytest.importorskip(
+            "playwright.sync_api", reason="this needs Playwright"
+        )
+        html = profile(pd.read_csv(TITANIC), seed=0).html
+        tmp = Path(tempfile.mkdtemp()) / "r.html"
+        tmp.write_text(html, encoding="utf-8")
+        launch = {}
+        if chrome := _chrome():
+            launch["executable_path"] = chrome
+        with playwright.sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**launch)
+            except Exception as exc:
+                pytest.skip(f"Chromium is not available: {exc}")
+            page = browser.new_page(viewport={"width": 1240, "height": 900})
+            page.goto(tmp.as_uri())
+            page.wait_for_timeout(700)
+            yield page
+            browser.close()
+
+    def test_no_tab_for_a_type_with_no_columns(self, page):
+        """Titanic has no datetime columns and used to get a Datetime tab that
+        filtered to an empty grid with nothing saying why — the same defect as
+        a zero-width donut segment or a one-option Top-N chooser."""
+        tabs = page.evaluate(
+            "[...document.querySelectorAll('.tab')].map(t => t.dataset.filter)"
+        )
+        counts = page.evaluate("""() => {
+  const out = {};
+  for (const c of document.querySelectorAll('#cards-grid .var-card')) {
+    out[c.dataset.type] = (out[c.dataset.type] || 0) + 1;
+  }
+  return out;
+}""")
+        for tab in tabs:
+            if tab == "all":
+                continue
+            assert counts.get(tab, 0) > 0, f"a {tab} tab with no {tab} columns"
+        for kind, n in counts.items():
+            if n:
+                assert kind in tabs, f"{n} {kind} columns and no tab for them"
+
+    def test_each_tab_carries_its_count(self, page):
+        labels = page.evaluate(
+            "[...document.querySelectorAll('.tab')].map(t => t.textContent)"
+        )
+        assert all(re.search(r"\d+$", t) for t in labels), labels
+
+    def test_the_count_sentence_is_gone(self, page):
+        """It duplicated the Summary composition bar, and printed `0 datetime`
+        for a type with no columns."""
+        text = page.evaluate("document.getElementById('pysuricata-report').innerText")
+        assert "Analyzing" not in text, "the count sentence is back"
+
+    def test_one_line_covers_filter_search_and_collapse(self, page):
+        unfiltered = page.evaluate(
+            "document.getElementById('pagination-info').textContent"
+        )
+        assert "expanded" in unfiltered and "collapsed" in unfiltered, unfiltered
+        assert "Showing 1-" not in unfiltered, "still describing a page"
+
+        page.evaluate(
+            """document.querySelector('.tab[data-filter="numeric"]').click()"""
+        )
+        filtered = page.evaluate(
+            "document.getElementById('pagination-info').textContent"
+        )
+        assert "numeric" in filtered, filtered
+        assert page.evaluate("!document.getElementById('clear-filter').hidden"), (
+            "no way to clear a filter that is narrowing the list"
+        )
+
+        page.evaluate("document.getElementById('clear-filter').click()")
+        assert page.evaluate("document.getElementById('clear-filter').hidden"), (
+            "clear-filter stays visible with nothing to clear"
+        )
+
+    def test_sorting_reorders_the_document_and_returns(self, page):
+        """The cards *are* the document, so a sort has to move them — that is
+        what makes the order true for a browser find and for print, rather than
+        only for the script's own bookkeeping. Dataset order is the default and
+        has to come back exactly."""
+        names = "[...document.querySelectorAll('#cards-grid .var-card')].map(c => c.dataset.name)"
+        original = page.evaluate(names)
+
+        def sort(value):
+            page.evaluate(
+                f"() => {{ const s = document.getElementById('sort-select');"
+                f" s.value = '{value}'; s.dispatchEvent(new Event('change')); }}"
+            )
+            return page.evaluate(names)
+
+        by_name = sort("name")
+        assert by_name == sorted(original), by_name
+
+        by_missing = sort("missing")
+        assert by_missing[0] == "Cabin", by_missing[:3]
+
+        assert sort("dataset") == original, "dataset order did not come back"
