@@ -16,6 +16,34 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **The categorical card no longer prints statistics that cannot say anything**
+  (design 16b, phase 5f.1, #295). Categorical is the most common column type —
+  eight of Titanic's twelve — and one card face was doing duty for four
+  different things: a boolean in a string, a true category, a sparse identifier
+  and a primary key. `Entropy`, `Rare levels` and `Top 5 coverage` describe how
+  a distribution spreads across its levels, and they were written for the
+  second of those four.
+
+  `Sex` reported entropy 0.936, rare levels 0 and top-5 coverage 100% — three
+  confident figures about the spread of a distribution with two members and no
+  spread. None of them was *wrong*, which is what made them hard to see: on a
+  two-level column the top **five** levels are both of them, so 100% was
+  arithmetic wearing the clothes of a measurement.
+
+  Each of the three is now dropped where its own arithmetic stops carrying
+  information, so the rule is per statistic and there is no level boundary to
+  argue about: `Sex` renders nine slots instead of twelve, `Embarked` loses only
+  top-5 coverage, and a column with eight well-spread levels keeps all three. A
+  suppressed statistic leaves **no cell** rather than an empty one — an em dash
+  means *the sketch could not answer*, and that is a different statement this
+  report already makes elsewhere and should not blur.
+
+  The level count is read from the top-k sketch summing to the row count, not
+  from the distinct-count estimate. Misra-Gries counters only fall below the
+  true count, and only when an eviction runs, so that sum is proof the sketch
+  holds every level exactly — where an estimate would let a card change shape
+  between runs of the same data.
+
 - **The two datetime calendar shares are drawn against the baseline that makes
   them readable** (redesign phase 5e.2, #291). The card printed `Weekend %
   27.0` and `Business hrs % 24.3` bare. A flat calendar gives **28.6%** (2 of
@@ -60,6 +88,21 @@ quoted when both sides were measured in the same round-robin run.
   carrying an issue.
 
 ### Fixed
+
+- **Every categorical column claimed to have processed `0.0 B`.** The stat row
+  read `mem_bytes` from the derived-stats dict, which has never had that key,
+  so the fallback rendered. `Sex` in the Titanic report is 11.1 KB. This is the
+  third field in the same function to go the same way — `avg_len` and `len_p90`
+  were the first two, fixed in 5c.2 — and the code that computed the right
+  number from the right object was still sitting a few lines above, its result
+  discarded.
+
+- **A short stat row left the card underlined for a fraction of its width.**
+  Each cell draws its own bottom rule, so a last row that does not fill the grid
+  stops the rule early; `Age` renders thirteen cells and has shipped a
+  quarter-width stub under it since the numeric restack. The last cell now takes
+  whatever tracks the row has left, at both breakpoints. Suppression made this
+  visible by giving `Sex` nine cells, but it was not the cause.
 
 - **The demo page was a phone layout on a desktop.** Every block sat in one
   column capped at 600px with no wider breakpoint anywhere in the stylesheet,

@@ -703,6 +703,36 @@
   color: var(--q-bad);
 }
 
+/* ---- the short last row -------------------------------------
+   Every cell draws its own bottom rule, so a last row that does not fill the
+   grid leaves the card underlined for a fraction of its width. `Age` renders
+   thirteen cells and has shipped a 25% stub under it since the restack; #295
+   suppresses categorical statistics that cannot be true, which gives `Sex`
+   nine and puts a second card in the same state.
+
+   The last cell takes whatever tracks the row has left, so the rule always
+   closes. `4n + 1` means it begins a row of four and is alone in it, `4n + 3`
+   means two cells precede it; a row that is already full matches none of
+   these and is left alone.
+
+   The span depends on the track count, so it has to be recomputed at the
+   mobile breakpoint -- see the two-column rules further down, which must also
+   *undo* a span these set. There is no `min-width` query pairing with them
+   here on purpose: 769 is not one of the project's breakpoints and
+   `test_css_integrity.py` rejects it. These rules apply everywhere and the
+   mobile block, being later at equal specificity, overrides them. */
+#pysuricata-report .vstat-row > .vstat:last-child:nth-child(4n + 1) {
+  grid-column: span 4;
+}
+
+#pysuricata-report .vstat-row > .vstat:last-child:nth-child(4n + 2) {
+  grid-column: span 3;
+}
+
+#pysuricata-report .vstat-row > .vstat:last-child:nth-child(4n + 3) {
+  grid-column: span 2;
+}
+
 /* ---- mobile ----------------------------------------------------
    Placed after the desktop rules on purpose: these have the same
    specificity, so the later declaration wins. Sitting before them, the
@@ -714,6 +744,19 @@
 
   #pysuricata-report .vstat-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Two tracks, so the last cell is alone exactly when its position is odd.
+     The even rule is not redundant: it clears a `span 3` or `span 4` the
+     four-column rules above already set, and a span wider than the grid
+     builds implicit tracks rather than being clamped -- ten cells would lay
+     out three-wide on a two-column card. */
+  #pysuricata-report .vstat-row > .vstat:last-child:nth-child(2n + 1) {
+    grid-column: span 2;
+  }
+
+  #pysuricata-report .vstat-row > .vstat:last-child:nth-child(2n) {
+    grid-column: auto;
   }
 }
 

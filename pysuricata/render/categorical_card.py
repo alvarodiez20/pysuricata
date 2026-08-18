@@ -114,6 +114,94 @@ def high_cardinality_sentence(facts: dict) -> str:
     )
 
 
+# `Entropy`, `Rare levels` and `Top 5 coverage` all describe how a distribution
+# spreads across its levels, and one card face renders all three for every
+# categorical column. Categorical is the most common column type -- eight of
+# Titanic's twelve -- and the three were written for exactly one of the four
+# kinds it covers: a handful of levels with meaningfully different shares.
+# `Sex` gets entropy 0.936, rare levels 0 and top-5 coverage 100%, three
+# statistics describing the spread of a distribution that has two members and
+# no spread (#295, 5f.1).
+#
+# The rule is **per statistic**, not per column kind. That is the whole reason
+# suppression was taken over routing to three card faces (5f.4, held): there is
+# no level boundary here to defend, and no argument about where a 12-level
+# column belongs. Each of the three drops out exactly where its own arithmetic
+# stops carrying information, so a column can lose one and keep the others --
+# `Embarked` loses top-5 coverage and keeps entropy and rare levels.
+
+#: Keys returned by `suppressed_statistics`, matching the rows they silence.
+ENTROPY = "entropy"
+RARE_LEVELS = "rare_levels"
+TOP5_COVERAGE = "top5_coverage"
+
+
+def _levels_are_complete(items: Sequence[tuple[str, int]], total: int) -> bool:
+    """Whether `items` is every level of the column, with exact counts.
+
+    Misra-Gries counters only ever *decrease* below the true count, and they
+    decrease only when an eviction round runs -- which happens only once more
+    distinct values arrive than the sketch has counters for. So the counters
+    summing to the number of non-missing rows is not evidence that the sketch
+    is complete, it is proof: no eviction can have happened, every level is
+    present and every count is exact.
+
+    That matters because the alternative is `unique_est`, and reading a level
+    count off a KMV estimate would make suppression flip between runs of the
+    same data for a column sitting on the boundary. This test cannot flip. When
+    it cannot prove completeness it returns False and the statistic renders,
+    which is the safe direction: an unnecessary statistic is a smaller error
+    than a suppressed one the reader needed.
+    """
+    return bool(items) and total > 0 and sum(c for _, c in items) == total
+
+
+def suppressed_statistics(cat_stats: dict) -> frozenset[str]:
+    """Which of the three spread statistics say nothing about this column.
+
+    Not one rule -- three, because the three fail for three different reasons
+    and a single threshold would be a coincidence rather than an argument:
+
+    **Top 5 coverage** is suppressed at five levels or fewer. There, the top
+    five *are* all of them, so the figure is 100% by construction. It is not a
+    measurement of the column, it is a restatement of `Unique`, and it reads as
+    the former.
+
+    **Rare levels** is suppressed at two levels. `Rare` names a tail, and it
+    exists to summarise the levels the chart is not showing; with two levels
+    the chart shows both, with their exact shares, immediately above. This one
+    is suppressed even when it would be non-zero -- a 99.9/0.1 split does have
+    a level under the 1% threshold, and the bar already says so.
+
+    **Entropy** is suppressed at two levels, where it is a monotone restatement
+    of the mode share already on the card and is read against the wrong scale
+    (its maximum is 1 bit, not the `log2(levels)` a reader assumes). It is also
+    suppressed when every tracked level occurs exactly once, where it collapses
+    to `log2(n)` -- a function of the level count, computed over values that
+    never repeat, presented as a measure of how they repeat.
+
+    An untracked column is not handled here. Its three cells already render as
+    `_unknown_cell`, and that is a different statement: *unknown* is a sketch
+    that could not answer, *absent* is a question that does not apply.
+    """
+    if not cat_stats.get("tracked", True):
+        return frozenset()
+
+    suppressed = set()
+
+    if cat_stats["all_singletons"]:
+        suppressed.add(ENTROPY)
+
+    if cat_stats["levels_complete"]:
+        levels = cat_stats["n_levels"]
+        if levels <= 5:
+            suppressed.add(TOP5_COVERAGE)
+        if levels <= 2:
+            suppressed.update((ENTROPY, RARE_LEVELS))
+
+    return frozenset(suppressed)
+
+
 class CategoricalCardRenderer(CardRenderer):
     """Renders categorical data cards."""
 
@@ -275,6 +363,12 @@ class CategoricalCardRenderer(CardRenderer):
 
         return {
             "tracked": tracked,
+            # What `suppressed_statistics` reads. Computed here rather than
+            # there so the whole stat row is derived from one pass over the
+            # sketch, and so a test can assert the facts without rendering.
+            "levels_complete": _levels_are_complete(items, total),
+            "n_levels": len(items),
+            "all_singletons": bool(items) and all(c == 1 for _, c in items),
             "mode_label": mode_label,
             "safe_mode_label": safe_mode_label,
             "mode_n": int(mode_n),
@@ -395,8 +489,6 @@ class CategoricalCardRenderer(CardRenderer):
         self, stats: CategoricalStats, miss_cls: str, miss_pct: float, cat_stats: dict
     ) -> list[tuple[str, str, str | None]]:
         """The counting half of the stat row: how many, and how many of each."""
-        self.format_bytes(int(getattr(stats, "mem_bytes", 0)))
-
         data = [
             ("Count", f"{int(getattr(stats, 'count', 0)):,}", "num"),
             (
@@ -490,28 +582,52 @@ class CategoricalCardRenderer(CardRenderer):
             "no value repeats often enough to be tracked in the top-k sketch"
         )
 
-        data = [
-            (
-                "Entropy",
-                self._unknown_cell(no_heavy_hitters)
-                if unknown
-                else self.format_number(cat_stats["entropy"]),
-                "num",
-            ),
-            (
-                "Rare levels",
-                self._unknown_cell(no_heavy_hitters)
-                if unknown
-                else f"{int(cat_stats['rare_count']):,} ({cat_stats['rare_cov']:.1f}%)",
-                f"num {cat_stats['rare_cls']}",
-            ),
-            (
-                "Top 5 coverage",
-                self._unknown_cell(no_heavy_hitters)
-                if unknown
-                else f"{cat_stats['top5_cov']:.1f}%",
-                f"num {cat_stats['top5_cls']}",
-            ),
+        # Three of the six describe a spread, and not every column has one.
+        # Where a statistic cannot carry information the row is **not emitted**
+        # -- the grid closes up rather than printing a dash, because a dash
+        # says *this could not be measured* and the truth here is *this does
+        # not apply* (#295, 5f.1). `Sex` renders nine slots, not twelve.
+        silenced = suppressed_statistics(cat_stats)
+
+        data = []
+
+        if ENTROPY not in silenced:
+            data.append(
+                (
+                    "Entropy",
+                    self._unknown_cell(no_heavy_hitters)
+                    if unknown
+                    else self.format_number(cat_stats["entropy"]),
+                    "num",
+                )
+            )
+
+        if RARE_LEVELS not in silenced:
+            data.append(
+                (
+                    "Rare levels",
+                    self._unknown_cell(no_heavy_hitters)
+                    if unknown
+                    else (
+                        f"{int(cat_stats['rare_count']):,} "
+                        f"({cat_stats['rare_cov']:.1f}%)"
+                    ),
+                    f"num {cat_stats['rare_cls']}",
+                )
+            )
+
+        if TOP5_COVERAGE not in silenced:
+            data.append(
+                (
+                    "Top 5 coverage",
+                    self._unknown_cell(no_heavy_hitters)
+                    if unknown
+                    else f"{cat_stats['top5_cov']:.1f}%",
+                    f"num {cat_stats['top5_cls']}",
+                )
+            )
+
+        data += [
             (
                 "Label length (avg)",
                 self._length_display(getattr(stats, "avg_len", None)),
@@ -523,8 +639,18 @@ class CategoricalCardRenderer(CardRenderer):
                 "num",
             ),
             (
+                # `stats`, not `cat_stats`. The same defect as `avg_len` and
+                # `len_p90` above and found the same way -- looking at the
+                # card. `_compute_categorical_stats` has never built a
+                # `mem_bytes` key, so the `.get()` default was what rendered,
+                # and **every** categorical column in every report has claimed
+                # to have processed `0.0 B`. `Sex` really is 11.4 KB.
+                #
+                # `_left_stats` computed the right number from the right
+                # object and threw the result away, which is the fossil of the
+                # move that broke this: the cell used to sit in the left half.
                 "Processed bytes (≈)",
-                self.format_bytes(int(cat_stats.get("mem_bytes", 0))),
+                self.format_bytes(int(getattr(stats, "mem_bytes", 0))),
                 "num",
             ),
         ]
