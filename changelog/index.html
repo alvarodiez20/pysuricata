@@ -2918,6 +2918,29 @@ quoted when both sides were measured in the same round-robin run.</p>
   the policy this doesn't automate: don't tag a release inside a planned
   launch window, because the demo re-installs whatever is newest with no
   redeploy and a broken demo cannot be un-shipped along with it.</p>
+<ul>
+<li><strong><code>action.yml</code>, wrapping <code>pysuricata check</code> for a workflow that does not
+  want a Python step, and a JSON Schema for the <code>summarize()</code> payload</strong>
+  (#250). Of the reach ladder's six items, the browser demo was shipped and
+  Arrow IPC nearly is (#247); these two were the cheapest of the rest — the
+  capability already existed, and what was missing was the thing that lets
+  someone outside Python reach it.</li>
+</ul>
+<p>Every documented <code>check</code> flag is an input; the exit code is the action's
+  own (a non-zero <code>pysuricata check</code> fails the step, matching what running
+  the command directly would do). Exercised in this repository's own CI
+  (<code>check-action</code> in <code>ci.yml</code>) against a real dataset, <code>requirement: .</code>
+  installing this checkout rather than the last release — so a flag this PR
+  renamed would have broken the job that tests the wrapper, not just left it
+  silently stale.</p>
+<p><code>docs/schemas/summary.v2.schema.json</code> is generated from a live
+  <code>summarize()</code> payload by <code>scripts/generate_summary_schema.py</code> rather than
+  written by hand — a hand-maintained schema is the same class of problem as
+  a hand-written changelog number, saying one thing while the code does
+  another. <code>tests/test_summary_json_schema.py</code> fails the suite if the
+  checked-in file drifts from the generator, or if a real payload (two
+  different frames, not just the generator's own exemplar) fails to validate
+  against it.</p>
 <h3 id="changed_1">Changed</h3>
 <ul>
 <li>
@@ -3293,12 +3316,34 @@ quoted when both sides were measured in the same round-robin run.</p>
 <p>This also reaches all-missing columns in ordinary frames, which had the same
   fabricated zeros.</p>
 <ul>
-<li><strong>The datetime calendar panel is suppressed for a column with no values.</strong>
+<li>
+<p><strong>The datetime calendar panel is suppressed for a column with no values.</strong>
   The ratios finalise to <code>0.0</code>, which the verdict read as <code>under-represented ·
   −28.6pp vs 28.6%</code> — a confident finding about a column containing nothing.
   Only reachable since a zero-row frame renders at all; the panel exists to stop
   a number being read as a finding when it is not one, so it must not be the
-  thing doing that.</li>
+  thing doing that.</p>
+</li>
+<li>
+<p><strong><code>stream_parquet</code> disables pyarrow's <code>pre_buffer</code></strong> (#92). Found while
+  proving <code>pysuricata check</code> runs against a file larger than a 512 MB
+  ceiling — the one acceptance criterion #76 shipped without, carried over
+  from #42. <code>pre_buffer=True</code> is pyarrow's default and it schedules
+  ahead-of-time reads for row groups the caller has not asked for yet, a
+  reasonable trade for hiding remote-storage latency and pure retained
+  memory for the local files <code>stream_parquet</code> always sees: a 300 MB file's
+  read alone was enough to breach a 512 MB-shaped ceiling with prefetching
+  on, and reading the same file with it off roughly halved the reader's own
+  footprint. <code>benchmarks/memory_bounded_check.py</code> runs <code>check</code> — write a
+  baseline, then compare against it — inside a cgroup capped at a fixed
+  limit, against a Parquet file sized past it. Both steps completed under
+  512 MB (peak 296–301 MB) and under 350 MB (peak 295 MB) against files of
+  775 MB and 531 MB respectively — peak memory stayed flat as the file grew,
+  which is the claim actually under test. Recorded in <code>docs/performance.md</code>
+  alongside the ADR's model prediction for the same shape (119 MB, a real
+  gap: the model was fitted on numeric columns only, and this frame is
+  deliberately text-heavy).</p>
+</li>
 </ul>
 <h3 id="changed_2">Changed</h3>
 <ul>

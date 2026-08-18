@@ -997,6 +997,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#proof-pysuricata-check-under-a-512-mb-ceiling" class="md-nav__link">
+    <span class="md-ellipsis">
+      Proof: pysuricata check under a 512 MB ceiling
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#monitor-memory-usage" class="md-nav__link">
     <span class="md-ellipsis">
       Monitor Memory Usage
@@ -2264,53 +2273,119 @@ faster.</p>
 <p>Every one of those trades accuracy for footprint, and the sample size is the
 one that costs most: quantile error goes as <span class="arithmatex">\(1/\sqrt{k}\)</span>, so dropping the
 reservoir from 20,000 to 5,000 moves it from about ±0.7% to ±1.4%.</p>
+<h3 id="proof-pysuricata-check-under-a-512-mb-ceiling">Proof: <code>pysuricata check</code> under a 512 MB ceiling</h3>
+<p>"Bounded memory, so it fits in CI" is the reason to prefer this over a
+profiler that loads the frame — until it is measured under an <em>enforced</em>
+ceiling it is an argument, not a result (<a href="https://github.com/alvarodiez20/pysuricata/issues/92">#92</a>).
+<code>benchmarks/memory_bounded_check.py</code> runs <code>pysuricata check</code> — first
+<code>--write-baseline</code>, then a comparison against it — inside a child cgroup
+capped at a fixed memory limit, against a Parquet file sized past that limit.
+The cgroup is the kernel primitive Docker's own <code>--memory</code> flag rests on: the
+process is genuinely killed by the kernel if it crosses the ceiling, not just
+observed afterward.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: right;">budget</th>
+<th style="text-align: right;">file on disk</th>
+<th>rows × cols</th>
+<th style="text-align: right;">peak, <code>--write-baseline</code></th>
+<th style="text-align: right;">peak, compare</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: right;">512 MB</td>
+<td style="text-align: right;">775 MB (1.5×)</td>
+<td>10.8M × 12</td>
+<td style="text-align: right;">301 MB</td>
+<td style="text-align: right;">296 MB</td>
+</tr>
+<tr>
+<td style="text-align: right;">350 MB</td>
+<td style="text-align: right;">531 MB (1.5×)</td>
+<td>7.4M × 12</td>
+<td style="text-align: right;">295 MB</td>
+<td style="text-align: right;">295 MB</td>
+</tr>
+</tbody>
+</table>
+<p>Both runs completed. The frame is deliberately text-heavy (mixed numeric,
+category-string and timestamp columns) — the shape
+<a href="../adr/memory-budget/">docs/adr/memory-budget.md</a> flags as most likely to
+break its model, since that model was fitted on numeric columns only. It does:
+the ADR's formula predicts 119 MB for this shape, and actual peak usage was
+roughly 2.5× that. The gap is a real finding about the model, not about
+<code>check</code> — both runs still landed comfortably under budget, and peak stayed
+flat (295–301 MB) as the file grew from 531 MB to 775 MB, which is the actual
+claim under test: memory does not grow with file size.</p>
+<p>One genuine bug came out of getting this measurement to pass at all:
+<code>stream_parquet</code> was calling pyarrow with its default <code>pre_buffer=True</code>, which
+prefetches row groups ahead of what the reader has asked for — a sensible
+trade on remote storage, and pure retained memory for the local files this
+reader always sees. A 300 MB file's read alone was enough to breach a 512
+MB-shaped ceiling with prefetching on; disabling it (now the default in
+<code>stream_parquet</code>) roughly halved the reader's own footprint.</p>
+<p>Two caveats, stated rather than glossed over. First, this measurement
+environment has no Docker daemon, so the ceiling is a cgroup v1 child group
+rather than a literal container — the same primitive, one layer down.
+<code>RLIMIT_AS</code> was tried first and rejected: it caps virtual address space, and
+<code>import pysuricata</code> alone reserves about 420 MB of it (pandas' and pyarrow's
+arena and BLAS reservations, almost none of it resident), which makes it an
+unrepresentative ceiling for this purpose. Second, "larger than RAM" in the
+original acceptance criterion means larger than the <em>runner's</em> memory — the
+host actually measured on has abundant physical RAM, so the file is sized
+past the configured <em>ceiling</em> (1.5×) rather than past the host's total
+memory, which is the dimension a CI runner is actually fixed at.</p>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.memory_bounded_check<span class="w"> </span>--budget-mb<span class="w"> </span><span class="m">512</span>
+</span></code></pre></div>
 <h3 id="monitor-memory-usage">Monitor Memory Usage</h3>
 <p>This recipe needs <code>psutil</code>, which is not a runtime dependency — nothing in the
 library imports it. Install it with <code>pip install pysuricata[system]</code>.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-</span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
-</span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
-</span><span id="__span-6-4"><a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>
-</span><span id="__span-6-5"><a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">profile</span>
-</span><span id="__span-6-6"><a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
-</span><span id="__span-6-7"><a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">()</span>
-</span><span id="__span-6-8"><a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">process</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
-</span><span id="__span-6-9"><a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Memory before: </span><span class="si">{</span><span class="n">process</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span><span class="o">.</span><span class="n">rss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="o">**</span><span class="mi">2</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> MB&quot;</span><span class="p">)</span>
-</span><span id="__span-6-10"><a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>
-</span><span id="__span-6-11"><a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
-</span><span id="__span-6-12"><a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>
-</span><span id="__span-6-13"><a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Memory after: </span><span class="si">{</span><span class="n">process</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span><span class="o">.</span><span class="n">rss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="o">**</span><span class="mi">2</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> MB&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">psutil</span>
+</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
+</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">profile</span>
+</span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+</span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">()</span>
+</span><span id="__span-7-8"><a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="n">process</span> <span class="o">=</span> <span class="n">psutil</span><span class="o">.</span><span class="n">Process</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">getpid</span><span class="p">())</span>
+</span><span id="__span-7-9"><a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Memory before: </span><span class="si">{</span><span class="n">process</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span><span class="o">.</span><span class="n">rss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="o">**</span><span class="mi">2</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> MB&quot;</span><span class="p">)</span>
+</span><span id="__span-7-10"><a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>
+</span><span id="__span-7-11"><a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</span><span id="__span-7-12"><a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>
+</span><span id="__span-7-13"><a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Memory after: </span><span class="si">{</span><span class="n">process</span><span class="o">.</span><span class="n">memory_info</span><span class="p">()</span><span class="o">.</span><span class="n">rss</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="o">**</span><span class="mi">2</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> MB&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="speed-optimization">Speed Optimization</h2>
 <h3 id="profile-only-key-columns">Profile Only Key Columns</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">profile</span>
-</span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">()</span>
-</span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="s2">&quot;timestamp&quot;</span><span class="p">]</span>
-</span><span id="__span-7-4"><a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>
-</span><span id="__span-7-5"><a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">profile</span>
+</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">()</span>
+</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">columns</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;user_id&quot;</span><span class="p">,</span> <span class="s2">&quot;amount&quot;</span><span class="p">,</span> <span class="s2">&quot;timestamp&quot;</span><span class="p">]</span>
+</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 </span></code></pre></div>
 <p><strong>Speed improvement</strong>: Linear in number of columns</p>
 <h3 id="use-polars-for-large-datasets">Use Polars for Large Datasets</h3>
 <p>Polars can be faster than pandas for certain operations:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
-</span><span id="__span-8-2"><a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
-</span><span id="__span-8-3"><a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>
-</span><span id="__span-8-4"><a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;large_file.csv&quot;</span><span class="p">)</span>
-</span><span id="__span-8-5"><a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>  <span class="c1"># Native polars support</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">polars</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pl</span>
+</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">df</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;large_file.csv&quot;</span><span class="p">)</span>
+</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>  <span class="c1"># Native polars support</span>
 </span></code></pre></div>
 <h3 id="parallelize-with-dask-advanced">Parallelize with Dask (Advanced)</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
-</span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">dask.dataframe</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dd</span>
-</span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
-</span><span id="__span-9-4"><a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1"># Load with Dask</span>
-</span><span id="__span-9-5"><a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">ddf</span> <span class="o">=</span> <span class="n">dd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;large_file.csv&quot;</span><span class="p">)</span>
-</span><span id="__span-9-6"><a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>
-</span><span id="__span-9-7"><a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="c1"># Convert partitions to generator</span>
-</span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">partition_generator</span><span class="p">():</span>
-</span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>    <span class="k">for</span> <span class="n">partition</span> <span class="ow">in</span> <span class="n">ddf</span><span class="o">.</span><span class="n">partitions</span><span class="p">:</span>
-</span><span id="__span-9-10"><a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>        <span class="k">yield</span> <span class="n">partition</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
-</span><span id="__span-9-11"><a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>
-</span><span id="__span-9-12"><a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">partition_generator</span><span class="p">())</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">dask.dataframe</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dd</span>
+</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>
+</span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="c1"># Load with Dask</span>
+</span><span id="__span-10-5"><a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="n">ddf</span> <span class="o">=</span> <span class="n">dd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;large_file.csv&quot;</span><span class="p">)</span>
+</span><span id="__span-10-6"><a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+</span><span id="__span-10-7"><a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># Convert partitions to generator</span>
+</span><span id="__span-10-8"><a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="k">def</span><span class="w"> </span><span class="nf">partition_generator</span><span class="p">():</span>
+</span><span id="__span-10-9"><a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="k">for</span> <span class="n">partition</span> <span class="ow">in</span> <span class="n">ddf</span><span class="o">.</span><span class="n">partitions</span><span class="p">:</span>
+</span><span id="__span-10-10"><a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>        <span class="k">yield</span> <span class="n">partition</span><span class="o">.</span><span class="n">compute</span><span class="p">()</span>
+</span><span id="__span-10-11"><a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>
+</span><span id="__span-10-12"><a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">partition_generator</span><span class="p">())</span>
 </span></code></pre></div>
 <h2 id="benchmarks">Benchmarks</h2>
 <p>Figures are not published on this page, on purpose. Two claims have already had
@@ -2320,9 +2395,9 @@ round-robin — "0.0.21 is 1.24x faster" was really 0.88x, a regression, and a
 <p>Run the harness instead. It interleaves every tool and version across rounds,
 reads the load average, refuses to run above one process per core without
 <code>--force</code>, and labels anything under three rounds <em>Not quotable</em>:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.end_to_end<span class="w"> </span>--markdown<span class="w"> </span>results.md<span class="w">   </span><span class="c1"># vs ydata/sweetviz/skimpy</span>
-</span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.hotspots<span class="w">                           </span><span class="c1"># where profile() spends its time</span>
-</span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.kernels<span class="w">                            </span><span class="c1"># per-kernel timings + memory roofline</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.end_to_end<span class="w"> </span>--markdown<span class="w"> </span>results.md<span class="w">   </span><span class="c1"># vs ydata/sweetviz/skimpy</span>
+</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.hotspots<span class="w">                           </span><span class="c1"># where profile() spends its time</span>
+</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>python<span class="w"> </span>-m<span class="w"> </span>benchmarks.kernels<span class="w">                            </span><span class="c1"># per-kernel timings + memory roofline</span>
 </span></code></pre></div>
 <h3 id="what-the-shape-is">What the shape is</h3>
 <ul>
@@ -2340,15 +2415,15 @@ reads the load average, refuses to run above one process per core without
 </ul>
 <h2 id="advanced-configuration">Advanced Configuration</h2>
 <h3 id="for-maximum-speed">For Maximum Speed</h3>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">profile</span>
-</span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">()</span>
-</span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">numeric_sample_size</span> <span class="o">=</span> <span class="mi">5_000</span>   <span class="c1"># Small samples</span>
-</span><span id="__span-11-4"><a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">max_uniques</span> <span class="o">=</span> <span class="mi">512</span>             <span class="c1"># Tiny sketches</span>
-</span><span id="__span-11-5"><a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">top_k</span> <span class="o">=</span> <span class="mi">10</span>                    <span class="c1"># Few top values</span>
-</span><span id="__span-11-6"><a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">compute_correlations</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Skip the O(p^2) step</span>
-</span><span id="__span-11-7"><a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">config</span><span class="o">.</span><span class="n">render</span><span class="o">.</span><span class="n">include_sample</span> <span class="o">=</span> <span class="kc">False</span>         <span class="c1"># skip the sample table</span>
-</span><span id="__span-11-8"><a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>
-</span><span id="__span-11-9"><a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">profile</span>
+</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">()</span>
+</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">numeric_sample_size</span> <span class="o">=</span> <span class="mi">5_000</span>   <span class="c1"># Small samples</span>
+</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">max_uniques</span> <span class="o">=</span> <span class="mi">512</span>             <span class="c1"># Tiny sketches</span>
+</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">top_k</span> <span class="o">=</span> <span class="mi">10</span>                    <span class="c1"># Few top values</span>
+</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">compute_correlations</span> <span class="o">=</span> <span class="kc">False</span>  <span class="c1"># Skip the O(p^2) step</span>
+</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="n">config</span><span class="o">.</span><span class="n">render</span><span class="o">.</span><span class="n">include_sample</span> <span class="o">=</span> <span class="kc">False</span>         <span class="c1"># skip the sample table</span>
+</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
+</span><span id="__span-12-9"><a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 </span></code></pre></div>
 <p><code>chunk_size</code> is deliberately not in that list — see the warning under Quick
 Wins. This is <code>preset="fast"</code> with the sketches turned down further.</p>
@@ -2357,14 +2432,14 @@ Wins. This is <code>preset="fast"</code> with the sketches turned down further.<
 and for a different reason this time: <strong>chunked results equal unchunked
 results</strong>. That invariant is asserted in <code>benchmarks/accuracy.py</code>, so no chunk
 size is more accurate than another.</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">profile</span>
-</span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">()</span>
-</span><span id="__span-12-3"><a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">numeric_sample_size</span> <span class="o">=</span> <span class="mi">100_000</span>  <span class="c1"># Large samples</span>
-</span><span id="__span-12-4"><a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">max_uniques</span> <span class="o">=</span> <span class="mi">8_192</span>  <span class="c1"># Large sketches</span>
-</span><span id="__span-12-5"><a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">top_k</span> <span class="o">=</span> <span class="mi">200</span>  <span class="c1"># Many top values</span>
-</span><span id="__span-12-6"><a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">corr_threshold</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># All correlations</span>
-</span><span id="__span-12-7"><a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>
-</span><span id="__span-12-8"><a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">profile</span>
+</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">()</span>
+</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">numeric_sample_size</span> <span class="o">=</span> <span class="mi">100_000</span>  <span class="c1"># Large samples</span>
+</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">max_uniques</span> <span class="o">=</span> <span class="mi">8_192</span>  <span class="c1"># Large sketches</span>
+</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">top_k</span> <span class="o">=</span> <span class="mi">200</span>  <span class="c1"># Many top values</span>
+</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">corr_threshold</span> <span class="o">=</span> <span class="mf">0.0</span>  <span class="c1"># All correlations</span>
+</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
+</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
 </span></code></pre></div>
 <h2 id="profiling-pysuricata">Profiling PySuricata</h2>
 <p>Use Python's profiler to find bottlenecks — and then check the answer:</p>
@@ -2375,19 +2450,19 @@ time on this codebase; swapping in a 5x-faster one moved wall clock by 4%.
 Confirm any ranking against wall clock <strong>with the profiler off</strong> before
 acting on it.</p>
 </div>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-13-1"><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
-</span><span id="__span-13-2"><a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cProfile</span>
-</span><span id="__span-13-3"><a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pstats</span>
-</span><span id="__span-13-4"><a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
-</span><span id="__span-13-5"><a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">profiler</span> <span class="o">=</span> <span class="n">cProfile</span><span class="o">.</span><span class="n">Profile</span><span class="p">()</span>
-</span><span id="__span-13-6"><a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="n">profiler</span><span class="o">.</span><span class="n">enable</span><span class="p">()</span>
-</span><span id="__span-13-7"><a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>
-</span><span id="__span-13-8"><a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-</span><span id="__span-13-9"><a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>
-</span><span id="__span-13-10"><a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="n">profiler</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
-</span><span id="__span-13-11"><a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">pstats</span><span class="o">.</span><span class="n">Stats</span><span class="p">(</span><span class="n">profiler</span><span class="p">)</span>
-</span><span id="__span-13-12"><a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a><span class="n">stats</span><span class="o">.</span><span class="n">sort_stats</span><span class="p">(</span><span class="s1">&#39;cumulative&#39;</span><span class="p">)</span>
-</span><span id="__span-13-13"><a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a><span class="n">stats</span><span class="o">.</span><span class="n">print_stats</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>  <span class="c1"># Top 20 functions</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">profile</span>
+</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cProfile</span>
+</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">pstats</span>
+</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>
+</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="n">profiler</span> <span class="o">=</span> <span class="n">cProfile</span><span class="o">.</span><span class="n">Profile</span><span class="p">()</span>
+</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="n">profiler</span><span class="o">.</span><span class="n">enable</span><span class="p">()</span>
+</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>
+</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>
+</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="n">profiler</span><span class="o">.</span><span class="n">disable</span><span class="p">()</span>
+</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">pstats</span><span class="o">.</span><span class="n">Stats</span><span class="p">(</span><span class="n">profiler</span><span class="p">)</span>
+</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="n">stats</span><span class="o">.</span><span class="n">sort_stats</span><span class="p">(</span><span class="s1">&#39;cumulative&#39;</span><span class="p">)</span>
+</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a><span class="n">stats</span><span class="o">.</span><span class="n">print_stats</span><span class="p">(</span><span class="mi">20</span><span class="p">)</span>  <span class="c1"># Top 20 functions</span>
 </span></code></pre></div>
 <h2 id="common-bottlenecks">Common Bottlenecks</h2>
 <h3 id="1-correlation-computation">1. Correlation Computation</h3>
@@ -2408,35 +2483,35 @@ file is read a batch at a time and never exists as one frame — 307 MB against
 <h2 id="production-optimization">Production Optimization</h2>
 <h3 id="scheduled-reports">Scheduled Reports</h3>
 <p>For regular reporting, optimize for speed:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-14-1"><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span>
-</span><span id="__span-14-2"><a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-</span><span id="__span-14-3"><a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>
-</span><span id="__span-14-4"><a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">profile</span>
-</span><span id="__span-14-5"><a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>
-</span><span id="__span-14-6"><a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a><span class="c1"># Fast config for nightly reports</span>
-</span><span id="__span-14-7"><a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">()</span>
-</span><span id="__span-14-8"><a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">compute_correlations</span> <span class="o">=</span> <span class="kc">False</span>
-</span><span id="__span-14-9"><a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">numeric_sample_size</span> <span class="o">=</span> <span class="mi">10_000</span>
-</span><span id="__span-14-10"><a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="n">config</span><span class="o">.</span><span class="n">render</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Daily Report - </span><span class="si">{</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
-</span><span id="__span-14-11"><a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>
-</span><span id="__span-14-12"><a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
-</span><span id="__span-14-13"><a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>
-</span><span id="__span-14-14"><a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;reports&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-</span><span id="__span-14-15"><a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="n">report</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;reports/daily_</span><span class="si">{</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2">.html&quot;</span><span class="p">)</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">date</span>
+</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProfileConfig</span><span class="p">,</span> <span class="n">profile</span>
+</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>
+</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="c1"># Fast config for nightly reports</span>
+</span><span id="__span-15-7"><a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="n">config</span> <span class="o">=</span> <span class="n">ProfileConfig</span><span class="p">()</span>
+</span><span id="__span-15-8"><a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">compute_correlations</span> <span class="o">=</span> <span class="kc">False</span>
+</span><span id="__span-15-9"><a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="n">config</span><span class="o">.</span><span class="n">compute</span><span class="o">.</span><span class="n">numeric_sample_size</span> <span class="o">=</span> <span class="mi">10_000</span>
+</span><span id="__span-15-10"><a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="n">config</span><span class="o">.</span><span class="n">render</span><span class="o">.</span><span class="n">title</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Daily Report - </span><span class="si">{</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+</span><span id="__span-15-11"><a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>
+</span><span id="__span-15-12"><a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="n">report</span> <span class="o">=</span> <span class="n">profile</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+</span><span id="__span-15-13"><a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>
+</span><span id="__span-15-14"><a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;reports&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</span><span id="__span-15-15"><a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="n">report</span><span class="o">.</span><span class="n">save_html</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;reports/daily_</span><span class="si">{</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="si">}</span><span class="s2">.html&quot;</span><span class="p">)</span>
 </span></code></pre></div>
 <h3 id="cicd-quality-checks">CI/CD Quality Checks</h3>
 <p><code>summarize()</code> skips rendering, so it is the faster path when you only want the
 numbers:</p>
-<div class="language-python highlight"><pre><span></span><code><span id="__span-15-1"><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
-</span><span id="__span-15-2"><a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
-</span><span id="__span-15-3"><a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>  <span class="c1"># no HTML built</span>
-</span><span id="__span-15-4"><a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>
-</span><span id="__span-15-5"><a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="k">assert</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">][</span><span class="s2">&quot;missing_cells_pct&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">5.0</span>
-</span><span id="__span-15-6"><a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="k">assert</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">][</span><span class="s2">&quot;duplicate_rows_pct_est&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
+<div class="language-python highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pysuricata</span><span class="w"> </span><span class="kn">import</span> <span class="n">summarize</span>
+</span><span id="__span-16-2"><a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+</span><span id="__span-16-3"><a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">stats</span> <span class="o">=</span> <span class="n">summarize</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>  <span class="c1"># no HTML built</span>
+</span><span id="__span-16-4"><a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>
+</span><span id="__span-16-5"><a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="k">assert</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">][</span><span class="s2">&quot;missing_cells_pct&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">5.0</span>
+</span><span id="__span-16-6"><a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="k">assert</span> <span class="n">stats</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">][</span><span class="s2">&quot;duplicate_rows_pct_est&quot;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1.0</span>
 </span></code></pre></div>
 <p>If the check is a build gate rather than an assertion inside your own code, the
 CLI does the same single pass and exits non-zero on a breach:</p>
-<div class="language-bash highlight"><pre><span></span><code><span id="__span-16-1"><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>pysuricata<span class="w"> </span>check<span class="w"> </span>data.parquet<span class="w"> </span>--baseline<span class="w"> </span>baseline.json<span class="w"> </span>--max-missing-pct<span class="w"> </span><span class="m">5</span>
+<div class="language-bash highlight"><pre><span></span><code><span id="__span-17-1"><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>pysuricata<span class="w"> </span>check<span class="w"> </span>data.parquet<span class="w"> </span>--baseline<span class="w"> </span>baseline.json<span class="w"> </span>--max-missing-pct<span class="w"> </span><span class="m">5</span>
 </span></code></pre></div>
 <p>See <a href="../data-checks/">Gating CI on drift</a>.</p>
 <h2 id="see-also">See Also</h2>

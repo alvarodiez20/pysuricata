@@ -2059,6 +2059,12 @@ and what a version bump means.</p>
 </span><span id="__span-1-5"><a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;dataset&quot;</span><span class="p">][</span><span class="s2">&quot;rows_est&quot;</span><span class="p">]</span>
 </span><span id="__span-1-6"><a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">stats</span><span class="p">[</span><span class="s2">&quot;columns&quot;</span><span class="p">][</span><span class="s2">&quot;amount&quot;</span><span class="p">][</span><span class="s2">&quot;median&quot;</span><span class="p">]</span>
 </span></code></pre></div>
+<p>A machine-readable version of this same contract -- for a consumer that is not
+Python -- is published alongside this page as a JSON Schema, one file per
+<code>schema_version</code>: <a href="../schemas/summary.v2.schema.json"><code>summary.v2.schema.json</code></a>.
+It is generated from a live payload by <code>scripts/generate_summary_schema.py</code>
+rather than written by hand, and <code>tests/test_summary_json_schema.py</code> fails the
+suite if it drifts from either the generator or a real <code>summarize()</code> call.</p>
 <h2 id="stability-policy">Stability policy</h2>
 <p><code>schema_version</code> is an integer at the top level.</p>
 <ul>
