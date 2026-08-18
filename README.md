@@ -293,3 +293,7 @@ Built using algorithms from:
 - Misra, J. & Gries, D. (1982) — Streaming heavy hitters
 
 Named after **suricatas (meerkats)** — small, vigilant animals that work cooperatively and thrive in harsh environments with limited resources.
+
+
+## Documentation
+- [Two pages still draw a donut chart the report has not had since #104](stats/boolean.md)
