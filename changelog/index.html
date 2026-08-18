@@ -2737,6 +2737,24 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...HEAD">Unreleased</a></h2>
 <h3 id="fixed">Fixed</h3>
 <ul>
+<li><strong>The demo page's hero and prose sit on one measure, with room around them.</strong>
+  The reading column is one 720px grid track, but the blocks inside it carried
+  caps of their own — 20ch on the h1, 52ch on the lede, 56ch on the closing note
+  — so each stopped short of the status line and the log between them. One left
+  edge, four right edges. The caps are gone: everything from the hero down ends
+  where the console ends.</li>
+</ul>
+<p>The top padding on <code>main</code> had never applied. <code>.col</code> sets the horizontal gutter
+  in a <code>padding</code> shorthand and a class selector outranks a bare element one, so
+  <code>main { padding: clamp(40px, 12vw, 84px) 0 64px }</code> was silently zeroed and the
+  hero sat flush against the header rule. Moved to <code>main.col</code> as <code>padding-block</code>.</p>
+<p>A phone needed the floors raised rather than the clamps retuned: 15vw is 59px
+  at 390px wide, under the minimum of every clamp involved, so a phone landed on
+  the floor wherever a desktop landed on the ceiling. Measured in Chromium after
+  the change — above the hero 84/115/120/120px and closing-note-to-footer
+  108/120/120/120px at 390/768/1280/1440px, with the lede, the log and the
+  closing note the same width as each other at every one.</p>
+<ul>
 <li><strong>The demo page's desktop composition is one centred column, not four widths
   down the left.</strong> Giving every block the shell's left edge fixed the measure
   and broke the composition: prose at 52ch, the panes at 760px, the control row
