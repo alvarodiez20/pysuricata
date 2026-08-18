@@ -68,9 +68,8 @@ $$
 
 **Binary analysis:**
 
-- True/False proportions
-- Entropy and balance metrics
-- Imbalance detection
+- True/False counts and proportions
+- Entropy
 
 **Key formulas:**
 

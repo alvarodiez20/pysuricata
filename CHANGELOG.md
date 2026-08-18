@@ -545,8 +545,16 @@ quoted when both sides were measured in the same round-robin run.
 
   The same table in `why-pysuricata.md` also still listed **balance score** and
   **imbalance ratio** for boolean columns, and so did the README's *What's in a
-  Report*. [#276] had corrected `stats/boolean.md`; these were the third and
-  fourth copies of that list.
+  Report*, and `stats/overview.md` as "Entropy and balance metrics" /
+  "Imbalance detection". [#276] had corrected `stats/boolean.md`; these were the
+  third, fourth and fifth copies of one list, found across three separate
+  passes.
+
+  Five copies and no source is the defect underneath, and it is the same shape
+  as the roadmap drift [#251] is open about — a fact restated in several places,
+  none of them authoritative, and nothing that fails when they disagree.
+  `summary-schema.md` is the one copy tied to the code by a test. Folded into
+  [#251] rather than fixed by hand a fourth time.
 
   While in the README: the streaming section taught
   `profile(stream_parquet(path))` when `profile(path)` does the same thing, so
@@ -558,6 +566,7 @@ quoted when both sides were measured in the same round-robin run.
 
 [#284]: https://github.com/alvarodiez20/pysuricata/issues/284
 [#285]: https://github.com/alvarodiez20/pysuricata/issues/285
+[#251]: https://github.com/alvarodiez20/pysuricata/issues/251
 [#287]: https://github.com/alvarodiez20/pysuricata/issues/287
 
 ## [0.1.2] - 2026-08-17
