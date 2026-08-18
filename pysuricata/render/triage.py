@@ -15,6 +15,8 @@ from __future__ import annotations
 import html as _html
 import re
 
+from .flag_reference import FLAG_MEANINGS, raised_flags
+
 # The chips are emitted by the card renderers as
 # <li class="flag warn" data-threshold="..." data-value="...">Skewed Right</li>
 # so the shape is ours, not arbitrary markup. Severity is the second class.
@@ -95,7 +97,6 @@ def annotate_flags(flags_html: str) -> str:
         if not value or not label:
             return match.group(0)
 
-        title = f' title="threshold: {_html.escape(threshold)}"' if threshold else ""
         # The identity of the flag, stamped before the face is rewritten and
         # taken from the label as it was *emitted*. Everything downstream --
         # triage, the card's data-flags, the chip filter -- has to ask "which
@@ -103,14 +104,36 @@ def annotate_flags(flags_html: str) -> str:
         # value is prepended to it: `Missing` slugs to `missing`, and
         # `19.9% missing` slugs to `19-9-missing`, which matches nothing and is
         # unique per column into the bargain. See #238.
-        identity = f' data-flag="{flag_slug(label)}"'
+        slug = flag_slug(label)
+        identity = f' data-flag="{slug}"'
         # The value leads: it is the fact, and the label says what the fact is
         # about. `48.7% has negatives` reads; `Has negatives 48.7%` does not.
         face = f"{value} {label[0].lower() + label[1:]}"
-        return (
-            f'<li class="flag{severity}"{attrs}{identity}{title}>'
-            f"{_html.escape(face)}</li>"
-        )
+
+        # The limit goes on the face, not in a `title` (phase 4b.2). A tooltip
+        # is invisible on a phone and absent from a printed report, so `33.20`
+        # had nothing to be judged against in either -- and the reader who
+        # cannot hover is the one with the least context, not the most.
+        #
+        # Preferred from the reference, which states it once per flag, so the
+        # face reads the same wherever a flag is raised. The renderer's own
+        # `data-threshold` is the fallback: it is per-site and worded forty-two
+        # different ways, but a flag with no entry should still say its limit.
+        # Not on a `good` chip. A limit reads as "this is how close you are to
+        # a problem", and a good chip is not near one -- `48.7% positive-only ·
+        # limit 0` invites a judgement where the card is reporting a property.
+        meaning = FLAG_MEANINGS.get(slug)
+        limit = meaning.limit if meaning else threshold
+        if limit and limit != "any" and "good" not in severity:
+            face = f"{face} · limit {limit}"
+
+        # And no `title`. A tooltip is the thing 4b.2 exists to get rid of --
+        # invisible on a phone, absent from a printed report, and read by the
+        # reader who needs it least. What the number *is* now lives in the flag
+        # reference, once per flag, where it can be read on any device and on
+        # paper. Repeating it on all 154 chips of a Titanic report cost 5,548
+        # bytes to say fourteen distinct things.
+        return f'<li class="flag{severity}"{attrs}{identity}>{_html.escape(face)}</li>'
 
     return _CHIP.sub(rewrite, flags_html)
 
@@ -223,14 +246,64 @@ def build_attention_block(
             f"</li>"
         )
 
+    raised = [slug for _, _, chips in flagged for _, _, slug in chips]
     return f"""
           <section class="needs-attention" id="needs-attention">
             <h3 class="attention-title">
               <strong>{len(flagged)}</strong> of {len(columns)} columns need a look
             </h3>
             <ul class="attention-list">{"".join(items)}</ul>
-            <p class="muted small attention-hint">
-              Click a column to jump to its card, or a chip to filter the list below.
-            </p>
+            {_flag_reference(raised)}
           </section>
     """
+
+
+def _flag_reference(raised: list[str]) -> str:
+    """What the flags mean, once per report, for the flags it actually raised.
+
+    Design 15b. The chips name a conclusion -- `heavy-tailed`, `dominant
+    category` -- and the vocabulary is only decodable if it is written down
+    somewhere. Four columns: the flag, what was measured, the limit that fired
+    it, and what it means for the data.
+
+    Rendered from the flags raised rather than from the whole table, so it is
+    six rows on Titanic and **nothing at all on a clean frame**. A flag with no
+    entry is dropped rather than rendered blank: a new flag in the renderers
+    must not put an empty row here.
+
+    Deliberately no advice. Every sentence states a consequence for the data
+    and stops -- "drop before modelling" is wrong for a reader who is not
+    modelling, and whether pysuricata should recommend actions at all is open
+    question 7 of the design package rather than something to settle here.
+
+    It also replaces the hint that used to close this block. "Click a column to
+    jump to its card" told the reader what to do instead of showing it, and was
+    untrue on paper.
+    """
+    rows = raised_flags(raised)
+    if not rows:
+        return ""
+    body = "".join(
+        f'<tr id="flagref-{slug}">'
+        f'<th scope="row"><span class="flag {slug}">{_html.escape(slug.replace("-", " "))}</span></th>'
+        f'<td data-label="Measures">{_html.escape(meaning.measure)}</td>'
+        f'<td class="flagref__limit" data-label="Fires above">'
+        f"{_html.escape(meaning.limit)}</td>"
+        f'<td data-label="Means">{_html.escape(meaning.means)}</td>'
+        "</tr>"
+        for slug, meaning in rows
+    )
+    return f"""
+            <details class="flagref">
+              <summary>What these flags mean</summary>
+              <table class="flagref__table">
+                <caption class="micro-label">
+                  Only the {len(rows)} flag{"" if len(rows) == 1 else "s"} this report raised
+                </caption>
+                <thead>
+                  <tr><th scope="col">Flag</th><th scope="col">What is measured</th>
+                  <th scope="col">Fires above</th><th scope="col">What it means</th></tr>
+                </thead>
+                <tbody>{body}</tbody>
+              </table>
+            </details>"""

@@ -166,7 +166,17 @@ class TestTheReportIsOneFile:
 #: So the rule stands and this is the exception it needs: a budget may not
 #: grow to hold more presentation, and a chart that omits 58% of a column is
 #: not presentation. #39 still wants 400,000.
-BYTES_BASELINE = 491_000
+#: 491,000 -> 494,000 for the flag reference (phase 4b.2). New content a
+#: reader asked for, not drift: six rows saying what each raised flag measures
+#: and means, 2,431 bytes, and nothing at all on a frame that raises none.
+#:
+#: Paid down first, which is the part worth recording. Putting the measure in
+#: a `title` on every chip cost **5,548 bytes to say fourteen distinct
+#: things** -- 154 copies across the report -- and a tooltip is exactly what
+#: 4b.2 removes, being invisible on a phone and absent from paper. Dropping it
+#: covered twice what the reference costs; the raise is the residue, mostly
+#: the `· limit 20%` now on each chip face.
+BYTES_BASELINE = 494_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.

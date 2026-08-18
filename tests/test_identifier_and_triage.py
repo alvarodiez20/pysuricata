@@ -233,9 +233,9 @@ class TestTheRuleSurvivesTheChipBeingRewritten:
             '<li class="flag warn" data-threshold=">10%" data-value="19.9%">'
             "Missing</li>"
         )
-        assert ">19.9% missing<" in annotated, "the face should carry the value"
+        assert "19.9% missing" in annotated, "the face should carry the value"
         chips = extract_chips(annotated)
-        assert chips == [("warn", "19.9% missing", "missing")]
+        assert chips == [("warn", "19.9% missing · limit 20%", "missing")]
         assert actionable_chips(chips) == chips
 
     def test_the_slug_does_not_move_with_the_value(self):
