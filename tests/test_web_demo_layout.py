@@ -57,6 +57,11 @@ WIDTHS = (320, 390, 768, 1024, 1280, 1440, 1920)
 SHELL = 1120
 PANE = 760
 
+#: At or below this the report frame breaks out of the page gutter and takes the
+#: whole window. The page's tablet breakpoint, and also the widest of the three
+#: the report's own layout criteria are measured at below desktop.
+FULL_BLEED = 768
+
 pytestmark = pytest.mark.browser
 
 
@@ -115,6 +120,7 @@ _MEASURE = """
     frame: box('.frame-wrap'),
     log: box('.log'),
     ledger: box('.ledger'),
+    actions: box('.result-actions'),
   };
 }
 """
@@ -196,15 +202,67 @@ def test_below_the_shell_the_column_fills_the_window(measurements, width):
     )
 
 
-@pytest.mark.parametrize("width", WIDTHS)
+@pytest.mark.parametrize("width", [w for w in WIDTHS if w > FULL_BLEED])
 def test_the_hero_and_the_report_share_a_left_edge(measurements, width):
     """The report used to be centred on the viewport while the text was centred
-    in a 600px column, so the two disagreed by 56px at every desktop width."""
+    in a 600px column, so the two disagreed by 56px at every desktop width.
+
+    Only above the tablet breakpoint. Below it the frame goes to the window edge
+    on purpose, which is the next test.
+    """
     m = measurements[width]
 
     assert m["hero"]["x"] == m["frame"]["x"], (
         f"at {width}px the hero starts at {m['hero']['x']}px and the report at "
         f"{m['frame']['x']}px — they are meant to be one column"
+    )
+
+
+@pytest.mark.parametrize("width", [w for w in WIDTHS if w <= FULL_BLEED])
+def test_a_phone_gives_the_report_the_whole_window(measurements, width):
+    """The report is a document with its own gutters, so the page's gutter is
+    charged twice on top of it.
+
+    That is affordable on a monitor and not on a phone: at 390px it took 47px of
+    page gutter before the report's own 40px of padding, and handed the report a
+    341px viewport. No phone is 341px wide, and the report's own layout criteria
+    (#124) are measured at 390, 768 and 1240 -- so the one width a visitor
+    actually saw the report at was the one width nobody had checked. Its nav
+    clipped `Missing Values` mid-word there.
+    """
+    m = measurements[width]
+
+    assert m["frame"]["x"] == 0, (
+        f"at {width}px the report starts at {m['frame']['x']}px, so the page "
+        f"gutter is still inside the frame"
+    )
+    assert m["frame"]["width"] == width, (
+        f"at {width}px the report frame is {m['frame']['width']}px wide, not the "
+        f"{width}px the device has"
+    )
+
+
+@pytest.mark.parametrize("width", [w for w in WIDTHS if w > FULL_BLEED])
+def test_the_control_row_ends_where_the_report_ends(measurements, width):
+    """`.result-actions` labels and resets the frame directly beneath it.
+
+    Capped at `--pane` under a `--shell` frame, `another file` sat 300px short of
+    the right edge of the thing it resets -- one block with two right edges,
+    which reads as a layout that slipped rather than as two measures chosen for a
+    reason. The log and the ledger keep their cap; they are reading blocks, not
+    controls for the frame.
+
+    Above the full-bleed breakpoint only. Below it the frame is deliberately the
+    one thing on the page outside the gutter, so the control row keeping the
+    gutter is the point rather than a mismatch.
+    """
+    m = measurements[width]
+    actions = m["actions"]["x"] + m["actions"]["width"]
+    frame = m["frame"]["x"] + m["frame"]["width"]
+
+    assert actions == frame, (
+        f"at {width}px the control row ends at {actions}px and the report it "
+        f"controls ends at {frame}px"
     )
 
 

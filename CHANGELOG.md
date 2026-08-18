@@ -63,6 +63,23 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The demo handed the report a viewport no phone has.** The report is a
+  document with its own gutters, and it sat inside the page's gutter as well, so
+  a 390px phone spent 47px on the page's margins before the report spent 40px on
+  its own — and the report rendered at **341px**. Its layout criteria are
+  measured at 390, 768 and 1240, so the one width a visitor actually saw it at
+  was the one width nobody had checked; its nav clipped `Missing Values`
+  mid-word there. At and below the tablet breakpoint the frame now breaks out to
+  the window edge and the report gets the width the device has — 390px, and a
+  card 318px wide instead of 269px. Above it the frame keeps the shell's left
+  edge, which is what it was given one for.
+
+- **The report's own control row stopped 300px short of it.** `Report / Full
+  window / Download the report / JSON / another file` was capped at the reading
+  measure while the frame it labels ran to the shell, so one block carried two
+  right edges. The controls now end where the report ends. The log and the
+  ledger keep their cap — they are reading blocks, not controls for the frame.
+
 - **A log-scale histogram labelled its x axis in log units** (#264). `Fare`'s
   log view captioned its peak bin `0.603–0.688` — those are log₁₀(4.01) and
   log₁₀(4.87), and **no fare is 0.603**. The axis ran roughly 0.6 to 2.7 for a

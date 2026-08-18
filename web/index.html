@@ -82,8 +82,14 @@
   .col { width: 100%; max-width: var(--shell); margin: 0 auto; padding: 0 var(--gutter); }
 
   /* Below the shell width there is nothing to cap: the gutters already own the
-     edges, so a phone renders exactly as it did before these two widths split. */
-  .status, .log, .note, .ledger, .result-actions { max-width: var(--pane); }
+     edges, so a phone renders exactly as it did before these two widths split.
+
+     `.result-actions` is not in this list. It labels and controls the frame
+     directly beneath it, and capping it at `--pane` under a `--shell` frame put
+     `another file` 300px short of the right edge of the thing it resets — one
+     block with two right edges, which reads as a layout that slipped rather
+     than as two measures chosen on purpose. */
+  .status, .log, .note, .ledger { max-width: var(--pane); }
 
   /* Micro-label: mono, uppercase, wide-tracked. The one recurring device. */
   .label {
@@ -213,6 +219,26 @@
   iframe#report {
     display: block; width: 100%; height: min(72vh, 620px); min-height: 420px;
     border: 1px solid var(--rule); border-radius: 3px; background: var(--paper);
+  }
+
+  /* The report is a document with its own gutters, so nesting it inside the
+     page's gutter charges the reader twice. On a 390px phone that cost 47px of
+     page gutter before the report's own 40px of padding, and handed the report
+     a 341px viewport -- narrower than any phone, and outside the widths its own
+     layout criteria are measured at (#124 pins 390, 768 and 1240). The report's
+     nav clipped `Missing Values` mid-word there.
+
+     So below the tablet breakpoint the frame breaks out to the window edge and
+     the report gets the width the device actually has. Above it the frame keeps
+     the shell's left edge, which is what #310 was for: the report lines up with
+     the hero rather than sitting 56px to its left. */
+  @media (max-width: 768px) {
+    .frame-wrap {
+      margin-inline: calc(var(--gutter) * -1);
+      width: auto;
+    }
+
+    iframe#report { border-inline: 0; border-radius: 0; }
   }
 
   /* Maximised. Deliberately an in-page overlay rather than the Fullscreen API:
