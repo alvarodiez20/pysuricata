@@ -353,7 +353,7 @@ def render_html_snapshot(
             # face leads with the column's own value, so deriving here gave
             # every card a set of flags no other card could share and no filter
             # could group. See #238.
-            flags = " ".join(sorted({slug for _, _, slug in _actionable_chips(chips)}))
+            flags = " ".join(sorted({chip.slug for chip in _actionable_chips(chips)}))
             card_id = _safe_col_id(name)
             column_chips.append((name, card_id, chips))
             # The missing share, for the "most missing" sort (design 15c).

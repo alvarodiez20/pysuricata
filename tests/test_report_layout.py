@@ -255,7 +255,19 @@ class TestTheReportIsOneFile:
 #: says it has to be: per class, checked against the renderers rather than
 #: against one fixture's output. Three untokenised colours went with it, which
 #: `test_colour_tokens.py` noticed and asked to have written down.
-BYTES_BASELINE = 486_500
+#:
+#: 486,500 -> 487,000 for the attention block's triage (#149). The block ranked
+#: by severity class alone, so Titanic's `Age` (19.9% missing against a 20%
+#: limit) sat above `Cabin` (77.1% against the same limit) on the strength of
+#: having two chips rather than one. Ranking on `value / threshold` needs those
+#: two numbers in this layer, and the 593 bytes are almost entirely the
+#: `data-value` and `data-threshold` pairs on eleven chips.
+#:
+#: The same argument as the #291 and #296 raises above: a figure the reader
+#: cannot act on is not presentation. Unlike #291, the report being weighed is
+#: the one that benefits -- Titanic raises seven flagged columns, and the
+#: reordering is visible on it.
+BYTES_BASELINE = 487_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.

@@ -41,12 +41,12 @@ def _flags(html: str) -> list[str]:
     Labels now lead with the value: `99.5% quasi-constant`, not
     `Quasi-constant`. `_has` matches on the slug.
     """
-    return [label for _, label, _ in extract_chips(html)]
+    return [chip.label for chip in extract_chips(html)]
 
 
 def _slugs(html: str) -> list[str]:
     """The quality chips, by identity rather than by face."""
-    return [slug for _, _, slug in extract_chips(html)]
+    return [chip.slug for chip in extract_chips(html)]
 
 
 def _has(html: str, name: str) -> bool:
