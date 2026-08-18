@@ -16,6 +16,29 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **`profile()` and `summarize()` read Excel workbooks** (#4) — `.xlsx`,
+  `.xlsm`, `.xlsb`, `.xls` and `.ods` — which the browser demo already did
+  (`web/README.md`) while the library itself raised `UnsupportedDataError`
+  for the same file. Publishing the demo widened that gap rather than
+  revealing it: a workbook the demo profiled in the browser had no path
+  through the package underneath it.
+
+  `python-calamine` is tried first — one dependency across all five formats,
+  and the engine the demo settled on for the same reason — falling back to
+  pandas' own per-format engine (openpyxl, xlrd, pyxlsb, odfpy) when calamine
+  is not installed, or when the installed pandas predates its support (added
+  in 2.2; this project's floor is 2.0, so the fallback is load-bearing, not
+  decorative). Only the first sheet is read, silently, matching what a plain
+  `pd.read_excel(path)` already defaults to — `profile()` is a one-shot call
+  with no prompt to put a sheet chooser behind, unlike the demo, which pauses
+  and asks.
+
+  `pysuricata/cli.py`'s `load_data()` used to duplicate `api.py`'s path
+  dispatch with a narrower format list that had already drifted out of sync
+  with it — `pysuricata profile data.arrow` worked from a Python call and
+  raised `Unsupported file format` from the CLI. It now delegates to the
+  same function, so this fix (and any future one) applies to both at once.
+
 - **`benchmarks/field.py`: the one command behind a published comparison
   table** (#2). A table of ratios against named competitors with no shipped
   harness behind it is exactly the shape that gets taken apart in a thread —

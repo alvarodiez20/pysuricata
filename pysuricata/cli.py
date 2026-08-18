@@ -17,7 +17,6 @@ import json
 import sys
 import time
 from dataclasses import replace
-from pathlib import Path
 
 from pysuricata import ComputeOptions, ProfileConfig, __version__, profile, summarize
 from pysuricata.check import (
@@ -64,7 +63,9 @@ For more information, visit: https://github.com/alvarodiez20/pysuricata
         description="Analyze a dataset and generate a comprehensive HTML report.",
     )
     profile_parser.add_argument(
-        "file", type=str, help="Path to the data file (CSV or Parquet)"
+        "file",
+        type=str,
+        help="Path to the data file (CSV, Parquet, JSON, Arrow or Excel)",
     )
     profile_parser.add_argument(
         "--output",
@@ -107,7 +108,9 @@ For more information, visit: https://github.com/alvarodiez20/pysuricata
         description="Analyze a dataset and output statistics as JSON.",
     )
     summarize_parser.add_argument(
-        "file", type=str, help="Path to the data file (CSV or Parquet)"
+        "file",
+        type=str,
+        help="Path to the data file (CSV, Parquet, JSON, Arrow or Excel)",
     )
     summarize_parser.add_argument(
         "--output",
@@ -140,7 +143,9 @@ For more information, visit: https://github.com/alvarodiez20/pysuricata
         ),
     )
     check_parser.add_argument(
-        "file", type=str, help="Path to the data file (CSV, Parquet or JSON)"
+        "file",
+        type=str,
+        help="Path to the data file (CSV, Parquet, JSON, Arrow or Excel)",
     )
     check_parser.add_argument(
         "--baseline",
@@ -239,38 +244,34 @@ For more information, visit: https://github.com/alvarodiez20/pysuricata
 def load_data(file_path: str):
     """Load data from a file path.
 
-    Supports CSV and Parquet files. For large files, returns a generator
-    that yields chunks.
+    Delegates to `pysuricata.api._read_path` -- the same dispatch `profile()`
+    and `summarize()` use for a path argument, covering CSV, Parquet, JSON,
+    Arrow IPC and Excel, streamed where the format allows it. This function
+    used to duplicate that dispatch with a narrower format list that had
+    drifted out of sync with it: `pysuricata profile data.arrow` worked from
+    a Python call and raised "Unsupported file format" from the CLI.
 
     Args:
         file_path: Path to the data file
 
     Returns:
         DataFrame or generator of DataFrames
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        ValueError: If the file's format is not supported.
     """
-    import pandas as pd
+    from pysuricata.api import PySuricataError, UnsupportedDataError, _read_path
 
-    from pysuricata.sources import first_batch_or_stream, stream_parquet
-
-    path = Path(file_path)
-
-    if not path.exists():
-        raise FileNotFoundError(f"File not found: {file_path}")
-
-    suffix = path.suffix.lower()
-
-    if suffix == ".csv":
-        return pd.read_csv(file_path)
-    elif suffix == ".parquet":
-        # Read a batch at a time rather than whole, so `pysuricata check` on a
-        # large Parquet file in CI stays inside the runner's memory.
-        return first_batch_or_stream(stream_parquet(path))
-    elif suffix == ".json":
-        return pd.read_json(file_path)
-    else:
-        raise ValueError(
-            f"Unsupported file format: {suffix}. Use CSV, Parquet, or JSON."
-        )
+    try:
+        return _read_path(file_path)
+    except UnsupportedDataError as e:
+        # A TypeError subclass at the API boundary (it can also be raised for
+        # a Python object of the wrong type); the CLI's contract here has
+        # always been ValueError for a bad file format.
+        raise ValueError(str(e)) from e
+    except PySuricataError as e:
+        raise FileNotFoundError(str(e)) from e
 
 
 def cmd_profile(args: argparse.Namespace) -> int:

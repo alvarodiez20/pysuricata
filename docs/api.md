@@ -43,7 +43,7 @@ For signatures and every parameter, see the [generated reference](reference.md).
 |---|---|
 | `pandas.DataFrame` | |
 | `polars.DataFrame` or `polars.LazyFrame` | requires `pysuricata[polars]` |
-| a path — `str` or `os.PathLike` | `.csv`, `.parquet`, `.json`, `.arrow`, `.feather`, `.ipc` |
+| a path — `str` or `os.PathLike` | `.csv`, `.parquet`, `.json`, `.arrow`, `.feather`, `.ipc`, `.xlsx`, `.xlsm`, `.xlsb`, `.xls`, `.ods` |
 | an Arrow table or reader | or anything exporting `__arrow_c_stream__` |
 | a DuckDB relation | a query that has not run yet |
 | `Iterable[DataFrame]` | a generator yielding pandas or polars chunks |
@@ -52,6 +52,16 @@ The middle three are read a **batch at a time** and never materialised as one
 frame. `pyarrow` is needed for Parquet and Arrow, and says so if it is missing;
 DuckDB is duck-typed on the relation's batch reader, so nothing imports it. See
 [Arrow, Parquet and DuckDB](data-sources.md).
+
+A spreadsheet is the one path format that cannot stream — no engine puts a
+`chunksize` on `read_excel`, so a workbook is always built whole before
+anything sees a row. `python-calamine` is tried first (one dependency across
+all five spreadsheet formats, and what the [browser demo](https://pysuricata.pages.dev)
+already uses), falling back to pandas' own per-format engine — openpyxl,
+xlrd, pyxlsb, odfpy — when calamine is not installed. Only the first sheet is
+read; a workbook that keeps its data on a later sheet needs
+`pd.read_excel(path, sheet_name=...)` and the resulting frame passed in
+directly.
 
 Anything else raises `UnsupportedDataError`, whose message lists the forms above.
 

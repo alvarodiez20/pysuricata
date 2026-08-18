@@ -234,12 +234,12 @@ No. PySuricata only reads data, never modifies it.
 |---|---|
 | `pandas.DataFrame` | |
 | `polars.DataFrame` / `LazyFrame` | needs `pysuricata[polars]` |
-| a **file path** | `.csv`, `.parquet`, `.json`, `.arrow`, `.feather`, `.ipc` |
+| a **file path** | `.csv`, `.parquet`, `.json`, `.arrow`, `.feather`, `.ipc`, `.xlsx`, `.xlsm`, `.xlsb`, `.xls`, `.ods` |
 | an **Arrow** table or reader | or anything exporting `__arrow_c_stream__` |
 | a **DuckDB relation** | a query that has not run yet |
 | an iterable of frames | your own chunks, from anywhere |
 
-The last three are read a **batch at a time** and never exist as one frame, so
+The middle two are read a **batch at a time** and never exist as one frame, so
 handing over the path costs less than loading it yourself — 307 MB against
 581 MB on a 180 MB Parquet file:
 
@@ -248,7 +248,13 @@ profile("events.parquet")            # streamed
 profile(pd.read_parquet("events.parquet"))  # loaded first
 ```
 
-Anything else — Excel, a SQL cursor, a Dask partition — goes through pandas or
+A spreadsheet is the exception among file paths: no engine puts a `chunksize`
+on `read_excel`, so a workbook is always built whole first, and only the
+first sheet is read. `python-calamine` covers all five spreadsheet formats
+with one dependency; without it, pandas falls back to openpyxl, xlrd, pyxlsb
+or odfpy depending on the extension.
+
+Anything else — a SQL cursor, a Dask partition — goes through pandas or
 polars first. See [Arrow, Parquet and DuckDB](data-sources.md).
 
 ### Is there a command line?

@@ -17,10 +17,11 @@ pysuricata check     data.parquet --baseline b.json  # a gate, with an exit code
 `pysuricata --version` prints the installed version. `pysuricata <command>
 --help` prints the options below.
 
-All three take a **path** and stream it — the file is read a batch at a time and
-never exists as one frame. CSV, Parquet, JSON and Arrow IPC (`.arrow`,
-`.feather`, `.ipc`) are read directly; see
-[Arrow, Parquet and DuckDB](data-sources.md).
+All three take a **path**. CSV, Parquet, JSON, Arrow IPC (`.arrow`, `.feather`,
+`.ipc`) and Excel (`.xlsx`, `.xlsm`, `.xlsb`, `.xls`, `.ods`) are all read
+directly — Parquet and Arrow IPC a batch at a time and never as one frame, the
+rest loaded whole, Excel unavoidably so since no engine puts a `chunksize` on
+`read_excel`. See [Arrow, Parquet and DuckDB](data-sources.md).
 
 ---
 
