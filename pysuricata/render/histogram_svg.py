@@ -180,9 +180,12 @@ class HistogramData:
     total_count: int
     scale: str  # 'lin' or 'log'
     y_max: float
-    original_range: tuple[float, float] | None = (
-        None  # Original data range for log scale
-    )
+    # No `original_range`. It was declared here for exactly this problem and
+    # never assigned anywhere, so a log chart labelled itself in exponents
+    # while carrying a field meant to prevent that (#264). Carrying both
+    # ranges is the other way to fix it; formatting the display edges through
+    # `10 ** x` needs no second copy that can fall out of step with the first,
+    # which is what happened to this one. See `_in_data_units`.
     # Rows this chart does not show. Non-zero only on a log axis, where zeros
     # and negatives cannot be drawn (#258). The caption states it: a chart that
     # silently omits rows is the defect, and drawing the drawable ones without
@@ -579,12 +582,16 @@ class SVGHistogramRenderer:
             y = self._SPAN - height
 
             if index < len(hist_data.edges) - 1:
-                x0_label = self._format_tick_label_standardized(hist_data.edges[index])
+                x0_label = self._format_tick_label_standardized(
+                    self._in_data_units(hist_data, hist_data.edges[index])
+                )
                 x1_label = self._format_tick_label_standardized(
-                    hist_data.edges[index + 1]
+                    self._in_data_units(hist_data, hist_data.edges[index + 1])
                 )
             else:
-                x0_label = x1_label = self._format_tick_label_standardized(center)
+                x0_label = x1_label = self._format_tick_label_standardized(
+                    self._in_data_units(hist_data, center)
+                )
 
             pct = (
                 (count / hist_data.total_count) * 100.0
@@ -652,6 +659,29 @@ class SVGHistogramRenderer:
             )
         return "".join(out)
 
+    @staticmethod
+    def _in_data_units(hist_data: HistogramData, edge: float) -> float:
+        """An edge of the drawn chart, back in the units of the column (#264).
+
+        On a log chart the display edges are log10 values, because that is the
+        space the bars are laid out in and laying them out anywhere else would
+        make the axis non-linear. Everything a *reader* sees has to come back
+        out of that space: `Fare`'s peak bin was captioned `0.603-0.688`, which
+        is log10(4.01) to log10(4.87), and no fare is 0.603.
+
+        Three places read `edges` -- the axis labels, the `data-x0`/`data-x1`
+        the tooltip prints, and the caption's peak range -- and all three were
+        wrong in the same way, so the un-logging belongs here rather than at
+        each of them. Labels come out unevenly spaced, which is what a log
+        axis normally shows.
+        """
+        if hist_data.scale != "log":
+            return edge
+        try:
+            return 10.0**edge
+        except OverflowError:  # pragma: no cover - guards a degenerate edge
+            return edge
+
     def _render_x_labels(self, hist_data: HistogramData) -> str:
         """Nine value labels across the axis, each tagged by importance.
 
@@ -671,9 +701,7 @@ class SVGHistogramRenderer:
         out = []
         for index, tier in enumerate(self._TICK_TIERS):
             fraction = index / (count - 1)
-            value = low + (high - low) * fraction
-            if hist_data.scale == "log":
-                value = 10**value
+            value = self._in_data_units(hist_data, low + (high - low) * fraction)
             label = self._format_tick_label_standardized(value)
             # The end labels anchor to the plot edge rather than centring on
             # their tick, so a wide value at either end sits inside the chart
@@ -714,8 +742,12 @@ class SVGHistogramRenderer:
             peak = int(hist_data.counts[index])
             noun = "row" if peak == 1 else "rows"
             if index < len(hist_data.edges) - 1:
-                low = self._format_tick_label_standardized(hist_data.edges[index])
-                high = self._format_tick_label_standardized(hist_data.edges[index + 1])
+                low = self._format_tick_label_standardized(
+                    self._in_data_units(hist_data, hist_data.edges[index])
+                )
+                high = self._format_tick_label_standardized(
+                    self._in_data_units(hist_data, hist_data.edges[index + 1])
+                )
                 pieces.append(f"peak {peak:,} {noun} at {low}–{high}")
             else:
                 pieces.append(f"peak {peak:,} {noun}")

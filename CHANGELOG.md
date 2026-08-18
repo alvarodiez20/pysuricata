@@ -14,6 +14,26 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+
+- **A log-scale histogram labelled its x axis in log units** (#264). `Fare`'s
+  log view captioned its peak bin `0.603–0.688` — those are log₁₀(4.01) and
+  log₁₀(4.87), and **no fare is 0.603**. The axis ran roughly 0.6 to 2.7 for a
+  column whose values run 4 to 512, with nothing saying the numbers were
+  exponents. It now reads `peak 60 rows at 4.0–4.9`.
+
+  The bars are still laid out in log space, because that is what makes the
+  axis linear in the log of the value. What changed is that everything a
+  *reader* sees comes back out of that space. Three consumers read the display
+  edges — the axis labels, the `data-x0`/`data-x1` the tooltip prints, and the
+  caption's peak range — and two of the three were wrong, so the un-logging is
+  one helper rather than three patches.
+
+  `HistogramData.original_range` is removed. It was declared for exactly this
+  problem and **never assigned anywhere**, so the chart mislabelled itself
+  while carrying the field meant to prevent it. Carrying both ranges is the
+  other way to fix this, and that field is what became of the second copy.
+
 ### Changed
 
 - **The two datetime calendar shares are drawn against the baseline that makes
