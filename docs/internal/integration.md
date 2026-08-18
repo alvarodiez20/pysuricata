@@ -317,6 +317,11 @@ Files: `render/triage.py`, `render/html.py`, `static/js/pagination.js`, `_13-uti
 
 Design: `Variables Section.dc.html`, options 15a–15d.
 
+Chosen: **15b's flag reference + 15a's chips in the existing one-row-per-column block**
+(bordered chips, value + measure + threshold on the face). Hold 15a's grouping-by-action
+until the "should pysuricata give advice" decision is made. Glossary strings live in
+`assets/flag_reference.py`; chip colour roles in `assets/tokens.css`.
+
 Between the `Variables` heading and the first card there are four things: the
 needs-attention block, a count sentence, a search-and-filter row, and a page control. The
 attention block is the best-designed piece in the report; its **chips** are the problem.

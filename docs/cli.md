@@ -114,6 +114,7 @@ whatever keys still line up.
 | `--thresholds` | — | a `.json` or `.toml` file overriding the defaults |
 | `--max-missing-pct` | — | fail if any column is missing more than this percentage |
 | `--min-rows` | — | fail if the dataset has fewer rows than this |
+| `--max-duplicate-pct` | — | fail if duplicate rows could be above this percentage — gated on the upper bound, so a count below the sketch's own resolution fails closed rather than passing as zero |
 | `--max-rows-drift-pct` | — | fail if the row count moved more than this percentage from the baseline |
 | `--fail-on-new-column` | off | treat an added column as a breach |
 | `--fail-on-range-expansion` | off | treat a new minimum or maximum outside the baseline range as a breach |

@@ -29,6 +29,22 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **`duplicate_rows_lo` / `duplicate_rows_hi` in the `summarize()` payload,
+  and a `pysuricata check --max-duplicate-pct` gate that reads them** (#329).
+  `duplicate_rows_est == 0` cannot be told from "below the sketch's own
+  resolution" without also reading `duplicate_rows_uncertainty` and
+  reconstructing the bound `render/html.py` already prints — and the
+  README's own CI-gate example gated on the suppressed estimate, so it
+  passed identically on a clean frame and on one whose duplicates were
+  merely unconfirmed. The two new fields publish that arithmetic directly:
+  `duplicate_rows_hi` is `estimate.ceiling` when suppressed (the same figure
+  the report prints, not a second computation of it) and `rows ± uncertainty`
+  when resolved. `--max-duplicate-pct` gates on `duplicate_rows_hi`, not the
+  point estimate, so a frame whose duplicates are merely unresolved fails
+  the check instead of passing it by accident. The README's own example is
+  fixed to match. Adding keys does not move `schema_version`
+  (`docs/versioning.md`).
+
 - **`profile()` and `summarize()` read Excel workbooks** (#4) — `.xlsx`,
   `.xlsm`, `.xlsb`, `.xls` and `.ods` — which the browser demo already did
   (`web/README.md`) while the library itself raised `UnsupportedDataError`
@@ -102,6 +118,46 @@ quoted when both sides were measured in the same round-robin run.
   redeploy and a broken demo cannot be un-shipped along with it.
 
 ### Changed
+
+- **A report ships only the card-kind CSS it can use** (#306). `load_css_dir`
+  concatenated all fourteen partials into every document, so a frame with no
+  datetime column carried `_09-datetime.css` — not as a cache miss, but as
+  bytes, because the report inlines its stylesheet.
+
+  Titanic drops **5,600 bytes** and is the *least* improved shape, since it has
+  three of the four kinds. A boolean-only frame saves 17,830 and a numeric-only
+  one 17,189.
+
+  **The mapping is measured, not assumed.** Every selector in every partial was
+  matched against the rendered DOM of a report built from each single-kind
+  frame, which found three rules misfiled — they named no element of their
+  partial's kind and applied to every report: `.axis` and the narrow-screen
+  `.controls-slot` gap in `_08-categorical.css`, and
+  `.var-card__body .var-chart` in `_09-datetime.css`. All three moved to
+  `_06-cards.css` before anything became conditional. Two declarations did not
+  survive the move because they had never done anything: `.card-controls` is
+  `display: flex`, and a flex container ignores `grid-template-columns` and
+  `grid-column`. A fourth rule, `--triple-right`, was deleted outright — read
+  by nothing, and the one bare `#pysuricata-report` selector in the datetime
+  partial.
+
+  The correlations and missing-values partials stay unconditional: both are
+  sections rather than card kinds, both always render, and an empty state still
+  needs styling.
+
+  Guarded by an equivalence rather than a spot check. `TestNothingThatMattered
+  WasDropped` renders each single-kind frame twice — once with the trimmed
+  stylesheet it ships, once with every partial forced back in — and requires
+  all ~20 computed properties of every element to match, at 390px and 1240px.
+
+- **`docs/internal/integration.md` records the phase 4b decision** it had been
+  carrying only in the external design package (#149). Options 15a–15d for the
+  attention block are settled as 15b's flag reference plus 15a's chips in the
+  existing one-row-per-column block, and — the part that matters — **15a's
+  grouping-by-action is held** until #301 decides whether pysuricata should
+  recommend actions or only report facts. Everything the note chooses already
+  ships; what did not exist in this repository was the reason the block ranks
+  rather than groups, which is exactly the drift #251 is open about.
 
 - **A design pass over seven report issues** (#319, #145, #294, #314, #149,
   #297, #300), which also closes #299.
@@ -179,6 +235,36 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **A zero-column frame reported 90% duplicate rows; pandas reports none**
+  (#312). `RowKMV.update_from_pandas` seeded its row hash from `columns[0]`,
+  which raises `IndexError` on a frame with no columns and fell into
+  `_degraded_update` -- built for content that failed to hash, not for
+  content that never existed. Joining zero columns per row produced the
+  same empty-string signature for every row, so a 10-row, 0-column frame
+  (`pd.DataFrame(index=range(10))`) reported 9 duplicates, labelled `exact`
+  because nothing was actually degraded from the sketch's point of view,
+  only from the data's.
+
+  Nothing can differ between such rows, but that is not the question a
+  duplicate count answers: pandas' own `duplicated()` reports zero for this
+  shape, since there is nothing to key a comparison on and every row counts
+  as its own, unrepeated observation. `RowKMV` now matches it directly
+  (`_offer_zero_column_rows`) by feeding the sketch a synthetic per-row
+  identity -- a running counter passed through the same `splitmix64` mixer
+  the real row hashes use, so it stays uniformly distributed and does not
+  bias the sketch's error bound -- kept cumulative across chunks so two
+  chunks' rows can never collide with each other. All-missing and
+  constant-column frames are unaffected: they are genuinely duplicate rows,
+  as they were before.
+
+- **README credited Misra-Gries with the wrong knob** (#330). The footnote
+  said `k` (the top-k budget) was `max_uniques` (default 2048); it is
+  `top_k` (default 50) -- `max_uniques` sizes the unrelated KMV
+  distinct-count sketch. A reader sizing expectations from that table got
+  exact counts up to 2048 distinct values and wrong ones from 51, which is
+  the wrong mental model that made #328 invisible in the first place: the
+  counts looked like they should be exact, so nobody checked.
+
 - **Top-k counts claimed to be exact in exactly the case they were most
   wrong** (#328). Misra-Gries keeps 50 counters; above 50 distinct values every
   new value evicts weight from every counter, so a reported count is a lower
@@ -219,6 +305,28 @@ quoted when both sides were measured in the same round-robin run.
   columns exact and costs ~490 MB of counters across 600 columns, trading a
   correctness bug for the memory regression #207 is about. The bound ships; the
   budget stays.
+
+- **`benchmarks/versions.py` could silently measure the same code four times
+  under four different version labels** (#249). `RUNNER`'s subprocess script
+  imported `pysuricata` after `sys.path.insert(0, REPO)` had already put this
+  checkout ahead of the throwaway venv's own installation, and `python -c`
+  additionally puts the caller's cwd at `sys.path[0]` — so running from the
+  repo root shadowed every venv's install with the local working tree even
+  without the insert. `pysuricata.__version__` could not have caught it: it
+  resolves through `importlib.metadata`, which reports the *installed*
+  distribution regardless of what actually imported. Only `pysuricata.__file__`
+  tells the truth.
+
+  `REPO` is now appended to `sys.path` rather than inserted at the front (it
+  can no longer outrank a venv's own site-packages), the subprocess runs with
+  `cwd` set away from `REPO`, and — the belt-and-suspenders fix, since some
+  other path-pollution source could still reach this — `RUNNER` checks
+  `pysuricata.__file__` against the venv it meant to measure before timing
+  anything, refusing the entire run with both paths named if they disagree.
+  Caught for real in testing: an incidental empty `pysuricata/` directory
+  elsewhere on the machine resolved as an implicit namespace package with
+  `__file__ is None`, which the first version of this check crashed on
+  (`realpath(None)`) rather than refusing cleanly — fixed alongside it.
 
 - **The duplicate-row estimate could false-alarm on a clean frame** (#248).
   `RowKMV.duplicates()` suppressed its count when the estimate did not exceed
