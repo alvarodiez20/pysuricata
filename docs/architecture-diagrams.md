@@ -152,7 +152,7 @@ flowchart TD
     F --> G{"Card type?"}
 
     G -->|"Numeric"| G1["NumericCardRenderer\nSVG histogram + stats tables\n~200 lines HTML per card"]
-    G -->|"Categorical"| G2["CategoricalCardRenderer\nDonut chart SVG + top-k table"]
+    G -->|"Categorical"| G2["CategoricalCardRenderer\ncat-svg bar chart + top-k table"]
     G -->|"Datetime"| G3["DatetimeCardRenderer\nTemporal bar charts + freq tables"]
     G -->|"Boolean"| G4["BooleanCardRenderer\nTrue/False bar + percentage"]
 
@@ -164,7 +164,7 @@ flowchart TD
     H --> I["Load + inline static assets\n_00..._13 CSS partials · functionality.js\ntooltips.js · description-editor.js"]
     I --> J["CorrelationsSectionRenderer\nrender_section — O(m²)"]
     J --> K_node["MissingValuesSectionRenderer\nrender_section — O(cols)"]
-    K_node --> L["DonutChartRenderer\nrender_dtype_donut — SVG"]
+    K_node --> L["CompositionBarRenderer\nthe dataset's type mix — SVG"]
     L --> M["Template assembly\nreport_template.html\n~35 placeholders, single regex pass"]
     M --> N["Self-contained HTML\nsize grows with columns, not rows"]
 ```

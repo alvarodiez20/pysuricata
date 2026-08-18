@@ -210,9 +210,9 @@ PySuricata detects the type of each column and applies specialized analysis:
 | Column Type | Statistics | Visualization |
 |-------------|-----------|---------------|
 | **Numeric** | Mean, variance, skewness, kurtosis, quantiles, IQR/MAD/z-score outliers | Histogram (SVG) |
-| **Categorical** | Top-k values, distinct count, entropy, Gini impurity, string length stats | Donut chart (SVG) |
+| **Categorical** | Top-k values, distinct count, entropy, Gini impurity, string length stats | Bar chart (SVG) |
 | **DateTime** | Range, hour/day/month distributions, monotonicity coefficient | Timeline (SVG) |
-| **Boolean** | True/false ratios, entropy, balance score, imbalance ratio | Balance bar (SVG) |
+| **Boolean** | True/false counts and ratios, entropy | Balance bar (SVG) |
 
 Additionally, PySuricata computes:
 

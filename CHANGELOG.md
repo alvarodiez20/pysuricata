@@ -534,8 +534,31 @@ quoted when both sides were measured in the same round-robin run.
   cli.md:75             `--warn-onlyy` is documented under `check` but the parser has no such flag
   ```
 
+### Changed
+
+- **The README and two pages stop describing a report that is not rendered**
+  ([#287]). There is no donut anywhere in a report — #104 replaced the 135px
+  dtype donut with a composition bar, and the categorical card draws a `cat-svg`
+  bar chart. `architecture-diagrams.md` still had `DonutChartRenderer` and
+  `render_dtype_donut` as steps in the live rendering pipeline; neither exists
+  as a file or a symbol.
+
+  The same table in `why-pysuricata.md` also still listed **balance score** and
+  **imbalance ratio** for boolean columns, and so did the README's *What's in a
+  Report*. [#276] had corrected `stats/boolean.md`; these were the third and
+  fourth copies of that list.
+
+  While in the README: the streaming section taught
+  `profile(stream_parquet(path))` when `profile(path)` does the same thing, so
+  the readers now appear as the escape hatch they are, beside the 307/581 MB
+  measurement; the `compare()` example split 800 rows 3/797, which illustrates
+  nothing, and now shows what the object carries; and the documentation index
+  was missing `cli`, `reference`, `data-sources`, `data-checks`, `comparing` and
+  `summary-schema`.
+
 [#284]: https://github.com/alvarodiez20/pysuricata/issues/284
 [#285]: https://github.com/alvarodiez20/pysuricata/issues/285
+[#287]: https://github.com/alvarodiez20/pysuricata/issues/287
 
 ## [0.1.2] - 2026-08-17
 
