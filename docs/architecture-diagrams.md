@@ -43,7 +43,7 @@ flowchart TD
 | **Total Space** | O(cols × (s + k + b)) |
 | **Peak Memory** | ~50 MB bounded by streaming architecture |
 
-Where: `n` = total rows, `c` = chunk size (200k default), `m` = numeric columns, `s` = reservoir size (20k), `k` = KMV sketch size (2048), `b` = histogram bins (25).
+Where: `n` = total rows, `c` = chunk size (50k default), `m` = numeric columns, `s` = reservoir size (20k), `k` = KMV sketch size (2048), `b` = histogram bins (25).
 
 ---
 
@@ -166,7 +166,7 @@ flowchart TD
     J --> K_node["MissingValuesSectionRenderer\nrender_section — O(cols)"]
     K_node --> L["DonutChartRenderer\nrender_dtype_donut — SVG"]
     L --> M["Template assembly\nreport_template.html\n~35 placeholders, single regex pass"]
-    M --> N["Self-contained HTML\n~1.2–1.6 MB typical"]
+    M --> N["Self-contained HTML\nsize grows with columns, not rows"]
 ```
 
 ### Rendering Cost Breakdown
@@ -177,7 +177,7 @@ flowchart TD
 | Card rendering | O(cols) | ~5–20 KB per card |
 | Asset inlining | O(1) | ~200 KB (CSS+JS) |
 | Correlation section | O(m²) | Variable |
-| Template assembly | O(1) | ~1.2–1.6 MB total |
+| Template assembly | O(1) | grows with columns, not rows |
 
 ---
 
@@ -186,12 +186,21 @@ flowchart TD
 | Stage | Time | Space | Key Parameter |
 |-------|------|-------|---------------|
 | Input coercion | O(1) | O(1) | — |
-| Chunking | O(n/c) | O(c × cols) | `chunk_size` (200k) |
+| Chunking | O(n/c) | O(c × cols) | `chunk_size` (50k) |
 | Type inference | O(sample) | O(1) | first chunk; reclassification only when that chunk is the whole frame |
 | Accumulator updates | O(n × cols) | O(cols × s) | `numeric_sample_k` (20k) |
 | KMV sketching | O(n × log k) | O(cols × k) | `uniques_k` (2048) |
 | Correlation | O(n × m²) | O(m²) | `corr_max_cols` (50) |
 | Row deduplication | O(n × cols) | O(k) | KMV sketch |
 | Finalization | O(cols × s log s) | O(cols) | — |
-| HTML rendering | O(cols) | O(report_size) | ~1.5 MB |
+| HTML rendering | O(cols) | O(report_size) | one card per column |
 | **Total** | **O(n × cols + n × m²)** | **O(cols × s)** | — |
+
+Note the space column: every bound is **per column**. Memory is flat in rows and
+linear in columns, at roughly 3 MB each — which is why a 20,000 × 600 frame
+costs more than a 5,000,000 × 8 one on less data
+([#207](https://github.com/alvarodiez20/pysuricata/issues/207)).
+
+Report size follows the same axis: one card per column, so it grows with width
+and not with length. A 20,000 × 5 frame covering all four column kinds renders
+to roughly 420 KB, with the CSS and JS inlined.

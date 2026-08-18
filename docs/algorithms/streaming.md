@@ -340,51 +340,34 @@ def parallel_moments(data, n_threads=4):
 
 ## Implementation in PySuricata
 
-### StreamingMoments Class
+`StreamingMoments` lives in `pysuricata/accumulators/algorithms.py`. The state is
+five numbers — `n`, `mean`, `m2`, `m3`, `m4` — plus two more for the geometric
+mean and the smallest strictly positive value seen.
 
-```python
-class StreamingMoments:
-    def __init__(self):
-        self.n = 0
-        self.mean = 0.0
-        self.M2 = 0.0
-        self.M3 = 0.0
-        self.M4 = 0.0
+Three things about it are worth knowing, and none of them is visible from the
+formulas above.
 
-    def update(self, values: np.ndarray):
-        """Update with array of values"""
-        for x in values:
-            if not np.isfinite(x):
-                continue
-            self.n, self.mean, self.M2, self.M3, self.M4 = \
-                moments_update(self.n, self.mean, self.M2, self.M3, self.M4, x)
+**`update()` is vectorised over the array, not a loop over values.** The
+pseudocode earlier on this page is per-value because that is how the recurrence
+is stated; the implementation filters non-finite values with a single
+`np.isfinite` mask and folds the batch in as a batch. On the numeric path that
+is most of the difference between a profiler and a slideshow.
 
-    def merge(self, other: 'StreamingMoments'):
-        """Merge with another moments object"""
-        self.n, self.mean, self.M2, self.M3, self.M4 = \
-            pebay_merge_moments(
-                self.n, self.mean, self.M2, self.M3, self.M4,
-                other.n, other.mean, other.M2, other.M3, other.M4
-            )
+**Non-finite values are excluded from the moments and counted separately.** NaN
+and ±Inf never enter `m2`; they are reported as `missing` and `inf` so a reader
+can see that they were there.
 
-    def finalize(self):
-        """Compute final statistics"""
-        if self.n < 2:
-            return {"mean": self.mean, "variance": None, "skewness": None, "kurtosis": None}
+**The merge is exact, and that is the whole point.** `merge()` applies Pébay's
+formulas, so combining two partial states gives bit-for-bit what one pass over
+the concatenation gives. Everything downstream rests on it: chunking, resuming
+from a checkpoint, and merging partitions computed on separate machines.
+`benchmarks/accuracy.py` asserts it on every run, and a change that breaks it is
+wrong even if it is faster.
 
-        variance = self.M2 / (self.n - 1)
-        std = math.sqrt(variance)
-        skewness, kurtosis = compute_shape(self.n, self.M2, self.M3, self.M4)
-
-        return {
-            "count": self.n,
-            "mean": self.mean,
-            "variance": variance,
-            "std": std,
-            "skewness": skewness,
-            "kurtosis": kurtosis
-        }
-```
+One field exists for a reason worth recording: `_min_positive` tracks the
+smallest strictly positive value, because a log axis cannot draw a zero or a
+negative and that is where one honestly starts. Without it the log histogram
+discarded a bin of 519 rows because 15 of them were zero (#258).
 
 ## Validation
 

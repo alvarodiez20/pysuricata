@@ -50,18 +50,37 @@ n_distinct = kmv.estimate()
 duplicate_rate = (n_total - n_distinct) / n_total
 ```
 
-## Exact vs Approximate
+## Reading the Number
 
-**Exact** (for small datasets):
+The duplicate count is `rows − distinct`. `rows` is exact and `distinct` is a
+sketch estimate, so **the whole absolute error of the distinct estimate lands on
+the duplicate count** — a quantity that is usually far smaller. On 200,000 rows
+with 2,000 genuine duplicates, a 1% error on the distinct count is 2,000 rows:
+inside spec for the sketch, and 100% wrong about the answer.
+
+So the payload publishes two keys, and they are meant to be read together:
+
+| key | meaning |
+|---|---|
+| `duplicate_rows_est` | the estimate, **suppressed to `0`** when it does not exceed its own uncertainty |
+| `duplicate_rows_uncertainty` | one standard deviation on that count, in rows; `0` when the count is exact |
+
+An `est` of `0` beside a large `uncertainty` means *we cannot tell*, not *there
+are none*. Full table in
+[the `summarize()` schema](../summary-schema.md#reading-the-duplicate-count).
+
+## Getting an Exact Count
+
+If the frame fits in memory and you need certainty rather than a bound, pandas
+will tell you exactly — at the cost of holding every row:
+
 ```python
 exact_duplicates = df.duplicated().sum()
 dup_pct = (exact_duplicates / len(df)) * 100
 ```
 
-**Approximate** (PySuricata for large datasets):
-- Uses KMV sketch
-- ~2% error with default settings
-- Constant memory
+The sketch exists for the case where that is not available: constant memory,
+whatever the row count.
 
 ## See Also
 
