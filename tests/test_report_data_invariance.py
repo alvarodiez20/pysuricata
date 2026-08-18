@@ -62,6 +62,29 @@ Deliberate fact changes so far, each with the reason it was allowed:
   **not** move: `col_name` keeps its entropy, because the fixture gives its head
   distinct counts and a column whose levels genuinely differ still has a spread
   worth reporting.
+
+* **#327, the outlier counts.** `outliers_iqr_est` counted crossings inside the
+  20,000-value reservoir and was published against `count`, the population
+  denominator every consumer divides it by. The two were on different scales,
+  so the figure came back low by exactly `numeric_sample_size / n` -- 49x at
+  1M rows, reproduced against exact truth at four row counts. It is now scaled
+  to the population, which measures within 3% of the exact count.
+
+  **No fact moved in any of the three fixtures, and that is the point worth
+  recording.** All three frames are well under `numeric_sample_size`, where the
+  reservoir holds every value, the scale factor is exactly 1, and the estimate
+  *is* the count -- 26 stayed 26, 2 stayed 2, 0 stayed 0. So this fixture set
+  could not have caught the bug and cannot now show it fixed: the defect lives
+  entirely above 20,000 rows, which nothing here reaches. What changed is two
+  added keys: `outliers_iqr_sample` and `outliers_mod_zscore_sample`, the
+  reservoir counts the estimates were scaled from. `schema_version` stays 1 --
+  correcting a wrong value does not bump it, per `docs/versioning.md` and the
+  `duplicate_rows_est` precedent (#202).
+
+  The corrected behaviour is covered instead by
+  `tests/test_outlier_population_scale.py`, which straddles the threshold
+  deliberately. A fixture frame that never crosses an internal budget is the
+  same blind spot #331 was filed about.
 """
 
 from __future__ import annotations

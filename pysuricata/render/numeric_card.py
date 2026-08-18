@@ -27,6 +27,17 @@ from .sampling import quantiles_are_sampled
 from .triage import annotate_flags
 
 
+def _outliers_estimated(stats) -> bool:
+    """Whether `outliers_iqr` is a scaled estimate rather than a count (#327).
+
+    False when the reservoir held the whole column, where the scale factor is
+    1 and the figure is exact.
+    """
+    sampled = len(getattr(stats, "sample_vals", None) or [])
+    count = int(getattr(stats, "count", 0) or 0)
+    return bool(getattr(stats, "outliers_iqr", 0)) and 0 < sampled < count
+
+
 class NumericCardRenderer(CardRenderer):
     """Renders numeric data cards."""
 
@@ -308,7 +319,12 @@ class NumericCardRenderer(CardRenderer):
                 f"num {miss_cls}",
             ),
             (
-                "Outliers",
+                # `(≈)` for the same reason `Unique` carries it: above
+                # `numeric_sample_size` rows this is a population estimate
+                # scaled from the reservoir, not a count (#327). The marker is
+                # what keeps the figure from claiming an exactness it lost the
+                # moment the column outgrew the sample.
+                f"Outliers{' (≈)' if _outliers_estimated(stats) else ''}",
                 f"{stats.outliers_iqr:,} ({percentages['out_pct']:.1f}%)",
                 f"num {out_cls}",
             ),
@@ -1672,7 +1688,15 @@ class NumericCardRenderer(CardRenderer):
         if lows or highs:
             counts["extremes"] = f"{max(lows, highs):,}"
 
-        outliers = int(getattr(stats, "outliers_iqr", 0) or 0)
+        # The sample count, not the scaled estimate: this number sits beside
+        # the button that opens the fence pane, and the pane counts in the
+        # sample (#327). Two different numbers for one pane is worse than a
+        # smaller one.
+        outliers = int(
+            getattr(stats, "outliers_iqr_sample", None)
+            or getattr(stats, "outliers_iqr", 0)
+            or 0
+        )
         if outliers:
             counts["outliers"] = f"{outliers:,}"
 

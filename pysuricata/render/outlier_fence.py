@@ -110,6 +110,9 @@ class Fence:
     value_lo: float
     value_hi: float
     n_total: int
+    #: How many values the fence was actually computed over. Below
+    #: `n_total` the pane is reporting a sample, and says so (#327).
+    n_sampled: int
     #: Occurrences beyond the fence, which is what `stats.outliers_iqr` counts
     #: and therefore what the card face and the tab badge already say. The rows
     #: below are *distinct values*, so the two figures differ whenever a value
@@ -124,6 +127,16 @@ class Fence:
     n_mad: int
     rows_are_partial: bool
     any_index_missing: bool
+
+    @property
+    def is_sampled(self) -> bool:
+        """Whether the fence saw fewer values than the column holds.
+
+        False when the reservoir held every value, in which case the pane's
+        counts and the card's estimate are the same number and there is
+        nothing to reconcile.
+        """
+        return 0 < self.n_sampled < self.n_total
 
     @property
     def lo_possible(self) -> bool:
@@ -251,10 +264,13 @@ def build_fence(stats, quantiles=None) -> Fence | None:
     n_iqr = sum(1 for e in entries if e["iqr"])
     n_mad = sum(1 for e in entries if e["mad"])
 
-    # The headline counts *occurrences past the fence*, which is exactly what
-    # `accumulators/numeric.py` puts in `outliers_iqr` -- so the number here,
-    # the number on the card face and the number on the tab badge are one
-    # number, computed the same way from the same sample. The rows below are
+    # The headline counts *occurrences past the fence in the sample*, which is
+    # what `accumulators/numeric.py` keeps in `outliers_iqr_sample`. It is no
+    # longer the number on the card face: `outliers_iqr` is now scaled to the
+    # population (#327), because every consumer divides it by `count`. So the
+    # two figures differ by the sampling ratio on any column above
+    # `numeric_sample_size` rows, and the pane names the sample it counted in
+    # rather than leaving the reader to reconcile them. The rows below are
     # distinct values and are counted separately.
     n_low = sum(1 for v in sample if v < lo_fence)
     n_high = sum(1 for v in sample if v > hi_fence)
@@ -302,6 +318,7 @@ def build_fence(stats, quantiles=None) -> Fence | None:
         value_lo=value_lo,
         value_hi=value_hi,
         n_total=int(getattr(stats, "count", 0) or 0),
+        n_sampled=len(sample),
         n_outliers=n_low + n_high,
         n_low=n_low,
         n_high=n_high,
@@ -647,6 +664,11 @@ def render_table(fence: Fence, fmt, col_id: str = "") -> str:
     )
 
     notes = []
+    if fence.is_sampled:
+        notes.append(
+            f"Counted in a {fence.n_sampled:,}-value sample of {fence.n_total:,}; "
+            "the card's outlier count scales this up to the column."
+        )
     if fence.rows_are_partial:
         notes.append(
             f"{len(fence.rows)} of {fence.n_outliers:,} shown, the most extreme first."

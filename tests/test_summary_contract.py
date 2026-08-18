@@ -206,6 +206,23 @@ class TestAddingKeysIsNotBreaking:
         assert {"skew", "kurtosis", "iqr", "true_histogram_counts"} <= set(stats)
         assert payload["schema_version"] == 1
 
+    def test_correcting_a_wrong_value_does_not_bump_the_version(self, payload):
+        """The rule that is easiest to get backwards, so it is pinned here.
+
+        #327 changed `outliers_iqr_est` from a reservoir count to a population
+        estimate. That looks like repurposing a key, and the instinct is to
+        bump. `docs/versioning.md` rules the other way: correcting a wrong
+        value is a bug fix, and "pinning it under the schema would mean the
+        contract guaranteed the bug". The precedent it records is
+        `duplicate_rows_est` (#202), which has the same shape -- published
+        wrong, corrected in place, an uncertainty field added beside it.
+
+        The two new keys are additive, which is free under the same policy.
+        """
+        stats = _column_of_type(payload, "numeric")
+        assert {"outliers_iqr_sample", "outliers_mod_zscore_sample"} <= set(stats)
+        assert payload["schema_version"] == 1
+
     def test_the_keys_that_existed_before_still_exist(self, payload):
         """The 0.0.38 numeric key set, pinned. Removing one of these is what
         bumps the version."""

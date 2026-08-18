@@ -33,6 +33,28 @@ from .sketches import KMV, MisraGries, ReservoirSampler, StreamingHistogram, mad
 _TOP_K_MIN_COVERAGE = 0.02
 
 
+def _scale_to_population(sample_count: int, count: int, sample_size: int) -> int:
+    """Scale a count made in the reservoir up to the whole column (#327).
+
+    The reservoir is a uniform sample, so the crossing rate it observes is an
+    unbiased estimate of the column's, and multiplying by `count / sample_size`
+    estimates the population count. Measured against exact truth on a lognormal
+    column: +0.4% at 50,000 rows and -3.0% at 1,000,000.
+
+    Deriving the count from `true_histogram_counts` instead -- which does cover
+    every row -- was tried and is worse by an order of magnitude (6,312 against
+    a true 110,179). Twenty-five linear bins over a skewed column put the fence
+    deep inside one very wide bin, and whole-bin arithmetic cannot see where in
+    that bin the fence falls.
+
+    Returns the sample count unchanged when the reservoir holds the whole
+    column, which is the exact answer rather than an estimate of it.
+    """
+    if sample_count <= 0 or sample_size <= 0 or count <= sample_size:
+        return int(sample_count)
+    return int(round(sample_count * (count / sample_size)))
+
+
 def should_track_top_k(unique_est: float, count: int, top_k: int) -> bool:
     """Whether a numeric column's top-k answer will carry information.
 
@@ -90,6 +112,12 @@ class NumericSummary:
     outliers_mod_zscore: int
     approx: bool
     inf: int
+    #: The reservoir counts behind `outliers_iqr` / `outliers_mod_zscore`,
+    #: before scaling to the population (#327). The fence pane reports the
+    #: sample it drew its rows from, so it reads these rather than the
+    #: estimates; every other consumer wants the estimate.
+    outliers_iqr_sample: int = 0
+    outliers_mod_zscore_sample: int = 0
     # Advanced analytics (approximate)
     int_like: bool = False
     unique_ratio_approx: float = float("nan")
@@ -526,8 +554,21 @@ class NumericAccumulator(PicklableAccumulator):
         if self._monotonicity:
             mono_inc, mono_dec = self._monotonicity.get_monotonicity()
 
-        # Get outlier detection results if enabled
+        # Get outlier detection results if enabled.
+        #
+        # Both counts are *population estimates*, not reservoir counts (#327).
+        # The fence is derived from the sample and the crossings are counted in
+        # the sample, so the raw figure is on the reservoir's scale while
+        # `count` -- the denominator every consumer divides it by -- is on the
+        # population's. Published unscaled, `outliers_iqr_est` came back 49x low
+        # at 1M rows, tracking `numeric_sample_size / n` exactly; the card face
+        # printed 0.2% for a column that is genuinely 10.4% outliers, and the
+        # outlier quality flag stopped firing on precisely the large datasets
+        # where it matters. The sample count itself is kept in
+        # `outliers_iqr_sample` for the fence pane, which is a sample view and
+        # says so.
         outliers_iqr, outliers_mod_zscore = 0, 0
+        outliers_iqr_sample, outliers_mod_zscore_sample = 0, 0
         # Bound up front: a column of nothing but inf leaves sample_values empty,
         # and the branch below never runs.
         mad_val = 0.0
@@ -544,8 +585,11 @@ class NumericAccumulator(PicklableAccumulator):
                 iqr = q3 - q1
                 lower_bound = q1 - 1.5 * iqr
                 upper_bound = q3 + 1.5 * iqr
-                outliers_iqr = np.sum(
-                    (sample_arr < lower_bound) | (sample_arr > upper_bound)
+                outliers_iqr_sample = int(
+                    np.sum((sample_arr < lower_bound) | (sample_arr > upper_bound))
+                )
+                outliers_iqr = _scale_to_population(
+                    outliers_iqr_sample, self.count, len(sample_values)
                 )
 
             if "mad" in methods:
@@ -554,7 +598,10 @@ class NumericAccumulator(PicklableAccumulator):
                     mod_z_score = (
                         0.6745 * (sample_arr - np.median(sample_arr)) / mad_val
                     )
-                    outliers_mod_zscore = np.sum(np.abs(mod_z_score) > 3.5)
+                    outliers_mod_zscore_sample = int(np.sum(np.abs(mod_z_score) > 3.5))
+                    outliers_mod_zscore = _scale_to_population(
+                        outliers_mod_zscore_sample, self.count, len(sample_values)
+                    )
 
         # Compute advanced analytics metrics.
         #
@@ -657,6 +704,8 @@ class NumericAccumulator(PicklableAccumulator):
             negatives=self.negatives,
             outliers_iqr=outliers_iqr,
             outliers_mod_zscore=outliers_mod_zscore,
+            outliers_iqr_sample=outliers_iqr_sample,
+            outliers_mod_zscore_sample=outliers_mod_zscore_sample,
             approx=approx,
             inf=self.inf,
             int_like=self._int_like_all,

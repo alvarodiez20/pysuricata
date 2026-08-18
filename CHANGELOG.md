@@ -14,7 +14,47 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **`outliers_iqr_sample` and `outliers_mod_zscore_sample` in the numeric
+  payload.** The reservoir counts the estimates beside them were scaled from.
+  Equal to the estimate means the reservoir held the whole column and the
+  figure is exact; the ratio between the two is the scale factor applied. They
+  are published rather than withheld so the basis of an estimate is visible
+  without inferring it from `count` and the configured sample size.
+
 ### Fixed
+
+- **Outlier counts were reservoir counts published against a population
+  denominator, and were 49x low at 1M rows.** The IQR fence is derived from the
+  reservoir and the crossings were counted there, but `outliers_iqr_est` was
+  published unscaled beside `count`, which covers every row. The ratio to truth
+  tracked `numeric_sample_size / n` exactly — measured 1.000, 0.396, 0.101 and
+  0.021 at 10k, 50k, 200k and 1M rows on a lognormal column.
+
+  Worse than the payload: both render sites divided the sample numerator by the
+  population denominator, so a column that is genuinely 10.4% outliers printed
+  0.2% on the card — and the outlier quality flag, which keys off that
+  percentage, stopped firing on exactly the large datasets where an outlier
+  warning matters. It failed silent.
+
+  Both counts are now scaled to the column. Measured against exact truth after
+  the fix: within 0.9% at 50k, 0.9% at 200k and 3.9% at 1M. Deriving the count
+  from `true_histogram_counts` instead — which does cover every row — was tried
+  and is worse by an order of magnitude (6,312 against a true 110,179), because
+  25 linear bins over a skewed column put the fence deep inside one very wide
+  bin and whole-bin arithmetic cannot see where in it the fence falls.
+
+  The card face carries `(≈)` like `Unique` does, since above the sample size
+  the figure is an estimate. The fence pane still counts in the sample it drew
+  its rows from, and now names that sample rather than leaving two different
+  numbers on one card to be reconciled.
+
+  `schema_version` stays **1**. Changing what a published key means reads like
+  a repurposing, but `docs/versioning.md` rules that correcting a wrong value
+  does not bump — "pinning it under the schema would mean the contract
+  guaranteed the bug" — and records `duplicate_rows_est` (#202) as the
+  precedent, which has exactly this shape.
 
 - **The demo page's desktop composition is one centred column, not four widths
   down the left.** Giving every block the shell's left edge fixed the measure

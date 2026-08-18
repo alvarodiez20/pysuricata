@@ -51,6 +51,13 @@ from .render.identifier import looks_like_identifier as _looks_like_identifier
 #
 # The promise: adding a key does not change this number, because a consumer
 # reading known keys is unaffected. Renaming or removing one bumps the major.
+# Deliberately still 1 after #327, which corrected `outliers_iqr_est` from a
+# reservoir count to a population estimate. That reads like a repurposing and is
+# not one: `docs/versioning.md` rules that correcting a wrong value does not
+# bump, "pinning it under the schema would mean the contract guaranteed the
+# bug". The precedent recorded there is `duplicate_rows_est` (#202) -- a figure
+# published wrong, corrected in place, with an uncertainty field added beside
+# it -- which is the same shape as this one.
 SUMMARY_SCHEMA_VERSION = 1
 
 # The payload key each summary-dataclass field is published under, where the two
@@ -441,6 +448,12 @@ class ReportOrchestrator:
                     "zeros": _i(s.zeros),
                     "negatives": _i(s.negatives),
                     "outliers_iqr_est": _i(s.outliers_iqr),
+                    # The reservoir count the estimate above was scaled from
+                    # (#327). Published rather than withheld so a consumer can
+                    # see the basis: equal to `outliers_iqr_est` means the
+                    # reservoir held the whole column and the figure is exact,
+                    # and the ratio between them is the scale factor applied.
+                    "outliers_iqr_sample": _i(s.outliers_iqr_sample),
                     "approx": bool(s.approx),
                     "mem_bytes": _i(s.mem_bytes),
                     # Correlations are computed and applied before this point, but
@@ -485,6 +498,7 @@ class ReportOrchestrator:
                     "ci_hi": _f(s.ci_hi),
                     "jb_chi2": _f(s.jb_chi2),
                     "outliers_mod_zscore": int(s.outliers_mod_zscore),
+                    "outliers_mod_zscore_sample": int(s.outliers_mod_zscore_sample),
                     "heap_pct": _f(s.heap_pct),
                     "bimodal": bool(s.bimodal),
                     "gran_decimals": _i(s.gran_decimals),
