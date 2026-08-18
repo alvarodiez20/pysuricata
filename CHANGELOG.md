@@ -16,6 +16,22 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **`duplicate_rows_lo` / `duplicate_rows_hi` in the `summarize()` payload,
+  and a `pysuricata check --max-duplicate-pct` gate that reads them** (#329).
+  `duplicate_rows_est == 0` cannot be told from "below the sketch's own
+  resolution" without also reading `duplicate_rows_uncertainty` and
+  reconstructing the bound `render/html.py` already prints — and the
+  README's own CI-gate example gated on the suppressed estimate, so it
+  passed identically on a clean frame and on one whose duplicates were
+  merely unconfirmed. The two new fields publish that arithmetic directly:
+  `duplicate_rows_hi` is `estimate.ceiling` when suppressed (the same figure
+  the report prints, not a second computation of it) and `rows ± uncertainty`
+  when resolved. `--max-duplicate-pct` gates on `duplicate_rows_hi`, not the
+  point estimate, so a frame whose duplicates are merely unresolved fails
+  the check instead of passing it by accident. The README's own example is
+  fixed to match. Adding keys does not move `schema_version`
+  (`docs/versioning.md`).
+
 - **`profile()` and `summarize()` read Excel workbooks** (#4) — `.xlsx`,
   `.xlsm`, `.xlsb`, `.xls` and `.ods` — which the browser demo already did
   (`web/README.md`) while the library itself raised `UnsupportedDataError`

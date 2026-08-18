@@ -175,6 +175,11 @@ class TestTheDocumentedKeys:
             # is "nothing resolvable below about 2,201". Without this key a
             # consumer could not reach the answer the report already printed.
             "duplicate_rows_uncertainty",
+            # The interval that arithmetic produces, published directly (#329)
+            # so a consumer never has to reconstruct it from uncertainty and a
+            # multiple documented only in prose.
+            "duplicate_rows_lo",
+            "duplicate_rows_hi",
             "memory_bytes",
             "top_missing",
         }

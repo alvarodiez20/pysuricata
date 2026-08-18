@@ -4456,6 +4456,8 @@
   "dataset": {
     "cols": 12,
     "duplicate_rows_est": 0,
+    "duplicate_rows_hi": 0,
+    "duplicate_rows_lo": 0,
     "duplicate_rows_pct_est": 0.0,
     "duplicate_rows_uncertainty": 0,
     "memory_bytes": 28800,

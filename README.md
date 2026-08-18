@@ -120,7 +120,16 @@ stats = summarize(df)
 
 assert stats["schema_version"] == 2
 assert stats["dataset"]["missing_cells_pct"] < 5.0
-assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
+
+# Gate on the upper bound, not the point estimate. Below the sketch's own
+# resolution `duplicate_rows_est` is suppressed to 0 -- a frame with no
+# duplicates and one whose duplicates are merely unresolved both read 0,
+# and a gate reading either alone would pass the second case by accident.
+# `duplicate_rows_hi` is the same bound the HTML report prints either way,
+# so this fails closed instead.
+rows = stats["dataset"]["rows_est"]
+duplicate_pct_hi = stats["dataset"]["duplicate_rows_hi"] / rows * 100 if rows else 0.0
+assert duplicate_pct_hi < 1.0
 
 print(f"Mean age: {stats['columns']['age']['mean']:.1f}")
 ```
