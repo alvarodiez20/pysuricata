@@ -1566,10 +1566,6 @@ body.suricata-standalone:not(.light) {
 }
 
 @media (max-width: 768px) {
-  #pysuricata-report .var-card__body .var-chart .hist-variants {
-    height: 180px;
-  }
-
   #pysuricata-report .vstat-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2965,11 +2961,17 @@ body.suricata-standalone:not(.light) {
 }
 
 .attention-item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
   gap: 0.5rem;
   min-height: var(--tap-min);
+}
+
+@media (max-width: 768px) {
+  .attention-item {
+    grid-template-columns: 1fr;
+  }
 }
 
 .attention-col {
@@ -3003,8 +3005,12 @@ body.suricata-standalone:not(.light) {
   white-space: nowrap;
 }
 
-.attention-item {
-  align-items: center;
+.attention-more,
+.attention-clear {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted, inherit);
+  text-wrap: pretty;
 }
 
 .needs-attention .flag.selected {
@@ -5399,112 +5405,6 @@ body.suricata-standalone:not(.light) {
 
   }
 
-#pysuricata-report .missing-per-chunk-enhanced {
-  margin-top: 1.5rem;
-  padding: 1.25rem;
-  background: transparent;
-  border-radius: 0;
-  border: 1px solid var(--rule-strong);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-header {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-header .icon {
-  font-size: 1.25rem;
-  opacity: 0.8;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-header .title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--ink);
-  flex: 1;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-header .overall-stats {
-  font-size: 0.85rem;
-  color: var(--ink-2);
-  background: transparent;
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-bars {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-bar-item {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem;
-  background: transparent;
-  border-radius: 6px;
-  border: 1px solid var(--rule-strong);
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-bar-item:hover {
-  background: transparent;
-  border-radius: 6px 6px 0 0;
-  border-color: var(--data-1);
-  transform: translateX(2px);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-info {
-  display: flex;
-  flex-direction: column;
-  min-width: 140px;
-  gap: 0.25rem;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-stats {
-  font-size: 0.8rem;
-  color: var(--ink-2);
-  font-weight: 500;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-size {
-  font-size: 0.75rem;
-  color: var(--muted);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-bar-container {
-  flex: 1;
-  height: 8px;
-  background: transparent;
-  border-radius: 6px;
-  overflow: hidden;
-  position: relative;
-  border: 1px solid var(--rule-strong);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
 @keyframes shimmer {
   0% {
     transform: translateX(-100%);
@@ -5512,384 +5412,6 @@ body.suricata-standalone:not(.light) {
 
   100% {
     transform: translateX(100%);
-  }
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-summary {
-  margin-bottom: 1rem;
-  padding: 1rem;
-  background: transparent;
-  border-radius: 0;
-  border: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .summary-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 1rem;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .stat-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 0.5rem;
-  background: transparent;
-  border-radius: 6px;
-  border: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .stat-label {
-  font-size: 0.75rem;
-  color: var(--muted);
-  margin-bottom: 0.25rem;
-  font-weight: 500;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .stat-value {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-insights {
-  margin-bottom: 1rem;
-  padding: 1rem;
-  background: transparent;
-  border-radius: 0;
-  border: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-insights h5 {
-  margin: 0 0 0.75rem 0;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .insights-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .insights-list li {
-  padding: 0.5rem 0;
-  font-size: 0.85rem;
-  color: var(--ink-2);
-  border-bottom: 1px solid var(--rule-strong);
-  position: relative;
-  padding-left: 1.5rem;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .insights-list li:last-child {
-  border-bottom: none;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .insights-list li::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0.5rem;
-  font-size: 0.8rem;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .chunk-legend {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .legend-color {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .legend-color.low {
-  background: linear-gradient(135deg, #10b981, #34d399);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .legend-color.medium {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .legend-color.high {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-}
-
-#pysuricata-report .missing-per-chunk-enhanced .legend-label {
-  font-size: 0.8rem;
-  color: var(--ink-2);
-  font-weight: 500;
-}
-
-#pysuricata-report:not(.light) .missing-per-chunk-enhanced {
-  background: transparent;
-  border-color: var(--rule-strong);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-#pysuricata-report:not(.light) .missing-per-chunk-enhanced:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-#pysuricata-report:not(.light) .missing-per-chunk-enhanced .chunk-bar-container {
-  background: transparent;
-  border-color: var(--rule-strong);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-@media (max-width: 768px) {
-  #pysuricata-report .missing-per-chunk-enhanced .chunk-bar-item {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-  }
-
-  #pysuricata-report .missing-per-chunk-enhanced .chunk-info {
-    min-width: auto;
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  #pysuricata-report .missing-per-chunk-enhanced .summary-stats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-
-  #pysuricata-report .missing-per-chunk-enhanced .chunk-legend {
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: center;
-  }
-}
-
-@media (max-width: 480px) {
-  #pysuricata-report .missing-per-chunk-enhanced {
-    padding: 1rem;
-  }
-
-  #pysuricata-report .missing-per-chunk-enhanced .chunk-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  #pysuricata-report .missing-per-chunk-enhanced .summary-stats {
-    grid-template-columns: 1fr;
-  }
-}
-
-#pysuricata-report .dataprep-spectrum {
-  margin-top: 1.5rem;
-  padding: 1.25rem;
-  background: transparent;
-  border-radius: 0;
-  border: 1px solid var(--rule-strong);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
-}
-
-#pysuricata-report .dataprep-spectrum:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transform: translateY(-1px);
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-stats {
-  font-size: 0.85rem;
-  color: var(--ink-2);
-  background: transparent;
-  padding: 0.25rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-bar {
-  display: flex;
-  height: 24px;
-  background: transparent;
-  border-radius: 6px;
-  overflow: hidden;
-  border: 1px solid var(--rule-strong);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
-  margin-bottom: 1rem;
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-segment {
-  height: 100%;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  position: relative;
-  overflow: hidden;
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-segment:hover {
-  transform: scaleY(1.1);
-  z-index: 1;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-segment.spectrum-low {
-  background: linear-gradient(135deg, #10b981, #34d399);
-  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.3);
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-segment.spectrum-medium {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.3);
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-segment.spectrum-high {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-  box-shadow: 0 1px 3px rgba(239, 68, 68, 0.3);
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-segment::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.2) 50%, transparent 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-segment:hover::after {
-  opacity: 1;
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-summary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-  padding: 0.75rem;
-  background: transparent;
-  border-radius: 0;
-  border: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-note {
-  font-size: 0.8rem;
-  color: var(--muted);
-  font-style: italic;
-}
-
-#pysuricata-report .dataprep-spectrum .spectrum-legend {
-  display: flex;
-  justify-content: center;
-  gap: 1.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .dataprep-spectrum .legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-#pysuricata-report .dataprep-spectrum .legend-color {
-  width: 16px;
-  height: 16px;
-  border-radius: 4px;
-  border: 1px solid var(--rule-strong);
-}
-
-#pysuricata-report .dataprep-spectrum .legend-color.spectrum-low {
-  background: linear-gradient(135deg, #10b981, #34d399);
-}
-
-#pysuricata-report .dataprep-spectrum .legend-color.spectrum-medium {
-  background: linear-gradient(135deg, #f59e0b, #fbbf24);
-}
-
-#pysuricata-report .dataprep-spectrum .legend-color.spectrum-high {
-  background: linear-gradient(135deg, #ef4444, #f87171);
-}
-
-#pysuricata-report .dataprep-spectrum .legend-label {
-  font-size: 0.8rem;
-  color: var(--ink-2);
-  font-weight: 500;
-}
-
-#pysuricata-report:not(.light) .dataprep-spectrum {
-  background: transparent;
-  border-color: var(--rule-strong);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-#pysuricata-report:not(.light) .dataprep-spectrum:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-}
-
-#pysuricata-report:not(.light) .dataprep-spectrum .spectrum-bar {
-  background: transparent;
-  border-color: var(--rule-strong);
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-
-#pysuricata-report:not(.light) .dataprep-spectrum .spectrum-segment::after {
-  background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.1) 50%, transparent 100%);
-}
-
-@media (max-width: 768px) {
-  #pysuricata-report .dataprep-spectrum .spectrum-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  #pysuricata-report .dataprep-spectrum .spectrum-summary {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-  }
-
-  #pysuricata-report .dataprep-spectrum .spectrum-legend {
-    flex-direction: column;
-    gap: 0.75rem;
-    align-items: center;
-  }
-}
-
-@media (max-width: 480px) {
-  #pysuricata-report .dataprep-spectrum {
-    padding: 1rem;
-  }
-
-  #pysuricata-report .dataprep-spectrum .spectrum-bar {
-    height: 8px;
   }
 }
 
@@ -6082,6 +5604,14 @@ body.suricata-standalone:not(.light) {
   border-bottom-color: var(--rule-strong);
 }
 
+#pysuricata-report .tab-pane[data-tab="missing"] .chunk-finding {
+  margin: 0 0 0.75rem 0;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--ink);
+  text-wrap: pretty;
+}
+
 #pysuricata-report .tab-pane[data-tab="missing"] .completeness-container {
   margin-bottom: 2rem;
 }
@@ -6266,13 +5796,6 @@ body.suricata-standalone:not(.light) {
 
 #pysuricata-report .tab-pane[data-tab="missing"] .chunk-segment:hover::after {
   transform: translateX(-50%) translateY(95%);
-}
-
-#pysuricata-report .tab-pane[data-tab="missing"] .chunk-legend {
-  display: flex;
-  gap: 1.5rem;
-  font-size: 0.85rem;
-  justify-content: center;
 }
 
 #pysuricata-report .tab-pane[data-tab="missing"] .legend-item {
@@ -6548,54 +6071,6 @@ body.suricata-standalone:not(.light) {
 
 #pysuricata-report .chunk-segment.high {
   background: #f44336;
-}
-
-#pysuricata-report .chunk-legend {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  background: transparent;
-  border-radius: 6px;
-  border: 1px solid var(--rule);
-  font-size: 0.85rem;
-}
-
-#pysuricata-report .chunk-legend .legend-label {
-  font-weight: 600;
-  color: var(--ink);
-  margin-right: 4px;
-}
-
-#pysuricata-report .chunk-legend .legend-item {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-#pysuricata-report .chunk-legend .legend-color {
-  width: 12px;
-  height: 12px;
-  border-radius: 2px;
-  display: inline-block;
-}
-
-#pysuricata-report .chunk-legend .legend-color.low {
-  background: #4caf50;
-}
-
-#pysuricata-report .chunk-legend .legend-color.medium {
-  background: #ff9800;
-}
-
-#pysuricata-report .chunk-legend .legend-color.high {
-  background: #f44336;
-}
-
-#pysuricata-report .chunk-legend .legend-text {
-  color: var(--ink-2);
-  font-weight: 500;
 }
 
 #pysuricata-report .no-missing-state {
@@ -7679,8 +7154,7 @@ body.suricata-standalone:not(.light) {
     if (e.target && e.target.closest &&
         (e.target.closest('.hist-svg') ||
          e.target.closest('.temporal-chart') || e.target.closest('.chunk-distribution') ||
-         e.target.closest('.chunk-spectrum') || e.target.closest('.missing-spectrum-bar') ||
-         e.target.closest('.dataprep-spectrum'))) {
+         e.target.closest('.chunk-spectrum') || e.target.closest('.missing-spectrum-bar'))) {
       hideTip();
     }
   }, true);
@@ -9181,7 +8655,7 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-18 19:44:08</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-18 20:09:13</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Profiled in</span> <span class="v">0.15 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
@@ -9269,13 +8743,13 @@ body.suricata-standalone:not(.light) {
           </div>
 
           <!-- Five bordered pills were five borders to say five short facts. -->
-          <p class="quick-facts">12 unique · 0 constant · 2 high-cardinality · 8 text (avg len 5.8) · no date range</p>
+          <p class="quick-facts">2 unique · 0 constant · 2 high-cardinality · 8 text (avg len 5.8) · no date range</p>
 
           <!-- Description as a margin note. Empty costs one hairline row:
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260818-194408-0541" data-original-markdown=""
+            data-report-id="20260818-200913-5482" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>
@@ -9313,7 +8787,8 @@ body.suricata-standalone:not(.light) {
             <h3 class="attention-title">
               <strong>7</strong> of 12 columns need a look
             </h3>
-            <ul class="attention-list"><li class="attention-item"><a class="attention-col" href="#col_Age">Age</a><span class="attention-flags"><span class="flag warn" data-flag="missing">19.9% missing · limit 20%</span><span class="flag bad" data-flag="many-outliers">1.5% many outliers · limit 5%</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Fare">Fare</a><span class="attention-flags"><span class="flag bad" data-flag="heavy-tailed">33.20 heavy‑tailed · limit 10</span><span class="flag bad" data-flag="many-outliers">13.0% many outliers · limit 5%</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Cabin">Cabin</a><span class="attention-flags"><span class="flag bad" data-flag="missing">77.1% missing · limit 20%</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Embarked">Embarked</a><span class="attention-flags"><span class="flag warn" data-flag="dominant-category">72.4% dominant category · limit 50%</span><span class="flag warn" data-flag="missing">0.2% missing · limit 20%</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Name">Name</a><span class="attention-flags"><span class="flag warn" data-flag="high-cardinality">High cardinality</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Parch">Parch</a><span class="attention-flags"><span class="flag warn" data-flag="dominant-category">76.1% dominant category · limit 50%</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Ticket">Ticket</a><span class="attention-flags"><span class="flag warn" data-flag="high-cardinality">High cardinality</span></span></li></ul>
+            <ul class="attention-list"><li class="attention-item"><a class="attention-col" href="#col_Cabin">Cabin</a><span class="attention-flags"><span class="flag bad" data-flag="missing" data-value="77.1%" data-threshold="&gt;20%">77.1% missing · limit 20%</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Fare">Fare</a><span class="attention-flags"><span class="flag bad" data-flag="heavy-tailed" data-value="33.20" data-threshold="|kurtosis| &gt; 3">33.20 heavy‑tailed · limit 10</span><span class="flag bad" data-flag="many-outliers" data-value="13.0%" data-threshold="&gt;1%">13.0% many outliers · limit 5%</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Age">Age</a><span class="attention-flags"><span class="flag warn" data-flag="missing" data-value="19.9%" data-threshold="≤20%">19.9% missing · limit 20%</span><span class="flag bad" data-flag="many-outliers" data-value="1.5%" data-threshold="&gt;1%">1.5% many outliers · limit 5%</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Parch">Parch</a><span class="attention-flags"><span class="flag warn" data-flag="dominant-category" data-value="76.1%" data-threshold="one level dominates">76.1% dominant category · limit 70%</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Embarked">Embarked</a><span class="attention-flags"><span class="flag warn" data-flag="dominant-category" data-value="72.4%" data-threshold="one level dominates">72.4% dominant category · limit 70%</span><span class="flag warn" data-flag="missing" data-value="0.2%" data-threshold="≤20%">0.2% missing · limit 20%</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Name">Name</a><span class="attention-flags"><span class="flag warn" data-flag="high-cardinality">High cardinality</span></span></li><li class="attention-item"><a class="attention-col" href="#col_Ticket">Ticket</a><span class="attention-flags"><span class="flag warn" data-flag="high-cardinality">High cardinality</span></span></li></ul>
+            
             
             <details class="flagref">
               <summary>What these flags mean</summary>
@@ -9325,7 +8800,7 @@ body.suricata-standalone:not(.light) {
                   <tr><th scope="col">Flag</th><th scope="col">What is measured</th>
                   <th scope="col">Fires above</th><th scope="col">What it means</th></tr>
                 </thead>
-                <tbody><tr id="flagref-missing"><th scope="row"><span class="flag missing">missing</span></th><td data-label="Measures">Share of rows with no value</td><td class="flagref__limit" data-label="Fires above">20%</td><td data-label="Means">Every use of the column has to say what happens to those rows. Above about half, imputation invents more data than it fills.</td></tr><tr id="flagref-many-outliers"><th scope="row"><span class="flag many-outliers">many outliers</span></th><td data-label="Measures">Share beyond 1.5× IQR from the quartiles</td><td class="flagref__limit" data-label="Fires above">5%</td><td data-label="Means">Values outside the usual range. They may be errors or may be real — the Outliers pane lists them so you can tell which.</td></tr><tr id="flagref-heavy-tailed"><th scope="row"><span class="flag heavy-tailed">heavy tailed</span></th><td data-label="Measures">Excess kurtosis of the values</td><td class="flagref__limit" data-label="Fires above">10</td><td data-label="Means">The tail is far heavier than a normal distribution, where this is 0. Means and standard deviations are pulled by a few extreme rows.</td></tr><tr id="flagref-dominant-category"><th scope="row"><span class="flag dominant-category">dominant category</span></th><td data-label="Measures">Share held by the most common level</td><td class="flagref__limit" data-label="Fires above">50%</td><td data-label="Means">One level accounts for most of the column, so the rest are a small minority however many of them there are.</td></tr><tr id="flagref-high-cardinality"><th scope="row"><span class="flag high-cardinality">high cardinality</span></th><td data-label="Measures">Distinct values ÷ rows</td><td class="flagref__limit" data-label="Fires above">90%</td><td data-label="Means">The column identifies rows rather than grouping them. Useful as a key or a join, not as a category.</td></tr></tbody>
+                <tbody><tr id="flagref-missing"><th scope="row"><span class="flag missing">missing</span></th><td data-label="Measures">Share of rows with no value</td><td class="flagref__limit" data-label="Fires above">20%</td><td data-label="Means">Every use of the column has to say what happens to those rows. Above about half, imputation invents more data than it fills.</td></tr><tr id="flagref-heavy-tailed"><th scope="row"><span class="flag heavy-tailed">heavy tailed</span></th><td data-label="Measures">Excess kurtosis of the values</td><td class="flagref__limit" data-label="Fires above">10</td><td data-label="Means">The tail is far heavier than a normal distribution, where this is 0. Means and standard deviations are pulled by a few extreme rows.</td></tr><tr id="flagref-many-outliers"><th scope="row"><span class="flag many-outliers">many outliers</span></th><td data-label="Measures">Share beyond 1.5× IQR from the quartiles</td><td class="flagref__limit" data-label="Fires above">5%</td><td data-label="Means">Values outside the usual range. They may be errors or may be real — the Outliers pane lists them so you can tell which.</td></tr><tr id="flagref-dominant-category"><th scope="row"><span class="flag dominant-category">dominant category</span></th><td data-label="Measures">Share held by the most common level</td><td class="flagref__limit" data-label="Fires above">70%</td><td data-label="Means">One level accounts for most of the column, so the rest are a small minority however many of them there are.</td></tr><tr id="flagref-high-cardinality"><th scope="row"><span class="flag high-cardinality">high cardinality</span></th><td data-label="Measures">Distinct values ÷ rows</td><td class="flagref__limit" data-label="Fires above">90%</td><td data-label="Means">The column identifies rows rather than grouping them. Useful as a key or a join, not as a category.</td></tr></tbody>
               </table>
             </details>
           </section>
@@ -9643,7 +9118,7 @@ body.suricata-standalone:not(.light) {
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">int64</span>
                     
-                    <ul class="quality-flags"><li class="flag warn" data-threshold="one level dominates" data-value="76.1%" data-flag="dominant-category">76.1% dominant category · limit 50%</li><li class="flag" data-threshold='empty string or "0"' data-value="678" data-flag="empty-or-zero">678 empty or zero</li></ul>
+                    <ul class="quality-flags"><li class="flag warn" data-threshold="one level dominates" data-value="76.1%" data-flag="dominant-category">76.1% dominant category · limit 70%</li><li class="flag" data-threshold='empty string or "0"' data-value="678" data-flag="empty-or-zero">678 empty or zero</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
@@ -9698,7 +9173,7 @@ body.suricata-standalone:not(.light) {
         </a>
             </header>
             <div class="var-card__body">
-                <div class="var-chart"><div class="nochart"><p class="nochart__why">681 distinct values in 891 rows, and the five most common cover 0.6% of them. A top-values chart would be a row of slivers, so there is nothing worth plotting.</p><ul class="nochart__facts"><li><span class="k">Shortest seen</span><span class="v">695</span></li><li><span class="k">Longest seen</span><span class="v">STON/O2. 3101290</span></li></ul></div></div>
+                <div class="var-chart"><div class="nochart"><p class="nochart__why">681 distinct values in 891 rows -- 1.3 rows per level, and the five most common cover 0.6% of them. A top-values chart would be a row of slivers, so there is nothing worth plotting. 547 of 681 levels occur exactly once.</p><ul class="nochart__facts"><li><span class="k">Shortest seen</span><span class="v">695</span></li><li><span class="k">Longest seen</span><span class="v">STON/O2. 3101290</span></li></ul></div></div>
                 
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
@@ -9708,7 +9183,7 @@ body.suricata-standalone:not(.light) {
         </div>
         
                 <div class="vstat-row"><div class="vstat"><div class="vstat__cap">Count</div><div class="vstat__val">891</div></div><div class="vstat"><div class="vstat__cap">Unique</div><div class="vstat__val">681</div></div><div class="vstat"><div class="vstat__cap">Missing</div><div class="vstat__val">0 (0.0%)</div></div><div class="vstat"><div class="vstat__cap">Mode</div><div class="vstat__val"><code>112050</code></div></div><div class="vstat"><div class="vstat__cap">Mode %</div><div class="vstat__val">0.1%</div></div><div class="vstat"><div class="vstat__cap">Empty or zero</div><div class="vstat__val">0</div></div><div class="vstat"><div class="vstat__cap">Rare levels</div><div class="vstat__val">47 (5.3%)</div></div><div class="vstat is-warn"><div class="vstat__cap">Top 5 coverage</div><div class="vstat__val">0.6%</div></div><div class="vstat"><div class="vstat__cap">Label length (avg)</div><div class="vstat__val">6.751</div></div><div class="vstat"><div class="vstat__cap">Length p90</div><div class="vstat__val">10</div></div><div class="vstat"><div class="vstat__cap">Processed bytes (≈)</div><div class="vstat__val">12.9 KB</div></div></div>
-                <section id="col_Ticket-details" class="details-section" hidden><nav class="tabs" role="tablist" aria-label="More details"><button role="tab" class="active" data-tab="common"><span class="tab__label">Shape</span></button><button role="tab" data-tab="length"><span class="tab__label">Label length</span></button></nav><div class="tab-panes"><section class="tab-pane active" data-tab="common"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Ticket · shape</span><span class="fence-head__rule"></span></div><p class="fence-lede">681 distinct values in 891 rows, and the five most common cover 0.6% of them. A top-values chart would be a row of slivers, so there is nothing worth plotting.</p><div class="shape__rows"><div class="shape__row"><span class="shape__key">Distinct</span><span class="shape__val">681 of 891 rows</span></div><div class="shape__row"><span class="shape__key">Repeats</span><span class="shape__val">the five most common cover 0.6%</span></div><div class="shape__row"><span class="shape__key">Length</span><span class="shape__val">3 to 18 characters</span></div></div></div></section><section class="tab-pane" data-tab="length"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Ticket · label length</span><span class="fence-head__rule"></span><span class="fence-head__count">3 to 18 characters</span></div><p class="fence-lede">Lengths run 3 to 18 characters, with nothing between 13 and 15: 851 labels fall below the gap and 40 above it. Two formats in one column look like this.</p><div class="lenchart"><div class="lenbar" style="height:0.5%" title="2 labels of 3 characters" data-col="col_Ticket" data-count="2"></div><div class="lenbar" style="height:24.1%" title="101 labels of 4 characters" data-col="col_Ticket" data-count="101"></div><div class="lenbar" style="height:31.3%" title="131 labels of 5 characters" data-col="col_Ticket" data-count="131"></div><div class="lenbar" style="height:100.0%" title="419 labels of 6 characters" data-col="col_Ticket" data-count="419"></div><div class="lenbar" style="height:6.4%" title="27 labels of 7 characters" data-col="col_Ticket" data-count="27"></div><div class="lenbar" style="height:18.1%" title="76 labels of 8 characters" data-col="col_Ticket" data-count="76"></div><div class="lenbar" style="height:6.2%" title="26 labels of 9 characters" data-col="col_Ticket" data-count="26"></div><div class="lenbar" style="height:9.8%" title="41 labels of 10 characters" data-col="col_Ticket" data-count="41"></div><div class="lenbar" style="height:1.9%" title="8 labels of 11 characters" data-col="col_Ticket" data-count="8"></div><div class="lenbar" style="height:2.4%" title="10 labels of 12 characters" data-col="col_Ticket" data-count="10"></div><div class="lenbar" style="height:2.4%" title="10 labels of 13 characters" data-col="col_Ticket" data-count="10"></div><div class="lenbar" style="height:2.1%" title="9 labels of 15 characters" data-col="col_Ticket" data-count="9"></div><div class="lenbar" style="height:2.6%" title="11 labels of 16 characters" data-col="col_Ticket" data-count="11"></div><div class="lenbar" style="height:3.3%" title="14 labels of 17 characters" data-col="col_Ticket" data-count="14"></div><div class="lenbar" style="height:1.4%" title="6 labels of 18 characters" data-col="col_Ticket" data-count="6"></div></div><div class="lenchart__axis"></div><div class="lenaxis"><span class="lenaxis__tick">3</span><span class="lenaxis__tick">18</span></div><p class="common__caption">one bar per label length, over a sample of the values</p></div></section></div></section>
+                <section id="col_Ticket-details" class="details-section" hidden><nav class="tabs" role="tablist" aria-label="More details"><button role="tab" class="active" data-tab="common"><span class="tab__label">Shape</span></button><button role="tab" data-tab="length"><span class="tab__label">Label length</span></button></nav><div class="tab-panes"><section class="tab-pane active" data-tab="common"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Ticket · shape</span><span class="fence-head__rule"></span></div><p class="fence-lede">681 distinct values in 891 rows -- 1.3 rows per level, and the five most common cover 0.6% of them. A top-values chart would be a row of slivers, so there is nothing worth plotting. 547 of 681 levels occur exactly once.</p><div class="shape__rows"><div class="shape__row"><span class="shape__key">Distinct</span><span class="shape__val">681 of 891 rows</span></div><div class="shape__row"><span class="shape__key">Repeats</span><span class="shape__val">the five most common cover 0.6%</span></div><div class="shape__row"><span class="shape__key">Length</span><span class="shape__val">3 to 18 characters</span></div></div></div></section><section class="tab-pane" data-tab="length"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Ticket · label length</span><span class="fence-head__rule"></span><span class="fence-head__count">3 to 18 characters</span></div><p class="fence-lede">Lengths run 3 to 18 characters, with nothing between 13 and 15: 851 labels fall below the gap and 40 above it. Two formats in one column look like this.</p><div class="lenchart"><div class="lenbar" style="height:0.5%" title="2 labels of 3 characters" data-col="col_Ticket" data-count="2"></div><div class="lenbar" style="height:24.1%" title="101 labels of 4 characters" data-col="col_Ticket" data-count="101"></div><div class="lenbar" style="height:31.3%" title="131 labels of 5 characters" data-col="col_Ticket" data-count="131"></div><div class="lenbar" style="height:100.0%" title="419 labels of 6 characters" data-col="col_Ticket" data-count="419"></div><div class="lenbar" style="height:6.4%" title="27 labels of 7 characters" data-col="col_Ticket" data-count="27"></div><div class="lenbar" style="height:18.1%" title="76 labels of 8 characters" data-col="col_Ticket" data-count="76"></div><div class="lenbar" style="height:6.2%" title="26 labels of 9 characters" data-col="col_Ticket" data-count="26"></div><div class="lenbar" style="height:9.8%" title="41 labels of 10 characters" data-col="col_Ticket" data-count="41"></div><div class="lenbar" style="height:1.9%" title="8 labels of 11 characters" data-col="col_Ticket" data-count="8"></div><div class="lenbar" style="height:2.4%" title="10 labels of 12 characters" data-col="col_Ticket" data-count="10"></div><div class="lenbar" style="height:2.4%" title="10 labels of 13 characters" data-col="col_Ticket" data-count="10"></div><div class="lenbar" style="height:2.1%" title="9 labels of 15 characters" data-col="col_Ticket" data-count="9"></div><div class="lenbar" style="height:2.6%" title="11 labels of 16 characters" data-col="col_Ticket" data-count="11"></div><div class="lenbar" style="height:3.3%" title="14 labels of 17 characters" data-col="col_Ticket" data-count="14"></div><div class="lenbar" style="height:1.4%" title="6 labels of 18 characters" data-col="col_Ticket" data-count="6"></div></div><div class="lenchart__axis"></div><div class="lenaxis"><span class="lenaxis__tick">3</span><span class="lenaxis__tick">18</span></div><p class="common__caption">one bar per label length, over a sample of the values</p></div></section></div></section>
             </div>
         </article>
         
@@ -9782,7 +9257,7 @@ body.suricata-standalone:not(.light) {
         </a>
             </header>
             <div class="var-card__body">
-                <div class="var-chart"><div class="nochart"><p class="nochart__why">147 distinct values in 204 rows. The top-values counters are not kept for a column this varied, so there is no ranking to plot.</p></div></div>
+                <div class="var-chart"><div class="nochart"><p class="nochart__why">147 distinct values in 204 rows -- 1.4 rows per level. The top-values counters are not kept for a column this varied, so there is no ranking to plot. 101 of 147 levels occur exactly once.</p></div></div>
                 
         <div class="card-controls" role="group" aria-label="Column controls">
             <div class="details-slot">
@@ -9792,7 +9267,7 @@ body.suricata-standalone:not(.light) {
         </div>
         
                 <div class="vstat-row"><div class="vstat"><div class="vstat__cap">Count</div><div class="vstat__val">204</div></div><div class="vstat"><div class="vstat__cap">Unique</div><div class="vstat__val">147</div></div><div class="vstat is-crit"><div class="vstat__cap">Missing</div><div class="vstat__val">687 (77.1%)</div></div><div class="vstat"><div class="vstat__cap">Mode</div><div class="vstat__val"><code>—</code></div></div><div class="vstat"><div class="vstat__cap">Mode %</div><div class="vstat__val"><span title="no value repeats often enough to be tracked in the top-k sketch">—</span></div></div><div class="vstat"><div class="vstat__cap">Empty or zero</div><div class="vstat__val">0</div></div><div class="vstat"><div class="vstat__cap">Entropy</div><div class="vstat__val"><span title="no value repeats often enough to be tracked in the top-k sketch">—</span></div></div><div class="vstat"><div class="vstat__cap">Rare levels</div><div class="vstat__val"><span title="no value repeats often enough to be tracked in the top-k sketch">—</span></div></div><div class="vstat is-warn"><div class="vstat__cap">Top 5 coverage</div><div class="vstat__val"><span title="no value repeats often enough to be tracked in the top-k sketch">—</span></div></div><div class="vstat"><div class="vstat__cap">Label length (avg)</div><div class="vstat__val">3.588</div></div><div class="vstat"><div class="vstat__cap">Length p90</div><div class="vstat__val">5</div></div><div class="vstat"><div class="vstat__cap">Processed bytes (≈)</div><div class="vstat__val">9.8 KB</div></div></div>
-                <section id="col_Cabin-details" class="details-section" hidden><nav class="tabs" role="tablist" aria-label="More details"><button role="tab" class="active" data-tab="common"><span class="tab__label">Shape</span></button><button role="tab" data-tab="length"><span class="tab__label">Label length</span></button></nav><div class="tab-panes"><section class="tab-pane active" data-tab="common"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Cabin · shape</span><span class="fence-head__rule"></span></div><p class="fence-lede">147 distinct values in 204 rows. The top-values counters are not kept for a column this varied, so there is no ranking to plot.</p><div class="shape__rows"><div class="shape__row"><span class="shape__key">Distinct</span><span class="shape__val">147 of 204 rows</span></div><div class="shape__row"><span class="shape__key">Repeats</span><span class="shape__val">not measured — the counters are not kept for a column this varied</span></div><div class="shape__row"><span class="shape__key">Length</span><span class="shape__val">1 to 15 characters</span></div></div></div></section><section class="tab-pane" data-tab="length"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Cabin · label length</span><span class="fence-head__rule"></span><span class="fence-head__count">1 to 15 characters</span></div><p class="fence-lede">Lengths run 1 to 15 characters in 3 groups separated by gaps, which is more than one format sharing a column.</p><div class="lenchart"><div class="lenbar" style="height:3.1%" title="4 labels of 1 character" data-col="col_Cabin" data-count="4"></div><div class="lenbar" style="height:18.8%" title="24 labels of 2 characters" data-col="col_Cabin" data-count="24"></div><div class="lenbar" style="height:100.0%" title="128 labels of 3 characters" data-col="col_Cabin" data-count="128"></div><div class="lenbar" style="height:18.8%" title="24 labels of 4 characters" data-col="col_Cabin" data-count="24"></div><div class="lenbar" style="height:3.1%" title="4 labels of 5 characters" data-col="col_Cabin" data-count="4"></div><div class="lenbar" style="height:9.4%" title="12 labels of 7 characters" data-col="col_Cabin" data-count="12"></div><div class="lenbar" style="height:4.7%" title="6 labels of 11 characters" data-col="col_Cabin" data-count="6"></div><div class="lenbar" style="height:1.6%" title="2 labels of 15 characters" data-col="col_Cabin" data-count="2"></div></div><div class="lenchart__axis"></div><div class="lenaxis"><span class="lenaxis__tick">1</span><span class="lenaxis__tick">15</span></div><p class="common__caption">one bar per label length, over a sample of the values</p></div></section></div></section>
+                <section id="col_Cabin-details" class="details-section" hidden><nav class="tabs" role="tablist" aria-label="More details"><button role="tab" class="active" data-tab="common"><span class="tab__label">Shape</span></button><button role="tab" data-tab="length"><span class="tab__label">Label length</span></button></nav><div class="tab-panes"><section class="tab-pane active" data-tab="common"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Cabin · shape</span><span class="fence-head__rule"></span></div><p class="fence-lede">147 distinct values in 204 rows -- 1.4 rows per level. The top-values counters are not kept for a column this varied, so there is no ranking to plot. 101 of 147 levels occur exactly once.</p><div class="shape__rows"><div class="shape__row"><span class="shape__key">Distinct</span><span class="shape__val">147 of 204 rows</span></div><div class="shape__row"><span class="shape__key">Repeats</span><span class="shape__val">not measured — the counters are not kept for a column this varied</span></div><div class="shape__row"><span class="shape__key">Length</span><span class="shape__val">1 to 15 characters</span></div></div></div></section><section class="tab-pane" data-tab="length"><div class="fence-pane"><div class="fence-head"><span class="fence-head__title">Cabin · label length</span><span class="fence-head__rule"></span><span class="fence-head__count">1 to 15 characters</span></div><p class="fence-lede">Lengths run 1 to 15 characters in 3 groups separated by gaps, which is more than one format sharing a column.</p><div class="lenchart"><div class="lenbar" style="height:3.1%" title="4 labels of 1 character" data-col="col_Cabin" data-count="4"></div><div class="lenbar" style="height:18.8%" title="24 labels of 2 characters" data-col="col_Cabin" data-count="24"></div><div class="lenbar" style="height:100.0%" title="128 labels of 3 characters" data-col="col_Cabin" data-count="128"></div><div class="lenbar" style="height:18.8%" title="24 labels of 4 characters" data-col="col_Cabin" data-count="24"></div><div class="lenbar" style="height:3.1%" title="4 labels of 5 characters" data-col="col_Cabin" data-count="4"></div><div class="lenbar" style="height:9.4%" title="12 labels of 7 characters" data-col="col_Cabin" data-count="12"></div><div class="lenbar" style="height:4.7%" title="6 labels of 11 characters" data-col="col_Cabin" data-count="6"></div><div class="lenbar" style="height:1.6%" title="2 labels of 15 characters" data-col="col_Cabin" data-count="2"></div></div><div class="lenchart__axis"></div><div class="lenaxis"><span class="lenaxis__tick">1</span><span class="lenaxis__tick">15</span></div><p class="common__caption">one bar per label length, over a sample of the values</p></div></section></div></section>
             </div>
         </article>
         
@@ -9803,7 +9278,7 @@ body.suricata-standalone:not(.light) {
                     <span class="badge">Categorical</span>
                     <span class="dtype chip">object</span>
                     
-                    <ul class="quality-flags"><li class="flag warn" data-threshold="one level dominates" data-value="72.4%" data-flag="dominant-category">72.4% dominant category · limit 50%</li><li class="flag warn" data-threshold="≤20%" data-value="0.2%" data-flag="missing">0.2% missing · limit 20%</li></ul>
+                    <ul class="quality-flags"><li class="flag warn" data-threshold="one level dominates" data-value="72.4%" data-flag="dominant-category">72.4% dominant category · limit 70%</li><li class="flag warn" data-threshold="≤20%" data-value="0.2%" data-flag="missing">0.2% missing · limit 20%</li></ul>
                 </div>
                 <a href="https://alvarodiez20.github.io/pysuricata/stats/categorical/" target="_blank" rel="noopener noreferrer" class="info-link" title="View documentation for Categorical analysis" aria-label="View Categorical analysis documentation">
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">

@@ -2810,6 +2810,50 @@ quoted when both sides were measured in the same round-robin run.</p>
   redeploy and a broken demo cannot be un-shipped along with it.</p>
 <h3 id="changed">Changed</h3>
 <ul>
+<li><strong>A design pass over seven report issues</strong> (#319, #145, #294, #314, #149,
+  #297, #300), which also closes #299.</li>
+</ul>
+<p><strong>The report is 12,419 bytes smaller.</strong> A <code>Hover over segments to see chunk
+  details</code> line that #294 asked to remove turned out never to render: the pane
+  it lived in — <code>_build_dataprep_spectrum_visualization</code>, four near-copies
+  across the card kinds, one of them documented "Legacy method - no longer
+  used" and shadowed by a second definition in the same class — was reached by
+  no code path, and only tests called it. It is deleted with the 523 lines of
+  stylesheet that dressed it, which every report was carrying because the
+  report inlines its CSS. Three untokenised colours went with it, taking that
+  ratchet from 61 to 58.</p>
+<p><strong>The attention block ranks rather than lists</strong> (#149). Severity was in the
+  class and unused for ordering, with ties broken on chip count, so Titanic
+  opened on <code>Age</code> (19.9% missing against a 20% limit) above <code>Cabin</code> (77.1%
+  against the same). Rows now sort by severity and then by <code>value / threshold</code>,
+  cap at ten with the remainder counted, and a clean frame gets a statement
+  instead of an absent block — #138's argument for correlations, applied here.</p>
+<p><strong>Degenerate frames stop describing themselves as three contradictory
+  things</strong> (#314). <code>unique_cols</code> was <code>n_cols</code>, so a one-column frame reported
+  itself all-unique <em>and</em> constant <em>and</em> high-cardinality at once; the three
+  buckets are exclusive now and empty below two values. A share-based flag no
+  longer fires where an even spread would also have fired it — at one row every
+  column is 100% dominant. Negative zero is caught in the formatter.</p>
+<p><strong>The flag reference stated a limit that was not applied.</strong> It said
+  <code>dominant category</code> fires above 50%; the threshold is 0.7, and a 60%-dominant
+  column does not fire. A block that exists to explain a chip is worse than
+  useless with a wrong number in it.</p>
+<p><strong>A many-level column says how many of its levels occur exactly once</strong>
+  (#297) — <code>101 of 147</code> for Titanic's <code>Cabin</code>, which is what separates a few
+  crowded levels from a drift of near-singletons. <code>singleton_levels</code> and
+  <code>exact_levels</code> join the <code>summarize()</code> payload; both are <code>null</code>, never zero,
+  when the column outgrew the counter, because the new <code>SingletonCounter</code>
+  counts exactly or refuses. Adding keys does not bump <code>schema_version</code>.</p>
+<p><strong>Dark mode is measured against the surface it is painted on</strong> (#300).
+  <code>test_contrast.py</code> measures token pairs against <code>--paper</code>; the new check
+  walks ~690 rendered elements, resolves the background each one actually sits
+  on, and finds nothing below AA at either width — the worst mark is 5.95
+  against a required 4.5.</p>
+<p><strong>Charts take the height their viewBox asks for</strong> (#319). A fixed 180px under
+  the mobile breakpoint padded a two-level categorical chart by 157px and
+  overflowed a numeric one by 33px. Card-height criteria now exist for all four
+  kinds rather than only numeric (#145).</p>
+<ul>
 <li><strong>The versioning contract said a minor bump may break you. It may not.</strong> The
   page had adopted Cargo's pre-1.0 convention, under which <code>0.1.0 → 0.2.0</code> is
   the release allowed to break. That is now stated the way SemVer means it:
