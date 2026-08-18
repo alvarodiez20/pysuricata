@@ -461,12 +461,6 @@ body.suricata-standalone:not(.light) {
   margin: 0.05rem 0;
 }
 
-#pysuricata-report #summary h2 {
-  margin: 0 0 .5rem;
-  font-size: 1.25rem;
-  line-height: 1.25;
-}
-
 #pysuricata-report .stat-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -3946,6 +3940,102 @@ body.suricata-standalone:not(.light) {
   font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--muted);
+}
+
+#pysuricata-report .dt-lede {
+  margin: 0 0 10px;
+}
+
+#pysuricata-report .dt-face {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  gap: 20px;
+  align-items: start;
+}
+
+#pysuricata-report .cal-base,
+#pysuricata-report .cal-base__row {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+#pysuricata-report .cal-base {
+  gap: 12px;
+  padding-top: 4px;
+}
+
+#pysuricata-report .cal-base__row,
+#pysuricata-report .cal-base__note {
+  border-top: 1px solid var(--rule);
+  padding-top: 9px;
+}
+
+#pysuricata-report .cal-base__row {
+  gap: 5px;
+}
+
+#pysuricata-report .cal-base__label,
+#pysuricata-report .cal-base__verdict,
+#pysuricata-report .cal-base__note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+}
+
+#pysuricata-report .cal-base__note {
+  line-height: 1.5;
+}
+
+#pysuricata-report .cal-base__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+}
+
+#pysuricata-report .cal-base__track {
+  position: relative;
+  height: 8px;
+  background: var(--track);
+}
+
+#pysuricata-report .cal-base__fill,
+#pysuricata-report .cal-base__rule {
+  position: absolute;
+  top: 0;
+  height: 8px;
+}
+
+#pysuricata-report .cal-base__fill {
+  left: 0;
+  background: var(--data-2);
+}
+
+#pysuricata-report .cal-base__rule {
+  top: -3px;
+  height: 14px;
+  border-left: 2px solid var(--ink);
+}
+
+#pysuricata-report .cal-base__verdict.good {
+  color: var(--q-good);
+}
+
+#pysuricata-report .cal-base__verdict.warn {
+  color: var(--q-warn-text);
+}
+
+@media (max-width: 1024px) {
+  #pysuricata-report .dt-face {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  #pysuricata-report .cal-base__note {
+    display: none;
+  }
 }
 
 #pysuricata-report {
@@ -9080,9 +9170,9 @@ body.suricata-standalone:not(.light) {
         <div class="report-head">
           <h1>PySuricata EDA Report — Titanic Dataset</h1>
           <div class="report-meta">
-            <span><span class="k">Generated</span> <span class="v">2026-08-18 10:33:16</span></span>
+            <span><span class="k">Generated</span> <span class="v">2026-08-18 12:33:35</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
-            <span><span class="k">Profiled in</span> <span class="v">0.14 s</span></span>
+            <span><span class="k">Profiled in</span> <span class="v">0.15 s</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
             <span><span class="k">Shape</span> <span class="v">891 rows × 12 columns</span></span>
             <span class="meta-sep" aria-hidden="true"></span>
@@ -9092,7 +9182,7 @@ body.suricata-standalone:not(.light) {
 
         <!-- Dataset Summary -->
         <section id="summary">
-          <h2>Summary</h2>
+          <h2 class="section-title">Summary</h2>
 
           <!-- Stat row: one rule above, hairlines between. Five cards with
                their own borders were five boxes to say five numbers. -->
@@ -9124,7 +9214,7 @@ body.suricata-standalone:not(.light) {
             </div>
             <div class="stat stat--elapsed">
               <div class="stat__cap">Elapsed</div>
-              <div class="stat__val">0.14 s</div>
+              <div class="stat__val">0.15 s</div>
               <div class="stat__sub">wall clock</div>
             </div>
           </div>
@@ -9174,7 +9264,7 @@ body.suricata-standalone:not(.light) {
                reports generated in a loop never have one and must not be
                disfigured by an invitation nobody will accept. -->
           <div class="description-block is-empty" id="summary-description"
-            data-report-id="20260818-103316-3128" data-original-markdown=""
+            data-report-id="20260818-123335-0578" data-original-markdown=""
             data-action="edit-description">
             <span class="micro-label description-block__label">Description</span>
             <div class="description-content"></div>

@@ -2695,10 +2695,46 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/v0.1.1...HEAD">Unreleased</a></h2>
 <h3 id="changed">Changed</h3>
 <ul>
-<li><strong>The report redesign package moved into the repository</strong>, at
+<li><strong>The two datetime calendar shares are drawn against the baseline that makes
+  them readable</strong> (redesign phase 5e.2, #291). The card printed <code>Weekend %
+  27.0</code> and <code>Business hrs % 24.3</code> bare. A flat calendar gives <strong>28.6%</strong> (2 of
+  7 days) and <strong>23.8%</strong> (8 of 24 hours on 5 of 7 days), so both readings were
+  <em>noise wearing the clothes of a finding</em> — and the renderer already knew it,
+  carrying <code>expected ~28.5%</code> in a comment on the flag threshold twelve lines
+  away. That is the Jarque–Bera problem again: a number whose meaning lives
+  where the reader cannot reach it.</li>
+</ul>
+<p>Each share is now a bar with a rule at the flat value and a verdict in
+  percentage points — <code>flat · −1.6pp vs 28.6%</code>. The baselines are arithmetic,
+  so <strong>no new statistic is computed</strong>; they live once, in
+  <code>render/flag_reference.py</code>, beside the flag thresholds that are set against
+  them. The rule is painted before the fill and stands 3px proud of the track,
+  so a bar reaching past it occludes it rather than crossing it — token rule 2,
+  since <code>--q-bad</code> on <code>--data-2</code> is 1.08:1.</p>
+<ul>
+<li>
+<p><strong>The datetime card face carries eight statistics instead of thirteen</strong>
+  (phase 5e.3, #292). <code>Avg interval</code> and <code>Interval std</code> moved into the
+  Statistics pane, where they already had a home; the interval sentence that
+  interprets them — and interprets them better than the raw pair reads — was
+  promoted out of that pane to <strong>lead the card face</strong>, so it is read before the
+  conclusions rather than after them. <code>Min</code> and <code>Max</code> lost their <code>&lt;br&gt;</code>: two
+  double-height cells in a four-column grid made every row in the grid taller.</p>
+</li>
+<li>
+<p><strong>Every section heading uses one system</strong> (#298). <code>Summary</code> was the only one
+  of the five opting out of <code>.section-title</code>, with a near-copy rule in
+  <code>_03-summary.css</code> — same size, same line height, an 8px bottom margin against
+  the system's 12px. The design draws it at <code>0.75rem</code>, so the shipped value was
+  drift rather than a decision, and the recorded summary heights were measuring
+  the drift.</p>
+</li>
+<li>
+<p><strong>The report redesign package moved into the repository</strong>, at
   <code>docs/internal/design/</code>. It lived in a folder on one laptop, so every issue
   filed against it pointed at a path nobody else could open. Nothing here
-  reaches the published site — <code>mkdocs.yml</code> already excludes <code>internal/</code>.</li>
+  reaches the published site — <code>mkdocs.yml</code> already excludes <code>internal/</code>.</p>
+</li>
 </ul>
 <p>Its status table was re-verified against the source rather than copied:
   <strong>five of its rows were stale</strong>, all of them claiming work was outstanding
