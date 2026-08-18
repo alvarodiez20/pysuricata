@@ -21,6 +21,106 @@ from .svg_utils import safe_col_id as _safe_col_id
 from .svg_utils import svg_empty as _svg_empty
 
 
+def share_threshold_can_discriminate(count: int, threshold: float) -> bool:
+    """Whether a share-based flag could fail to fire on `count` values.
+
+    #314. A column with one row has one value, so its most common value holds
+    100% of it and a "dominant category" flag *cannot not* fire -- it lands in
+    the block whose whole job is to say what needs a look, on the frames a new
+    user is most likely to start with, and costs that block its credibility.
+
+    The guard is derived rather than picked. The most evenly spread column
+    possible gives its top value a share of `1 / count`, so the threshold says
+    something only when that spread would clear it. Below that the flag is a
+    restatement of the row count, and a threshold that is meaningless below
+    some n should be suppressed there rather than fired and explained.
+
+    `mono_inc` and `mono_dec` already worked this way -- both are guarded on
+    more than one value, for the same reason.
+    """
+    return count * threshold > 1.0
+
+
+#: Distinct values as a share of non-missing rows, above which a top-values
+#: chart is a row of near-identical slivers. Titanic's `Cabin` is 147 distinct
+#: in 204 rows -- 0.72. Read by the categorical card, which drops the chart,
+#: and by the summary's quick facts, which counts the columns: the two have to
+#: name the same columns, and #314 is what happened when they did not.
+HIGH_CARDINALITY = 0.5
+
+#: A stronger claim than high cardinality, and the only one that licenses
+#: saying every value is different. Set well below 1.0 so KMV's ~2.2% error
+#: cannot reach it.
+NEAR_UNIQUE = 0.90
+
+
+def _where_the_gaps_fall(chunk_metadata) -> str:
+    """Say, in words, where a column's missing values concentrate.
+
+    A chunk strip exists to reveal that gaps are not evenly spread. It shows
+    where they fall; this says it, so the finding survives a phone, a PDF and
+    a reader who does not hover (#294).
+
+    The claim is the smallest number of chunks holding at least half the
+    missing values -- the same quantity the strip encodes, read out.
+
+    That alone is not yet a finding: on an even spread, half the data holds
+    half the gaps by definition, and which chunks get named is decided by how
+    ties happen to sort. So the share is compared against the share of *rows*
+    those same chunks hold -- what they would carry if the gaps were spread
+    evenly -- and it only speaks when it is at least half again as concentrated
+    as that. The comparison has to be against rows and not against the chunk
+    count, because the last chunk of a file is usually a short one: two chunks
+    of 50,000 and 10,000 rows holding 10,000 gaps each is an even split by
+    chunk and a threefold concentration by data.
+
+    Otherwise it says the gaps are spread, which is true and more useful than
+    a ranking of noise.
+    """
+    counts = [missing for _, _, missing in chunk_metadata]
+    sizes = [end - start + 1 for start, end, _ in chunk_metadata]
+    total = sum(counts)
+    total_rows = sum(sizes)
+    if total <= 0 or total_rows <= 0:
+        return ""
+
+    # Ranked by gap *rate*, not by raw count. Two chunks holding 10,000gaps
+    # each rank equally by count, and a tie then resolves to whichever came
+    # first -- which on a file whose last chunk is short is the wrong one, and
+    # names the chunk where the gaps are thinnest.
+    order = sorted(
+        range(len(counts)),
+        key=lambda i: (counts[i] / sizes[i] if sizes[i] else 0.0, counts[i]),
+        reverse=True,
+    )
+    running = 0
+    holders: list[int] = []
+    for i in order:
+        holders.append(i)
+        running += counts[i]
+        if running * 2 >= total:
+            break
+
+    n_chunks = len(counts)
+    share = running / total * 100.0
+    rows_share = sum(sizes[i] for i in holders) / total_rows * 100.0
+    if share < 1.5 * rows_share:
+        return f"The {total:,} missing values are spread across all {n_chunks} chunks."
+
+    holders.sort()
+    k = len(holders)
+    if holders == list(range(n_chunks - k, n_chunks)):
+        where = "The last chunk holds" if k == 1 else f"The last {k} chunks hold"
+    elif holders == list(range(k)):
+        where = "The first chunk holds" if k == 1 else f"The first {k} chunks hold"
+    elif k == 1:
+        where = f"Chunk {holders[0] + 1} of {n_chunks} holds"
+    else:
+        where = f"{k} of the {n_chunks} chunks hold"
+
+    return f"{where} {share:.0f}% of the {total:,} missing values."
+
+
 class CardRenderer:
     """Base class for card rendering functionality."""
 
@@ -201,18 +301,14 @@ class CardRenderer:
 
         return f"""
         <div class="chunk-distribution">
-            <h4 class="section-title">Missing Values per Chunk</h4>
+            <h4 class="section-title">Missing values per chunk</h4>
+            <p class="chunk-finding">{_where_the_gaps_fall(chunk_metadata)}</p>
             <div class="chunk-info">
                 <span>{num_chunks} chunks analyzed</span>
                 <span>Peak: {max_missing_pct:.1f}%</span>
             </div>
             <div class="chunk-spectrum">
                 {segments_html}
-            </div>
-            <div class="chunk-legend">
-                <span class="legend-item"><span class="color-box low"></span>Low (0-5%)</span>
-                <span class="legend-item"><span class="color-box medium"></span>Medium (5-20%)</span>
-                <span class="legend-item"><span class="color-box high"></span>High (20%+)</span>
             </div>
         </div>
         """
@@ -356,7 +452,13 @@ class QualityAssessor:
         uniq_est = max(0, int(stats.unique_est))
         total_nonnull = max(1, int(stats.count))
 
-        if uniq_est == 1:
+        # Both claims are about concentration, so both need enough values for
+        # concentration to be distinguishable from the row count (#314): one
+        # value is constant and all-distinct at the same time.
+        share_limit = self.thresholds.dominant_value_share
+        if not share_threshold_can_discriminate(int(stats.count), share_limit):
+            pass
+        elif uniq_est == 1:
             flags.constant = True
         elif uniq_est <= 2:
             flags.quasi_constant = True
@@ -364,7 +466,7 @@ class QualityAssessor:
             top_values = getattr(stats, "top_values", None)
             if top_values:
                 share = top_values[0][1] / total_nonnull
-                flags.quasi_constant = share >= self.thresholds.dominant_value_share
+                flags.quasi_constant = share >= share_limit
 
         # Outliers
         if out_pct > self.thresholds.outlier_crit_pct:
@@ -397,11 +499,10 @@ class QualityAssessor:
             flags.high_cardinality = True
 
         # Dominant category
-        if stats.top_items:
+        limit = self.thresholds.dominant_category_threshold
+        if stats.top_items and share_threshold_can_discriminate(stats.count, limit):
             mode_count = stats.top_items[0][1] if stats.top_items else 0
-            if mode_count >= int(
-                self.thresholds.dominant_category_threshold * max(1, stats.count)
-            ):
+            if mode_count >= int(limit * max(1, stats.count)):
                 flags.dominant_category = True
 
         # Case and trim variants: flag only when lowercasing/stripping *reduces* the

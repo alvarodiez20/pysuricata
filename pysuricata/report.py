@@ -551,6 +551,14 @@ class ReportOrchestrator:
                     "most_common_ratio": _f(s.most_common_ratio),
                     "diversity_ratio": _f(s.diversity_ratio),
                     "gini_impurity": _f(s.gini_impurity),
+                    # #297. Exact, and `null` together when the column had more
+                    # levels than the counter's capacity -- unknown, never
+                    # zero. `exact_levels` is not a second opinion on
+                    # `unique_est`: it is the total the singleton count is out
+                    # of, counted the same way, and it is absent for exactly
+                    # the columns where `unique_est` is a sketch estimate.
+                    "singleton_levels": s.singleton_levels,
+                    "exact_levels": s.exact_levels,
                 }
             elif kind == "datetime":
                 s = acc.finalize()

@@ -206,6 +206,10 @@ class TestWhatTheSentenceSays:
         assert "Every value is different" not in some
         assert "147 distinct values in 204 rows" in some
         assert "8.8%" in some
+        # #297. The shape figure, so the reader does not have to divide two
+        # numbers to learn whether this is a few crowded levels or a drift of
+        # near-singletons. 204 / 147 = 1.4.
+        assert "1.4 rows per level" in some
 
     def test_the_identifier_flag_agrees_with_the_uniqueness_claim(self, titanic_shaped):
         card = _card(titanic_shaped, "name")

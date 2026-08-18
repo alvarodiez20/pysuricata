@@ -749,6 +749,109 @@ class MisraGries:
         return sorted(self.counters.items(), key=lambda kv: (-kv[1], str(kv[0])[:64]))
 
 
+class SingletonCounter:
+    """How many levels occur exactly once -- exactly, or not at all.
+
+    #297. A 147-level column is a very different thing depending on whether it
+    is a few crowded levels or a drift of near-singletons, and neither of the
+    sketches already here can tell them apart. Misra-Gries is gated off
+    entirely on high-cardinality columns and its counts are lower bounds in any
+    case, so a tracked count of 1 is not evidence of a singleton. KMV keeps
+    values and not counts.
+
+    So this counts exactly, and **refuses rather than estimating**. Below
+    `capacity` distinct values it holds one counter each and the answer is a
+    fact; the first value past that capacity turns it off, the counters are
+    dropped, and it reports `None` forever after. There is no approximate mode:
+    a singleton count is a claim about the rarest thing in the column, which is
+    exactly what a frequency sketch is worst at, and *unknown* is a better
+    answer than a number that cannot be trusted.
+
+    That makes it exact for the columns the figure is *for*. The high
+    cardinality this is reported on is a share of rows, not an absolute -- 147
+    levels in 204 rows -- and a column with more distinct values than the
+    capacity is one where `Every value is different` is the sentence anyway.
+
+    Merging is exact and order-independent: counts add per key, and a merge
+    that would exceed the capacity turns the result off, so the answer does not
+    depend on how the stream was chunked. That invariant is what
+    `benchmarks/accuracy.py` asserts and is the thing most likely to break.
+
+    Keyed on the value itself rather than a hash. A hash needs no less memory
+    at this size, and a collision would silently merge two levels into one --
+    turning two singletons into a pair and reporting a number that is wrong
+    rather than absent, which is the failure this class exists to avoid.
+    """
+
+    __slots__ = ("capacity", "counters", "_over")
+
+    def __init__(self, capacity: int = 2048) -> None:
+        self.capacity = int(capacity)
+        self.counters: dict[Any, int] = {}
+        self._over = False
+
+    def add(self, value: Any, w: int = 1) -> None:
+        """Record `w` occurrences of one value."""
+        if self._over:
+            return
+        if value in self.counters:
+            self.counters[value] += w
+        elif len(self.counters) < self.capacity:
+            self.counters[value] = w
+        else:
+            self._give_up()
+
+    def add_many(self, values: Sequence[Any]) -> None:
+        if self._over or len(values) == 0:
+            return
+        for value in values:
+            self.add(value)
+            if self._over:
+                return
+
+    def merge(self, other: SingletonCounter) -> None:
+        """Fold another counter in. Exact, or off."""
+        if other is self:
+            return
+        if self._over or other._over:
+            self._give_up()
+            return
+        for value, count in other.counters.items():
+            if value in self.counters:
+                self.counters[value] += count
+            elif len(self.counters) < self.capacity:
+                self.counters[value] = count
+            else:
+                self._give_up()
+                return
+
+    def _give_up(self) -> None:
+        self._over = True
+        self.counters = {}
+
+    @property
+    def exact(self) -> bool:
+        """Whether the column stayed inside the capacity."""
+        return not self._over
+
+    def singletons(self) -> int | None:
+        """Levels seen exactly once, or `None` when it cannot be known."""
+        if self._over:
+            return None
+        return sum(1 for count in self.counters.values() if count == 1)
+
+    def levels(self) -> int | None:
+        """Distinct levels seen, or `None` when it cannot be known.
+
+        Exact where it is available, unlike `unique_est`, which is KMV and
+        carries about 2.2% of error. The singleton count is only meaningful
+        against a total from the same counting, so both come from here.
+        """
+        if self._over:
+            return None
+        return len(self.counters)
+
+
 def mad(arr: np.ndarray) -> float:
     """Calculates the Median Absolute Deviation (MAD) of an array.
 

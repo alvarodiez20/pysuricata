@@ -17,6 +17,7 @@ import pytest
 from pysuricata import profile, summarize
 from pysuricata.render.identifier import identifier_facts, looks_like_identifier
 from pysuricata.render.triage import (
+    Chip,
     actionable_chips,
     annotate_flags,
     build_attention_block,
@@ -174,18 +175,20 @@ class TestChipExtraction:
         chips = extract_chips(
             '<li class="flag warn" data-threshold=">1" data-value="6.6">Skewed Right</li>'
         )
-        assert chips == [("warn", "Skewed Right", "skewed-right")]
+        assert chips == [Chip("warn", "Skewed Right", "skewed-right", "6.6", ">1")]
 
     def test_a_threshold_with_an_inequality_in_prose(self):
         chips = extract_chips(
             '<li class="flag bad" data-threshold="|kurtosis| > 3" '
             'data-value="9.1">Heavy&#8209;tailed</li>'
         )
-        assert chips == [("bad", "Heavy‑tailed", "heavy-tailed")]
+        assert chips == [
+            Chip("bad", "Heavy‑tailed", "heavy-tailed", "9.1", "|kurtosis| > 3")
+        ]
 
     def test_an_unclassed_chip_reports_empty_severity(self):
         assert extract_chips('<li class="flag">Heaping</li>') == [
-            ("", "Heaping", "heaping")
+            Chip("", "Heaping", "heaping")
         ]
 
     def test_slugs_normalise_the_non_breaking_hyphen(self):
@@ -195,23 +198,22 @@ class TestChipExtraction:
 
 class TestActionableRule:
     def test_a_bad_chip_is_always_actionable(self):
-        assert actionable_chips([("bad", "Many outliers", "many-outliers")]) == [
-            ("bad", "Many outliers", "many-outliers")
-        ]
+        chip = Chip("bad", "Many outliers", "many-outliers")
+        assert actionable_chips([chip]) == [chip]
 
     def test_a_good_chip_never_is(self):
-        assert actionable_chips([("good", "Positive‑only", "positive-only")]) == []
+        assert actionable_chips([Chip("good", "Positive‑only", "positive-only")]) == []
 
     def test_distribution_shape_warnings_are_not_defects(self):
         """A standard normal earns both of these; nine clean columns are not
         nine problems."""
-        assert actionable_chips([("warn", "Has negatives", "has-negatives")]) == []
-        assert actionable_chips([("warn", "Some outliers", "some-outliers")]) == []
-        assert actionable_chips([("warn", "Skewed Right", "skewed-right")]) == []
+        assert actionable_chips([Chip("warn", "Has negatives", "has-negatives")]) == []
+        assert actionable_chips([Chip("warn", "Some outliers", "some-outliers")]) == []
+        assert actionable_chips([Chip("warn", "Skewed Right", "skewed-right")]) == []
 
     def test_data_quality_warnings_are(self):
         for label in ("Missing", "Zero‑inflated", "Quasi‑constant", "Imbalanced"):
-            chip = ("warn", label, flag_slug(label))
+            chip = Chip("warn", label, flag_slug(label))
             assert actionable_chips([chip]) == [chip], label
 
 
@@ -235,7 +237,9 @@ class TestTheRuleSurvivesTheChipBeingRewritten:
         )
         assert "19.9% missing" in annotated, "the face should carry the value"
         chips = extract_chips(annotated)
-        assert chips == [("warn", "19.9% missing · limit 20%", "missing")]
+        assert chips == [
+            Chip("warn", "19.9% missing · limit 20%", "missing", "19.9%", ">10%")
+        ]
         assert actionable_chips(chips) == chips
 
     def test_the_slug_does_not_move_with_the_value(self):
@@ -268,19 +272,79 @@ class TestTheRuleSurvivesTheChipBeingRewritten:
 
 
 class TestAttentionBlock:
-    def test_nothing_flagged_renders_nothing(self):
-        """An empty '0 of 60 columns have issues' banner is noise."""
-        assert (
-            build_attention_block(
-                [("a", "a", [("good", "Positive‑only", "positive-only")])]
-            )
-            == ""
+    def test_nothing_flagged_says_so(self):
+        """It used to render nothing, on the grounds that an empty
+        `0 of 60 columns have issues` banner is noise. #149 overturns that: an
+        absence and a clean result look identical, and only one of them is
+        information, so a block that vanishes reads as a broken feature. The
+        same argument #138 already accepted for correlations.
+
+        The banner it replaces is still not what gets rendered -- the statement
+        is `All 1 column looks fine`, not `0 of 1`."""
+        block = build_attention_block(
+            [("a", "a", [Chip("good", "Positive‑only", "positive-only")])]
         )
+
+        assert "look" in block and "fine" in block
+        assert "need a look" not in block
+
+    def test_a_frame_with_no_columns_still_renders_nothing(self):
+        """There is no clean bill of health to give for zero columns."""
+        assert build_attention_block([]) == ""
+
+    def test_the_ranking_is_by_how_far_past_the_limit(self):
+        """Severity first, then `value / threshold` -- the one quantity
+        comparable across flag types. Both of these are `bad` missing chips, so
+        only the magnitude separates them, and the flat list put them in
+        whatever order the columns happened to arrive in."""
+        block = build_attention_block(
+            [
+                ("mild", "m", [Chip("bad", "22% missing", "missing", "22%", "20%")]),
+                ("severe", "s", [Chip("bad", "77% missing", "missing", "77%", "20%")]),
+            ]
+        )
+
+        assert block.index("severe") < block.index("mild")
+
+    def test_a_chip_with_an_unrankable_threshold_does_not_sort_first(self):
+        """`data-threshold="one level dominates"` is real. A chip that cannot
+        be ranked must not be ranked as zero, and must not beat a real ratio."""
+        block = build_attention_block(
+            [
+                ("prose", "p", [Chip("bad", "X", "x", "5", "one level dominates")]),
+                ("ranked", "r", [Chip("bad", "77% missing", "missing", "77%", "20%")]),
+            ]
+        )
+
+        assert block.index("ranked") < block.index("prose")
+
+    def test_the_list_is_capped_and_says_what_it_withheld(self):
+        """Past roughly ten rows the block is the flat column list it
+        replaced. Nothing disappears silently: the remainder is counted."""
+        columns = [
+            (f"c{i}", f"col_c{i}", [Chip("bad", "x", "missing", f"{99 - i}%", "20%")])
+            for i in range(14)
+        ]
+        block = build_attention_block(columns)
+
+        assert block.count("attention-item") == 10
+        assert "4 further flagged columns" in block
+        assert "<strong>14</strong> of 14 columns need a look" in block
+
+    def test_the_chips_carry_the_number_and_the_limit(self):
+        """#137 put both on the card chips; this block dropped them, so it said
+        `37.8% missing` without saying why that is on the list."""
+        block = build_attention_block(
+            [("a", "a", [Chip("bad", "77% missing", "missing", "77%", "20%")])]
+        )
+
+        assert 'data-value="77%"' in block
+        assert 'data-threshold="20%"' in block
 
     def test_the_banner_counts_flagged_against_total(self):
         block = build_attention_block(
             [
-                ("a", "a", [("bad", "Many outliers", "many-outliers")]),
+                ("a", "a", [Chip("bad", "Many outliers", "many-outliers")]),
                 ("b", "b", []),
                 ("c", "c", []),
             ]
@@ -288,20 +352,22 @@ class TestAttentionBlock:
         assert "<strong>1</strong> of 3 columns need a look" in block
 
     def test_each_column_links_to_its_card(self):
-        block = build_attention_block([("revenue", "col_revenue", [("bad", "X", "x")])])
+        block = build_attention_block(
+            [("revenue", "col_revenue", [Chip("bad", "X", "x")])]
+        )
         assert 'href="#col_revenue"' in block
 
     def test_the_worst_column_comes_first(self):
         block = build_attention_block(
             [
-                ("warned", "w", [("warn", "Missing", "missing")]),
-                ("broken", "b", [("bad", "Many outliers", "many-outliers")]),
+                ("warned", "w", [Chip("warn", "Missing", "missing")]),
+                ("broken", "b", [Chip("bad", "Many outliers", "many-outliers")]),
             ]
         )
         assert block.index("broken") < block.index("warned")
 
     def test_column_names_are_escaped(self):
-        block = build_attention_block([("<script>", "x", [("bad", "X", "x")])])
+        block = build_attention_block([("<script>", "x", [Chip("bad", "X", "x")])])
         assert "<script>" not in block
         assert "&lt;script&gt;" in block
 

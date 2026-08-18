@@ -138,12 +138,13 @@ class TestBuildChunkDistributionSimple:
         assert "data-total=" in html
         assert "data-pct=" in html
 
-    def test_legend_rendered(self, renderer):
+    def test_no_legend_rendered(self, renderer):
+        """#294 -- the three-item severity legend belongs once, in the Missing
+        values section, not repeated on every card that has a gap."""
         stats = StatsStub(chunk_metadata=[(0, 9, 0)])
         html = renderer._build_chunk_distribution_simple(stats, 10)
-        assert "Low (0-5%)" in html
-        assert "Medium (5-20%)" in html
-        assert "High (20%+)" in html
+        assert "chunk-legend" not in html
+        assert "Low (0-5%)" not in html
 
     # --- Edge cases ---
 

@@ -70,38 +70,25 @@ def test_numeric_details_tabs_present():
 
 
 def test_numeric_card_missing_chunk_visualization():
+    """The strip the numeric card actually renders.
+
+    This used to drive `_build_dataprep_spectrum_visualization`,
+    `_generate_missing_insights` and `_render_chunk_visualization` -- three
+    methods #294 deleted because no code path reached any of them. The shared
+    `_build_chunk_distribution_simple` is what a report contains.
+    """
     from pysuricata.render.numeric_card import NumericCardRenderer
 
     s = make_numeric_summary()
-    s.chunk_metadata = [(0, 9, 2), (10, 19, 0)]  # Start, end, missing
+    s.chunk_metadata = [(0, 9, 2), (10, 19, 0)]
     renderer = NumericCardRenderer()
 
-    # Test _build_dataprep_spectrum_visualization
-    html = renderer._build_dataprep_spectrum_visualization(s)
-    assert "spectrum-segment" in html
+    html = renderer._build_chunk_distribution_simple(s, 20)
+    assert "chunk-segment" in html
     assert 'data-missing="2"' in html
 
-    # Test empty metadata behavior
     s.chunk_metadata = []
-    assert renderer._build_dataprep_spectrum_visualization(s) == ""
-
-    # Test insights generation
-    s.count = 2000
-    s.missing = 100
-    chunks = [
-        {"index": 1, "size": 1000, "missing": 20, "missing_pct": 2.0, "present": 980},
-        {"index": 2, "size": 1100, "missing": 80, "missing_pct": 7.3, "present": 1020},
-    ]
-    insights = renderer._generate_missing_insights(chunks, 5.0)
-    assert "overall_missing_pct" in insights
-    assert "max_missing_pct" in insights
-    assert "severity" in insights
-    assert insights["total_chunks"] == len(chunks)
-
-    # Test complete chunk visualization render
-    viz_html = renderer._render_chunk_visualization(chunks, insights, s)
-    assert "chunk-bar-container" in viz_html
-    assert "chunk-bar-fill" in viz_html
+    assert renderer._build_chunk_distribution_simple(s, 20) == ""
 
 
 def test_numeric_card_outliers_severity_and_tables():
