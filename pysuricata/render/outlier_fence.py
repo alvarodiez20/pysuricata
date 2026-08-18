@@ -131,6 +131,16 @@ class Fence:
     any_index_missing: bool
 
     @property
+    def is_sampled(self) -> bool:
+        """Whether the fence saw fewer values than the column holds.
+
+        False when the reservoir held every value, in which case the pane's
+        count and the card's figure are the same number and there is nothing to
+        reconcile -- so the note stays off rather than stating the obvious.
+        """
+        return 0 < self.n_sampled < self.n_total
+
+    @property
     def lo_possible(self) -> bool:
         """Whether any value in the column is below the lower fence.
 
@@ -653,6 +663,16 @@ def render_table(fence: Fence, fmt, col_id: str = "") -> str:
     )
 
     notes = []
+    if fence.is_sampled:
+        # Without this the pane and the card face contradict each other in
+        # public: this table counts crossings in the reservoir, the card scales
+        # that count to the column (#327), and the two differ by the sampling
+        # ratio. Both are right. Saying which is which is what stops a reader
+        # concluding one of them is broken.
+        notes.append(
+            f"Counted in a {fence.n_sampled:,}-value sample of "
+            f"{fence.n_total:,}; the card scales this up to the column."
+        )
     if fence.rows_are_partial:
         notes.append(
             f"{len(fence.rows)} of {fence.n_outliers:,} shown, the most extreme first."

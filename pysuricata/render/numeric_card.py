@@ -27,6 +27,23 @@ from .sampling import quantiles_are_sampled
 from .triage import annotate_flags
 
 
+def _outliers_are_scaled(stats) -> bool:
+    """Whether the Outliers figure is a scaled estimate rather than a count.
+
+    The two fields are equal exactly when no scaling was applied -- either the
+    reservoir held the whole column, or the column has no outliers at all. Above
+    `numeric_sample_size` the scale factor exceeds 1, so any non-zero sample
+    count scales to a strictly larger number.
+
+    Read from the published pair rather than from `len(sample_vals)` so the
+    marker cannot disagree with the figure it is qualifying: whatever produced
+    the number decides whether it is an estimate.
+    """
+    sample = int(getattr(stats, "outliers_iqr_sample", 0) or 0)
+    scaled = int(getattr(stats, "outliers_iqr", 0) or 0)
+    return scaled != sample
+
+
 class NumericCardRenderer(CardRenderer):
     """Renders numeric data cards."""
 
@@ -312,7 +329,12 @@ class NumericCardRenderer(CardRenderer):
                 f"num {miss_cls}",
             ),
             (
-                "Outliers",
+                # `(≈)` for the same reason `Unique` above carries it. Past
+                # `numeric_sample_size` rows this is a reservoir count scaled to
+                # the column (#327), not a count of anything, and the row
+                # otherwise presents it with the same confidence as `Zeros` and
+                # `Negatives` beside it -- both of which are exact.
+                f"Outliers{' (≈)' if _outliers_are_scaled(stats) else ''}",
                 f"{stats.outliers_iqr:,} ({percentages['out_pct']:.1f}%)",
                 f"num {out_cls}",
             ),
