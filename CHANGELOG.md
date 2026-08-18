@@ -14,6 +14,31 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- **The README leads with the product rather than with its caveats.** It opened
+  on a dense paragraph about what memory is *not* bounded in, put the
+  screenshot below the installation instructions, and scattered the things that
+  distinguish it across three sections — so a reader deciding whether to try it
+  had to assemble the pitch themselves.
+
+  Now: the report is the first thing on the page, then two ways to see one
+  without installing anything, then a four-line Quick Start, then **Why
+  PySuricata** — one pass, three outputs from it, Arrow as the boundary,
+  approximations that say so, one file with no assets. The algorithms table
+  moves down, where it is credibility rather than the opening argument, and the
+  caveat stays inside the memory claim where it belongs.
+
+  Nothing the README is contractually checked on moved, and two of those checks
+  caught real breakage in the edit: the streaming claim has to *start* a line,
+  and `save_html` must not appear after `compare(`.
+
+### Added
+
+- **The README links the live demo**, as a badge and in the header row, and
+  <https://pysuricata.pages.dev> is recorded in `web/README.md` beside the
+  deployment instructions that never said where it deploys to.
+
 ### Added
 
 - **A flag reference, rendered from the flags a report actually raised**
