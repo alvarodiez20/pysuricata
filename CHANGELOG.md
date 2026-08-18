@@ -12,6 +12,31 @@ Each entry states what changed and, where it matters, **what was measured**.
 Numbers here come from the benchmark harness in `benchmarks/`; ratios are only
 quoted when both sides were measured in the same round-robin run.
 
+## [Unreleased]
+
+### Fixed
+
+- **The search strip and the "Hide sample" bar were taller than the 44px they
+  asked for** ([#122]). `min-height: var(--tap-min)` sizes the *content* box,
+  and the UA stylesheet leaves `<input>` and `<summary>` as `content-box`, so
+  the padding and border were added outside the target rather than fitting
+  inside it. Measured in Chromium at 1240px: the search field **62px** against
+  the 44 it declares (8px padding and a 1px border per edge), the sample's
+  summary bar **68px** (12px of padding). The filter tabs sitting beside the
+  search field are the control — same token, same shape of padding, exactly
+  44px, because a `<button>` is border-box already, which is also why the field
+  and the tabs did not line up.
+
+  Both rules now say `box-sizing: border-box`, and both land on 44px. The
+  bordered controls box around the search row drops from 135px to 117px. No
+  target gets smaller than the accessibility pass intended — 44px is what #122
+  asked for and 44px is now what is painted.
+
+  `tests/test_target_size.py` could not catch this: it asserts the declarations
+  rather than measuring, and *at least* 44px is exactly what the old rules
+  guaranteed. It gains a check that the two content-box targets carry
+  `box-sizing: border-box`, so a target stays a size rather than a floor.
+
 ## [0.1.3] - 2026-08-18
 
 ### Added
