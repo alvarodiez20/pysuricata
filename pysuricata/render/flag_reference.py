@@ -167,8 +167,13 @@ FLAG_MEANINGS: dict[str, FlagMeaning] = {
     # limit that fired it, and a consequence for the data. No advice -- that
     # line is open question 7 and is not mine to close.
     "dominant-category": FlagMeaning(
+        # 70%, not the 50% this said until #314. `dominant_category_threshold`
+        # is 0.7 and has been throughout; a 60%-dominant column does not fire,
+        # so the table was explaining the flag with a limit that was not the
+        # one being applied. This block exists to tell a reader why a chip is
+        # on their column, and a wrong number there is worse than no table.
         measure="Share held by the most common level",
-        limit="50%",
+        limit="70%",
         means=(
             "One level accounts for most of the column, so the rest are a "
             "small minority however many of them there are."

@@ -21,6 +21,39 @@ from .svg_utils import safe_col_id as _safe_col_id
 from .svg_utils import svg_empty as _svg_empty
 
 
+def share_threshold_can_discriminate(count: int, threshold: float) -> bool:
+    """Whether a share-based flag could fail to fire on `count` values.
+
+    #314. A column with one row has one value, so its most common value holds
+    100% of it and a "dominant category" flag *cannot not* fire -- it lands in
+    the block whose whole job is to say what needs a look, on the frames a new
+    user is most likely to start with, and costs that block its credibility.
+
+    The guard is derived rather than picked. The most evenly spread column
+    possible gives its top value a share of `1 / count`, so the threshold says
+    something only when that spread would clear it. Below that the flag is a
+    restatement of the row count, and a threshold that is meaningless below
+    some n should be suppressed there rather than fired and explained.
+
+    `mono_inc` and `mono_dec` already worked this way -- both are guarded on
+    more than one value, for the same reason.
+    """
+    return count * threshold > 1.0
+
+
+#: Distinct values as a share of non-missing rows, above which a top-values
+#: chart is a row of near-identical slivers. Titanic's `Cabin` is 147 distinct
+#: in 204 rows -- 0.72. Read by the categorical card, which drops the chart,
+#: and by the summary's quick facts, which counts the columns: the two have to
+#: name the same columns, and #314 is what happened when they did not.
+HIGH_CARDINALITY = 0.5
+
+#: A stronger claim than high cardinality, and the only one that licenses
+#: saying every value is different. Set well below 1.0 so KMV's ~2.2% error
+#: cannot reach it.
+NEAR_UNIQUE = 0.90
+
+
 def _where_the_gaps_fall(chunk_metadata) -> str:
     """Say, in words, where a column's missing values concentrate.
 
@@ -419,7 +452,13 @@ class QualityAssessor:
         uniq_est = max(0, int(stats.unique_est))
         total_nonnull = max(1, int(stats.count))
 
-        if uniq_est == 1:
+        # Both claims are about concentration, so both need enough values for
+        # concentration to be distinguishable from the row count (#314): one
+        # value is constant and all-distinct at the same time.
+        share_limit = self.thresholds.dominant_value_share
+        if not share_threshold_can_discriminate(int(stats.count), share_limit):
+            pass
+        elif uniq_est == 1:
             flags.constant = True
         elif uniq_est <= 2:
             flags.quasi_constant = True
@@ -427,7 +466,7 @@ class QualityAssessor:
             top_values = getattr(stats, "top_values", None)
             if top_values:
                 share = top_values[0][1] / total_nonnull
-                flags.quasi_constant = share >= self.thresholds.dominant_value_share
+                flags.quasi_constant = share >= share_limit
 
         # Outliers
         if out_pct > self.thresholds.outlier_crit_pct:
@@ -460,11 +499,10 @@ class QualityAssessor:
             flags.high_cardinality = True
 
         # Dominant category
-        if stats.top_items:
+        limit = self.thresholds.dominant_category_threshold
+        if stats.top_items and share_threshold_can_discriminate(stats.count, limit):
             mode_count = stats.top_items[0][1] if stats.top_items else 0
-            if mode_count >= int(
-                self.thresholds.dominant_category_threshold * max(1, stats.count)
-            ):
+            if mode_count >= int(limit * max(1, stats.count)):
                 flags.dominant_category = True
 
         # Case and trim variants: flag only when lowercasing/stripping *reduces* the

@@ -3,6 +3,8 @@
 import math
 from collections.abc import Sequence
 
+from .card_base import HIGH_CARDINALITY as _HIGH_CARDINALITY
+from .card_base import NEAR_UNIQUE as _NEAR_UNIQUE
 from .card_base import CardRenderer
 from .card_config import DEFAULT_CAT_CONFIG, DEFAULT_CHART_DIMS
 from .card_types import BarData, CategoricalStats, QualityFlags
@@ -14,17 +16,10 @@ from .triage import annotate_flags
 # of near-identical slivers -- ten bars of one row each on Titanic's `Name`.
 _LOW_COVERAGE = 0.02
 
-# Or the column is distinct enough that the same is true by construction. 0.5
-# is the ceiling the report already uses for "high-cardinality categorical" in
-# the summary, so the card and the summary agree about which columns those are.
-# Titanic's `Cabin` is 147 distinct in 204 rows -- 0.72 -- and its top five
-# cover 8.8%, which clears the coverage arm but is still a chart of five values
-# out of a hundred and forty-seven.
-_HIGH_CARDINALITY = 0.5
-
-# A stronger claim than "high cardinality", and only this one licenses saying
-# every value is different.
-_NEAR_UNIQUE = 0.90
+# `HIGH_CARDINALITY` (0.5) and `NEAR_UNIQUE` (0.90) come from `card_base` so
+# the summary's quick facts and this card read the same two numbers -- the
+# comment they carry there says the card and the summary must agree about which
+# columns those are, and until #314 they did not.
 
 
 def describe_high_cardinality(stats: CategoricalStats) -> dict | None:
