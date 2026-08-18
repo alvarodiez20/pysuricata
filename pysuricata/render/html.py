@@ -15,6 +15,8 @@ from ..utils import (
     load_script,
     load_template,
 )
+from .card_base import HIGH_CARDINALITY as _HIGH_CARDINALITY
+from .card_base import NEAR_UNIQUE as _NEAR_UNIQUE
 from .cards import render_bool_card as _render_bool_card
 from .cards import render_cat_card as _render_cat_card
 from .cards import render_dt_card as _render_dt_card
@@ -247,6 +249,18 @@ def render_html_snapshot(
         duplicates_note = "below sketch resolution"
         duplicates_overall = f"under {dup_ceiling:,} ({ceiling_pct:.1f}%)"
 
+    # #314. The three buckets used to be independent tests, and `unique_cols`
+    # was not a test at all -- it was `n_cols`, so a 12-column Titanic reported
+    # "12 unique" and a one-column frame reported itself as all-unique *and*
+    # constant *and* high-cardinality at once. Each of those is individually
+    # defensible at n = 1 and the three together are nonsense.
+    #
+    # A column now lands in at most one bucket, strongest claim first, and in
+    # none of them below two values -- a column with one value is trivially
+    # both constant and all-distinct, and a column with none is neither. The
+    # ratios are the ones `categorical_card.py` already uses, so the summary
+    # and the cards name the same columns.
+    unique_cols = 0
     constant_cols = 0
     high_card_cols = 0
     for name, (kind, acc) in kinds_map.items():
@@ -258,12 +272,16 @@ def render_html_snapshot(
             # A boolean column reports 2 by definition; what the constant-column
             # count wants to know is how many values actually turned up.
             u = int((acc.true_n > 0) + (acc.false_n > 0))
-        _ = getattr(acc, "count", 0) + getattr(acc, "missing", 0)
+        count = int(getattr(acc, "count", 0))
+        if count < 2:
+            continue
+        ratio = u / count
         if u <= 1:
             constant_cols += 1
-        if kind == "categorical" and n_rows:
-            if (u / n_rows) > 0.5:
-                high_card_cols += 1
+        elif ratio >= _NEAR_UNIQUE:
+            unique_cols += 1
+        elif kind == "categorical" and ratio > _HIGH_CARDINALITY:
+            high_card_cols += 1
 
     if kinds.datetime:
         mins, maxs = [], []
@@ -335,7 +353,7 @@ def render_html_snapshot(
             # face leads with the column's own value, so deriving here gave
             # every card a set of flags no other card could share and no filter
             # could group. See #238.
-            flags = " ".join(sorted({slug for _, _, slug in _actionable_chips(chips)}))
+            flags = " ".join(sorted({chip.slug for chip in _actionable_chips(chips)}))
             card_id = _safe_col_id(name)
             column_chips.append((name, card_id, chips))
             # The missing share, for the "most missing" sort (design 15c).
@@ -582,7 +600,7 @@ def render_html_snapshot(
         "description_label": description_label,
         "description_action": description_action,
         "quick_facts": _quick_facts(
-            unique_cols=n_cols,
+            unique_cols=unique_cols,
             constant_cols=constant_cols,
             high_card_cols=high_card_cols,
             text_cols=text_cols,
@@ -591,7 +609,7 @@ def render_html_snapshot(
             date_max=date_max,
         ),
         "top_missing_list": top_missing_list,
-        "n_unique_cols": f"{n_cols:,}",
+        "n_unique_cols": f"{unique_cols:,}",
         "constant_cols": f"{constant_cols:,}",
         "high_card_cols": f"{high_card_cols:,}",
         "date_min": date_min,

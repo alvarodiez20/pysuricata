@@ -36,7 +36,17 @@ def fmt_num(x: int | float | None) -> str:
     try:
         if isinstance(x, float) and (math.isnan(x) or math.isinf(x)):
             return "NaN"
-        return f"{x:,.4g}"
+        formatted = f"{x:,.4g}"
+        # #314. A one-level column's entropy is `-sum([1.0 * log2(1.0)])`,
+        # which is IEEE negative zero, and the card printed `-0`. The value is
+        # right and its rendering is not -- there is no negative zero in
+        # anything this report measures. Caught here rather than at the one
+        # call site so no future statistic can reintroduce it. `.4g` keeps a
+        # small negative in exponent form (`-1e-25`), so this only ever matches
+        # a true signed zero.
+        if formatted.lstrip("-").strip("0.,") == "":
+            return formatted.lstrip("-")
+        return formatted
     except Exception:
         return str(x)
 

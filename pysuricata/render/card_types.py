@@ -86,6 +86,13 @@ class CategoricalStats:
     #: from the runtime one and the Missing Values gate reads `None` -- which
     #: does not tighten the rule, it hides the pane permanently.
     chunk_metadata: list[tuple[int, int, int]] | None = None
+    #: Levels seen exactly once, out of an exactly counted total (#297).
+    #:
+    #: Both `None` together when the column had more levels than the counter's
+    #: capacity -- unknown, never zero. Duck-typed against the accumulator's
+    #: summary like `chunk_metadata` above, so both types have to carry it.
+    singleton_levels: int | None = None
+    exact_levels: int | None = None
 
 
 @dataclass

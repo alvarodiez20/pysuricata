@@ -8,19 +8,21 @@ suite, so nothing said whether they worked.
 
 The investigation found they mostly do. This file is what keeps that true.
 
-**What it deliberately does not assert.** Four defects were found and are filed
-rather than pinned here, because a test asserting today's wrong answer makes
-the wrong answer permanent:
+**What it deliberately does not assert.** One defect is still filed rather than
+pinned here, because a test asserting today's wrong answer makes the wrong
+answer permanent:
 
 * #312 -- a zero-column frame reports 9 duplicate rows where pandas reports 0
-* #314 -- flags that fire by construction, contradictory quick facts, and `-0`
 
 #313 and #315 were both fixed by treating a zero-row frame as a frame with a
 schema rather than as an empty source, and their cases below are ordinary
-assertions now rather than xfails.
+assertions now rather than xfails. #314 is fixed too: the three quick-facts
+buckets are mutually exclusive and empty below two values, a share-based flag
+only fires where an even spread would not have fired it, and negative zero is
+caught in the formatter. Those are ordinary assertions below as well.
 
-The cases below are written to pass **either** side of #312 and #313 landing,
-so they guard the shapes without freezing the bugs.
+The remaining cases are written to pass **either** side of #312 landing, so
+they guard the shapes without freezing the bug.
 """
 
 from __future__ import annotations
@@ -123,6 +125,93 @@ class TestNothingUndefinedReachesThePage:
         ]
 
         assert not drawn, f"{name} draws {len(drawn)} bars for a zero count"
+
+
+def _quick_facts(html: str) -> dict[str, int]:
+    """The Summary's `n unique · n constant · n high-cardinality` counts."""
+    text = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", " ", _TAGS.sub("", html)))
+    match = re.search(
+        r"([\d,]+) unique · ([\d,]+) constant · ([\d,]+) high-cardinality", text
+    )
+    assert match, "the quick-facts line is gone -- this check reads nothing"
+    unique, constant, high_card = (int(g.replace(",", "")) for g in match.groups())
+    return {"unique": unique, "constant": constant, "high_card": high_card}
+
+
+@pytest.mark.parametrize("name", sorted(SHAPES))
+class TestAColumnIsCountedInAtMostOneBucket:
+    """#314. `pd.DataFrame({"a": [1.0]})` was described as all-unique **and**
+    constant **and** high-cardinality at once. Each is individually defensible
+    at n = 1 and the three together are nonsense."""
+
+    def test_the_three_buckets_do_not_double_count(
+        self, rendered: dict[str, str], name: str
+    ) -> None:
+        facts = _quick_facts(rendered[name])
+        n_cols = SHAPES[name].shape[1]
+
+        assert sum(facts.values()) <= n_cols, (
+            f"{name} has {n_cols} column(s) and counts {sum(facts.values())} "
+            f"bucket memberships: {facts}"
+        )
+
+    def test_a_column_with_no_values_is_counted_in_none_of_them(
+        self, rendered: dict[str, str], name: str
+    ) -> None:
+        """Neither unique nor constant is a property a column with zero values
+        has, and `all_missing` holds two of them."""
+        if name != "all_missing":
+            pytest.skip("only the all-missing frame has valueless columns")
+
+        assert _quick_facts(rendered[name]) == {
+            "unique": 0,
+            "constant": 0,
+            "high_card": 0,
+        }
+
+
+class TestAFlagDoesNotFireWhereItCannotFail:
+    """#314. A column with one row has one value, so its most common value is
+    100% of it -- `dominant category` cannot *not* fire. Same family as #248,
+    where the duplicate threshold false-alarms on a clean frame."""
+
+    def test_a_single_row_raises_no_dominance_flag(
+        self, rendered: dict[str, str]
+    ) -> None:
+        body = _TAGS.sub("", rendered["one_col_one_row"])
+
+        assert "dominant-category" not in body
+        assert "quasi-constant" not in body
+
+    def test_the_same_flag_still_fires_where_it_means_something(self) -> None:
+        """The guard must not have bought its silence by turning the flag off:
+        75% of one level in 100 rows is a real dominant category."""
+        frame = pd.DataFrame({"a": ["x"] * 75 + [f"v{i}" for i in range(25)]})
+        body = _TAGS.sub("", profile(frame, seed=0).html)
+
+        assert "dominant-category" in body
+
+    def test_the_reference_table_states_the_limit_that_is_applied(self) -> None:
+        """The block exists to tell a reader why a chip is on their column. It
+        said 50% while `dominant_category_threshold` was 0.7, so a 60%-dominant
+        column cleared the stated limit and did not fire."""
+        from pysuricata.render.card_config import DEFAULT_QUALITY_THRESHOLDS
+        from pysuricata.render.flag_reference import FLAG_MEANINGS
+
+        stated = FLAG_MEANINGS["dominant-category"].limit
+        applied = DEFAULT_QUALITY_THRESHOLDS.dominant_category_threshold
+
+        assert stated == f"{applied:.0%}"
+
+
+@pytest.mark.parametrize("name", sorted(SHAPES))
+def test_no_negative_zero_reaches_the_page(rendered: dict[str, str], name: str) -> None:
+    """#314. A one-level column's entropy is `-sum([1.0 * log2(1.0)])`, which
+    is IEEE negative zero. The value is correct; its rendering was not."""
+    body = _TAGS.sub("", rendered[name])
+    found = re.findall(r">\s*-0(?:\.0+)?\s*<", body)
+
+    assert not found, f"{name} renders negative zero {len(found)} time(s)"
 
 
 class TestTheDuplicateCountAgreesWithPandas:

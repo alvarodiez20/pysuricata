@@ -96,10 +96,8 @@ BASELINE: set[str] = {
     "_11-correlations.css #fbc02d",
     "_11-correlations.css #ff9800",
     "_11-correlations.css #ffeb3b",
-    "_12-missing.css #10b981",
     "_12-missing.css #1a1a1a",
     "_12-missing.css #22c55e",
-    "_12-missing.css #34d399",
     "_12-missing.css #45a049",
     "_12-missing.css #4caf50",
     "_12-missing.css #66bb6a",
@@ -111,7 +109,6 @@ BASELINE: set[str] = {
     "_12-missing.css #f44336",
     "_12-missing.css #f57c00",
     "_12-missing.css #f59e0b",
-    "_12-missing.css #f87171",
     "_12-missing.css #fb923c",
     "_12-missing.css #fbbf24",
     "_12-missing.css #ff9800",
@@ -171,8 +168,13 @@ class TestTheRatchetOnlyTurnsOneWay:
         four that went were a bar hover stroke and three dark-mode overrides
         for labels drawn inside a stretched SVG; they left with the markup that
         needed them rather than as a separate tidy-up.
+
+        61 → 58 on the same principle, for the same reason. #294 removed the
+        per-card chunk legend and, with it, the `.dataprep-spectrum` and
+        `.missing-per-chunk-enhanced` renderers that no code path had reached
+        for some time. Their 523 lines of CSS held the last three.
         """
-        assert len(BASELINE) == 61
+        assert len(BASELINE) == 58
 
 
 class TestTheAssertionIsWorthHaving:

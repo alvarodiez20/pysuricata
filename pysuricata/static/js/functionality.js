@@ -420,8 +420,7 @@
     if (e.target && e.target.closest &&
         (e.target.closest('.hist-svg') ||
          e.target.closest('.temporal-chart') || e.target.closest('.chunk-distribution') ||
-         e.target.closest('.chunk-spectrum') || e.target.closest('.missing-spectrum-bar') ||
-         e.target.closest('.dataprep-spectrum'))) {
+         e.target.closest('.chunk-spectrum') || e.target.closest('.missing-spectrum-bar'))) {
       hideTip();
     }
   }, true);

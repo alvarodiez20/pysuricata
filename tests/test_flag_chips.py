@@ -30,7 +30,7 @@ import pandas as pd
 import pytest
 
 from pysuricata import profile, summarize
-from pysuricata.render.triage import annotate_flags, extract_chips
+from pysuricata.render.triage import Chip, annotate_flags, extract_chips
 
 CARDS_CSS = (
     Path(__file__).resolve().parents[1] / "pysuricata/static/css/_06-cards.css"
@@ -117,7 +117,7 @@ class TestDistinctNeverExceedsTheRowCount:
 class TestTheChipsShowWhatTheyKnow:
     def test_the_value_reaches_the_face_of_the_chip(self, frame):
         html = profile(frame, seed=0).html
-        labels = [label for _, label, _ in extract_chips(html)]
+        labels = [chip.label for chip in extract_chips(html)]
         assert any(re.match(r"[\d.\-]", label) for label in labels), labels[:6]
 
     def test_the_value_leads_and_the_name_follows(self):
@@ -151,9 +151,16 @@ class TestTheChipsShowWhatTheyKnow:
         )
         assert "9.1 heavy‑tailed" in out
         # The face carries the value and the limit; the slug still says which
-        # flag it is.
+        # flag it is; and the raw pair rides along for the triage block to rank
+        # on (#149), bracket and all.
         assert extract_chips(out) == [
-            ("bad", "9.1 heavy‑tailed · limit 10", "heavy-tailed")
+            Chip(
+                "bad",
+                "9.1 heavy‑tailed · limit 10",
+                "heavy-tailed",
+                "9.1",
+                "|kurtosis| > 3",
+            )
         ]
 
     def test_a_chip_with_no_value_is_left_alone(self):
@@ -242,7 +249,7 @@ class TestTheFlagReference:
         assert block, "no flag reference in a report that raises flags"
 
         listed = set(re.findall(r'<tr id="flagref-([^"]+)"', block))
-        raised = {slug for _, _, slug in extract_chips(html) if slug}
+        raised = {chip.slug for chip in extract_chips(html) if chip.slug}
         assert listed <= raised, sorted(listed - raised)
         assert listed, "the reference is empty"
 
@@ -255,7 +262,7 @@ class TestTheFlagReference:
         if not block:
             return
         listed = set(re.findall(r'<tr id="flagref-([^"]+)"', block))
-        raised = {slug for _, _, slug in extract_chips(html) if slug}
+        raised = {chip.slug for chip in extract_chips(html) if chip.slug}
         assert listed <= raised
 
     def test_every_row_states_a_measure_a_limit_and_a_meaning(self, frame):

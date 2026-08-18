@@ -90,6 +90,56 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **A design pass over seven report issues** (#319, #145, #294, #314, #149,
+  #297, #300), which also closes #299.
+
+  **The report is 12,419 bytes smaller.** A `Hover over segments to see chunk
+  details` line that #294 asked to remove turned out never to render: the pane
+  it lived in — `_build_dataprep_spectrum_visualization`, four near-copies
+  across the card kinds, one of them documented "Legacy method - no longer
+  used" and shadowed by a second definition in the same class — was reached by
+  no code path, and only tests called it. It is deleted with the 523 lines of
+  stylesheet that dressed it, which every report was carrying because the
+  report inlines its CSS. Three untokenised colours went with it, taking that
+  ratchet from 61 to 58.
+
+  **The attention block ranks rather than lists** (#149). Severity was in the
+  class and unused for ordering, with ties broken on chip count, so Titanic
+  opened on `Age` (19.9% missing against a 20% limit) above `Cabin` (77.1%
+  against the same). Rows now sort by severity and then by `value / threshold`,
+  cap at ten with the remainder counted, and a clean frame gets a statement
+  instead of an absent block — #138's argument for correlations, applied here.
+
+  **Degenerate frames stop describing themselves as three contradictory
+  things** (#314). `unique_cols` was `n_cols`, so a one-column frame reported
+  itself all-unique *and* constant *and* high-cardinality at once; the three
+  buckets are exclusive now and empty below two values. A share-based flag no
+  longer fires where an even spread would also have fired it — at one row every
+  column is 100% dominant. Negative zero is caught in the formatter.
+
+  **The flag reference stated a limit that was not applied.** It said
+  `dominant category` fires above 50%; the threshold is 0.7, and a 60%-dominant
+  column does not fire. A block that exists to explain a chip is worse than
+  useless with a wrong number in it.
+
+  **A many-level column says how many of its levels occur exactly once**
+  (#297) — `101 of 147` for Titanic's `Cabin`, which is what separates a few
+  crowded levels from a drift of near-singletons. `singleton_levels` and
+  `exact_levels` join the `summarize()` payload; both are `null`, never zero,
+  when the column outgrew the counter, because the new `SingletonCounter`
+  counts exactly or refuses. Adding keys does not bump `schema_version`.
+
+  **Dark mode is measured against the surface it is painted on** (#300).
+  `test_contrast.py` measures token pairs against `--paper`; the new check
+  walks ~690 rendered elements, resolves the background each one actually sits
+  on, and finds nothing below AA at either width — the worst mark is 5.95
+  against a required 4.5.
+
+  **Charts take the height their viewBox asks for** (#319). A fixed 180px under
+  the mobile breakpoint padded a two-level categorical chart by 157px and
+  overflowed a numeric one by 33px. Card-height criteria now exist for all four
+  kinds rather than only numeric (#145).
+
 - **The versioning contract said a minor bump may break you. It may not.** The
   page had adopted Cargo's pre-1.0 convention, under which `0.1.0 → 0.2.0` is
   the release allowed to break. That is now stated the way SemVer means it:

@@ -3,6 +3,8 @@
 import math
 from collections.abc import Sequence
 
+from .card_base import HIGH_CARDINALITY as _HIGH_CARDINALITY
+from .card_base import NEAR_UNIQUE as _NEAR_UNIQUE
 from .card_base import CardRenderer
 from .card_config import DEFAULT_CAT_CONFIG, DEFAULT_CHART_DIMS
 from .card_types import BarData, CategoricalStats, QualityFlags
@@ -14,17 +16,10 @@ from .triage import annotate_flags
 # of near-identical slivers -- ten bars of one row each on Titanic's `Name`.
 _LOW_COVERAGE = 0.02
 
-# Or the column is distinct enough that the same is true by construction. 0.5
-# is the ceiling the report already uses for "high-cardinality categorical" in
-# the summary, so the card and the summary agree about which columns those are.
-# Titanic's `Cabin` is 147 distinct in 204 rows -- 0.72 -- and its top five
-# cover 8.8%, which clears the coverage arm but is still a chart of five values
-# out of a hundred and forty-seven.
-_HIGH_CARDINALITY = 0.5
-
-# A stronger claim than "high cardinality", and only this one licenses saying
-# every value is different.
-_NEAR_UNIQUE = 0.90
+# `HIGH_CARDINALITY` (0.5) and `NEAR_UNIQUE` (0.90) come from `card_base` so
+# the summary's quick facts and this card read the same two numbers -- the
+# comment they carry there says the card and the summary must agree about which
+# columns those are, and until #314 they did not.
 
 
 def describe_high_cardinality(stats: CategoricalStats) -> dict | None:
@@ -81,6 +76,9 @@ def describe_high_cardinality(stats: CategoricalStats) -> dict | None:
         "coverage": coverage,
         "distinct_ratio": distinct_ratio,
         "identifier_like": distinct_ratio >= _NEAR_UNIQUE,
+        #: Exact, and `None` together when the column outgrew the counter.
+        "singletons": getattr(stats, "singleton_levels", None),
+        "levels": getattr(stats, "exact_levels", None),
     }
 
 
@@ -92,6 +90,13 @@ def high_cardinality_sentence(facts: dict) -> str:
     -- `Cabin` is 147 values in 204 rows -- cannot: claiming every value is
     different there would be false, and the reason the chart is useless is that
     the top few cover almost nothing, which is worth stating as a number.
+
+    The merely-high-cardinality branches carry **rows per level** (#297). A
+    distinct count and a row count are two numbers the reader has to divide to
+    learn the thing that matters -- whether this is a few crowded levels or a
+    drift of near-singletons. `Cabin` is 1.4 rows per level, which says
+    *near-singletons* in one figure and is the shape argument for not drawing
+    the chart. It needs no statistic that is not already here.
     """
     unique = facts["unique"]
     count = facts["count"]
@@ -100,19 +105,51 @@ def high_cardinality_sentence(facts: dict) -> str:
             "Every value is different. A top-values chart would be "
             "bars of one row each, so there is nothing to plot."
         )
+    per_level = count / unique if unique else 0.0
     if facts["coverage"] is None:
         # The counters were never kept, so the coverage is unmeasured. Saying
         # so is shorter than the alternative and does not invent a number.
-        return (
-            f"{unique:,} distinct values in {count:,} rows. The top-values "
-            "counters are not kept for a column this varied, so there is no "
-            "ranking to plot."
+        opening = (
+            f"{unique:,} distinct values in {count:,} rows -- "
+            f"{per_level:.1f} rows per level. The top-values counters are not "
+            "kept for a column this varied, so there is no ranking to plot."
         )
-    return (
-        f"{unique:,} distinct values in {count:,} rows, and the five most "
-        f"common cover {facts['coverage'] * 100:.1f}% of them. A top-values "
-        "chart would be a row of slivers, so there is nothing worth plotting."
-    )
+    else:
+        opening = (
+            f"{unique:,} distinct values in {count:,} rows -- {per_level:.1f} "
+            f"rows per level, and the five most common cover "
+            f"{facts['coverage'] * 100:.1f}% of them. A top-values chart would "
+            "be a row of slivers, so there is nothing worth plotting."
+        )
+    return f"{opening}{_singleton_clause(facts)}"
+
+
+def _singleton_clause(facts: dict) -> str:
+    """The thing the chart structurally cannot say (#297).
+
+    *119 of 147 levels occur exactly once* separates the two columns that a
+    distinct count alone cannot: a handful of crowded levels, and a drift of
+    near-singletons. Both are "high cardinality" and only one of them is a
+    column where a top-values ranking would have meant anything.
+
+    Stated as a count of levels against the level total, both exact and both
+    from the same counting -- `unique_est` is KMV and would make `119 of 147`
+    arithmetic that does not quite add up on the page.
+
+    Silent when the count is unknown, and silent when it is zero: no level
+    occurring exactly once is the ordinary case, and a clause saying so on
+    every high-cardinality column is noise.
+    """
+    singletons = facts.get("singletons")
+    levels = facts.get("levels")
+    if not singletons or not levels:
+        return ""
+    if singletons == levels:
+        # Every level a singleton, which `identifier_like` usually catches
+        # first -- but not always, since that arm is a ratio against rows and
+        # this is a count against levels.
+        return f" All {levels:,} levels occur exactly once."
+    return f" {singletons:,} of {levels:,} levels occur exactly once."
 
 
 # `Entropy`, `Rare levels` and `Top 5 coverage` all describe how a distribution
@@ -1551,10 +1588,6 @@ class CategoricalCardRenderer(CardRenderer):
             stats.count, present_pct, stats.missing, miss_pct, stats, total_values
         )
 
-    def _build_dataprep_spectrum_visualization(self, stats: CategoricalStats) -> str:
-        """Legacy method - no longer used."""
-        return ""
-
     def _get_missing_data_severity(self, missing_pct: float) -> tuple[str, str, str]:
         """Get missing data severity classification with clear thresholds.
 
@@ -1572,102 +1605,3 @@ class CategoricalCardRenderer(CardRenderer):
             return "medium", "Medium", ""
         else:
             return "low", "Low", ""
-
-    def _build_dataprep_spectrum_visualization(self, stats: CategoricalStats) -> str:
-        """Build DataPrep-style spectrum visualization for missing values per chunk.
-
-        This creates a single horizontal bar with segments representing actual processing
-        chunks, colored by missing value density (green-yellow-red gradient).
-
-        Args:
-            stats: CategoricalStats object containing chunk metadata and missing data information
-
-        Returns:
-            HTML string for the DataPrep-style spectrum visualization
-        """
-        # Check if we have chunk metadata
-        chunk_metadata = getattr(stats, "chunk_metadata", None)
-        if not chunk_metadata:
-            return ""
-
-        total_values = stats.count + stats.missing
-        if total_values == 0:
-            return ""
-
-        # Build the spectrum bar segments
-        segments_html = ""
-        total_width = 0
-
-        for start_row, end_row, missing_count in chunk_metadata:
-            chunk_size = end_row - start_row + 1
-            missing_pct = (
-                (missing_count / chunk_size) * 100.0 if chunk_size > 0 else 0.0
-            )
-
-            # Calculate segment width as percentage of total
-            segment_width_pct = (chunk_size / total_values) * 100.0
-            total_width += segment_width_pct
-
-            # Determine color based on missing percentage (DataPrep-style)
-            if missing_pct <= 5:
-                color_class = "spectrum-low"
-            elif missing_pct <= 20:
-                color_class = "spectrum-medium"
-            else:
-                color_class = "spectrum-high"
-
-            segments_html += f"""
-            <div class="spectrum-segment {color_class}"
-                 style="width: {segment_width_pct:.2f}%"
-                 data-start="{start_row}"
-                 data-end="{end_row}"
-                 data-missing="{missing_count}"
-                 data-pct="{missing_pct:.1f}">
-            </div>
-            """
-
-        # Build summary statistics
-        total_chunks = len(chunk_metadata)
-        max_missing_pct = max(
-            (missing_count / (end_row - start_row + 1)) * 100.0
-            for start_row, end_row, missing_count in chunk_metadata
-        )
-        avg_missing_pct = (
-            sum(
-                (missing_count / (end_row - start_row + 1)) * 100.0
-                for start_row, end_row, missing_count in chunk_metadata
-            )
-            / total_chunks
-        )
-
-        # Determine overall severity
-        if max_missing_pct >= 50:
-            severity = "critical"
-        elif max_missing_pct >= 20:
-            severity = "high"
-        elif max_missing_pct >= 5:
-            severity = "medium"
-        else:
-            severity = "low"
-
-        return f"""
-        <div class="dataprep-spectrum">
-            <div class="spectrum-header">
-                <span class="spectrum-title">Missing Values Distribution</span>
-                <span class="spectrum-stats">
-                    {total_chunks} chunks • {max_missing_pct:.1f}% max • {avg_missing_pct:.1f}% avg
-                </span>
-                <span class="spectrum-severity {severity}">
-                    {severity.title()} Missing Data
-                </span>
-            </div>
-            <div class="spectrum-bar">
-                {segments_html}
-            </div>
-            <div class="spectrum-legend">
-                <span class="legend-item spectrum-low">Low (≤5%)</span>
-                <span class="legend-item spectrum-medium">Medium (5-20%)</span>
-                <span class="legend-item spectrum-high">High (>20%)</span>
-            </div>
-        </div>
-        """

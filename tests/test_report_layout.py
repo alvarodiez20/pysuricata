@@ -239,7 +239,42 @@ class TestTheReportIsOneFile:
 #: name, because `Cabin` is 77.1% empty and a coverage figure without its
 #: denominator cannot distinguish 5.9% of the non-missing rows from 1.3% of
 #: the frame.
-BYTES_BASELINE = 499_500
+#:
+#: 499,500 -> 486,500, and this one is a **paydown, not a raise**. #294 asked
+#: for a legend and a hover instruction to come out of the per-card missing
+#: pane. Following the legend to its renderer found that the pane those strings
+#: lived in -- `_build_dataprep_spectrum_visualization`, four near-copies
+#: across the card kinds, plus `_generate_missing_insights`,
+#: `_render_chunk_visualization` and `_build_simple_missing_distribution` --
+#: was **reached by no code path at all**. What ships is one shared renderer in
+#: `card_base.py`. The dead markup took 523 lines of stylesheet with it, and
+#: the report inlines its CSS into every document, so every report was carrying
+#: it.
+#:
+#: This is the dead-CSS sweep the note above abandoned, done the way that note
+#: says it has to be: per class, checked against the renderers rather than
+#: against one fixture's output. Three untokenised colours went with it, which
+#: `test_colour_tokens.py` noticed and asked to have written down.
+#:
+#: 486,500 -> 487,000 for the attention block's triage (#149). The block ranked
+#: by severity class alone, so Titanic's `Age` (19.9% missing against a 20%
+#: limit) sat above `Cabin` (77.1% against the same limit) on the strength of
+#: having two chips rather than one. Ranking on `value / threshold` needs those
+#: two numbers in this layer, and the 593 bytes are almost entirely the
+#: `data-value` and `data-threshold` pairs on eleven chips.
+#:
+#: The same argument as the #291 and #296 raises above: a figure the reader
+#: cannot act on is not presentation. Unlike #291, the report being weighed is
+#: the one that benefits -- Titanic raises seven flagged columns, and the
+#: reordering is visible on it.
+#:
+#: 487,000 -> 487,500 on the rebase, and the 81 bytes are not this branch's:
+#: #338 landed underneath it and publishes a top-k error bound. Rounded up to
+#: leave the headroom the #246/#252 note above asks for, so the next rebase
+#: does not spend an afternoon on the same 3 bytes.
+#:
+#: Net against the 499,500 this branch started from: 12,419 bytes returned.
+BYTES_BASELINE = 487_500
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
@@ -379,6 +414,25 @@ _MEASURE = (
     }
   }
 
+  // #319/#145. A card that is paginated away lays out at a stub height, so
+  // `offsetParent` decides what counts; the active `.variant` is the chart the
+  // container is actually holding.
+  const cards = [];
+  for (const card of document.querySelectorAll('.var-card')) {
+    if (card.offsetParent === null) continue;
+    const badge = card.querySelector('.badge');
+    const container = card.querySelector('.var-chart .hist-variants');
+    const chart = container ? container.querySelector('.variant.active') : null;
+    cards.push({
+      id: card.id,
+      kind: badge ? badge.textContent.trim() : '?',
+      height: Math.round(card.getBoundingClientRect().height),
+      container_height:
+        container ? Math.round(container.getBoundingClientRect().height) : null,
+      chart_height: chart ? Math.round(chart.getBoundingClientRect().height) : null,
+    });
+  }
+
   const summary = document.querySelector('#summary');
   return {
     header_height: header ? parseFloat(getComputedStyle(header).height) : null,
@@ -388,6 +442,7 @@ _MEASURE = (
       document.documentElement.scrollWidth - document.documentElement.clientWidth,
     summary_height: summary ? Math.round(summary.getBoundingClientRect().height) : null,
     strokes,
+    cards,
   };
 }"""
     # A plain replace, not %-format or .format(): the script is full of `{...}`
@@ -489,6 +544,62 @@ def measurements(report_html, tmp_path_factory):
     return out
 
 
+def _every_kind() -> pd.DataFrame:
+    """A frame carrying all four card kinds, which Titanic cannot: it has no
+    datetime column, so the only kind with a `time_span` has never been
+    measured. Same 891 rows and same generator as the invariance suite's
+    `_frame`, trimmed to one column per kind plus a second numeric."""
+    import numpy as np
+
+    rng = np.random.default_rng(0)
+    n = 891
+    return pd.DataFrame(
+        {
+            "age": rng.integers(1, 80, n).astype(float),
+            "fare": rng.gamma(2, 20, n),
+            "sex": rng.choice(["male", "female"], n),
+            "cabin": rng.choice([None, "C85", "B42"], n, p=[0.77, 0.12, 0.11]),
+            "survived": rng.integers(0, 2, n).astype(bool),
+            "booked": pd.date_range("2026-01-01", periods=n, freq="h"),
+        }
+    )
+
+
+@pytest.fixture(scope="module")
+def kind_measurements(tmp_path_factory):
+    """`_every_kind()` measured at every breakpoint, once.
+
+    Light theme only. `test_the_themes_do_not_change_the_layout` already
+    asserts that a theme moves no box, so measuring both here would buy a
+    second reading of the same geometry at twice the browser time.
+    """
+    playwright = pytest.importorskip(
+        "playwright.sync_api", reason="browser layout checks need Playwright"
+    )
+
+    page_file = tmp_path_factory.mktemp("kinds") / "report.html"
+    page_file.write_text(profile(_every_kind(), seed=0).html, encoding="utf-8")
+
+    launch = {}
+    if chrome := _chrome():
+        launch["executable_path"] = chrome
+
+    out = {}
+    with playwright.sync_playwright() as p:
+        try:
+            browser = p.chromium.launch(**launch)
+        except Exception as exc:  # no browser binary on this machine
+            pytest.skip(f"Chromium is not available: {exc}")
+        for width in BREAKPOINTS:
+            page = browser.new_page(viewport={"width": width, "height": 844})
+            page.goto(page_file.as_uri())
+            page.wait_for_timeout(900)
+            out[width] = page.evaluate(_MEASURE)["cards"]
+            page.close()
+        browser.close()
+    return out
+
+
 #: #111. The header is 48px on mobile and 52px from the first breakpoint up,
 #: plus a 1px rule that the budget does not count.
 _HEADER_BUDGET = {390: 48, 768: 48, 1240: 52}
@@ -543,6 +654,70 @@ _KNOWN_UNDERSIZED = {390: 3, 768: 3, 1240: 9}
 #: The 64px still between 624 and #112's 560 is unaffected by this and is
 #: where the work remains.
 _SUMMARY_BASELINE = {390: 624, 768: 579, 1240: 344}
+
+#: #145 — a height criterion for each of the four card kinds, which only the
+#: numeric card had. Measured on `_every_kind()` at 844px tall, details
+#: collapsed. Pinned to a dataset and a viewport, which is the thing #112 and
+#: #114 did not do and why their original figures could not be reproduced.
+#:
+#: The premise #145 was filed on no longer holds: it recorded categorical as
+#: the tallest kind at 923px against numeric's 820px. Categorical is now the
+#: *shortest* of the three non-boolean kinds (480px at 390px) because #308
+#: suppressed the statistics it could not say, and #319 took the padded 180px
+#: chart container out from under it. Numeric and datetime are what run tall.
+#:
+#: These are a developer machine's readings, and #309 records that such a
+#: machine measures 2-7px *taller* than CI. That direction is the safe one for
+#: an upper bound -- CI reads under it, and by well under the 6% `_SLACK`, so
+#: the lower branch does not fire either.
+_CARD_HEIGHT_BASELINE = {
+    390: {"Numeric": 883, "Categorical": 480, "Boolean": 343, "Datetime": 868},
+    768: {"Numeric": 803, "Categorical": 449, "Boolean": 332, "Datetime": 849},
+    1240: {"Numeric": 578, "Categorical": 405, "Boolean": 314, "Datetime": 551},
+}
+
+
+@pytest.mark.browser
+@pytest.mark.parametrize("width", BREAKPOINTS)
+class TestEveryCardKindHasAHeightCriterion:
+    """#145. Three of the four kinds had no recorded expectation at all, so
+    nothing distinguished "tall because it has more to say" from "tall because
+    something regressed"."""
+
+    @pytest.mark.parametrize("kind", sorted(_CARD_HEIGHT_BASELINE[390]))
+    def test_no_card_kind_gets_taller(self, kind_measurements, width, kind):
+        cards = [c for c in kind_measurements[width] if c["kind"] == kind]
+
+        assert cards, (
+            f"no {kind} card rendered at {width}px -- the fixture no longer "
+            f"covers this kind, so its criterion is measuring nothing"
+        )
+        tallest = max(cards, key=lambda c: c["height"])
+        _ratchet(
+            tallest["height"],
+            _CARD_HEIGHT_BASELINE[width][kind],
+            f"the tallest {kind} card at {width}px ({tallest['id']})",
+            "#145",
+        )
+
+
+@pytest.mark.browser
+@pytest.mark.parametrize("width", BREAKPOINTS)
+def test_no_chart_container_reserves_height_its_chart_does_not_use(measurements, width):
+    """#319. A fixed `height` on `.hist-variants` under the mobile breakpoint
+    forced every kind to 180px, which a two-level categorical chart (23px)
+    padded by 157px and a numeric one (213px) overflowed by 33px. The chart is
+    `height: auto` and sizes to the viewBox the renderer computed, so the
+    container must take the height the chart asks for -- in both directions."""
+    for card in measurements[(width, "light")]["cards"]:
+        if card["container_height"] is None or card["chart_height"] is None:
+            continue
+
+        assert card["container_height"] == card["chart_height"], (
+            f"{card['id']} ({card['kind']}) reserves "
+            f"{card['container_height']}px at {width}px for a "
+            f"{card['chart_height']}px chart"
+        )
 
 
 @pytest.mark.browser
