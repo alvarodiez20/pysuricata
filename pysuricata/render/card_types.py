@@ -58,6 +58,10 @@ class NumericStats:
         Sequence[tuple[int, int, int]] | None
     )  # (start_row, end_row, missing_count)
     corr_threshold: float = 0.5  # Threshold used for correlation filtering
+    # The smallest strictly positive value, for the log histogram's left edge
+    # (#258). None when the column has none, which is when there is no log
+    # variant worth drawing at all.
+    min_positive: float | None = None
 
 
 @dataclass

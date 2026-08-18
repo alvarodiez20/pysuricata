@@ -100,6 +100,10 @@ class NumericSummary:
     # True distribution histogram data
     true_histogram_edges: list[float] | None = None
     true_histogram_counts: list[int] | None = None
+    # The smallest strictly positive value, or None when the column has none.
+    # Where a log axis honestly begins: the histogram is binned linearly, so a
+    # bin straddling zero has to be clipped rather than dropped whole (#258).
+    min_positive: float | None = None
     # Quality metrics
     heap_pct: float = float("nan")
     gran_decimals: int | None = None
@@ -638,6 +642,7 @@ class NumericAccumulator(PicklableAccumulator):
             se=stats["se"],
             cv=stats["cv"],
             gmean=stats["gmean"],
+            min_positive=stats["min_positive"],
             min=quantiles["min"],
             q1=quantiles["q1"],
             median=quantiles["median"],

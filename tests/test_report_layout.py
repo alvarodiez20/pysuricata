@@ -148,7 +148,25 @@ class TestTheReportIsOneFile:
 #: Set at 488,000 first, against a report measured before #246 and #252
 #: landed; the rebase put it 3 bytes over. A baseline wants the headroom
 #: of a round number above the measurement, not the measurement itself.
-BYTES_BASELINE = 489_000
+#:
+#: 489,000 -> 491,000, and this is the **first rise**. #258's fix costs 1,040
+#: bytes and none of it is waste: the log histogram was dropping a bin that
+#: straddles zero, so `Fare` drew 372 of its 891 rows, and drawing the other
+#: 504 emits **8 more bars** (~956 bytes) plus 84 bytes of caption saying how
+#: many rows a log axis still cannot show.
+#:
+#: Measured before raising it, because "the fix needs the room" is what every
+#: regression would say. The two savings that paid for #240 were real
+#: redundancy -- comments nobody read. There is no equivalent here: the
+#: candidates are `data-col` (10,224 bytes) and `data-pct` (6,944), and both
+#: are read by `scripts/report_fingerprint.py` as facts, so removing either
+#: deletes facts from the invariance guard rather than bytes from the report.
+#: `data-col` was tried once already and put back for exactly that reason.
+#:
+#: So the rule stands and this is the exception it needs: a budget may not
+#: grow to hold more presentation, and a chart that omits 58% of a column is
+#: not presentation. #39 still wants 400,000.
+BYTES_BASELINE = 491_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.

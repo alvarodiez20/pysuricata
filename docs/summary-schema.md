@@ -107,6 +107,7 @@ Shape and position:
 | `mean`, `std`, `variance`, `se` | float | Exact (Welford/Pébay) |
 | `skew`, `kurtosis`, `cv`, `gmean` | float | Exact |
 | `min`, `max` | float | Exact — from the extreme tracker, which sees every value |
+| `min_positive` | float \| null | Exact — the smallest strictly positive value, or `null` when the column has none. Where a log axis begins |
 | `q1`, `median`, `q3`, `iqr`, `mad` | float | **From the reservoir sample** |
 | `ci_lo`, `ci_hi` | float | 95% confidence interval for the mean |
 | `jb_chi2` | float | Jarque–Bera statistic |

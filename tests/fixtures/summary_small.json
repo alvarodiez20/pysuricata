@@ -96,6 +96,7 @@
           -1.2273520542445742
         ]
       ],
+      "min_positive": 0.008142180518343508,
       "missing": 0,
       "mono_dec": false,
       "mono_inc": false,
