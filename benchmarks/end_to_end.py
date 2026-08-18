@@ -139,17 +139,25 @@ s = summarize(df)
 open(out, "w").write(_j.dumps({"n": len(s.get("columns", {}))}))
 """,
     },
+    # `ydata-profiling` renamed itself to `fg-data-profiling` (import
+    # `data_profiling`) in its 4.18.4 release and will not receive further
+    # updates under the old name -- a benchmark pinned to the old import
+    # would be measuring an abandoned package and calling it current. The new
+    # name is tried first; the old one is kept as a fallback for whichever is
+    # actually installed, not as the preferred target. See `run_one()`, which
+    # resolves `import_candidates` in order and flags it when the fallback is
+    # what answered.
     "ydata": {
-        "import": "ydata_profiling",
+        "import_candidates": ["data_profiling", "ydata_profiling"],
         "code": """
-from ydata_profiling import ProfileReport
+from {module} import ProfileReport
 ProfileReport(df, minimal=False, progress_bar=False).to_file(out)
 """,
     },
     "ydata-minimal": {
-        "import": "ydata_profiling",
+        "import_candidates": ["data_profiling", "ydata_profiling"],
         "code": """
-from ydata_profiling import ProfileReport
+from {module} import ProfileReport
 ProfileReport(df, minimal=True, progress_bar=False).to_file(out)
 """,
     },
@@ -212,13 +220,32 @@ def have(module: str) -> bool:
 
 def run_one(tool: str, suite: str, scale: float, repo: str, timeout: int) -> dict:
     spec = TOOLS[tool]
-    if not have(spec["import"]):
-        return {"status": "skipped", "reason": f"{spec['import']} not installed"}
+    note = None
+    if "import_candidates" in spec:
+        candidates = spec["import_candidates"]
+        module = next((m for m in candidates if have(m)), None)
+        if module is None:
+            return {
+                "status": "skipped",
+                "reason": f"none of {', '.join(candidates)} installed",
+            }
+        if module != candidates[0]:
+            note = (
+                f"measured against {module}, which is the renamed package's "
+                f"predecessor and receives no further updates -- "
+                f"pip install fg-data-profiling for the maintained one"
+            )
+        code = spec["code"].format(module=module)
+    else:
+        module = spec["import"]
+        if not have(module):
+            return {"status": "skipped", "reason": f"{module} not installed"}
+        code = spec["code"]
 
     suffix = ".html" if "summarize" not in tool and "skimpy" not in tool else ".txt"
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as fh:
         out = fh.name
-    body = textwrap.indent(spec["code"].strip(), " " * 4)
+    body = textwrap.indent(code.strip(), " " * 4)
     script = RUNNER.format(repo=repo, suite=suite, scale=scale, out=out, body=body)
 
     try:
@@ -241,6 +268,8 @@ def run_one(tool: str, suite: str, scale: float, repo: str, timeout: int) -> dic
         if line.startswith("__RESULT__"):
             payload = json.loads(line[len("__RESULT__") :])
             payload["status"] = "error" if payload.get("error") else "ok"
+            if note:
+                payload["note"] = note
             return payload
     return {
         "status": "crashed",
@@ -263,6 +292,11 @@ def environment() -> dict:
         "polars",
         "pysuricata",
         "pysuricata_core",
+        # `ydata_profiling` renamed itself to `data_profiling` (package
+        # `fg-data-profiling`) in 4.18.4 and receives no further updates under
+        # the old name -- both are captured so the report can say which one
+        # actually ran rather than assuming the current name is installed.
+        "data_profiling",
         "ydata_profiling",
     ):
         r = subprocess.run(
@@ -272,6 +306,20 @@ def environment() -> dict:
         )
         env[mod] = r.stdout.strip() if r.returncode == 0 else None
     return env
+
+
+def _profiling_line(env: dict) -> str:
+    """The ydata/fg-data-profiling environment line, naming whichever is
+    actually installed rather than assuming the current name is present."""
+    if env.get("data_profiling"):
+        return f"- fg-data-profiling {env['data_profiling']}"
+    if env.get("ydata_profiling"):
+        return (
+            f"- ydata-profiling {env['ydata_profiling']} -- **renamed to "
+            "fg-data-profiling in 4.18.4 and no longer updated**; this "
+            "environment has the old name installed"
+        )
+    return "- fg-data-profiling not installed"
 
 
 def to_markdown(payload: dict) -> str:
@@ -289,7 +337,7 @@ def to_markdown(payload: dict) -> str:
             if env.get("pysuricata_core")
             else " (pure Python)"
         ),
-        f"- ydata-profiling {env['ydata_profiling'] or 'not installed'}",
+        _profiling_line(env),
         f"- {payload.get('rounds', 1)} interleaved round(s), best per tool",
         "",
     ]
@@ -330,6 +378,10 @@ def to_markdown(payload: dict) -> str:
                 lines.append(
                     f"| {tool} | — | — | — | — | {r['status']}: {detail[:120]} |"
                 )
+        notes = [(tool, r["note"]) for tool, r in rows.items() if r.get("note")]
+        if notes:
+            lines.append("")
+            lines += [f"> **{tool}**: {note}" for tool, note in notes]
         lines.append("")
     return "\n".join(lines)
 

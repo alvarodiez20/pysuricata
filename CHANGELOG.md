@@ -16,6 +16,29 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **`benchmarks/field.py`: the one command behind a published comparison
+  table** (#2). A table of ratios against named competitors with no shipped
+  harness behind it is exactly the shape that gets taken apart in a thread —
+  "re-run it yourself" was not actually possible. `field.py` pins
+  `end_to_end.py`'s machinery (round-robin scheduling, the load guard, the
+  environment block) to one fixed scenario — `datasets.mixed()` at a
+  realistic scale, the suite already built to read as "the column mix of a
+  real analytics table" rather than one of the isolation shapes
+  `hotspots.py`/`kernels.py` use to pin down a single kernel — and
+  `MIN_QUOTABLE_ROUNDS` rounds by default, so nothing about what gets
+  published depends on which flags someone happened to type.
+
+  It also fixes what a fixed comparison would otherwise have kept fixed
+  forever: `ydata-profiling` renamed itself to `fg-data-profiling` (import
+  `data_profiling`) in its 4.18.4 release — April 2026 — and receives no
+  further updates under the old name, by its own PyPI page. Measuring
+  against `ydata-profiling` as "current" would have been measuring an
+  abandoned package. `end_to_end.TOOLS["ydata"]` now tries the new import
+  first and falls back to the old one only if that is what is actually
+  installed, attaching a note to the result and to the environment block
+  when the fallback is what ran — shared by both `end_to_end.py` and
+  `field.py`, so the fix applies to every comparison table either produces.
+
 - **A real-browser check that the demo actually renders a report, run after
   every release** (#1). `worker.js` installs `pysuricata==<latest>` from PyPI
   at page load, so every release edited the demo's launch asset in production
