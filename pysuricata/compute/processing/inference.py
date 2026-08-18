@@ -700,13 +700,29 @@ def should_reclassify_numeric_as_boolean(
                 )
             return False
 
-        # Must contain exactly 0 and 1 (handle numpy types)
-        unique_ints = {int(v) for v in unique_values}
-        if not unique_ints.issubset({0, 1}):
+        # Must contain exactly 0 and 1, and **exactly** is the word.
+        #
+        # This used to read `{int(v) for v in unique_values}`, added to handle
+        # numpy types. `int()` on a float truncates: `int(0.24)` is 0 and
+        # `int(1.0)` is 1, so every value of a column normalised to [0, 1]
+        # collapsed onto {0, 1} and the column was promoted to boolean. The
+        # boolean accumulator then found no `True` or `False` in it and
+        # reported the **whole column as missing** -- `temp`, `feels_like` and
+        # `humidity` in the demo dataset each came back `count=0,
+        # missing=17,379` against a frame pandas says has no gaps at all.
+        #
+        # A normalised feature column is about as ordinary as data gets, and
+        # the failure was silent and total. `float()` compares the value rather
+        # than its integer part, and still handles the numpy types the original
+        # was written for -- `float(np.float64(1.0))` and `float(np.True_)` are
+        # both fine. 0.85 stays numeric; only a genuine two-valued 0/1 column
+        # is promoted.
+        unique_floats = {float(v) for v in unique_values}
+        if not unique_floats.issubset({0.0, 1.0}):
             return False
 
         # Must have both values present
-        if len(unique_ints) != 2:
+        if len(unique_floats) != 2:
             return False
 
         # Check for reasonable distribution (not mostly zeros)
