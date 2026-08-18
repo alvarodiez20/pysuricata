@@ -1,3 +1,6 @@
+> **Live working notes.** Not all of these figures are built yet, so this stays.
+> It is a set of generation prompts, not documentation, and is not published.
+
 # Prompts for generating PySuricata's diagrams and animations
 
 Ready to paste into Claude. One prompt per visual, in the order I would build them.

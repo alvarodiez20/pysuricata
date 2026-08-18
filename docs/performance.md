@@ -42,21 +42,38 @@ config.compute.compute_correlations = False  # Skip correlations
 report = profile(df, config=config)
 ```
 
-**Speed improvement**: 2-10x for wide datasets
+The step is \(O(p^2)\) in numeric columns, so the saving grows with the square
+of the width. Measure it on your own frame with `benchmarks/end_to_end.py`
+rather than trusting a ratio typed on someone else's machine.
 
-### 2. Increase Chunk Size
+### 2. Start From a Preset
 
-Larger chunks mean fewer iterations and less overhead.
+`preset="fast"` sets the four knobs that actually move the clock — sample size,
+sketch size, top-k and correlations — in one word.
 
 ```python
-from pysuricata import ProfileConfig, profile
-config = ProfileConfig()
-config.compute.chunk_size = 500_000  # Default: 50_000
+from pysuricata import profile
 
-report = profile(df, config=config)
+report = profile(df, preset="fast")
 ```
 
-**Trade-off**: More memory usage
+Keyword options layer on top, so you can take the preset and put one thing back:
+
+```python
+from pysuricata import profile
+
+report = profile(df, preset="fast", correlations=True)
+```
+
+!!! warning "Raising `chunk_size` is not a speed lever"
+
+    It reads like one and it is not. The sketch merges are **superlinear in
+    batch size**, so one 200,000-row batch costs more than four 50,000-row ones
+    — you spend memory and get less throughput. 50,000 is near the measured
+    optimum across frame shapes; the useful range is roughly 25K–100K.
+
+    Change it to trade memory against the number of chunk boundaries, not to go
+    faster.
 
 ### 3. Reduce Sample Sizes
 
@@ -88,7 +105,9 @@ config.compute.compute_correlations = False  # Skip correlations
 report = profile(df, config=config)
 ```
 
-**Memory usage**: ~20-30 MB (vs ~50 MB default)
+Every one of those trades accuracy for footprint, and the sample size is the
+one that costs most: quantile error goes as \(1/\sqrt{k}\), so dropping the
+reservoir from 20,000 to 5,000 moves it from about ±0.7% to ±1.4%.
 
 ### Monitor Memory Usage
 
@@ -156,30 +175,33 @@ report = profile(partition_generator())
 
 ## Benchmarks
 
-### Performance by Dataset Size
+Figures are not published on this page, on purpose. Two claims have already had
+to be retracted for being paired across sessions rather than measured in one
+round-robin — "0.0.21 is 1.24x faster" was really 0.88x, a regression, and a
+3.56x headline was really 2.48x.
 
-| Rows | Columns | Time | Throughput | Memory |
-|------|---------|------|------------|--------|
-| 10K | 10 | ~3s | ~3,000 rows/s | 20 MB |
-| 100K | 10 | ~13s | ~8,000 rows/s | 30 MB |
-| 1M | 10 | ~3 min | ~5,500 rows/s | 50 MB |
-| 10M | 10 | ~30 min | ~5,500 rows/s | 50 MB |
+Run the harness instead. It interleaves every tool and version across rounds,
+reads the load average, refuses to run above one process per core without
+`--force`, and labels anything under three rounds *Not quotable*:
 
-> *Benchmarks measured on Apple Silicon with Python 3.13. Actual times vary by hardware, data complexity, and configuration.*
-
-### Scalability
-
-PySuricata scales **linearly** with dataset size (O(n)) thanks to streaming algorithms:
-
-```
-Time(n) ≈ k × n
+```bash
+python -m benchmarks.end_to_end --markdown results.md   # vs ydata/sweetviz/skimpy
+python -m benchmarks.hotspots                           # where profile() spends its time
+python -m benchmarks.kernels                            # per-kernel timings + memory roofline
 ```
 
-where k is constant per row processing time.
+### What the shape is
 
-### Streaming Advantage
-
-Because PySuricata processes data in chunks, memory stays bounded regardless of dataset size. Tools that load the full dataset into memory cannot process datasets larger than available RAM.
+- **Time is linear in rows.** One pass, O(1) work per value, so
+  \(T(n) \approx k \cdot n\).
+- **Memory is flat in rows.** Four float64 columns cost the same above the
+  import floor at 500,000 rows and at 8,400,000.
+- **Memory is *not* flat in columns.** It grows at roughly 3 MB per column, so a
+  20,000 x 600 frame costs far more than a 5,000,000 x 8 one on less data. This
+  is a known limit, tracked in
+  [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
+- **`summarize()` skips rendering entirely**, so it is the faster path whenever
+  you only want the numbers.
 
 ## Advanced Configuration
 
@@ -188,22 +210,28 @@ Because PySuricata processes data in chunks, memory stays bounded regardless of 
 ```python
 from pysuricata import ProfileConfig, profile
 config = ProfileConfig()
-config.compute.chunk_size = 1_000_000  # Large chunks
-config.compute.numeric_sample_size = 5_000  # Small samples
-config.compute.max_uniques = 512  # Tiny sketches
-config.compute.top_k = 10  # Few top values
-config.compute.compute_correlations = False  # Skip correlations
-config.render.include_sample = False  # No sample in report
+config.compute.numeric_sample_size = 5_000   # Small samples
+config.compute.max_uniques = 512             # Tiny sketches
+config.compute.top_k = 10                    # Few top values
+config.compute.compute_correlations = False  # Skip the O(p^2) step
+config.render.include_sample = False         # No raw rows in the report
 
 report = profile(df, config=config)
 ```
 
+`chunk_size` is deliberately not in that list — see the warning under Quick
+Wins. This is `preset="fast"` with the sketches turned down further.
+
 ### For Maximum Accuracy
+
+This is `preset="thorough"`, turned up. Note that `chunk_size` is absent again,
+and for a different reason this time: **chunked results equal unchunked
+results**. That invariant is asserted in `benchmarks/accuracy.py`, so no chunk
+size is more accurate than another.
 
 ```python
 from pysuricata import ProfileConfig, profile
 config = ProfileConfig()
-config.compute.chunk_size = 100_000  # Smaller for better merging
 config.compute.numeric_sample_size = 100_000  # Large samples
 config.compute.max_uniques = 8_192  # Large sketches
 config.compute.top_k = 200  # Many top values
@@ -214,7 +242,15 @@ report = profile(df, config=config)
 
 ## Profiling PySuricata
 
-Use Python's profiler to find bottlenecks:
+Use Python's profiler to find bottlenecks — and then check the answer:
+
+!!! warning "`cProfile` over-weights kernels that make many small calls"
+
+    It charges per Python call. It ranked the reservoir sampler at ~30% of self
+    time on this codebase; swapping in a 5x-faster one moved wall clock by 4%.
+    Confirm any ranking against wall clock **with the profiler off** before
+    acting on it.
+
 
 ```python
 from pysuricata import profile
@@ -242,17 +278,20 @@ stats.print_stats(20)  # Top 20 functions
 ### 2. Many Categorical Columns
 
 **Symptom**: Slow with > 50 categorical columns  
-**Solution**: Reduce `top_k`, increase `chunk_size`
+**Solution**: Reduce `top_k` and `max_uniques`, or reach for `preset="fast"`
 
 ### 3. Very Wide Datasets (> 1000 columns)
 
 **Symptom**: Slow overall  
 **Solution**: Profile in batches, combine reports manually
 
-### 4. Small Chunk Size
+### 4. Loading Before Profiling
 
-**Symptom**: Slow despite small dataset  
-**Solution**: Increase `chunk_size` to reduce overhead
+**Symptom**: memory spikes to the size of the file before profiling starts  
+**Solution**: hand `profile()` the **path**, not `pd.read_parquet(path)`. The
+file is read a batch at a time and never exists as one frame — 307 MB against
+581 MB on a 180 MB Parquet file. See
+[Arrow, Parquet and DuckDB](data-sources.md).
 
 ## Production Optimization
 
@@ -280,18 +319,26 @@ report.save_html(f"reports/daily_{date.today()}.html")
 
 ### CI/CD Quality Checks
 
-Use `summarize()` for faster stats-only checks:
+`summarize()` skips rendering, so it is the faster path when you only want the
+numbers:
 
 ```python
-from pysuricata import profile
 from pysuricata import summarize
 
-stats = summarize(df)  # Faster than profile()
+stats = summarize(df)  # no HTML built
 
-# Check thresholds
 assert stats["dataset"]["missing_cells_pct"] < 5.0
 assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 ```
+
+If the check is a build gate rather than an assertion inside your own code, the
+CLI does the same single pass and exits non-zero on a breach:
+
+```bash
+pysuricata check data.parquet --baseline baseline.json --max-missing-pct 5
+```
+
+See [Gating CI on drift](data-checks.md).
 
 ## See Also
 

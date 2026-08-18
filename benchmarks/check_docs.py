@@ -75,22 +75,21 @@ class Finding:
     detail: str
 
 
-# Planning documents, not documentation. They quote broken names on purpose
-# (DOCS_PLAN) and propose APIs that do not exist yet (DIAGRAM_PROMPTS), so
-# checking them against the current API reports the plan as the defect.
-# Planning documents that live in docs/ for convenience but are not part of
-# the published documentation: not in the nav, and their code fences
-# illustrate test scaffolding rather than the public API.
-_NOT_DOCUMENTATION = {
-    "DOCS_PLAN.md",
-    "DIAGRAM_PROMPTS.md",
-    "MIGRATION_TESTING.md",
-    "integration.md",
-}
+# Working notes live under `docs/internal/`, excluded from the built site by
+# `exclude_docs` in mkdocs.yml (#279). They quote broken names on purpose, propose
+# APIs that do not exist yet, and illustrate test scaffolding rather than the
+# public API -- checking them against the current API reports the plan as the
+# defect. They used to sit beside the documentation behind a name-based
+# allowlist here; a directory says the same thing where a reader can see it.
+_NOT_DOCUMENTATION_DIR = "internal"
 
 
 def _pages() -> list[Path]:
-    return sorted(p for p in DOCS.rglob("*.md") if p.name not in _NOT_DOCUMENTATION)
+    return sorted(
+        p
+        for p in DOCS.rglob("*.md")
+        if _NOT_DOCUMENTATION_DIR not in p.relative_to(DOCS).parts
+    )
 
 
 #: Documentation that does not live under `docs/`. The README is the page most
@@ -186,8 +185,13 @@ def check_examples(page: Path, text: str, out: list[Finding], run: bool) -> None
         # `stream_*` are the streaming readers in `pysuricata.sources`. They
         # need a file or a live relation exactly as `read_*` does, so they
         # belong in the same skip rather than failing on a missing path.
+        # A path literal handed straight to the API needs that file just as much
+        # as `read_parquet` does -- `profile("events.parquet")` is the shortest
+        # way to show the streaming input and must not be reported as broken
+        # code for want of a fixture.
         if re.search(
             r"(read|scan|stream)_(csv|parquet|json|ndjson|duckdb|arrow)\(|"
+            r"(profile|summarize|check)\(\s*[\"']\S+\.(csv|parquet|json|arrow|feather|ipc)[\"']|"
             r"open\(|requests\.|http|duckdb\.",
             code,
         ):

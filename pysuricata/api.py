@@ -306,7 +306,12 @@ class ComputeOptions:
         top_k: Maximum number of top categories to track for categorical
             columns. Default: 50
         random_seed: Seed for reproducible sampling. Set to None for
-            non-deterministic results. Default: 0
+            non-deterministic results. Default: 0 -- reproducible unless you
+            ask for otherwise, so re-running the same data is a no-op.
+        progress: Whether to report progress while streaming. True, False,
+            "auto" (report only when stderr is a terminal) or a callable taking
+            chunks/rows/elapsed. Always stderr, never stdout, so piped output
+            stays parseable. Default: False
         log_every_n_chunks: Log progress every N chunks. Set to 1 to log every
             chunk, higher values for less frequent logging. Default: 1
         checkpoint_every_n_chunks: Create checkpoint every N chunks. Set to 0
@@ -324,9 +329,11 @@ class ComputeOptions:
             boolean detection. Default: 100
         boolean_detection_max_zero_ratio: Maximum ratio of zeros allowed for
             boolean detection (to avoid classifying mostly-zero columns as boolean).
-            Default: 0.95
+            Default: 0.80
         boolean_detection_require_name_pattern: Whether to require boolean-like
-            column names (e.g., 'is_', 'has_', 'can_') for detection. Default: True
+            column names (e.g., 'is_', 'has_', 'can_') for detection.
+            Default: False, so a 0/1 column is detected on its values whatever
+            it is called.
         force_column_types: Optional dictionary mapping column names to their
             forced types. Overrides automatic type inference. Default: None
         compute_correlations: Whether to compute pairwise correlations between
@@ -495,10 +502,23 @@ class RenderOptions:
             If provided, this will be shown below the "Summary" heading with
             consistent styling. Can be used to provide context about the dataset
             or analysis.
+        include_sample: Whether the report shows a handful of sample rows.
+            Default: True. Set it to False when the frame carries data that must
+            not leave the pipeline -- the sample is the only place raw values
+            appear in the report.
+        sample_rows: How many rows the sample shows, when it is shown.
+            Default: 10.
     """
 
     title: str | None = None
     description: str | None = None
+    # Both were documented against `config.render` for several releases while
+    # living only on `EngineConfig`, so assigning them did nothing and said
+    # nothing -- including in a recipe that offered `include_sample = False` as
+    # a way to keep raw values out of a report (#266). A silent no-op is bad; a
+    # silent no-op sold as a privacy control is worse.
+    include_sample: bool = True
+    sample_rows: int = 10
 
 
 @dataclass
@@ -534,14 +554,18 @@ class ProfileConfig:
 def _coerce_input(data: DataLike) -> pd.DataFrame | cabc.Iterable:
     """Normalize supported inputs into a form the engine can consume.
 
-    The API is intentionally strict about accepted inputs to keep the
-    orchestration layer lightweight and dependency‑optional. File paths and
-    on‑disk loaders are out of scope for this function.
+    Arrow and DuckDB are checked by module name rather than by importing
+    pyarrow, so a caller who has neither pays nothing for the branches.
 
     Args:
-        data: One of the supported in‑memory data forms:
+        data: One of the supported forms:
             - a pandas ``DataFrame``;
             - a polars eager or lazy frame (handled upstream by the caller);
+            - an Arrow table or reader, or anything exporting
+              ``__arrow_c_stream__``, streamed a batch at a time;
+            - a DuckDB relation, streamed without landing the result set;
+            - a path to a ``.csv``, ``.parquet``, ``.json``, ``.arrow``,
+              ``.feather`` or ``.ipc`` file;
             - an iterable (generator, list, tuple, etc.) yielding pandas or
               polars ``DataFrame`` chunks.
 
@@ -774,6 +798,8 @@ def _to_engine_config(cfg: ProfileConfig) -> _EngineConfig:
 
     engine_config.title = render.title or "PySuricata EDA Report"
     engine_config.description = render.description
+    engine_config.include_sample = render.include_sample
+    engine_config.sample_rows = render.sample_rows
     return engine_config
 
 
@@ -931,7 +957,15 @@ def profile(
         data: Dataset to analyze. Supported:
             - ``pandas.DataFrame``
             - ``polars.DataFrame`` or ``polars.LazyFrame``
+            - an Arrow table or reader, or anything exporting
+              ``__arrow_c_stream__``
+            - a DuckDB relation
+            - a path to a ``.csv``, ``.parquet``, ``.json``, ``.arrow``,
+              ``.feather`` or ``.ipc`` file
             - Iterable yielding ``pandas.DataFrame`` or ``polars.DataFrame`` chunks
+
+            The last three stream a batch at a time and are never materialised
+            as a whole frame. See the Arrow, Parquet and DuckDB guide.
         config: Optional configuration overriding compute/render defaults.
             Set chunk_size=None to disable chunking for both pandas and polars.
             This is the full escape hatch and cannot be combined with ``preset``

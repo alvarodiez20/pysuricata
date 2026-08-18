@@ -1,3 +1,10 @@
+> **Retired — this plan is done.** Phases 1–9 of the report redesign landed and
+> the redesign is closed out. Kept as a record of what was decided and why; it
+> is not documentation and is not published. Paths it names may no longer exist
+> — `examples/titanic_report.html` in particular was removed in #165, and the
+> example report is now generated at docs-build time by
+> `scripts/regenerate_example_report.py`.
+
 # pysuricata report UI — integration plan
 
 Design decisions settled with the designer, written for implementation in the

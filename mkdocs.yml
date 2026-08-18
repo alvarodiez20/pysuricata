@@ -51,11 +51,13 @@ nav:
       - Configuration: configuration.md
       - Advanced Features: advanced.md
       - Arrow, Parquet and DuckDB: data-sources.md
+      - Command Line: cli.md
       - Gating CI on drift: data-checks.md
       - Comparing two datasets: comparing.md
       - Performance Tips: performance.md
   - Technical Reference:
       - API Reference: api.md
+      - Generated Reference: reference.md
       - "summarize() schema": summary-schema.md
       - Complexity Analysis: complexity-analysis.md
       - Statistical Methods:
@@ -114,6 +116,12 @@ markdown_extensions:
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+
+# Working notes that live under docs/ for convenience but are not documentation:
+# a finished plan, its test harness, a superseded audit and the designer handoff.
+# They are kept as a record of how the work was done and are not published.
+exclude_docs: |
+  internal/
 
 plugins:
   - search
