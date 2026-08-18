@@ -20,6 +20,9 @@
   list-style: none;
   cursor: pointer;
   padding: 12px 14px;
+  /* Same reason as the search field: <summary> is content-box, so without this
+     the 12px padding stacks on top of the 44px target and the bar measures 68. */
+  box-sizing: border-box;
   min-height: var(--tap-min);
   display: flex;
   align-items: center;

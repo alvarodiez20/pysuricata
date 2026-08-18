@@ -88,6 +88,41 @@ def test_the_target_is_sized_from_the_token(sheet: str, selector: str, axis: str
         )
 
 
+#: Targets whose `min-height` lands on a *content* box unless told otherwise.
+#: The UA stylesheet makes `button` border-box and leaves `input` and `summary`
+#: alone, so only these two need the declaration written out.
+CONTENT_BOX_BY_DEFAULT = [
+    ("_13-utilities.css", "#pysuricata-report .controls-row input"),
+    ("_05-sample.css", "#pysuricata-report details.card>summary"),
+]
+
+
+@pytest.mark.parametrize("sheet,selector", CONTENT_BOX_BY_DEFAULT, ids=lambda v: v)
+def test_the_tap_target_is_a_size_and_not_a_floor(sheet: str, selector: str):
+    """`min-height: var(--tap-min)` sizes the *content* box on these two.
+
+    The rule above only asks that the target be at least 44px, and on a
+    content-box element the padding and border are then added outside it. Both
+    of these overshot: the search field measured 62px against 44 (8px padding
+    and a 1px border on each edge) and the sample's summary bar 68px (12px of
+    padding), which is what a reader sees as the search strip and the "Hide
+    sample" bar being too tall. The filter tabs beside the search field are the
+    control: same token, same padding, exactly 44px, because a `<button>` is
+    border-box already.
+
+    So a 44px minimum is only the intended size while the box counts padding
+    inside itself. Drop the declaration and nothing fails the rule above --
+    the target is still *at least* 44 -- it just quietly grows again.
+    """
+    body = _rule(sheet, selector)
+    assert body is not None, f"{selector} is gone from {sheet}"
+    assert re.search(r"box-sizing:\s*border-box", body), (
+        f"{selector} carries a --tap-min minimum on a content box, so its "
+        f"padding is added on top of the 44px target instead of fitting "
+        f"inside it:\n{body}"
+    )
+
+
 def test_the_icon_button_keeps_its_extended_hit_area():
     """The one target whose painted box is deliberately smaller than itself.
 

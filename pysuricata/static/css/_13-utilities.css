@@ -221,6 +221,12 @@
 #pysuricata-report .controls-row input {
   flex: 1;
   min-width: 200px;
+  /* border-box, or the tap target becomes a floor to add padding to rather than
+     a size: a text input is content-box in the UA sheet, where min-height sizes
+     the content alone and the 8px padding and 1px border land outside it. The
+     field measured 62px against the 44px this rule asks for. Buttons elsewhere
+     in this file hit 44 exactly because the UA already makes them border-box. */
+  box-sizing: border-box;
   min-height: var(--tap-min);
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--rule-strong);
