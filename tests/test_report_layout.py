@@ -658,12 +658,61 @@ _KNOWN_UNDERSIZED = {390: 3, 768: 3, 1240: 9}
 #: environment-independent, and added to what CI records. It is +4px at every
 #: width, which is the margin and nothing else.
 #:
-#: The consequence is that these six cases fail locally on a machine that
-#: reads high, and pass in CI. That split predates this change and is #309.
+#: The consequence used to be that these six cases failed locally on a machine
+#: that reads high, and passed in CI. That is #309, and it is handled below by
+#: `_summary_ceiling` rather than by moving these numbers.
 #:
 #: The 64px still between 624 and #112's 560 is unaffected by this and is
 #: where the work remains.
 _SUMMARY_BASELINE = {390: 624, 768: 579, 1240: 344}
+
+#: #309. Off CI only, and never a licence to raise `_SUMMARY_BASELINE`.
+#:
+#: The recorded numbers are CI's, and two developer machines read 2-7px above
+#: them with nothing applied. That is not a regression anyone introduced, and
+#: it is not a font *scale* either -- measured on this machine at eb0523b's
+#: successor, the summary holds 41 text rows at all three widths while the
+#: excess is +7.2px at 390, +5.2px at 768 and +2.5px at 1240. It tracks how
+#: much the content **wraps**, not how many rows it has: glyph advances differ
+#: by a fraction of a pixel per platform, lines break in different places, and
+#: each extra line box rounds up once. So there is no portable unit to divide
+#: by -- expressing the budget in line boxes was tried and does not cancel it,
+#: because the line count itself is what moves.
+#:
+#: Of #309's four options this is closest to (1), a tolerance, with the
+#: objection to (1) removed: a tolerance that applies **only where the ratchet
+#: was never authoritative** costs nothing. CI is the gate, CI keeps exact
+#: teeth, and the local run stops being a red that trains people to ignore it.
+#:
+#: Proportional rather than a flat pixel count because the drift is
+#: proportional to how much text is on screen: 2% is 12.5px at 390 where the
+#: observed excess is 7.2, and 6.9px at 1240 where it is 2.5. Both clear it
+#: with room for a machine that reads higher, and both are far below the
+#: 64px #112 is still asking for or any real regression.
+_LOCAL_DRIFT_ALLOWANCE = 0.02
+
+
+def _summary_ceiling(width: int) -> tuple[int, str]:
+    """The height to assert against here, and what to say when it is missed.
+
+    On CI this is the recorded number exactly. Off CI it carries #309's
+    allowance, and the message says plainly that a raise has to be measured as
+    a delta against CI's figure rather than read off this machine.
+    """
+    import os
+
+    recorded = _SUMMARY_BASELINE[width]
+    if os.environ.get("CI"):
+        return recorded, "This budget only goes down (#112)."
+    return (
+        int(recorded * (1 + _LOCAL_DRIFT_ALLOWANCE)),
+        f"Measured off CI, so #309's {_LOCAL_DRIFT_ALLOWANCE:.0%} allowance is "
+        f"applied over CI's recorded {recorded}px. If you are raising this "
+        f"budget on purpose, measure the **delta** your change makes on this "
+        f"machine and add it to {recorded} -- recording a local absolute bakes "
+        f"this machine's font rendering in as permanent slack.",
+    )
+
 
 #: #145 — a height criterion for each of the four card kinds, which only the
 #: numeric card had. Measured on `_every_kind()` at 844px tall, details
@@ -796,12 +845,17 @@ class TestLayoutAtEveryBreakpoint:
         )
 
     def test_the_summary_does_not_get_taller(self, measurements, width, theme):
-        """#112 wants ≤560px at 390px; it is 620px. A ratchet, not a waiver."""
-        got = measurements[(width, theme)]["summary_height"]
+        """#112 wants ≤560px at 390px; it is 624px. A ratchet, not a waiver.
 
-        assert got <= _SUMMARY_BASELINE[width], (
-            f"the summary grew to {got}px at {width}px, over the recorded "
-            f"{_SUMMARY_BASELINE[width]}px"
+        The ceiling is CI's recorded number on CI, and carries #309's drift
+        allowance anywhere else -- see `_summary_ceiling`.
+        """
+        got = measurements[(width, theme)]["summary_height"]
+        ceiling, note = _summary_ceiling(width)
+
+        assert got <= ceiling, (
+            f"the summary grew to {got}px at {width}px, over the "
+            f"{ceiling}px ceiling. {note}"
         )
 
 
