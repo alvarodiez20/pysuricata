@@ -534,14 +534,14 @@ def test_the_themes_do_not_change_the_layout(measurements):
 # --------------------------------------------------------------------------- #
 @pytest.mark.browser
 class TestAnOffPageCardIsStillReachable:
-    """#240. `pagination.js` hides off-page cards with `display: none`, which
-    is not a rendering choice but a removal: the browser finds no target for a
-    fragment link, and prints nothing at all.
+    """#240, then design 15d. Pagination hid the eleventh column onward with
+    `display: none`, which is not a rendering choice but a removal: a browser
+    find cannot match inside it, an anchor cannot land on it, and a printer
+    will not print it.
 
-    Four things broke on that, and two of them have universal fixes -- links
-    and paper. Both are asserted here. Browser find-in-page over hidden content
-    is the third and cannot be fixed while pagination hides cards; see the
-    issue.
+    Nothing is hidden now. A column past the limit keeps its row and folds its
+    body, so all four consequences go together -- including find, which the
+    first pass at this could not fix because it left the hiding in place.
     """
 
     @staticmethod
@@ -585,10 +585,10 @@ class TestAnOffPageCardIsStillReachable:
         page = self._page(None, browser, report_html, tmp_path)
         hidden = page.evaluate(
             "[...document.querySelectorAll('#cards-grid .var-card')]"
-            ".filter(c => c.style.display === 'none').map(c => c.id)"
+            ".filter(c => c.classList.contains('is-collapsed')).map(c => c.id)"
         )
         if not hidden:
-            pytest.skip("this frame fits on one page")
+            pytest.skip("every column in this frame is expanded")
         target = hidden[-1]
         page.evaluate(
             "id => document.querySelector(`a[href='#${id}']`)?.click()"
@@ -599,36 +599,46 @@ class TestAnOffPageCardIsStillReachable:
         assert page.evaluate(
             "id => document.getElementById(id).getBoundingClientRect().height > 0",
             target,
-        ), f"{target} is on another page and the link did not go there"
+        ), f"the link to {target} did not open it"
         page.close()
 
     def test_a_deep_link_opens_on_the_right_page(self, browser, report_html, tmp_path):
         page = self._page(None, browser, report_html, tmp_path)
         hidden = page.evaluate(
             "[...document.querySelectorAll('#cards-grid .var-card')]"
-            ".filter(c => c.style.display === 'none').map(c => c.id)"
+            ".filter(c => c.classList.contains('is-collapsed')).map(c => c.id)"
         )
         page.close()
         if not hidden:
-            pytest.skip("this frame fits on one page")
+            pytest.skip("every column in this frame is expanded")
         target = hidden[-1]
         fresh = self._page(None, browser, report_html, tmp_path, f"#{target}")
         assert fresh.evaluate(
             "id => document.getElementById(id).getBoundingClientRect().height > 0",
             target,
-        ), f"opening the report at #{target} left it on page 1"
+        ), f"opening the report at #{target} left it folded"
         fresh.close()
 
-    def test_print_shows_every_card(self, browser, report_html, tmp_path):
+    def test_print_unfolds_every_card(self, browser, report_html, tmp_path):
         """The worst of the four: a 60-column profile exported as 10 columns
         with nothing saying so. Read by re-targeting the print media query at
         the screen, which exercises the real cascade rather than the rule text.
+
+        A folded card is now *in* the printed document, so what print has to do
+        is unfold it -- a sheet of header rows answers less than the cards do,
+        and paper has no affordance to expand one.
         """
         page = self._page(None, browser, report_html, tmp_path)
         result = page.evaluate("""() => {
   const cards = [...document.querySelectorAll('#cards-grid .var-card')];
-  const visible = () => cards.filter(c => c.getBoundingClientRect().height > 0).length;
-  const onScreen = visible();
+  // A card counts as printed only when its *body* is laid out -- a folded
+  // header has a box too, and counting boxes would pass on a page of headers.
+  const body = c => [...c.children].find(x => !x.classList.contains('var-card__header'));
+  const unfolded = () => cards.filter(c => {
+    const b = body(c);
+    return b && getComputedStyle(b).display !== 'none';
+  }).length;
+  const onScreen = unfolded();
   let rule = null;
   for (const s of [...document.styleSheets]) {
     let rules; try { rules = s.cssRules; } catch { continue; }
@@ -639,16 +649,64 @@ class TestAnOffPageCardIsStillReachable:
   }
   if (!rule) return {error: 'no @media print block ships with the report'};
   rule.media.mediaText = 'screen';
-  const onPaper = visible();
-  const controls = getComputedStyle(document.querySelector('.pagination')).display;
+  const onPaper = unfolded();
+  const rail = document.getElementById('collapsed-rail');
+  const controls = rail ? getComputedStyle(rail).display : 'none';
   rule.media.mediaText = 'print';
   return {onScreen, onPaper, total: cards.length, controls};
 }""")
         page.close()
         assert "error" not in result, result.get("error")
         assert result["onPaper"] == result["total"], (
-            f"{result['onPaper']} of {result['total']} cards would print"
+            f"{result['onPaper']} of {result['total']} cards would print in full"
+        )
+        assert result["onScreen"] < result["total"], (
+            "nothing was folded on screen, so this proved nothing about print"
         )
         assert result["controls"] == "none", (
-            "the page buttons print as instructions the reader cannot follow"
+            "the expand control prints as an affordance the reader cannot use"
         )
+
+    def test_no_column_is_ever_removed_from_the_document(
+        self, browser, report_html, tmp_path
+    ):
+        """The property the whole mechanism exists for, and the one the first
+        attempt could not deliver.
+
+        A browser find matches rendered text. It cannot see into a
+        `display: none` subtree, so paging a column away made it unfindable —
+        and finding a column by name is the primary action in a profiling
+        report. Folding keeps the name, the type and the flags laid out; only
+        the charts, which nobody searches for, go.
+
+        Filtering is the one case that still removes a card, and that is the
+        intent: a reader who filtered a column away is asking not to see it.
+        """
+        page = self._page(None, browser, report_html, tmp_path)
+        result = page.evaluate("""() => {
+  const cards = [...document.querySelectorAll('#cards-grid .var-card')];
+  const laidOut = c => c.getBoundingClientRect().height > 0;
+  const nameShown = c => {
+    const n = c.querySelector('.colname');
+    return n && n.getBoundingClientRect().height > 0;
+  };
+  return {
+    total: cards.length,
+    laidOut: cards.filter(laidOut).length,
+    namesVisible: cards.filter(nameShown).length,
+    folded: cards.filter(c => c.classList.contains('is-collapsed')).length,
+    inlineDisplayNone: cards.filter(c => c.style.display === 'none').length,
+  };
+}""")
+        page.close()
+        assert result["laidOut"] == result["total"], (
+            f"{result['total'] - result['laidOut']} cards have no box, so a "
+            "browser find cannot reach them"
+        )
+        assert result["namesVisible"] == result["total"], (
+            "a column name is not laid out, which is the text a reader searches for"
+        )
+        assert result["inlineDisplayNone"] == 0, (
+            "a card is hidden with an inline display:none — the mechanism 15d replaced"
+        )
+        assert result["folded"] > 0, "nothing was folded, so this frame proved nothing"

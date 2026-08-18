@@ -7,11 +7,21 @@
     'use strict';
 
     // Configuration
-    const CARDS_PER_PAGE = 10;
+    //
+    // Not a page size. The first EXPANDED_LIMIT matching columns render in
+    // full; every column after that keeps a row in the document with its body
+    // folded (design 15d). A hidden card is a card a browser find cannot
+    // match, an anchor cannot land on and a printer will not print -- and the
+    // primary action in a profiling report is finding a column by name.
+    const EXPANDED_LIMIT = 10;
     const SEARCH_DEBOUNCE = 300;
 
     // State
-    let currentPage = 1;
+    // Columns the reader has opened by hand, by card id, plus the flag set by
+    // "expand all". Both survive a filter change: having opened a column is a
+    // decision, and re-collapsing it because a search ran is undoing it.
+    let opened = new Set();
+    let expandAll = false;
     let currentFilter = 'all';
     // Set by clicking a quality chip in the "needs attention" block. The chips
     // were already computed per column; this is what makes them navigation
@@ -34,19 +44,10 @@
         // Get all cards
         allCards = Array.from(document.querySelectorAll('#cards-grid .var-card'));
 
-        // Only the page buttons are pointless on a single page. Search, the
-        // type tabs and the chip filter are not -- returning early here left
-        // them wired to nothing on any report with ten columns or fewer, which
-        // is most of them.
-        if (allCards.length <= CARDS_PER_PAGE) {
-            const pagination = document.querySelector('.pagination');
-            if (pagination) pagination.style.display = 'none';
-        }
-
         setupSearch();
         setupFilters();
         setupFlagFilters();
-        if (allCards.length > CARDS_PER_PAGE) setupPagination();
+        setupExpansion();
         applyFilters();
         // After applyFilters, which builds the list revealCard indexes into.
         setupDeepLinks();
@@ -131,15 +132,42 @@
         controls.appendChild(banner);
     }
 
-    function setupPagination() {
-        const prev = document.getElementById('prev-btn');
-        const next = document.getElementById('next-btn');
-        if (prev) prev.addEventListener('click', () => goToPage(currentPage - 1));
-        if (next) next.addEventListener('click', () => goToPage(currentPage + 1));
+    function setupExpansion() {
+        const grid = document.getElementById('cards-grid');
+        const all = document.getElementById('expand-all');
+
+        // Delegated, so a card that is collapsed after a filter change is still
+        // clickable without rebinding. Only the header opens a card: a click
+        // inside an expanded body belongs to whatever it landed on.
+        if (grid) {
+            grid.addEventListener('click', (e) => {
+                const card = e.target.closest('.var-card.is-collapsed');
+                if (!card) return;
+                // A link in a collapsed header still navigates.
+                if (e.target.closest('a[href]')) return;
+                opened.add(card.id);
+                updateDisplay();
+            });
+            grid.addEventListener('keydown', (e) => {
+                if (e.key !== 'Enter' && e.key !== ' ') return;
+                const card = e.target.closest('.var-card.is-collapsed');
+                if (!card) return;
+                e.preventDefault();
+                opened.add(card.id);
+                updateDisplay();
+            });
+        }
+
+        if (all) {
+            all.addEventListener('click', () => {
+                expandAll = !expandAll;
+                if (!expandAll) opened.clear();
+                updateDisplay();
+            });
+        }
     }
 
     function applyFilters() {
-        // Filter cards
         filteredCards = allCards.filter(card => {
             const cardType = card.dataset.type;
             const cardName = card.dataset.name.toLowerCase();
@@ -153,39 +181,76 @@
             return typeMatch && searchMatch && flagMatch;
         });
 
-        // Reset page if needed
-        currentPage = 1;
         updateDisplay();
-        updatePagination();
     }
 
+    /* Three states, not two.
+     *
+     * A card is *out of the filter* (removed from the flow), *collapsed* (in
+     * the document, header only), or *expanded*. Only the first uses
+     * `display: none`, and only for cards the reader has actively filtered
+     * away -- which is the one case where not finding them is the intent.
+     */
     function updateDisplay() {
-        // Hide all cards
+        let shown = 0;
+        let collapsed = 0;
+
         allCards.forEach(card => {
-            card.style.display = 'none';
+            if (!filteredCards.includes(card)) {
+                card.hidden = true;
+                card.classList.remove('is-collapsed');
+                card.removeAttribute('tabindex');
+                card.removeAttribute('aria-expanded');
+                return;
+            }
+            card.hidden = false;
+            shown += 1;
+            const fold = !expandAll
+                && !opened.has(card.id)
+                && shown > EXPANDED_LIMIT;
+            card.classList.toggle('is-collapsed', fold);
+            if (fold) {
+                collapsed += 1;
+                card.setAttribute('tabindex', '0');
+                card.setAttribute('role', 'button');
+            } else {
+                card.removeAttribute('tabindex');
+                card.removeAttribute('role');
+            }
+            card.setAttribute('aria-expanded', String(!fold));
         });
 
-        // Show filtered cards for current page
-        const startIndex = (currentPage - 1) * CARDS_PER_PAGE;
-        const endIndex = startIndex + CARDS_PER_PAGE;
-        const visibleCards = filteredCards.slice(startIndex, endIndex);
+        if (shown === 0) showNoResults(); else hideNoResults();
+        updateRail(shown, collapsed);
+    }
 
-        if (visibleCards.length === 0) {
-            showNoResults();
-        } else {
-            hideNoResults();
-            visibleCards.forEach(card => {
-                card.style.display = 'block';
-            });
-        }
-
-        // Update info
+    function updateRail(shown, collapsed) {
+        const rail = document.getElementById('collapsed-rail');
+        const count = document.getElementById('collapsed-count');
+        const all = document.getElementById('expand-all');
         const info = document.getElementById('pagination-info');
-        if (visibleCards.length > 0) {
-            info.textContent = `Showing ${startIndex + 1}-${startIndex + visibleCards.length} of ${filteredCards.length}`;
-        } else {
-            info.textContent = 'No columns found';
+
+        if (info) {
+            info.textContent = shown === 0
+                ? 'No columns found'
+                : `${shown} of ${allCards.length} columns · ` +
+                  `${shown - collapsed} expanded, ${collapsed} collapsed`;
         }
+        if (!rail || !count || !all) return;
+
+        // The rail is about collapsed rows, so it says nothing when there are
+        // none -- which is every report of ten columns or fewer.
+        if (collapsed === 0 && !expandAll) {
+            rail.hidden = true;
+            return;
+        }
+        rail.hidden = false;
+        const noun = collapsed === 1 ? 'row' : 'rows';
+        count.textContent = expandAll
+            ? `All ${shown} columns expanded`
+            : `${collapsed} collapsed ${noun}`;
+        all.textContent = expandAll ? 'collapse again' : `expand all ${collapsed}`;
+        all.setAttribute('aria-pressed', String(expandAll));
     }
 
     function showNoResults() {
@@ -195,7 +260,6 @@
             noResults.id = 'no-results';
             noResults.className = 'no-results';
             noResults.innerHTML = `
-
                 <div class="message">No columns found</div>
                 <div class="suggestion">Try adjusting your search or filter</div>
             `;
@@ -205,58 +269,15 @@
 
     function hideNoResults() {
         const noResults = document.getElementById('no-results');
-        if (noResults) {
-            noResults.remove();
-        }
+        if (noResults) noResults.remove();
     }
 
-    function updatePagination() {
-        const totalPages = Math.ceil(filteredCards.length / CARDS_PER_PAGE);
-
-        document.getElementById('prev-btn').disabled = currentPage <= 1;
-        document.getElementById('next-btn').disabled = currentPage >= totalPages;
-
-        // Generate page numbers
-        const pageNumbers = document.getElementById('page-numbers');
-        let html = '';
-
-        // A button, not a span with a click listener. The span version could
-        // not be reached by keyboard, announced no role, and had "2" as its
-        // whole accessible name.
-        for (let i = 1; i <= totalPages; i++) {
-            const active = i === currentPage ? 'active' : '';
-            const current = i === currentPage ? ' aria-current="page"' : '';
-            html += `<button type="button" class="page-number ${active}" data-page="${i}" aria-label="Go to page ${i}"${current}>${i}</button>`;
-        }
-
-        pageNumbers.innerHTML = html;
-
-        // Add click listeners
-        pageNumbers.querySelectorAll('.page-number').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                // currentTarget, not target: a click can land on a text node
-                // inside the button once it is a real button rather than a span.
-                goToPage(parseInt(e.currentTarget.dataset.page));
-            });
-        });
-    }
-
-    function goToPage(page) {
-        const totalPages = Math.ceil(filteredCards.length / CARDS_PER_PAGE);
-        if (page >= 1 && page <= totalPages) {
-            currentPage = page;
-            updateDisplay();
-            updatePagination();
-        }
-    }
-
-    /* Take a #col_<name> link to the card it names, wherever that card is.
+    /* Take a #col_<name> link to the card it names, and open it.
      *
-     * Off-page cards are hidden with `display: none`, so a fragment link to one
-     * used to do nothing at all: the browser finds no rendered target and stays
-     * put. Every link in the needs-attention block is one of these, and the
-     * block exists precisely to be clicked -- so the report's own navigation
-     * silently failed for any column past the first page.
+     * Every link in the needs-attention block is one of these, and the block
+     * exists to be clicked. A collapsed card is already in the document, so
+     * the anchor lands on its own -- what this adds is expanding it, since
+     * arriving at a folded header answers less than the reader asked for.
      *
      * A filter or a search that excludes the target is cleared on the way. A
      * deep link is an explicit request for one column and should outrank a
@@ -284,10 +305,10 @@
             applyFilters();
         }
 
-        const index = filteredCards.indexOf(card);
-        if (index === -1) return false;
-        goToPage(Math.floor(index / CARDS_PER_PAGE) + 1);
-        // After updateDisplay, so the card has a box to scroll to.
+        if (!filteredCards.includes(card)) return false;
+        opened.add(card.id);
+        updateDisplay();
+        // After updateDisplay, so the card has its full box to scroll to.
         card.scrollIntoView({ behavior: 'smooth', block: 'start' });
         return true;
     }

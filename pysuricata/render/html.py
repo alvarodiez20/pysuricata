@@ -368,10 +368,14 @@ def render_html_snapshot(
             {"".join(all_cards_list)}
           </div>
 
-          <div class=\"pagination\" id=\"pagination\">
-            <button id=\"prev-btn\" {"disabled" if total_variables <= 10 else ""}>←</button>
-            <div class=\"pages\" id=\"page-numbers\"></div>
-            <button id=\"next-btn\" {"disabled" if total_variables <= 10 else ""}>→</button>
+          <div class=\"collapsed-rail\" id=\"collapsed-rail\" hidden>
+            <div class=\"collapsed-rail__head\">
+              <span class=\"label\" id=\"collapsed-count\"></span>
+              <button type=\"button\" class=\"linklike\" id=\"expand-all\"></button>
+            </div>
+            <p class=\"collapsed-rail__note micro-label\">
+              Collapsed rows stay in the page, so find, anchors and print reach them.
+            </p>
           </div>
     """
 
