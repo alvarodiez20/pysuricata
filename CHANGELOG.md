@@ -32,6 +32,28 @@ quoted when both sides were measured in the same round-robin run.
   fixed to match. Adding keys does not move `schema_version`
   (`docs/versioning.md`).
 
+- **A contract that every estimate is checked against truth** (#331). Three
+  defects shipped in one release — #327, #328 and #329 — and an outside
+  benchmark found them, not the suite, because the suite tested that estimators
+  *run* rather than that they are *right*: `outliers_iqr_est` was 49x low at a
+  million rows and every test passed.
+
+  `tests/test_estimate_contracts.py` pairs each published estimate with an
+  independent exact computation of the same quantity, so no test can be
+  satisfied by an estimator agreeing with itself. Three contracts run off that
+  table — scale invariance across sizes straddling every internal budget, the
+  `approx` promise in both directions, and threshold crossings at `k-1`, `k`,
+  `k+1` and `10k`.
+
+  Adding an estimate now forces a decision: a payload key matching the
+  estimate-shaped naming convention with neither an oracle nor a stated reason
+  fails the suite. That check found `case_variants_est` and `trim_variants_est`
+  on its first run — two KMV estimates nothing had ever compared against an
+  exact count. Both are accurate, and both are now oracled.
+
+  Verified by reintroducing each defect rather than assuming: #327 fails scale
+  invariance at 50,001 rows, #328 fails the bound-brackets-truth contract.
+
 - **`profile()` and `summarize()` read Excel workbooks** (#4) — `.xlsx`,
   `.xlsm`, `.xlsb`, `.xls` and `.ods` — which the browser demo already did
   (`web/README.md`) while the library itself raised `UnsupportedDataError`
