@@ -465,7 +465,12 @@ def render_html_snapshot(
     template_path = os.path.join(template_dir, "report_template.html")
     template = load_template(template_path)
     css_dir = os.path.join(static_dir, "css")
-    css_tag = load_css_dir(css_dir)
+    # #306. Only the card kinds this frame actually has. `kinds_map` is built at
+    # the top of this function from the same `ColumnKinds` the toolbar counts
+    # come from, so the set is known long before the shell is assembled.
+    css_tag = load_css_dir(
+        css_dir, frozenset(kind for _, (kind, _) in kinds_map.items())
+    )
     script_path = os.path.join(static_dir, "js", "functionality.js")
     script_content = load_script(script_path)
 

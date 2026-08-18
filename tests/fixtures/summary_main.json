@@ -407,13 +407,11 @@
       "dtype": "object",
       "empty_zero": 0,
       "entropy": 0.9854976183205397,
-      "exact_levels": 2,
       "gini_impurity": 0.4899814432559788,
       "len_p90": 3,
       "mem_bytes": 10495,
       "missing": 672,
       "most_common_ratio": 0.5707762557077626,
-      "singleton_levels": 0,
       "top_items": [
         [
           "C85",
@@ -428,7 +426,9 @@
       "trim_variants_est": 2,
       "type": "categorical",
       "unique_est": 2,
-      "unique_est_exact": true
+      "unique_est_exact": true,
+      "singleton_levels": 0,
+      "exact_levels": 2
     },
     "empty": {
       "approx": false,
@@ -439,19 +439,19 @@
       "dtype": "object",
       "empty_zero": null,
       "entropy": null,
-      "exact_levels": null,
       "gini_impurity": null,
       "len_p90": null,
       "mem_bytes": 10692,
       "missing": 891,
       "most_common_ratio": null,
-      "singleton_levels": null,
       "top_items": [],
       "top_items_uncertainty": null,
       "trim_variants_est": null,
       "type": "categorical",
       "unique_est": 0,
-      "unique_est_exact": null
+      "unique_est_exact": null,
+      "singleton_levels": null,
+      "exact_levels": null
     },
     "fare": {
       "approx": true,
@@ -709,13 +709,11 @@
       "dtype": "object",
       "empty_zero": 0,
       "entropy": 2.9275862035280227,
-      "exact_levels": 599,
       "gini_impurity": 0.8328385840594975,
       "len_p90": 13,
       "mem_bytes": 14256,
       "missing": 0,
       "most_common_ratio": 0.051627384960718295,
-      "singleton_levels": 589,
       "top_items": [
         [
           "common 0",
@@ -790,7 +788,9 @@
       "trim_variants_est": 599,
       "type": "categorical",
       "unique_est": 599,
-      "unique_est_exact": true
+      "unique_est_exact": true,
+      "singleton_levels": 589,
+      "exact_levels": 599
     },
     "sex": {
       "approx": false,
@@ -801,13 +801,11 @@
       "dtype": "object",
       "empty_zero": 0,
       "entropy": 0.9998900524545518,
-      "exact_levels": 2,
       "gini_impurity": 0.49992379210486204,
       "len_p90": 6,
       "mem_bytes": 11636,
       "missing": 0,
       "most_common_ratio": 0.5061728395061729,
-      "singleton_levels": 0,
       "top_items": [
         [
           "male",
@@ -822,7 +820,9 @@
       "trim_variants_est": 2,
       "type": "categorical",
       "unique_est": 2,
-      "unique_est_exact": true
+      "unique_est_exact": true,
+      "singleton_levels": 0,
+      "exact_levels": 2
     },
     "survived": {
       "count": 891,
@@ -840,6 +840,8 @@
   "dataset": {
     "cols": 8,
     "duplicate_rows_est": 0,
+    "duplicate_rows_hi": 0,
+    "duplicate_rows_lo": 0,
     "duplicate_rows_pct_est": 0.0,
     "duplicate_rows_uncertainty": 0,
     "duplicates_degraded": false,

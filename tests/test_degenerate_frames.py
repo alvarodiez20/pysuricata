@@ -8,19 +8,18 @@ suite, so nothing said whether they worked.
 
 The investigation found they mostly do. This file is what keeps that true.
 
-All four defects the investigation found are now fixed, so every case below
-asserts the right answer rather than pinning a wrong one:
+#312, #313, #314 and #315 are all fixed, and every case below is an ordinary
+assertion now rather than an xfail:
 
-* #313 and #315 -- a zero-row frame rendered a bare page and returned `{}`,
-  both fixed by treating it as a frame with a schema rather than as an empty
-  source
-* #314 -- the three quick-facts buckets are mutually exclusive and empty below
-  two values, a share-based flag only fires where an even spread would not have
-  fired it, and negative zero is caught in the formatter
-* #312 -- a zero-column frame reported 9 duplicate rows where pandas reports 0
-
-Each arrived here as a strict xfail while it was open, which is what turned the
-fix into a passing test rather than a claim.
+* #312 -- a zero-column frame reported 9 duplicate rows where pandas reports
+  0, from `RowKMV` seeding its row hash off `columns[0]` and falling into a
+  fallback built for content that failed to hash rather than content that
+  never existed.
+* #313 and #315 -- both fixed by treating a zero-row frame as a frame with a
+  schema rather than as an empty source.
+* #314 -- the three quick-facts buckets are mutually exclusive and empty
+  below two values, a share-based flag only fires where an even spread would
+  not have fired it, and negative zero is caught in the formatter.
 """
 
 from __future__ import annotations
@@ -213,14 +212,18 @@ def test_no_negative_zero_reaches_the_page(rendered: dict[str, str], name: str) 
 
 
 class TestTheDuplicateCountAgreesWithPandas:
-    """The neighbours of #312, which are correct and must stay correct.
-
-    All-missing rows and constant rows genuinely *are* duplicate rows, and
-    pandas says so. They look like the zero-column defect and are not it, so
-    they are pinned here to stop #312's fix taking them with it.
+    """#312 and its neighbours. All-missing rows and constant rows genuinely
+    *are* duplicate rows, and pandas says so; a zero-column frame looks like
+    the same shape of defect and is not -- there is nothing to key a
+    comparison on, so pandas counts every row as its own, unrepeated
+    observation, and `RowKMV` now does too (`_offer_zero_column_rows`)
+    rather than routing through the unhashable-chunk fallback, which landed
+    on one distinct signature for every row.
     """
 
-    @pytest.mark.parametrize("name", ["all_missing", "constant_column", "all_numeric"])
+    @pytest.mark.parametrize(
+        "name", ["all_missing", "constant_column", "all_numeric", "zero_columns"]
+    )
     def test_it_matches_pandas(self, name: str) -> None:
         frame = SHAPES[name]
         payload = summarize(frame)
@@ -228,32 +231,15 @@ class TestTheDuplicateCountAgreesWithPandas:
 
         assert dataset["duplicate_rows_est"] == int(frame.duplicated().sum())
 
-    def test_a_zero_column_frame_matches_pandas_too(self) -> None:
-        """Was a strict xfail for #312.
-
-        Ten empty rows came back as nine duplicates, 90%, labelled `exact`: the
-        row hasher raised `IndexError` on `columns[0]` and the surrounding
-        `except` routed it into the fallback for *unhashable* chunks, which
-        stringified nothing into one signature for the lot. A frame with no
-        columns has nothing in its rows to compare, which is why pandas reports
-        no duplicates, and now so does this.
-        """
+    def test_the_zero_column_frame_is_reported_exact_not_degraded(self) -> None:
+        """The bug's second half: nothing about a zero-column frame could not
+        be hashed, so this must not be routed through the same "degraded"
+        path a genuinely unhashable chunk takes."""
         frame = SHAPES["zero_columns"]
         payload = summarize(frame)
         dataset = payload.get("dataset", payload)
 
-        assert dataset["duplicate_rows_est"] == int(frame.duplicated().sum()) == 0
-        assert dataset["duplicate_rows_pct_est"] == 0.0
         assert dataset["duplicate_rows_uncertainty"] == 0
-
-    def test_the_zero_column_frame_is_not_reported_as_degraded(self) -> None:
-        """That flag means the sketch saw fewer rows than were counted, which
-        is how a consumer learns the figure is an overestimate. Nothing failed
-        here: there was simply nothing to hash."""
-        payload = summarize(SHAPES["zero_columns"])
-        dataset = payload.get("dataset", payload)
-
-        assert dataset["duplicates_degraded"] is False
 
 
 class TestTheZeroRowFrame:

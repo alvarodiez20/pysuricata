@@ -181,6 +181,11 @@ class TestTheDocumentedKeys:
             # from the sketch's own error, and the reason the report could
             # label such a count `exact` (#312).
             "duplicates_degraded",
+            # The interval that arithmetic produces, published directly (#329)
+            # so a consumer never has to reconstruct it from uncertainty and a
+            # multiple documented only in prose.
+            "duplicate_rows_lo",
+            "duplicate_rows_hi",
             "memory_bytes",
             "top_missing",
         }

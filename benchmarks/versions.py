@@ -48,10 +48,49 @@ from benchmarks.end_to_end import (
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+
+class VersionPathFallthrough(RuntimeError):
+    """A subprocess resolved `pysuricata` to code outside the venv it was
+    meant to measure -- the version label on that result cannot be trusted
+    (#249)."""
+
+
 # The measured body. Deliberately not indented: it is source for a subprocess.
+#
+# `import pysuricata` happens first, before `REPO` (this checkout) is added to
+# `sys.path`, and is checked against `env_dir` immediately (#249). Two things
+# can otherwise shadow the venv's own installed distribution with this
+# checkout's working-tree source: the empty-string cwd entry `python -c` puts
+# at `sys.path[0]` when the caller's cwd is the repo root, and `REPO` itself
+# once it is added, since it holds a real `pysuricata/` package directory.
+# Either shadow still reports the *venv's* `pysuricata.__version__`
+# (`importlib.metadata` reads installed-distribution metadata, not the module
+# actually running) while executing completely different code underneath it.
+# A round-robin that hits this measures one version four times under four
+# different labels, and does so identically every round -- clean, flat, and
+# false. `time_once()` sets `cwd` away from `REPO` for the same reason, and
+# `REPO` is appended rather than inserted at the front so it can never win
+# against a venv's own site-packages for a name both provide.
 RUNNER = """\
-import json, sys, time
-sys.path.insert(0, {repo!r})
+import json, os, sys, time
+import pysuricata
+
+env_dir = {env_dir!r}
+# `__file__` is None for an implicit namespace package -- no __init__.py
+# anywhere on sys.path, just a directory that happens to be named right (an
+# incidental empty `pysuricata/` left over from something else entirely is
+# enough). That is not "found nothing", it is "found something that is not
+# the package", and belongs in the same refusal as a real shadow rather than
+# an unhandled TypeError out of realpath(None).
+found = pysuricata.__file__
+expected = os.path.realpath(env_dir)
+if found is None or not os.path.realpath(found).startswith(expected + os.sep):
+    print("__RESULT__" + json.dumps(
+        {{"status": "path_fallthrough", "wanted": env_dir, "got": found}}
+    ))
+    sys.exit(0)
+
+sys.path.append({repo!r})
 from benchmarks import datasets
 from pysuricata import summarize
 
@@ -60,12 +99,11 @@ summarize(df)                       # warm imports and any lazy setup
 t0 = time.perf_counter()
 summarize(df)
 elapsed = time.perf_counter() - t0
-import pysuricata
 print("__RESULT__" + json.dumps({{"seconds": elapsed, "version": pysuricata.__version__}}))
 """
 
 
-def make_env(version: str, workdir: str) -> str | None:
+def make_env(version: str, workdir: str) -> tuple[str, str] | None:
     """Install one released version into a throwaway virtualenv.
 
     Args:
@@ -73,7 +111,9 @@ def make_env(version: str, workdir: str) -> str | None:
         workdir: Directory to create the environment under.
 
     Returns:
-        Path to the environment's python, or None if the install failed.
+        `(python, env_dir)` -- the environment's interpreter and its own
+        directory, the latter needed to check what actually got measured
+        (#249) -- or `None` if the install failed.
     """
     env_dir = os.path.join(workdir, f"v{version}")
     target = REPO if version == "." else f"pysuricata=={version}"
@@ -93,33 +133,58 @@ def make_env(version: str, workdir: str) -> str | None:
     if install.returncode != 0:
         print(f"  {version:<10} install failed: {install.stderr.strip()[-160:]}")
         return None
-    return python
+    return python, env_dir
 
 
-def time_once(python: str, suite: str, scale: float, timeout: int) -> dict:
-    """Time one `summarize()` call in a fresh subprocess."""
-    script = RUNNER.format(repo=REPO, suite=suite, scale=scale)
+def time_once(
+    python: str, env_dir: str, suite: str, scale: float, timeout: int
+) -> dict:
+    """Time one `summarize()` call in a fresh subprocess.
+
+    Raises:
+        VersionPathFallthrough: `pysuricata` resolved to something outside
+            `env_dir` -- see the module docstring and `RUNNER` (#249).
+    """
+    script = RUNNER.format(repo=REPO, env_dir=env_dir, suite=suite, scale=scale)
     try:
+        # cwd deliberately not REPO: `python -c` puts the empty string (cwd)
+        # at sys.path[0], and REPO holds a real pysuricata/ directory that
+        # would shadow the venv's own installation from there just as easily
+        # as the sys.path.insert(0, ...) this fix also removed.
         proc = subprocess.run(
-            [python, "-c", script], capture_output=True, text=True, timeout=timeout
+            [python, "-c", script],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            cwd=env_dir,
         )
     except subprocess.TimeoutExpired:
         return {"status": "timeout"}
     for line in proc.stdout.splitlines():
         if line.startswith("__RESULT__"):
             payload = json.loads(line[len("__RESULT__") :])
+            if payload.get("status") == "path_fallthrough":
+                raise VersionPathFallthrough(
+                    f"wanted pysuricata from {payload['wanted']!r}, got "
+                    f"{payload['got']!r} -- this result cannot be trusted, "
+                    "and neither can any other in this run"
+                )
             payload["status"] = "ok"
             return payload
     return {"status": "crashed", "stderr": proc.stderr.strip()[-400:]}
 
 
 def round_robin(
-    pythons: dict[str, str], suite: str, scale: float, rounds: int, timeout: int
+    pythons: dict[str, tuple[str, str]],
+    suite: str,
+    scale: float,
+    rounds: int,
+    timeout: int,
 ) -> dict[str, dict]:
     """Time every version in every round; keep each version's best.
 
     Args:
-        pythons: Mapping of version label to interpreter path.
+        pythons: Mapping of version label to `(python, env_dir)`.
         suite: Dataset suite name.
         scale: Dataset scale factor.
         rounds: Number of interleaved rounds.
@@ -128,12 +193,19 @@ def round_robin(
     Returns:
         Mapping of version label to its best result, retaining every round's
         timing under ``all_seconds``.
+
+    Raises:
+        VersionPathFallthrough: A subprocess measured code outside the venv
+            it was meant to (#249). Propagates uncaught -- deliberately: this
+            failure mode corrupts every round identically, so a result
+            gathered before it fired is exactly as untrustworthy as one
+            gathered after, and there is no partial table worth returning.
     """
     best: dict[str, dict] = {}
     for index in range(1, rounds + 1):
         print(f"  -- round {index}/{rounds}")
-        for version, python in pythons.items():
-            result = time_once(python, suite, scale, timeout)
+        for version, (python, env_dir) in pythons.items():
+            result = time_once(python, env_dir, suite, scale, timeout)
             if result["status"] != "ok":
                 best.setdefault(version, result)
                 print(f"  {version:<10} {result['status'].upper()}")
@@ -240,12 +312,12 @@ def main(argv=None) -> int:
     print(f"building {len(versions)} environments under {workdir}\n")
 
     started = time.perf_counter()
-    pythons: dict[str, str] = {}
+    pythons: dict[str, tuple[str, str]] = {}
     for version in versions:
-        python = make_env(version, workdir)
-        if python:
+        built = make_env(version, workdir)
+        if built:
             label = "working tree" if version == "." else version
-            pythons[label] = python
+            pythons[label] = built
             print(f"  {label:<12} ready")
     print(f"  ({time.perf_counter() - started:.0f}s)\n")
 
@@ -256,9 +328,13 @@ def main(argv=None) -> int:
 
     print(f"=== {args.suite} (scale={args.scale}, rounds={args.rounds}) ===")
     try:
-        results = round_robin(
-            pythons, args.suite, args.scale, args.rounds, args.timeout
-        )
+        try:
+            results = round_robin(
+                pythons, args.suite, args.scale, args.rounds, args.timeout
+            )
+        except VersionPathFallthrough as exc:
+            print(f"refusing to measure: {exc}", file=sys.stderr)
+            return 2
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 

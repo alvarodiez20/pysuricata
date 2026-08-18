@@ -273,8 +273,18 @@ class TestTheReportIsOneFile:
 #: leave the headroom the #246/#252 note above asks for, so the next rebase
 #: does not spend an afternoon on the same 3 bytes.
 #:
-#: Net against the 499,500 this branch started from: 12,419 bytes returned.
-BYTES_BASELINE = 487_500
+#: Net against the 499,500 that branch started from: 12,419 bytes returned.
+#:
+#: 487,500 -> 482,000 for #306: a report now ships only the card-kind partials
+#: it can use. Titanic has no datetime column, so `_09-datetime.css` was 5,600
+#: bytes of stylesheet it could never render — which is the case #291's note
+#: above complains about from the other side, where a datetime improvement was
+#: charged in full to the one report that cannot benefit from it.
+#:
+#: Titanic is the *least* improved shape, because it has three of the four
+#: kinds. A boolean-only frame saves 17,830 bytes and a numeric-only one
+#: 17,189.
+BYTES_BASELINE = 482_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.

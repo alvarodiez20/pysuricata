@@ -34,6 +34,18 @@ def duplicate_fields(row_kmv: Any) -> dict[str, Any]:
     prints. The field stays one sigma rather than exporting the ceiling
     directly, so the multiple can move without bumping `schema_version`;
     `docs/summary-schema.md` states the multiple for consumers who need it.
+
+    `duplicate_rows_lo` / `duplicate_rows_hi` publish that arithmetic done
+    (#329), because a consumer that cannot see the HTML has no way to reach
+    the same reading the report already has otherwise -- the README's own
+    `duplicate_rows_est == 0` example passes identically on a clean frame and
+    on one whose duplicates are merely below the sketch's resolution, which
+    is a CI gate failing open in exactly the case it exists to catch.
+    `duplicate_rows_hi` is `estimate.ceiling` when suppressed -- the exact
+    figure the report prints, not a second computation of it -- and
+    `rows +/- uncertainty` when resolved, matching the "+/- sigma" the report
+    already shows beside a resolved count. Adding keys does not move
+    `schema_version` (`docs/versioning.md`).
     """
     if not hasattr(row_kmv, "duplicates"):
         return {
@@ -41,8 +53,16 @@ def duplicate_fields(row_kmv: Any) -> dict[str, Any]:
             "duplicate_rows_pct_est": 0.0,
             "duplicate_rows_uncertainty": 0,
             "duplicates_degraded": False,
+            "duplicate_rows_lo": 0,
+            "duplicate_rows_hi": 0,
         }
     estimate = row_kmv.duplicates()
+    if estimate.resolvable:
+        lo = max(0, estimate.rows - estimate.uncertainty)
+        hi = estimate.rows + estimate.uncertainty
+    else:
+        lo = 0
+        hi = estimate.ceiling
     return {
         "duplicate_rows_est": int(estimate.rows),
         "duplicate_rows_pct_est": float(estimate.pct),
@@ -52,6 +72,8 @@ def duplicate_fields(row_kmv: Any) -> dict[str, Any]:
         # of unknown size. The report labelled such a count `exact` because the
         # label was derived from the sketch's own error alone (#312).
         "duplicates_degraded": bool(getattr(row_kmv, "duplicates_degraded", False)),
+        "duplicate_rows_lo": int(lo),
+        "duplicate_rows_hi": int(hi),
     }
 
 
