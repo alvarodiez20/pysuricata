@@ -102,7 +102,7 @@
       "mono_inc": false,
       "negatives": 23,
       "outliers_iqr_est": 2,
-      "outliers_mod_zscore": 1,
+      "outliers_mod_zscore_est": 1,
       "q1": -0.5002485719057307,
       "q3": 0.521628383050338,
       "se": 0.1258757827635776,
@@ -394,5 +394,5 @@
       }
     ]
   },
-  "schema_version": 1
+  "schema_version": 2
 }

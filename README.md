@@ -118,7 +118,7 @@ from pysuricata import summarize
 
 stats = summarize(df)
 
-assert stats["schema_version"] == 1
+assert stats["schema_version"] == 2
 assert stats["dataset"]["missing_cells_pct"] < 5.0
 assert stats["dataset"]["duplicate_rows_pct_est"] < 1.0
 
