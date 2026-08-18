@@ -610,13 +610,42 @@ class MisraGries:
     """Heavy hitters (top-K) with deterministic memory.
 
     Maintains up to k counters. Good for approximate top categories.
+
+    **The counters are lower bounds, and the sketch knows by how much.** Every
+    eviction subtracts weight from every counter, so a reported count can only
+    undercount, never overcount. Misra-Gries guarantees that if `D` is the
+    total weight decremented, then for any value `x`::
+
+        true_count(x) ∈ [reported(x), reported(x) + D]
+
+    `D` is tracked here rather than inferred by the caller, because the two
+    places that decrement -- `add()` one weight at a time and `add_many()`'s
+    prune branch, which is the hot path -- are the only two that can see it.
+
+    Deriving exactness from `len(counters) >= k` instead, as the caller used
+    to, gets the dangerous case backwards: heavy eviction *deletes* counters,
+    so the list shrinks below `k` exactly when the sketch is under most
+    pressure, and the column then reported itself exact while its top count was
+    30x low (#328).
     """
 
-    __slots__ = ("k", "counters")
+    __slots__ = ("k", "counters", "decremented")
 
     def __init__(self, k: int = 50) -> None:
         self.k = int(k)
         self.counters: dict[Any, int] = {}
+        #: Total weight subtracted from counters, which is the error bound.
+        self.decremented: int = 0
+
+    @property
+    def is_exact(self) -> bool:
+        """True when no eviction has happened, so every count is the truth."""
+        return self.decremented == 0
+
+    @property
+    def error_bound(self) -> int:
+        """How far below the truth a reported count may be. 0 when exact."""
+        return int(self.decremented)
 
     def add(self, x: Any, w: int = 1) -> None:
         if x in self.counters:
@@ -626,6 +655,7 @@ class MisraGries:
             self.counters[x] = w
             return
         # decrement all
+        self.decremented += int(w)
         to_del = []
         for key in list(self.counters.keys()):
             self.counters[key] -= w
@@ -665,6 +695,12 @@ class MisraGries:
                 self.counters[val] = count
                 min_count = min(self.counters.values())
                 if min_count > 0:
+                    # The batch path evicts by the smallest counter rather than
+                    # by the incoming weight, so the mass it removes is that
+                    # minimum -- and it is the path a chunked run takes, so a
+                    # bound that missed it would read exact on almost every
+                    # real column.
+                    self.decremented += int(min_count)
                     self.counters = {
                         k: v - min_count
                         for k, v in self.counters.items()
@@ -694,8 +730,13 @@ class MisraGries:
         for key, count in other.counters.items():
             combined[key] = combined.get(key, 0) + count
 
+        # Error is additive across a merge: each side's counts were already
+        # short by its own decrement mass, and the subtraction below adds more.
+        self.decremented += int(other.decremented)
+
         if len(combined) > self.k:
             delta = sorted(combined.values(), reverse=True)[self.k]
+            self.decremented += int(delta)
             combined = {
                 key: count - delta
                 for key, count in combined.items()

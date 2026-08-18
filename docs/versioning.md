@@ -8,29 +8,37 @@ description: What a pysuricata version number promises, and what it does not
 A version number means nothing until the surface it describes is written down.
 This page is that surface.
 
-## The contract, at 0.x
+## The contract
 
-pysuricata follows [Semantic Versioning](https://semver.org/), with the
-convention Cargo uses for pre-1.0 crates:
+pysuricata follows [Semantic Versioning](https://semver.org/), and means the
+part everyone skips:
 
-!!! note "At 0.x, a **minor** bump is what a major bump becomes at 1.0"
+!!! note "Only a **major** bump may break you"
 
-    `0.1.0 → 0.2.0` is the release allowed to break you.
-    `0.1.0 → 0.1.1` never is.
+    `0.1.0 → 1.0.0` is the release allowed to break you.
+    `0.1.0 → 0.2.0` adds; it does not break.
+    `0.1.0 → 0.1.1` fixes.
 
-That makes `pysuricata~=0.1.0` a real guarantee: you will get fixes, and you
-will not get a breaking change without changing that line yourself.
+That makes `pysuricata>=0.1,<1` a real guarantee, not just `~=0.1.0`: every
+release before 1.0.0 keeps the surface below working.
 
 Semver's own text says `0.y.z` means "anything may change" and that `1.0.0` is
-what defines a public API — so "a stable release at 0.1.0" is, read strictly, a
-contradiction. It is resolved by writing the contract down rather than by
-picking a bigger number. **A 0.x with a written contract beats a 1.0 you have to
-walk back.**
+what defines a public API — so read strictly, a 0.x promises nothing. Some
+projects resolve that by adopting Cargo's convention, where a 0.x minor bump
+does the job of a major one. **This project does not.** A minor number that
+sometimes breaks and sometimes does not is a number a consumer cannot act on
+without reading the changelog, which is the thing the version number exists to
+save them from.
+
+The cost is deliberate and worth stating: a breaking change costs 1.0.0. If the
+surface below has to change before then, the change waits, ships behind a new
+name beside the old one, or the project goes to 1.0. **A 0.x with a written
+contract beats a 1.0 you have to walk back**, and a contract that only holds
+when convenient is not one.
 
 ## What is covered
 
-A breaking change to anything in this list requires a minor bump at 0.x, and a
-major bump at 1.0 and after.
+A breaking change to anything in this list requires a **major** bump.
 
 | Surface | Covered |
 |---|---|
@@ -54,8 +62,15 @@ major bump at 1.0 and after.
 
 `outliers_iqr_est` is the same call made again (#327): it was a count inside the
 reservoir published beside a population `count`, 49x low at a million rows, and
-correcting it did not bump anything. Schema 2 was bought by the rename that
-travelled with it, `outliers_mod_zscore` to `outliers_mod_zscore_est`.
+correcting it is a fix. It moved `schema_version` to 2 anyway, for a reason the
+rule above does not cover: a baseline stored before the fix holds counts on the
+old scale, and `check` refusing across schema versions is the only thing that
+stops it being compared against the new ones as though it were drift.
+
+The rename that travelled with it, `outliers_mod_zscore` to
+`outliers_mod_zscore_est`, is a break, and a break costs a major bump. So it did
+not ship as one: **both names are published**, and the old one goes at 1.0.0.
+That is the shape every rename takes here.
 
 That last rule was decided on `duplicate_rows_est` (#202), which is the case
 worth recording because it looks like a break and is not. The figure was
@@ -83,13 +98,14 @@ in patch releases without notice.
 - **The exact value of any approximate figure.** Distinct counts, quantiles,
   duplicate counts and the bounds printed beside them are sketch estimates.
   Improving one is a fix, not a break: `0.0.73` changed how quantiles are
-  *presented* and what error bound the duplicate count carries, and neither
-  should have forced a minor bump.
+  *presented* and what error bound the duplicate count carries, and neither is
+  a breaking change.
 - **Log output, progress reporting and timing figures.**
 - **The wheel's dependency floors**, except where raising one drops a Python
   version — that is covered.
 
-Python version support is covered: dropping a Python is a minor bump at 0.x.
+Python version support is covered: dropping a Python is a break, so it waits
+for a major bump.
 
 ## How a release happens
 

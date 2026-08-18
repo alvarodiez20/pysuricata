@@ -498,7 +498,7 @@ class CategoricalCardRenderer(CardRenderer):
         data = [
             ("Count", f"{int(getattr(stats, 'count', 0)):,}", "num"),
             (
-                f"Unique{' (≈)' if getattr(stats, 'approx', False) else ''}",
+                f"Unique{'' if getattr(stats, 'unique_est_exact', False) else ' (≈)'}",
                 f"{int(getattr(stats, 'unique_est', 0)):,}",
                 "num",
             ),
