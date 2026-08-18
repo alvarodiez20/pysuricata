@@ -90,6 +90,15 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **`docs/internal/integration.md` records the phase 4b decision** it had been
+  carrying only in the external design package (#149). Options 15a–15d for the
+  attention block are settled as 15b's flag reference plus 15a's chips in the
+  existing one-row-per-column block, and — the part that matters — **15a's
+  grouping-by-action is held** until #301 decides whether pysuricata should
+  recommend actions or only report facts. Everything the note chooses already
+  ships; what did not exist in this repository was the reason the block ranks
+  rather than groups, which is exactly the drift #251 is open about.
+
 - **A design pass over seven report issues** (#319, #145, #294, #314, #149,
   #297, #300), which also closes #299.
 
