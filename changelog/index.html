@@ -2757,13 +2757,33 @@ quoted when both sides were measured in the same round-robin run.</p>
   (<code>docs/versioning.md</code>).</p>
 </li>
 <li>
-<p><strong><code>profile()</code> and <code>summarize()</code> read Excel workbooks</strong> (#4) — <code>.xlsx</code>,
+<p><strong>A contract that every estimate is checked against truth</strong> (#331). Three
+  defects shipped in one release — #327, #328 and #329 — and an outside
+  benchmark found them, not the suite, because the suite tested that estimators
+  <em>run</em> rather than that they are <em>right</em>: <code>outliers_iqr_est</code> was 49x low at a
+  million rows and every test passed.</p>
+</li>
+</ul>
+<p><code>tests/test_estimate_contracts.py</code> pairs each published estimate with an
+  independent exact computation of the same quantity, so no test can be
+  satisfied by an estimator agreeing with itself. Three contracts run off that
+  table — scale invariance across sizes straddling every internal budget, the
+  <code>approx</code> promise in both directions, and threshold crossings at <code>k-1</code>, <code>k</code>,
+  <code>k+1</code> and <code>10k</code>.</p>
+<p>Adding an estimate now forces a decision: a payload key matching the
+  estimate-shaped naming convention with neither an oracle nor a stated reason
+  fails the suite. That check found <code>case_variants_est</code> and <code>trim_variants_est</code>
+  on its first run — two KMV estimates nothing had ever compared against an
+  exact count. Both are accurate, and both are now oracled.</p>
+<p>Verified by reintroducing each defect rather than assuming: #327 fails scale
+  invariance at 50,001 rows, #328 fails the bound-brackets-truth contract.</p>
+<ul>
+<li><strong><code>profile()</code> and <code>summarize()</code> read Excel workbooks</strong> (#4) — <code>.xlsx</code>,
   <code>.xlsm</code>, <code>.xlsb</code>, <code>.xls</code> and <code>.ods</code> — which the browser demo already did
   (<code>web/README.md</code>) while the library itself raised <code>UnsupportedDataError</code>
   for the same file. Publishing the demo widened that gap rather than
   revealing it: a workbook the demo profiled in the browser had no path
-  through the package underneath it.</p>
-</li>
+  through the package underneath it.</li>
 </ul>
 <p><code>python-calamine</code> is tried first — one dependency across all five formats,
   and the engine the demo settled on for the same reason — falling back to
