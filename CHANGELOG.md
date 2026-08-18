@@ -14,6 +14,48 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **Arrow IPC files load** ([#247]). `.arrow`, `.feather` and `.ipc` raised
+  `UnsupportedDataError`, and `pa.ipc.open_file(path)` raised `Cannot profile
+  RecordBatchFileReader`. The split fell exactly on the line between
+  *in-process* Arrow and *on-disk* Arrow: a `pa.Table` handed over inside one
+  process worked, and the file another runtime writes did not — which is the
+  line that matters, since `arrow::write_ipc_file()` in R, `Arrow.write()` in
+  Julia and the `arrow` crate in Rust all produce the latter. "Make Arrow the
+  boundary, not pandas" could not be documentation alone while the one format
+  it names by name was the one that did not load.
+
+  **Three framings can wear those extensions, and the extension does not say
+  which**, so the first bytes decide rather than the suffix. Measured, because
+  dispatching on the extension would have loaded R's output and failed on
+  Julia's:
+
+  | magic | framing | reader |
+  |---|---|---|
+  | `ARROW1` | IPC file, footer indexes every batch | `pa.ipc.open_file` |
+  | `\xff\xff\xff\xff` | IPC stream, forward-only | `pa.ipc.open_stream` |
+  | `FEA1` | Feather V1 — not IPC at all | `feather.read_table` |
+
+  Only the last materialises, and pyarrow deprecated writing it in 25.0.0.
+
+  `RecordBatchFileReader` needed its own branch: it is the one Arrow reader
+  that does not subclass `RecordBatchReader` and has no `to_batches`, because
+  the IPC file format's footer gives it random access — `num_record_batches`
+  and `get_batch(i)` — instead of an iterator. Reading by index keeps the
+  bounded-memory promise where the `read_all()` its API leads with would not.
+  `RecordBatchStreamReader` does subclass it and needed nothing.
+
+- **The Arrow C stream claim is stated where it can be read** ([#247]), in the
+  README and `docs/data-sources.md`. The claim is not "pyarrow is accepted" —
+  every profiler can be handed a converted frame. It is that anything
+  exporting `__arrow_c_stream__` is profiled without materialising it,
+  whatever produced it. Already true, and verified against an object that is
+  neither pandas, polars nor pyarrow: a bare class exporting only the capsule
+  is recognised by `is_arrow_source` and profiles.
+
+[#247]: https://github.com/alvarodiez20/pysuricata/issues/247
+
 ### Changed
 
 - **The correlations section says which kind of empty it is** ([#243]). Phase

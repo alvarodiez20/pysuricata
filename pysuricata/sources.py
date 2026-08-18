@@ -38,6 +38,7 @@ __all__ = [
     "is_duckdb_relation",
     "stream_arrow",
     "stream_duckdb",
+    "stream_ipc",
     "stream_parquet",
 ]
 
@@ -81,6 +82,68 @@ def stream_parquet(
         yield batch.to_pandas()
 
 
+#: The first bytes of each on-disk framing that can wear a `.arrow`,
+#: `.feather` or `.ipc` extension. The extension does not say which one it is,
+#: so the magic is what decides -- see `stream_ipc`.
+_IPC_FILE_MAGIC = b"ARROW1"
+_FEATHER_V1_MAGIC = b"FEA1"
+
+
+def stream_ipc(
+    path: str | os.PathLike, *, batch_size: int | None = None
+) -> Iterator[pd.DataFrame]:
+    """Yield an Arrow IPC file one batch at a time.
+
+    This is the format another runtime writes -- `arrow::write_ipc_file()` in
+    R, `Arrow.write()` in Julia, the `arrow` crate in Rust -- which is what
+    makes it worth reading directly rather than through a conversion (#247).
+
+    **Three different framings can wear these extensions, and the extension
+    does not say which.** Dispatching on the suffix would load an R
+    `write_ipc_file()` and fail on an `Arrow.write()`, since Julia defaults to
+    the stream framing. So the first bytes decide:
+
+    | magic | framing | read by |
+    |---|---|---|
+    | `ARROW1` | IPC file, with a footer | `pa.ipc.open_file` |
+    | `\xff\xff\xff\xff` | IPC stream, no footer | `pa.ipc.open_stream` |
+    | `FEA1` | Feather V1, not IPC at all | `feather.read_table` |
+
+    Only the last materialises, and that format is legacy -- pyarrow itself
+    deprecated writing it in 25.0.0 -- so it has no streaming reader to use.
+
+    Args:
+        path: Path to a `.arrow`, `.feather` or `.ipc` file.
+        batch_size: Rows per batch, where the framing lets us choose. The two
+            IPC framings carry the batching their writer chose and are read as
+            they were written.
+
+    Yields:
+        One pandas DataFrame per batch.
+
+    Raises:
+        ImportError: If pyarrow is not installed.
+        FileNotFoundError: If the file does not exist.
+    """
+    pa = _require("pyarrow", "reading Arrow IPC")
+    resolved = Path(path)
+    if not resolved.exists():
+        raise FileNotFoundError(f"File not found: {resolved}")
+
+    with open(resolved, "rb") as handle:
+        magic = handle.read(6)
+
+    if magic.startswith(_FEATHER_V1_MAGIC):
+        feather = _require("pyarrow.feather", "reading Feather V1")
+        yield from stream_arrow(feather.read_table(resolved), batch_size=batch_size)
+        return
+
+    opener = (
+        pa.ipc.open_file if magic.startswith(_IPC_FILE_MAGIC) else pa.ipc.open_stream
+    )
+    yield from stream_arrow(opener(resolved), batch_size=batch_size)
+
+
 def stream_arrow(
     source: Any, *, batch_size: int | None = None
 ) -> Iterator[pd.DataFrame]:
@@ -117,6 +180,22 @@ def stream_arrow(
 
     if isinstance(source, pa.RecordBatch):
         yield source.to_pandas()
+        return
+
+    # `RecordBatchFileReader` -- what `pa.ipc.open_file()` returns (#247). It
+    # is the one Arrow reader that is *not* a `RecordBatchReader`: the IPC file
+    # format has a footer listing every batch, so it offers random access by
+    # index instead of a forward-only iterator. Reading by index keeps the
+    # bounded-memory promise; `read_all()` would materialise the file.
+    #
+    # Duck-typed on the pair of members rather than the class name, for the
+    # reason `_duckdb_reader` is: a check that names a class breaks when the
+    # class moves, and these two members are specific enough together.
+    count = getattr(source, "num_record_batches", None)
+    get_batch = getattr(source, "get_batch", None)
+    if isinstance(count, int) and callable(get_batch):
+        for index in range(count):
+            yield get_batch(index).to_pandas()
         return
 
     to_batches = getattr(source, "to_batches", None)
@@ -207,6 +286,11 @@ def is_arrow_source(obj: Any) -> bool:
         "Table",
         "RecordBatch",
         "RecordBatchReader",
+        # `pa.ipc.open_file()` and `open_stream()` (#247). The stream reader is
+        # a `RecordBatchReader` subclass and would qualify anyway; the file
+        # reader is not, and named here is the only way it qualifies.
+        "RecordBatchFileReader",
+        "RecordBatchStreamReader",
         "Dataset",
         "FileSystemDataset",
         "InMemoryDataset",
