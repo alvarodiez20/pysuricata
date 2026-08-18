@@ -479,14 +479,14 @@ _INLINE_LINK_EXEMPTIONS = 3
 #: 1240 is the six nav links plus the three exempt inline ones.
 _KNOWN_UNDERSIZED = {390: 3, 768: 3, 1240: 9}
 
-#: #112 wants the summary under 560px at 390px. It is 631px. Recorded, not
+#: #112 wants the summary under 560px at 390px. It is 624px. Recorded, not
 #: waived.
 #:
-#: 620/575/340 -> 631/584/346 for the section-heading system (#298). Summary
+#: 620/575/340 -> 624/579/344 for the section-heading system (#298). Summary
 #: was the only one of the five sections whose heading opted out of
 #: `.section-title`, carrying a near-copy rule in `_03-summary.css` instead --
 #: same size, same line height, an 8px bottom margin against the system's
-#: 12px. Joining the system costs those 4px plus the reflow around them.
+#: 12px. Joining the system costs exactly those 4px, at all three widths.
 #:
 #: The raise is against this ratchet's own direction, so the reason matters:
 #: this is not a new decision about spacing, it is the *removal* of an
@@ -495,9 +495,22 @@ _KNOWN_UNDERSIZED = {390: 3, 768: 3, 1240: 9}
 #: `.section-title`. The shipped 0.5rem was drift away from the design, and
 #: the heights recorded here were measuring the drift.
 #:
-#: The 71px still between 631 and #112's 560 is unaffected by this and is
+#: **+4 and not more.** These numbers are CI's, and CI is the gate. Two
+#: developer machines measure this summary 2-7px taller than the recorded
+#: values *before any change* -- 342/580/627 against 340/575/620, at
+#: eb0523b with nothing applied -- so a baseline set from a local reading
+#: would have carried that machine's font rendering into the budget as
+#: permanent slack, and the ratchet would have stopped catching the next 7px.
+#: The change was therefore measured as a **delta** on one machine, which is
+#: environment-independent, and added to what CI records. It is +4px at every
+#: width, which is the margin and nothing else.
+#:
+#: The consequence is that these six cases fail locally on a machine that
+#: reads high, and pass in CI. That split predates this change and is #309.
+#:
+#: The 64px still between 624 and #112's 560 is unaffected by this and is
 #: where the work remains.
-_SUMMARY_BASELINE = {390: 631, 768: 584, 1240: 346}
+_SUMMARY_BASELINE = {390: 624, 768: 579, 1240: 344}
 
 
 @pytest.mark.browser
