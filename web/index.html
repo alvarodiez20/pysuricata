@@ -487,6 +487,18 @@
       els.versions.textContent =
         `pysuricata ${m.versions.pysuricata} · pandas ${m.versions.pandas} · Python ${m.versions.python} on WebAssembly`;
       logLine(`ready — pysuricata ${m.versions.pysuricata}, pandas ${m.versions.pandas}, python ${m.versions.python}`);
+      // The demo installs whatever PyPI is serving, so it is current by
+      // construction — except on the one day it is not, and that is worth
+      // saying out loud rather than letting an old release pass for the
+      // release the page advertises.
+      if (m.stale) {
+        note("warn", `This demo is running pysuricata ${m.stale.installed}, not the current ${m.stale.latest}.`,
+          m.stale.reason
+            ? `${m.stale.latest} would not install in this runtime: ${m.stale.reason}`
+            : "The installer resolved an older release. Reports are still correct, but they come from the older version.");
+      } else if (m.latest) {
+        logLine(`pysuricata ${m.latest} is the current release on PyPI`);
+      }
       return;
     }
 

@@ -1,6 +1,7 @@
 # Cloudflare Pages response headers.
-# Keep connect-src in step with worker.js: micropip fetches the pysuricata wheel
-# from PyPI at runtime, and Pyodide itself comes from jsDelivr.
+# Keep connect-src in step with worker.js: the worker reads the newest version off
+# the PyPI JSON API and micropip fetches the wheel from PyPI at runtime, and
+# Pyodide itself comes from jsDelivr.
 
 /*
   X-Content-Type-Options: nosniff

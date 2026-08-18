@@ -55,6 +55,33 @@ gc.collect()
   }
 }
 
+/** First line of an exception, which is the part worth showing in the log. */
+const errLine = (err) => String((err && err.message) || err).trim().split("\n")[0];
+
+/* What PyPI is serving right now.
+ *
+ * `micropip.install("pysuricata")` already means "newest", but only as far as
+ * the resolver can see: when the newest release is unsatisfiable inside this
+ * Pyodide, micropip settles on an older one and says nothing, and a demo three
+ * releases behind looks exactly like a current one. Asking PyPI directly gives
+ * the install something to be checked against.
+ *
+ * `no-store` covers the half of the staleness this page controls. The JSON API
+ * is served `max-age=900`, so a visitor who booted the demo minutes before a
+ * release would otherwise be handed their own cached copy of the old answer;
+ * PyPI purges its CDN on upload, so the origin is already current.
+ */
+/** A final release: digits and dots, optionally a `.postN`. Not `1.2.0rc1`. */
+const STABLE_VERSION = /^\d+(\.\d+)*(\.post\d+)?$/;
+
+async function latestOnPyPI() {
+  const res = await fetch("https://pypi.org/pypi/pysuricata/json", { cache: "no-store" });
+  if (!res.ok) throw new Error(`PyPI answered ${res.status}`);
+  const version = (await res.json())?.info?.version;
+  if (!version) throw new Error("no version in the PyPI response");
+  return version;
+}
+
 async function boot(config) {
   cfg = config;
   const t0 = performance.now();
@@ -73,7 +100,45 @@ async function boot(config) {
   status("Installing pysuricata from PyPI…", "~0.6 MB");
   await pyodide.runPythonAsync("import micropip");
   const indexArg = cfg.indexUrls ? `, index_urls=${JSON.stringify(cfg.indexUrls)}` : "";
-  await pyodide.runPythonAsync(`await micropip.install("pysuricata"${indexArg})`);
+
+  /* A mirror (?local=1) serves whatever it was populated with, so asking
+   * pypi.org what is newest would only manufacture a mismatch nobody running
+   * offline can act on. */
+  let latest = null;
+  if (!cfg.indexUrls) {
+    try {
+      const newest = await latestOnPyPI();
+      /* An alpha or a release candidate is newest without being what a visitor
+       * should be handed. Unpinned micropip ignores pre-releases already, so
+       * leaving `latest` null hands the choice back to the resolver. */
+      if (STABLE_VERSION.test(newest)) {
+        latest = newest;
+        post("log", { text: `pypi.org: newest pysuricata is ${latest}` });
+      } else {
+        post("log", { text: `pypi.org: newest pysuricata is ${newest}, a pre-release — installing the newest stable instead` });
+      }
+    } catch (err) {
+      post("log", { text: `could not read the PyPI index (${errLine(err)}) — installing unpinned` });
+    }
+  }
+
+  /* Pinned first, unpinned as the fallback. Pinning is what makes "latest"
+   * checkable; falling back is what keeps the demo alive on the day a release
+   * cannot be satisfied inside this Pyodide, which pinning alone would turn
+   * from a stale demo into no demo. Either way the version that actually
+   * loaded is compared against PyPI below. */
+  let pinFailed = null;
+  if (latest) {
+    try {
+      await pyodide.runPythonAsync(`await micropip.install("pysuricata==${latest}"${indexArg})`);
+    } catch (err) {
+      pinFailed = errLine(err);
+      post("log", { text: `pysuricata==${latest} would not install here (${pinFailed})` });
+    }
+  }
+  if (!latest || pinFailed) {
+    await pyodide.runPythonAsync(`await micropip.install("pysuricata"${indexArg})`);
+  }
 
   const versions = pyodide.runPython(`
 import json, sys, pandas, numpy, pysuricata
@@ -85,8 +150,18 @@ json.dumps({
 })
 `);
 
+  const parsed = JSON.parse(versions);
+
+  /* Only ever a warning. A demo running an older release still profiles files
+   * correctly — what would be wrong is letting it pass for the current one. */
+  const stale = latest && parsed.pysuricata !== latest
+    ? { installed: parsed.pysuricata, latest, reason: pinFailed }
+    : null;
+
   post("ready", {
-    versions: JSON.parse(versions),
+    versions: parsed,
+    latest,
+    stale,
     bootSecs: (performance.now() - t0) / 1000,
     heapMB: heapMB(),
   });
