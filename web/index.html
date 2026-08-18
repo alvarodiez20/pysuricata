@@ -138,7 +138,7 @@
      `.closing`: 15vw is 59px at 390px wide, under the minimum. So the floor
      is the mobile value, not a fallback — set it to what a phone should get
      rather than to whatever the desktop figure decays into. */
-  main.col { padding-block: clamp(84px, 15vw, 120px) clamp(56px, 9vw, 64px); }
+  main.col { padding-block: clamp(48px, 9vw, 72px) clamp(36px, 5vw, 44px); }
 
   h1 {
     font-size: clamp(29px, 7vw, 40px); line-height: 1.1; letter-spacing: -.03em;
@@ -301,7 +301,7 @@
   body.maxed { overflow: hidden; }
 
   .closing {
-    margin: clamp(52px, 12vw, 76px) 0 clamp(52px, 8vw, 56px);
+    margin: clamp(52px, 12vw, 76px) 0 clamp(20px, 3vw, 28px);
     padding-top: 18px; border-top: 1px solid var(--rule);
     font-size: 15px; line-height: 1.6; color: var(--ink-2); text-wrap: pretty;
   }
