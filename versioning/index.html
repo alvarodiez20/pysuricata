@@ -2077,7 +2077,28 @@ version you are about to tag before you push it.</p>
 <ol>
 <li><strong>release</strong> — GitHub release created <strong>after</strong> PyPI has the package, with
    notes lifted from <code>CHANGELOG.md</code>.</li>
+<li><strong>demo-check</strong> — the live demo, not a local checkout, profiles the sample
+   dataset against the version <code>publish</code> just shipped and asserts the report
+   frame is visibly painted (<code>web/e2e.py</code>, #1). <code>worker.js</code> installs
+   <code>pysuricata==&lt;latest&gt;</code> from PyPI at page load, so every publish above edits
+   the demo's launch asset in production, and this is what tests that edit
+   instead of the first visitor doing it. Runs after <code>publish</code>, not before —
+   the demo cannot see a version that is not on PyPI yet — and does not gate
+   <code>release</code>: PyPI already has the package by then and nothing can take that
+   back, so a demo failure fails the workflow on its own rather than
+   delaying release notes that are already accurate.</li>
 </ol>
+<div class="admonition warning">
+<p class="admonition-title">Freeze releases during a launch window</p>
+<p>A release cannot be un-shipped, and the demo re-installs whatever is
+newest on every page load with no redeploy — so a release pushed
+during a traffic spike (a front-page post, a scheduled announcement)
+can break the demo in front of the traffic it was timed for, and
+<code>demo-check</code> only reports that after the fact. Do not push a version
+tag inside a planned launch window. If a release must go out during
+one anyway, watch the <code>demo-check</code> job to completion before treating
+the window as safe, and be ready to yank.</p>
+</div>
 </li>
 </ol>
 <p>A pull request does <strong>not</strong> have to bump the version. If it does,

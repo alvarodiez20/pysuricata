@@ -1974,10 +1974,11 @@ three things the library does, without writing a script:</p>
 </span></code></pre></div>
 <p><code>pysuricata --version</code> prints the installed version. <code>pysuricata &lt;command&gt;
 --help</code> prints the options below.</p>
-<p>All three take a <strong>path</strong> and stream it — the file is read a batch at a time and
-never exists as one frame. CSV, Parquet, JSON and Arrow IPC (<code>.arrow</code>,
-<code>.feather</code>, <code>.ipc</code>) are read directly; see
-<a href="../data-sources/">Arrow, Parquet and DuckDB</a>.</p>
+<p>All three take a <strong>path</strong>. CSV, Parquet, JSON, Arrow IPC (<code>.arrow</code>, <code>.feather</code>,
+<code>.ipc</code>) and Excel (<code>.xlsx</code>, <code>.xlsm</code>, <code>.xlsb</code>, <code>.xls</code>, <code>.ods</code>) are all read
+directly — Parquet and Arrow IPC a batch at a time and never as one frame, the
+rest loaded whole, Excel unavoidably so since no engine puts a <code>chunksize</code> on
+<code>read_excel</code>. See <a href="../data-sources/">Arrow, Parquet and DuckDB</a>.</p>
 <hr />
 <h2 id="profile"><code>profile</code></h2>
 <p>Analyse a dataset and write a self-contained HTML report.</p>

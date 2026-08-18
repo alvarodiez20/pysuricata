@@ -2038,7 +2038,7 @@ scope. Paste this first to follow along:</p>
 </tr>
 <tr>
 <td>a path — <code>str</code> or <code>os.PathLike</code></td>
-<td><code>.csv</code>, <code>.parquet</code>, <code>.json</code>, <code>.arrow</code>, <code>.feather</code>, <code>.ipc</code></td>
+<td><code>.csv</code>, <code>.parquet</code>, <code>.json</code>, <code>.arrow</code>, <code>.feather</code>, <code>.ipc</code>, <code>.xlsx</code>, <code>.xlsm</code>, <code>.xlsb</code>, <code>.xls</code>, <code>.ods</code></td>
 </tr>
 <tr>
 <td>an Arrow table or reader</td>
@@ -2058,6 +2058,15 @@ scope. Paste this first to follow along:</p>
 frame. <code>pyarrow</code> is needed for Parquet and Arrow, and says so if it is missing;
 DuckDB is duck-typed on the relation's batch reader, so nothing imports it. See
 <a href="../data-sources/">Arrow, Parquet and DuckDB</a>.</p>
+<p>A spreadsheet is the one path format that cannot stream — no engine puts a
+<code>chunksize</code> on <code>read_excel</code>, so a workbook is always built whole before
+anything sees a row. <code>python-calamine</code> is tried first (one dependency across
+all five spreadsheet formats, and what the <a href="https://pysuricata.pages.dev">browser demo</a>
+already uses), falling back to pandas' own per-format engine — openpyxl,
+xlrd, pyxlsb, odfpy — when calamine is not installed. Only the first sheet is
+read; a workbook that keeps its data on a later sheet needs
+<code>pd.read_excel(path, sheet_name=...)</code> and the resulting frame passed in
+directly.</p>
 <p>Anything else raises <code>UnsupportedDataError</code>, whose message lists the forms above.</p>
 <h2 id="configuring-a-call">Configuring a call</h2>
 <p>Three forms, cheapest first. <code>configuration.md</code> has the full

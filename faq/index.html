@@ -2396,7 +2396,7 @@ batch size, so a bigger batch costs more memory <em>and</em> more time. See
 </tr>
 <tr>
 <td>a <strong>file path</strong></td>
-<td><code>.csv</code>, <code>.parquet</code>, <code>.json</code>, <code>.arrow</code>, <code>.feather</code>, <code>.ipc</code></td>
+<td><code>.csv</code>, <code>.parquet</code>, <code>.json</code>, <code>.arrow</code>, <code>.feather</code>, <code>.ipc</code>, <code>.xlsx</code>, <code>.xlsm</code>, <code>.xlsb</code>, <code>.xls</code>, <code>.ods</code></td>
 </tr>
 <tr>
 <td>an <strong>Arrow</strong> table or reader</td>
@@ -2412,13 +2412,18 @@ batch size, so a bigger batch costs more memory <em>and</em> more time. See
 </tr>
 </tbody>
 </table>
-<p>The last three are read a <strong>batch at a time</strong> and never exist as one frame, so
+<p>The middle two are read a <strong>batch at a time</strong> and never exist as one frame, so
 handing over the path costs less than loading it yourself — 307 MB against
 581 MB on a 180 MB Parquet file:</p>
 <div class="language-python highlight"><pre><span></span><code><span id="__span-12-1"><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">profile</span><span class="p">(</span><span class="s2">&quot;events.parquet&quot;</span><span class="p">)</span>            <span class="c1"># streamed</span>
 </span><span id="__span-12-2"><a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="n">profile</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_parquet</span><span class="p">(</span><span class="s2">&quot;events.parquet&quot;</span><span class="p">))</span>  <span class="c1"># loaded first</span>
 </span></code></pre></div>
-<p>Anything else — Excel, a SQL cursor, a Dask partition — goes through pandas or
+<p>A spreadsheet is the exception among file paths: no engine puts a <code>chunksize</code>
+on <code>read_excel</code>, so a workbook is always built whole first, and only the
+first sheet is read. <code>python-calamine</code> covers all five spreadsheet formats
+with one dependency; without it, pandas falls back to openpyxl, xlrd, pyxlsb
+or odfpy depending on the extension.</p>
+<p>Anything else — a SQL cursor, a Dask partition — goes through pandas or
 polars first. See <a href="../data-sources/">Arrow, Parquet and DuckDB</a>.</p>
 <h3 id="is-there-a-command-line">Is there a command line?</h3>
 <p>Yes, three subcommands:</p>

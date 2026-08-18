@@ -2139,14 +2139,18 @@ sketch estimate, so <strong>the whole absolute error of the distinct estimate la
 the duplicate count</strong> — a quantity that is usually far smaller. On 200,000 rows
 containing exactly 2,000 duplicates the distinct estimate was 0.48% off, well
 inside spec, and the duplicate count came back 47% high.</p>
-<p>So <code>duplicate_rows_est</code> is suppressed to <code>0</code> when it does not exceed its own
-uncertainty, and <code>duplicate_rows_uncertainty</code> carries the ceiling. Read the two
-together:</p>
+<p>So <code>duplicate_rows_est</code> is suppressed to <code>0</code> when it does not clear <strong>3</strong>
+standard deviations of uncertainty, not 1 — a 1-sigma gate published a
+duplicate count on a clean, duplicate-free frame about one run in ten (#248).
+<code>duplicate_rows_uncertainty</code> is exported as one sigma either way; the ceiling
+below which nothing is resolvable is <code>math.ceil(3 * duplicate_rows_uncertainty)</code>,
+not <code>duplicate_rows_uncertainty</code> itself. Read the two together:</p>
 <table>
 <thead>
 <tr>
 <th><code>est</code></th>
 <th><code>uncertainty</code></th>
+<th>Ceiling (<code>3 × uncertainty</code>, rounded up)</th>
 <th>Means</th>
 </tr>
 </thead>
@@ -2154,23 +2158,27 @@ together:</p>
 <tr>
 <td><code>0</code></td>
 <td><code>0</code></td>
+<td>—</td>
 <td>Exactly none. The distinct count was exact, not estimated</td>
 </tr>
 <tr>
 <td><code>0</code></td>
 <td><code>2201</code></td>
-<td>Nothing resolvable. The true count is somewhere below roughly 2,201</td>
+<td><code>6603</code></td>
+<td>Nothing resolvable. The true count is somewhere below roughly 6,603</td>
 </tr>
 <tr>
 <td><code>50602</code></td>
 <td><code>1651</code></td>
-<td>About 50,602, give or take 1,651</td>
+<td>—</td>
+<td>About 50,602, give or take 1,651 — cleared the ceiling, so no suppression</td>
 </tr>
 </tbody>
 </table>
 <p>Gating on <code>duplicate_rows_est &gt; 0</code> is therefore safe against false positives and
 will not fire on a count the sketch cannot support. If you need to fail on the
-<em>possibility</em> of duplicates, gate on <code>duplicate_rows_uncertainty</code> instead.</p>
+<em>possibility</em> of duplicates, gate on <code>duplicate_rows_uncertainty</code> instead — it
+is nonzero exactly when <code>duplicate_rows_est</code> could be suppressing a real count.</p>
 <h2 id="columnsnametype"><code>columns[name]["type"]</code></h2>
 <p>One of <code>numeric</code>, <code>categorical</code>, <code>datetime</code>, <code>boolean</code>, <code>identifier</code>.</p>
 <p><code>identifier</code> is a numeric column that is monotonic, integer-like and has a
