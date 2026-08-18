@@ -89,8 +89,8 @@
 
   /* The reading column, as a grid track rather than a `max-width` per block.
      Capping each block instead would centre each one on its own width — a 20ch
-     heading and a 52ch lede would end up with different left edges, which is
-     the ragged centre this is here to avoid. One track, one left edge, and the
+     heading and a narrower lede would end up with different left edges, which
+     is the ragged centre this is here to avoid. One track, one left edge, and the
      side tracks collapse to nothing below `--measure`, so a phone is untouched.
 
      `full` is for the two things that belong to the report rather than to the
@@ -130,13 +130,24 @@
   header nav a:not(.brand) { color: var(--muted); text-decoration: none; padding: 14px 0; }
   header nav a:not(.brand):hover { color: var(--link); }
 
-  main { flex: 1 1 auto; padding: clamp(40px, 12vw, 84px) 0 64px; }
+  /* `main.col`, not `main`: `.col` sets the horizontal gutter in a shorthand
+     and outranks a bare element selector, so a `padding` on `main` alone was
+     silently zeroed and the hero sat flush against the header rule. */
+  main { flex: 1 1 auto; }
+  /* A phone lands on the floor of both clamps here and of the one on
+     `.closing`: 15vw is 59px at 390px wide, under the minimum. So the floor
+     is the mobile value, not a fallback — set it to what a phone should get
+     rather than to whatever the desktop figure decays into. */
+  main.col { padding-block: clamp(84px, 15vw, 120px) clamp(56px, 9vw, 64px); }
 
   h1 {
     font-size: clamp(29px, 7vw, 40px); line-height: 1.1; letter-spacing: -.03em;
-    font-weight: 600; margin: 0 0 18px; max-width: 20ch; text-wrap: balance;
+    font-weight: 600; margin: 0 0 18px; text-wrap: balance;
   }
-  .lede { font-size: 17px; line-height: 1.6; color: var(--ink-2); margin: 0; max-width: 52ch; text-wrap: pretty; }
+  /* No cap of its own: the reading track is the measure, so the lede and the
+     closing note end on the same right edge as the status line and the log
+     between them. A 52ch cap here gave the page a second right edge. */
+  .lede { font-size: 17px; line-height: 1.6; color: var(--ink-2); margin: 0; text-wrap: pretty; }
 
   /* Actions. The drop target is the whole page, so there is no dashed box to
      draw — the rule above the buttons is what lights up on dragover. */
@@ -290,8 +301,9 @@
   body.maxed { overflow: hidden; }
 
   .closing {
-    margin: clamp(52px, 12vw, 76px) 0 0; padding-top: 18px; border-top: 1px solid var(--rule);
-    font-size: 15px; line-height: 1.6; color: var(--ink-2); max-width: 56ch; text-wrap: pretty;
+    margin: clamp(52px, 12vw, 76px) 0 clamp(52px, 8vw, 56px);
+    padding-top: 18px; border-top: 1px solid var(--rule);
+    font-size: 15px; line-height: 1.6; color: var(--ink-2); text-wrap: pretty;
   }
   .closing code { font-family: var(--mono); font-size: 13px; color: var(--ink); }
 
@@ -324,8 +336,8 @@
 
   <h1>Profile a big CSV in a browser tab.</h1>
   <p class="lede">
-    Drop a file and PySuricata returns a full EDA report — per-column distributions,
-    missing values, quality alerts. There is no server: the profiler is compiled to
+    Drop a file and PySuricata returns a full EDA report with per-column distributions,
+    missing values and quality alerts. There is no server: the profiler is compiled to
     WebAssembly and runs inside this page, so <strong>your data never leaves your machine</strong>.
   </p>
 
@@ -368,13 +380,13 @@
   </div>
 
   <p class="closing">
-    Reads CSV, TSV, Parquet and Excel — <code>.xlsx</code>, <code>.xlsm</code>,
+    Reads CSV, TSV, Parquet and Excel: <code>.xlsx</code>, <code>.xlsm</code>,
     <code>.xlsb</code>, <code>.xls</code> and <code>.ods</code>. CSV and Parquet are
     streamed in chunks; a spreadsheet has no chunked reader in pandas, so a workbook is
     read whole and capped at 40 MB here. Statistics come from streaming sketches, so
     memory tracks column count rather than row count. Counts and moments are exact;
     quantiles, distinct counts and duplicates are estimated, and the report marks each
-    one. Frames wider than 250 columns are refused here — run those locally.
+    one. Frames wider than 250 columns are refused here; run those locally.
   </p>
 
 </main>
