@@ -14,6 +14,80 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **`profile()` and `summarize()` read Excel workbooks** (#4) — `.xlsx`,
+  `.xlsm`, `.xlsb`, `.xls` and `.ods` — which the browser demo already did
+  (`web/README.md`) while the library itself raised `UnsupportedDataError`
+  for the same file. Publishing the demo widened that gap rather than
+  revealing it: a workbook the demo profiled in the browser had no path
+  through the package underneath it.
+
+  `python-calamine` is tried first — one dependency across all five formats,
+  and the engine the demo settled on for the same reason — falling back to
+  pandas' own per-format engine (openpyxl, xlrd, pyxlsb, odfpy) when calamine
+  is not installed, or when the installed pandas predates its support (added
+  in 2.2; this project's floor is 2.0, so the fallback is load-bearing, not
+  decorative). Only the first sheet is read, silently, matching what a plain
+  `pd.read_excel(path)` already defaults to — `profile()` is a one-shot call
+  with no prompt to put a sheet chooser behind, unlike the demo, which pauses
+  and asks.
+
+  `pysuricata/cli.py`'s `load_data()` used to duplicate `api.py`'s path
+  dispatch with a narrower format list that had already drifted out of sync
+  with it — `pysuricata profile data.arrow` worked from a Python call and
+  raised `Unsupported file format` from the CLI. It now delegates to the
+  same function, so this fix (and any future one) applies to both at once.
+
+- **`benchmarks/field.py`: the one command behind a published comparison
+  table** (#2). A table of ratios against named competitors with no shipped
+  harness behind it is exactly the shape that gets taken apart in a thread —
+  "re-run it yourself" was not actually possible. `field.py` pins
+  `end_to_end.py`'s machinery (round-robin scheduling, the load guard, the
+  environment block) to one fixed scenario — `datasets.mixed()` at a
+  realistic scale, the suite already built to read as "the column mix of a
+  real analytics table" rather than one of the isolation shapes
+  `hotspots.py`/`kernels.py` use to pin down a single kernel — and
+  `MIN_QUOTABLE_ROUNDS` rounds by default, so nothing about what gets
+  published depends on which flags someone happened to type.
+
+  It also fixes what a fixed comparison would otherwise have kept fixed
+  forever: `ydata-profiling` renamed itself to `fg-data-profiling` (import
+  `data_profiling`) in its 4.18.4 release — April 2026 — and receives no
+  further updates under the old name, by its own PyPI page. Measuring
+  against `ydata-profiling` as "current" would have been measuring an
+  abandoned package. `end_to_end.TOOLS["ydata"]` now tries the new import
+  first and falls back to the old one only if that is what is actually
+  installed, attaching a note to the result and to the environment block
+  when the fallback is what ran — shared by both `end_to_end.py` and
+  `field.py`, so the fix applies to every comparison table either produces.
+
+- **A real-browser check that the demo actually renders a report, run after
+  every release** (#1). `worker.js` installs `pysuricata==<latest>` from PyPI
+  at page load, so every release edited the demo's launch asset in production
+  with nothing testing it first — ship during a front-page hour and the demo
+  could break in front of the traffic.
+
+  `web/e2e.py` boots the live demo in Chromium, drops the sample dataset,
+  waits for a real Pyodide + `micropip.install` + `profile()` run, and asserts
+  on the *pixels* of the resulting report frame rather than its markup. DOM
+  presence would not have caught the one failure already found this way:
+  Chrome silently drops a `srcdoc` document past ~700 KB — no error, no
+  console warning, no failed request, just a blank frame that is structurally
+  identical to a rendered one (`web/index.html` moved to a blob URL over
+  exactly this). A screenshot with too little non-background ink or too few
+  distinct colours is treated as a blank render even when the runtime itself
+  reports success.
+
+  Wired into `cd.yml` as `demo-check`, after `publish` — the demo cannot see a
+  version that is not on PyPI yet — and deliberately not a dependency of
+  `release`: PyPI already has the package by then, so a demo failure fails the
+  workflow on its own rather than delaying release notes that are already
+  accurate. `docs/versioning.md` documents the new pipeline stage and states
+  the policy this doesn't automate: don't tag a release inside a planned
+  launch window, because the demo re-installs whatever is newest with no
+  redeploy and a broken demo cannot be un-shipped along with it.
+
 ### Changed
 
 - **The versioning contract said a minor bump may break you. It may not.** The
@@ -134,6 +208,24 @@ quoted when both sides were measured in the same round-robin run.
   elsewhere on the machine resolved as an implicit namespace package with
   `__file__ is None`, which the first version of this check crashed on
   (`realpath(None)`) rather than refusing cleanly — fixed alongside it.
+
+- **The duplicate-row estimate could false-alarm on a clean frame** (#248).
+  `RowKMV.duplicates()` suppressed its count when the estimate did not exceed
+  its own uncertainty — an implicit 1-sigma gate. Measured over 40 frames of
+  200,000 guaranteed-unique rows, that published a nonzero duplicate count
+  about 1 run in 10, because the normal-tail rate at 1 sigma is ~15.9% and
+  `approx_duplicates()` rectifies at zero for the rest.
+
+  The gate is now `DUPLICATE_RESOLUTION_SIGMAS = 3`
+  (`pysuricata/accumulators/sketches.py`), matching the normal-tail rate down
+  to ~0.13%. `DuplicateEstimate` gained a `ceiling` field so the report and
+  the `summarize()` payload state the same bound: the report prints
+  `math.ceil(3 * uncertainty)` directly, and the payload's exported
+  `duplicate_rows_uncertainty` stays one sigma so a consumer computes the same
+  ceiling — documented in `docs/summary-schema.md` — without a
+  `schema_version` bump. The asymmetry is intentional: a missed 2-sigma
+  duplication is a number a human notices on the next look, and a false
+  alarm is a pipeline that failed overnight on a dataset that was fine.
 
 - **`outliers_iqr_est` was a reservoir count published against a population
   denominator, so it read 49x low at a million rows** (#327). The IQR fence is

@@ -6,18 +6,25 @@ machine.
 
 ```bash
 uv sync --dev
-uv pip install pytest pytest-benchmark          # accuracy suite
-uv pip install ydata-profiling sweetviz skimpy  # optional, for end_to_end
+uv pip install pytest pytest-benchmark            # accuracy suite
+uv pip install fg-data-profiling sweetviz skimpy  # optional, for end_to_end / field
 ```
 
-## The four entry points
+`fg-data-profiling`, not `ydata-profiling`: the latter renamed itself in its
+4.18.4 release and receives no further updates under the old name (its own
+PyPI page says so). `end_to_end.py` and `field.py` both try the new import
+first and fall back to the old one if that is what is actually installed,
+flagging the result when it does — see `TOOLS["ydata"]` in `end_to_end.py`.
+
+## Entry points
 
 | Script | Question it answers |
 |---|---|
 | `hotspots.py` | Where does `profile()` spend its time *today*? |
 | `kernels.py` | How fast is each kernel, and how close is it to this machine's memory bandwidth? |
 | `accuracy.py` | Are the numbers right — and do they stay right when the data is chunked? |
-| `end_to_end.py` | How does PySuricata compare to ydata-profiling / sweetviz / skimpy on identical data? |
+| `end_to_end.py` | How does PySuricata compare to competitors on identical, tunable, synthetic data? |
+| `field.py` | The one command behind a published comparison table: `end_to_end.py`'s machinery, pinned to a fixed, realistic scenario, so "re-run it yourself" is one line instead of a guess at what flags to pass. |
 | `versions.py` | How much faster is this version than the last five, measured properly? |
 | `columns.py` | What does a *column* cost, in memory and in report bytes? |
 
@@ -53,7 +60,12 @@ gate for #207's "a 600-column frame profiles inside a 512 MB runner".
    rule: under 20% means the instruction stream is the bottleneck (a native
    kernel helps); over 70% means you are already saturating memory bandwidth
    and only *fewer passes over the data* will help.
-4. **`end_to_end.py`** and **`versions.py`** to produce the numbers you publish.
+4. **`end_to_end.py`**, **`field.py`** and **`versions.py`** to produce the
+   numbers you publish. Reach for `field.py` specifically when the number is
+   going in front of an audience: it is `end_to_end.py`'s harness with no
+   flags to get wrong, run against a scenario chosen to look like real data
+   rather than one of the isolation shapes `hotspots.py`/`kernels.py` use to
+   pin down a single kernel.
 
 ## The one rule for anything you publish
 

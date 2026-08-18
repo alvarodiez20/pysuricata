@@ -500,7 +500,7 @@ class TestCLIDataLoading:
             f.write("data")
             path = f.name
         try:
-            with pytest.raises(ValueError, match="Unsupported"):
+            with pytest.raises(ValueError, match="unsupported format"):
                 load_data(path)
         finally:
             os.unlink(path)
@@ -513,7 +513,7 @@ class TestCLIDataLoading:
             f.write("a\tb\n1\tx\n2\ty\n")
             path = f.name
         try:
-            with pytest.raises(ValueError, match="Unsupported"):
+            with pytest.raises(ValueError, match="unsupported format"):
                 load_data(path)
         finally:
             os.unlink(path)

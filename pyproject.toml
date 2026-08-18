@@ -90,6 +90,13 @@ dev = [
     "mkdocstrings>=0.30.0",
     "mkdocstrings-python>=1.18.0",
     "pyarrow>=17.0.0",  # test-only: exercises the pd.ArrowDtype inference branch
+    # test-only: exercises `_read_excel`'s calamine path. Never a runtime dep --
+    # `_read_excel` falls back to pandas' own per-format engines when this is
+    # not installed, same as the browser demo's dependency-on-demand story.
+    "python-calamine>=0.2",
+    # test-only: writes the .xlsx fixtures `_read_excel` reads. Not calamine,
+    # which is read-only -- pandas needs a writer engine to create one.
+    "openpyxl>=3.1",
     # test-only: tests/test_memory_stress.py and tests/test_complexity_analysis.py
     # measure RSS with it. Nothing under `pysuricata/` imports it.
     "psutil>=7.1.0",
@@ -108,6 +115,8 @@ dev = [
 # and installs the browser; everywhere else the cases skip themselves.
 browser = [
     "playwright>=1.47",
+    # web/e2e.py decodes a demo screenshot to assert it is not blank.
+    "pillow>=10.0",
 ]
 
 [tool.setuptools]

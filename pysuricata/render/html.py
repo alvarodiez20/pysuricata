@@ -221,10 +221,13 @@ def render_html_snapshot(
     # unresolvable count while `summarize()` published it raw -- the report
     # correct, the versioned payload wrong.
     if hasattr(row_kmv, "duplicates"):
-        dup_rows, dup_pct, dup_sigma, dup_resolvable = row_kmv.duplicates()
+        estimate = row_kmv.duplicates()
+        dup_rows, dup_pct = estimate.rows, estimate.pct
+        dup_sigma, dup_resolvable = estimate.uncertainty, estimate.resolvable
+        dup_ceiling = estimate.ceiling
     else:  # pragma: no cover - a row sketch that predates `duplicates()`
         dup_rows, dup_pct = row_kmv.approx_duplicates()
-        dup_sigma, dup_resolvable = 0, True
+        dup_sigma, dup_resolvable, dup_ceiling = 0, True, 0
     if dup_resolvable:
         duplicates_value = f"{dup_rows:,}"
         # No bound when the count is exact -- KMV counts exactly until it has
@@ -234,11 +237,15 @@ def render_html_snapshot(
         duplicates_overall = f"{dup_rows:,} ({dup_pct:.1f}%)"
     else:
         # Below the resolution of the sketch. A figure here would invite a
-        # conclusion it cannot support, so state the ceiling instead.
-        ceiling_pct = (dup_sigma / n_rows * 100.0) if n_rows else 0.0
-        duplicates_value = f"&lt; {dup_sigma:,}"
+        # conclusion it cannot support, so state the ceiling instead. The
+        # ceiling comes from the sketch rather than from `dup_sigma` here: it
+        # is the same multiple the suppression gate applied, and computing it
+        # twice is how the printed bound would end up below the figure it
+        # suppressed.
+        ceiling_pct = (dup_ceiling / n_rows * 100.0) if n_rows else 0.0
+        duplicates_value = f"&lt; {dup_ceiling:,}"
         duplicates_note = "below sketch resolution"
-        duplicates_overall = f"under {dup_sigma:,} ({ceiling_pct:.1f}%)"
+        duplicates_overall = f"under {dup_ceiling:,} ({ceiling_pct:.1f}%)"
 
     constant_cols = 0
     high_card_cols = 0
