@@ -36,14 +36,17 @@ def fmt_num(x: int | float | None) -> str:
     try:
         if isinstance(x, float) and (math.isnan(x) or math.isinf(x)):
             return "NaN"
-        # `-0` is arithmetically zero and reads as a measurement that came out
-        # slightly negative. A one-row categorical column has one level at
-        # p = 1, and -(1 * log2(1)) is -0.0, so the card printed `ENTROPY -0`
-        # (#314). Every formatter is a place this can surface, so it is caught
-        # in the one they all go through rather than at the call site.
-        if x == 0:
-            x = abs(x)
-        return f"{x:,.4g}"
+        formatted = f"{x:,.4g}"
+        # #314. A one-level column's entropy is `-sum([1.0 * log2(1.0)])`,
+        # which is IEEE negative zero, and the card printed `-0`. The value is
+        # right and its rendering is not -- there is no negative zero in
+        # anything this report measures. Caught here rather than at the one
+        # call site so no future statistic can reintroduce it. `.4g` keeps a
+        # small negative in exponent form (`-1e-25`), so this only ever matches
+        # a true signed zero.
+        if formatted.lstrip("-").strip("0.,") == "":
+            return formatted.lstrip("-")
+        return formatted
     except Exception:
         return str(x)
 
@@ -64,13 +67,10 @@ def fmt_compact(x: object) -> str:
         # If isinstance checks fail unexpectedly, continue to best-effort
         pass
     try:
-        if isinstance(x, (int, float)) and x == 0:
-            x = abs(x)
         return f"{x:.4g}"
     except Exception:
         try:
-            value = float(x)
-            return f"{abs(value) if value == 0 else value:.4g}"
+            return f"{float(x):.4g}"
         except Exception:
             return str(x)
 

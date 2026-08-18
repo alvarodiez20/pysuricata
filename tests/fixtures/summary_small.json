@@ -9,11 +9,13 @@
       "dtype": "object",
       "empty_zero": 0,
       "entropy": 0.9814538950336537,
+      "exact_levels": 2,
       "gini_impurity": 0.48719999999999997,
       "len_p90": 1,
       "mem_bytes": 450,
       "missing": 0,
       "most_common_ratio": 0.58,
+      "singleton_levels": 0,
       "top_items": [
         [
           "b",

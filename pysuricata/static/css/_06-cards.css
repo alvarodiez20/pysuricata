@@ -735,13 +735,14 @@
 
 /* ---- mobile ----------------------------------------------------
    Placed after the desktop rules on purpose: these have the same
-   specificity, so the later declaration wins. Sitting before them, the
-   180px chart never applied. */
-@media (max-width: 768px) {
-  #pysuricata-report .var-card__body .var-chart .hist-variants {
-    height: 180px;
-  }
+   specificity, so the later declaration wins.
 
+   No fixed height on `.hist-variants` here. One lived here and forced every
+   kind to 180px, which a two-level categorical chart (23px) padded and a
+   numeric one (213px) overflowed -- see #319. The chart is `height: auto` and
+   sizes to the viewBox the renderer computed, which is the same argument
+   `_08-categorical.css` makes for the bars one level down. */
+@media (max-width: 768px) {
   #pysuricata-report .vstat-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2356,12 +2357,24 @@
    accepted rather than traded away. #122's decision on the summary and the
    numeric card raised both height targets to their measured values precisely
    so that a target size would never again be argued down to fit a budget. */
+/* `max-content 1fr` -- the row grid the rest of the redesign uses (#149).
+   Under `flex` every row set its own name-column width, so the chips began at
+   a different x on every line and there was no column to read down. The names
+   are short and the track is shared, so `max-content` costs nothing and buys
+   an alignment. Below the mobile breakpoint the two stack, because a column
+   name and three chips do not fit on one 390px line. */
 .attention-item {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  align-items: center;
   gap: 0.5rem;
   min-height: var(--tap-min);
+}
+
+@media (max-width: 768px) {
+  .attention-item {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* min-width as well as min-height, because a target has two dimensions and
@@ -2407,11 +2420,15 @@
   white-space: nowrap;
 }
 
-/* The chips are the row's content, so they set its baseline; the column name
-   was sitting on a different one, which made the eye read the flags and then
-   travel back to find out whose they were. */
-.attention-item {
-  align-items: center;
+/* What was withheld by the cap, and where to find it (#149). Past ten rows the
+   block stops being a triage, and a row silently dropped is worse than a row
+   not shown. */
+.attention-more,
+.attention-clear {
+  margin: 0.6rem 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted, inherit);
+  text-wrap: pretty;
 }
 
 .needs-attention .flag.selected {

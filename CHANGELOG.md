@@ -93,10 +93,60 @@ quoted when both sides were measured in the same round-robin run.
 - **The `ReportConfig` deprecation now names 1.0.0 as its removal, not 0.3.0.**
   Removing a public name is a break and a break costs a major bump, so the old
   date was a deadline that could not happen: it was set under the Cargo-style
-  reading this release replaces. The 1.0.0 gate that asked for an empty
-  deprecation queue said the same thing in reverse -- the queue cannot empty
-  before the release that empties it -- and it now asks instead that every
-  entry has warned long enough to be removed *in* 1.0.0.
+  reading of SemVer that this cycle replaced. The 1.0.0 gate asking for an
+  empty deprecation queue said the same thing in reverse -- the queue cannot
+  empty before the release that empties it -- and it now asks instead that
+  every entry has warned long enough to be removed *in* 1.0.0.
+
+- **A design pass over seven report issues** (#319, #145, #294, #314, #149,
+  #297, #300), which also closes #299.
+
+  **The report is 12,419 bytes smaller.** A `Hover over segments to see chunk
+  details` line that #294 asked to remove turned out never to render: the pane
+  it lived in — `_build_dataprep_spectrum_visualization`, four near-copies
+  across the card kinds, one of them documented "Legacy method - no longer
+  used" and shadowed by a second definition in the same class — was reached by
+  no code path, and only tests called it. It is deleted with the 523 lines of
+  stylesheet that dressed it, which every report was carrying because the
+  report inlines its CSS. Three untokenised colours went with it, taking that
+  ratchet from 61 to 58.
+
+  **The attention block ranks rather than lists** (#149). Severity was in the
+  class and unused for ordering, with ties broken on chip count, so Titanic
+  opened on `Age` (19.9% missing against a 20% limit) above `Cabin` (77.1%
+  against the same). Rows now sort by severity and then by `value / threshold`,
+  cap at ten with the remainder counted, and a clean frame gets a statement
+  instead of an absent block — #138's argument for correlations, applied here.
+
+  **Degenerate frames stop describing themselves as three contradictory
+  things** (#314). `unique_cols` was `n_cols`, so a one-column frame reported
+  itself all-unique *and* constant *and* high-cardinality at once; the three
+  buckets are exclusive now and empty below two values. A share-based flag no
+  longer fires where an even spread would also have fired it — at one row every
+  column is 100% dominant. Negative zero is caught in the formatter.
+
+  **The flag reference stated a limit that was not applied.** It said
+  `dominant category` fires above 50%; the threshold is 0.7, and a 60%-dominant
+  column does not fire. A block that exists to explain a chip is worse than
+  useless with a wrong number in it.
+
+  **A many-level column says how many of its levels occur exactly once**
+  (#297) — `101 of 147` for Titanic's `Cabin`, which is what separates a few
+  crowded levels from a drift of near-singletons. `singleton_levels` and
+  `exact_levels` join the `summarize()` payload; both are `null`, never zero,
+  when the column outgrew the counter, because the new `SingletonCounter`
+  counts exactly or refuses. Adding keys does not bump `schema_version`.
+
+  **Dark mode is measured against the surface it is painted on** (#300).
+  `test_contrast.py` measures token pairs against `--paper`; the new check
+  walks ~690 rendered elements, resolves the background each one actually sits
+  on, and finds nothing below AA at either width — the worst mark is 5.95
+  against a required 4.5.
+
+  **Charts take the height their viewBox asks for** (#319). A fixed 180px under
+  the mobile breakpoint padded a two-level categorical chart by 157px and
+  overflowed a numeric one by 33px. Card-height criteria now exist for all four
+  kinds rather than only numeric (#145).
 
 - **The versioning contract said a minor bump may break you. It may not.** The
   page had adopted Cargo's pre-1.0 convention, under which `0.1.0 → 0.2.0` is
@@ -125,43 +175,18 @@ quoted when both sides were measured in the same round-robin run.
 ### Fixed
 
 - **A zero-column frame reported 9 duplicate rows in 10, labelled `exact`;
-  pandas reports none** (#312, closing out #299). The row hasher raised
-  `IndexError` on `columns[0]` and the surrounding `except` routed it into the
-  fallback built for chunks that *cannot be hashed*, which stringified nothing
-  into a single signature for every row. A frame with no columns has nothing in
-  its rows to compare, which is exactly why `df.duplicated()` is False for all
-  of them, so the case is now handled where it arises rather than caught as a
-  failure. The all-NaN and constant-column neighbours still report 19 and 49.
+  pandas reports none** (#312, and with it the last of #299). The row hasher
+  raised `IndexError` on `columns[0]` and the surrounding `except` routed it
+  into the fallback built for chunks that *cannot be hashed*, which stringified
+  nothing into a single signature for every row. A frame with no columns has
+  nothing in its rows to compare, which is exactly why `df.duplicated()` is
+  False for all of them, so the case is handled where it arises rather than
+  caught as a failure. The all-NaN and constant-column neighbours, which look
+  identical and are correct, still report 19 and 49.
 
   `duplicates_degraded` is published in the dataset payload, and the Summary
-  tile stops calling a partial hash `exact`: that label was derived from the
-  sketch's own error alone, which says nothing about rows the sketch never saw.
-
-- **Degenerate frames raised flags that were true by construction** (#314,
-  closing out #299). A one-row frame rendered "1 of 1 columns need a look" with
-  `100.0% dominant category · limit 50%`. A column with one row has one value,
-  so its most common value is 100% of it whatever the data: the flag could not
-  *not* fire, and it landed in the one block designed to say what needs a look,
-  on the frames a new user is most likely to start with.
-
-  Share-based flags now fire only where a column could fail to raise them, and
-  the dominant-category test compares a share against a share. It used to
-  compare the mode's count against `int(threshold * count)`, and truncation
-  makes that bar 1 at two rows -- the smallest a mode can be -- so two distinct
-  values were flagged as having a dominant category. `100.0% dominant category`
-  on two identical rows, and `80.0%` on eight of ten, still fire.
-
-  The quick-facts line counted one column as unique *and* constant *and*
-  high-cardinality. `unique` was not a property at all: it was the column
-  count, so every column was always in it. The three are now exclusive
-  properties in that order of strength, a column holding no values is in none
-  of them, and a bucket nobody is in is dropped rather than printed as a zero.
-  Titanic reads `2 all distinct · 1 high-cardinality · 8 text`; an all-missing
-  frame no longer claims its empty columns are both unique and constant.
-
-  `-0` no longer reaches the page. One categorical level at p = 1 gives
-  `-(1 * log2(1))`, which is `-0.0`, and the card printed `ENTROPY -0`. Caught
-  in the shared formatter, because every formatter is a place it can surface.
+  tile stops calling a partial hash `exact`: that label came from the sketch's
+  own sigma, which says nothing about rows the sketch never saw.
 
 - **Top-k counts claimed to be exact in exactly the case they were most
   wrong** (#328). Misra-Gries keeps 50 counters; above 50 distinct values every
