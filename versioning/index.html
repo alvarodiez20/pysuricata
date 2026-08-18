@@ -2042,9 +2042,13 @@ for a major bump.</p>
 <h2 id="how-a-release-happens">How a release happens</h2>
 <p>Publishing is triggered by <strong>pushing a tag</strong>, not by merging.</p>
 <div class="language-bash highlight"><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1"># after the version bump and changelog section have merged to main</span>
-</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>git<span class="w"> </span>tag<span class="w"> </span>v0.1.0
-</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>v0.1.0
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>git<span class="w"> </span>tag<span class="w"> </span>v0.1.6
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>git<span class="w"> </span>push<span class="w"> </span>origin<span class="w"> </span>v0.1.6
 </span></code></pre></div>
+<p>The current release is <strong>0.1.5</strong>, so the next patch is the tag above. Under the
+rule at the top of this page the number after it is a choice about <em>what
+changed</em>, not about how much: additions take <code>0.2.0</code>, and nothing takes <code>1.0.0</code>
+until a break is worth making.</p>
 <p>That is the whole reform, and everything else follows from it. Until 0.0.72,
 <code>cd.yml</code> triggered on <code>push: branches: [main]</code> while <code>version-check</code> required a
 bump on every pull request — so <strong>one merged pull request was exactly one PyPI
@@ -2110,9 +2114,14 @@ changelog section exists.</p>
 <ol>
 <li><strong>Two consecutive minor releases with no breaking change, unforced.</strong> A
    settled shape, not a freeze.</li>
-<li><strong>The deprecation queue is empty.</strong> <code>ReportConfig</code> is aliased to
-   <code>ProfileConfig</code> and now warns on use, naming <strong>0.3.0</strong> as the release that
-   removes it (#210). The queue is not empty until that removal happens.</li>
+<li><strong>The deprecation queue is drained <em>by</em> 1.0.0, not before it.</strong> This gate
+   used to read "the queue is empty", which the rule at the top of this page
+   turns into a circle: removing a deprecated name is a break, a break costs
+   the major bump, so the queue cannot empty until the release it is a
+   precondition for. What it asks instead is that every entry has warned for
+   long enough to be removable, and that 1.0.0 is the release that removes
+   them. Currently one entry: <code>ReportConfig</code>, aliased to <code>ProfileConfig</code> and
+   warning on use since 0.1.1 (#210).</li>
 <li><strong>Every approximate value carries its error bound.</strong> The quantiles (#146) and
    the duplicate count (#161) are done; the distinct count already was.</li>
 <li><strong>No known correctness bug in a covered path.</strong></li>
