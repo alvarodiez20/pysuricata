@@ -266,6 +266,60 @@ class TestTheUncertaintyIsExported:
         assert unresolved["duplicate_rows_uncertainty"] > 0
 
 
+class TestTheIntervalIsPublished:
+    """#329. `duplicate_rows_est == 0` cannot be told from "below my
+    resolution" without also reading `duplicate_rows_uncertainty` and doing
+    the arithmetic -- and the README's own CI-gate example
+    (`duplicate_rows_est == 0`) passed identically on a clean frame and on
+    one whose duplicates were merely unresolvable, which is a gate failing
+    open in exactly the case it exists to catch.
+
+    `duplicate_rows_lo` / `duplicate_rows_hi` publish the arithmetic done,
+    so a consumer reaches the same conclusion the report already had without
+    reconstructing it.
+    """
+
+    def test_an_unresolved_count_publishes_zero_to_the_ceiling(self):
+        """`hi` must be the exact figure the report prints, not a second,
+        independently-computed version of it that could drift from it."""
+        stats = summarize(_frame(200_000, 0), seed=0)["dataset"]
+        value, _ = _duplicates_stat(profile(_frame(200_000, 0), seed=0).html)
+
+        assert stats["duplicate_rows_lo"] == 0
+        assert value == f"&lt; {stats['duplicate_rows_hi']:,}"
+
+    def test_a_resolved_count_publishes_a_bound_around_it(self):
+        stats = summarize(_frame(200_000, 50_000), seed=0)["dataset"]
+
+        est, sigma = stats["duplicate_rows_est"], stats["duplicate_rows_uncertainty"]
+        assert stats["duplicate_rows_lo"] == max(0, est - sigma)
+        assert stats["duplicate_rows_hi"] == est + sigma
+        assert stats["duplicate_rows_lo"] <= est <= stats["duplicate_rows_hi"]
+
+    def test_an_exact_count_has_no_interval_around_it(self):
+        """891 rows is below `k` -- the count is exact, not estimated, so the
+        interval collapses to the point rather than padding a known answer
+        with a bound that does not apply to it."""
+        stats = summarize(_frame(891, 0), seed=0)["dataset"]
+
+        assert stats["duplicate_rows_lo"] == stats["duplicate_rows_hi"] == 0
+
+    def test_a_gate_on_the_upper_bound_fails_closed_below_the_floor(self):
+        """The motivating case: a frame with real duplicates just under the
+        resolution floor must fail a strict gate compared against `hi`,
+        where a gate compared against the suppressed `duplicate_rows_est`
+        would pass it -- exactly the false-negative #329 was filed over."""
+        stats = summarize(_frame(200_000, 2_000), seed=0)["dataset"]
+
+        assert stats["duplicate_rows_est"] == 0, "suppressed, as #248 intends"
+        assert stats["duplicate_rows_hi"] > 0
+        max_allowed_pct = 0.1
+        allowed_rows = 200_000 * max_allowed_pct / 100.0
+        assert stats["duplicate_rows_hi"] > allowed_rows, (
+            "a gate reading duplicate_rows_est alone would wrongly pass here"
+        )
+
+
 class TestTheGateIsThreeSigma:
     """#248. The gate was an implicit `>` — one sigma — and a clean frame
     published a duplicate count about one run in ten.

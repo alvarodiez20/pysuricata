@@ -71,12 +71,12 @@
   overflow: visible;
 }
 
-/* Slightly widen right stats column on larger screens to reduce ellipsis of ISO timestamps */
-@media (min-width: 1024px) {
-  #pysuricata-report {
-    --triple-right: 280px;
-  }
-}
+/* `--triple-right` is gone (#306). It set a width for a three-column stats row
+   that no longer exists: the only mentions left in the stylesheet are two
+   comments in `_06-cards.css` describing the layout it belonged to in the past
+   tense, and nothing reads `var(--triple-right)` anywhere. It was also the one
+   rule in this file with a bare `#pysuricata-report` selector, so it matched
+   every report whether or not it had a datetime column. */
 
 /* Let the main datetime chart fill its column height without relying on % heights */
 
@@ -140,10 +140,8 @@
   }
 }
 
-/* Chart container overflow handling */
-#pysuricata-report .var-card__body .var-chart {
-  overflow: hidden;
-}
+/* Chart container overflow handling moved to `_06-cards.css` (#306): it named
+   no datetime element and applied to every card kind. */
 
 /* =============================
    Temporal Distribution Charts

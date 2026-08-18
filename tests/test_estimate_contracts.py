@@ -144,9 +144,11 @@ _NO_ORACLE = {
     "unique_ratio_approx": "a ratio of unique_est, which is oracled above",
     "rows_est": "the row count is exact; the name is historical",
     "duplicate_rows_est": (
-        "deliberately suppressed below the sketch's resolution, so it is 0 "
-        "rather than wrong on a frame with few duplicates -- see #329. Its "
-        "bound is asserted by the approx contract below"
+        "deliberately suppressed below the sketch's resolution, so on a frame "
+        "with few duplicates it is 0 by design rather than wrong, and an "
+        "oracle counting real duplicates would read that as an error. The "
+        "readable form is the interval #329 added, and the contract below "
+        "asserts that interval contains the truth"
     ),
     "duplicate_rows_pct_est": "the same figure as a percentage",
 }
@@ -261,22 +263,36 @@ class TestTheApproxContract:
                 "interval, so a miss means the decrement mass is undercounted."
             )
 
-    def test_an_unresolvable_duplicate_count_still_publishes_its_bound(self) -> None:
-        """#329's field, held to the same rule.
+    @pytest.mark.parametrize("duplicate_fraction", [0.0, 0.5])
+    def test_the_duplicate_interval_contains_the_truth(
+        self, duplicate_fraction: float
+    ) -> None:
+        """#329's interval, held to the same rule as every other bound.
 
-        `duplicate_rows_est` is 0 on a frame whose duplicates fall below the
-        sketch's resolution. That is correct and deliberate -- and unreadable
-        without the bound beside it, which is the whole of #329. A zero with a
-        zero bound means "none"; a zero with a large one means "none I can
-        resolve", and they are different answers.
+        Both ends of the range matter, which is why this runs at 0% and 50%.
+        A near-clean frame has duplicates below the sketch's resolution, where
+        `duplicate_rows_est` is 0 *by design* rather than wrong -- and the
+        interval is the only thing that distinguishes "none" from "none I can
+        resolve". A frame that is half duplicates is well above resolution,
+        where an interval that still contained the truth only by being
+        enormous would be no use.
         """
         rng = np.random.default_rng(0)
-        frame = pd.DataFrame({"a": rng.integers(0, 1_000_000, 50_000)})
+        n = 50_000
+        values = rng.integers(0, 1_000_000, n)
+        if duplicate_fraction:
+            repeated = int(n * duplicate_fraction)
+            values[:repeated] = values[0]
+        frame = pd.DataFrame({"a": values})
+
+        exact = int(frame.duplicated().sum())
         dataset = pysuricata.summarize(frame)["dataset"]
 
-        assert "duplicate_rows_uncertainty" in dataset
-        if dataset["duplicate_rows_est"] == 0:
-            assert dataset["duplicate_rows_uncertainty"] >= 0
+        assert {"duplicate_rows_lo", "duplicate_rows_hi"} <= set(dataset)
+        assert dataset["duplicate_rows_lo"] <= exact <= dataset["duplicate_rows_hi"], (
+            f"{exact:,} real duplicates outside the published "
+            f"[{dataset['duplicate_rows_lo']:,}, {dataset['duplicate_rows_hi']:,}]"
+        )
 
 
 class TestTheThresholdsAreCrossed:
