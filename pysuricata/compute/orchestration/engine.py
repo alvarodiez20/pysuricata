@@ -87,6 +87,42 @@ def _mark_chunk_boundary(accs) -> None:
             mark()
 
 
+def _schema_only_frame(source: Any) -> Any | None:
+    """The source itself when it is a frame with columns and no rows.
+
+    A zero-row frame is **not** an empty source. Its schema is known --
+    `pd.DataFrame({"a": pd.Series([], dtype="float64")})` has a column named
+    `a` of dtype `float64` -- and `summarize()` used to throw all of it away
+    and return `{}`, with no `schema_version`, no `dataset` and no `columns`
+    (#315). That is the one part of the surface `docs/versioning.md`
+    guarantees, returning silence rather than an error, on the shape a filter
+    matching nothing produces routinely.
+
+    Returning the frame here lets the ordinary path run over an empty chunk:
+    inference types each column from its dtype, the accumulators fold in zero
+    values, and `finalize()` reports counts of zero. Nothing downstream needs
+    a special case.
+
+    Returns:
+        The frame when it has at least one column and no rows, otherwise
+        `None` -- an exhausted generator or a frame with no columns knows
+        nothing about a schema, and for those "Empty source" is still the
+        honest answer.
+    """
+    for module in (pd, pl):
+        if module is None:
+            continue
+        frame_type = getattr(module, "DataFrame", None)
+        if frame_type is None or not isinstance(source, frame_type):
+            continue
+        try:
+            if len(source) == 0 and len(source.columns) > 0:
+                return source
+        except Exception:  # pragma: no cover - a frame that cannot be measured
+            return None
+    return None
+
+
 def _select_columns(chunk: Any, columns: tuple[str, ...] | None) -> Any:
     """Restrict a chunk to the configured column subset.
 
@@ -417,7 +453,13 @@ class StreamingEngine:
             try:
                 first_chunk = next(chunks)
             except StopIteration:
-                return ProcessingResult.error_result("Empty source")
+                # No chunks is not the same as nothing to say. A frame with
+                # columns and zero rows still has a schema, and the payload is
+                # a contract (#315) -- run the ordinary path over one empty
+                # chunk rather than erroring out with the columns in hand.
+                first_chunk = _schema_only_frame(source)
+                if first_chunk is None:
+                    return ProcessingResult.error_result("Empty source")
 
             column_subset = getattr(config, "columns", None)
             first_chunk = _select_columns(first_chunk, column_subset)
