@@ -21,7 +21,7 @@ import pytest
 import pysuricata
 
 #: Every deprecated name, the name replacing it, and the release removing it.
-DEPRECATIONS = [("ReportConfig", "ProfileConfig", "0.3.0")]
+DEPRECATIONS = [("ReportConfig", "ProfileConfig", "1.0.0")]
 
 
 @pytest.mark.parametrize("old,new,removal", DEPRECATIONS)

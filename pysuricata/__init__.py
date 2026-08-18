@@ -61,10 +61,16 @@ from .comparison import Comparison, compare
 #: two-constructor ceremony. As a bare alias it gave no signal that it was going
 #: away, and a reader of this module could not tell whether it was deprecated or
 #: simply a second spelling intended to stay. The door now has a closing date on
-#: it: the clock starts at 0.1.0, so by 0.3.0 a full minor has passed with a
-#: warning in place -- the deprecation policy being run rather than described.
+#: it -- the deprecation policy being run rather than described.
+#:
+#: That date is **1.0.0**, not the 0.3.0 it used to name. Removing a public name
+#: is a break, and `docs/versioning.md` now says a break costs a major bump; the
+#: old date came from the Cargo-style reading, under which a 0.x minor was
+#: allowed to break. The warning has to name a release that can actually carry
+#: the removal, or it is telling users to migrate against a deadline that
+#: cannot happen.
 _DEPRECATED_NAMES = {
-    "ReportConfig": ("ProfileConfig", ProfileConfig, "0.3.0"),
+    "ReportConfig": ("ProfileConfig", ProfileConfig, "1.0.0"),
 }
 
 

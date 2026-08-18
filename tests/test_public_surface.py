@@ -100,7 +100,7 @@ class TestPublicNamespace:
             assert internal not in pysuricata.__all__
 
     def test_the_config_alias_still_works(self):
-        """Deprecated (#210, removed in 0.3.0) but not yet gone, so it must
+        """Deprecated (#210, removed in 1.0.0) but not yet gone, so it must
         still resolve -- and to the same object, not a copy.
 
         The warning itself is asserted in `tests/test_deprecations.py`; it is

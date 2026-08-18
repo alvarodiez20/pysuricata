@@ -178,14 +178,45 @@ def load_css(css_path: str) -> str:
     return ""
 
 
-@lru_cache(maxsize=4)
-def load_css_dir(css_dir: str) -> str:
+#: Partials that only style a card kind, and the kinds that need them (#306).
+#:
+#: The report inlines its CSS, so a partial for a kind the frame does not have
+#: is bytes in the document rather than a cache miss. Anything not named here
+#: is unconditional -- the shell, the summary, the sample, the card chrome, and
+#: **both section partials**: correlations and missing values always render,
+#: with an empty state when they have nothing to report, and an empty state
+#: still needs styling.
+#:
+#: The mapping is measured, not assumed. Every selector in every partial was
+#: matched against the rendered DOM of a report built from each single-kind
+#: frame; `_07-histogram.css` is here with two kinds because the datetime card
+#: was rebuilt on `figure.hist` and draws with it.
+#:
+#: Three rules had to move into `_06-cards.css` first, because they named no
+#: element of their partial's kind and applied to every report: `.axis`,
+#: `.var-card__body .var-chart`, and the narrow-screen `.controls-slot` gap.
+_CSS_FOR_KIND = {
+    "_07-histogram.css": frozenset({"numeric", "datetime"}),
+    "_08-categorical.css": frozenset({"categorical"}),
+    "_09-datetime.css": frozenset({"datetime"}),
+    "_10-boolean.css": frozenset({"boolean"}),
+}
+
+
+@lru_cache(maxsize=8)
+def load_css_dir(css_dir: str, kinds: frozenset[str] | None = None) -> str:
     """Read _*.css partials from a directory, concatenate in sorted order, wrap in <style>.
 
     Result is cached so repeated calls (e.g. generating multiple reports) pay no I/O cost.
+    The cache key includes `kinds`, so two frames of different shapes do not
+    serve each other's stylesheet.
 
     Args:
         css_dir: Path to the directory containing _*.css partial files.
+        kinds: The card kinds the report contains -- any of ``numeric``,
+            ``categorical``, ``datetime``, ``boolean``. Partials that only
+            style a kind not present are skipped. ``None`` ships everything,
+            which is what a caller that does not know the shape should get.
 
     Returns:
         A string with the concatenated CSS wrapped in a <style> tag,
@@ -193,6 +224,10 @@ def load_css_dir(css_dir: str) -> str:
     """
     parts = []
     for path in sorted(glob.glob(os.path.join(css_dir, "_*.css"))):
+        if kinds is not None:
+            needed_by = _CSS_FOR_KIND.get(os.path.basename(path))
+            if needed_by is not None and not (needed_by & kinds):
+                continue
         with open(path, encoding="utf-8") as f:
             parts.append(f.read())
     if not parts:
