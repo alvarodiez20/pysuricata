@@ -5,6 +5,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/pysuricata.svg)](https://github.com/alvarodiez20/pysuricata)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/alvarodiez20/pysuricata/branch/main/graph/badge.svg)](https://codecov.io/gh/alvarodiez20/pysuricata)
+[![Live demo](https://img.shields.io/badge/demo-run%20it%20in%20your%20browser-2C4A62.svg)](https://pysuricata.pages.dev)
 [![Documentation](https://img.shields.io/badge/docs-mkdocs-blue.svg)](https://alvarodiez20.github.io/pysuricata/)
 [![Downloads](https://static.pepy.tech/badge/pysuricata)](https://pepy.tech/project/pysuricata)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-alvarodiez20-blue?logo=linkedin)](https://www.linkedin.com/in/alvarodiez20/)
@@ -15,6 +16,7 @@
   <h3>Exploratory Data Analysis for Python, Built on Streaming Algorithms</h3>
 
   <p>
+    <a href="https://pysuricata.pages.dev"><strong>Live Demo</strong></a> •
     <a href="#quick-start">Quick Start</a> •
     <a href="https://alvarodiez20.github.io/pysuricata/">Documentation</a> •
     <a href="https://alvarodiez20.github.io/pysuricata/examples/">Examples</a>
@@ -30,6 +32,13 @@ PySuricata generates **self-contained HTML reports** from pandas or polars DataF
 Data is processed in chunks using streaming algorithms, so memory usage stays bounded **in the number of rows** — a million rows costs no more than twenty thousand. It is *not* bounded in the number of columns: each column keeps its own sketches for the whole run and gets its own card in the report, so both memory and report size grow linearly with the width of the frame. Measured at 20,000 rows: **~1.3 MB of RSS and ~59 KB of report per column**, so a 600-column frame needs roughly 850 MB. See [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
 
 It also does two things a profiler usually does not: `summarize()` returns the same numbers as a versioned JSON payload with no HTML in the way, and `pysuricata check` compares a dataset against a stored baseline and exits non-zero when a threshold is crossed — so the same single pass can run in a notebook and in CI.
+
+### Try it without installing anything
+
+[**pysuricata.pages.dev**](https://pysuricata.pages.dev) runs the profiler itself — not a
+screenshot of it — inside your browser. Drop a CSV, a Parquet file or an Excel workbook and
+you get the real report back. There is no server: the library is compiled to WebAssembly and
+runs in the page, so **your data never leaves your machine**.
 
 ## Quick Start
 

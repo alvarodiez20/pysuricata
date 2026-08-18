@@ -81,6 +81,8 @@ an offline mirror at `/pyodide/` and `/pypi/`.
 
 ## Deployment
 
+Live at **<https://pysuricata.pages.dev>**.
+
 Cloudflare Pages, git-connected to this repository:
 
 - **Build command:** *(none)*
