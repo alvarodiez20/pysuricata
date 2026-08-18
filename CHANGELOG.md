@@ -16,6 +16,12 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **The live demo is a tab on every documentation page**, not only a link on
+  the landing page. `docs/index.md` already offered it twice, which serves a
+  reader who arrives at the front door; a search result lands on
+  `stats/numeric.md` or `cli.md`, where the demo was unreachable without going
+  back to Home and knowing to look.
+
 - **`profile()` and `summarize()` read Excel workbooks** (#4) — `.xlsx`,
   `.xlsm`, `.xlsb`, `.xls` and `.ods` — which the browser demo already did
   (`web/README.md`) while the library itself raised `UnsupportedDataError`
