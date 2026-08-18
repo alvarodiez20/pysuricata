@@ -13,12 +13,6 @@
   margin: 0.05rem 0;
 }
 
-#pysuricata-report #summary h2 {
-  margin: 0 0 .5rem;
-  font-size: 1.25rem;
-  line-height: 1.25;
-}
-
 /* ---- the stat row ------------------------------------------- */
 #pysuricata-report .stat-row {
   display: grid;
