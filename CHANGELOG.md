@@ -90,6 +90,37 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **A report ships only the card-kind CSS it can use** (#306). `load_css_dir`
+  concatenated all fourteen partials into every document, so a frame with no
+  datetime column carried `_09-datetime.css` — not as a cache miss, but as
+  bytes, because the report inlines its stylesheet.
+
+  Titanic drops **5,600 bytes** and is the *least* improved shape, since it has
+  three of the four kinds. A boolean-only frame saves 17,830 and a numeric-only
+  one 17,189.
+
+  **The mapping is measured, not assumed.** Every selector in every partial was
+  matched against the rendered DOM of a report built from each single-kind
+  frame, which found three rules misfiled — they named no element of their
+  partial's kind and applied to every report: `.axis` and the narrow-screen
+  `.controls-slot` gap in `_08-categorical.css`, and
+  `.var-card__body .var-chart` in `_09-datetime.css`. All three moved to
+  `_06-cards.css` before anything became conditional. Two declarations did not
+  survive the move because they had never done anything: `.card-controls` is
+  `display: flex`, and a flex container ignores `grid-template-columns` and
+  `grid-column`. A fourth rule, `--triple-right`, was deleted outright — read
+  by nothing, and the one bare `#pysuricata-report` selector in the datetime
+  partial.
+
+  The correlations and missing-values partials stay unconditional: both are
+  sections rather than card kinds, both always render, and an empty state still
+  needs styling.
+
+  Guarded by an equivalence rather than a spot check. `TestNothingThatMattered
+  WasDropped` renders each single-kind frame twice — once with the trimmed
+  stylesheet it ships, once with every partial forced back in — and requires
+  all ~20 computed properties of every element to match, at 390px and 1240px.
+
 - **`docs/internal/integration.md` records the phase 4b decision** it had been
   carrying only in the external design package (#149). Options 15a–15d for the
   attention block are settled as 15b's flag reference plus 15a's chips in the
