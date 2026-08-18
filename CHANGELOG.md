@@ -14,6 +14,85 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **A flag reference, rendered from the flags a report actually raised**
+  (design 15b, phase 4b.2). The chips name a conclusion — `heavy-tailed`,
+  `dominant category` — and that vocabulary was decodable nowhere. Four columns
+  now say what was measured, the limit that fired it, and what it means for the
+  data: five rows on Titanic, and **nothing at all on a frame that raises no
+  flags**.
+
+  No advice. Every sentence states a consequence and stops, because whether
+  pysuricata should recommend actions is open question 7 of the design package
+  and not something a glossary should settle — "drop before modelling" is wrong
+  for a reader who is not modelling.
+
+  It ships as `render/flag_reference.py`, from the design package. Its keys had
+  been written against assumed slugs rather than measured ones, so **five of
+  the ten flags the Titanic report raises had no entry**: two near-misses
+  (`heaped` for `heaping`, `skewed` for `skewed-right`) and three absent
+  outright. Re-keyed against the 28 labels the renderers actually emit.
+
+### Changed
+
+- **A column past the tenth collapses instead of being paged away** (design
+  15d, closing the last of #240). Pagination hid the eleventh column onward
+  with `display: none`, which is not a rendering choice but a removal: a
+  browser find cannot match inside it, an anchor cannot land on it, a printer
+  will not print it. Finding a column by name is the primary action in a
+  profiling report, and it failed silently for every column past the first
+  page.
+
+  The earlier pass fixed the anchors and the printing and left the hiding in
+  place, so find stayed broken — and the note it left said find *could not* be
+  fixed while pagination hid cards. True as written, and the wrong question.
+
+  A column beyond the limit keeps its row and folds its body. The header
+  already carries what an index needs — name, type, quality flags — at 44px
+  with a `+`, and one click, Enter or Space opens it in place. Opening one is
+  remembered across a filter change. Print unfolds every card; the page buttons
+  are gone, replaced by a rail reading `2 collapsed rows · expand all 2`.
+
+  Three states now, where there were two: **out of the filter** (removed, the
+  one case where not finding a column is the intent), **collapsed** (in the
+  document, header only) and **expanded**.
+
+  The cost, stated because it is real: fifty collapsed rows is ~2,200px of
+  scroll where the page control was 40px. Report size is unchanged — the charts
+  were always in the document, which is why hiding them bought nothing.
+
+- **A chip carries its limit on its face** (phase 4b.2). `33.20 heavy-tailed`
+  became `33.20 heavy-tailed · limit 10`. The threshold used to live in a
+  `title`, invisible on a phone and absent from a printed report, so the number
+  had nothing to be judged against in either — and the reader who cannot hover
+  has the least context rather than the most.
+
+  The tooltip is gone rather than kept alongside: what the number *is* moved to
+  the reference, stated once per flag instead of 154 times, which cost **5,548
+  bytes to say fourteen distinct things**. Not on a `good` chip, where a limit
+  invites a judgement about what is only a property.
+
+- **The attention block's chips are bordered, and its rows share one baseline**
+  (phase 4b.2). Two adjacent chips with no border read as one string: `Age`
+  rendered as `19.9% missing 1.5% many outliers`, a sentence with no verb. The
+  card's own chips had always been bordered; only this block's were not.
+
+- **The variables toolbar says what it is showing** (design 15c, phase 4b.4).
+  Three separate mechanisms narrow that list — a search box, a type tab and the
+  collapse limit — and the toolbar described none of them. `Showing 1-10 of 12`
+  describes a page, and there are no pages now.
+
+  One line covers all three, with a `clear filter` control that appears only
+  when something is filtering. **A tab per type that exists, carrying its
+  count**: Titanic has no datetime columns and used to get a Datetime tab that
+  filtered to an empty grid with nothing saying why. **The count sentence is
+  gone** — it duplicated the Summary composition bar and printed `0 datetime`.
+  **And a sort**: dataset order, most missing, most flagged, name. Dataset
+  order stays the default, and sorting moves the cards themselves rather than a
+  copy — they *are* the document, which is what makes the order true for a
+  browser find and for print.
+
 ### Fixed
 
 - **The search strip and the "Hide sample" bar were taller than the 44px they
