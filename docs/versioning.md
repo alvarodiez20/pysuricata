@@ -129,6 +129,27 @@ The pipeline runs `guard → build → smoke → publish → release`, in that o
         → pypi**.
 5. **release** — GitHub release created **after** PyPI has the package, with
    notes lifted from `CHANGELOG.md`.
+6. **demo-check** — the live demo, not a local checkout, profiles the sample
+   dataset against the version `publish` just shipped and asserts the report
+   frame is visibly painted (`web/e2e.py`, #1). `worker.js` installs
+   `pysuricata==<latest>` from PyPI at page load, so every publish above edits
+   the demo's launch asset in production, and this is what tests that edit
+   instead of the first visitor doing it. Runs after `publish`, not before —
+   the demo cannot see a version that is not on PyPI yet — and does not gate
+   `release`: PyPI already has the package by then and nothing can take that
+   back, so a demo failure fails the workflow on its own rather than
+   delaying release notes that are already accurate.
+
+    !!! warning "Freeze releases during a launch window"
+
+        A release cannot be un-shipped, and the demo re-installs whatever is
+        newest on every page load with no redeploy — so a release pushed
+        during a traffic spike (a front-page post, a scheduled announcement)
+        can break the demo in front of the traffic it was timed for, and
+        `demo-check` only reports that after the fact. Do not push a version
+        tag inside a planned launch window. If a release must go out during
+        one anyway, watch the `demo-check` job to completion before treating
+        the window as safe, and be ready to yank.
 
 A pull request does **not** have to bump the version. If it does,
 `scripts/check_version.py` asserts the step is legal — one component raised, the

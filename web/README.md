@@ -19,6 +19,7 @@ cannot put their data into a SaaS profiler.
 | `worker.js` | Pyodide runtime in a Web Worker, so a large file never freezes the tab. |
 | `assets/`, `sample/` | Logo, favicon, and the sample dataset. |
 | `_headers` | Cloudflare Pages response headers (CSP, caching). |
+| `e2e.py` | Boots this page in a real browser, profiles the sample and asserts the report actually painted (#1). Run after every release — see [Versioning](../docs/versioning.md#how-a-release-happens). |
 
 The runtime comes from the jsDelivr CDN and `pysuricata` is installed from PyPI at
 page load with `micropip`. Nothing here is vendored, so **the demo picks up every

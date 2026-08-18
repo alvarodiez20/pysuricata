@@ -14,6 +14,34 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **A real-browser check that the demo actually renders a report, run after
+  every release** (#1). `worker.js` installs `pysuricata==<latest>` from PyPI
+  at page load, so every release edited the demo's launch asset in production
+  with nothing testing it first — ship during a front-page hour and the demo
+  could break in front of the traffic.
+
+  `web/e2e.py` boots the live demo in Chromium, drops the sample dataset,
+  waits for a real Pyodide + `micropip.install` + `profile()` run, and asserts
+  on the *pixels* of the resulting report frame rather than its markup. DOM
+  presence would not have caught the one failure already found this way:
+  Chrome silently drops a `srcdoc` document past ~700 KB — no error, no
+  console warning, no failed request, just a blank frame that is structurally
+  identical to a rendered one (`web/index.html` moved to a blob URL over
+  exactly this). A screenshot with too little non-background ink or too few
+  distinct colours is treated as a blank render even when the runtime itself
+  reports success.
+
+  Wired into `cd.yml` as `demo-check`, after `publish` — the demo cannot see a
+  version that is not on PyPI yet — and deliberately not a dependency of
+  `release`: PyPI already has the package by then, so a demo failure fails the
+  workflow on its own rather than delaying release notes that are already
+  accurate. `docs/versioning.md` documents the new pipeline stage and states
+  the policy this doesn't automate: don't tag a release inside a planned
+  launch window, because the demo re-installs whatever is newest with no
+  redeploy and a broken demo cannot be un-shipped along with it.
+
 ### Fixed
 
 - **The duplicate-row estimate could false-alarm on a clean frame** (#248).

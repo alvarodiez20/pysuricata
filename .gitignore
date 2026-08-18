@@ -147,3 +147,6 @@ README.draft.md
 # Review aid from scripts/contact_sheet.py (#124). Regenerated on demand and
 # uploaded by CI as an artifact; never a committed asset.
 contact-sheet/
+
+# Screenshot from web/e2e.py (#1). Same as contact-sheet/ above.
+e2e-out/

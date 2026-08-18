@@ -108,6 +108,8 @@ dev = [
 # and installs the browser; everywhere else the cases skip themselves.
 browser = [
     "playwright>=1.47",
+    # web/e2e.py decodes a demo screenshot to assert it is not blank.
+    "pillow>=10.0",
 ]
 
 [tool.setuptools]
