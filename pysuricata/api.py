@@ -666,6 +666,12 @@ def _is_frame(obj: Any) -> bool:
     return False
 
 
+#: Extensions that hold Arrow IPC. All three are read the same way -- the
+#: framing is determined by the file's magic bytes, not by which of these it
+#: happens to be named with.
+_IPC_SUFFIXES = frozenset({".arrow", ".feather", ".ipc"})
+
+
 def _read_path(path: str | os.PathLike) -> pd.DataFrame:
     """Load a CSV, Parquet or JSON file into a DataFrame.
 
@@ -696,15 +702,25 @@ def _read_path(path: str | os.PathLike) -> pd.DataFrame:
     if suffix == ".parquet":
         return _sources.first_batch_or_stream(_sources.stream_parquet(resolved))
 
+    # Arrow IPC, by the same streaming route as Parquet (#247). This is the one
+    # format another language writes -- `arrow::write_ipc_file()` in R,
+    # `Arrow.write()` in Julia, the `arrow` crate in Rust -- so a claim that
+    # Arrow is the boundary is only true once these load. Which framing a given
+    # file uses is decided by its magic bytes, not its extension; `stream_ipc`
+    # is where that is worked out.
+    if suffix in _IPC_SUFFIXES:
+        return _sources.first_batch_or_stream(_sources.stream_ipc(resolved))
+
     readers = {
         ".csv": pd.read_csv,
         ".json": pd.read_json,
     }
     reader = readers.get(suffix)
     if reader is None:
+        supported = ", ".join([".csv", ".parquet", ".json", *sorted(_IPC_SUFFIXES)])
         raise UnsupportedDataError(
             f"Cannot read '{resolved.name}': unsupported format "
-            f"'{resolved.suffix}'. Use .csv, .parquet or .json, or load it "
+            f"'{resolved.suffix}'. Use one of {supported}, or load it "
             "yourself and pass the DataFrame."
         )
     return reader(resolved)

@@ -90,7 +90,8 @@ df = pd.DataFrame(
 ## Features
 
 - **Streaming architecture** — Data is processed in configurable chunks, keeping memory bounded in rows (not in columns — see above). Useful for datasets with more rows than fit in RAM.
-- **Pandas and Polars** — Works natively with `pandas.DataFrame`, `polars.DataFrame` and `polars.LazyFrame`, plus Parquet files, DuckDB relations and Arrow batches.
+- **Pandas and Polars** — Works natively with `pandas.DataFrame`, `polars.DataFrame` and `polars.LazyFrame`, plus Parquet files, Arrow IPC files (`.arrow`, `.feather`, `.ipc`), DuckDB relations and Arrow batches.
+- **Arrow is the boundary, not pandas** — anything exporting the Arrow C stream interface (`__arrow_c_stream__`) is profiled without materialising it, whatever library produced it. Arrow IPC is what R, Julia and Rust write, so a file from another runtime is read directly.
 - **Self-contained HTML** — Single file with inline CSS, JS, and SVG charts. No external assets needed.
 - **Configurable** — Control chunk size, sample size, correlations and more with keyword options, a `preset=`, or a `ProfileConfig`.
 - **Reproducible** — Seeded random sampling produces deterministic results across runs.
@@ -141,14 +142,18 @@ report = profile(read_in_chunks())
 report.save_html("large_report.html")
 ```
 
-A Parquet path, a DuckDB relation or an Arrow source can be streamed directly, without loading the whole thing:
+A Parquet path, an Arrow IPC file, a DuckDB relation or an Arrow source can be streamed directly, without loading the whole thing:
 
 ```python
 import duckdb
 from pysuricata import profile
-from pysuricata.sources import stream_duckdb, stream_parquet
+from pysuricata.sources import stream_duckdb, stream_ipc, stream_parquet
 
 report = profile(stream_parquet("data/events.parquet"))
+
+# Written by arrow::write_ipc_file() in R, Arrow.write() in Julia, or the
+# arrow crate in Rust. The framing is read from the file, not its extension.
+report = profile(stream_ipc("data/events.arrow"))
 
 relation = duckdb.connect("warehouse.db").sql("SELECT * FROM events")
 report = profile(stream_duckdb(relation))

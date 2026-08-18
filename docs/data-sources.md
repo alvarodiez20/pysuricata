@@ -41,6 +41,50 @@ from pysuricata import summarize
 summarize(pa.Table.from_pandas(df))
 ```
 
+Arrow IPC on disk — `.arrow`, `.feather` and `.ipc` — reads the same way, a
+batch at a time:
+
+```python
+import pyarrow as pa
+
+from pysuricata import summarize
+
+table = pa.Table.from_pandas(df)
+with pa.OSFile("events.arrow", "wb") as sink:
+    with pa.ipc.new_file(sink, table.schema) as writer:
+        writer.write_table(table)
+
+summarize("events.arrow")
+```
+
+That is the format another runtime writes: `arrow::write_ipc_file()` in R,
+`Arrow.write()` in Julia, the `arrow` crate in Rust. Which of the three
+framings a given file uses — IPC file, IPC stream, or the legacy Feather V1 —
+is read from the file's magic bytes rather than assumed from its extension, so
+a file written by any of them loads under any of those names.
+
+## Anything that speaks Arrow, without an adapter
+
+The claim worth stating precisely is not "pyarrow is accepted" — every profiler
+can be handed a converted frame. It is:
+
+> anything exporting the Arrow C stream interface can be profiled without
+> materialising it
+
+`__arrow_c_stream__` is how the ecosystem hands data over without anyone
+agreeing on a type. An object exporting it is streamed batch by batch, whatever
+library produced it and whether or not PySuricata has ever heard of that
+library:
+
+```python
+from pysuricata.sources import is_arrow_source
+
+class MyFrame:  # any producer at all
+    def __arrow_c_stream__(self, requested_schema=None): ...
+
+is_arrow_source(MyFrame())
+```
+
 DuckDB and pyarrow are **not dependencies**. The DuckDB path is duck-typed on
 the relation's batch-reader method — `to_arrow_reader`, or `fetch_record_batch`
 on older DuckDB — so nothing imports it; Parquet and Arrow reading needs
