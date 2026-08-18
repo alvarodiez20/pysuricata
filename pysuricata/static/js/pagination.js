@@ -22,6 +22,13 @@
     // decision, and re-collapsing it because a search ran is undoing it.
     let opened = new Set();
     let expandAll = false;
+    // Dataset order is the default and stays it: a reader working alongside
+    // their dataframe expects the report's columns in the frame's order, and
+    // any other default silently disagrees with the thing on their other
+    // screen. The grid's DOM order is that order, so it is the baseline every
+    // other sort is applied against.
+    let sortBy = 'dataset';
+    let datasetOrder = [];
     let currentFilter = 'all';
     // Set by clicking a quality chip in the "needs attention" block. The chips
     // were already computed per column; this is what makes them navigation
@@ -43,11 +50,14 @@
     function setup() {
         // Get all cards
         allCards = Array.from(document.querySelectorAll('#cards-grid .var-card'));
+        datasetOrder = allCards.slice();
 
         setupSearch();
         setupFilters();
         setupFlagFilters();
         setupExpansion();
+        setupSort();
+        setupClearFilter();
         applyFilters();
         // After applyFilters, which builds the list revealCard indexes into.
         setupDeepLinks();
@@ -167,6 +177,59 @@
         }
     }
 
+
+    function setupSort() {
+        const select = document.getElementById('sort-select');
+        if (!select) return;
+        select.addEventListener('change', () => {
+            sortBy = select.value;
+            applySort();
+            applyFilters();
+        });
+    }
+
+    /* Reorder the grid itself, not a copy.
+     *
+     * The cards are the document -- moving them is what makes the order true
+     * for a browser find, for print and for anyone reading the page top to
+     * bottom, rather than only for this script's own bookkeeping.
+     */
+    function applySort() {
+        const grid = document.getElementById('cards-grid');
+        if (!grid) return;
+        const order = datasetOrder.slice();
+        const missing = c => parseFloat(c.dataset.missingPct || '0');
+        const flags = c => (c.dataset.flags || '').split(' ').filter(Boolean).length;
+
+        if (sortBy === 'missing') {
+            order.sort((a, b) => missing(b) - missing(a));
+        } else if (sortBy === 'flagged') {
+            order.sort((a, b) => flags(b) - flags(a));
+        } else if (sortBy === 'name') {
+            order.sort((a, b) => a.dataset.name.localeCompare(b.dataset.name));
+        }
+        // `dataset` needs no comparator -- `order` is already that order, which
+        // is why the original list is kept rather than re-read from the DOM.
+        for (const card of order) grid.appendChild(card);
+        allCards = order;
+    }
+
+    function setupClearFilter() {
+        const button = document.getElementById('clear-filter');
+        if (!button) return;
+        button.addEventListener('click', () => {
+            currentFilter = 'all';
+            searchTerm = '';
+            const search = document.getElementById('search-input');
+            if (search) search.value = '';
+            document.querySelectorAll('.tab[data-filter]').forEach((tab) => {
+                tab.classList.toggle('active', tab.dataset.filter === 'all');
+            });
+            clearFlagFilter();
+            applyFilters();
+        });
+    }
+
     function applyFilters() {
         filteredCards = allCards.filter(card => {
             const cardType = card.dataset.type;
@@ -230,11 +293,23 @@
         const all = document.getElementById('expand-all');
         const info = document.getElementById('pagination-info');
 
+        // One line for all three mechanisms. `Showing 1-10 of 12` described a
+        // page, and could not say that a search and a type filter were also
+        // narrowing the list (design 15c).
         if (info) {
+            const filtered = currentFilter !== 'all' || searchTerm || currentFlag;
+            const noun = currentFilter === 'all' ? 'columns' : `${currentFilter} columns`;
             info.textContent = shown === 0
-                ? 'No columns found'
-                : `${shown} of ${allCards.length} columns · ` +
-                  `${shown - collapsed} expanded, ${collapsed} collapsed`;
+                ? 'No columns match'
+                : filtered
+                    ? `${shown} ${noun} of ${allCards.length} · ` +
+                      `${shown - collapsed} expanded, ${collapsed} collapsed`
+                    : `${shown} columns · ${shown - collapsed} expanded, ` +
+                      `${collapsed} collapsed`;
+        }
+        const clear = document.getElementById('clear-filter');
+        if (clear) {
+            clear.hidden = !(currentFilter !== 'all' || searchTerm || currentFlag);
         }
         if (!rail || !count || !all) return;
 

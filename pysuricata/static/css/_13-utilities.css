@@ -641,3 +641,53 @@
 #pysuricata-report .description-content em {
   font-style: italic;
 }
+
+/* The result line, the sort control and clear-filter (design 15c).
+   ==========================================================================
+
+   `Showing 1-10 of 12` described a page and could say nothing about the search
+   box or the type tab also narrowing the list. One line covers all three. */
+#pysuricata-report .info-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+#pysuricata-report .sort-by {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+}
+
+#pysuricata-report .sort-by select {
+  min-height: var(--tap-min);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  padding: 0 8px;
+  cursor: pointer;
+}
+
+#pysuricata-report .info-row .linklike {
+  margin-left: 0;
+}
+
+/* The count on a type tab. Quieter than the label: the label is what you are
+   choosing, the count is what you would get. */
+#pysuricata-report .tab__n {
+  margin-left: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+#pysuricata-report .tab.active .tab__n {
+  color: inherit;
+}

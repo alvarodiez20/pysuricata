@@ -51,6 +51,7 @@ their own job.
 from __future__ import annotations
 
 import re
+import tempfile
 from pathlib import Path
 
 import pandas as pd
@@ -176,7 +177,12 @@ class TestTheReportIsOneFile:
 #: 4b.2 removes, being invisible on a phone and absent from paper. Dropping it
 #: covered twice what the reference costs; the raise is the residue, mostly
 #: the `· limit 20%` now on each chip face.
-BYTES_BASELINE = 494_000
+#: 494,000 -> 498,000 for the toolbar (phase 4b.4): a count on each type tab,
+#: the sort control, and the script behind them. Trimmed first, again --
+#: `data-missing-pct` is one decimal now and is omitted entirely on a complete
+#: column, since the sort reads its absence as zero and most columns in most
+#: frames are complete.
+BYTES_BASELINE = 498_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
@@ -720,3 +726,114 @@ class TestAnOffPageCardIsStillReachable:
             "a card is hidden with an inline display:none — the mechanism 15d replaced"
         )
         assert result["folded"] > 0, "nothing was folded, so this frame proved nothing"
+
+
+@pytest.mark.browser
+class TestTheToolbarSaysWhatItIsShowing:
+    """Design 15c, phase 4b.4. Three separate mechanisms narrow the variables
+    list — a search box, a type tab and the collapse limit — and the toolbar
+    described none of them. `Showing 1-10 of 12` describes a page, and there
+    are no pages.
+    """
+
+    @pytest.fixture(scope="class")
+    def page(self, request):
+        playwright = pytest.importorskip(
+            "playwright.sync_api", reason="this needs Playwright"
+        )
+        html = profile(pd.read_csv(TITANIC), seed=0).html
+        tmp = Path(tempfile.mkdtemp()) / "r.html"
+        tmp.write_text(html, encoding="utf-8")
+        launch = {}
+        if chrome := _chrome():
+            launch["executable_path"] = chrome
+        with playwright.sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(**launch)
+            except Exception as exc:
+                pytest.skip(f"Chromium is not available: {exc}")
+            page = browser.new_page(viewport={"width": 1240, "height": 900})
+            page.goto(tmp.as_uri())
+            page.wait_for_timeout(700)
+            yield page
+            browser.close()
+
+    def test_no_tab_for_a_type_with_no_columns(self, page):
+        """Titanic has no datetime columns and used to get a Datetime tab that
+        filtered to an empty grid with nothing saying why — the same defect as
+        a zero-width donut segment or a one-option Top-N chooser."""
+        tabs = page.evaluate(
+            "[...document.querySelectorAll('.tab')].map(t => t.dataset.filter)"
+        )
+        counts = page.evaluate("""() => {
+  const out = {};
+  for (const c of document.querySelectorAll('#cards-grid .var-card')) {
+    out[c.dataset.type] = (out[c.dataset.type] || 0) + 1;
+  }
+  return out;
+}""")
+        for tab in tabs:
+            if tab == "all":
+                continue
+            assert counts.get(tab, 0) > 0, f"a {tab} tab with no {tab} columns"
+        for kind, n in counts.items():
+            if n:
+                assert kind in tabs, f"{n} {kind} columns and no tab for them"
+
+    def test_each_tab_carries_its_count(self, page):
+        labels = page.evaluate(
+            "[...document.querySelectorAll('.tab')].map(t => t.textContent)"
+        )
+        assert all(re.search(r"\d+$", t) for t in labels), labels
+
+    def test_the_count_sentence_is_gone(self, page):
+        """It duplicated the Summary composition bar, and printed `0 datetime`
+        for a type with no columns."""
+        text = page.evaluate("document.getElementById('pysuricata-report').innerText")
+        assert "Analyzing" not in text, "the count sentence is back"
+
+    def test_one_line_covers_filter_search_and_collapse(self, page):
+        unfiltered = page.evaluate(
+            "document.getElementById('pagination-info').textContent"
+        )
+        assert "expanded" in unfiltered and "collapsed" in unfiltered, unfiltered
+        assert "Showing 1-" not in unfiltered, "still describing a page"
+
+        page.evaluate(
+            """document.querySelector('.tab[data-filter="numeric"]').click()"""
+        )
+        filtered = page.evaluate(
+            "document.getElementById('pagination-info').textContent"
+        )
+        assert "numeric" in filtered, filtered
+        assert page.evaluate("!document.getElementById('clear-filter').hidden"), (
+            "no way to clear a filter that is narrowing the list"
+        )
+
+        page.evaluate("document.getElementById('clear-filter').click()")
+        assert page.evaluate("document.getElementById('clear-filter').hidden"), (
+            "clear-filter stays visible with nothing to clear"
+        )
+
+    def test_sorting_reorders_the_document_and_returns(self, page):
+        """The cards *are* the document, so a sort has to move them — that is
+        what makes the order true for a browser find and for print, rather than
+        only for the script's own bookkeeping. Dataset order is the default and
+        has to come back exactly."""
+        names = "[...document.querySelectorAll('#cards-grid .var-card')].map(c => c.dataset.name)"
+        original = page.evaluate(names)
+
+        def sort(value):
+            page.evaluate(
+                f"() => {{ const s = document.getElementById('sort-select');"
+                f" s.value = '{value}'; s.dispatchEvent(new Event('change')); }}"
+            )
+            return page.evaluate(names)
+
+        by_name = sort("name")
+        assert by_name == sorted(original), by_name
+
+        by_missing = sort("missing")
+        assert by_missing[0] == "Cabin", by_missing[:3]
+
+        assert sort("dataset") == original, "dataset order did not come back"
