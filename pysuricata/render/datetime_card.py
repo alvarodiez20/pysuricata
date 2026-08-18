@@ -463,25 +463,12 @@ class DateTimeCardRenderer(CardRenderer):
             ).astype(int)
             y_max = int(max(1, counts.max()))
 
-            width, height = self._get_chart_dimensions()
-            margin_left = self.dt_config.margin_left
-            margin_right = self.dt_config.margin_right
-            margin_top = self.dt_config.margin_top
-            margin_bottom = self.dt_config.margin_bottom
-            iw = width - margin_left - margin_right
-            ih = height - margin_top - margin_bottom
-
-            def sx(x):
-                return margin_left + (x - tmin) / (tmax - tmin) * iw
-
-            def sy(y):
-                return margin_top + (1 - y / y_max) * ih
-
-            centers = (edges[:-1] + edges[1:]) / 2.0
-            pts = " ".join(
-                f"{sx(x):.2f},{sy(float(c)):.2f}"
-                for x, c in zip(centers, counts, strict=False)
-            )
+            # A pixel-space coordinate system used to be built here -- margins,
+            # an inner box, `sx`/`sy`, bin centres and a `pts` string -- and the
+            # only thing it produced was `pts`, which nothing read. The marks
+            # below are drawn in `gx`/`gy`, the 0..100 viewBox space the chart
+            # actually uses. `render/*` carries a per-file `F841` ignore, so
+            # ruff never said so.
             y_ticks, _ = _nice_ticks(0, y_max, 5)
 
             n_xt = 5
@@ -553,15 +540,46 @@ class DateTimeCardRenderer(CardRenderer):
                 f'vector-effect="non-scaling-stroke"/>'
             )
 
-            centers_g = (edges[:-1] + edges[1:]) / 2.0
-            line_pts = " ".join(
-                f"{gx(float(x)):.3f},{gy(float(c)):.3f}"
-                for x, c in zip(centers_g, counts, strict=False)
-            )
-            marks.append(
-                f'<polyline class="line" points="{line_pts}" '
-                f'vector-effect="non-scaling-stroke"/>'
-            )
+            # Bars, not a polyline (#293, 5e.4). A line through bucket centres
+            # draws a slope between "84 records on 8 Jan" and "83 on 9 Jan",
+            # asserting every intermediate value -- and the data holds values
+            # only at the buckets. A bucket count is a quantity per interval,
+            # which is what a bar means and what a line does not, and the card's
+            # own temporal panes and the numeric histogram already draw counts
+            # that way. One encoding for counts, across the report.
+            #
+            # The plan proposed keeping the line above ~180 buckets, where bars
+            # would be sub-pixel. That threshold cannot fire: `default_bins` is
+            # 60, it is not reachable from `ProfileConfig` or `ComputeOptions`,
+            # so `min(bins, 180)` is always 60 and the line branch would be
+            # unreachable code with no input that tests it.
+            #
+            # The sub-pixel risk is real but it is a *viewport* width, not a
+            # bucket count -- 60 buckets are 13px each at 1240 and 3.8px at 390.
+            # A static report cannot branch on that, and the numeric histogram
+            # already ships ~4.5px bars at 390 on the same screen, so this is
+            # the width the report has always drawn counts at.
+            #
+            # Edge to edge with the separator as a non-scaling stroke, exactly
+            # as `histogram_svg._render_bars` does and for the reason recorded
+            # there: a gap in viewBox units is a fraction of the data, so it
+            # shrinks to nothing on a narrow plot.
+            for i, c in enumerate(counts):
+                # Rule 3: a zero count draws nothing. A 1px floor is right for a
+                # small non-zero value and wrong for zero -- an empty month drawn
+                # as a 1px bar asserts data that is not there.
+                if c <= 0:
+                    continue
+                x0b = gx(float(edges[i]))
+                bar_h = float(c) / y_max * span
+                marks.append(
+                    # Two decimals: the viewBox is 0..100, so a unit is a
+                    # percent of the plot and the third decimal is a
+                    # ten-thousandth of a pixel at any width this renders at.
+                    f'<rect class="bar" x="{x0b:.2f}" y="{span - bar_h:.2f}" '
+                    f'width="{gx(float(edges[i + 1])) - x0b:.2f}" '
+                    f'height="{bar_h:.2f}"/>'
+                )
 
             total = int(counts.sum())
             marks.append('<g class="hotspots">')

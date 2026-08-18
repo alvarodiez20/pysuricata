@@ -101,24 +101,15 @@
   fill: #f9f9f9;
 }
 
-/* The timeline is a `figure.hist` now, so its marks live in `.hist-svg` like
-   the histogram's. `.dt-svg` is kept alongside because the empty-state chart
-   still carries that class. */
-#pysuricata-report .dt-svg .line,
-#pysuricata-report .dt-figure .hist-svg .line {
-  stroke: var(--data-2);
-  stroke-width: 1.5;
-  fill: none;
-  cursor: pointer;
-  transition: stroke-width 0.2s ease, stroke-opacity 0.2s ease;
-}
+/* The timeline is a `figure.hist`, so its marks live in `.hist-svg` like the
+   histogram's -- and since #293 they are `.bar`, styled once in
+   `_07-histogram.css` for every chart in the report that draws a count. The
+   `.line` rules that stood here went with the polyline: `svg_empty` does not
+   draw one and nothing under `pysuricata/` emits `class="line"` on an SVG
+   element any more. (`functionality.js` builds `<div class="line">` for tooltip
+   rows, which is a different class in a different tree.)
 
-#pysuricata-report .dt-svg .line:hover,
-#pysuricata-report .dt-figure .hist-svg .line:hover {
-  stroke-width: 2.5;
-  stroke-opacity: 0.8;
-}
-
+   `.dt-svg` is kept alongside because the empty-state chart still carries it. */
 #pysuricata-report .dt-svg .hot,
 #pysuricata-report .dt-figure .hist-svg .hot {
   cursor: pointer;
