@@ -14,6 +14,32 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **Degenerate frames are covered by tests for the first time** (#299) — one
+  column, zero rows, one row, all-one-type, zero columns, all-missing, and a
+  constant column. **No behaviour changed here**; these shapes were absent from
+  every fixture in the suite, and a fixture that misses a branch reports
+  "absent", not "unknown".
+
+  Most of it already worked: nothing raises on any shape, no section formats a
+  division by zero into the page, and no chart draws a bar for a zero count.
+  The zero-*column* frame renders the full report shell with correct empty
+  states throughout.
+
+  Five defects were found and filed rather than fixed, three of them carrying a
+  decision: `summarize()` returning `{}` for a zero-row frame and so breaking
+  the one surface `docs/versioning.md` guarantees (#315), the bare unstyled
+  page that same frame renders (#313), a zero-column frame reporting 9
+  duplicate rows in 10 where pandas reports 0 (#312), and flags that are true
+  by construction on a one-row frame (#314). The three that are shapes rather
+  than values are `strict=True` xfails, so whoever fixes one is told by a
+  failing test that they are done.
+
+  The all-missing frame's 19 duplicates and the constant column's 49 look like
+  #312 and are **correct** — pandas agrees to the row — so both are pinned to
+  stop that fix taking them along.
+
 ### Fixed
 
 - **A log-scale histogram labelled its x axis in log units** (#264). `Fare`'s
