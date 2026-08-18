@@ -13,11 +13,10 @@
   margin: 0.05rem 0;
 }
 
-#pysuricata-report #summary h2 {
-  margin: 0 0 .5rem;
-  font-size: 1.25rem;
-  line-height: 1.25;
-}
+/* No `#summary h2` rule. Summary is one of five sections and takes
+   `.section-title` like the other four (#298); it had its own near-copy of
+   that rule -- same size and line height, a different bottom margin -- which
+   is drift rather than a decision. The single system lives in _06-cards.css. */
 
 /* ---- the stat row ------------------------------------------- */
 #pysuricata-report .stat-row {

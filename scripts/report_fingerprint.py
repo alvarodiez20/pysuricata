@@ -132,9 +132,28 @@ _PAIR_PATTERNS = (
     # <th>Label</th><td>Value</td>  and  <td>Label</td><td>Value</td>
     re.compile(r"<t[dh][^>]*>(.*?)</t[dh]>\s*<t[dh][^>]*>(.*?)</t[dh]>", re.S),
     # <div class="…__cap">Label</div><div class="…__val">Value</div>
+    #
+    # `(?:\s[^"]*)?` because the marker is a class *token*, not the end of the
+    # attribute. An element that borrows a second class -- the calendar panel's
+    # figure carries `cal-base__value vstat__val` -- is the same fact in the
+    # same shape, and anchoring on the closing quote silently stopped matching
+    # it. Two facts read as removed from a report that still displayed both.
     re.compile(
-        r'<div class="[^"]*__cap"[^>]*>(.*?)</div>\s*'
-        r'<div class="[^"]*__val"[^>]*>(.*?)</div>',
+        r'<div class="[^"]*__cap(?:\s[^"]*)?"[^>]*>(.*?)</div>\s*'
+        r'<div class="[^"]*__val(?:\s[^"]*)?"[^>]*>(.*?)</div>',
+        re.S,
+    ),
+    # <span class="…__label">Label</span><span class="…__value">Value</span>
+    #
+    # The third shape, and added for the same reason as the second. #291 drew
+    # the two datetime calendar shares as bars against a flat-calendar rule
+    # instead of printing them as stat-row figures, and the extractor -- which
+    # knew table cells and `.vstat` rows -- collected neither, so two facts the
+    # report still displays looked *removed*. Over-fitting again; the fix is
+    # here, not in the card.
+    re.compile(
+        r'<span class="[^"]*__label(?:\s[^"]*)?"[^>]*>(.*?)</span>\s*'
+        r'<span class="[^"]*__value(?:\s[^"]*)?"[^>]*>(.*?)</span>',
         re.S,
     ),
 )

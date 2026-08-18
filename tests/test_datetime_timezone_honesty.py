@@ -78,6 +78,15 @@ def cards() -> dict[str, str]:
     return {name: _card(tz) for name, tz in CASES.items()}
 
 
+#: A rendered instant on a datetime card. Separator is a single space, not a
+#: `<br>`: #292 made Min and Max single-height cells, because two
+#: double-height cells in a four-column grid made every row in the grid
+#: taller. What this file is about is the zone suffix, which is unaffected --
+#: the regex moved with the format so that it keeps testing the zone rather
+#: than silently matching nothing and passing on an empty list.
+_INSTANT = r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[^<]*"
+
+
 class TestANaiveColumnIsNotCalledUTC:
     """The headline case. A column with no timezone has none to print."""
 
@@ -95,9 +104,7 @@ class TestANaiveColumnIsNotCalledUTC:
         assert "naive" in row.lower(), row
 
     def test_the_instants_carry_no_zone(self, cards):
-        stamps = re.findall(
-            r"\d{4}-\d{2}-\d{2}<br>\d{2}:\d{2}:\d{2}[^<]*", cards["naive"]
-        )
+        stamps = re.findall(_INSTANT, cards["naive"])
 
         assert stamps, "no rendered instants in the naive card"
         for stamp in stamps:
@@ -115,7 +122,7 @@ class TestAZonedColumnKeepsItsZone:
     def test_the_instants_are_labelled(self, cards, name):
         """For a zone-aware column the epoch really is an instant, so saying
         which zone it is displayed in is information rather than invention."""
-        stamps = re.findall(r"\d{4}-\d{2}-\d{2}<br>\d{2}:\d{2}:\d{2}[^<]*", cards[name])
+        stamps = re.findall(_INSTANT, cards[name])
 
         assert stamps
         assert all(stamp.strip().endswith("UTC") for stamp in stamps), stamps

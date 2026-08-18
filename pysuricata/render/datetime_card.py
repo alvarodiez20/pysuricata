@@ -10,6 +10,13 @@ except Exception:  # pragma: no cover
 from .card_base import CardRenderer
 from .card_config import DEFAULT_CHART_DIMS, DEFAULT_DT_CONFIG
 from .card_types import DateTimeStats, QualityFlags
+from .flag_reference import (
+    BUSINESS_HOURS_FLAG_PCT,
+    BUSINESS_HOURS_FLAT_PCT,
+    WEEKEND_FLAT_PCT,
+    WEEKEND_HEAVY_FLAG_PCT,
+    flat_verdict,
+)
 from .svg_utils import nice_ticks as _nice_ticks
 from .temporal_charts import TemporalChartRenderer
 from .triage import annotate_flags
@@ -55,8 +62,11 @@ class DateTimeCardRenderer(CardRenderer):
             self._left_stats(stats, miss_cls, miss_pct) + self._right_stats(stats)
         )
 
-        # Chart
+        # Chart, and the two things that now sit beside and above it
         chart_html = self._build_timeline_chart(stats)
+        baselines_html = self._build_calendar_baselines(stats)
+        lede = self._interval_sentence(stats)
+        lede_html = f'<p class="fence-lede dt-lede">{lede}</p>' if lede else ""
 
         # Details
         details_html = self._build_details_section(col_id, stats)
@@ -69,6 +79,8 @@ class DateTimeCardRenderer(CardRenderer):
             stat_row,
             chart_html,
             details_html,
+            lede_html,
+            baselines_html,
         )
 
     def _build_quality_flags_html(
@@ -104,14 +116,19 @@ class DateTimeCardRenderer(CardRenderer):
         if flags.monotonic_decreasing:
             flag_items.append('<li class="flag good">Monotonic ↓</li>')
 
-        # Weekend concentrated
+        # Weekend concentrated. The baseline these thresholds are set against
+        # used to sit in a comment on this line, which is what #291 was filed
+        # about; it is now the constant the panel draws its rule from, so the
+        # chip and the rule cannot drift apart. The thresholds themselves are
+        # unchanged -- see the two `*_FLAG_PCT` constants for how each relates
+        # to its baseline.
         weekend_ratio = getattr(stats, "weekend_ratio", 0.0)
-        if weekend_ratio > 0.35:  # >35% on weekends (expected ~28.5%)
+        if weekend_ratio * 100 > WEEKEND_HEAVY_FLAG_PCT:
             flag_items.append('<li class="flag">Weekend-heavy</li>')
 
         # Business hours concentrated
         business_hours = getattr(stats, "business_hours_ratio", 0.0)
-        if business_hours > 0.5:  # >50% during business hours
+        if business_hours * 100 > BUSINESS_HOURS_FLAG_PCT:
             flag_items.append('<li class="flag good">Business hours</li>')
 
         # Seasonal pattern detected
@@ -138,7 +155,13 @@ class DateTimeCardRenderer(CardRenderer):
         )
 
     def _left_stats(self, stats: DateTimeStats, miss_cls: str, miss_pct: float) -> str:
-        """Build left statistics table."""
+        """The identity half of the face: what the column is, and how much.
+
+        `Avg interval` and `Interval std` left this table in #292. They are not
+        deleted -- `_build_temporal_statistics_table` still carries both, and
+        `_interval_sentence` now leads the card face, where it says what the
+        pair means better than the raw pair read.
+        """
         # Format time span
         time_span = getattr(stats, "time_span_days", 0.0)
         if time_span >= 365:
@@ -147,28 +170,6 @@ class DateTimeCardRenderer(CardRenderer):
             span_display = f"{time_span / 30:.1f} months"
         else:
             span_display = f"{time_span:.1f} days"
-
-        # Format avg interval
-        avg_interval = getattr(stats, "avg_interval_seconds", 0.0)
-        if avg_interval >= 86400:
-            interval_display = f"{avg_interval / 86400:.1f} days"
-        elif avg_interval >= 3600:
-            interval_display = f"{avg_interval / 3600:.1f} hours"
-        elif avg_interval >= 60:
-            interval_display = f"{avg_interval / 60:.1f} minutes"
-        else:
-            interval_display = f"{avg_interval:.1f} seconds"
-
-        # Format interval std in human-readable way
-        interval_std = getattr(stats, "interval_std_seconds", 0.0)
-        if interval_std >= 86400:
-            std_display = f"{interval_std / 86400:.1f} days"
-        elif interval_std >= 3600:
-            std_display = f"{interval_std / 3600:.1f} hours"
-        elif interval_std >= 60:
-            std_display = f"{interval_std / 60:.1f} minutes"
-        else:
-            std_display = f"{interval_std:.1f} seconds"
 
         data = [
             ("Count", f"{int(getattr(stats, 'count', 0)):,}", "num"),
@@ -184,17 +185,18 @@ class DateTimeCardRenderer(CardRenderer):
             ),
             ("Timezone", self._timezone_display(stats), None),
             ("Time span", span_display, None),
-            ("Avg interval", interval_display, None),
-            ("Interval std", std_display, None),
         ]
 
         return data
 
     def _right_stats(self, stats: DateTimeStats) -> list[tuple[str, str, str | None]]:
-        """Build right statistics table with temporal analysis.
+        """The range half of the face: where the column starts, ends, and how densely.
 
         Facts about the column only. `Processed bytes (≈)` moved to the
         Statistics pane in #209 -- see `_build_temporal_statistics_table`.
+        `Weekend %` and `Business hrs %` left in #291: bare, neither could be
+        judged, so they are drawn against their flat-calendar baseline by
+        `_build_calendar_baselines` instead of printed as two more numbers.
         """
         # Seasonal pattern removed from display
 
@@ -213,10 +215,14 @@ class DateTimeCardRenderer(CardRenderer):
             density_display = "—"
 
         data = [
+            # Single-height (#292). Two double-height cells in a four-column
+            # grid made every row in the grid taller, including the six that
+            # carry one line.
             (
                 "Min",
                 self._format_timestamp(
                     getattr(stats, "min_ts", None),
+                    multiline=False,
                     suffix=self._instant_suffix(stats),
                 ),
                 "timestamp-value",
@@ -225,15 +231,10 @@ class DateTimeCardRenderer(CardRenderer):
                 "Max",
                 self._format_timestamp(
                     getattr(stats, "max_ts", None),
+                    multiline=False,
                     suffix=self._instant_suffix(stats),
                 ),
                 "timestamp-value",
-            ),
-            ("Weekend %", f"{getattr(stats, 'weekend_ratio', 0.0) * 100:.1f}%", "num"),
-            (
-                "Business hrs %",
-                f"{getattr(stats, 'business_hours_ratio', 0.0) * 100:.1f}%",
-                "num",
             ),
             ("Data density", density_display, None),
         ]
@@ -344,6 +345,68 @@ class DateTimeCardRenderer(CardRenderer):
         blocks = "▁▂▃▄▅▆▇█"
         return "".join(
             blocks[min(len(blocks) - 1, int(c * (len(blocks) - 1) / m))] for c in counts
+        )
+
+    #: The two calendar shares, with what a flat calendar would give each.
+    #: Both baselines are arithmetic rather than estimates, and neither costs
+    #: the accumulator a new statistic -- the ratios were already computed and
+    #: already on the card; #291 only gave them something to be read against.
+    _CALENDAR_BASELINES: tuple[tuple[str, str, float, str], ...] = (
+        ("Weekend share", "weekend_ratio", WEEKEND_FLAT_PCT, "2 of 7 days"),
+        (
+            "Business hours",
+            "business_hours_ratio",
+            BUSINESS_HOURS_FLAT_PCT,
+            "8 of 24 hours on 5 of 7 days",
+        ),
+    )
+
+    def _build_calendar_baselines(self, stats: DateTimeStats) -> str:
+        """Draw each calendar share against the flat value that makes it readable.
+
+        `Weekend % 27.0` printed bare is noise wearing the clothes of a
+        finding: a flat calendar gives 28.6%, so 27.0 is the *absence* of a
+        weekend effect. The bar carries the observed share, the rule carries
+        the baseline, and the verdict states the gap in percentage points so
+        the reading can be checked against the mark (phase 5e.2, #291).
+
+        The rule is drawn *before* the bar, so a bar that reaches past it
+        occludes it rather than crossing it -- rule 2 in `tokens.css`. It also
+        protrudes above and below the track onto the paper, which is what keeps
+        it visible at 390px after its label is dropped.
+        """
+        rows: list[str] = []
+        for label, attr, flat_pct, unit_note in self._CALENDAR_BASELINES:
+            raw = getattr(stats, attr, None)
+            if not isinstance(raw, (int, float)):
+                continue
+            actual_pct = float(raw) * 100.0
+            verdict, tone = flat_verdict(actual_pct, flat_pct)
+            title = f"A flat calendar would give {flat_pct:.1f}% \u2014 {unit_note}"
+            rows.append(
+                f'<div class="cal-base__row">'
+                f'<div class="cal-base__head">'
+                f'<span class="cal-base__label">{label}</span>'
+                f'<span class="cal-base__value vstat__val">{actual_pct:.1f}%</span>'
+                f"</div>"
+                f'<div class="cal-base__track">'
+                f'<span class="cal-base__rule" title="{title}" '
+                f'style="left:{min(100.0, flat_pct):.2f}%"></span>'
+                f'<span class="cal-base__fill" '
+                f'style="width:{min(100.0, max(0.0, actual_pct)):.2f}%"></span>'
+                f"</div>"
+                f'<span class="cal-base__verdict {tone}">{verdict}</span>'
+                f"</div>"
+            )
+        if not rows:
+            return ""
+        return (
+            '<div class="cal-base">'
+            '<span class="cal-base__title vstat__cap">Shape of the calendar</span>'
+            + "".join(rows)
+            + '<span class="cal-base__note">rule marks the flat-calendar share '
+            "\u2014 2 of 7 days, and 8 of 24 hours on 5 of 7 days</span>"
+            "</div>"
         )
 
     def _build_timeline_chart(self, stats: DateTimeStats) -> str:
@@ -1041,11 +1104,10 @@ class DateTimeCardRenderer(CardRenderer):
         missing_table = self._build_missing_values_table(stats)
         temporal_charts = self._build_temporal_distributions(stats)
 
-        # The regularity sentence leads the pane. It was a table row filed
-        # alphabetically, and it is the strongest thing the column knows.
-        sentence = self._interval_sentence(stats)
-        if sentence:
-            stats_table = f'<p class="fence-lede">{sentence}</p>{stats_table}'
+        # The regularity sentence used to lead this pane. It leads the card
+        # face now (#292) -- it is read before the conclusions rather than
+        # after them. `Avg interval` and `Interval std dev` stay in the table
+        # below, so the pair the sentence interprets is still reachable.
 
         return self._build_tabbed_details(
             col_id,
@@ -1084,6 +1146,8 @@ class DateTimeCardRenderer(CardRenderer):
         stat_row: str,
         chart_html: str,
         details_html: str,
+        lede_html: str = "",
+        baselines_html: str = "",
     ) -> str:
         """Assemble the complete card HTML."""
         docs_url = "https://alvarodiez20.github.io/pysuricata/stats/datetime/"
@@ -1105,7 +1169,11 @@ class DateTimeCardRenderer(CardRenderer):
                 {info_button}
             </header>
             <div class="var-card__body">
-                <div class="var-chart">{chart_html}</div>
+                {lede_html}
+                <div class="dt-face">
+                    <div class="var-chart">{chart_html}</div>
+                    {baselines_html}
+                </div>
                 {stat_row}
                 <div class="card-controls" role="group" aria-label="Column controls">
                     <div class="details-slot">
