@@ -795,12 +795,34 @@ class RowKMV:
         # sketch has seen fewer rows than ``rows``. The row count stays exact
         # either way; only the duplicate estimate degrades.
         self.duplicates_degraded = False
+        # Set when a chunk arrives with no columns at all. Not a failure: there
+        # is simply nothing in a row to compare, which is why `df.duplicated()`
+        # is False for every row of such a frame. Kept apart from
+        # `duplicates_degraded` because that flag means "the sketch saw less
+        # than it should have", and here it saw everything there was (#312).
+        self.no_columns = False
 
     def update_from_pandas(self, df: pd.DataFrame) -> None:
         try:
             import pandas as pd
         except ImportError:
             return
+
+        # A frame with no columns has nothing in its rows to compare, so no two
+        # of them can differ *or* match: pandas reports zero duplicates for ten
+        # empty rows, and so does this.
+        #
+        # Handled here rather than left to fail below, where `columns[0]` raised
+        # an IndexError straight into `_degraded_update`. That path is built for
+        # rows that *could not be hashed*, and it stringified nothing into one
+        # signature, so ten rows came out as one distinct and nine duplicates --
+        # 90%, labelled `exact` (#312).
+        if df.shape[1] == 0:
+            self.rows += len(df)
+            if len(df):
+                self.no_columns = True
+            return
+
         try:
             # Vectorized row hashing: combine column hashes using a polynomial hash
             # instead of per-row tuple construction + hash()
@@ -835,6 +857,15 @@ class RowKMV:
             self._degraded_update(len(df), df.head(_HASH_FALLBACK_SAMPLE))
 
     def update_from_polars(self, df: pl.DataFrame) -> None:
+        # Same argument as the pandas path. A polars frame with no columns has
+        # height 0 today, so this is a guard rather than a live case, but the
+        # two paths answering differently is how the pandas one went unnoticed.
+        if getattr(df, "width", None) == 0:
+            self.rows += int(getattr(df, "height", 0) or 0)
+            if getattr(df, "height", 0):
+                self.no_columns = True
+            return
+
         try:
             # Polars' hash_rows() is already correct - hashes entire rows properly
             if hasattr(df, "hash_rows"):
@@ -893,6 +924,12 @@ class RowKMV:
         **This figure is a difference of two large numbers and its error is not
         the sketch's error.** See :meth:`duplicates_uncertainty`.
         """
+        # Nothing to compare, so nothing is a duplicate. Without this the
+        # sketch has seen no signatures at all, and `rows - 0` would report
+        # every row as a duplicate rather than none of them.
+        if self.no_columns:
+            return 0, 0.0
+
         uniq = self.kmv.estimate()
         d = max(0, min(self.rows, self.rows - uniq))
         pct = (d / self.rows * 100.0) if self.rows else 0.0
@@ -926,6 +963,10 @@ class RowKMV:
             would understate what the sketch knows, which is the opposite of
             this method's purpose.
         """
+        if self.no_columns:
+            # Exactly zero, by the same argument as `approx_duplicates`.
+            return 0
+
         uniq = self.kmv.estimate()
         if not self.rows or uniq <= 0:
             return 0

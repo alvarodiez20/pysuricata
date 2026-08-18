@@ -4458,6 +4458,7 @@
     "duplicate_rows_est": 0,
     "duplicate_rows_pct_est": 0.0,
     "duplicate_rows_uncertainty": 0,
+    "duplicates_degraded": false,
     "memory_bytes": 28800,
     "missing_cells": 0,
     "missing_cells_pct": 0.0,

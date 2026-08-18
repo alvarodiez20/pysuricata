@@ -36,6 +36,13 @@ def fmt_num(x: int | float | None) -> str:
     try:
         if isinstance(x, float) and (math.isnan(x) or math.isinf(x)):
             return "NaN"
+        # `-0` is arithmetically zero and reads as a measurement that came out
+        # slightly negative. A one-row categorical column has one level at
+        # p = 1, and -(1 * log2(1)) is -0.0, so the card printed `ENTROPY -0`
+        # (#314). Every formatter is a place this can surface, so it is caught
+        # in the one they all go through rather than at the call site.
+        if x == 0:
+            x = abs(x)
         return f"{x:,.4g}"
     except Exception:
         return str(x)
@@ -57,10 +64,13 @@ def fmt_compact(x: object) -> str:
         # If isinstance checks fail unexpectedly, continue to best-effort
         pass
     try:
+        if isinstance(x, (int, float)) and x == 0:
+            x = abs(x)
         return f"{x:.4g}"
     except Exception:
         try:
-            return f"{float(x):.4g}"
+            value = float(x)
+            return f"{abs(value) if value == 0 else value:.4g}"
         except Exception:
             return str(x)
 

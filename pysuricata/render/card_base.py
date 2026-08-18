@@ -262,6 +262,33 @@ class CardRenderer:
         return completeness_html + chunk_html
 
 
+def share_flag_is_falsifiable(count: int, threshold: float) -> bool:
+    """Whether a share-based flag could *fail* to fire on a column this small.
+
+    A flag that cannot not fire is not a finding. `pd.DataFrame({"a": [1.0]})`
+    rendered "1 of 1 columns need a look" with the chip `100.0% dominant
+    category`: a column with one row has one value, so its most common value is
+    100% of it whatever the data (#314). The same holds for every threshold on
+    a share -- below `1 / threshold` rows a single occurrence already crosses
+    it, and the flag is measuring the row count rather than the column.
+
+    Same family as #248, where the duplicate threshold false-alarms on a clean
+    frame about one run in ten: a threshold that is meaningless below some `n`
+    is suppressed below it, rather than fired and then explained.
+
+    Args:
+        count: Non-null values in the column.
+        threshold: The share the flag fires at, as a fraction.
+
+    Returns:
+        True when one value out of `count` sits below `threshold`, so the data
+        still gets to decide.
+    """
+    if count <= 0 or threshold <= 0:
+        return False
+    return (1.0 / count) < threshold
+
+
 class QualityAssessor:
     """Assesses data quality and generates flags."""
 
@@ -362,7 +389,9 @@ class QualityAssessor:
             flags.quasi_constant = True
         else:
             top_values = getattr(stats, "top_values", None)
-            if top_values:
+            if top_values and share_flag_is_falsifiable(
+                total_nonnull, self.thresholds.dominant_value_share
+            ):
                 share = top_values[0][1] / total_nonnull
                 flags.quasi_constant = share >= self.thresholds.dominant_value_share
 
@@ -390,18 +419,29 @@ class QualityAssessor:
         # Missing data
         flags.missing = miss_pct > self.thresholds.missing_warn_pct
 
-        # High cardinality
-        if stats.unique_est > max(
+        # High cardinality. Below three rows every column is 100% distinct, so
+        # the ratio is a fact about the frame's height (#314).
+        if share_flag_is_falsifiable(
+            stats.count, self.thresholds.high_cardinality_threshold
+        ) and stats.unique_est > max(
             200, int(self.thresholds.high_cardinality_threshold * max(1, stats.count))
         ):
             flags.high_cardinality = True
 
-        # Dominant category
-        if stats.top_items:
+        # Dominant category.
+        #
+        # A share against a share, which is what the chip claims it is ("50.0%
+        # dominant category · limit 50%"). It used to compare the mode's count
+        # against `int(threshold * count)`, and truncation makes that bar
+        # vacuous on a short column: at two rows `int(0.7 * 2)` is 1, which is
+        # the smallest a mode can be, so a column of two distinct values was
+        # flagged as having a dominant category (#314).
+        if stats.top_items and share_flag_is_falsifiable(
+            stats.count, self.thresholds.dominant_category_threshold
+        ):
             mode_count = stats.top_items[0][1] if stats.top_items else 0
-            if mode_count >= int(
-                self.thresholds.dominant_category_threshold * max(1, stats.count)
-            ):
+            share = mode_count / max(1, stats.count)
+            if share >= self.thresholds.dominant_category_threshold:
                 flags.dominant_category = True
 
         # Case and trim variants: flag only when lowercasing/stripping *reduces* the

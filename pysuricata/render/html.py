@@ -111,10 +111,17 @@ def _quick_facts(
     doing none of the work. The date range is dropped rather than shown empty
     when there are no datetime columns.
     """
+    # A zero here is not a finding, and three of them in a row on a small frame
+    # is a line that says nothing in five words. The counts that are zero drop
+    # out; if all three are, the line starts with the text or date facts.
     facts = [
-        f"{unique_cols:,} unique",
-        f"{constant_cols:,} constant",
-        f"{high_card_cols:,} high-cardinality",
+        f"{count:,} {label}"
+        for count, label in (
+            (unique_cols, "all distinct"),
+            (constant_cols, "constant"),
+            (high_card_cols, "high-cardinality"),
+        )
+        if count
     ]
     if text_cols:
         facts.append(f"{text_cols:,} text (avg len {avg_text_len})")
@@ -228,12 +235,24 @@ def render_html_snapshot(
     else:  # pragma: no cover - a row sketch that predates `duplicates()`
         dup_rows, dup_pct = row_kmv.approx_duplicates()
         dup_sigma, dup_resolvable, dup_ceiling = 0, True, 0
+    degraded = bool(getattr(row_kmv, "duplicates_degraded", False))
     if dup_resolvable:
         duplicates_value = f"{dup_rows:,}"
         # No bound when the count is exact -- KMV counts exactly until it has
         # seen k distinct values, so most frames have no estimation error here
         # and "± 0" would be noise.
-        duplicates_note = f"± {dup_sigma:,} · KMV sketch" if dup_sigma else "exact"
+        #
+        # `exact` is a claim about the *whole* count, not just the sketch's
+        # error on it. When a chunk could not be hashed the sketch saw fewer
+        # rows than were counted, so the figure is an overestimate of unknown
+        # size, and the tile said `exact` regardless because it only ever
+        # consulted sigma (#312).
+        if degraded:
+            duplicates_note = "partial hash · overestimate"
+        elif dup_sigma:
+            duplicates_note = f"± {dup_sigma:,} · KMV sketch"
+        else:
+            duplicates_note = "exact"
         duplicates_overall = f"{dup_rows:,} ({dup_pct:.1f}%)"
     else:
         # Below the resolution of the sketch. A figure here would invite a
@@ -247,6 +266,19 @@ def render_html_snapshot(
         duplicates_note = "below sketch resolution"
         duplicates_overall = f"under {dup_ceiling:,} ({ceiling_pct:.1f}%)"
 
+    # Three buckets, and a column belongs to at most one of them.
+    #
+    # `unique` used to be `n_cols` -- the column count, not a property -- so
+    # every column was always in it, and a one-row frame read `1 unique · 1
+    # constant · 1 high-cardinality`: one column described as all-distinct and
+    # constant and high-cardinality at once. Each is individually defensible at
+    # n = 1 and the three together are nonsense (#314).
+    #
+    # Order matters and runs from the strongest claim down: a column with no
+    # values at all is none of these -- neither unique nor constant is a
+    # property of a column that holds nothing -- then constant, then
+    # all-distinct, then merely high-cardinality.
+    unique_cols = 0
     constant_cols = 0
     high_card_cols = 0
     for name, (kind, acc) in kinds_map.items():
@@ -258,12 +290,15 @@ def render_html_snapshot(
             # A boolean column reports 2 by definition; what the constant-column
             # count wants to know is how many values actually turned up.
             u = int((acc.true_n > 0) + (acc.false_n > 0))
-        _ = getattr(acc, "count", 0) + getattr(acc, "missing", 0)
+        non_null = int(getattr(acc, "count", 0) or 0)
+        if non_null <= 0:
+            continue
         if u <= 1:
             constant_cols += 1
-        if kind == "categorical" and n_rows:
-            if (u / n_rows) > 0.5:
-                high_card_cols += 1
+        elif u >= non_null:
+            unique_cols += 1
+        elif kind == "categorical" and n_rows and (u / n_rows) > 0.5:
+            high_card_cols += 1
 
     if kinds.datetime:
         mins, maxs = [], []
@@ -582,7 +617,7 @@ def render_html_snapshot(
         "description_label": description_label,
         "description_action": description_action,
         "quick_facts": _quick_facts(
-            unique_cols=n_cols,
+            unique_cols=unique_cols,
             constant_cols=constant_cols,
             high_card_cols=high_card_cols,
             text_cols=text_cols,

@@ -90,6 +90,14 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Changed
 
+- **The `ReportConfig` deprecation now names 1.0.0 as its removal, not 0.3.0.**
+  Removing a public name is a break and a break costs a major bump, so the old
+  date was a deadline that could not happen: it was set under the Cargo-style
+  reading this release replaces. The 1.0.0 gate that asked for an empty
+  deprecation queue said the same thing in reverse -- the queue cannot empty
+  before the release that empties it -- and it now asks instead that every
+  entry has warned long enough to be removed *in* 1.0.0.
+
 - **The versioning contract said a minor bump may break you. It may not.** The
   page had adopted Cargo's pre-1.0 convention, under which `0.1.0 → 0.2.0` is
   the release allowed to break. That is now stated the way SemVer means it:
@@ -115,6 +123,45 @@ quoted when both sides were measured in the same round-robin run.
   Half of #251 goes with the file.
 
 ### Fixed
+
+- **A zero-column frame reported 9 duplicate rows in 10, labelled `exact`;
+  pandas reports none** (#312, closing out #299). The row hasher raised
+  `IndexError` on `columns[0]` and the surrounding `except` routed it into the
+  fallback built for chunks that *cannot be hashed*, which stringified nothing
+  into a single signature for every row. A frame with no columns has nothing in
+  its rows to compare, which is exactly why `df.duplicated()` is False for all
+  of them, so the case is now handled where it arises rather than caught as a
+  failure. The all-NaN and constant-column neighbours still report 19 and 49.
+
+  `duplicates_degraded` is published in the dataset payload, and the Summary
+  tile stops calling a partial hash `exact`: that label was derived from the
+  sketch's own error alone, which says nothing about rows the sketch never saw.
+
+- **Degenerate frames raised flags that were true by construction** (#314,
+  closing out #299). A one-row frame rendered "1 of 1 columns need a look" with
+  `100.0% dominant category · limit 50%`. A column with one row has one value,
+  so its most common value is 100% of it whatever the data: the flag could not
+  *not* fire, and it landed in the one block designed to say what needs a look,
+  on the frames a new user is most likely to start with.
+
+  Share-based flags now fire only where a column could fail to raise them, and
+  the dominant-category test compares a share against a share. It used to
+  compare the mode's count against `int(threshold * count)`, and truncation
+  makes that bar 1 at two rows -- the smallest a mode can be -- so two distinct
+  values were flagged as having a dominant category. `100.0% dominant category`
+  on two identical rows, and `80.0%` on eight of ten, still fire.
+
+  The quick-facts line counted one column as unique *and* constant *and*
+  high-cardinality. `unique` was not a property at all: it was the column
+  count, so every column was always in it. The three are now exclusive
+  properties in that order of strength, a column holding no values is in none
+  of them, and a bucket nobody is in is dropped rather than printed as a zero.
+  Titanic reads `2 all distinct · 1 high-cardinality · 8 text`; an all-missing
+  frame no longer claims its empty columns are both unique and constant.
+
+  `-0` no longer reaches the page. One categorical level at p = 1 gives
+  `-(1 * log2(1))`, which is `-0.0`, and the card printed `ENTROPY -0`. Caught
+  in the shared formatter, because every formatter is a place it can surface.
 
 - **Top-k counts claimed to be exact in exactly the case they were most
   wrong** (#328). Misra-Gries keeps 50 counters; above 50 distinct values every

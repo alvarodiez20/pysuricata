@@ -175,6 +175,12 @@ class TestTheDocumentedKeys:
             # is "nothing resolvable below about 2,201". Without this key a
             # consumer could not reach the answer the report already printed.
             "duplicate_rows_uncertainty",
+            # Whether any chunk's rows could not be hashed. When they could
+            # not, the sketch saw fewer rows than were counted and the estimate
+            # above is an overestimate of unknown size -- a different statement
+            # from the sketch's own error, and the reason the report could
+            # label such a count `exact` (#312).
+            "duplicates_degraded",
             "memory_bytes",
             "top_missing",
         }
