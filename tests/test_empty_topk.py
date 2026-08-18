@@ -68,10 +68,17 @@ class TestAnUntrackedColumnSaysSo:
     def test_a_column_with_real_heavy_hitters_still_reports_numbers(self):
         """The guard must not swallow the normal case.
 
-        `Sex` has two levels over 891 rows, so the sketch is full of heavy
-        hitters and every figure should be a figure.
+        Eight levels over 800 rows: the sketch is full of heavy hitters and
+        every figure should be a figure.
+
+        This used to be a two-level `sex` column, which #295 stopped rendering
+        entropy for at all -- and a fixture that no longer reaches the branch
+        reports *absent*, which reads exactly like a pass. Eight levels is
+        clear of every suppression rule in `suppressed_statistics`, so the
+        only thing that can empty this row is the untracked guard, which is
+        what the test is about.
         """
-        frame = pd.DataFrame({"sex": ["male", "female"] * 400})
+        frame = pd.DataFrame({"grade": list("abcdefgh") * 100})
         body = _body(profile(frame, seed=0).html)
         assert "no value repeats often enough" not in body
         assert re.search(r"Entropy.{0,200}?\d", body, re.S)
@@ -81,9 +88,14 @@ class TestTheDistinctionIsRealAndNotCosmetic:
     def test_zero_and_unknown_render_differently(self):
         """The point of the fix: a column that genuinely has no rare levels
         must not look like a column that cannot say."""
-        known = pd.DataFrame({"grade": ["a"] * 500 + ["b"] * 500})
+        known = pd.DataFrame({"grade": ["a"] * 500 + ["b"] * 300 + ["c"] * 200})
         body = _body(profile(known, seed=0).html)
-        # Two levels, both common: rare levels really is 0, and says 0.
+        # Three levels, all common: rare levels really is 0, and says 0.
+        # Three rather than two, because #295 suppresses the row entirely on a
+        # two-level column -- there, `0` is not a measurement of a tail, it is
+        # the absence of one. The distinction this test is about is between a
+        # measured zero and an unmeasurable one, and it needs a column that
+        # can be measured.
         assert "no value repeats often enough" not in body
         assert re.search(r"Rare levels.{0,120}?0", body, re.S)
 

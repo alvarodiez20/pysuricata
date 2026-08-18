@@ -45,6 +45,14 @@ a report actually raised, and the toolbar says what it is showing.
 Phase 9's mobile and accessibility pass is done except for the parts that need a human
 looking at a screen — see #300.
 
+**5f.1** (#295) landed after this file was written. The three spread statistics are
+suppressed per statistic rather than per column kind, so `Sex` renders nine slots and
+`Embarked` loses only top-5 coverage. Two things fell out of it that the plan did not
+name: every categorical column had been reporting `Processed bytes (≈) 0.0 B` from a
+dict key that was never built, and a stat row that does not fill its grid had been
+stopping its bottom rule early — `Age`, at thirteen cells, since the numeric restack.
+Both are fixed. `tests/test_categorical_card.py` holds the rule.
+
 ### Open
 
 | Item | Issue | Note |
@@ -53,7 +61,6 @@ looking at a screen — see #300.
 | 5e.3 · thirteen datetime statistics become eight | #292 | blocked behind #291, which takes two of them off the grid |
 | 5e.4 · bars or a line for the timeline | #293 | **decision.** The plan calls it the one genuine trade in the phase |
 | 5e.5 · the per-card missing strip | #294 | also touches `numeric_card.py`; 5b.7 asked for the same removal and it did not happen |
-| 5f.1 · suppress statistics that cannot be true | #295 | the largest single win left — categorical is eight of Titanic's twelve columns |
 | 5f.2 · the even-split rule on every level bar | #296 | `even_split_pct()` exists at `flag_reference.py:254` and has no callers |
 | 5f.3 · concentration figures for many-level columns | #297 | extends 5.4's high-cardinality branch |
 | 8 · an HTML view for `compare()` | #121 | colour settled: `--data-1` and `--data-3`. Deltas are not verdicts |

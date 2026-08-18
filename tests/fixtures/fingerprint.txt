@@ -994,15 +994,11 @@ kv::col_booked::weekend ratio	27.3%
 kv::col_booked::weekend share	27.3%
 kv::col_cabin::count	219
 kv::col_cabin::empty or zero	0
-kv::col_cabin::entropy	0.9855
 kv::col_cabin::label length (avg)	3
 kv::col_cabin::length p90	3
 kv::col_cabin::missing	672
 kv::col_cabin::missing	75.4%
 kv::col_cabin::mode %	57.1%
-kv::col_cabin::rare levels	0
-kv::col_cabin::rare levels	0%
-kv::col_cabin::top 5 coverage	100%
 kv::col_cabin::unique	2
 kv::col_empty::count	0
 kv::col_empty::empty or zero	0
@@ -1064,15 +1060,11 @@ kv::col_name::top 5 coverage	16.8%
 kv::col_name::unique	599
 kv::col_sex::count	891
 kv::col_sex::empty or zero	0
-kv::col_sex::entropy	0.9999
 kv::col_sex::label length (avg)	4.988
 kv::col_sex::length p90	6
 kv::col_sex::missing	0
 kv::col_sex::missing	0%
 kv::col_sex::mode %	50.6%
-kv::col_sex::rare levels	0
-kv::col_sex::rare levels	0%
-kv::col_sex::top 5 coverage	100%
 kv::col_sex::unique	2
 kv::col_survived::count	891
 kv::col_survived::false	434

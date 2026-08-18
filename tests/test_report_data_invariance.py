@@ -32,6 +32,7 @@ Deliberate fact changes so far, each with the reason it was allowed:
   go negative. 82 facts moved, all of them `count` and `pct` on the two numeric
   columns; **no fact was added or removed**, and no bin moved by more than one
   row. The old numbers were wrong, so this fixture records the corrected ones.
+
 * **#291/#292, the datetime card face.** `Weekend %` and `Business hrs %` left
   the stat grid to become bars drawn against the flat-calendar share, and `Avg
   interval`/`Interval std` moved into the Statistics pane. **No number
@@ -46,6 +47,21 @@ Deliberate fact changes so far, each with the reason it was allowed:
   read as removed. That is the #114 over-fitting again. Loosening it also
   brought the summary composition counts into the fingerprint, which is four
   facts checked that never were.
+
+* **#295, three categorical statistics on two-level columns.** `Entropy`,
+  `Rare levels` and `Top 5 coverage` describe how a distribution spreads across
+  its levels, and the card rendered all three for every categorical column
+  regardless of whether it had a spread to describe. They are now suppressed
+  where their own arithmetic cannot carry information -- see
+  `categorical_card.suppressed_statistics` for which rule drops which. **8 facts
+  removed, none added, none changed**, and every one of the eight is on `sex` or
+  `cabin`, the frame's two two-level columns: `top 5 coverage 100%` on a column
+  with two levels is the top *five*, so it was 100% by construction rather than
+  by measurement; `rare levels 0` counted a tail that does not exist. Removing a
+  fact is the change this file exists to make expensive, so note what did
+  **not** move: `col_name` keeps its entropy, because the fixture gives its head
+  distinct counts and a column whose levels genuinely differ still has a spread
+  worth reporting.
 """
 
 from __future__ import annotations
