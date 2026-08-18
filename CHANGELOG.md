@@ -296,6 +296,28 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **A column scaled to [0, 1] was reported as 100% missing.** Found while
+  replacing the demo dataset (#150), where `temp`, `feels_like` and `humidity`
+  each came back `count=0, missing=17,379` against a frame pandas says has no
+  gaps at all — three of twelve columns, silently emptied.
+
+  Two independent defects. The rule deciding whether a numeric column is really
+  boolean read `{int(v) for v in unique_values}`, and `int()` on a float
+  truncates: `int(0.24)` is 0 and `int(1.0)` is 1, so every value of a
+  normalised column collapsed onto {0, 1} and the column was promoted. A column
+  maxing at 0.85 escaped only because nothing in it truncated to 1.
+
+  Then, once promoted, `_to_bool_array_pandas` fell through to a string
+  coercion where `astype(str)` turns 1.0 into `"1.0"` — in neither the true set
+  nor the false set, so every row became None. That half is independent: a
+  genuine 0.0/1.0 float column, which *should* be promoted, was also reported
+  entirely missing, while an integer 0/1 column escaped because `str(1)` is
+  `"1"`.
+
+  So the same data profiled differently as `int` and as `float`, and the two
+  adapters disagreed as well — polars casts with `cast(pl.Boolean,
+  strict=False)` and has been right all along, which is why nothing caught it.
+  The regression test pins both halves, both dtypes and both adapters.
 - **A duplicate count from a partial hash was still labelled `exact`.** The
   label came from the sketch's own sigma, which measures the error of a sketch
   that saw every row -- it says nothing about rows that never reached it. When
