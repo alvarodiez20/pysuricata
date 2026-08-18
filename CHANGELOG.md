@@ -267,6 +267,29 @@ quoted when both sides were measured in the same round-robin run.
   Note what the flag does *not* mean: hashing failing is not the same as rows
   going unseen. Below the fallback sample the stringified rows are all of them,
   so the count is as good as it ever was and the flag stays down.
+- **The summary-height cases are no longer red on a developer machine** (#309).
+  `test_the_summary_does_not_get_taller` passed in CI and failed on at least two
+  macOS checkouts with nothing applied, which is the worst kind of failing test:
+  the one that teaches people to ignore a ratchet.
+
+  Measuring it first ruled out the obvious fixes. It is not a font *scale* — the
+  summary holds 41 text rows at all three widths while the excess is +7.2px at
+  390, +5.2px at 768 and +2.5px at 1240. It tracks how much the content
+  **wraps**: glyph advances differ by a fraction of a pixel per platform, lines
+  break in different places, and each extra line box rounds up once. There is no
+  portable unit to divide by — expressing the budget in line boxes was tried and
+  does not cancel it, because the line count is itself what moves.
+
+  The fix keeps the ratchet's teeth exactly where they were. **On CI the
+  recorded numbers are asserted unchanged**; off CI a 2% allowance applies,
+  proportional because the drift is proportional to how much text is on screen.
+  A tolerance that applies only where the ratchet was never authoritative costs
+  nothing — which was #309's objection to the cheap option, and it does not hold
+  once the tolerance is confined off CI.
+
+  The off-CI failure message also states the procedure that had been folklore: a
+  deliberate raise must be measured as a **delta** on your machine and added to
+  CI's figure, never read off as a local absolute.
 
 - **A zero-column frame reported 90% duplicate rows; pandas reports none**
   (#312). `RowKMV.update_from_pandas` seeded its row hash from `columns[0]`,
