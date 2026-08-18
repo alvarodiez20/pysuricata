@@ -43,12 +43,20 @@ matching whatever keys still line up.
 
 ### What changed in 2
 
-`outliers_mod_zscore` is now `outliers_mod_zscore_est`, which is the rename that
-bought the bump. Both outlier counts also changed value: they were the number of
-crossings found *inside* the 20,000-value reservoir and are now estimates for the
-column, so above `numeric_sample_size` rows they are roughly `n / 20,000` times
-larger than before (#327). By the rule above, that correction on its own would
-**not** have bumped the version. The rename is what did.
+Both outlier counts changed value: they were the number of crossings found
+*inside* the 20,000-value reservoir and are now estimates for the column, so
+above `numeric_sample_size` rows they are roughly `n / 20,000` times larger than
+before (#327). By the rule above that is a **correction, not a break**, and it
+would not have bumped the version on its own. The version moved anyway, because
+a stored baseline written before the fix holds counts on the old scale and
+comparing it against the new ones would silently mis-report drift: `check`
+refuses across versions, which is exactly the signal wanted here.
+
+`outliers_mod_zscore_est` is a new name for `outliers_mod_zscore`, which is
+**deprecated and still published**. Renaming a key outright is a break, and a
+break costs a major bump under [Versioning](versioning.md) -- so the old name
+stays until 1.0.0 rather than the rename shipping in a minor release. New code
+should read `_est`; nothing is required to change today.
 
 Every column carries `type`, `count`, `missing` and `mem_bytes`, whatever its
 kind. Those four are safe to read without checking `type` first.
@@ -130,6 +138,7 @@ Quality and structure:
 | `unique_est` | int | **Approximate.** KMV sketch |
 | `unique_ratio_approx` | float | **Approximate.** `unique_est / count` |
 | `top_values` | list \| None | `(value, count)`. **`None` means not tracked** |
+| `top_values_uncertainty` | int | **Approximate.** How far below the truth each count above may sit. `0` means exact |
 | `outliers_iqr_est`, `outliers_mod_zscore_est` | int | **Approximate.** Counted in the sample, scaled to the column |
 | `mono_inc`, `mono_dec` | bool | Monotonic over the stream as it arrived |
 | `int_like` | bool | Every value is a whole number |
@@ -152,6 +161,7 @@ tracked and nothing was frequent enough.
 | `count`, `missing`, `empty_zero` | int | Exact |
 | `unique_est` | int | **Approximate.** KMV sketch |
 | `top_items` | list | `(value, count)`. **Approximate** — Misra-Gries counts are lower bounds |
+| `top_items_uncertainty` | int | **The bound on those counts.** `0` means the counters never evicted, so they are exact |
 | `entropy`, `gini_impurity`, `diversity_ratio`, `most_common_ratio` | float | Derived |
 | `avg_len`, `len_p90` | float, int | Value length in characters |
 | `case_variants_est`, `trim_variants_est` | int | **Approximate.** Distinct counts after folding case / trimming whitespace |
@@ -214,6 +224,23 @@ quantiles are exact.
 `top_items` and `top_values` come from Misra-Gries counters. Their counts are
 **lower bounds** — a reported count never overstates, and the counters neither
 partition the column nor sum to the row count.
+
+How far below is published rather than left to the reader.
+`top_items_uncertainty` (and `top_values_uncertainty` on numeric columns) is the
+total weight the sketch decremented, and Misra-Gries guarantees
+
+```text
+true_count(x) ∈ [reported(x), reported(x) + uncertainty]
+```
+
+so `sku-0753: 37` with an uncertainty of 1,112 is honestly rendered as
+`37 – 1,149`. Zero means no eviction ever happened and the counts are exact.
+
+`approx` follows from the same number. It used to be `len(top_items) >=
+top_k`, which reads the dangerous case backwards: eviction *deletes* counters,
+so the list shrinks below the budget exactly when the sketch is under most
+pressure, and a 1M-row column over 1,000 categories reported nine items,
+`approx=False`, and a top count 30x low (#328).
 
 ## What is not in the payload
 

@@ -1,7 +1,7 @@
 {
   "columns": {
     "age": {
-      "approx": false,
+      "approx": true,
       "bimodal": false,
       "ci_hi": 42.82497157032833,
       "ci_lo": 39.80353572484563,
@@ -79,6 +79,7 @@
       "mono_inc": false,
       "negatives": 0,
       "outliers_iqr_est": 0,
+      "outliers_mod_zscore": 0,
       "outliers_mod_zscore_est": 0,
       "q1": 22.0,
       "q3": 61.0,
@@ -263,6 +264,7 @@
           1
         ]
       ],
+      "top_values_uncertainty": 12,
       "true_histogram_counts": [
         46,
         34,
@@ -320,6 +322,7 @@
       ],
       "type": "numeric",
       "unique_est": 79,
+      "unique_est_exact": true,
       "unique_ratio_approx": 0.08866442199775533,
       "variance": 529.3370887400849,
       "zeros": 0
@@ -419,9 +422,11 @@
           94
         ]
       ],
+      "top_items_uncertainty": 0,
       "trim_variants_est": 2,
       "type": "categorical",
-      "unique_est": 2
+      "unique_est": 2,
+      "unique_est_exact": true
     },
     "empty": {
       "approx": false,
@@ -438,12 +443,14 @@
       "missing": 891,
       "most_common_ratio": null,
       "top_items": [],
+      "top_items_uncertainty": null,
       "trim_variants_est": null,
       "type": "categorical",
-      "unique_est": 0
+      "unique_est": 0,
+      "unique_est_exact": null
     },
     "fare": {
-      "approx": false,
+      "approx": true,
       "bimodal": false,
       "ci_hi": 41.88302747799928,
       "ci_lo": 38.15394947371168,
@@ -521,6 +528,7 @@
       "mono_inc": false,
       "negatives": 0,
       "outliers_iqr_est": 26,
+      "outliers_mod_zscore": 17,
       "outliers_mod_zscore_est": 17,
       "q1": 19.07572822689805,
       "q3": 54.22875889652353,
@@ -625,6 +633,7 @@
           1
         ]
       ],
+      "top_values_uncertainty": 17,
       "true_histogram_counts": [
         54,
         103,
@@ -682,12 +691,13 @@
       ],
       "type": "numeric",
       "unique_est": 891,
+      "unique_est_exact": true,
       "unique_ratio_approx": 1.0,
       "variance": 806.32199350511,
       "zeros": 0
     },
     "name": {
-      "approx": false,
+      "approx": true,
       "avg_len": 11.181818181818182,
       "case_variants_est": 599,
       "count": 891,
@@ -699,7 +709,7 @@
       "len_p90": 13,
       "mem_bytes": 14256,
       "missing": 0,
-      "most_common_ratio": 0.2598870056497175,
+      "most_common_ratio": 0.051627384960718295,
       "top_items": [
         [
           "common 0",
@@ -770,9 +780,11 @@
           1
         ]
       ],
+      "top_items_uncertainty": 14,
       "trim_variants_est": 599,
       "type": "categorical",
-      "unique_est": 599
+      "unique_est": 599,
+      "unique_est_exact": true
     },
     "sex": {
       "approx": false,
@@ -798,9 +810,11 @@
           440
         ]
       ],
+      "top_items_uncertainty": 0,
       "trim_variants_est": 2,
       "type": "categorical",
-      "unique_est": 2
+      "unique_est": 2,
+      "unique_est_exact": true
     },
     "survived": {
       "count": 891,

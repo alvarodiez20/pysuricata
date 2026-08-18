@@ -301,7 +301,11 @@ class NumericCardRenderer(CardRenderer):
 
         data = [
             ("Count", f"{stats.count:,}", "num"),
-            (f"Unique{' (≈)' if stats.approx else ''}", f"{stats.unique_est:,}", "num"),
+            (
+                f"Unique{'' if getattr(stats, 'unique_est_exact', False) else ' (≈)'}",
+                f"{stats.unique_est:,}",
+                "num",
+            ),
             (
                 "Missing",
                 f"{stats.missing:,} ({percentages['miss_pct']:.1f}%)",
