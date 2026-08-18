@@ -2801,6 +2801,36 @@ quoted when both sides were measured in the same round-robin run.</p>
   said which was which.</p>
 <h3 id="added">Added</h3>
 <ul>
+<li><strong>The example dataset can exercise what the report does</strong> (#150). Titanic is
+  in the README, the docs quick start and the linked example report, and it has
+  no datetime column and no numeric pair correlating above 0.5 — so the
+  datetime card, its four temporal panels, and both populated correlation views
+  never appeared in the one example anybody looks at. Three of four card kinds
+  and one of three correlation views.</li>
+</ul>
+<p><code>docs/assets/bike_sharing.csv</code> replaces it: two calendar years of hourly bike
+  rentals from the UCI repository, 17,379 rows, vendored so no CI job fetches
+  anything. It renders all four card kinds, a populated correlation view
+  (<code>temp</code> ↔ <code>feels_like</code> at r = 0.99), and <strong>all four temporal panels</strong> — two
+  years is what buys the year panel, which the renderer drops inside a single
+  year. It profiles in 0.16 s.</p>
+<p>Two changes to the source earn their keep, and <code>scripts/build_demo_dataset.py</code>
+  is the reproducible record of both: the date and hour columns are recombined
+  into one timestamp, without which every value is midnight and the hour-of-day
+  panel is a single bar; and <code>season</code> and <code>weathersit</code> are decoded from small
+  integers to labels, because a bar chart of <code>1, 2, 3, 4</code> is a chart of nothing.
+  Nothing is sampled, filtered or reordered. <code>docs/assets/bike_sharing.NOTICE</code>
+  carries the citation the source asks for.</p>
+<p>The generated example is now <code>example_report.html</code> rather than
+  <code>titanic_report.html</code> — a dataset-neutral name, so the next swap does not
+  break the link again. <strong>Titanic stays as the fixture for
+  <code>tests/test_report_layout.py</code></strong>, whose byte and height ratchets are pinned to
+  it.</p>
+<p>The large-file pre-commit hook goes from 500 KB to 1500 KB for this one file.
+  It cannot be smaller and still do its job: the floor for two years of hourly
+  rows is ~1,150 KB even with minute-precision timestamps and two-decimal
+  floats, and dropping to one year loses the year panel.</p>
+<ul>
 <li>
 <p><strong><code>duplicate_rows_lo</code> / <code>duplicate_rows_hi</code> in the <code>summarize()</code> payload,
   and a <code>pysuricata check --max-duplicate-pct</code> gate that reads them</strong> (#329).

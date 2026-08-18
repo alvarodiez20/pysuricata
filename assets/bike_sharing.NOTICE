@@ -1,0 +1,50 @@
+bike_sharing.csv
+================
+
+Derived from the Bike Sharing Dataset in the UCI Machine Learning Repository.
+
+    Fanaee-T, Hadi, and Gama, Joao. "Event labeling combining ensemble
+    detectors and background knowledge." Progress in Artificial Intelligence
+    (2013): pp. 1-15. Springer Berlin Heidelberg.
+    doi:10.1007/s13748-013-0040-3
+
+    https://doi.org/10.24432/C5W894
+
+The source terms ask that use in publications cite that paper, which is what
+this file records.
+
+What was changed
+----------------
+
+`scripts/build_demo_dataset.py` is the script, and it is the authority; this is
+the summary.
+
+* `dteday` and `hr` are combined into a single `rented_at` timestamp. The
+  source splits them, which profiles as a datetime column whose every value is
+  midnight -- the hour-of-day panel would be one bar. This is the change that
+  makes the dataset worth vendoring.
+* `season` and `weathersit` are decoded from small integers to labels. A bar
+  chart of `1, 2, 3, 4` is a chart of nothing.
+* `holiday` and `workingday` become real booleans, and `workingday` is renamed
+  `working_day`; `cnt` becomes `rentals`; `atemp` becomes `feels_like`; `hum`
+  becomes `humidity`.
+* The four weather floats are rounded to two decimals, and the timestamps are
+  written to minute precision, purely to keep the file inside a size the
+  repository is willing to carry. Neither changes a distribution the report
+  draws.
+* `instant`, `yr`, `mnth` and `weekday` are dropped: a row number and three
+  restatements of the timestamp.
+
+Nothing is sampled, filtered or reordered. All 17,379 hourly observations are
+present, in source order.
+
+Why this dataset
+----------------
+
+Titanic, which it replaces as the example, has no datetime column and no
+numeric pair correlating above 0.5 -- so the datetime card, its four temporal
+panels, and both populated correlation views never appeared in the one example
+anybody looks at. See #150.
+
+Titanic remains the fixture for `tests/test_report_layout.py`, whose byte and
+height ratchets are pinned to it.
