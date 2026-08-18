@@ -134,11 +134,15 @@
      and outranks a bare element selector, so a `padding` on `main` alone was
      silently zeroed and the hero sat flush against the header rule. */
   main { flex: 1 1 auto; }
-  main.col { padding-block: clamp(64px, 15vw, 120px) 64px; }
+  /* A phone lands on the floor of both clamps here and of the one on
+     `.closing`: 15vw is 59px at 390px wide, under the minimum. So the floor
+     is the mobile value, not a fallback — set it to what a phone should get
+     rather than to whatever the desktop figure decays into. */
+  main.col { padding-block: clamp(84px, 15vw, 120px) clamp(56px, 9vw, 64px); }
 
   h1 {
     font-size: clamp(29px, 7vw, 40px); line-height: 1.1; letter-spacing: -.03em;
-    font-weight: 600; margin: 0 0 18px; max-width: 20ch; text-wrap: balance;
+    font-weight: 600; margin: 0 0 18px; text-wrap: balance;
   }
   /* No cap of its own: the reading track is the measure, so the lede and the
      closing note end on the same right edge as the status line and the log
@@ -297,7 +301,7 @@
   body.maxed { overflow: hidden; }
 
   .closing {
-    margin: clamp(52px, 12vw, 76px) 0 clamp(36px, 8vw, 56px);
+    margin: clamp(52px, 12vw, 76px) 0 clamp(52px, 8vw, 56px);
     padding-top: 18px; border-top: 1px solid var(--rule);
     font-size: 15px; line-height: 1.6; color: var(--ink-2); text-wrap: pretty;
   }
@@ -332,8 +336,8 @@
 
   <h1>Profile a big CSV in a browser tab.</h1>
   <p class="lede">
-    Drop a file and PySuricata returns a full EDA report — per-column distributions,
-    missing values, quality alerts. There is no server: the profiler is compiled to
+    Drop a file and PySuricata returns a full EDA report with per-column distributions,
+    missing values and quality alerts. There is no server: the profiler is compiled to
     WebAssembly and runs inside this page, so <strong>your data never leaves your machine</strong>.
   </p>
 
