@@ -14,36 +14,7 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
-### Changed
-
-- **The datetime timeline draws bars instead of a line** (design 14b, phase
-  5e.4, #293). A `<polyline>` through bucket centres draws a continuous slope
-  between "84 records on 8 Jan" and "83 on 9 Jan", asserting every value in
-  between — and the data holds values only at the buckets. A bucket count is a
-  quantity per interval, which is what a bar means and what a line does not, so
-  the report now has one encoding for counts across the numeric histogram, the
-  temporal panes and the timeline.
-
-  The issue was filed as a decision, and the plan proposed keeping the line
-  above ~180 buckets where bars go sub-pixel. Two measurements settled it
-  against that. **The threshold could not have fired**: the bucket count is
-  fixed at 60 and is not reachable from `ProfileConfig` or `ComputeOptions`, so
-  the line branch would have been unreachable code. And **the sub-pixel risk is
-  a viewport width, not a bucket count** — those 60 buckets are 12.5px each at
-  1240 and 3.8px at 390, which a static report cannot branch on, and which is
-  the width the numeric histogram already draws bars at on the same screen.
-
-  An empty bucket now draws nothing, where the line sloped through it. On a
-  column with two bursts ten months apart that is 56 of 60 buckets: the line
-  drew a gradual decline and recovery across ten months in which nothing
-  happened. Every bucket keeps its full-height hover target, so an empty
-  stretch still answers `0 rows` — the design proposed merging the two, and
-  merging them would have made exactly those buckets unhoverable.
-
-  Deleted with the polyline: its stylesheet rules, and a whole unused
-  pixel-space coordinate system in the renderer — margins, an inner box, `sx`,
-  `sy`, bin centres and a `pts` string that nothing read. `render/*` carries a
-  per-file `F841` ignore, so ruff never mentioned it.
+## [0.1.5] - 2026-08-18
 
 ### Added
 
@@ -92,44 +63,37 @@ quoted when both sides were measured in the same round-robin run.
   #312 and are **correct** — pandas agrees to the row — so both are pinned to
   stop that fix taking them along.
 
-### Fixed
-
-- **The demo handed the report a viewport no phone has.** The report is a
-  document with its own gutters, and it sat inside the page's gutter as well, so
-  a 390px phone spent 47px on the page's margins before the report spent 40px on
-  its own — and the report rendered at **341px**. Its layout criteria are
-  measured at 390, 768 and 1240, so the one width a visitor actually saw it at
-  was the one width nobody had checked; its nav clipped `Missing Values`
-  mid-word there. At and below the tablet breakpoint the frame now breaks out to
-  the window edge and the report gets the width the device has — 390px, and a
-  card 318px wide instead of 269px. Above it the frame keeps the shell's left
-  edge, which is what it was given one for.
-
-- **The report's own control row stopped 300px short of it.** `Report / Full
-  window / Download the report / JSON / another file` was capped at the reading
-  measure while the frame it labels ran to the shell, so one block carried two
-  right edges. The controls now end where the report ends. The log and the
-  ledger keep their cap — they are reading blocks, not controls for the frame.
-
-- **A log-scale histogram labelled its x axis in log units** (#264). `Fare`'s
-  log view captioned its peak bin `0.603–0.688` — those are log₁₀(4.01) and
-  log₁₀(4.87), and **no fare is 0.603**. The axis ran roughly 0.6 to 2.7 for a
-  column whose values run 4 to 512, with nothing saying the numbers were
-  exponents. It now reads `peak 60 rows at 4.0–4.9`.
-
-  The bars are still laid out in log space, because that is what makes the
-  axis linear in the log of the value. What changed is that everything a
-  *reader* sees comes back out of that space. Three consumers read the display
-  edges — the axis labels, the `data-x0`/`data-x1` the tooltip prints, and the
-  caption's peak range — and two of the three were wrong, so the un-logging is
-  one helper rather than three patches.
-
-  `HistogramData.original_range` is removed. It was declared for exactly this
-  problem and **never assigned anywhere**, so the chart mislabelled itself
-  while carrying the field meant to prevent it. Carrying both ranges is the
-  other way to fix this, and that field is what became of the second copy.
-
 ### Changed
+
+- **The datetime timeline draws bars instead of a line** (design 14b, phase
+  5e.4, #293). A `<polyline>` through bucket centres draws a continuous slope
+  between "84 records on 8 Jan" and "83 on 9 Jan", asserting every value in
+  between — and the data holds values only at the buckets. A bucket count is a
+  quantity per interval, which is what a bar means and what a line does not, so
+  the report now has one encoding for counts across the numeric histogram, the
+  temporal panes and the timeline.
+
+  The issue was filed as a decision, and the plan proposed keeping the line
+  above ~180 buckets where bars go sub-pixel. Two measurements settled it
+  against that. **The threshold could not have fired**: the bucket count is
+  fixed at 60 and is not reachable from `ProfileConfig` or `ComputeOptions`, so
+  the line branch would have been unreachable code. And **the sub-pixel risk is
+  a viewport width, not a bucket count** — those 60 buckets are 12.5px each at
+  1240 and 3.8px at 390, which a static report cannot branch on, and which is
+  the width the numeric histogram already draws bars at on the same screen.
+
+  An empty bucket now draws nothing, where the line sloped through it. On a
+  column with two bursts ten months apart that is 56 of 60 buckets: the line
+  drew a gradual decline and recovery across ten months in which nothing
+  happened. Every bucket keeps its full-height hover target, so an empty
+  stretch still answers `0 rows` — the design proposed merging the two, and
+  merging them would have made exactly those buckets unhoverable.
+
+  Deleted with the polyline: its stylesheet rules, and a whole unused
+  pixel-space coordinate system in the renderer — margins, an inner box, `sx`,
+  `sy`, bin centres and a `pts` string that nothing read. `render/*` carries a
+  per-file `F841` ignore, so ruff never mentioned it.
+
 
 - **The categorical card no longer prints statistics that cannot say anything**
   (design 16b, phase 5f.1, #295). Categorical is the most common column type —
@@ -203,6 +167,42 @@ quoted when both sides were measured in the same round-robin run.
   carrying an issue.
 
 ### Fixed
+
+- **The demo handed the report a viewport no phone has.** The report is a
+  document with its own gutters, and it sat inside the page's gutter as well, so
+  a 390px phone spent 47px on the page's margins before the report spent 40px on
+  its own — and the report rendered at **341px**. Its layout criteria are
+  measured at 390, 768 and 1240, so the one width a visitor actually saw it at
+  was the one width nobody had checked; its nav clipped `Missing Values`
+  mid-word there. At and below the tablet breakpoint the frame now breaks out to
+  the window edge and the report gets the width the device has — 390px, and a
+  card 318px wide instead of 269px. Above it the frame keeps the shell's left
+  edge, which is what it was given one for.
+
+- **The report's own control row stopped 300px short of it.** `Report / Full
+  window / Download the report / JSON / another file` was capped at the reading
+  measure while the frame it labels ran to the shell, so one block carried two
+  right edges. The controls now end where the report ends. The log and the
+  ledger keep their cap — they are reading blocks, not controls for the frame.
+
+- **A log-scale histogram labelled its x axis in log units** (#264). `Fare`'s
+  log view captioned its peak bin `0.603–0.688` — those are log₁₀(4.01) and
+  log₁₀(4.87), and **no fare is 0.603**. The axis ran roughly 0.6 to 2.7 for a
+  column whose values run 4 to 512, with nothing saying the numbers were
+  exponents. It now reads `peak 60 rows at 4.0–4.9`.
+
+  The bars are still laid out in log space, because that is what makes the
+  axis linear in the log of the value. What changed is that everything a
+  *reader* sees comes back out of that space. Three consumers read the display
+  edges — the axis labels, the `data-x0`/`data-x1` the tooltip prints, and the
+  caption's peak range — and two of the three were wrong, so the un-logging is
+  one helper rather than three patches.
+
+  `HistogramData.original_range` is removed. It was declared for exactly this
+  problem and **never assigned anywhere**, so the chart mislabelled itself
+  while carrying the field meant to prevent it. Carrying both ranges is the
+  other way to fix this, and that field is what became of the second copy.
+
 
 - **Every categorical column claimed to have processed `0.0 B`.** The stat row
   read `mem_bytes` from the derived-stats dict, which has never had that key,
