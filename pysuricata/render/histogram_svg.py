@@ -183,6 +183,11 @@ class HistogramData:
     original_range: tuple[float, float] | None = (
         None  # Original data range for log scale
     )
+    # Rows this chart does not show. Non-zero only on a log axis, where zeros
+    # and negatives cannot be drawn (#258). The caption states it: a chart that
+    # silently omits rows is the defect, and drawing the drawable ones without
+    # saying what is missing would only make the omission smaller.
+    excluded_rows: int = 0
 
 
 class SVGHistogramRenderer:
@@ -190,6 +195,85 @@ class SVGHistogramRenderer:
 
     def __init__(self, config: HistogramConfig | None = None):
         self.config = config or HistogramConfig()
+
+    @staticmethod
+    def _clip_to_positive(
+        edges: np.ndarray,
+        counts: np.ndarray,
+        min_positive: float | None,
+        non_positive: int | None = None,
+    ) -> tuple[np.ndarray | None, np.ndarray | None, int]:
+        """Restrict a linear histogram to the part a log axis can draw (#258).
+
+        The exclusion belongs to *values*, not to bins. A bin whose right edge
+        is at or below zero holds nothing that can be logged and goes; a bin
+        that straddles zero holds rows on both sides, and dropping it throws
+        away every positive row it contains along with the handful that are
+        not.
+
+        Since the source is already binned, the straddling bin's left edge is
+        moved to the column's smallest positive value. That is the honest place
+        for it: no row in the bin lies to the left of it, and the alternative
+        -- inventing a left edge from the bin's own width -- would place rows
+        on a span the data never occupied.
+
+        Args:
+            edges: Bin edges, ascending, one longer than `counts`.
+            counts: Rows per bin.
+            min_positive: The column's smallest strictly positive value, or
+                None when it was not supplied.
+            non_positive: How many rows are zero or negative. Those rows are
+                inside the straddling bin's count and are not drawable, so
+                keeping the bin whole would overstate it by exactly that many.
+
+        Returns:
+            `(edges, counts, excluded)` for the drawable part, or
+            `(None, None, excluded)` when nothing is drawable. `excluded` is
+            the number of rows the log view does not show.
+        """
+        drawable = edges[1:] > 0
+        if not np.any(drawable):
+            return None, None, int(counts.sum())
+
+        first = int(np.argmax(drawable))
+        kept_counts = counts[first:].copy()
+        kept_edges = edges[first:].copy()
+        excluded = int(counts[:first].sum())
+
+        if kept_edges[0] <= 0:
+            # The straddling bin. Without a positive value to anchor it there
+            # is no left edge to give it, so it is dropped -- the old
+            # behaviour, kept only as the fallback for a caller that cannot
+            # supply one.
+            if (
+                min_positive is None
+                or not np.isfinite(min_positive)
+                or min_positive <= 0
+            ):
+                excluded += int(kept_counts[0])
+                kept_edges = kept_edges[1:]
+                kept_counts = kept_counts[1:]
+            else:
+                # `min` guards the degenerate case where the smallest positive
+                # value sits at or past the bin's right edge, which would make
+                # a bin of zero or negative width.
+                kept_edges[0] = min(min_positive, kept_edges[1] * 0.999)
+
+                # The bin still counts its own zeros and negatives, and those
+                # sit to the left of the new edge. Clipping without subtracting
+                # them would trade a 58% undercount for a small overcount --
+                # still a chart that does not add up. Whole bins already
+                # dropped above are non-positive in their entirety, so only the
+                # remainder is still inside this one.
+                if non_positive:
+                    remaining = max(0, int(non_positive) - excluded)
+                    removed = min(int(kept_counts[0]), remaining)
+                    kept_counts[0] -= removed
+                    excluded += removed
+
+        if len(kept_edges) < 2 or not len(kept_counts):
+            return None, None, excluded + int(kept_counts.sum())
+        return kept_edges, kept_counts, excluded
 
     def render_histogram_from_bins(
         self,
@@ -199,6 +283,8 @@ class SVGHistogramRenderer:
         scale: str,
         title: str,
         col_id: str,
+        min_positive: float | None = None,
+        non_positive: int | None = None,
     ) -> str:
         """Render histogram from pre-computed bin edges and counts.
 
@@ -212,6 +298,12 @@ class SVGHistogramRenderer:
             scale: Scale type ('lin' or 'log')
             title: Chart title
             col_id: Column identifier for tooltips
+            min_positive: The column's smallest strictly positive value, used
+                as the left edge of a bin that straddles zero on a log axis
+                (#258). Optional: without it such a bin is dropped, which is
+                the old behaviour and loses every row in it.
+            non_positive: How many rows are zero or negative, so the clipped
+                bin can drop exactly those and no more.
 
         Returns:
             SVG string
@@ -225,16 +317,32 @@ class SVGHistogramRenderer:
 
         # Apply log transformation if needed
         if scale == "log":
-            # Filter out non-positive values and their corresponding counts
-            positive_mask = original_edges > 0
-            if not np.any(positive_mask):
+            # A log axis cannot draw a zero or a negative, and the question is
+            # what "cannot draw" applies to (#258). It used to apply to whole
+            # *bins*: the mask was computed over edges and then sliced to index
+            # counts, so a column whose minimum is 0 had `edges[0] == 0`, and
+            # `positive_mask[:-1]` dropped the count of the entire first bin.
+            #
+            # On the Titanic `Fare` column that is 519 of 891 rows -- 58% of
+            # the column -- discarded because 15 of them were zero, with
+            # nothing on the chart saying so. A reader comparing the linear and
+            # log views saw two different distributions and no way to tell that
+            # one was missing more than half its rows.
+            #
+            # A bin is drawable if any part of it is positive, which is its
+            # *right* edge being positive. The one bin that straddles zero is
+            # clipped to the column's smallest positive value rather than
+            # dropped, so its rows are drawn over the span they actually
+            # occupy. Rows that genuinely cannot be logged are still excluded,
+            # and `_log_excluded` reports how many so the caption can say.
+            original_edges, original_counts, excluded = self._clip_to_positive(
+                original_edges, original_counts, min_positive, non_positive
+            )
+            if original_edges is None:
                 return self._render_empty_histogram(title)
 
-            # Keep only positive edges and their corresponding counts
-            positive_edges = original_edges[positive_mask]
-            positive_counts = original_counts[
-                positive_mask[:-1]
-            ]  # Counts are one less than edges
+            positive_edges = original_edges
+            positive_counts = original_counts
 
             # Apply log10 transformation to edges
             transformed_edges = np.log10(positive_edges)
@@ -245,6 +353,7 @@ class SVGHistogramRenderer:
             data_max = transformed_edges[-1]
         else:
             # Use original data for linear scale
+            excluded = 0
             transformed_edges = original_edges
             transformed_counts = original_counts
             data_min = original_edges[0]
@@ -314,6 +423,7 @@ class SVGHistogramRenderer:
             total_count=int(np.sum(new_counts)),
             scale=scale,
             y_max=nice_y_max,
+            excluded_rows=excluded,
         )
 
         return self._render_figure(hist_data, title, col_id, bins)
@@ -609,6 +719,13 @@ class SVGHistogramRenderer:
                 pieces.append(f"peak {peak:,} {noun} at {low}–{high}")
             else:
                 pieces.append(f"peak {peak:,} {noun}")
+
+        # Said plainly rather than as a footnote. This is the count a reader
+        # needs to reconcile the log view against the linear one, and before
+        # #258 it was both large and unstated.
+        if hist_data.excluded_rows > 0:
+            noun = "row" if hist_data.excluded_rows == 1 else "rows"
+            pieces.append(f"{hist_data.excluded_rows:,} {noun} not shown (≤ 0)")
 
         text = " · ".join(pieces)
         return (

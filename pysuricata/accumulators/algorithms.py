@@ -66,6 +66,11 @@ class StreamingMoments:
         self._m4 = 0.0  # Fourth moment
         self._log_sum_pos = 0.0  # For geometric mean
         self._pos_count = 0
+        # The smallest strictly positive value seen. A log axis cannot draw a
+        # zero or a negative, so this is where one honestly starts -- see #258,
+        # where the log histogram threw away a bin of 519 rows because 15 of
+        # them were zero. `inf` is the identity for the min that folds it in.
+        self._min_positive = math.inf
         self._enable_performance_tracking = enable_performance_tracking
         self._metrics = PerformanceMetrics() if enable_performance_tracking else None
 
@@ -78,6 +83,7 @@ class StreamingMoments:
         self._m4 = 0.0
         self._log_sum_pos = 0.0
         self._pos_count = 0
+        self._min_positive = math.inf
         if self._metrics is not None:
             self._metrics.reset()
 
@@ -124,6 +130,7 @@ class StreamingMoments:
             pos_values = finite_values[pos_mask]
             self._log_sum_pos += np.sum(np.log(pos_values))
             self._pos_count += pos_mask.sum()
+            self._min_positive = min(self._min_positive, float(pos_values.min()))
 
         # For the first batch, initialize directly
         if self.count == 0:
@@ -172,6 +179,7 @@ class StreamingMoments:
                 "skew": 0.0,
                 "kurtosis": 0.0,
                 "gmean": 0.0,
+                "min_positive": None,
             }
 
         # Basic statistics
@@ -210,6 +218,9 @@ class StreamingMoments:
             "skew": skew,
             "kurtosis": kurtosis,
             "gmean": gmean,
+            "min_positive": (
+                self._min_positive if self._min_positive != math.inf else None
+            ),
         }
 
     def merge(self, other: StreamingMoments) -> None:
@@ -229,6 +240,7 @@ class StreamingMoments:
             self._m4 = other._m4
             self._log_sum_pos = other._log_sum_pos
             self._pos_count = other._pos_count
+            self._min_positive = other._min_positive
             return
 
         # Combine using Chan's algorithm
@@ -258,6 +270,7 @@ class StreamingMoments:
 
         self._log_sum_pos += other._log_sum_pos
         self._pos_count += other._pos_count
+        self._min_positive = min(self._min_positive, other._min_positive)
         self.count = n
 
 

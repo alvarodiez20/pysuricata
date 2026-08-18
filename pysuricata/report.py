@@ -397,6 +397,12 @@ class ReportOrchestrator:
                     "cv": _f(s.cv),
                     "se": _f(s.se),
                     "gmean": _f(s.gmean),
+                    # None when the column has no positive value at all, which
+                    # is a different statement from 0.0 and the reason this is
+                    # not passed through `_f`.
+                    "min_positive": (
+                        _f(s.min_positive) if s.min_positive is not None else None
+                    ),
                     "iqr": _f(s.iqr),
                     "mad": _f(s.mad),
                     "ci_lo": _f(s.ci_lo),

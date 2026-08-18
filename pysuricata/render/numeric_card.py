@@ -462,6 +462,14 @@ class NumericCardRenderer(CardRenderer):
                     scale=scale,
                     title=title,
                     col_id=col_id,
+                    # Where the log axis starts. `getattr` because this is
+                    # duck-typed across the accumulator summary and the render
+                    # type, and a card built from an older payload has neither.
+                    min_positive=getattr(stats, "min_positive", None),
+                    non_positive=(
+                        int(getattr(stats, "zeros", 0) or 0)
+                        + int(getattr(stats, "negatives", 0) or 0)
+                    ),
                 )
 
                 active_class = " active" if (bins == 25 and scale == "lin") else ""

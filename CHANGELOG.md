@@ -14,6 +14,51 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Fixed
+
+- **The log histogram no longer discards more than half a column** ([#258]).
+  `render_histogram_from_bins` computed its positive mask over **edges** and
+  then sliced it to index **counts**, so a column whose minimum is 0 had
+  `edges[0] == 0`, and `positive_mask[:-1]` dropped the count of the entire
+  first bin.
+
+  Measured on the Titanic `Fare` column: 891 rows, of which **15** are actually
+  `<= 0`, and a first bin spanning `[0, 20.5]` holding **519**. All three log
+  variants drew **372 rows — 42% of the column** — with nothing on the chart
+  saying so, so a reader comparing the linear and log views of one column saw
+  two different distributions and no way to tell that one was missing more than
+  half its rows.
+
+  A log axis must exclude non-positive values; the defect was the granularity.
+  A bin is now drawable when *any* of it is positive, which is its **right**
+  edge being positive, and the single bin that straddles zero is clipped to the
+  column's smallest positive value rather than dropped. Its zeros and negatives
+  are subtracted from its count, since they lie left of the new edge — keeping
+  the bin whole would have traded a 58% undercount for a 15-row overcount, and
+  both are charts that do not add up. `Fare`'s log variants now draw **876 =
+  891 − 15**, exactly the rows that can be logged and not one more.
+
+  The caption states the rest: `15 rows not shown (≤ 0)`. That is worth having
+  however the first part is decided, because the count is never zero for a
+  column with zeros in it.
+
+  `StreamingMoments` carries the smallest positive value to make this possible,
+  beside the positive-count state the geometric mean already maintained, so it
+  costs one `min()` per chunk. It merges as a `min`, so chunked equals
+  unchunked. It is published as **`min_positive`** on numeric columns —
+  `null` when a column has no positive value, which is a different statement
+  from `0.0`.
+
+  The report-size ratchet refused this at first and was right to make the case
+  be argued. The growth is **1,040 bytes: 8 more bars** drawing the rows that
+  were missing, plus the caption. The two obvious savings — `data-col` at
+  10,224 bytes and `data-pct` at 6,944 — are both read by
+  `scripts/report_fingerprint.py` as facts, so removing either deletes facts
+  from the invariance guard rather than bytes from the report. Baseline raised
+  489,000 → 491,000, the first rise, with the measurement recorded beside it.
+
+[#258]: https://github.com/alvarodiez20/pysuricata/issues/258
+
 ### Added
 
 - **Arrow IPC files load** ([#247]). `.arrow`, `.feather` and `.ipc` raised
