@@ -216,7 +216,9 @@ def stream_arrow(
     )
 
 
-def stream_duckdb(relation: Any, *, batch_size: int | None = None):
+def stream_duckdb(
+    relation: Any, *, batch_size: int | None = None
+) -> Iterator[pd.DataFrame]:
     """Yield a DuckDB relation or query result one batch at a time.
 
     A relation is a query that has not run yet, so this profiles a result set

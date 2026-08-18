@@ -27,7 +27,10 @@ flowchart LR
     style E fill:#66BB6A,stroke:#2E7D32,color:#fff
 ```
 
-**Data Sources** → pandas DataFrames, polars DataFrames, or any iterable of DataFrames (for streaming).
+**Data Sources** → pandas or polars frames; a path to a CSV, Parquet, JSON or
+Arrow IPC file; an Arrow table or reader, or anything exporting
+`__arrow_c_stream__`; a DuckDB relation; or any iterable of frames. The middle
+three are read a batch at a time and never materialised.
 
 **Chunk Iterator** → If a single DataFrame is passed, it is treated as one chunk. Generators are consumed chunk-by-chunk to bound memory.
 
@@ -35,7 +38,10 @@ flowchart LR
 
 **Summary Metrics** → After all chunks are consumed, accumulators are finalized and dataset-wide metrics (missingness, duplicates, etc.) are computed.
 
-**HTML Renderer** → A single-file Jinja2 template with inline CSS/JS produces a portable, self-contained HTML report.
+**HTML Renderer** → One template, `templates/report_template.html`, filled by
+`str.format` over bare `{identifier}` placeholders — no templating engine and no
+dependency for one. CSS, JS and SVG are inlined, producing a portable,
+self-contained file.
 
 ---
 
@@ -84,8 +90,15 @@ classDiagram
 
 Each accumulator follows the same interface:
 
-1. **`update(chunk)`** — process a batch of values, update internal state
-2. **`finalize()`** — compute final statistics from accumulated state
+1. **`update(values)`** — fold a batch of values into internal state. The
+   accumulator never sees a frame, only an array; the adapter has already
+   converted the column
+2. **`merge(other)`** — combine two partial states into one
+3. **`finalize()`** — compute final statistics from accumulated state
+
+`merge` is the one the whole design rests on. Because it exists and is exact,
+**chunked results equal unchunked results** — an invariant asserted in
+`benchmarks/accuracy.py`, and the thing most likely to break.
 
 ---
 
@@ -164,7 +177,7 @@ flowchart TB
 ```mermaid
 flowchart TB
     A["Finalized Summaries"] --> B["Dataset-Level Metrics"]
-    B --> C["Jinja2 Template"]
+    B --> C["report_template.html"]
     C --> D["Inline CSS + JS"]
     C --> E["Summary Cards"]
     C --> F["Variable Cards"]
@@ -204,8 +217,8 @@ The template produces a **single portable HTML file** — no external dependenci
 | `top_k` | 50 | Misra-Gries capacity |
 | `compute_correlations` | `True` | Enable/disable correlation chips |
 | `corr_threshold` | 0.5 | Minimum \|r\| to display |
-| `random_seed` | `None` | Deterministic sampling |
-| `include_sample` | `True` | Include data sample in report |
+| `random_seed` | `0` | Deterministic sampling — reproducible unless you ask otherwise |
+| `render.include_sample` | `True` | Show sample rows; the only place raw values appear |
 
 ---
 
@@ -218,6 +231,27 @@ The template produces a **single portable HTML file** — no external dependenci
 
 ## Extending
 
-- **Backends** — polars/Arrow/DuckDB can be connected via the chunk iterator interface
-- **Quantile sketches** — t-digest or KLL can replace the default reservoir
-- **New sections** — drift comparisons, JSON export, CLI wrapper
+Where the seams are, and what already sits in them.
+
+**Already connected through the chunk iterator.** polars, Arrow (anything
+exporting `__arrow_c_stream__`) and DuckDB relations are adapters over the same
+interface — `pysuricata/sources.py` and `compute/adapters/`. A new backend is a
+new reader yielding frames, not a change to the engine.
+
+**Already built on the summary payload.** `summarize()` and `Report.save_json()`
+are the JSON export; `compare()` is the drift comparison; `pysuricata check` is
+the gate. All three read the same finalized summaries the renderer does, which
+is why a gate and a diff cannot disagree about what a number means.
+
+**Still open:**
+
+- **Quantile sketches** — t-digest or KLL could replace the reservoir, trading a
+  fixed error bound for a distribution-dependent one
+- **A native core** — the accumulator boundary was prepared for a second
+  implementation in Rust and measured at 0.97–1.01x, so the preparation cost
+  nothing ([#44](https://github.com/alvarodiez20/pysuricata/issues/44))
+- **The column axis** — state is per column at roughly 3 MB each, so bounded
+  memory is a claim about rows and not yet about columns
+  ([#207](https://github.com/alvarodiez20/pysuricata/issues/207))
+- **An HTML view for `compare()`**
+  ([#121](https://github.com/alvarodiez20/pysuricata/issues/121))

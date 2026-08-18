@@ -295,6 +295,19 @@ for col, col_stats in stats["columns"].items():
 
 ## CI/CD Data Quality Gates
 
+!!! tip "There is a built-in for this"
+
+    `pysuricata check` does the same single pass from a shell, with a stored
+    baseline, a thresholds file and an exit code:
+
+    ```bash
+    pysuricata check data.parquet --baseline baseline.json --max-missing-pct 5
+    ```
+
+    See [Gating CI on drift](data-checks.md) and the
+    [CLI reference](cli.md#check). The recipe below is the arithmetic, for when
+    the gate lives inside your own code.
+
 Enforce quality thresholds in pipelines.
 
 ```python
@@ -428,6 +441,29 @@ plt.savefig("missing_chart.png")
 
 ## Combine Multiple Datasets
 
+!!! tip "There is a built-in for this"
+
+    `compare(a, b)` reports every delta — schema, dataset and per column —
+    normalised into baseline standard deviations, with the sketch-based ones
+    marked approximate:
+
+    ```python
+    import numpy as np
+    import pandas as pd
+
+    from pysuricata import compare
+
+    rng = np.random.default_rng(0)
+    df_train = pd.DataFrame({"amount": rng.lognormal(3, 1, 5_000)})
+    df_test = pd.DataFrame({"amount": rng.lognormal(3.1, 1, 2_000)})
+
+    diff = compare(df_train, df_test)
+    diff.columns["amount"].median_shift_sigma
+    ```
+
+    See [Comparing two datasets](comparing.md). The recipe below is the manual
+    version, for when you want two payloads side by side.
+
 Compare multiple datasets (manual).
 
 ```python
@@ -456,6 +492,65 @@ for col in df_train.columns:
     if train_mean and test_mean:
         print(f"{col} mean: {train_mean:.2f} vs {test_mean:.2f}")
 ```
+
+## Profile a File Without Loading It
+
+`profile()` takes a path and reads it a batch at a time — the file never exists
+as one frame.
+
+```python
+from pysuricata import profile
+
+report = profile("events.parquet")
+report.save_html("events.html")
+```
+
+CSV, Parquet, JSON and Arrow IPC all work. A DuckDB relation works too, and it
+is a query that has not run yet, so a filtered join across several Parquet files
+can be profiled without any of it being landed:
+
+```python
+import duckdb
+
+from pysuricata import summarize
+
+con = duckdb.connect()
+relation = con.sql("SELECT * FROM 'events/*.parquet' WHERE amount > 0")
+summarize(relation)
+```
+
+See [Arrow, Parquet and DuckDB](data-sources.md).
+
+## Start From a Preset
+
+One word for an intent, rather than working out which knobs to turn.
+
+```python
+import numpy as np
+import pandas as pd
+
+from pysuricata import profile
+
+rng = np.random.default_rng(0)
+df = pd.DataFrame({"amount": rng.lognormal(3, 1, 5_000)})
+
+fast = profile(df, preset="fast")          # small samples, no correlations
+careful = profile(df, preset="thorough")   # large samples, every correlation
+```
+
+Keyword options layer on top and win, so `profile(df, preset="fast",
+correlations=True)` is a fast profile with the correlation step put back.
+
+## From the Command Line
+
+```bash
+pysuricata profile data.csv --output report.html
+pysuricata summarize data.csv | jq .dataset
+pysuricata check data.parquet --baseline baseline.json --require-fresh
+```
+
+Progress goes to stderr, so the middle one stays parseable without `--quiet`.
+Every option is in the [CLI reference](cli.md).
 
 ## Next Steps
 
