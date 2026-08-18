@@ -2810,8 +2810,20 @@ quoted when both sides were measured in the same round-robin run.</p>
   redeploy and a broken demo cannot be un-shipped along with it.</p>
 <h3 id="changed">Changed</h3>
 <ul>
-<li><strong>A design pass over seven report issues</strong> (#319, #145, #294, #314, #149,
-  #297, #300), which also closes #299.</li>
+<li>
+<p><strong><code>docs/internal/integration.md</code> records the phase 4b decision</strong> it had been
+  carrying only in the external design package (#149). Options 15a–15d for the
+  attention block are settled as 15b's flag reference plus 15a's chips in the
+  existing one-row-per-column block, and — the part that matters — <strong>15a's
+  grouping-by-action is held</strong> until #301 decides whether pysuricata should
+  recommend actions or only report facts. Everything the note chooses already
+  ships; what did not exist in this repository was the reason the block ranks
+  rather than groups, which is exactly the drift #251 is open about.</p>
+</li>
+<li>
+<p><strong>A design pass over seven report issues</strong> (#319, #145, #294, #314, #149,
+  #297, #300), which also closes #299.</p>
+</li>
 </ul>
 <p><strong>The report is 12,419 bytes smaller.</strong> A <code>Hover over segments to see chunk
   details</code> line that #294 asked to remove turned out never to render: the pane
