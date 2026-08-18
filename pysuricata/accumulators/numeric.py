@@ -125,6 +125,12 @@ class NumericSummary:
     dtype_str: str = "numeric"
     corr_top: list[tuple[str, float]] = field(default_factory=list)
     sample_scale: float = 1.0
+    #: How far below the truth every count in `top_values` may sit. Same
+    #: guarantee as the categorical side: zero when the counters never evicted.
+    top_values_uncertainty: int = 0
+    #: Whether `unique_est` is exact rather than a KMV estimate. See the note
+    #: on the categorical summary: `approx` is the column, this is the number.
+    unique_est_exact: bool = False
     #: What the reservoir itself held, before `sample_scale` was applied.
     outliers_iqr_sample: int = 0
     outliers_mod_zscore_sample: int = 0
@@ -598,13 +604,21 @@ class NumericAccumulator(PicklableAccumulator):
         )
 
         # Determine if approximation was used for transparency
-        # Approximate if *either* the quantiles came from a sample or the
-        # distinct count came from the sketch rather than its exact counter.
+        # Approximate if the quantiles came from a sample, the distinct count
+        # came from the sketch rather than its exact counter, or the top-k
+        # counters evicted anything.
+        #
         # It used to mean sampling alone, so a column small enough to hold every
         # value in the reservoir reported approx=False while still publishing a
         # sketched `unique_est` -- asserting an exactness that value did not
-        # have.
-        approx = len(sample_values) < self.count or not self._uniques.is_exact
+        # have. The third arm is the same argument for `top_values`, which comes
+        # from the same Misra-Gries sketch the categorical path publishes and
+        # undercounts the same way once it evicts (#328).
+        approx = (
+            len(sample_values) < self.count
+            or not self._uniques.is_exact
+            or not self._topk.is_exact
+        )
 
         # Compute confidence intervals if enabled
         ci_lo, ci_hi = self._compute_confidence_interval(
@@ -629,6 +643,7 @@ class NumericAccumulator(PicklableAccumulator):
         # five distinct values, replacing a correct answer with an estimate.
         # An absent table is the honest output when nothing is common.
         top_values = self._topk.items()
+        top_values_uncertainty = self._topk.error_bound
 
         # Build per-column chunk metadata from tracked boundaries
         # Finalize any pending chunk data first
@@ -699,6 +714,8 @@ class NumericAccumulator(PicklableAccumulator):
             heap_pct=heap_pct,
             top_values=top_values,
             sample_scale=sample_scale,
+            top_values_uncertainty=top_values_uncertainty,
+            unique_est_exact=self._uniques.is_exact,
             outliers_iqr_sample=outliers_iqr_sample,
             outliers_mod_zscore_sample=outliers_mod_zscore_sample,
             chunk_metadata=final_chunk_metadata,

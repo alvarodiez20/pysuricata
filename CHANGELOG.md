@@ -14,7 +14,74 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- **The versioning contract said a minor bump may break you. It may not.** The
+  page had adopted Cargo's pre-1.0 convention, under which `0.1.0 → 0.2.0` is
+  the release allowed to break. That is now stated the way SemVer means it:
+  **only a major bump breaks**, `0.2.0` adds, `0.1.1` fixes. The cost is
+  deliberate and written down beside the rule: a break costs 1.0.0, so until
+  then a change to a covered surface waits, or ships behind a new name beside
+  the old one.
+
+  That rule applies immediately to the rename in the entry below.
+  `outliers_mod_zscore` is **published again** beside `outliers_mod_zscore_est`
+  rather than replaced by it, and goes at 1.0.0. Nothing reading the payload
+  today has to change.
+
+### Removed
+
+- **`docs/roadmap.md`.** It was v10, pinned to 0.0.62, and sat in the docs nav
+  describing a project ninety releases older than the one a reader was
+  installing: the report redesign it called unfinished has shipped, the
+  correctness item it tracked is closed, and the headline ratio it quoted came
+  from the cross-session pairing that was later shown to be wrong. A roadmap in
+  the docs dates the moment it is written and nothing after. The issue tracker
+  is the authority, which is what `CLAUDE.md` already told anyone working here.
+  Half of #251 goes with the file.
+
 ### Fixed
+
+- **Top-k counts claimed to be exact in exactly the case they were most
+  wrong** (#328). Misra-Gries keeps 50 counters; above 50 distinct values every
+  new value evicts weight from every counter, so a reported count is a lower
+  bound and the *ranking* goes with it. On a near-uniform column of 1,000
+  categories over a million rows, the true top value held 1,107 occurrences and
+  the report named a different value with 35.
+
+  The flag meant to warn about this read `len(top_items) >= top_k_size`, which
+  is the dangerous case backwards: eviction *deletes* counters, so the list
+  shrinks below the budget precisely when the sketch is under most pressure.
+  That same column published nine items and `approx=False`.
+
+  The sketch now tracks the weight it decrements, which is the only thing that
+  knows, in both `add()` and the `add_many()` prune branch a chunked run
+  actually takes, and across `merge()`. `approx` is derived from it, and the
+  bound itself is published as `top_items_uncertainty` (and
+  `top_values_uncertainty` on numeric columns, whose `approx` never consulted
+  the sketch either), so `sku-0753: 37` can be rendered `37 – 1,149` instead of
+  a confident wrong 37. Verified to bracket the truth at 5k x 100, 200k x 500
+  and 1M x 1,000.
+
+  `most_common_ratio` divided one decremented count by the sum of the
+  decremented counts. Both shrink and the denominator shrinks faster, so the
+  ratio *grew* as the counters lost information: 0.132 for a value whose true
+  share was 0.0011, a 120x overstatement feeding the dominant-category flag. It
+  is now taken over the exact row count, where it can only understate.
+
+  One consequence worth naming: `approx` now covers more columns, so the flag
+  had to stop standing in for every statistic on the card. `Unique (≈)` was
+  rendered from it, and an exactly counted 599 distinct values would have
+  started claiming to be an estimate -- the same overclaim as this bug,
+  pointing the other way. `unique_est_exact` is published beside it and the two
+  Unique rows read that instead, keeping the report's rule that suppression is
+  per statistic rather than per column. The rendered facts are otherwise
+  byte-identical: `tests/fixtures/fingerprint.txt` is unchanged.
+
+  The counter budget is deliberately unchanged. Raising it to 8,192 makes these
+  columns exact and costs ~490 MB of counters across 600 columns, trading a
+  correctness bug for the memory regression #207 is about. The bound ships; the
+  budget stays.
 
 - **`outliers_iqr_est` was a reservoir count published against a population
   denominator, so it read 49x low at a million rows** (#327). The IQR fence is

@@ -111,10 +111,43 @@ class TestApproximationIsDeclared:
     def test_a_key_column_is_marked_approximate(self, payload):
         assert payload["columns"]["cid"]["approx"] is True
 
-    def test_an_exactly_counted_column_is_not(self, payload):
-        """68 distinct integers fit KMV's exact counter, so nothing here is an
-        estimate and saying `approx` would be its own kind of dishonesty."""
-        assert payload["columns"]["age"]["approx"] is False
+    def test_an_exact_distinct_count_says_so_even_on_an_approximate_column(
+        self, payload
+    ):
+        """`age` is the case that separates the two questions.
+
+        Its 68 distinct integers fit KMV's exact counter, so `unique_est` is
+        the truth and marking *that number* approximate would be its own kind
+        of dishonesty. But 68 distinct values do not fit 50 Misra-Gries
+        counters, so the 49 counts published in `top_values` are lower bounds:
+        the top one measured 314 against a true 321 (#328). The column is
+        approximate; its distinct count is not.
+
+        This case used to assert `approx is False`, back when the flag meant
+        sampling and the distinct sketch alone and consulted nothing about the
+        counters it was also publishing.
+        """
+        age = payload["columns"]["age"]
+
+        assert age["unique_est_exact"] is True
+        assert age["approx"] is True
+        assert age["top_values_uncertainty"] > 0
+
+    def test_a_fully_exact_column_is_not_marked(self, payload):
+        """The other half of the contract: nothing approximate, nothing said.
+
+        Three distinct values in four rows profiles as *categorical*, so the
+        bound to read is `top_items_uncertainty`. A numeric column would carry
+        `top_values_uncertainty`, and asserting the wrong one here passes for
+        the wrong reason on a `KeyError` nobody reads.
+        """
+        stats = summarize(pd.DataFrame({"x": [1.0, 2.0, 3.0, 2.0]}), seed=0)
+
+        column = stats["columns"]["x"]
+        assert column["type"] == "categorical"
+        assert column["approx"] is False
+        assert column["unique_est_exact"] is True
+        assert column["top_items_uncertainty"] == 0
 
     def test_a_small_frame_is_exact(self):
         stats = summarize(pd.DataFrame({"x": [1.0, 2.0, 3.0, 2.0]}), seed=0)

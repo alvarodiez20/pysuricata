@@ -33,6 +33,19 @@ class CategoricalSummary:
     unique_est: int
     top_items: list[tuple[str, int]]
     approx: bool
+    #: How far below the truth every count in `top_items` may sit: the total
+    #: weight Misra-Gries decremented. Zero means the counts are exact, and
+    #: `true_count(x) ∈ [reported(x), reported(x) + this]` otherwise. Published
+    #: rather than kept private, because a count that can only undercount is a
+    #: range, and the alternative is a confident wrong integer (#328).
+    top_items_uncertainty: int = 0
+    #: Whether `unique_est` is the exact distinct count rather than a KMV
+    #: estimate. Separate from `approx`, which is true when *anything* on the
+    #: column is approximate: once `approx` also covered lossy top-k counters,
+    #: reading it for the Unique row marked an exact 599 as `≈ 599`, which is
+    #: the same overclaim as #328 pointing the other way. Per statistic, not
+    #: per column.
+    unique_est_exact: bool = False
     # extras for alignment
     mem_bytes: int = 0
     avg_len: float | None = None
@@ -541,11 +554,22 @@ class CategoricalAccumulator(PicklableAccumulator):
         most_common_ratio = self._calculate_most_common_ratio(top_items)
         diversity_ratio = self._calculate_diversity_ratio()
 
-        # Approximate if the top-k tracker filled, or if the distinct count
-        # came from the KMV sketch rather than its exact counter. The second
-        # arm was missing, so a column with few enough levels to fit the tracker
-        # reported approx=False while publishing a sketched distinct count.
-        approx = len(top_items) >= self.config.top_k_size or not self._uniques.is_exact
+        # Approximate if the top-k counters have evicted anything, or if the
+        # distinct count came from the KMV sketch rather than its exact counter.
+        #
+        # The first arm used to read `len(top_items) >= top_k_size`, which is
+        # the dangerous case *backwards*: eviction deletes counters, so the list
+        # shrinks below the budget exactly when the sketch is under most
+        # pressure. A 1M-row column over 1,000 categories came out of here with
+        # 9 items, a top count 30x low, and `approx=False` (#328). The sketch
+        # now reports its own decrement mass, which is the only thing that
+        # knows whether a count is the truth or a lower bound.
+        topk_lossy = not self._topk.is_exact
+        approx = topk_lossy or not self._uniques.is_exact
+
+        # How far below the truth any published count may sit. Zero when the
+        # counters never evicted, which is the case the report may call exact.
+        top_items_uncertainty = self._topk.error_bound
 
         return CategoricalSummary(
             name=self.name,
@@ -556,6 +580,8 @@ class CategoricalAccumulator(PicklableAccumulator):
             unique_est=min(self._uniques.estimate(), self.count),
             top_items=top_items,
             approx=approx,
+            top_items_uncertainty=top_items_uncertainty,
+            unique_est_exact=self._uniques.is_exact,
             mem_bytes=self._bytes_seen,
             avg_len=avg_len,
             len_p90=len_p90,
@@ -648,7 +674,18 @@ class CategoricalAccumulator(PicklableAccumulator):
         return gini
 
     def _calculate_most_common_ratio(self, top_items: list[tuple[str, int]]) -> float:
-        """Calculate ratio of the most common value.
+        """What share of the column the most common value takes.
+
+        Against `self.count`, the exact non-null row count, not against the sum
+        of the counters. Under eviction every counter is short, so their sum is
+        short *faster* than any one of them: dividing one by the other measured
+        0.132 for a value whose true share was 0.0011, a 120x overstatement
+        (#328). The same numerator-over-a-different-denominator slip as #327,
+        and in the more damaging direction, since this one feeds the dominant
+        category flag.
+
+        Over the row count the answer is a lower bound, inheriting the
+        counters' own guarantee: it can only understate, and `approx` says so.
 
         Args:
             top_items: List of (value, count) tuples
@@ -656,15 +693,11 @@ class CategoricalAccumulator(PicklableAccumulator):
         Returns:
             Ratio of most common value
         """
-        if not top_items:
-            return 0.0
-
-        total_count = sum(count for _, count in top_items)
-        if total_count == 0:
+        if not top_items or self.count <= 0:
             return 0.0
 
         max_count = max(count for _, count in top_items)
-        return max_count / total_count
+        return max_count / self.count
 
     def _calculate_diversity_ratio(self) -> float:
         """Calculate diversity ratio (unique values / total values).
