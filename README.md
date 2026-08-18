@@ -258,6 +258,20 @@ pysuricata check data.csv --baseline baseline.json --max-missing-pct 5
 
 `check` exits `0` on pass, `1` when a threshold is crossed, and `2` when the check could not run, so it drops into CI without a wrapper.
 
+### GitHub Action
+
+The same gate, as a step instead of a script:
+
+```yaml
+- uses: alvarodiez20/pysuricata@v1
+  with:
+    file: data.csv
+    baseline: baseline.json
+    max-missing-pct: 5
+```
+
+Every `pysuricata check` flag is an input; see [`action.yml`](action.yml).
+
 ## How It Works
 
 PySuricata uses well-known streaming algorithms from the academic literature:

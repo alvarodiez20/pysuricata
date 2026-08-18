@@ -1,0 +1,164 @@
+name: 'pysuricata check'
+description: >-
+  Gate a dataset on shape drift, with an exit code. A thin wrapper around
+  `pysuricata check` -- see https://alvarodiez20.github.io/pysuricata/cli/
+author: 'pysuricata'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  file:
+    description: 'Path to the data file (CSV, Parquet, JSON, Arrow IPC or Excel)'
+    required: true
+  baseline:
+    description: 'Baseline JSON to compare against'
+    required: false
+    default: ''
+  write-baseline:
+    description: >-
+      Write a baseline from this dataset to this path and exit, instead of
+      comparing against one
+    required: false
+    default: ''
+  thresholds:
+    description: 'Thresholds file (.json or .toml) overriding the defaults'
+    required: false
+    default: ''
+  max-missing-pct:
+    description: 'Fail if any column is missing more than this percentage'
+    required: false
+    default: ''
+  min-rows:
+    description: 'Fail if the dataset has fewer rows than this'
+    required: false
+    default: ''
+  max-duplicate-pct:
+    description: >-
+      Fail if duplicate rows could be above this percentage -- gated on the
+      upper bound, so a count below the sketch's own resolution fails closed
+      rather than passing as zero
+    required: false
+    default: ''
+  max-rows-drift-pct:
+    description: 'Fail if the row count moved more than this percentage from the baseline'
+    required: false
+    default: ''
+  fail-on-new-column:
+    description: "Treat an added column as a breach ('true'/'false')"
+    required: false
+    default: 'false'
+  fail-on-range-expansion:
+    description: >-
+      Treat a new minimum or maximum outside the baseline range as a breach
+      ('true'/'false')
+    required: false
+    default: 'false'
+  max-age:
+    description: >-
+      Fail if the newest timestamp in a datetime column is older than this,
+      e.g. 26h, 3d, 90m. Needs no baseline
+    required: false
+    default: ''
+  require-fresh:
+    description: >-
+      Fail if a datetime column's newest timestamp did not advance past the
+      baseline's ('true'/'false')
+    required: false
+    default: 'false'
+  warn-only:
+    description: "Report findings but always exit 0 ('true'/'false')"
+    required: false
+    default: 'false'
+  seed:
+    description: 'Random seed, so a re-run of the same data is a no-op'
+    required: false
+    default: '0'
+  chunk-size:
+    description: 'Rows per chunk while streaming'
+    required: false
+    default: '100000'
+  python-version:
+    description: 'Python version to run the check under'
+    required: false
+    default: '3.12'
+  requirement:
+    description: >-
+      What to `pip install` for the `pysuricata` command. Defaults to the
+      latest release; pin a version with e.g. "pysuricata==0.1.5", or point
+      it at a local checkout (e.g. ".") to test an unreleased change --
+      this repository's own CI does exactly that
+    required: false
+    default: 'pysuricata'
+
+outputs:
+  exit-code:
+    description: '0 pass, 1 threshold crossed, 2 the check could not run'
+    value: ${{ steps.run-check.outputs.exit-code }}
+  result:
+    description: 'The JSON result of `pysuricata check --json`'
+    value: ${{ steps.run-check.outputs.result }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install pysuricata
+      shell: bash
+      env:
+        REQUIREMENT: ${{ inputs.requirement }}
+      run: pip install "$REQUIREMENT"
+
+    - name: Run pysuricata check
+      id: run-check
+      shell: bash
+      env:
+        FILE: ${{ inputs.file }}
+        BASELINE: ${{ inputs.baseline }}
+        WRITE_BASELINE: ${{ inputs.write-baseline }}
+        THRESHOLDS: ${{ inputs.thresholds }}
+        MAX_MISSING_PCT: ${{ inputs.max-missing-pct }}
+        MIN_ROWS: ${{ inputs.min-rows }}
+        MAX_DUPLICATE_PCT: ${{ inputs.max-duplicate-pct }}
+        MAX_ROWS_DRIFT_PCT: ${{ inputs.max-rows-drift-pct }}
+        FAIL_ON_NEW_COLUMN: ${{ inputs.fail-on-new-column }}
+        FAIL_ON_RANGE_EXPANSION: ${{ inputs.fail-on-range-expansion }}
+        MAX_AGE: ${{ inputs.max-age }}
+        REQUIRE_FRESH: ${{ inputs.require-fresh }}
+        WARN_ONLY: ${{ inputs.warn-only }}
+        SEED: ${{ inputs.seed }}
+        CHUNK_SIZE: ${{ inputs.chunk-size }}
+      run: |
+        args=("$FILE" --json --seed "$SEED" --chunk-size "$CHUNK_SIZE")
+        if [ -n "$BASELINE" ]; then args+=(--baseline "$BASELINE"); fi
+        if [ -n "$WRITE_BASELINE" ]; then args+=(--write-baseline "$WRITE_BASELINE"); fi
+        if [ -n "$THRESHOLDS" ]; then args+=(--thresholds "$THRESHOLDS"); fi
+        if [ -n "$MAX_MISSING_PCT" ]; then args+=(--max-missing-pct "$MAX_MISSING_PCT"); fi
+        if [ -n "$MIN_ROWS" ]; then args+=(--min-rows "$MIN_ROWS"); fi
+        if [ -n "$MAX_DUPLICATE_PCT" ]; then args+=(--max-duplicate-pct "$MAX_DUPLICATE_PCT"); fi
+        if [ -n "$MAX_ROWS_DRIFT_PCT" ]; then args+=(--max-rows-drift-pct "$MAX_ROWS_DRIFT_PCT"); fi
+        if [ "$FAIL_ON_NEW_COLUMN" = "true" ]; then args+=(--fail-on-new-column); fi
+        if [ "$FAIL_ON_RANGE_EXPANSION" = "true" ]; then args+=(--fail-on-range-expansion); fi
+        if [ -n "$MAX_AGE" ]; then args+=(--max-age "$MAX_AGE"); fi
+        if [ "$REQUIRE_FRESH" = "true" ]; then args+=(--require-fresh); fi
+        if [ "$WARN_ONLY" = "true" ]; then args+=(--warn-only); fi
+
+        set +e
+        output="$(pysuricata check "${args[@]}")"
+        code=$?
+        set -e
+
+        echo "$output"
+        {
+          echo "result<<PYSURICATA_RESULT_EOF"
+          echo "$output"
+          echo "PYSURICATA_RESULT_EOF"
+        } >> "$GITHUB_OUTPUT"
+        echo "exit-code=$code" >> "$GITHUB_OUTPUT"
+
+        exit "$code"

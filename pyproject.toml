@@ -86,6 +86,9 @@ dev = [
     # test-only: exercises the DuckDB streaming path. Never a runtime dep --
     # the reader is duck-typed on fetch_record_batch, so nothing imports it.
     "duckdb>=1.0.0",
+    # test-only: validates docs/schemas/summary.v*.schema.json against a live
+    # summarize() payload (#250). Nothing under `pysuricata/` imports it.
+    "jsonschema>=4.23.0",
     "mkdocs-material>=9.6.18",
     "mkdocstrings>=0.30.0",
     "mkdocstrings-python>=1.18.0",
