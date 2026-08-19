@@ -16,6 +16,28 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **`test_performance_impact` measured noise, and blocked two merges** (#354).
+  It timed one run of each configuration and asserted a wall-clock ratio under
+  1.5. Twelve rounds of that body measure mean 1.00 with stdev 0.15 on an idle
+  machine, reaching 1.38; CI measured 1.65 and then 1.76 on an unrelated pull
+  request.
+
+  Two of the three defects are why the number could not mean much: a single
+  sample per side, and `np.random.randn` called *inside* the timed region, so
+  both measurements were dominated by generating 100,000 values rather than by
+  the accumulator. The third is that it used the global RNG, which `CLAUDE.md`
+  forbids outright.
+
+  It now builds the arrays once outside the timing, folds the same ones on both
+  sides, takes the median of five alternating rounds, and seeds a local
+  generator. The bound is 2.0 and deliberately generous: the true cost measures
+  1.00 on a developer machine under both pandas 2 and pandas 3 — the latter with
+  stdev 0.01 — while CI has shown 1.7 on the same code, which nothing local
+  reproduces. A bound both satisfy still catches the thing the test exists for,
+  which is per-chunk metadata becoming a cost proportional to the data.
+
+### Fixed
+
 - **The demo's landing page stops padding itself out** — most of it from a
   mechanism no rule named. `main` is `flex: 1 1 auto` so the footer sits on the
   floor of a short page, and it is *also* a grid, whose default
