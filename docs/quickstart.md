@@ -364,7 +364,7 @@ card with its own SVG charts.
 - Hand over the path rather than a loaded frame, so the file streams
 - Reduce `chunk_size`
 - Reduce `numeric_sample_size` and `max_uniques`
-- Memory is bounded in rows but grows about 1.2 MB per column, so a very wide
+- Memory is bounded in rows but grows about 529 KB per column, so a very wide
   frame is the case to watch
   ([#207](https://github.com/alvarodiez20/pysuricata/issues/207))
 

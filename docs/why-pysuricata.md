@@ -338,7 +338,7 @@ existing as a frame. See [Arrow, Parquet and DuckDB](data-sources.md).
 Worth saying plainly, since the rest of this page is a case for the design.
 
 - **Memory is bounded in rows, not in columns.** State is per column at roughly
-  1.2 MB each, so a 20,000 x 600 frame costs 797 MB against 52 MB for a
+  529 KB each, so a 20,000 x 600 frame peaks at 631 MB against 344 MB for a
   1,000,000 x 14 one on more cells. Tracked in
   [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
 - **Quantiles come from a sample.** Exact below the reservoir size, approximate

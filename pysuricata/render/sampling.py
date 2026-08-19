@@ -42,7 +42,9 @@ def quantiles_are_sampled(stats: Any) -> bool:
     exactly the numbers that do not need one.
     """
     sample = getattr(stats, "sample_vals", None)
-    if not sample:
+    # `len`, not truthiness: the reservoir is a numpy array (#207), and an
+    # array of more than one element has no truth value.
+    if sample is None or len(sample) == 0:
         return False
     count = getattr(stats, "count", 0) or 0
     return len(sample) < count

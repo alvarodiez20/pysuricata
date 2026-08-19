@@ -3,6 +3,8 @@
 import math
 from collections.abc import Sequence
 
+import numpy as np
+
 from .card_base import CardRenderer
 from .card_config import (
     DEFAULT_CHART_DIMS,
@@ -74,7 +76,7 @@ class NumericCardRenderer(CardRenderer):
             self._left_stats(stats, percentages) + self._right_stats(stats)
         )
 
-        quantiles = self._compute_quantiles_from_sample(stats.sample_vals or [])
+        quantiles = self._compute_quantiles_from_sample(stats.sample_vals)
         quant_stats_table = self._build_quant_stats_table(stats, quantiles)
 
         chart_html = self._build_histogram_variants(col_id, safe_name, stats)
@@ -386,10 +388,10 @@ class NumericCardRenderer(CardRenderer):
         return data
 
     def _compute_quantiles_from_sample(
-        self, sample_vals: Sequence[float]
+        self, sample_vals: Sequence[float] | None
     ) -> QuantileData:
         """Compute quantiles from sample values."""
-        if not sample_vals:
+        if sample_vals is None or len(sample_vals) == 0:
             return QuantileData(
                 p1=float("nan"),
                 p5=float("nan"),
@@ -399,8 +401,11 @@ class NumericCardRenderer(CardRenderer):
                 p99=float("nan"),
             )
 
-        n = len(sample_vals)
-        sorted_vals = sorted(sample_vals)
+        # `np.sort` over the reservoir array, for the reason given in
+        # `NumericAccumulator._compute_quantiles`: `sorted` boxes 20,000
+        # values per column to reach the same order (#207).
+        sorted_vals = np.sort(np.asarray(sample_vals, dtype=float))
+        n = sorted_vals.size
 
         def _quantile(p: float) -> float:
             i = (n - 1) * p
@@ -408,7 +413,9 @@ class NumericCardRenderer(CardRenderer):
             hi = int(math.ceil(i))
             if lo == hi:
                 return float(sorted_vals[int(i)])
-            return float(sorted_vals[lo] * (hi - i) + sorted_vals[hi] * (i - lo))
+            return float(
+                float(sorted_vals[lo]) * (hi - i) + float(sorted_vals[hi]) * (i - lo)
+            )
 
         return QuantileData(
             p1=_quantile(0.01),

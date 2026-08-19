@@ -501,7 +501,7 @@ class DatetimeAccumulator(PicklableAccumulator):
 
         # Get sample values efficiently
         sample_vals = self._sample.values()
-        sample_ts = [int(ts) for ts in sample_vals] if sample_vals else None
+        sample_ts = [int(ts) for ts in sample_vals] if len(sample_vals) else None
 
         return DatetimeSummary(
             name=self.name,

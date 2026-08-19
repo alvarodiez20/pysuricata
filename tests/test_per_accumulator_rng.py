@@ -40,7 +40,7 @@ class TestReservoirOwnsItsGenerator:
         values = np.arange(20_000, dtype=float)
         a.add_many(values)
         b.add_many(values)
-        assert a.values() == b.values()
+        assert np.array_equal(a.values(), b.values())
 
     def test_different_generators_give_different_samples(self):
         a = ReservoirSampler(50, rng=np.random.default_rng(1))
@@ -48,7 +48,7 @@ class TestReservoirOwnsItsGenerator:
         values = np.arange(20_000, dtype=float)
         a.add_many(values)
         b.add_many(values)
-        assert a.values() != b.values()
+        assert not np.array_equal(a.values(), b.values())
 
     def test_global_seed_does_not_steer_the_sample(self):
         values = np.arange(20_000, dtype=float)
@@ -58,7 +58,7 @@ class TestReservoirOwnsItsGenerator:
         np.random.seed(999_999)
         b = ReservoirSampler(50, rng=np.random.default_rng(7))
         b.add_many(values)
-        assert a.values() == b.values()
+        assert np.array_equal(a.values(), b.values())
 
     def test_no_generator_still_avoids_the_global_rng(self):
         np.random.seed(4)
@@ -72,7 +72,7 @@ class TestReservoirOwnsItsGenerator:
         a, b = ReservoirSampler(64), ReservoirSampler(64)
         a.add_many(values)
         b.add_many(values)
-        assert a.values() != b.values()
+        assert not np.array_equal(a.values(), b.values())
 
 
 class TestSeedDerivation:

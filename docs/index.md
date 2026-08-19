@@ -140,8 +140,8 @@ PySuricata reads data in chunks and updates lightweight accumulators for each co
 | **Mergeability** | Accumulators can be merged across chunks or machines |
 
 Memory is bounded **in rows**. It is not bounded in columns: state is per
-column at roughly 1.2 MB each, and a 20,000 x 600 frame costs 797 MB against
-52 MB for a 1,000,000 x 14 one on more cells. That is a known limit, tracked in
+column at roughly 529 KB each, and a 20,000 x 600 frame peaks at 631 MB against
+344 MB for a 1,000,000 x 14 one on more cells. That is a known limit, tracked in
 [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
 
 Reports include per-column statistics, histograms, correlation chips, missing value analysis, outlier detection, and more — all computed during the single streaming pass.

@@ -32,6 +32,8 @@ import math
 from dataclasses import dataclass
 from html import escape
 
+import numpy as np
+
 from .card_config import MAD_OUTLIER_THRESHOLD, MAD_SCALE_FACTOR
 
 #: Two marks closer than this, as a percentage of the axis, are drawn as one
@@ -188,8 +190,30 @@ def _band(distance: float, bands: tuple[tuple[float, str], ...]) -> str:
     return "moderate"
 
 
+#: Returned for a missing reservoir, so the caller's `.size` check is uniform.
+_EMPTY = np.empty(0, dtype=np.float64)
+
+
 def _finite(value: object) -> bool:
     return isinstance(value, (int, float)) and math.isfinite(float(value))
+
+
+def _sample_array(reservoir) -> np.ndarray:
+    """The reservoir's finite values as a float array.
+
+    `sample_vals` is already a float64 array (#207), so the common path is a
+    no-op view. The fallback covers a caller that hands in a plain sequence,
+    which the tests and any external consumer of these dataclasses may.
+    """
+    if reservoir is None:
+        return _EMPTY
+    try:
+        values = np.asarray(reservoir, dtype=float)
+    except (TypeError, ValueError):
+        values = np.asarray([float(v) for v in reservoir if _finite(v)], dtype=float)
+    # No reshape: a boolean mask over an array of any shape already returns a
+    # flat one, so the guard that used to sit here could never run.
+    return values[np.isfinite(values)]
 
 
 def build_fence(stats, quantiles=None) -> Fence | None:
@@ -210,47 +234,48 @@ def build_fence(stats, quantiles=None) -> Fence | None:
     lo_fence = float(q1) - 1.5 * iqr
     hi_fence = float(q3) + 1.5 * iqr
 
-    sample = [
-        float(v) for v in (getattr(stats, "sample_vals", None) or []) if _finite(v)
-    ]
-    if not sample:
+    sample = _sample_array(getattr(stats, "sample_vals", None))
+    if sample.size == 0:
         return None
+    sample_lo, sample_hi = float(sample.min()), float(sample.max())
 
-    value_lo = float(stats.min) if _finite(stats.min) else min(sample)
-    value_hi = float(stats.max) if _finite(stats.max) else max(sample)
-    value_lo = min(value_lo, min(sample))
-    value_hi = max(value_hi, max(sample))
+    value_lo = float(stats.min) if _finite(stats.min) else sample_lo
+    value_hi = float(stats.max) if _finite(stats.max) else sample_hi
+    value_lo = min(value_lo, sample_lo)
+    value_hi = max(value_hi, sample_hi)
     if not (value_hi > value_lo):
         return None
 
     mad = float(stats.mad) if _finite(stats.mad) else 0.0
 
-    def mad_distance(value: float) -> float | None:
-        if mad <= 0:
-            return None
-        return abs(MAD_SCALE_FACTOR * (value - float(median)) / mad)
+    # Decided over the whole sample at once, then walked only where something
+    # was flagged. Element-wise, this was three Python passes over 20,000
+    # values per numeric column and the single largest cost in rendering a
+    # wide frame -- 7.8s of a 13.3s profile at 60 columns (#207).
+    below = sample < lo_fence
+    above = sample > hi_fence
+    by_iqr_mask = below | above
+    if mad > 0:
+        mad_distance = np.abs(MAD_SCALE_FACTOR * (sample - float(median)) / mad)
+        by_mad_mask = mad_distance > MAD_OUTLIER_THRESHOLD
+    else:
+        mad_distance = None
+        by_mad_mask = np.zeros(sample.shape, dtype=bool)
 
-    # One pass, one dict per value: a value flagged by both methods is one row
-    # with two verdicts, which is what replaces the `rowspan` table.
+    # One dict per value: a value flagged by both methods is one row with two
+    # verdicts, which is what replaces the `rowspan` table.
     flagged: dict[float, dict] = {}
-    for value in sample:
-        by_iqr = value < lo_fence or value > hi_fence
-        distance_mad = mad_distance(value)
-        by_mad = distance_mad is not None and distance_mad > MAD_OUTLIER_THRESHOLD
-        if not (by_iqr or by_mad):
-            continue
+    for i in np.flatnonzero(by_iqr_mask | by_mad_mask):
+        value = float(sample[i])
         entry = flagged.setdefault(
             round(value, 12), {"value": value, "iqr": None, "mad": None}
         )
-        if by_iqr:
-            gap = (
-                (float(q1) - value) / iqr
-                if value < lo_fence
-                else (value - float(q3)) / iqr
-            )
+        if by_iqr_mask[i]:
+            gap = (float(q1) - value) / iqr if below[i] else (value - float(q3)) / iqr
             entry["iqr"] = (gap, _band(gap, _IQR_BANDS))
-        if by_mad:
-            entry["mad"] = (distance_mad, _band(distance_mad, _MAD_BANDS))
+        if by_mad_mask[i]:
+            distance = float(mad_distance[i])
+            entry["mad"] = (distance, _band(distance, _MAD_BANDS))
 
     index_map: dict[float, list] = {}
     for pairs in (
@@ -271,8 +296,8 @@ def build_fence(stats, quantiles=None) -> Fence | None:
     # the number on the card face and the number on the tab badge are one
     # number, computed the same way from the same sample. The rows below are
     # distinct values and are counted separately.
-    n_low = sum(1 for v in sample if v < lo_fence)
-    n_high = sum(1 for v in sample if v > hi_fence)
+    n_low = int(below.sum())
+    n_high = int(above.sum())
 
     rows: list[Row] = []
 
@@ -317,7 +342,7 @@ def build_fence(stats, quantiles=None) -> Fence | None:
         value_lo=value_lo,
         value_hi=value_hi,
         n_total=int(getattr(stats, "count", 0) or 0),
-        n_sampled=len(sample),
+        n_sampled=int(sample.size),
         n_outliers=n_low + n_high,
         n_low=n_low,
         n_high=n_high,

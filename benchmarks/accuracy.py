@@ -512,7 +512,7 @@ class TestReservoirInvariants:
 
         r = ReservoirSampler(100)
         r.add_many(np.arange(10, dtype=np.float64))
-        assert r.values() == list(range(10))
+        assert r.values().tolist() == list(range(10))
 
     def test_never_exceeds_k(self):
         from pysuricata.accumulators.sketches import ReservoirSampler

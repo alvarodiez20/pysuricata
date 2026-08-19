@@ -103,6 +103,43 @@ def _fmt(value: float) -> str:
     return f"{value:,.3g}"
 
 
+class TestTheReservoirIsReadAsAnArray:
+    """`sample_vals` is a float64 array on the live path (#207), and the fence
+    reads it with numpy. These pin what happens to the shapes it is *not*."""
+
+    def test_a_numpy_reservoir_and_a_list_of_the_same_values_agree(self):
+        values = [45.0, 50.0, 55.0, 200.0]
+        from_list = build_fence(_stats(sample_vals=values, min=45.0, max=200.0))
+        from_array = build_fence(
+            _stats(sample_vals=np.asarray(values), min=45.0, max=200.0)
+        )
+        assert from_list is not None and from_array is not None
+        assert (from_list.n_outliers, from_list.n_sampled) == (
+            from_array.n_outliers,
+            from_array.n_sampled,
+        )
+        assert from_list.rows == from_array.rows
+
+    def test_a_non_numeric_entry_is_dropped_rather_than_raising(self):
+        """What the element-wise version did, kept. `np.asarray` refuses a
+        string where the old `_finite` check simply skipped it, so the fence
+        falls back to filtering by hand rather than failing to draw."""
+        fence = build_fence(
+            _stats(sample_vals=[45.0, "n/a", 50.0, 55.0, 200.0], min=45.0, max=200.0)
+        )
+        assert fence is not None
+        assert fence.n_sampled == 4
+
+    def test_a_none_entry_is_dropped_too(self):
+        """`None` reaches `np.asarray(..., dtype=float)` as a NaN, which the
+        finite filter removes -- a different route to the same answer."""
+        fence = build_fence(
+            _stats(sample_vals=[45.0, None, 50.0, 55.0, 200.0], min=45.0, max=200.0)
+        )
+        assert fence is not None
+        assert fence.n_sampled == 4
+
+
 class TestTheLowSideIsAnsweredNotLeftEmpty:
     """5b.2's central claim. ``Age``'s lower fence sits at -6.7 years and its
     minimum is 0.42, so the column *cannot* have a low outlier -- one sentence,
