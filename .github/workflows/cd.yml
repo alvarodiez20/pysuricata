@@ -192,7 +192,9 @@ jobs:
   # fails the workflow on its own, which is the signal to stop tagging further
   # releases until the demo is fixed (docs/versioning.md).
   demo-check:
-    needs: publish
+    # `guard` as well as `publish`, for the version it resolved: this job both
+    # waits for that version to appear on PyPI and asserts the demo loaded it.
+    needs: [publish, guard]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -208,8 +210,45 @@ jobs:
       - name: Install Chromium
         run: uv run playwright install --with-deps chromium
 
+      # Without this the job checks the demo at the one moment the demo is
+      # guaranteed not to have the release yet, and calls that a demo failure.
+      #
+      # `needs: publish` means this starts seconds after upload. PyPI's JSON
+      # API -- which is what micropip resolves against -- is served
+      # `cache-control: max-age=900`, so for up to fifteen minutes an edge can
+      # still be answering with a copy that predates the release. That is not a
+      # guess: when 0.2.0 was published the demo logged `newest pysuricata is
+      # 0.2.0` (its own query sets `no-store`) and then `0.2.0 would not
+      # install here`, and served 0.1.5 until the window expired. The demo was
+      # fine, the release was fine, and this job would have failed both.
+      #
+      # So wait for the index micropip will actually read to agree, and give up
+      # after twenty minutes -- past the window, so a timeout here means
+      # something is really wrong rather than merely early.
+      - name: Wait for PyPI's index to serve the published version
+        run: |
+          VERSION="${{ needs.guard.outputs.version }}"
+          DEADLINE=$(( SECONDS + 1200 ))
+          until [ "$SECONDS" -ge "$DEADLINE" ]; do
+            SEEN=$(curl -fsS "https://pypi.org/pypi/pysuricata/json" \
+                   | python -c "import json,sys; print(json.load(sys.stdin)['info']['version'])" \
+                   || echo "")
+            if [ "$SEEN" = "$VERSION" ]; then
+              echo "PyPI is serving $VERSION after ${SECONDS}s"
+              exit 0
+            fi
+            echo "PyPI still serving ${SEEN:-<unreadable>}, waiting for $VERSION"
+            sleep 30
+          done
+          echo "::error::PyPI did not serve $VERSION within 20 minutes"
+          exit 1
+
       - name: The live demo renders a visible report on the version just published
-        run: uv run python web/e2e.py --url https://pysuricata.pages.dev --out e2e-out
+        run: |
+          uv run python web/e2e.py \
+            --url https://pysuricata.pages.dev \
+            --out e2e-out \
+            --expect-version "${{ needs.guard.outputs.version }}"
 
       - name: Upload the report screenshot
         if: always()
