@@ -265,42 +265,66 @@ class TestChunkMetadataMemoryFix:
         with pytest.raises(ValueError):
             NumericConfig(max_chunks=-1)  # Should raise ValueError
 
-    def test_performance_impact(self):
-        """Test performance impact of chunk metadata optimization."""
+    def test_chunk_metadata_overhead_is_not_gross(self):
+        """Chunk metadata must not multiply the cost of update().
+
+        Deliberately a loose bound rather than a precise one. The previous
+        version asserted `time_enabled < time_disabled * 1.5` from a single
+        sample per side, with `np.random.randn` inside the timed region -- so
+        both sides were dominated by generating 100,000 random values, and the
+        accumulator difference sat in the noise on top. Measured spread reached
+        1.38 on an idle machine against a 1.5 threshold; CI saw 1.65 and failed
+        an unrelated PR.
+
+        Three changes make the number mean something:
+
+        - data is generated once, outside the timed region, so the measurement
+          is of `update()` rather than of the RNG;
+        - each side is measured over several rounds and compared on the median,
+          not on one draw;
+        - the bound is 3x, which the real effect (~1.0) clears by a wide margin
+          while staying tight enough to catch an actual regression such as a
+          per-chunk allocation or an O(n) rescan.
+        """
+        import statistics
         import time
 
-        # Test with chunk metadata enabled
-        config_enabled = NumericConfig(enable_chunk_metadata=True, max_chunks=100)
-        accumulator_enabled = NumericAccumulator("test_col", config_enabled)
+        # Local Generator: CLAUDE.md forbids touching the global RNG, and the
+        # data is identical for both sides so neither is handed easier input.
+        rng = np.random.default_rng(20260819)
+        chunks = [rng.standard_normal(1000) for _ in range(100)]
 
-        start_time = time.perf_counter()
-        for i in range(100):
-            values = np.random.randn(1000)
-            accumulator_enabled.update(values)
-            accumulator_enabled.mark_chunk_boundary()
-        end_time = time.perf_counter()
+        def measure(*, enable: bool) -> float:
+            config = (
+                NumericConfig(enable_chunk_metadata=True, max_chunks=100)
+                if enable
+                else NumericConfig(enable_chunk_metadata=False)
+            )
+            accumulator = NumericAccumulator("test_col", config)
+            start = time.perf_counter()
+            for values in chunks:
+                accumulator.update(values)
+                accumulator.mark_chunk_boundary()
+            return time.perf_counter() - start
 
-        time_enabled = end_time - start_time
+        rounds = 5
+        # Interleaved so a machine that slows down partway through penalises
+        # both sides equally, rather than whichever ran last.
+        enabled: list[float] = []
+        disabled: list[float] = []
+        for _ in range(rounds):
+            enabled.append(measure(enable=True))
+            disabled.append(measure(enable=False))
 
-        # Test with chunk metadata disabled
-        config_disabled = NumericConfig(enable_chunk_metadata=False)
-        accumulator_disabled = NumericAccumulator("test_col", config_disabled)
+        median_enabled = statistics.median(enabled)
+        median_disabled = statistics.median(disabled)
+        ratio = median_enabled / median_disabled if median_disabled else float("inf")
 
-        start_time = time.perf_counter()
-        for i in range(100):
-            values = np.random.randn(1000)
-            accumulator_disabled.update(values)
-            accumulator_disabled.mark_chunk_boundary()
-        end_time = time.perf_counter()
-
-        time_disabled = end_time - start_time
-
-        # Performance should be similar (chunk metadata overhead is minimal)
-        print(f"Time with chunk metadata: {time_enabled:.4f}s")
-        print(f"Time without chunk metadata: {time_disabled:.4f}s")
-
-        # Should not be significantly slower
-        assert time_enabled < time_disabled * 1.5  # Allow 50% overhead
+        assert ratio < 3.0, (
+            f"chunk metadata made update() {ratio:.2f}x slower "
+            f"(median of {rounds} rounds: {median_enabled:.4f}s enabled vs "
+            f"{median_disabled:.4f}s disabled)"
+        )
 
 
 class TestChunkMetadataVisualization:
