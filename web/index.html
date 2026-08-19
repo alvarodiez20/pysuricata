@@ -133,12 +133,36 @@
   /* `main.col`, not `main`: `.col` sets the horizontal gutter in a shorthand
      and outranks a bare element selector, so a `padding` on `main` alone was
      silently zeroed and the hero sat flush against the header rule. */
-  main { flex: 1 1 auto; }
-  /* A phone lands on the floor of both clamps here and of the one on
-     `.closing`: 15vw is 59px at 390px wide, under the minimum. So the floor
-     is the mobile value, not a fallback — set it to what a phone should get
-     rather than to whatever the desktop figure decays into. */
-  main.col { padding-block: clamp(48px, 9vw, 72px) clamp(36px, 5vw, 44px); }
+  /* `flex: 1 1 auto` is what keeps the footer on the floor of a short page, and
+     it has to stay. But `main` is also a grid, and a grid's default
+     `align-content: normal` resolves to **stretch** — so on any page shorter
+     than the viewport, `main` grew to fill it and handed the leftover height
+     to its rows, one share each.
+
+     That, not the margins below, was where most of the air came from, and it
+     is invisible in the stylesheet because no rule names it. At 1264x1000 it
+     was 121px spread over seven rows: enough to give `#notes`, an element with
+     no height at all, a 17px gap. It gets worse the taller the window, which
+     is why the page looked emptiest on a large screen.
+
+     `start` packs the rows at their content height and lets the slack fall
+     where it belongs — above the footer, at the bottom. */
+  main { flex: 1 1 auto; align-content: start; }
+  /* The top padding, the gap above `.actions` and the one above `.closing` are
+     flat rather than `clamp(_, vw, _)`, and that is the point rather than a
+     simplification: `vw` is viewport *width*, so every one of them sat at its
+     maximum on any window wider than about 800px, however short that window
+     was. A wide, short screen got the most vertical air the design could
+     produce — 130px of pure gap above the primary button — for a reason that
+     has nothing to do with how much vertical room the visitor has.
+
+     #333 already took the top padding from 120px to 72px without changing that
+     shape. This finishes the job at the value a phone was already getting, so
+     the change lands on desktop and leaves mobile where it was.
+
+     The bottom padding keeps its clamp: it scales into the footer rather than
+     between two blocks a reader is trying to connect, and it never dominated. */
+  main.col { padding-block: 48px clamp(36px, 5vw, 44px); }
 
   h1 {
     font-size: clamp(29px, 7vw, 40px); line-height: 1.1; letter-spacing: -.03em;
@@ -153,7 +177,8 @@
      draw — the rule above the buttons is what lights up on dragover. */
   .actions {
     display: flex; flex-wrap: wrap; align-items: center; gap: 12px 18px;
-    margin: clamp(30px, 7vw, 40px) 0 0;
+    /* 40px on desktop, and the button is the thing the page exists for. */
+    margin: 28px 0 0;
   }
   .btn {
     min-height: 44px; padding: 11px 20px; font-size: 16px; font-weight: 500; cursor: pointer;
@@ -301,7 +326,10 @@
   body.maxed { overflow: hidden; }
 
   .closing {
-    margin: clamp(52px, 12vw, 76px) 0 clamp(20px, 3vw, 28px);
+    /* Was up to 76px, the largest single gap on the page. It has a rule above
+       it already, which is what separates it from the log — the margin was
+       doing the same job a second time. */
+    margin: 44px 0 clamp(20px, 3vw, 28px);
     padding-top: 18px; border-top: 1px solid var(--rule);
     font-size: 15px; line-height: 1.6; color: var(--ink-2); text-wrap: pretty;
   }
