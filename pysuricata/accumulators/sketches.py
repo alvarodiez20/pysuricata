@@ -49,6 +49,10 @@ _NO_MORE_ACCEPTANCES = 1 << 62
 # Acceptances are scheduled a block at a time. The schedule depends only on the
 # generator and k, so computing it in bulk costs nothing in correctness.
 _SCHEDULE_BLOCK = 2048
+# The reservoir's buffer grows geometrically to this block size before
+# doubling, so a 600-column frame of 20 rows does not pay for 600 buffers
+# sized for the 20,000 values it will never see (#207).
+_RESERVOIR_BLOCK = 1024
 # Rows stringified into the sketch when vectorised row hashing fails. This
 # bounds the sketch's input only -- never the row count.
 _HASH_FALLBACK_SAMPLE = 2000
@@ -437,6 +441,7 @@ class ReservoirSampler:
         "k",
         "_rng",
         "_buf",
+        "_n",
         "_seen",
         "_logw",
         "_next",
@@ -454,7 +459,12 @@ class ReservoirSampler:
         # column happened to draw first, which is neither reproducible under
         # threading nor invisible to the caller's own RNG.
         self._rng = rng if rng is not None else np.random.default_rng()
-        self._buf: list[float] = []
+        # float64, not a list of Python floats. The values are the sample and
+        # nothing else reads them one at a time, so boxing each one cost 33
+        # bytes where the datum is 8 -- 374 MB rather than 92 MB across 600
+        # columns, which is most of the wide-frame memory in #207.
+        self._buf: np.ndarray = np.empty(0, dtype=np.float64)
+        self._n: int = 0
         self._seen: int = 0
         # Algorithm L state carried between schedule blocks. _logw is log(W);
         # _next is the stream index (0-based) of the next element to accept.
@@ -504,6 +514,20 @@ class ReservoirSampler:
         # first candidate sits at _seen + skip.
         self._extend_schedule(self._seen)
 
+    def _reserve(self, needed: int) -> None:
+        """Grow the buffer to hold `needed` values, geometrically and up to k.
+
+        A list grows itself; an array does not. Growing by doubling keeps the
+        fill phase amortised O(1) per value, and capping at k keeps a narrow
+        column from ever allocating the full 20,000 slots.
+        """
+        if needed <= self._buf.size:
+            return
+        size = min(self.k, max(needed, 2 * self._buf.size, _RESERVOIR_BLOCK))
+        grown = np.empty(size, dtype=np.float64)
+        grown[: self._n] = self._buf[: self._n]
+        self._buf = grown
+
     def add_many(self, arr: Sequence[float]) -> None:
         """Add a batch of values, preserving the uniform-sampling guarantee.
 
@@ -516,12 +540,14 @@ class ReservoirSampler:
         arr = np.asarray(arr, dtype=float)
 
         # Fill the reservoir before any sampling decision is made.
-        if len(self._buf) < self.k:
-            needed = min(self.k - len(self._buf), len(arr))
-            self._buf.extend(arr[:needed].tolist())
+        if self._n < self.k:
+            needed = min(self.k - self._n, len(arr))
+            self._reserve(self._n + needed)
+            self._buf[self._n : self._n + needed] = arr[:needed]
+            self._n += needed
             self._seen += needed
             arr = arr[needed:]
-            if len(self._buf) >= self.k:
+            if self._n >= self.k:
                 self._start_skipping()
             if len(arr) == 0:
                 return
@@ -529,26 +555,34 @@ class ReservoirSampler:
         end = self._seen + len(arr)
         buf = self._buf
         while self._next < end:
-            buf[int(self._sched_slot[self._sched_pos])] = float(
-                arr[self._next - self._seen]
-            )
+            buf[int(self._sched_slot[self._sched_pos])] = arr[self._next - self._seen]
             self._advance_schedule()
         self._seen = end
 
     def add(self, x: float) -> None:
-        if len(self._buf) < self.k:
-            self._buf.append(float(x))
+        if self._n < self.k:
+            self._reserve(self._n + 1)
+            self._buf[self._n] = x
+            self._n += 1
             self._seen += 1
-            if len(self._buf) >= self.k:
+            if self._n >= self.k:
                 self._start_skipping()
             return
         if self._seen == self._next:
-            self._buf[int(self._sched_slot[self._sched_pos])] = float(x)
+            self._buf[int(self._sched_slot[self._sched_pos])] = x
             self._advance_schedule()
         self._seen += 1
 
-    def values(self) -> list[float]:
-        return self._buf
+    def values(self) -> np.ndarray:
+        """The sample, as a read-only view of the filled prefix.
+
+        A view rather than a copy: at 600 columns the copy is the memory this
+        buffer exists to save. It is marked read-only because a caller that
+        wrote through it would be editing the live reservoir.
+        """
+        view = self._buf[: self._n]
+        view.flags.writeable = False
+        return view
 
     def merge(self, other: ReservoirSampler) -> None:
         """Combine two reservoirs into one uniform sample of the union.
@@ -576,16 +610,17 @@ class ReservoirSampler:
             return
 
         # The other side is complete: replay it, weights and all.
-        if len(other._buf) < other.k:
-            for value in other._buf:
+        if other._n < other.k:
+            for value in other._buf[: other._n].tolist():
                 self.add(value)
             return
 
         # This side is complete: adopt the other's sample and its stream
         # position, then replay ours into it. Same argument, mirrored.
-        if len(self._buf) < self.k:
-            mine = list(self._buf)
-            self._buf = list(other._buf)
+        if self._n < self.k:
+            mine = self._buf[: self._n].tolist()
+            self._buf = other._buf[: other._n].copy()
+            self._n = other._n
             self._seen = other._seen
             self._logw = other._logw
             self._next = other._next
@@ -597,9 +632,9 @@ class ReservoirSampler:
             return
 
         total = self._seen + other._seen
-        take_other = self._rng.random(len(self._buf)) >= (self._seen / total)
-        for slot in np.flatnonzero(take_other):
-            self._buf[int(slot)] = other._buf[int(slot)]
+        take_other = self._rng.random(self._n) >= (self._seen / total)
+        slots = np.flatnonzero(take_other)
+        self._buf[slots] = other._buf[slots]
         self._seen = total
         # The stream position jumped, so the acceptance schedule -- which is
         # indexed against _seen -- has to be rebuilt from the new position.

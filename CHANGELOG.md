@@ -14,6 +14,55 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Changed
+
+- **The column axis costs 2.2x less memory and 1.9x less time** (#207). Bounded
+  memory was a claim about rows and false about columns: 20,000 x 600 peaked at
+  980 MB while 1,000,000 x 14 — *more* cells — peaked at 344 MB.
+
+  Most of it was one line. The reservoir held its sample as a `list[float]`,
+  and a Python float is 24 bytes plus the 8-byte pointer that finds it, so
+  20,000 values that are 160 KB of data occupied 638 KB of heap. It is a
+  `float64` array now, and one filled numeric column holds 284 KB rather than
+  765 KB.
+
+  The array then made three element-wise loops over the reservoir cost more, so
+  they are vectorised: the outlier fence walked all 20,000 values three times
+  per column and was 7.8s of a 13.3s profile at 60 columns, and both quantile
+  paths reached `sorted()` over an array, which boxes every element to get the
+  order `np.sort` already has. Same values by the same arithmetic — the fence
+  bands, the interpolation and the sampling schedule are untouched.
+
+  Measured per shape in its own process, at 20,000 rows:
+
+  | shape | peak, before | peak, after | time, before | time, after |
+  |---|---:|---:|---:|---:|
+  | 20,000 x 100 | 261 MB | 220 MB | 9.6s | 5.4s |
+  | 20,000 x 600 | 980 MB | 631 MB | 57.9s | 30.3s |
+
+  Per column: **529 KB and 59 KB of report**, down from 1.2 MB. The row axis is
+  unchanged — 1,000,000 x 14 peaks at 344 MB, none of it marginal, because
+  profiling never exceeds what holding the frame already cost.
+
+  `summarize()` at 20,000 x 600 now peaks at 492 MB, inside a 512 MB runner;
+  `profile()` does not, and the 139 MB between them is the 35 MB report and its
+  copies during assembly. That half of #207's exit is #39's subject.
+
+### Fixed
+
+- **`benchmarks/columns.py` mis-measured the axis it exists to measure**, by
+  about 2x in each direction (#207). It ran every shape in one process, and
+  peak memory is a high-water mark the allocator does not hand back — so the
+  600-column run reported only what it grew *beyond* the 400-column run, which
+  halved the widest shape. It also measured under `tracemalloc`, which
+  allocates a trace record per allocation: that inflated the resident set it
+  was reading and slowed the 600-column run from 58s to 252s.
+
+  Each shape now runs in its own subprocess, the number reported is the process
+  high-water mark rather than a sampled RSS, and `tracemalloc` is opt-in behind
+  `--python-peak`. `--budget` is now checked against the peak, which is what a
+  container ceiling enforces.
+
 ## [0.2.0] - 2026-08-19
 
 ### Added

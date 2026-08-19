@@ -179,9 +179,10 @@ sketches for the whole run and gets its own card in the report, so both memory a
 size grow linearly with the width of the frame.
 
 Measured with `python -m benchmarks.columns` at 20,000 rows, taking the slope from 100
-columns to 600: **1.2 MB of resident memory and 59 KB of report per column**. A
-20,000 x 600 frame costs 797 MB and emits a 35 MB report, while a 1,000,000 x 14 frame
-holds 1.2x the cells for 52 MB. Wide frames are the axis the streaming design does not
+columns to 600: **529 KB of memory and 59 KB of report per column**. A 20,000 x 600
+frame peaks at 631 MB and emits a 35 MB report, while a 1,000,000 x 14 frame holds 1.2x
+the cells and peaks at 344 MB — none of which is the profiling, which never exceeds what
+holding the frame already costs. Wide frames are the axis the streaming design does not
 yet cover, tracked in [#207](https://github.com/alvarodiez20/pysuricata/issues/207).
 
 ## Comparing Two Datasets

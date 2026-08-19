@@ -255,7 +255,7 @@ is why a gate and a diff cannot disagree about what a number means.
 - **A native core** — the accumulator boundary was prepared for a second
   implementation in Rust and measured at 0.97–1.01x, so the preparation cost
   nothing ([#44](https://github.com/alvarodiez20/pysuricata/issues/44))
-- **The column axis** — state is per column at roughly 1.2 MB each, so bounded
+- **The column axis** — state is per column at roughly 529 KB each, so bounded
   memory is a claim about rows and not yet about columns
   ([#207](https://github.com/alvarodiez20/pysuricata/issues/207))
 - **An HTML view for `compare()`**

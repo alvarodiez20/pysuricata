@@ -138,9 +138,9 @@ Memory usage depends on configuration, not dataset size. The main factors are:
 Processing a 10 GB dataset uses roughly the same memory as processing a 100 MB
 one — **in rows**.
 
-In columns it is not bounded: state is per column, at roughly 1.2 MB each, so a
-20,000 x 600 frame costs 797 MB against 52 MB for a 1,000,000 x 14 one on more
-cells. That is
+In columns it is not bounded: state is per column, at roughly 529 KB each, so a
+20,000 x 600 frame peaks at 631 MB against 344 MB for a 1,000,000 x 14 one on
+more cells. That is
 a known limit, tracked in
 [#207](https://github.com/alvarodiez20/pysuricata/issues/207), and worth knowing
 before you point it at a very wide frame.

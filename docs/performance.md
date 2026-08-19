@@ -247,8 +247,8 @@ python -m benchmarks.kernels                            # per-kernel timings + m
   \(T(n) \approx k \cdot n\).
 - **Memory is flat in rows.** Four float64 columns cost the same above the
   import floor at 500,000 rows and at 8,400,000.
-- **Memory is *not* flat in columns.** It grows at roughly 1.2 MB per column, so
-  a 20,000 x 600 frame costs 797 MB against 52 MB for a 1,000,000 x 14 one on
+- **Memory is *not* flat in columns.** It grows at roughly 529 KB per column, so
+  a 20,000 x 600 frame peaks at 631 MB against 344 MB for a 1,000,000 x 14 one on
   more cells. This
   is a known limit, tracked in
   [#207](https://github.com/alvarodiez20/pysuricata/issues/207).

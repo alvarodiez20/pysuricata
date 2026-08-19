@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from collections.abc import Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from typing import Any
 
 import numpy as np
@@ -103,7 +103,7 @@ class NumericSummary:
     hist_counts: list[int] | None = None
     top_values: list[tuple[float, int]] = field(default_factory=list)
     # Reservoir sample for advanced analytics
-    sample_vals: list[float] | None = None
+    sample_vals: np.ndarray | None = None
     # True distribution histogram data
     true_histogram_edges: list[float] | None = None
     true_histogram_counts: list[int] | None = None
@@ -142,6 +142,28 @@ class NumericSummary:
         None  # (start_row, end_row, missing_count)
     )
     corr_threshold: float = 0.5  # Threshold used for correlation filtering
+
+    def __eq__(self, other: object) -> bool:
+        """Field by field, with the reservoir compared as an array.
+
+        `sample_vals` is a numpy array rather than a list of Python floats
+        (#207), and the equality a dataclass generates would *raise* on it --
+        `array == array` is elementwise, and the result has no truth value.
+        Two things compare whole summaries and both would have broken: the
+        checkpoint round-trip, and `reset()`.
+        """
+        if other.__class__ is not self.__class__:
+            return NotImplemented
+        for f in fields(self):
+            mine, theirs = getattr(self, f.name), getattr(other, f.name)
+            if isinstance(mine, np.ndarray) or isinstance(theirs, np.ndarray):
+                if (mine is None) != (theirs is None):
+                    return False
+                if mine is not None and not np.array_equal(mine, theirs):
+                    return False
+            elif mine != theirs:
+                return False
+        return True
 
 
 class NumericAccumulator(PicklableAccumulator):
@@ -546,20 +568,20 @@ class NumericAccumulator(PicklableAccumulator):
         # than beside the histogram below, because the outlier counts need it
         # too and reading it from thirty lines further down is what let them
         # go unscaled for five releases (#327).
-        sample_scale = self.count / len(sample_values) if sample_values else 1.0
+        sample_scale = self.count / len(sample_values) if len(sample_values) else 1.0
 
         # Get outlier detection results if enabled
         outliers_iqr_sample, outliers_mod_zscore_sample = 0, 0
         # Bound up front: a column of nothing but inf leaves sample_values empty,
         # and the branch below never runs.
         mad_val = 0.0
-        if self.enable_outlier_detection and sample_values:
+        if self.enable_outlier_detection and len(sample_values):
             # `outlier_methods` used to be read by nobody: the detector that
             # consulted it was never called, and this block always computed
             # both. A configuration option that silently does nothing is worse
             # than one that does not exist, so it is honoured here.
             methods = set(self.config.outlier_methods)
-            sample_arr = np.array(sample_values)
+            sample_arr = np.asarray(sample_values)
 
             if "iqr" in methods:
                 q1, q3 = np.percentile(sample_arr, [25, 75])
@@ -695,7 +717,7 @@ class NumericAccumulator(PicklableAccumulator):
             inf=self.inf,
             int_like=self._int_like_all,
             unique_ratio_approx=unique_ratio,
-            sample_vals=sample_values if sample_values else [],
+            sample_vals=sample_values,
             # True distribution histogram data
             true_histogram_edges=self._streaming_histogram.bin_edges,
             true_histogram_counts=self._streaming_histogram.counts,
@@ -721,16 +743,16 @@ class NumericAccumulator(PicklableAccumulator):
             chunk_metadata=final_chunk_metadata,
         )
 
-    def _compute_quantiles(self, values: list[float]) -> dict[str, float]:
+    def _compute_quantiles(self, values: np.ndarray) -> dict[str, float]:
         """Compute quantiles from sample values using optimized algorithms.
 
         Args:
-            values: List of sample values
+            values: The reservoir sample
 
         Returns:
             Dictionary containing quantile statistics
         """
-        if not values:
+        if len(values) == 0:
             return {
                 "min": 0.0,
                 "q1": 0.0,
@@ -740,24 +762,28 @@ class NumericAccumulator(PicklableAccumulator):
                 "iqr": 0.0,
             }
 
-        sorted_values = sorted(values)
-        n = len(sorted_values)
+        # `np.sort`, not `sorted`: the reservoir is an array (#207), and
+        # `sorted` over one boxes every element into a Python float on the way
+        # in. Same order, and the interpolation below is the same float64
+        # arithmetic -- 0.97s of a 5.7s profile at 60 columns.
+        sorted_values = np.sort(np.asarray(values, dtype=float))
+        n = sorted_values.size
 
         def percentile(p: float) -> float:
             """Compute percentile using optimized linear interpolation."""
             if n == 1:
-                return sorted_values[0]
+                return float(sorted_values[0])
             k = (n - 1) * p / 100
             f = math.floor(k)
             c = math.ceil(k)
             if f == c:
-                return sorted_values[int(k)]
-            d0 = sorted_values[int(f)] * (c - k)
-            d1 = sorted_values[int(c)] * (k - f)
+                return float(sorted_values[int(k)])
+            d0 = float(sorted_values[int(f)]) * (c - k)
+            d1 = float(sorted_values[int(c)]) * (k - f)
             return d0 + d1
 
-        min_val = sorted_values[0]
-        max_val = sorted_values[-1]
+        min_val = float(sorted_values[0])
+        max_val = float(sorted_values[-1])
         q1 = percentile(25)
         median = percentile(50)
         q3 = percentile(75)
@@ -909,7 +935,7 @@ class NumericAccumulator(PicklableAccumulator):
         return mean - margin_of_error, mean + margin_of_error
 
     def _compute_granularity(
-        self, values: list[float]
+        self, values: np.ndarray
     ) -> tuple[float | None, int | None]:
         """Compute granularity analysis of the data.
 
@@ -919,12 +945,13 @@ class NumericAccumulator(PicklableAccumulator):
         Returns:
             Tuple of (granularity_step, decimal_places)
         """
-        if not values or len(values) < 2:
+        if len(values) < 2:
             return None, None
 
-        # Convert to numpy array for efficient processing
+        # Already a float array on the live path, so `asarray` is a view
+        # rather than a second copy of every reservoir (#207).
         try:
-            arr = np.array(values, dtype=float)
+            arr = np.asarray(values, dtype=float)
         except Exception:
             # Fallback for mixed types
             arr = np.array([float(x) for x in values if x is not None], dtype=float)
@@ -989,7 +1016,7 @@ class NumericAccumulator(PicklableAccumulator):
 
         return float(gran_step), decimal_places
 
-    def _compute_heaping_percentage(self, values: list[float]) -> float:
+    def _compute_heaping_percentage(self, values: np.ndarray) -> float:
         """Compute heaping percentage (percentage of values ending in 0 or 5).
 
         Args:
@@ -998,12 +1025,13 @@ class NumericAccumulator(PicklableAccumulator):
         Returns:
             Heaping percentage (0-100)
         """
-        if not values:
+        if len(values) == 0:
             return float("nan")
 
-        # Convert to numpy array for efficient processing
+        # Already a float array on the live path, so `asarray` is a view
+        # rather than a second copy of every reservoir (#207).
         try:
-            arr = np.array(values, dtype=float)
+            arr = np.asarray(values, dtype=float)
         except Exception:
             # Fallback for mixed types
             arr = np.array([float(x) for x in values if x is not None], dtype=float)

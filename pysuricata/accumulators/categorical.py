@@ -98,7 +98,7 @@ class CategoricalSummary:
 _MAX_LENGTH_BINS = 40
 
 
-def _length_histogram(values: list[float]) -> list[tuple[int, int]]:
+def _length_histogram(values: Sequence[float]) -> list[tuple[int, int]]:
     """`(length, count)` pairs over the length reservoir, shortest first.
 
     One bar per distinct length while that stays readable, because a label
@@ -106,7 +106,7 @@ def _length_histogram(values: list[float]) -> list[tuple[int, int]]:
     column of 4-character and 7-character values is two formats, and a bin of
     4-7 is one blur.
     """
-    if not values:
+    if len(values) == 0:
         return []
 
     counts: dict[int, int] = {}
@@ -621,7 +621,7 @@ class CategoricalAccumulator(PicklableAccumulator):
         )
 
     def _calculate_percentile(
-        self, values: list[float], percentile: float
+        self, values: Sequence[float], percentile: float
     ) -> int | None:
         """Calculate percentile of values efficiently.
 
@@ -632,7 +632,7 @@ class CategoricalAccumulator(PicklableAccumulator):
         Returns:
             Percentile value or None if insufficient data
         """
-        if not values:
+        if len(values) == 0:
             return None
 
         sorted_values = sorted(values)

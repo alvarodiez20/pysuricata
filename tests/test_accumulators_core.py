@@ -150,7 +150,7 @@ class TestReservoirSampler:
     def test_keeps_everything_below_k(self):
         r = ReservoirSampler(100)
         r.add_many(np.arange(10, dtype=float))
-        assert r.values() == list(range(10))
+        assert r.values().tolist() == list(range(10))
 
     def test_never_exceeds_k(self):
         r = ReservoirSampler(64)
@@ -177,7 +177,7 @@ class TestReservoirSampler:
     def test_empty_batch_is_a_no_op(self):
         r = ReservoirSampler(10)
         r.add_many(np.array([], dtype=float))
-        assert r.values() == []
+        assert r.values().tolist() == []
 
     def test_interleaved_add_and_add_many(self):
         r = ReservoirSampler(50, rng=np.random.default_rng(2))
