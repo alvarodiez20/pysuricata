@@ -129,7 +129,12 @@ def _ink_stats(png_bytes: bytes) -> tuple[float, int]:
     return non_background / len(pixels), distinct
 
 
-def run(url: str | None, out_dir: Path, headed: bool = False) -> None:
+def run(
+    url: str | None,
+    out_dir: Path,
+    headed: bool = False,
+    expect_version: str | None = None,
+) -> None:
     try:
         from playwright.sync_api import sync_playwright
     except ImportError as exc:  # pragma: no cover - environment guard
@@ -189,6 +194,28 @@ def run(url: str | None, out_dir: Path, headed: bool = False) -> None:
                 text = page.inner_text("#statusText") or ""
                 page.screenshot(path=str(screenshot_path))
                 raise DemoE2EFailure(f"The runtime failed to boot: {text!r} {detail!r}")
+
+            # Which pysuricata actually loaded, before profiling anything.
+            #
+            # The demo pins the newest version PyPI reports and falls back to
+            # an unpinned install when that will not resolve, so a stale index
+            # makes it render a perfectly good report of an *old* release --
+            # which every other check in this file passes. Not hypothetical:
+            # for about fifteen minutes after 0.2.0 was published, micropip's
+            # view of the index was still cached and the demo served 0.1.5.
+            #
+            # Checked only when asked. Against a local `web/` or a mirror,
+            # "the version just published" is not a question with an answer.
+            if expect_version is not None:
+                loaded = page.inner_text("#versions") or ""
+                if f"pysuricata {expect_version}" not in loaded:
+                    page.screenshot(path=str(screenshot_path))
+                    raise DemoE2EFailure(
+                        f"the demo is not running the version just published: "
+                        f"expected pysuricata {expect_version}, the page says "
+                        f"{loaded.strip()!r}"
+                    )
+                print(f"the demo loaded pysuricata {expect_version}", file=sys.stderr)
 
             page.click("#sample")
 
@@ -258,10 +285,23 @@ def main() -> int:
         action="store_true",
         help="Show the browser window (for local debugging)",
     )
+    parser.add_argument(
+        "--expect-version",
+        default=None,
+        help=(
+            "Fail unless the demo loaded this pysuricata version. Used after a "
+            "release, where a stale index makes a good demo serve an old one."
+        ),
+    )
     args = parser.parse_args()
 
     try:
-        run(args.url, args.out, headed=args.headed)
+        run(
+            args.url,
+            args.out,
+            headed=args.headed,
+            expect_version=args.expect_version,
+        )
     except DemoE2EFailure as exc:
         print(f"FAIL: {exc}", file=sys.stderr)
         return 1

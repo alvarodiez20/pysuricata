@@ -16,6 +16,36 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The post-release demo check no longer races the cache it depends on.**
+  `demo-check` declares `needs: publish`, so it starts seconds after upload —
+  and PyPI's JSON API, which is what micropip resolves against, is served
+  `cache-control: max-age=900`. For up to fifteen minutes an edge can still be
+  answering with a copy that predates the release, so the job was checking the
+  live demo at the one moment the demo cannot yet have the new version.
+
+  Not hypothetical: when 0.2.0 was published the demo logged `newest
+  pysuricata is 0.2.0` — its own query sets `no-store` — and then `0.2.0 would
+  not install here`, and its fallback served 0.1.5 until the window expired.
+  The release was fine and the demo was fine; only the timing was wrong.
+
+  The job now waits for that index to serve the published version before
+  running, giving up after twenty minutes so a timeout means something is
+  really wrong rather than merely early.
+
+- **`web/e2e.py --expect-version` asserts which release the demo loaded.** The
+  step was already named "on the version just published" and checked no such
+  thing — and could not have, since the demo's fallback renders a perfectly
+  good report of an *older* release, which every other check in that file
+  passes.
+
+- **The demo's error log says what failed.** `errLine` took the *first* line of
+  an exception, and every failure from `runPythonAsync` is a Python traceback
+  whose first line is always `Traceback (most recent call last):`. So the log
+  read `pysuricata==0.2.0 would not install here (Traceback (most recent call
+  last):)`, discarding the `ValueError: Can't find a pure Python 3 wheel for
+  'pysuricata==0.2.0'` that explained it. It now reports the exception line,
+  matched on the type name rather than "last line" because micropip appends a
+  bare `See:` hint after some errors.
 - **The demo's landing page stops padding itself out** — most of it from a
   mechanism no rule named. `main` is `flex: 1 1 auto` so the footer sits on the
   floor of a short page, and it is *also* a grid, whose default

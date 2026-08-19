@@ -55,8 +55,35 @@ gc.collect()
   }
 }
 
-/** First line of an exception, which is the part worth showing in the log. */
-const errLine = (err) => String((err && err.message) || err).trim().split("\n")[0];
+/** The one line of an exception worth showing in the log.
+ *
+ * For a plain JS error that is the first line. For a **Python** traceback --
+ * which is what every failure from `runPythonAsync` is -- the first line is
+ * always the literal `Traceback (most recent call last):`, and taking it threw
+ * away the only informative part. `pysuricata==0.2.0 would not install here
+ * (Traceback (most recent call last):)` is what a visitor saw on the day 0.2.0
+ * was published, describing a failure that was easy to explain.
+ *
+ * The exception is at the bottom, below the frames: the last unindented
+ * `SomeError: message` line. Scanned from the end because a message may itself
+ * span lines, and matched on the type name rather than on "last line" because
+ * micropip appends a bare `See: <url>` hint after some of its errors.
+ */
+const EXCEPTION_LINE =
+  /^(?:[A-Za-z_]\w*\.)+[A-Za-z_]\w*\s*:|^[A-Za-z_]\w*(?:Error|Exception|Warning|Interrupt|Exit)\s*:/;
+
+const errLine = (err) => {
+  const text = String((err && err.message) || err).trim();
+  const lines = text.split("\n").filter((line) => line.trim());
+  if (!lines.length) return text;
+  if (!/^Traceback \(most recent call last\)/.test(lines[0])) return lines[0];
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (EXCEPTION_LINE.test(lines[i])) return lines[i].trim();
+  }
+  // A traceback whose tail does not look like a typed exception at all. The
+  // last line is still a better guess than the header we know says nothing.
+  return lines[lines.length - 1].trim();
+};
 
 /* What PyPI is serving right now.
  *
@@ -68,8 +95,16 @@ const errLine = (err) => String((err && err.message) || err).trim().split("\n")[
  *
  * `no-store` covers the half of the staleness this page controls. The JSON API
  * is served `max-age=900`, so a visitor who booted the demo minutes before a
- * release would otherwise be handed their own cached copy of the old answer;
- * PyPI purges its CDN on upload, so the origin is already current.
+ * release would otherwise be handed their own cached copy of the old answer.
+ *
+ * It does **not** make the two halves agree. This request bypasses the browser
+ * cache; micropip's own query to the same API does not, so for a window after
+ * an upload this function can report a version micropip cannot yet see. That
+ * is not hypothetical -- it is what happened when 0.2.0 was published: the log
+ * read `newest pysuricata is 0.2.0` and then `0.2.0 would not install here`,
+ * and the fallback below served 0.1.5 for about a quarter of an hour. Nothing
+ * here can fix that, and nothing here should try: the fallback keeps the demo
+ * working, and the version line keeps it honest about which one it is running.
  */
 /** A final release: digits and dots, optionally a `.postN`. Not `1.2.0rc1`. */
 const STABLE_VERSION = /^\d+(\.\d+)*(\.post\d+)?$/;
