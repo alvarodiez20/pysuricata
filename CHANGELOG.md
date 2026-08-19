@@ -50,6 +50,31 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The demo's landing page stops padding itself out** — most of it from a
+  mechanism no rule named. `main` is `flex: 1 1 auto` so the footer sits on the
+  floor of a short page, and it is *also* a grid, whose default
+  `align-content: normal` resolves to **stretch**. So on any page shorter than
+  the viewport, `main` grew to fill it and handed the leftover height to its
+  rows, one share each — including to `#notes`, an element with no content,
+  which was given a 75px row on a 1400px-tall window.
+
+  That is why the page looked emptiest on a large screen, and why the
+  stylesheet gave no hint: the gaps a reader saw were mostly not in it.
+  `align-content: start` packs the rows at their content height and lets the
+  slack fall where it belongs, above the footer. On a 1264×1400 window the
+  primary button moves **186px** up the page.
+
+  The three vertical `clamp(_, vw, _)` values are flat now as well. `vw` is
+  viewport *width*, so each sat at its maximum on any window wider than about
+  800px however short it was: top padding 72 → 48, the gap above the actions
+  40 → 28, and the gap above the closing note 76 → 44. #333 took the top
+  padding from 120px to 72px without changing that shape; this finishes it at
+  the value a phone was already getting, so mobile moves by at most 8px.
+
+  Measured before and after on the same page at the same width, rather than
+  across two screenshots: the primary button lands at 273px instead of 328px
+  at 1264×1000, and the footer stays on the floor.
+
 - **`benchmarks/columns.py` mis-measured the axis it exists to measure**, by
   about 2x in each direction (#207). It ran every shape in one process, and
   peak memory is a high-water mark the allocator does not hand back — so the
