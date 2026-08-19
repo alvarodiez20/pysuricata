@@ -2331,8 +2331,8 @@
 </tbody>
 </table>
 <p>Note the space column: every bound is <strong>per column</strong>. Memory is flat in rows and
-linear in columns, at roughly 1.2 MB each — which is why a 20,000 × 600 frame
-costs 797 MB against 52 MB for a 1,000,000 × 14 one on more cells
+linear in columns, at roughly 529 KB each — which is why a 20,000 × 600 frame
+peaks at 631 MB against 344 MB for a 1,000,000 × 14 one on more cells
 (<a href="https://github.com/alvarodiez20/pysuricata/issues/207">#207</a>).</p>
 <p>Report size follows the same axis: one card per column, so it grows with width
 and not with length. A 20,000 × 5 frame covering all four column kinds renders
