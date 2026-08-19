@@ -196,6 +196,13 @@ jobs:
     # waits for that version to appear on PyPI and asserts the demo loaded it.
     needs: [publish, guard]
     runs-on: ubuntu-latest
+    # The default is six hours, and this job can hang. On the 0.2.0 release it
+    # sat in `playwright install --with-deps chromium` for the best part of an
+    # hour with nothing to show for it, holding the whole workflow open long
+    # after PyPI and the GitHub release were both done. Nothing here should
+    # take more than a few minutes past the twenty-minute index wait below, so
+    # a run that reaches this bound has stopped making progress.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
