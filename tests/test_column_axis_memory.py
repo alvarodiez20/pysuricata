@@ -32,7 +32,12 @@ from pysuricata.accumulators.sketches import ReservoirSampler
 #: reservoir: 160 KB of sample, 32 KB of acceptance schedule, 83 KB of KMV and
 #: the rest small. Before #207 the same accumulator was ~765 KB.
 _ACCUMULATOR_KB = 284
-_TOLERANCE_KB = 40
+#: Wide enough to survive the interpreter, narrow enough to still be a ratchet.
+#: 188 KB of the total is array buffers and is the same on every build; the
+#: other 95 KB is Python objects, whose `sys.getsizeof` moves between versions
+#: and this runs on five of them. 80 KB is more than a 40% swing in that share
+#: and still less than a sixth of the 468 KB the fix removed.
+_TOLERANCE_KB = 80
 
 
 def _deep_size(obj, seen=None) -> int:
@@ -75,12 +80,18 @@ class TestTheSampleIsNotBoxed:
         assert isinstance(_filled()._buf, np.ndarray)
         assert _filled()._buf.dtype == np.float64
 
-    def test_a_list_of_the_same_values_would_cost_four_times_as_much(self):
-        """The comparison the fix rests on, measured rather than asserted."""
+    def test_a_list_of_the_same_values_would_cost_several_times_as_much(self):
+        """The comparison the fix rests on, measured rather than asserted.
+
+        The true ratio is 4.00x -- 8 bytes of pointer plus a 24-byte float
+        against 8 bytes of array -- which is exactly why the threshold is not
+        4: a one-byte change to either object's header on any of the five
+        interpreters in the matrix would decide it.
+        """
         sampler = _filled()
         as_list = sampler.values().tolist()
         boxed = sys.getsizeof(as_list) + sum(sys.getsizeof(v) for v in as_list)
-        assert boxed > 4 * sampler.values().nbytes
+        assert boxed > 3.5 * sampler.values().nbytes
 
 
 class TestAShortColumnDoesNotPayForALongOne:
