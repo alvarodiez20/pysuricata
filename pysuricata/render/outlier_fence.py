@@ -211,8 +211,8 @@ def _sample_array(reservoir) -> np.ndarray:
         values = np.asarray(reservoir, dtype=float)
     except (TypeError, ValueError):
         values = np.asarray([float(v) for v in reservoir if _finite(v)], dtype=float)
-    if values.ndim != 1:
-        values = values.reshape(-1)
+    # No reshape: a boolean mask over an array of any shape already returns a
+    # flat one, so the guard that used to sit here could never run.
     return values[np.isfinite(values)]
 
 
