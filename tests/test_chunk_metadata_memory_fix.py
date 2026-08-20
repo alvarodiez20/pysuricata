@@ -282,9 +282,16 @@ class TestChunkMetadataMemoryFix:
           is of `update()` rather than of the RNG;
         - each side is measured over several rounds and compared on the median,
           not on one draw;
-        - the bound is 3x, which the real effect (~1.0) clears by a wide margin
-          while staying tight enough to catch an actual regression such as a
+        - the bound is 2x, which the real effect clears by a wide margin while
+          staying tight enough to catch an actual regression such as a
           per-chunk allocation or an O(n) rescan.
+
+        2x rather than 3x because the measured spread no longer needs the room.
+        Over 12 trials the median ratio is ~1.0 with a standard deviation of
+        0.055 locally and 0.018 on the maintainer's machine, and the worst
+        single trial was 1.089 -- so 2.0 sits 18-55 standard deviations out.
+        3x would buy no safety that 2x lacks and would let a regression landing
+        at 2.5x through unnoticed.
         """
         import statistics
         import time
@@ -320,7 +327,7 @@ class TestChunkMetadataMemoryFix:
         median_disabled = statistics.median(disabled)
         ratio = median_enabled / median_disabled if median_disabled else float("inf")
 
-        assert ratio < 3.0, (
+        assert ratio < 2.0, (
             f"chunk metadata made update() {ratio:.2f}x slower "
             f"(median of {rounds} rounds: {median_enabled:.4f}s enabled vs "
             f"{median_disabled:.4f}s disabled)"
