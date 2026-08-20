@@ -60,6 +60,12 @@ quoted when both sides were measured in the same round-robin run.
   matched something, so a template move fails loudly instead of turning the
   comparison into a tautology.
 
+  The same comparison also had to normalise `Generated`, which is
+  `datetime.now()` at second resolution: two runs agree only when they land in
+  the same second, so it failed about one full-suite run in three while passing
+  every time in isolation — a fast isolated run keeps both profiles inside one
+  second, which is exactly why running it alone could not find it.
+
 ### Changed
 
 - **The payload contract is checked against the payload** (#251).

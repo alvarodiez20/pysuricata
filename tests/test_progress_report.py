@@ -59,8 +59,8 @@ def _config(**compute) -> ProfileConfig:
     )
 
 
-#: The things a report stamps from the clock. Neither is a statistic, and
-#: neither can be equal across two runs of anything.
+#: The things a report stamps from the clock. None is a statistic, and none
+#: can be equal across two runs of anything.
 #:
 #: Matched by their place in the template rather than by the shape of a
 #: duration. `human_time` renders `0.02 s`, `1.50 s`, `1 min 5 s` or
@@ -71,6 +71,14 @@ def _config(**compute) -> ProfileConfig:
 #: care.
 _CLOCK_STAMPED = (
     (re.compile(r'data-report-id="[^"]*"'), 'data-report-id="STAMP"'),
+    # `Generated` is `datetime.now()` at second resolution, so two runs agree
+    # only when they land in the same second. That made this comparison fail
+    # about one full-suite run in three -- intermittently, which is the worst
+    # way to learn that a normalisation is incomplete.
+    (
+        re.compile(r'(Generated</span>\s*<span class="v">)[^<]*(</span>)'),
+        r"\1GENERATED\2",
+    ),
     (
         re.compile(r'(Profiled in</span>\s*<span class="v">)[^<]*(</span>)'),
         r"\1ELAPSED\2",
@@ -111,6 +119,8 @@ class TestTheComparisonItselfIsSound:
         def page(duration: str, report_id: str) -> str:
             return (
                 f'<div data-report-id="{report_id}">'
+                f'<span class="k">Generated</span> '
+                f'<span class="v">2026-08-20 {report_id}0:00:00</span>'
                 f'<span class="k">Profiled in</span> '
                 f'<span class="v">{duration}</span>'
                 f'<div class="stat stat--elapsed"><div class="stat__cap">Elapsed</div>'
@@ -130,6 +140,7 @@ class TestTheComparisonItselfIsSound:
         statistic could hide behind the clock."""
         page = (
             '<div data-report-id="A">'
+            '<span class="k">Generated</span> <span class="v">2026-08-20 10:00:00</span>'
             '<span class="k">Profiled in</span> <span class="v">0.02 s</span>'
             '<div class="stat stat--elapsed"><div class="stat__val">0.02 s</div></div>'
             '<div class="stat stat--rows"><div class="stat__val">0.02 s</div></div>'
