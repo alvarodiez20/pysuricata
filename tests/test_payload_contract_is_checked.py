@@ -17,15 +17,17 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import pytest
-
 REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-check_docs = pytest.importorskip(
-    "benchmarks.check_docs", reason="the docs checker is a dev-only module"
-)
+# A plain import, deliberately. `importorskip` would have been the reflex, and
+# it is wrong here: `benchmarks` is a package and `check_docs` imports nothing
+# but the standard library at module level, so the import cannot fail for a
+# reason worth tolerating -- it can only fail because something broke. Skipping
+# on that would report a broken guard as an absent one, which is the exact
+# confusion this file exists to prevent one level down.
+from benchmarks import check_docs
 
 
 class TestTheContractAndThePayloadAgree:
