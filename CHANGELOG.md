@@ -14,6 +14,45 @@ quoted when both sides were measured in the same round-robin run.
 
 ## [Unreleased]
 
+### Added
+
+- **The self-download is tested by downloading the report and re-opening it**
+  (#39, first acceptance box). The download button does not ask the renderer
+  what it emitted — it re-serialises the live DOM, keeping `<style>` elements
+  whose text matches `#pysuricata-report|suricata-standalone` and the *first*
+  `<script>` matching `toggleDarkMode`. #39 says any restructuring breaks that
+  silently, and it is right: four JS files are concatenated into one tag today,
+  so all four survive only because they ride on the one element that happens to
+  contain `toggleDarkMode`.
+
+  The guard is an equivalence rather than a feature checklist — every `<style>`
+  and every `<script>` the live report carries must appear in the downloaded
+  document, so a file added to `static/js/` is covered on the day it is added.
+  Alongside it: the re-opened report must render identically across a sampled
+  set of computed properties, raise nothing on load, still toggle its theme,
+  and still be a single file.
+
+  Verified by breaking things rather than by passing. Splitting the script tag
+  into four loses three of them, and **the other seven cases stay green** —
+  no console error, dark mode still working, styles intact — which is the
+  silent failure this exists to catch, and the same shape as #142 leaving a
+  control inert for eleven versions with 1,735 green tests.
+
+  The theme case took three attempts and both earlier ones passed against a
+  deliberate break. Reading the report root proves nothing, because the root
+  carries its own `light` class inside `outerHTML`; what `isLight` buys is the
+  standalone *body*, which paints `#1C1A17` without it and letterboxes a light
+  report in dark. And a single direction is inert — the default is light, so
+  downloading the dark state exercises the empty branch. It is parametrised
+  over both, and only `as-opened` fails when the expression is deleted.
+
+  Run against two shapes, because #306 made the stylesheet a function of the
+  frame: Titanic has no datetime column, so a Titanic-only round trip never
+  puts `_09-datetime.css` through the filter at all. The every-kind frame
+  ships 5,600 more bytes of CSS, `.dt-svg` rules among them.
+
+  No source changed; this is the test #39 asks for before the work it protects.
+
 ### Changed
 
 - **The column axis costs 2.2x less memory and 1.9x less time** (#207). Bounded
