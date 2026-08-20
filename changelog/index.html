@@ -2856,9 +2856,10 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h3 id="fixed">Fixed</h3>
 <ul>
 <li><strong>The chunk-metadata suite stops asserting wall-clock noise</strong> (#354).
-  <code>test_chunk_metadata_overhead_is_not_gross</code> compared one timed run per side
-  against a 1.5x bound, and it failed <code>test-pandas3</code> on a PR that never touched
-  the accumulator.</li>
+  <code>test_performance_impact</code> compared one timed run per side against a 1.5x
+  bound, and it failed <code>test-pandas3</code> on a PR that never touched the
+  accumulator. It is now <code>test_chunk_metadata_overhead_is_not_gross</code>, which is
+  what a loose bound can honestly assert.</li>
 </ul>
 <p>The measurement was of the wrong thing. <code>np.random.randn</code> sat <em>inside</em> the
   timed region, so both sides were dominated by generating 100,000 random
