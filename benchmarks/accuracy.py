@@ -26,6 +26,7 @@ Run:  pytest benchmarks/accuracy.py -v
 from __future__ import annotations
 
 import math
+import pathlib
 
 import numpy as np
 import pytest
@@ -475,6 +476,69 @@ class TestChunkedVsUnchunkedEndToEnd:
         # Median comes from the reservoir, so it is an estimate; 2% is the
         # honest tolerance for a 10k-20k sample of a lognormal.
         assert rel(got["median"], float(df["a"].median()), 1e-9) < 0.02
+
+
+class TestProgressReportDoesNotMoveTheNumbers:
+    """#211, end to end: rendering while you wait must not change the result.
+
+    `TestFinalizeIsIdempotent` makes this claim about the accumulator -- that
+    `finalize()` leaves the bit generator's state alone. This makes it about
+    `profile()`, which is where a user would notice: a partial report is a
+    `finalize()` at a chunk boundary, so `progress_report=N` calls it N times
+    over a run that otherwise calls it once.
+
+    #205 was filed saying this *did* move the median, and #211 was blocked on
+    it. It closed as not reproducible. This is the oracle case that keeps it
+    that way, and it compares the whole payload rather than a chosen statistic
+    -- the failure it guards against would show up in whichever field the
+    reservoir happened to be feeding, not in one picked in advance.
+    """
+
+    @pytest.mark.parametrize("every", [1, 2, 5])
+    def test_partial_renders_do_not_change_the_payload(self, every, tmp_path):
+        import pandas as pd
+
+        from pysuricata import ComputeOptions, ProfileConfig, summarize
+
+        g = np.random.default_rng(41)
+        n = 60_000
+        df = pd.DataFrame(
+            {
+                "a": g.lognormal(0, 1, n),
+                "b": g.standard_normal(n),
+                "c": g.choice(list("abcdef"), n),
+            }
+        )
+
+        def run(progress_report: int, into: pathlib.Path) -> dict:
+            cfg = ProfileConfig()
+            cfg.compute.chunk_size = 10_000
+            cfg.compute.random_seed = 7
+            cfg.compute.progress_report = progress_report
+            cfg.compute.checkpoint_dir = str(into)
+            return summarize(df, config=cfg)["columns"]
+
+        on_dir = tmp_path / "on"
+        off_dir = tmp_path / "off"
+        on_dir.mkdir()
+        off_dir.mkdir()
+
+        on = run(every, on_dir)
+        off = run(0, off_dir)
+
+        # The axis has to move, or this compares one state with itself: an
+        # option that is silently ignored would sail through the equality
+        # below for entirely the wrong reason.
+        #
+        # Six chunks at 10,000 rows, so `every` writes `6 // every` reports --
+        # but rotation keeps only `checkpoint_max_to_keep`, and it rotates the
+        # HTML alongside the pickles. At `every=1` that is six written and
+        # three surviving, which is the behaviour rather than a rounding slip.
+        kept = min(6 // every, ComputeOptions().checkpoint_max_to_keep)
+        assert len(list(on_dir.glob("*.html"))) == kept
+        assert not list(off_dir.iterdir())
+
+        assert on == off
 
 
 class TestReservoirInvariants:

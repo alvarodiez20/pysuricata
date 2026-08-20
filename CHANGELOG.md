@@ -16,6 +16,44 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **`progress_report=N` renders a report every N chunks** (#211). Checkpointing
+  was five options for one intent — *show me something before it finishes* —
+  and the intent is not what any of them is named after. Nobody thinks "I would
+  like a checkpoint prefix". They also encoded an implementation, pickle files
+  on disk rotated in place, as the interface, which is why
+  `checkpoint_write_html` existed as a fifth boolean rather than being the
+  whole point.
+
+  `progress_report` is on `ComputeOptions` and in the keyword passthrough, so
+  `profile(df, progress_report=20)` works. The pickle rotation still runs
+  underneath, because resuming a run needs it.
+
+  **Two of the five are deprecated, not all five.** `progress_report` is an
+  interval that turns HTML on, so it says everything `checkpoint_every_n_chunks`
+  and `checkpoint_write_html` say, and those two now warn against removal in
+  1.0.0. `checkpoint_dir`, `checkpoint_prefix` and `checkpoint_max_to_keep` are
+  placement and rotation, which it cannot express and nothing else can either;
+  deprecating them would point users at a replacement that does not exist —
+  the same defect `__init__.py` already names about deprecation *dates*, one
+  field over. The rest of #211 needs a placement design first.
+
+  Removal is **1.0.0**, not the 0.2.0 the issue names: that came from the
+  Cargo-style reading of pre-1.0 versioning the project has since dropped.
+
+  Turning it on changes nothing. The `summarize()` payload is identical with
+  partial reports on and off, and the report differs only in the two fields
+  stamped from the clock — the elapsed time and the report id.
+  `benchmarks/accuracy.py` carries it at three intervals, and asserts the
+  reports were actually written, so an option that were silently ignored fails
+  rather than passing the equality for the wrong reason.
+
+  This was blocked on #205, `finalize()` consuming reservoir randomness, since
+  a progressive report calls `finalize()` repeatedly by construction. #205
+  closed as not reproducible — the bit generator's state is byte-identical
+  across `finalize()`.
+
+### Changed
+
 - **The payload contract is checked against the payload** (#251).
   `docs/summary-schema.md` is the one copy of "what each column kind reports"
   that is meant to be tied to the code, and nothing tied it. `check_docs.py`

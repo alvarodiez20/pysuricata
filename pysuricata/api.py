@@ -18,6 +18,7 @@ from __future__ import annotations
 import collections.abc as cabc
 import json
 import os
+import warnings
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -211,6 +212,39 @@ class Report:
         return self.display_in_notebook(width, height)
 
 
+#: The superseded names, with the values that mean "untouched". Removal is
+#: **1.0.0**, matching `ReportConfig` in `__init__.py`: removing a public name
+#: is a break, and `docs/versioning.md` says a break costs a major bump. #211
+#: named 0.2.0, under the Cargo-style reading the project has since dropped.
+#:
+#: **Two of the five, not all five.** `__init__.py` states the rule for the
+#: release a warning names -- it has to be one that can actually carry the
+#: removal, or the warning sets a deadline that cannot happen. The same rule
+#: applies to the replacement it names, and only these two have one:
+#: `progress_report` is an interval that turns HTML on, so it says everything
+#: `checkpoint_every_n_chunks` and `checkpoint_write_html` say.
+#:
+#: `checkpoint_dir`, `checkpoint_prefix` and `checkpoint_max_to_keep` are
+#: placement and rotation, which `progress_report` cannot express at all --
+#: there is nowhere else to say where the files go. Deprecating them now would
+#: point users at a replacement that does not exist, which is the same defect
+#: one field over. #211's full collapse needs a placement design first, and
+#: that is a decision rather than effort.
+_DEPRECATED_CHECKPOINT_DEFAULTS = {
+    "checkpoint_every_n_chunks": 0,
+    "checkpoint_write_html": False,
+}
+
+#: Reachable through `CheckpointView` but not deprecated -- see above.
+_LIVE_CHECKPOINT_DEFAULTS = {
+    "checkpoint_dir": None,
+    "checkpoint_prefix": "pysuricata_ckpt",
+    "checkpoint_max_to_keep": 3,
+}
+
+_CHECKPOINT_REMOVAL = "1.0.0"
+
+
 class CheckpointView:
     """The checkpointing settings of a `ComputeOptions`, under shorter names.
 
@@ -250,6 +284,21 @@ class CheckpointView:
                 f"no checkpoint setting {name!r}; "
                 f"try one of: {', '.join(sorted(self._FIELDS))}"
             ) from None
+        # The lens is a second way to reach the same deprecated fields, so it
+        # warns for the same reason they do. Without this, `opts.checkpoint.dir
+        # = ...` was the one spelling that went quiet -- and it is the spelling
+        # the class exists to encourage.
+        if (
+            field_name in _DEPRECATED_CHECKPOINT_DEFAULTS
+            and value != _DEPRECATED_CHECKPOINT_DEFAULTS[field_name]
+        ):
+            warnings.warn(
+                f"checkpoint.{name} is deprecated and will be removed in "
+                f"{_CHECKPOINT_REMOVAL}; use progress_report=N to render a "
+                f"partial report every N chunks.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
         setattr(self._options, field_name, value)
 
     def __repr__(self) -> str:
@@ -314,6 +363,9 @@ class ComputeOptions:
             stays parseable. Default: False
         log_every_n_chunks: Log progress every N chunks. Set to 1 to log every
             chunk, higher values for less frequent logging. Default: 1
+        progress_report: Render a report every N chunks, so a long run shows
+            something before it finishes. 0 disables. Supersedes
+            checkpoint_every_n_chunks and checkpoint_write_html. Default: 0
         checkpoint_every_n_chunks: Create checkpoint every N chunks. Set to 0
             to disable checkpointing. Default: 0 (disabled)
         checkpoint_dir: Directory for checkpoint files. If None, uses current
@@ -362,6 +414,16 @@ class ComputeOptions:
     # They stay here as fields for compatibility -- removing them would break
     # existing code for no gain -- and are also reachable as a named group via
     # the `checkpoint` view below, which is what makes the shape legible.
+    #: Render a partial report every N chunks; 0 disables. One option for the
+    #: intent the five `checkpoint_*` fields below serve between them --
+    #: *show me something before it finishes* -- which is not what any of them
+    #: is named after. Nobody thinks "I would like a checkpoint prefix" (#211).
+    #:
+    #: The pickle rotation stays underneath, because resuming a run needs it.
+    #: It just stops being the surface you have to understand to get a report
+    #: while you wait.
+    progress_report: int = 0
+
     checkpoint_every_n_chunks: int = 0  # 0 disables checkpointing
     checkpoint_dir: str | None = None
     checkpoint_prefix: str = "pysuricata_ckpt"
@@ -382,8 +444,40 @@ class ComputeOptions:
     corr_max_per_col: int = 10
 
     def __post_init__(self) -> None:
-        """Validate at construction. See :meth:`validate`."""
+        """Validate at construction, and warn for the superseded names.
+
+        The warning fires here rather than in :meth:`validate`, which runs a
+        second time on the way into the engine -- one construction is one use,
+        and warning twice for it would train people to filter the message.
+        """
         self.validate()
+        self._warn_for_deprecated_checkpoint_options()
+
+    def _warn_for_deprecated_checkpoint_options(self) -> None:
+        """Name the replacement and the release that removes these.
+
+        Deprecating by *value* rather than by access: a dataclass field cannot
+        tell whether it was passed or defaulted, so anything left at its
+        default is treated as untouched. That misses the caller who passes a
+        default explicitly, which costs them nothing -- they get no warning for
+        a setting that is doing nothing.
+        """
+        used = [
+            name
+            for name, default in _DEPRECATED_CHECKPOINT_DEFAULTS.items()
+            if getattr(self, name) != default
+        ]
+        if not used:
+            return
+        warnings.warn(
+            f"{', '.join(used)} {'is' if len(used) == 1 else 'are'} deprecated "
+            f"and will be removed in {_CHECKPOINT_REMOVAL}; use "
+            f"progress_report=N to render a partial report every N chunks. "
+            f"The pickle rotation still runs underneath, so resuming is "
+            f"unaffected.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
 
     def validate(self) -> None:
         """Check every invariant, from wherever the options are about to be used.
@@ -431,6 +525,8 @@ class ComputeOptions:
                 "progress must be True, False, 'auto' or a callable, got "
                 f"{self.progress!r}"
             )
+        if self.progress_report < 0:
+            raise ValueError("progress_report must be non-negative")
         if self.checkpoint_every_n_chunks < 0:
             raise ValueError("checkpoint_every_n_chunks must be non-negative")
         if self.checkpoint_max_to_keep <= 0:
@@ -895,6 +991,7 @@ _KEYWORD_OPTIONS = {
     "seed": ("compute", "random_seed"),
     "title": ("render", "title"),
     "progress": ("compute", "progress"),
+    "progress_report": ("compute", "progress_report"),
 }
 
 # Field names on the options dataclasses, mapped to the keyword that sets them.

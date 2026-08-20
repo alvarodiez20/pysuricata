@@ -116,6 +116,25 @@ class EngineConfig:
         # Handle chunk_size=None to disable chunking (pass 0 to engine)
         engine_chunk_size = 0 if opts.chunk_size is None else opts.chunk_size
 
+        # #211. `progress_report=N` is the one option for "show me something
+        # before it finishes"; the checkpoint machinery is how it is done, not
+        # what it is. Mapped here rather than by writing back onto the options,
+        # which are public and mutable -- assigning to a deprecated field to
+        # implement its replacement would fire that field's own warning at the
+        # user who did the right thing.
+        #
+        # It sets the interval and turns HTML on. `dir`, `prefix` and
+        # `max_to_keep` keep coming from their own fields: they still have
+        # sensible defaults, and a caller who wants to place the files can say
+        # so until the names go in 1.0.0.
+        progress_report = int(getattr(opts, "progress_report", 0) or 0)
+        every_n_chunks = progress_report or getattr(
+            opts, "checkpoint_every_n_chunks", 0
+        )
+        write_html = (
+            True if progress_report else getattr(opts, "checkpoint_write_html", False)
+        )
+
         return cls(
             chunk_size=engine_chunk_size,
             numeric_sample_k=int(opts.numeric_sample_k),
@@ -126,10 +145,10 @@ class EngineConfig:
             # Add checkpointing parameters
             log_every_n_chunks=getattr(opts, "log_every_n_chunks", 1),
             progress=getattr(opts, "progress", False),
-            checkpoint_every_n_chunks=getattr(opts, "checkpoint_every_n_chunks", 0),
+            checkpoint_every_n_chunks=every_n_chunks,
             checkpoint_dir=getattr(opts, "checkpoint_dir", None),
             checkpoint_prefix=getattr(opts, "checkpoint_prefix", "pysuricata_ckpt"),
-            checkpoint_write_html=getattr(opts, "checkpoint_write_html", False),
+            checkpoint_write_html=write_html,
             checkpoint_max_to_keep=getattr(opts, "checkpoint_max_to_keep", 3),
             # Boolean detection parameters
             enable_auto_boolean_detection=getattr(
