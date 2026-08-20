@@ -51,9 +51,10 @@ quoted when both sides were measured in the same round-robin run.
 ### Fixed
 
 - **The chunk-metadata suite stops asserting wall-clock noise** (#354).
-  `test_chunk_metadata_overhead_is_not_gross` compared one timed run per side
-  against a 1.5x bound, and it failed `test-pandas3` on a PR that never touched
-  the accumulator.
+  `test_performance_impact` compared one timed run per side against a 1.5x
+  bound, and it failed `test-pandas3` on a PR that never touched the
+  accumulator. It is now `test_chunk_metadata_overhead_is_not_gross`, which is
+  what a loose bound can honestly assert.
 
   The measurement was of the wrong thing. `np.random.randn` sat *inside* the
   timed region, so both sides were dominated by generating 100,000 random
