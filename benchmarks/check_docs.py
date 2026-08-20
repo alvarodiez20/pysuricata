@@ -398,6 +398,138 @@ def check_summary_keys(page: Path, text: str, out: list[Finding], real: dict) ->
             )
 
 
+#: The four per-kind key tables in `docs/summary-schema.md`, by the heading
+#: that introduces each. This is the *contract* page -- #251 calls it the only
+#: copy of "what each column kind reports" that is tied to the code, and this
+#: check is what ties it.
+_SCHEMA_SECTIONS = {
+    "numeric": "Numeric columns",
+    "categorical": "Categorical columns",
+    "datetime": "Datetime columns",
+    "boolean": "Boolean columns",
+}
+
+
+def _contract_frame():
+    """One frame carrying all four column kinds.
+
+    Deliberately not the checker's existing two-column frame: that one has no
+    datetime and no boolean column, so half the contract could say anything at
+    all and nothing would read it.
+    """
+    import numpy as np
+    import pandas as pd
+
+    rng = np.random.default_rng(0)
+    n = 300
+    return pd.DataFrame(
+        {
+            "num": rng.normal(size=n),
+            "cat": rng.choice(list("abcde"), n),
+            "boo": rng.random(n) > 0.5,
+            "dt": pd.date_range("2024-01-01", periods=n, freq="h"),
+        }
+    )
+
+
+def _documented_keys(body: str) -> set[str]:
+    """Backticked identifiers in the **first** column of a table.
+
+    The first column only: later columns carry prose that names other keys
+    (`unique_est / count`, `true + false + missing`), and counting those as
+    declarations would let a key be "documented" by being mentioned in someone
+    else's note.
+    """
+    keys: set[str] = set()
+    for row in re.findall(r"^\|(.+)$", body, flags=re.M):
+        keys |= set(re.findall(r"`([a-z0-9_]+)`", row.split("|")[0]))
+    return keys
+
+
+def check_payload_contract(out: list[Finding]) -> None:
+    """`summarize()`'s per-kind keys and the schema page must be the same set.
+
+    #251 is about facts restated in several places drifting apart, and this is
+    the instance with teeth: `docs/summary-schema.md` is a **contract**, so a
+    key missing from it is a promise the payload makes and the documentation
+    does not, while a key only in it is the `balance score` failure -- a
+    statistic readers were told to expect that exists nowhere under
+    `pysuricata/`, corrected in one copy at a time across three passes.
+
+    Both directions, because they fail differently and neither is cosmetic:
+
+    * a key in the payload and not in the table is **undocumented**. Three were,
+      when this check was written: `unique_est_exact` on two kinds, and
+      `singleton_levels` / `exact_levels`, which #297 added to the payload and
+      to the card without adding to the contract.
+    * a key in the table and not in the payload is a **ghost**. There are none
+      today, and this is the half that keeps it that way.
+
+    Keys documented before the first per-kind section -- `type`, `count`,
+    `missing`, `mem_bytes` -- are stated once for every kind on purpose, and
+    are not required to be repeated in each table.
+    """
+    from pysuricata import summarize
+
+    page = DOCS / "summary-schema.md"
+    if not page.exists():
+        out.append(
+            Finding(
+                "summary-schema.md",
+                0,
+                "ERROR",
+                "contract",
+                "the payload contract page is missing",
+            )
+        )
+        return
+
+    text = page.read_text(encoding="utf-8")
+    first = min(
+        text.index(f"## {h}") for h in _SCHEMA_SECTIONS.values() if f"## {h}" in text
+    )
+    shared = set(re.findall(r"`([a-z0-9_]+)`", text[:first]))
+
+    columns = summarize(_contract_frame())["columns"]
+    by_kind = {c["type"]: c for c in columns.values()}
+    everything = {k for col in by_kind.values() for k in col}
+
+    for kind, heading in _SCHEMA_SECTIONS.items():
+        marker = f"## {heading}"
+        if marker not in text or kind not in by_kind:
+            continue
+        start = text.index(marker)
+        nxt = text.find("\n## ", start + 1)
+        body = text[start : nxt if nxt > 0 else len(text)]
+        line = text[:start].count("\n") + 1
+
+        documented = _documented_keys(body)
+        actual = set(by_kind[kind])
+
+        for key in sorted(actual - documented - shared):
+            out.append(
+                Finding(
+                    "summary-schema.md",
+                    line,
+                    "ERROR",
+                    "contract",
+                    f"summarize() publishes `{key}` on {kind} columns and the "
+                    f"contract does not document it",
+                )
+            )
+        for key in sorted(documented - everything):
+            out.append(
+                Finding(
+                    "summary-schema.md",
+                    line,
+                    "ERROR",
+                    "contract",
+                    f"the contract documents `{key}` under {kind} columns and "
+                    f"no column kind publishes it",
+                )
+            )
+
+
 def check_links(page: Path, text: str, out: list[Finding]) -> None:
     for rx, kind in ((LINK, "link"), (IMAGE, "image")):
         for m in rx.finditer(text):
@@ -722,6 +854,7 @@ def main(argv=None) -> int:
     # mkdocs page, and including it here would report that as an orphan.
     check_nav(findings)
     check_cli_flags(findings)
+    check_payload_contract(findings)
     for page in _checked_pages():
         text = page.read_text(encoding="utf-8")
         rel = _page_label(page)
