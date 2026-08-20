@@ -2333,6 +2333,11 @@ the numbers mean.</p>
 <td><strong>Approximate.</strong> KMV sketch</td>
 </tr>
 <tr>
+<td><code>unique_est_exact</code></td>
+<td>bool</td>
+<td>Whether <code>unique_est</code> is exact rather than a sketch estimate</td>
+</tr>
+<tr>
 <td><code>unique_ratio_approx</code></td>
 <td>float</td>
 <td><strong>Approximate.</strong> <code>unique_est / count</code></td>
@@ -2442,6 +2447,16 @@ tracked and nothing was frequent enough.</p>
 <td><code>case_variants_est</code>, <code>trim_variants_est</code></td>
 <td>int</td>
 <td><strong>Approximate.</strong> Distinct counts after folding case / trimming whitespace</td>
+</tr>
+<tr>
+<td><code>singleton_levels</code>, <code>exact_levels</code></td>
+<td>int | null</td>
+<td>Exact — levels occurring exactly once, and the total that count is out of. <code>null</code> together when the column had more levels than the counter's capacity: unknown, never zero</td>
+</tr>
+<tr>
+<td><code>unique_est_exact</code></td>
+<td>bool</td>
+<td>Whether <code>unique_est</code> above is exact rather than a sketch estimate</td>
 </tr>
 <tr>
 <td><code>approx</code>, <code>dtype</code></td>
