@@ -59,19 +59,97 @@ def _config(**compute) -> ProfileConfig:
     )
 
 
-#: The two things a report stamps from the clock. Neither is a statistic, and
+#: The things a report stamps from the clock. Neither is a statistic, and
 #: neither can be equal across two runs of anything.
+#:
+#: Matched by their place in the template rather than by the shape of a
+#: duration. `human_time` renders `0.02 s`, `1.50 s`, `1 min 5 s` or
+#: `1 h 1 min 1 s` depending on magnitude, so a numeric pattern is a bet that
+#: both runs land in the same format -- and the first version of this file made
+#: that bet and lost it on one CI runner out of six, where the slower of the
+#: two runs crossed a unit boundary. `[^<]*` inside the exact element cannot
+#: care.
 _CLOCK_STAMPED = (
     (re.compile(r'data-report-id="[^"]*"'), 'data-report-id="STAMP"'),
-    (re.compile(r'class="v">[\d.]+\s*s</span>'), 'class="v">T</span>'),
-    (re.compile(r'class="stat__val">[\d.]+\s*s</div>'), 'class="stat__val">T</div>'),
+    (
+        re.compile(r'(Profiled in</span>\s*<span class="v">)[^<]*(</span>)'),
+        r"\1ELAPSED\2",
+    ),
+    (
+        re.compile(r'(stat--elapsed".*?<div class="stat__val">)[^<]*(</div>)', re.S),
+        r"\1ELAPSED\2",
+    ),
 )
 
 
 def _without_the_clock(html: str) -> str:
     for pattern, replacement in _CLOCK_STAMPED:
-        html = pattern.sub(replacement, html)
+        html, n = pattern.subn(replacement, html)
+        assert n, (
+            f"nothing matched {pattern.pattern!r}; the template moved and this "
+            f"normalisation is now silently doing nothing, which would make "
+            f"the comparison below pass or fail for an unrelated reason"
+        )
     return html
+
+
+class TestTheComparisonItselfIsSound:
+    """The helper above is the part that broke, so it gets its own test.
+
+    A normalisation that quietly stops matching turns the comparison into
+    either a tautology or an unrelated failure, and neither announces itself.
+    """
+
+    #: The two ends of `human_time`'s range, which is what the first version
+    #: could not span: a fast local run and a slow CI one do not render the
+    #: elapsed time in the same units.
+    @pytest.mark.parametrize(
+        "fast,slow",
+        [("0.02 s", "1 min 5 s"), ("340 ms", "0.90 s"), ("1.50 s", "1 h 1 min 1 s")],
+    )
+    def test_two_durations_in_different_units_normalise_alike(self, fast, slow):
+        def page(duration: str, report_id: str) -> str:
+            return (
+                f'<div data-report-id="{report_id}">'
+                f'<span class="k">Profiled in</span> '
+                f'<span class="v">{duration}</span>'
+                f'<div class="stat stat--elapsed"><div class="stat__cap">Elapsed</div>'
+                f'<div class="stat__val">{duration}</div></div>'
+                f'<div class="stat__val">0.02 s</div>'
+                "</div>"
+            )
+
+        assert _without_the_clock(page(fast, "A")) == _without_the_clock(
+            page(slow, "B")
+        )
+
+    def test_it_leaves_other_values_alone(self):
+        """The trailing `stat__val` in the fixture above is deliberately the
+        same text as a plausible duration. Normalising by *value* rather than
+        by position would erase it too, and then a real difference in a real
+        statistic could hide behind the clock."""
+        page = (
+            '<div data-report-id="A">'
+            '<span class="k">Profiled in</span> <span class="v">0.02 s</span>'
+            '<div class="stat stat--elapsed"><div class="stat__val">0.02 s</div></div>'
+            '<div class="stat stat--rows"><div class="stat__val">0.02 s</div></div>'
+            "</div>"
+        )
+        cleaned = _without_the_clock(page)
+
+        assert cleaned.count("ELAPSED") == 2, "both clock sites normalised"
+        assert (
+            '<div class="stat stat--rows"><div class="stat__val">0.02 s</div>'
+            in cleaned
+        ), (
+            "a statistic that happens to read like a duration was erased; "
+            "normalising by value rather than by position would hide a real "
+            "difference behind the clock"
+        )
+
+    def test_it_refuses_to_pass_silently_if_the_template_moves(self):
+        with pytest.raises(AssertionError, match="silently doing nothing"):
+            _without_the_clock("<html>nothing the report would emit</html>")
 
 
 class TestItRendersWhileYouWait:
@@ -119,10 +197,6 @@ class TestTurningItOnChangesNothing:
         off = profile(frame, config=_config()).html
 
         assert _without_the_clock(on) == _without_the_clock(off)
-        assert len(on) == len(off), (
-            "the documents are the same length, so any difference is a "
-            "substitution rather than added or removed content"
-        )
 
 
 class TestTheKeywordReachesIt:

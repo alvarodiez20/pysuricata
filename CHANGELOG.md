@@ -52,6 +52,14 @@ quoted when both sides were measured in the same round-robin run.
   closed as not reproducible — the bit generator's state is byte-identical
   across `finalize()`.
 
+  The report comparison normalises the clock by **position in the template**,
+  not by the shape of a duration. `human_time` renders `0.02 s`, `1 min 5 s` or
+  `1 h 1 min 1 s` depending on magnitude, so a numeric pattern bets that both
+  runs land in the same units — a bet that lost on one CI runner out of six,
+  where the slower run crossed a boundary. The normalisation now asserts it
+  matched something, so a template move fails loudly instead of turning the
+  comparison into a tautology.
+
 ### Changed
 
 - **The payload contract is checked against the payload** (#251).
