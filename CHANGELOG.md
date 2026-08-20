@@ -50,6 +50,26 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The chunk-metadata suite stops asserting wall-clock noise** (#354).
+  `test_chunk_metadata_overhead_is_not_gross` compared one timed run per side
+  against a 1.5x bound, and it failed `test-pandas3` on a PR that never touched
+  the accumulator.
+
+  The measurement was of the wrong thing. `np.random.randn` sat *inside* the
+  timed region, so both sides were dominated by generating 100,000 random
+  values and the chunk-metadata difference rode in the noise on top: over 12
+  trials the ratio had a standard deviation of 0.15 and reached 1.38 on an idle
+  machine, against a threshold of 1.5. CI's worst was 1.65.
+
+  Data is now generated once outside the timed region, each side is measured
+  over five interleaved rounds and compared on the median, and the two sides
+  get byte-identical chunks from a local `Generator` rather than the global RNG.
+  That tightens the spread 2.7x locally (stdev 0.15 → 0.055, worst 1.38 →
+  1.089) and 4.7x on the maintainer's machine, which is what lets the bound come
+  *down* to 2.0 — 18-55 standard deviations from the real effect of ~1.0, and
+  tight enough that a regression landing at 2.5x is caught rather than waved
+  through.
+
 - **The demo's landing page stops padding itself out** — most of it from a
   mechanism no rule named. `main` is `flex: 1 1 auto` so the footer sits on the
   floor of a short page, and it is *also* a grid, whose default
