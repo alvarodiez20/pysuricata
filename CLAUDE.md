@@ -98,31 +98,41 @@ baseline so the win cannot be quietly respent.
 | untokenised colours | `tests/test_colour_tokens.py` |
 | `Processed bytes` still in a stat row | `tests/test_processed_bytes_placement.py` |
 
-Next, in rough order:
+Next, in rough order. **Check state before starting** — this list has gone
+stale twice, and #306 was worked on after it was already delivered:
 
-1. **The reach ladder** — the half v12–v14 dropped. #247 (Arrow IPC does not
-   load, which is the one format another language writes) then #250 (an
-   `action.yml` over `pysuricata check`, and a JSON Schema for the payload).
-   Cheapest reach per unit effort in the project.
-2. **Two one-hour corrections**: #248 (the duplicate threshold is 1σ, so a clean
-   frame false-alarms ~10% of runs) and #249 (a `sys.path` fall-through that
-   `__version__` cannot detect and that corrupts every round *identically*).
-3. **The column axis** — #207, and #39 for the report side. Bounded memory holds
-   in rows (189 MB at 2M, 190 MB at 5M) and fails in columns (929 MB at
-   20,000 × 600, on *less* data). Nothing in the field handles wide data, so
-   this is where a weakness converts into a claim. Exit: a 600-column frame
-   inside a 512 MB runner, which also answers #92 and unblocks #79.
+1. **The column axis** — #207. The compute half is done: the reservoir stopped
+   boxing its sample and the 20,000 × 600 peak went 980 MB → 631 MB, 2.2x less
+   memory and 1.9x less time. `summarize()` now fits a 512 MB runner at 492 MB;
+   `profile()` does not, and the 139 MB between them is the report and its
+   copies during assembly. So the remaining exit box is **#39's**, not this
+   issue's, and the demo's 250-column refusal is still untouched.
 
-   Note the largest remaining report saving is **no longer tracked**. #206 is
-   closed on its cheap half (repeated constants out of every bar, 73,204 →
-   ~63,600 bytes per numeric column), but the six pre-rendered histogram variants
-   it was filed about are all still emitted, and they are ~65% of a numeric
-   column. Collecting that needs a JS port of a ~170-line SVG renderer — a second
+   The largest remaining report saving is **no longer tracked**. #206 is closed
+   on its cheap half (repeated constants out of every bar, 73,204 → ~63,600
+   bytes per numeric column), but the six pre-rendered histogram variants it was
+   filed about are all still emitted, and they are ~65% of a numeric column.
+   Collecting that needs a JS port of a ~170-line SVG renderer — a second
    implementation of the chart, which the reference-implementation rule under
    **Conventions** argues against. Re-file it before building it.
-4. **Publish** (#38), then the native core (#44) — **KMV first, moments last**,
+
+   #39's first acceptance box is done (#360): the self-download is now tested by
+   downloading the report and re-opening it, which that issue asks for *before*
+   anything else in it is touched. The coupling it guards is unchanged —
+   `downloadReport()` keeps the first `<script>` matching `toggleDarkMode`, and
+   four JS files ride on one tag today.
+
+2. **The 1.0.0 API surface** — #211 (collapse the five `checkpoint_*` options
+   into `progress_report=`) and #340 (remove the deprecated names, whole queue,
+   one release).
+
+3. **Publish** (#38), then the native core (#44) — **KMV first, moments last**,
    since moments are ~1.4% of the numeric path and KMV was half of it. #108's
    abstraction boundary measured at 0.97–1.01×, so the preparation cost nothing.
+
+The reach ladder is **done**: #247 (Arrow IPC) and #250 (an `action.yml` over
+`pysuricata check`, plus a JSON Schema for the payload) are both closed, as are
+the two one-hour corrections #248 and #249, and #92.
 
 **Two open issues are blocked on a decision, not on effort.** Do not guess at
 them: #209 (categorical has no Statistics pane and boolean has no details

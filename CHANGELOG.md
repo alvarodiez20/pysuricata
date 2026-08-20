@@ -16,6 +16,31 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **The payload contract is checked against the payload** (#251).
+  `docs/summary-schema.md` is the one copy of "what each column kind reports"
+  that is meant to be tied to the code, and nothing tied it. `check_docs.py`
+  now compares the per-kind key tables against a real `summarize()` call over a
+  frame carrying all four kinds — deliberately not the checker's existing
+  two-column frame, which has no datetime and no boolean column, so half the
+  contract could have said anything.
+
+  Both directions, because they fail differently. A key in the payload and not
+  in the table is an undocumented promise: **three were**, and one of them is
+  the reason to have the check — #297 added `singleton_levels` and
+  `exact_levels` to the payload and to the card without adding them to the
+  contract. `unique_est_exact` was missing on two kinds. All three are
+  documented now.
+
+  A key in the table and not in the payload is the `balance score` failure:
+  a statistic readers were told to expect that exists nowhere under
+  `pysuricata/`, corrected one copy at a time across three passes (#276, #287).
+  There are none today, and reinstating it as a mutation is caught.
+
+  `docs-check` already triggers on `pysuricata/**/*.py`, so the code change that
+  adds a key re-runs the check that notices it is undocumented.
+
+### Changed
+
 - **The self-download is tested by downloading the report and re-opening it**
   (#39, first acceptance box). The download button does not ask the renderer
   what it emitted — it re-serialises the live DOM, keeping `<style>` elements

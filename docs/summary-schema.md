@@ -158,6 +158,7 @@ Quality and structure:
 | Key | Type | Notes |
 |---|---|---|
 | `unique_est` | int | **Approximate.** KMV sketch |
+| `unique_est_exact` | bool | Whether `unique_est` is exact rather than a sketch estimate |
 | `unique_ratio_approx` | float | **Approximate.** `unique_est / count` |
 | `top_values` | list \| None | `(value, count)`. **`None` means not tracked** |
 | `top_values_uncertainty` | int | **Approximate.** How far below the truth each count above may sit. `0` means exact |
@@ -187,6 +188,8 @@ tracked and nothing was frequent enough.
 | `entropy`, `gini_impurity`, `diversity_ratio`, `most_common_ratio` | float | Derived |
 | `avg_len`, `len_p90` | float, int | Value length in characters |
 | `case_variants_est`, `trim_variants_est` | int | **Approximate.** Distinct counts after folding case / trimming whitespace |
+| `singleton_levels`, `exact_levels` | int \| null | Exact — levels occurring exactly once, and the total that count is out of. `null` together when the column had more levels than the counter's capacity: unknown, never zero |
+| `unique_est_exact` | bool | Whether `unique_est` above is exact rather than a sketch estimate |
 | `approx`, `dtype` | bool, str | |
 
 The two variant estimates are what the report's "looks like a case variant"
