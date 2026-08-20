@@ -39,6 +39,12 @@ quoted when both sides were measured in the same round-robin run.
   `docs-check` already triggers on `pysuricata/**/*.py`, so the code change that
   adds a key re-runs the check that notices it is undocumented.
 
+  The check has its own guard, for the reason #151's does — *a guard that does
+  not run on the file it guards is not a guard*. It can be defeated three ways
+  that leave every other test green: unwire it from `main()`, narrow the frame
+  until a column kind is unrepresented, or widen what counts as a declaration
+  until a mention in someone else's note satisfies it. All three are pinned.
+
 ### Changed
 
 - **The self-download is tested by downloading the report and re-opening it**
