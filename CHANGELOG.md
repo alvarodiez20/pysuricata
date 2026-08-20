@@ -46,6 +46,11 @@ quoted when both sides were measured in the same round-robin run.
   downloading the dark state exercises the empty branch. It is parametrised
   over both, and only `as-opened` fails when the expression is deleted.
 
+  Run against two shapes, because #306 made the stylesheet a function of the
+  frame: Titanic has no datetime column, so a Titanic-only round trip never
+  puts `_09-datetime.css` through the filter at all. The every-kind frame
+  ships 5,600 more bytes of CSS, `.dt-svg` rules among them.
+
   No source changed; this is the test #39 asks for before the work it protects.
 
 ### Changed

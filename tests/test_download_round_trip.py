@@ -63,10 +63,37 @@ def _chrome() -> str | None:
     return None
 
 
-@pytest.fixture(scope="module")
-def report_html() -> str:
+def _every_kind() -> pd.DataFrame:
+    """A frame carrying all four card kinds, which Titanic cannot -- it has no
+    datetime column. Same construction as the layout suite's fixture of the
+    same name.
+
+    It matters here specifically because of #306: the report ships only the CSS
+    for the kinds it contains, so a Titanic-only round trip never puts
+    `_09-datetime.css` through the download filter at all. A fixture that
+    misses a branch reports *absent*, and absent reads as fine.
+    """
+    import numpy as np
+
+    rng = np.random.default_rng(0)
+    n = 891
+    return pd.DataFrame(
+        {
+            "age": rng.integers(1, 80, n).astype(float),
+            "fare": rng.gamma(2, 20, n),
+            "sex": rng.choice(["male", "female"], n),
+            "cabin": rng.choice([None, "C85", "B42"], n, p=[0.77, 0.12, 0.11]),
+            "survived": rng.integers(0, 2, n).astype(bool),
+            "booked": pd.date_range("2026-01-01", periods=n, freq="h"),
+        }
+    )
+
+
+@pytest.fixture(scope="module", params=["titanic", "every-kind"])
+def report_html(request) -> str:
     """`seed` fixes the reservoir, so the document is byte-deterministic."""
-    return profile(pd.read_csv(TITANIC), seed=0).html
+    frame = pd.read_csv(TITANIC) if request.param == "titanic" else _every_kind()
+    return profile(frame, seed=0).html
 
 
 @pytest.mark.browser
