@@ -175,9 +175,23 @@ def filtered_generator():
 report = profile(filtered_generator())
 ```
 
-## Checkpointing Long-Running Profiles
+## Seeing a Report Before the Run Finishes
 
-For multi-hour pipelines analyzing massive datasets (i.e. over 100M rows), you can enable disk checkpoints. This saves the profiling state every `N` chunks, allowing you to resume or investigate partial state if the job is interrupted.
+For multi-hour pipelines analyzing massive datasets (i.e. over 100M rows), set
+`progress_report=N` to render a report every `N` chunks. The state is also
+serialized to disk each time, so an interrupted job can be resumed or
+inspected.
+
+One option, one intent: *show me something before it finishes*. It supersedes
+`checkpoint.every_n_chunks` and `checkpoint.write_html`, which are deprecated
+and removed in 1.0.0. `checkpoint.dir`, `checkpoint.prefix` and
+`checkpoint.max_to_keep` still say where the files go, what they are called and
+how many are kept.
+
+Turning it on does not change the result. A partial report finalizes the
+accumulators at a chunk boundary, and finalizing leaves the reservoir's random
+state untouched — `benchmarks/accuracy.py` asserts that the payload is
+identical with partial reports on and off.
 
 ```python
 import numpy as np
@@ -188,13 +202,11 @@ from pysuricata import ProfileConfig, profile
 rng = np.random.default_rng(0)
 
 config = ProfileConfig()
-# Checkpoint roughly every million rows at the default 50,000-row chunk. Leave
-# chunk_size alone -- raising it costs memory and time both, and checkpoint
-# frequency is what you are actually setting here.
-config.compute.checkpoint.every_n_chunks = 20
+# A report roughly every million rows at the default 50,000-row chunk. Leave
+# chunk_size alone -- raising it costs memory and time both, and how often you
+# want to see something is what you are actually setting here.
+config.compute.progress_report = 20
 config.compute.checkpoint.dir = "/tmp/pysuricata/nightly"
-# Optionally dump a preview HTML page alongside the serialized pickle state
-config.compute.checkpoint.write_html = True
 
 
 
