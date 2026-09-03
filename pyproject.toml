@@ -111,6 +111,11 @@ dev = [
     "setuptools>=80.9.0",
     "ipykernel>=7.2.0",
     "nbconvert>=7.17.0",
+    # notebook-only: examples/billion_rows.ipynb plots the memory curve that
+    # benchmarks/billion.py records. Nothing under `pysuricata/` imports it,
+    # and the report renders its own charts as inline SVG without a plotting
+    # library -- this is for the benchmark's graph, not for the product.
+    "matplotlib>=3.9",
 ]
 # Deliberately not in `dev`. The layout acceptance criteria (#124) need a real
 # browser, and pulling a ~300 MB Chromium into every test job to run 31 cases

@@ -11,9 +11,9 @@ That is a memory claim, so it is measured as one -- against a ceiling the
 kernel enforces, and sampled all the way through rather than read once at the
 end.
 
-    python -m benchmarks.billion --rows 1_000_000_000        # the headline
-    python -m benchmarks.billion --rows 10_000_000 --cols 14 # a smoke run
-    python -m benchmarks.billion --ladder                    # the scaling curve
+    python -m benchmarks.billion --rows 1_000_000_000         # the headline
+    python -m benchmarks.billion --rows 10_000_000            # a smoke run
+    python -m benchmarks.billion --rows 200_000_000 --mode load  # the contrast
 
 ## What is measured, and against what
 
@@ -56,14 +56,22 @@ Synthesised in-process, a chunk at a time, never materialised as a frame --
 not a thing you keep on a CI runner. The cost of that choice is stated rather
 than hidden: **the generator's own memory is inside the measurement**, since
 it runs in the same process under the same ceiling, so the reported peak is
-higher than a pure read path would be, not lower. `--parquet` runs the same
-profile over a real file on disk for anyone who wants the read path measured
-too.
+higher than a pure read path would be, not lower.
 
 The distributions are deliberately awkward -- lognormal tails, a Zipf head on
 the high-cardinality column, seasonal timestamps, injected nulls, outliers and
 duplicate rows. A uniform generator makes for a boring report and flatters
 every sketch in it.
+
+## The contrast curve
+
+`--mode load` runs the same generator into a list and concatenates it, which is
+what any profiler taking a frame rather than a stream must do before it can
+start. It is *expected* to be killed by the ceiling; the row count it reaches
+before it dies is the result, and it is measured in the same session, with the
+same generator and the same ceiling, so the two curves in the graph are
+comparable. Pairing a streaming number with a loading number taken from a
+different run is how this project has twice published a ratio that was wrong.
 
 ## Reading the report it produces
 
@@ -401,6 +409,42 @@ def child_main(args) -> int:
 
     src = counting_source(g, pools, blocks, args.rows, args.chunk_size, progress)
     kwargs = {"chunk_size": args.chunk_size}
+
+    if args.mode == "load":
+        # The contrast curve. Every profiler that takes a frame rather than a
+        # stream needs the frame first, so this is the floor its memory cannot
+        # go below -- measured with the same generator, the same ceiling and
+        # the same sampler, in the same session, because a ratio assembled from
+        # two separate runs is how this project has published wrong numbers
+        # before. It is *expected* to be killed; where it dies is the result.
+        import pandas as pd
+
+        held = []
+        for df in src:
+            held.append(df)
+        frame = pd.concat(held, ignore_index=True)
+        del held
+        progress.phase = "profile-in-memory"
+        stats = summarize(frame, **kwargs)
+        elapsed = time.perf_counter() - started
+        progress.done = True
+        t.join(timeout=args.sample_interval * 3)
+        with open(os.environ["RESULT_OUT"], "w") as f:
+            json.dump(
+                {
+                    "rows": progress.rows,
+                    "chunks": progress.chunks,
+                    "cols": blocks * BLOCK,
+                    "seconds": round(elapsed, 2),
+                    "rows_per_s": round(progress.rows / elapsed, 1),
+                    "peak_rss_mb": round(
+                        resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024, 2
+                    ),
+                },
+                f,
+            )
+        return 0
+
     if args.html:
         result = profile(src, **kwargs)
         progress.phase = "render"
@@ -497,6 +541,8 @@ def run_capped(args) -> Run:
         args.csv,
         "--mechanism",
         mechanism,
+        "--mode",
+        args.mode,
     ]
     if args.html:
         cmd += ["--html", args.html]
@@ -596,6 +642,13 @@ def main(argv=None) -> int:
     ap.add_argument("--html", default=None, help="render the HTML report here")
     ap.add_argument("--summary-json", default=None)
     ap.add_argument("--json", default=None, help="write the run's result here")
+    ap.add_argument(
+        "--mode",
+        default="stream",
+        choices=["stream", "load"],
+        help="stream: profile chunk by chunk. load: materialise the whole frame "
+        "first, the way a load-then-profile tool must -- expected to be killed",
+    )
     ap.add_argument(
         "--mechanism", default="auto", choices=["auto", "cgroup", "rlimit", "none"]
     )
