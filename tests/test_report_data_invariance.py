@@ -337,6 +337,21 @@ _dtype_is_comparable = pd.__version__.split(".")[0] == str(_BASELINE_PANDAS_MAJO
 _ENVIRONMENT_DEPENDENT: tuple[str, ...] = () if _dtype_is_comparable else ("dtype",)
 
 
+#: The fixtures are an artifact of `_BASELINE_PANDAS_MAJOR`, so their *content*
+#: has to be judged by that pandas's rules rather than the running one's. On
+#: pandas 3 `_stable` drops `dtype`, which the files legitimately carry because
+#: on the baseline it is a fully compared field -- so a test asserting the files
+#: hold nothing `_stable` discards is asking the wrong pandas.
+#:
+#: Only the two *content* assertions are skipped. The payload comparison itself
+#: still runs on both legs, so pandas 3 keeps checking every field the running
+#: interpreter can compare.
+_fixture_content = pytest.mark.skipif(
+    not _dtype_is_comparable,
+    reason=f"fixture content is pinned under pandas {_BASELINE_PANDAS_MAJOR}",
+)
+
+
 #: Fields holding `(row_index, value)` pairs. The value is the fact; the row it
 #: came from is not, and with ties it is arbitrary -- twelve rows share the
 #: maximum age of 79, so CI recorded row 638 where this machine recorded 343.
@@ -427,6 +442,50 @@ def test_the_summarize_payload_is_unchanged(name):
         json.loads(json.dumps(summarize(FRAMES[name](), seed=0), default=str))
     )
     assert actual == expected
+
+
+def test_stable_is_idempotent():
+    """`_stable` must be a no-op on an already-stable payload.
+
+    The fixtures are now written through `_stable`, and
+    `test_the_summarize_payload_is_unchanged` still applies it to both sides --
+    so a second application must not change anything, or the stored file and
+    the comparison would disagree. Not free: `_values_only` turns
+    `[[k, v], ...]` into `[v, ...]`, and would strip a second time if any
+    surviving value were itself a two-element list.
+    """
+    for name in FRAMES:
+        raw = json.loads(json.dumps(summarize(FRAMES[name](), seed=0), default=str))
+        once = _stable(raw)
+        assert _stable(once) == once, f"_stable is not idempotent on {name}"
+
+
+@_fixture_content
+def test_fixtures_are_stored_stabilised():
+    """What is on disk is what is compared.
+
+    Storing the raw payload meant the files carried fields `_stable` drops --
+    machine-dependent ones that could never be compared, so `--write` churned
+    hundreds of lines and the fixtures recorded whichever machine last ran it.
+    """
+    for name in FRAMES:
+        stored = json.loads((FIXTURES / f"summary_{name}.json").read_text())
+        assert _stable(stored) == stored, (
+            f"summary_{name}.json holds values _stable discards; regenerate with "
+            "`uv run python tests/test_report_data_invariance.py --write`"
+        )
+
+
+@_fixture_content
+def test_process_dependent_keys_are_absent_from_the_fixtures():
+    """Absent, not present-and-ignored, so the file cannot suggest a guarantee
+    it does not make."""
+    exempt = set(_PROCESS_DEPENDENT) | set(_ENVIRONMENT_DEPENDENT)
+    for name in FRAMES:
+        stored = json.loads((FIXTURES / f"summary_{name}.json").read_text())
+        for column, stats in stored.get("columns", {}).items():
+            leaked = sorted(set(stats) & exempt)
+            assert not leaked, f"{name}/{column} still stores exempt keys: {leaked}"
 
 
 def test_nothing_tied_survives_into_the_comparison():
@@ -555,6 +614,11 @@ def test_every_exemption_still_applies_to_something():
     `sample_scale` that was never in the payload -- so they exempted nothing
     while reading as though they did.
     """
+    # Deliberately a RAW payload, never the stored fixture. The fixtures are
+    # written through `_stable`, which drops exactly the exempt keys -- so
+    # reading one here would make every exemption look unused, or, once the
+    # assertion was "fixed" to match, make this test pass vacuously. Same
+    # class of bug as #201.
     payload = summarize(_frame(), seed=0)
     keys: set[str] = set()
     for stats in payload["columns"].values():
@@ -569,7 +633,18 @@ def _write_fixtures() -> None:
         fingerprint(profile(_frame(), seed=0).html) + "\n", encoding="utf-8"
     )
     for name, builder in FRAMES.items():
-        payload = json.loads(json.dumps(summarize(builder(), seed=0), default=str))
+        # Through `_stable`, not around it: what is stored is exactly what is
+        # compared. Writing the raw payload stored fields `_stable` discards at
+        # comparison time -- float noise below twelve significant figures, and
+        # `min_items`/`max_items` row indices that are arbitrary among ties --
+        # so `--write` produced hundreds of changed lines for a one-key change
+        # and the fixtures silently recorded whichever machine last ran it.
+        #
+        # A diff nobody can read is a diff nobody reads, which is the failure
+        # this file already documents for HTML snapshots.
+        payload = _stable(
+            json.loads(json.dumps(summarize(builder(), seed=0), default=str))
+        )
         (FIXTURES / f"summary_{name}.json").write_text(
             json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8"
         )

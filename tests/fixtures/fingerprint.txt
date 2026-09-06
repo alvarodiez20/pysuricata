@@ -180,6 +180,12 @@ attr::::percentage	25
 attr::::percentage	48.7%
 attr::::percentage	50
 attr::::percentage	51.3%
+attr::::threshold	&gt;1%
+attr::::threshold	&gt;20%
+attr::::threshold	&gt;20%
+attr::::value	100%
+attr::::value	2.9%
+attr::::value	75.4%
 attr::Feb::count	147
 attr::Feb::pct	16.5
 attr::Fri::count	144
