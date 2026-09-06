@@ -120,6 +120,31 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Fixed
 
+- **The golden fixtures are written through `_stable`, not around it** (#215).
+  `--write` stored the raw `summarize()` payload while the comparison ran both
+  sides through `_stable()`, so the files carried fields the test then threw
+  away. A regeneration therefore rewrote unstable values -- run ids, timings,
+  tie-broken row indices -- as though they were results, and every one of them
+  showed up as a line in the diff of a PR that had changed none of them.
+
+  Measured on the same regeneration: **the diff drops from 1,120 changed lines
+  to 34**, and the 34 are the payload fields that actually moved. What is
+  stored is now exactly what is compared, so a fixture diff means a result
+  changed.
+
+  Two properties the change now depends on are pinned rather than assumed.
+  `test_stable_is_idempotent` covers `_stable(_stable(x)) == _stable(x)`, which
+  has to hold once the stored value is already stabilised; and
+  `test_every_exemption_still_applies_to_something` keeps each exemption
+  earning its place, with a comment recording the `_values_only` re-stripping
+  hazard so the next reader does not walk into it.
+
+  The two fixture-content assertions run only on the baseline pandas. The files
+  are an artifact of `_BASELINE_PANDAS_MAJOR` by construction, so their content
+  has to be judged by that pandas's rules: on pandas 3 `_stable` drops `dtype`,
+  which the files legitimately carry because on the baseline it is a fully
+  compared field. The payload comparison itself still runs on both legs.
+
 - **The chunk-metadata suite stops asserting wall-clock noise** (#354).
   `test_performance_impact` compared one timed run per side against a 1.5x
   bound, and it failed `test-pandas3` on a PR that never touched the

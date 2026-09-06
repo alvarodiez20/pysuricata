@@ -337,6 +337,21 @@ _dtype_is_comparable = pd.__version__.split(".")[0] == str(_BASELINE_PANDAS_MAJO
 _ENVIRONMENT_DEPENDENT: tuple[str, ...] = () if _dtype_is_comparable else ("dtype",)
 
 
+#: The fixtures are an artifact of `_BASELINE_PANDAS_MAJOR`, so their *content*
+#: has to be judged by that pandas's rules rather than the running one's. On
+#: pandas 3 `_stable` drops `dtype`, which the files legitimately carry because
+#: on the baseline it is a fully compared field -- so a test asserting the files
+#: hold nothing `_stable` discards is asking the wrong pandas.
+#:
+#: Only the two *content* assertions are skipped. The payload comparison itself
+#: still runs on both legs, so pandas 3 keeps checking every field the running
+#: interpreter can compare.
+_fixture_content = pytest.mark.skipif(
+    not _dtype_is_comparable,
+    reason=f"fixture content is pinned under pandas {_BASELINE_PANDAS_MAJOR}",
+)
+
+
 #: Fields holding `(row_index, value)` pairs. The value is the fact; the row it
 #: came from is not, and with ties it is arbitrary -- twelve rows share the
 #: maximum age of 79, so CI recorded row 638 where this machine recorded 343.
@@ -445,6 +460,7 @@ def test_stable_is_idempotent():
         assert _stable(once) == once, f"_stable is not idempotent on {name}"
 
 
+@_fixture_content
 def test_fixtures_are_stored_stabilised():
     """What is on disk is what is compared.
 
@@ -460,6 +476,7 @@ def test_fixtures_are_stored_stabilised():
         )
 
 
+@_fixture_content
 def test_process_dependent_keys_are_absent_from_the_fixtures():
     """Absent, not present-and-ignored, so the file cannot suggest a guarantee
     it does not make."""
