@@ -343,6 +343,22 @@ def counting_source(
         yield df
 
 
+def counting_parquet(path: str, batch_size: int, progress: Progress):
+    """Yield a Parquet file batch by batch, bumping `progress` as it goes.
+
+    Wraps `pysuricata.sources.stream_parquet`, which is the reader the library
+    uses itself when handed a path. The wrapper adds a row counter and nothing
+    else, so what gets measured is the shipped read path rather than a stand-in
+    for it.
+    """
+    from pysuricata.sources import stream_parquet
+
+    for df in stream_parquet(path, batch_size=batch_size):
+        progress.rows += len(df)
+        progress.chunks += 1
+        yield df
+
+
 def _sampler(
     path: str, progress: Progress, interval: float, started: float, budget_mb: float
 ) -> None:
@@ -407,7 +423,10 @@ def child_main(args) -> int:
     )
     t.start()
 
-    src = counting_source(g, pools, blocks, args.rows, args.chunk_size, progress)
+    if args.parquet:
+        src = counting_parquet(args.parquet, args.chunk_size, progress)
+    else:
+        src = counting_source(g, pools, blocks, args.rows, args.chunk_size, progress)
     kwargs = {"chunk_size": args.chunk_size}
 
     if args.mode == "load":
@@ -480,6 +499,50 @@ def child_main(args) -> int:
     return 0
 
 
+def build_parquet(path: str, rows: int, cols: int, chunk: int, seed: int) -> int:
+    """Write `rows` rows of the same shape to a Parquet file, in row groups.
+
+    Deliberately not run under the ceiling. Building the fixture is not the
+    thing being measured; reading it is. Written a row group at a time so
+    creating an 8 GB file does not itself need 8 GB, the same way
+    `memory_bounded_check.py` builds its own fixture.
+    """
+    import numpy as np
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+
+    parent = os.path.dirname(os.path.abspath(path))
+    os.makedirs(parent, exist_ok=True)
+
+    blocks = max(1, round(cols / BLOCK))
+    pools = Pools()
+    g = np.random.default_rng(seed)
+    writer = None
+    written = 0
+    started = time.perf_counter()
+    try:
+        while written < rows:
+            n = min(chunk, rows - written)
+            table = pa.Table.from_pandas(
+                make_chunk(g, n, pools, blocks), preserve_index=False
+            )
+            if writer is None:
+                writer = pq.ParquetWriter(path, table.schema, compression="snappy")
+            writer.write_table(table)
+            written += n
+            if written % (chunk * 50) == 0:
+                mb = os.path.getsize(path) / 1024 / 1024
+                rate = written / (time.perf_counter() - started) / 1e6
+                print(
+                    f"  {written:>13,} rows  {mb:>8,.0f} MB  {rate:.2f} M rows/s",
+                    flush=True,
+                )
+    finally:
+        if writer is not None:
+            writer.close()
+    return written
+
+
 # --------------------------------------------------------------------------
 # The parent: applies the ceiling, then reports what the kernel recorded
 # --------------------------------------------------------------------------
@@ -498,6 +561,10 @@ class Run:
     seconds: float
     rows_per_s: float | None
     csv: str
+    #: Size of the source file on disk, when the source was a file rather than
+    #: the generator. The claim a Parquet run makes is that this exceeds
+    #: `budget_mb`, so it belongs in the recorded result and not only in prose.
+    file_bytes: int | None = None
     note: str = ""
 
 
@@ -544,6 +611,8 @@ def run_capped(args) -> Run:
         "--mode",
         args.mode,
     ]
+    if args.parquet:
+        cmd += ["--parquet", args.parquet]
     if args.html:
         cmd += ["--html", args.html]
     if args.summary_json:
@@ -603,6 +672,7 @@ def run_capped(args) -> Run:
         seconds=round(elapsed, 2),
         rows_per_s=child.get("rows_per_s"),
         csv=args.csv,
+        file_bytes=os.path.getsize(args.parquet) if args.parquet else None,
         note=note,
     )
 
@@ -621,6 +691,11 @@ def _print(run: Run) -> None:
     if run.rows_per_s:
         print(f"throughput:  {run.rows_per_s / 1e6:.3f} M rows/s")
     print(f"wall clock:  {run.seconds / 60:.1f} min")
+    if run.file_bytes is not None:
+        print(
+            f"source file: {run.file_bytes / 1e9:,.2f} GB on disk "
+            f"({run.file_bytes / 1e6 / run.budget_mb:.1f}x the ceiling)"
+        )
     print(f"curve:       {run.csv}")
     if run.note:
         print(f"note:        {run.note}")
@@ -643,6 +718,16 @@ def main(argv=None) -> int:
     ap.add_argument("--summary-json", default=None)
     ap.add_argument("--json", default=None, help="write the run's result here")
     ap.add_argument(
+        "--parquet",
+        default=None,
+        help="profile this Parquet file instead of the in-process generator",
+    )
+    ap.add_argument(
+        "--build-parquet",
+        default=None,
+        help="write a Parquet fixture of --rows rows here, then exit",
+    )
+    ap.add_argument(
         "--mode",
         default="stream",
         choices=["stream", "load"],
@@ -657,6 +742,20 @@ def main(argv=None) -> int:
 
     if args._child:
         return child_main(args)
+
+    if args.build_parquet:
+        started = time.perf_counter()
+        written = build_parquet(
+            args.build_parquet, args.rows, args.cols, args.chunk_size, args.seed
+        )
+        size = os.path.getsize(args.build_parquet)
+        print(
+            f"wrote {written:,} rows to {args.build_parquet}: "
+            f"{size / 1024 / 1024 / 1024:.2f} GB on disk "
+            f"({size / written:.1f} bytes/row) in "
+            f"{(time.perf_counter() - started) / 60:.1f} min"
+        )
+        return 0
 
     run = run_capped(args)
     _print(run)
