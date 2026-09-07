@@ -1,0 +1,14 @@
+{
+  "mechanism": "cgroup",
+  "budget_mb": 4096.0,
+  "rows": 1000000000,
+  "cols": 10,
+  "chunk_size": 200000,
+  "passed": true,
+  "peak_rss_mb": 225.13,
+  "cgroup_peak_mb": 142.82,
+  "seconds": 4724.12,
+  "rows_per_s": 211761.8,
+  "csv": "benchmarks/results/billion-curve.csv",
+  "note": ""
+}

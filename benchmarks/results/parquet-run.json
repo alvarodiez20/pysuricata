@@ -1,0 +1,15 @@
+{
+  "mechanism": "cgroup",
+  "budget_mb": 4096.0,
+  "rows": 200000000,
+  "cols": 10,
+  "chunk_size": 200000,
+  "passed": true,
+  "peak_rss_mb": 508.63,
+  "cgroup_peak_mb": 498.11,
+  "seconds": 1020.91,
+  "rows_per_s": 196175.6,
+  "csv": "benchmarks/results/parquet-curve.csv",
+  "file_bytes": 8197583935,
+  "note": ""
+}

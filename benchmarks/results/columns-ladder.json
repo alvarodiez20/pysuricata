@@ -1,0 +1,26 @@
+[
+  {
+    "cols": 10,
+    "rows": 3000000,
+    "peak_rss_mb": 225.07,
+    "rows_per_s": 170890.7
+  },
+  {
+    "cols": 20,
+    "rows": 3000000,
+    "peak_rss_mb": 306.51,
+    "rows_per_s": 94082.2
+  },
+  {
+    "cols": 40,
+    "rows": 3000000,
+    "peak_rss_mb": 445.89,
+    "rows_per_s": 44114.0
+  },
+  {
+    "cols": 80,
+    "rows": 3000000,
+    "peak_rss_mb": 734.18,
+    "rows_per_s": 20504.8
+  }
+]

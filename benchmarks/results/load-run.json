@@ -1,0 +1,14 @@
+{
+  "mechanism": "cgroup",
+  "budget_mb": 4096.0,
+  "rows": 0,
+  "cols": 10,
+  "chunk_size": 200000,
+  "passed": false,
+  "peak_rss_mb": null,
+  "cgroup_peak_mb": 4096.0,
+  "seconds": 70.77,
+  "rows_per_s": null,
+  "csv": "benchmarks/results/load-curve.csv",
+  "note": "killed by signal 9 -- the kernel intervened"
+}

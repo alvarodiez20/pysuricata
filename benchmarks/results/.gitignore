@@ -1,0 +1,3 @@
+# The recorded curves and the rendered report are the artefacts this directory
+# exists for, and they are committed deliberately. Nothing else here is.
+*.log

@@ -150,3 +150,8 @@ contact-sheet/
 
 # Screenshot from web/e2e.py (#1). Same as contact-sheet/ above.
 e2e-out/
+
+# Parquet fixtures for benchmarks/billion.py. Several GB by design -- the point
+# of that run is a file larger than the memory ceiling reading it, and the
+# command that rebuilds it is in examples/billion_rows.ipynb.
+.parquet-fixture/
