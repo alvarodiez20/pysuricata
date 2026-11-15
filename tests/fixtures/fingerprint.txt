@@ -180,6 +180,12 @@ attr::::percentage	25
 attr::::percentage	48.7%
 attr::::percentage	50
 attr::::percentage	51.3%
+attr::::threshold	&gt;1%
+attr::::threshold	&gt;20%
+attr::::threshold	&gt;20%
+attr::::value	100%
+attr::::value	2.9%
+attr::::value	75.4%
 attr::Feb::count	147
 attr::Feb::pct	16.5
 attr::Fri::count	144
@@ -965,12 +971,12 @@ kv::col_age::negatives	0
 kv::col_age::negatives	0%
 kv::col_age::outliers	0
 kv::col_age::outliers	0%
-kv::col_age::p1 (≈)	1
-kv::col_age::p10 (≈)	9
-kv::col_age::p5 (≈)	4
-kv::col_age::p90 (≈)	73
-kv::col_age::p95 (≈)	76
-kv::col_age::p99 (≈)	79
+kv::col_age::p1	1
+kv::col_age::p10	9
+kv::col_age::p5	4
+kv::col_age::p90	73
+kv::col_age::p95	76
+kv::col_age::p99	79
 kv::col_age::q1 (p25)	22
 kv::col_age::q1 (p25)	22
 kv::col_age::q3 (p75)	61
@@ -988,8 +994,8 @@ kv::col_booked::business hours	24.2%
 kv::col_booked::count	891
 kv::col_booked::missing	0
 kv::col_booked::missing	0%
-kv::col_booked::unique (≈)	891
-kv::col_booked::unique timestamps (≈)	891
+kv::col_booked::unique	891
+kv::col_booked::unique timestamps	891
 kv::col_booked::weekend ratio	27.3%
 kv::col_booked::weekend share	27.3%
 kv::col_cabin::count	219
@@ -1028,12 +1034,12 @@ kv::col_fare::negatives	0
 kv::col_fare::negatives	0%
 kv::col_fare::outliers	2.9%
 kv::col_fare::outliers	26
-kv::col_fare::p1 (≈)	3.399
-kv::col_fare::p10 (≈)	10.19
-kv::col_fare::p5 (≈)	6.94
-kv::col_fare::p90 (≈)	77.04
-kv::col_fare::p95 (≈)	95.21
-kv::col_fare::p99 (≈)	134.1
+kv::col_fare::p1	3.399
+kv::col_fare::p10	10.19
+kv::col_fare::p5	6.94
+kv::col_fare::p90	77.04
+kv::col_fare::p95	95.21
+kv::col_fare::p99	134.1
 kv::col_fare::q1 (p25)	19.08
 kv::col_fare::q1 (p25)	19.08
 kv::col_fare::q3 (p75)	54.23

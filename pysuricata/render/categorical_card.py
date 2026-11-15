@@ -10,6 +10,7 @@ from .card_config import DEFAULT_CAT_CONFIG, DEFAULT_CHART_DIMS
 from .card_types import BarData, CategoricalStats, QualityFlags
 from .flag_reference import even_split_pct
 from .format_utils import ordinal_number
+from .margin import count_margin_html, lower_bound_note
 from .triage import annotate_flags
 
 # Top-5 coverage below this means a bar chart of the top values would be a row
@@ -536,7 +537,12 @@ class CategoricalCardRenderer(CardRenderer):
             ("Count", f"{int(getattr(stats, 'count', 0)):,}", "num"),
             (
                 f"Unique{'' if getattr(stats, 'unique_est_exact', False) else ' (≈)'}",
-                f"{int(getattr(stats, 'unique_est', 0)):,}",
+                f"{int(getattr(stats, 'unique_est', 0)):,}"
+                + count_margin_html(
+                    getattr(stats, "unique_est", None),
+                    getattr(stats, "unique_ci_lo", None),
+                    getattr(stats, "unique_ci_hi", None),
+                ),
                 "num",
             ),
             (
@@ -1573,7 +1579,7 @@ class CategoricalCardRenderer(CardRenderer):
             '<table class="common-values-table enhanced">'
             "<thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead>"
             f"<tbody>{body}</tbody>"
-            "</table>"
+            "</table>" + lower_bound_note(getattr(stats, "top_items_uncertainty", 0))
         )
 
     def _build_missing_values_table(

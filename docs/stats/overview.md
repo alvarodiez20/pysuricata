@@ -117,9 +117,10 @@ every missing-value count.
 
 | value | from | error |
 |---|---|---|
-| quantiles (`q1`, `median`, `q3`, and IQR/MAD) | reservoir sample | \(\approx 1/\sqrt{k}\) — about **0.7%** at the default 20,000, and 3.2% at 1,000. **Exact** below the sample size, and `approx` says which |
-| `unique_est`, variant counts | KMV sketch | \(\approx 1/\sqrt{k}\) — about **2.2%** at the default `uniques_k=2048` |
+| quantiles (`q1`, `median`, `q3`, and IQR/MAD) | reservoir sample | \(\approx 1/\sqrt{k}\) — about **0.7%** at the default 20,000, and 3.2% at 1,000. **Exact** below the sample size, and `approx` says which. Published per column as a 95% bracket: `q1_ci_lo` … `q3_ci_hi` |
+| `unique_est`, variant counts | KMV sketch | \(\approx 1/\sqrt{k}\) — about **2.2%** at the default `uniques_k=2048`. Published per column as `unique_ci_lo` / `unique_ci_hi`, 95% |
 | `duplicate_rows_est` | KMV over row hashes | reported with `duplicate_rows_uncertainty` |
+| `outliers_iqr_est` | sample count, scaled | `outliers_iqr_ci_lo` / `outliers_iqr_ci_hi`, 95% — sampling error only |
 | `top_items` counts | Misra-Gries | **lower bounds** — a count never overstates, and the counters neither partition the column nor sum to the row count |
 
 **Deterministic:** reproducible by default. `random_seed` is `0`, not `None`, so

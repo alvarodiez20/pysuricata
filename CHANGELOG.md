@@ -16,6 +16,42 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **Approximate figures say how approximate.** `(≈)` told a reader that a
+  number was an estimate and nothing about how good one, and the readings it
+  invites are a factor of four apart: a median from 20,000 of 60,000 values is
+  good to about 1% of the spread, a distinct count from a 2,048-hash sketch to
+  about 4% of itself. Every estimate now carries a **95% interval**, printed
+  after the figure in the report (`19.99 ± 0.38`) and published beside it in
+  `summarize()` as a `_ci_lo` / `_ci_hi` pair:
+
+  | estimate | payload keys | from |
+  |---|---|---|
+  | distinct count, all column kinds | `unique_ci_lo`, `unique_ci_hi` | KMV's relative standard error, clipped to `[k, count]` |
+  | `q1`, `median`, `q3` (and P1–P99 in the report) | `q1_ci_lo` … `q3_ci_hi` | the reservoir's own order statistics — distribution-free, with the finite-population correction |
+  | `outliers_iqr_est` | `outliers_iqr_ci_lo`, `outliers_iqr_ci_hi` | Wilson's interval on the sampled share |
+
+  **Measured, not assumed:** over 200 independently drawn 60,000-row columns
+  per estimate, each interval is asserted to contain an exact computation of
+  the same quantity at least 90% of the time
+  (`tests/test_error_margins.py`); a 300-column run while building it gave
+  95.7%, 95.0% and 97.7% for the three quartiles and 95.3% for the outlier
+  count.
+
+  An exact figure prints no margin and publishes a zero-width interval, so
+  `lo == hi` is the test for "counted". A key column's interval is one-sided
+  and printed as its bounds — `126,000 (120,541 – 126,000)` — because the
+  sketch cannot certify a key is unique, and `Duplicates 0` alone said it had.
+  Nothing exact gained a margin: `Min`, `Max`, `Mean` and the counts see every
+  value. `iqr`, `mad` and `outliers_mod_zscore_est` have none either, on
+  purpose — see `docs/summary-schema.md`.
+
+  Adding keys does not move `schema_version`.
+
+- **Top-k counts are captioned as lower bounds in the report.** The bound has
+  been in the payload since #328 (`top_items_uncertainty`); the Common values
+  table printed the counts beside it with nothing. One line under the table,
+  once, when the counters evicted.
+
 - **The payload contract is checked against the payload** (#251).
   `docs/summary-schema.md` is the one copy of "what each column kind reports"
   that is meant to be tied to the code, and nothing tied it. `check_docs.py`
@@ -119,6 +155,23 @@ quoted when both sides were measured in the same round-robin run.
   copies during assembly. That half of #207's exit is #39's subject.
 
 ### Fixed
+
+- **The mean's 95% interval used 1.96 at every sample size.** The code had a
+  branch for `n < 30` that assigned the same constant, while
+  `docs/stats/numeric.md` documented Student's t. At five values the right
+  multiplier is 2.776, so `ci_lo` / `ci_hi` were 29% too narrow exactly where
+  the mean is least pinned down. Unchanged to four figures above a few hundred
+  rows.
+- **Exact figures labelled approximate.** The six tail percentiles in the
+  Quantiles pane carried `(≈)` unconditionally and the three quartiles beside
+  them never did; the datetime card's `Unique` read an `approx` field its
+  summary did not have and defaulted to "approximate"; the identifier card's
+  `Distinct` and `Duplicates` were marked always. All four now follow whether
+  the figure was sampled or sketched. Datetime columns publish
+  `unique_est_exact`, as the other kinds already did.
+- **`Outliers 0` from a sample was presented as a count.** Zero sampled hits
+  scales to zero and so looked unscaled; it now carries `(≈)` and its interval,
+  `(0 – 21)` on a 126,000-row column.
 
 - **The chunk-metadata suite stops asserting wall-clock noise** (#354).
   `test_performance_impact` compared one timed run per side against a 1.5x

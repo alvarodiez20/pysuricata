@@ -176,6 +176,8 @@ _DEFINED_WHEN_EMPTY = frozenset(
         "count",
         "missing",
         "unique_est",
+        "unique_ci_lo",
+        "unique_ci_hi",
         "inf",
         "zeros",
         "negatives",
@@ -496,6 +498,20 @@ class ReportOrchestrator:
                     "mad": _f(s.mad),
                     "ci_lo": _f(s.ci_lo),
                     "ci_hi": _f(s.ci_hi),
+                    # 95% intervals on the estimates above, the same ones the
+                    # card prints beside them. Zero-width when the figure is
+                    # exact, so `lo == hi` is the test for "counted, not
+                    # estimated" -- no second flag to keep in step.
+                    "unique_ci_lo": _i(s.unique_ci_lo),
+                    "unique_ci_hi": _i(s.unique_ci_hi),
+                    "q1_ci_lo": _f(s.q1_ci_lo),
+                    "q1_ci_hi": _f(s.q1_ci_hi),
+                    "median_ci_lo": _f(s.median_ci_lo),
+                    "median_ci_hi": _f(s.median_ci_hi),
+                    "q3_ci_lo": _f(s.q3_ci_lo),
+                    "q3_ci_hi": _f(s.q3_ci_hi),
+                    "outliers_iqr_ci_lo": _i(s.outliers_iqr_ci_lo),
+                    "outliers_iqr_ci_hi": _i(s.outliers_iqr_ci_hi),
                     "jb_chi2": _f(s.jb_chi2),
                     "outliers_mod_zscore_est": int(s.outliers_mod_zscore),
                     # The pre-0.1.6 name, kept beside the new one. Renaming a
@@ -537,6 +553,8 @@ class ReportOrchestrator:
                     # instead of a confident wrong 37. Zero means exact (#328).
                     "top_items_uncertainty": _i(s.top_items_uncertainty),
                     "unique_est_exact": bool(s.unique_est_exact),
+                    "unique_ci_lo": _i(s.unique_ci_lo),
+                    "unique_ci_hi": _i(s.unique_ci_hi),
                     "approx": bool(s.approx),
                     "mem_bytes": _i(s.mem_bytes),
                     "dtype": str(s.dtype_str),
@@ -571,6 +589,9 @@ class ReportOrchestrator:
                     "mem_bytes": _i(s.mem_bytes),
                     "dtype": str(s.dtype_str),
                     "unique_est": _i(s.unique_est),
+                    "unique_est_exact": bool(s.unique_est_exact),
+                    "unique_ci_lo": _i(s.unique_ci_lo),
+                    "unique_ci_hi": _i(s.unique_ci_hi),
                     "mono_inc": bool(s.mono_inc),
                     "mono_dec": bool(s.mono_dec),
                     "time_span_days": _f(s.time_span_days),

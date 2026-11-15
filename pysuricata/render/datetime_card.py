@@ -17,9 +17,20 @@ from .flag_reference import (
     WEEKEND_HEAVY_FLAG_PCT,
     flat_verdict,
 )
+from .margin import count_margin_html
 from .svg_utils import nice_ticks as _nice_ticks
 from .temporal_charts import TemporalChartRenderer
 from .triage import annotate_flags
+
+
+def _unique_with_margin(stats: DateTimeStats) -> str:
+    """The distinct-timestamp count and, when it was sketched, its interval."""
+    unique = int(getattr(stats, "unique_est", 0) or 0)
+    return f"{unique:,}" + count_margin_html(
+        unique,
+        getattr(stats, "unique_ci_lo", None),
+        getattr(stats, "unique_ci_hi", None),
+    )
 
 
 class DateTimeCardRenderer(CardRenderer):
@@ -174,8 +185,8 @@ class DateTimeCardRenderer(CardRenderer):
         data = [
             ("Count", f"{int(getattr(stats, 'count', 0)):,}", "num"),
             (
-                f"Unique{' (≈)' if getattr(stats, 'approx', True) else ''}",
-                f"{int(getattr(stats, 'unique_est', 0)):,}",
+                f"Unique{'' if getattr(stats, 'unique_est_exact', False) else ' (≈)'}",
+                _unique_with_margin(stats),
                 "num",
             ),
             (
@@ -759,8 +770,8 @@ class DateTimeCardRenderer(CardRenderer):
                 "timestamp-value",
             ),
             (
-                f"Unique timestamps{' (≈)' if getattr(stats, 'approx', True) else ''}",
-                f"{int(getattr(stats, 'unique_est', 0)):,}",
+                f"Unique timestamps{'' if getattr(stats, 'unique_est_exact', False) else ' (≈)'}",
+                _unique_with_margin(stats),
                 "num",
             ),
             ("Timezone", self._timezone_display(stats), None),

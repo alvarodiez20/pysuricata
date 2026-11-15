@@ -192,7 +192,10 @@ class TestTheFaceCarriesEightStatistics:
         caps = re.findall(r'class="vstat__cap">([^<]+)<', face)
         assert caps == [
             "Count",
-            "Unique (≈)",
+            # No `(≈)`: the fixture is short enough that the sketch counted
+            # rather than estimated. The card marked it approximate anyway,
+            # reading an `approx` field the datetime summary never had.
+            "Unique",
             "Missing",
             "Timezone",
             "Time span",

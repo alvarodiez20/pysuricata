@@ -21,6 +21,12 @@ from .algorithms import (
     StreamingMoments,
 )
 from .config import NumericConfig
+from .margins import (
+    distinct_interval,
+    quantile_interval,
+    scaled_count_interval,
+    t_critical_95,
+)
 from .protocols import AccumulatorKind, PicklableAccumulator
 from .sketches import KMV, MisraGries, ReservoirSampler, StreamingHistogram, mad
 
@@ -133,6 +139,20 @@ class NumericSummary:
     unique_est_exact: bool = False
     #: What the reservoir itself held, before `sample_scale` was applied.
     outliers_iqr_sample: int = 0
+    #: 95% intervals on the figures above that are estimates -- see
+    #: `accumulators/margins.py` for where each comes from. **Zero-width when
+    #: the figure is exact**, so `lo == hi == value` is how a consumer reads
+    #: "this one was counted". NaN only for a column with no finite values.
+    unique_ci_lo: int = 0
+    unique_ci_hi: int = 0
+    q1_ci_lo: float = float("nan")
+    q1_ci_hi: float = float("nan")
+    median_ci_lo: float = float("nan")
+    median_ci_hi: float = float("nan")
+    q3_ci_lo: float = float("nan")
+    q3_ci_hi: float = float("nan")
+    outliers_iqr_ci_lo: int = 0
+    outliers_iqr_ci_hi: int = 0
     outliers_mod_zscore_sample: int = 0
     # Extremes with global indices
     min_items: list[tuple[Any, float]] = field(default_factory=list)
@@ -619,6 +639,22 @@ class NumericAccumulator(PicklableAccumulator):
         # its bound is.
         unique_est = min(self._uniques.estimate(), self.count)
         unique_ratio = unique_est / max(1, self.count)
+        unique_ci_lo, unique_ci_hi = distinct_interval(
+            unique_est, self._uniques.k, self._uniques.is_exact, self.count
+        )
+
+        # The same reservoir, read as a bracket rather than a point. Zero-width
+        # when the reservoir holds the column, so the three exact cases and the
+        # three sampled ones come out of one code path.
+        quantile_cis = self._quantile_intervals(sample_values, quantiles)
+
+        # Clamped around the published figure: Wilson's centre is not the
+        # scaled count, and after rounding the two can sit a row apart.
+        outliers_ci_lo, outliers_ci_hi = scaled_count_interval(
+            outliers_iqr_sample, len(sample_values), self.count
+        )
+        outliers_ci_lo = min(outliers_ci_lo, outliers_iqr)
+        outliers_ci_hi = max(outliers_ci_hi, outliers_iqr)
 
         # Compute robust statistics
         jb_chi2 = self._compute_jarque_bera(
@@ -740,8 +776,49 @@ class NumericAccumulator(PicklableAccumulator):
             unique_est_exact=self._uniques.is_exact,
             outliers_iqr_sample=outliers_iqr_sample,
             outliers_mod_zscore_sample=outliers_mod_zscore_sample,
+            unique_ci_lo=unique_ci_lo,
+            unique_ci_hi=unique_ci_hi,
+            q1_ci_lo=quantile_cis["q1"][0],
+            q1_ci_hi=quantile_cis["q1"][1],
+            median_ci_lo=quantile_cis["median"][0],
+            median_ci_hi=quantile_cis["median"][1],
+            q3_ci_lo=quantile_cis["q3"][0],
+            q3_ci_hi=quantile_cis["q3"][1],
+            outliers_iqr_ci_lo=outliers_ci_lo,
+            outliers_iqr_ci_hi=outliers_ci_hi,
             chunk_metadata=final_chunk_metadata,
         )
+
+    def _quantile_intervals(
+        self, sample_values: np.ndarray, quantiles: dict[str, float]
+    ) -> dict[str, tuple[float, float]]:
+        """95% brackets on the three quartiles, from the reservoir's own order.
+
+        Args:
+            sample_values: The reservoir.
+            quantiles: The point estimates already computed from it.
+
+        Returns:
+            `{"q1": (lo, hi), ...}`. `(value, value)` when the reservoir holds
+            every finite value, and `(nan, nan)` when it holds none.
+        """
+        names = (("q1", 0.25), ("median", 0.50), ("q3", 0.75))
+        if len(sample_values) == 0:
+            return {name: (float("nan"), float("nan")) for name, _ in names}
+        if len(sample_values) >= self.count:
+            return {name: (quantiles[name], quantiles[name]) for name, _ in names}
+        ordered = np.sort(np.asarray(sample_values, dtype=float))
+        out = {}
+        for name, p in names:
+            lo, hi = quantile_interval(ordered, p, self.count) or (
+                quantiles[name],
+                quantiles[name],
+            )
+            # The point estimate interpolates between two order statistics and
+            # the bracket is made of order statistics, so it always contains
+            # the estimate; the clamp is for the float64 last digit.
+            out[name] = (min(lo, quantiles[name]), max(hi, quantiles[name]))
+        return out
 
     def _compute_quantiles(self, values: np.ndarray) -> dict[str, float]:
         """Compute quantiles from sample values using optimized algorithms.
@@ -924,12 +1001,9 @@ class NumericAccumulator(PicklableAccumulator):
         if n <= 1 or se <= 0:
             return float("nan"), float("nan")
 
-        # Use t-distribution for small samples, normal for large samples
-        if n < 30:
-            # For small samples, use t-distribution (approximate with normal for simplicity)
-            t_value = 1.96  # Approximate t-value for 95% CI
-        else:
-            t_value = 1.96  # Normal distribution for large samples
+        # Student's t, not 1.96 throughout. Both branches here used to assign
+        # 1.96, so the interval was 29% too narrow at five values.
+        t_value = t_critical_95(n - 1)
 
         margin_of_error = t_value * se
         return mean - margin_of_error, mean + margin_of_error
