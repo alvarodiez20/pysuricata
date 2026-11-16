@@ -16,7 +16,7 @@ from .card_types import NumericStats, QualityFlags, QuantileData
 from .format_utils import fmt_compact_scientific as _fmt_compact_scientific
 from .histogram_svg import SVGHistogramRenderer
 from .identifier import identifier_facts, looks_like_identifier
-from .margin import count_margin_html, lower_bound_note, margin_html
+from .margin import count_margin_html, format_margin, lower_bound_note, margin_html
 from .outlier_fence import (
     build_fence,
     classify,
@@ -683,7 +683,7 @@ class NumericCardRenderer(CardRenderer):
         ):
             half = (float(ci_hi) - float(ci_lo)) / 2.0
             lines.append(
-                f"The mean carries a ±{self.format_number(half)} 95% interval, "
+                f"The mean carries a ±{format_margin(half)} 95% interval, "
                 f"so {self.format_number(mean)} is well determined at this "
                 "sample size."
             )
@@ -695,7 +695,8 @@ class NumericCardRenderer(CardRenderer):
     def _build_stats_table(self, stats: NumericStats) -> str:
         """Build detailed statistics table."""
         # IQR and MAD are derived from the same reservoir as the quartiles, so
-        # they inherit the same status. Everything else in this table comes
+        # they inherit the same status. The IQR carries an interval; MAD does
+        # not, because its error depends on densities a reservoir cannot give. Everything else in this table comes
         # from the streaming moments, which see every value.
         sampled = " (≈)" if quantiles_are_sampled(stats) else ""
         data = [
@@ -705,7 +706,17 @@ class NumericCardRenderer(CardRenderer):
             ("Std Error", self.format_number(stats.se), "num"),
             ("Coeff. of Var", self.format_number(stats.cv), "num"),
             ("Geometric mean", self.format_number(stats.gmean), "num"),
-            (f"IQR{sampled}", self.format_number(stats.iqr), "num"),
+            (
+                f"IQR{sampled}",
+                self.format_number(stats.iqr)
+                + margin_html(
+                    stats.iqr,
+                    getattr(stats, "iqr_ci_lo", None),
+                    getattr(stats, "iqr_ci_hi", None),
+                    fmt=self.format_number,
+                ),
+                "num",
+            ),
             (f"MAD{sampled}", self.format_number(stats.mad), "num"),
             ("Skew", self.format_number(stats.skew), "num"),
             ("Kurtosis", self.format_number(stats.kurtosis), "num"),
@@ -717,7 +728,7 @@ class NumericCardRenderer(CardRenderer):
             ),
             (
                 "Granularity",
-                f"{self.safe_html_escape(str(stats.gran_step)) if stats.gran_step is not None else '—'} (decimals: {stats.gran_decimals if stats.gran_decimals is not None else '—'})",
+                self._granularity_text(stats),
                 None,
             ),
             ("Heaping %", self.format_number(stats.heap_pct), "num"),
@@ -735,6 +746,21 @@ class NumericCardRenderer(CardRenderer):
         ]
 
         return self.table_builder.build_key_value_table(data)
+
+    @staticmethod
+    def _granularity_text(stats: NumericStats) -> str:
+        """The step the values sit on, or a dash when they sit on none.
+
+        A continuous column has no granularity, and the row used to print a
+        histogram artefact there with seventeen digits. The step is shortened
+        to the figure it was recovered from; a dash carries no decimals clause.
+        """
+        step = stats.gran_step
+        if step is None or not math.isfinite(float(step)):
+            return "—"
+        text = f"{float(step):.12g}"
+        decimals = stats.gran_decimals
+        return text if decimals is None else f"{text} (decimals: {decimals})"
 
     def _build_common_values_table(self, stats: NumericStats, col_id: str = "") -> str:
         """Ten rows, three columns, and the finding said out loud.
@@ -1098,13 +1124,24 @@ class NumericCardRenderer(CardRenderer):
         sampled = fence.n_sampled and fence.n_sampled < fence.n_total
         of_what = "sampled values" if sampled else "values"
 
+        # The card's Outliers row scales this count to the whole column, so the
+        # two figures differ by the sampling ratio. The table footnote said so,
+        # below the fold and only when rows were listed; the header is where
+        # the reader sees both numbers, so it is where they are reconciled.
+        scaled = int(getattr(stats, "outliers_iqr", 0) or 0)
+        reconciled = (
+            f" · ≈{scaled:,} across all {fence.n_total:,}"
+            if sampled and scaled != fence.n_outliers
+            else ""
+        )
         header = (
             '<div class="fence-head">'
             f'<span class="fence-head__title">{name} · outliers</span>'
             '<span class="fence-head__rule"></span>'
             f'<span class="fence-head__count" data-col="{col_id}" '
             f'data-count="{fence.n_outliers}" data-pct="{pct:.1f}">'
-            f"{fence.n_outliers:,} of {denom:,} {of_what} · {pct:.1f}%</span>"
+            f"{fence.n_outliers:,} of {denom:,} {of_what} · {pct:.1f}%"
+            f"{reconciled}</span>"
             "</div>"
         )
         lede = f'<p class="fence-lede">{fence_verdict(fence, self.format_number)}</p>'
@@ -1177,11 +1214,22 @@ class NumericCardRenderer(CardRenderer):
                 f"{self.safe_html_escape(str(strongest))} at {value:+.3f}."
             )
 
+        # One interval per partner, keyed by name: the two lists are published
+        # in the same order, but a lookup does not depend on that staying true.
+        intervals = {
+            str(other): (lo, hi)
+            for other, lo, hi in (getattr(stats, "corr_top_ci", None) or [])
+        }
+
+        def margin(other: str, corr: float) -> str:
+            lo, hi = intervals.get(str(other), (None, None))
+            return margin_html(corr, lo, hi, fmt=lambda v: f"{v:+.3f}")
+
         rows = "".join(
             f'<div class="corr-partner">'
             f'<span class="corr-partner__name">{self.safe_html_escape(str(other))}</span>'
             f"{self._diverging_bar(corr)}"
-            f'<span class="corr-partner__value">{corr:+.3f}</span>'
+            f'<span class="corr-partner__value">{corr:+.3f}{margin(other, corr)}</span>'
             f"</div>"
             for other, corr in shown
         )

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from ..accumulators.margins import normal_half_width_95
 from ..accumulators.protocols import FinalizableAccumulator
 from ..render.missing_columns import create_missing_columns_renderer
 
@@ -43,8 +44,8 @@ def duplicate_fields(row_kmv: Any) -> dict[str, Any]:
     is a CI gate failing open in exactly the case it exists to catch.
     `duplicate_rows_hi` is `estimate.ceiling` when suppressed -- the exact
     figure the report prints, not a second computation of it -- and
-    `rows +/- uncertainty` when resolved, matching the "+/- sigma" the report
-    already shows beside a resolved count. Adding keys does not move
+    `rows +/- 1.96 * uncertainty` (rounded up) when resolved, the 95% interval the
+    report shows beside a resolved count. Adding keys does not move
     `schema_version` (`docs/versioning.md`).
     """
     if not hasattr(row_kmv, "duplicates"):
@@ -58,8 +59,13 @@ def duplicate_fields(row_kmv: Any) -> dict[str, Any]:
         }
     estimate = row_kmv.duplicates()
     if estimate.resolvable:
-        lo = max(0, estimate.rows - estimate.uncertainty)
-        hi = estimate.rows + estimate.uncertainty
+        # 95%, like every other interval in the payload. This was one sigma
+        # (~68%), the lone exception, and a reader comparing it with the
+        # quantile and distinct-count intervals beside it read it as the same
+        # confidence level. `duplicate_rows_uncertainty` stays one sigma.
+        half = normal_half_width_95(estimate.uncertainty)
+        lo = max(0, estimate.rows - half)
+        hi = estimate.rows + half
     else:
         lo = 0
         hi = estimate.ceiling

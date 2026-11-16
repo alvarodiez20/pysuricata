@@ -16,6 +16,27 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **Margins on the rest of what is estimated.** The intervals above covered the
+  quartiles, distinct counts and outlier counts; four more figures now carry one,
+  each from the method that suits it:
+
+  | figure | payload keys | from |
+  |---|---|---|
+  | `iqr` | `iqr_ci_lo`, `iqr_ci_hi` | the two quartile intervals combined at their asymptotic correlation of 1/3 — not as independent, which overstates the spread of a difference read from one sample |
+  | each entry of `corr_top` | `corr_top_ci` — `[partner, lo, hi]`, same order | Fisher's z over every row the pair shared; assumes independent rows |
+  | categorical `Mode %` | — (report only) | a ceiling: Misra-Gries counts only fall short, so the share is a floor, printed as a range and never as `±` |
+  | `duplicate_rows_lo` / `duplicate_rows_hi` | existing keys | now 95% — see **Changed** |
+
+  Measured: the IQR interval covers the true value in 382 of 400 runs (95.5%) on
+  a 2,000-value reservoir over 30,000 standard-normal rows. `mad` has no interval, deliberately:
+  its error depends on densities at three points a reservoir cannot estimate.
+
+- **`pysuricata check` stops gating on noise it can see.** A mean, median or
+  distinct-count threshold fires only when the move exceeds the limit **and** the
+  baseline's and the current run's 95% intervals do not overlap. It never
+  produces a finding the old rule would not have; a baseline written without
+  intervals gates exactly as before.
+
 - **Approximate figures say how approximate.** `(≈)` told a reader that a
   number was an estimate and nothing about how good one, and the readings it
   invites are a factor of four apart: a median from 20,000 of 60,000 values is
@@ -82,6 +103,16 @@ quoted when both sides were measured in the same round-robin run.
   until a mention in someone else's note satisfies it. All three are pinned.
 
 ### Changed
+
+- **`duplicate_rows_lo` / `duplicate_rows_hi` and the duplicates tile are 95%.**
+  They were one standard deviation, the only interval on the page that was, so
+  `± 2,730` beside a duplicate count read as the same confidence as the 95% beside
+  the quartiles. Both are now `rows ± ⌈1.96 σ⌉`. `duplicate_rows_uncertainty` is
+  still one sigma, so a consumer can apply any multiple of its own. A gate on
+  `duplicate_rows_hi` sees a slightly higher bound than before.
+
+- **`gran_step` and `gran_decimals` are `null` on a continuous column.** See
+  **Fixed**.
 
 - **The self-download is tested by downloading the report and re-opening it**
   (#39, first acceptance box). The download button does not ask the renderer
@@ -155,6 +186,34 @@ quoted when both sides were measured in the same round-robin run.
   copies during assembly. That half of #207's exit is #39's subject.
 
 ### Fixed
+
+- **Granularity was a histogram artefact, and printed on every float column.**
+  The step was the midpoint of the busiest bin of a histogram of the gaps, so a
+  continuous column reported `Granularity 35.881109943719636 (decimals: 10)` — a
+  fact about the histogram. It is now the largest step every gap is a whole
+  multiple of, checked against all of them, and `null` when the values sit on none
+  (`0.5`, `5` and `0.01` are found; a normal or lognormal sample reports nothing).
+  The card prints a dash instead of seventeen digits. `gran_step` and
+  `gran_decimals` are now `number | null` and `integer | null` in the schema.
+- **The mean's interval was printed to four significant figures in prose**
+  (`±0.4209`). A margin's third digit is not information; it is two.
+- **The Outliers pane and the card disagreed with no explanation.** The card
+  scales the reservoir's count to the column and the pane counts in the sample,
+  which differ by the sampling ratio. The footnote said so, below the fold and only
+  when rows were listed; the pane's header now carries both, in the form `A of B
+  sampled values · ≈N across all M`.
+- **Quantile-strip labels overlapped, and the narrow layout clipped digits.** Label
+  rows were 22px apart and a label is ~27px tall, so neighbours in different rows
+  overlapped by 5px at every width. Below 1,024px the strip keeps `Q1`, `P50` and
+  `Q3` and drops the tail captions, whose percentage gap knows nothing of pixels
+  (the ticks stay and the table lists every value). A datetime stat cell at 390px
+  cut `2020-01-01 00:46:32` to `2020-01-01 00…`, and a distinct-count margin was
+  cut mid-number; both now wrap at their own space. Costs 19px on the tallest
+  datetime card at 390px, recorded in `test_report_layout.py`.
+- **The fingerprint dropped any figure with a margin beside it.** A cell reading
+  `5.2% (5.2% – 6.5%)` is not a number, so `scripts/report_fingerprint.py` discarded
+  the fact — the regenerated fixture from the margins' first commit could not have
+  shown it. Margins are now stripped before the cell is read.
 
 - **The mean's 95% interval used 1.96 at every sample size.** The code had a
   branch for `n < 30` that assigned the same constant, while

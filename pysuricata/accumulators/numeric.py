@@ -23,6 +23,7 @@ from .algorithms import (
 from .config import NumericConfig
 from .margins import (
     distinct_interval,
+    iqr_interval,
     quantile_interval,
     scaled_count_interval,
     t_critical_95,
@@ -130,6 +131,9 @@ class NumericSummary:
     mono_dec: bool = False
     dtype_str: str = "numeric"
     corr_top: list[tuple[str, float]] = field(default_factory=list)
+    #: `(partner, lo, hi)` for each entry of `corr_top`, in the same order: the
+    #: 95% Fisher-z interval on that correlation. Empty when none was computed.
+    corr_top_ci: list[tuple[str, float, float]] = field(default_factory=list)
     sample_scale: float = 1.0
     #: How far below the truth every count in `top_values` may sit. Same
     #: guarantee as the categorical side: zero when the counters never evicted.
@@ -153,6 +157,8 @@ class NumericSummary:
     q3_ci_hi: float = float("nan")
     outliers_iqr_ci_lo: int = 0
     outliers_iqr_ci_hi: int = 0
+    iqr_ci_lo: float = float("nan")
+    iqr_ci_hi: float = float("nan")
     outliers_mod_zscore_sample: int = 0
     # Extremes with global indices
     min_items: list[tuple[Any, float]] = field(default_factory=list)
@@ -223,6 +229,7 @@ class NumericAccumulator(PicklableAccumulator):
         self._int_like_all = True
         self._dtype_str = "numeric"
         self._corr_top: list[tuple[str, float]] = []
+        self._corr_top_ci: list[tuple[str, float, float]] = []
         self._corr_threshold: float = 0.5
 
         # Memory tracking for big data optimization
@@ -317,6 +324,14 @@ class NumericAccumulator(PicklableAccumulator):
             items: List of (column_name, correlation) tuples
         """
         self._corr_top = list(items or [])
+
+    def set_corr_intervals(self, items: list[tuple[str, float, float]]) -> None:
+        """Attach the 95% interval on each correlation set by `set_corr_top`.
+
+        Args:
+            items: List of (column_name, lo, hi) tuples.
+        """
+        self._corr_top_ci = list(items or [])
 
     def set_corr_threshold(self, threshold: float) -> None:
         """Set correlation threshold for analytics.
@@ -648,6 +663,12 @@ class NumericAccumulator(PicklableAccumulator):
         # three sampled ones come out of one code path.
         quantile_cis = self._quantile_intervals(sample_values, quantiles)
 
+        # The IQR is a difference of two of those, and combined with the
+        # correlation between them rather than as if they were independent.
+        iqr_ci_lo, iqr_ci_hi = iqr_interval(
+            quantiles["q1"], quantiles["q3"], quantile_cis["q1"], quantile_cis["q3"]
+        )
+
         # Clamped around the published figure: Wilson's centre is not the
         # scaled count, and after rounding the two can sit a row apart.
         outliers_ci_lo, outliers_ci_hi = scaled_count_interval(
@@ -762,6 +783,7 @@ class NumericAccumulator(PicklableAccumulator):
             mono_dec=mono_dec,
             dtype_str=self._dtype_str,
             corr_top=self._corr_top,
+            corr_top_ci=self._corr_top_ci,
             corr_threshold=self._corr_threshold,
             min_items=min_pairs,
             max_items=max_pairs,
@@ -786,6 +808,8 @@ class NumericAccumulator(PicklableAccumulator):
             q3_ci_hi=quantile_cis["q3"][1],
             outliers_iqr_ci_lo=outliers_ci_lo,
             outliers_iqr_ci_hi=outliers_ci_hi,
+            iqr_ci_lo=iqr_ci_lo,
+            iqr_ci_hi=iqr_ci_hi,
             chunk_metadata=final_chunk_metadata,
         )
 
@@ -958,6 +982,7 @@ class NumericAccumulator(PicklableAccumulator):
         self._int_like_all = True
         self._bytes_seen = 0
         self._corr_top = []
+        self._corr_top_ci = []
 
         # A reset accumulator must replay identically, so rewind the generator
         # rather than continuing its stream.
@@ -1045,50 +1070,65 @@ class NumericAccumulator(PicklableAccumulator):
         if len(non_zero_diffs) == 0:
             return None, None
 
-        # Find the most common non-zero difference (granularity step) by
-        # histogramming the differences.
-        # Specify range explicitly and use python's min/max to avoid NumPy 2.1 _NoValue pointer bug when reloaded by pytest-cov
-        range_min, range_max = float(min(non_zero_diffs)), float(max(non_zero_diffs))
-        n_bins = int(min(50, len(non_zero_diffs)))
+        # Granularity is a property of a *lattice*: the values sit on multiples
+        # of one step (0.5, 5, 0.01). A continuous column has no such step, and
+        # the previous answer -- the midpoint of the busiest bin of a histogram
+        # of the gaps -- always produced a number, so a float column reported
+        # "Granularity 35.88110994 (decimals: 10)", a fact about the histogram
+        # and not about the data. Find the largest step that divides the gaps
+        # and say nothing when there is none.
+        gran_step = self._lattice_step(non_zero_diffs, finite_values)
+        if gran_step is None:
+            return None, None
 
-        # A strictly positive spread is not sufficient. The bins must also be
-        # wide enough to be representable: for values around 1e-15 whose spread
-        # is ~1e-31, every computed edge rounds to the same float64 and numpy
-        # (>= 2.5) rejects the call outright rather than silently returning
-        # degenerate bins. When the differences are all equal to within
-        # floating-point resolution there is nothing to histogram anyway -- the
-        # granularity simply *is* that difference.
-        spread = range_max - range_min
-        min_representable = float(np.spacing(max(abs(range_min), abs(range_max))))
-        if n_bins < 1 or spread <= min_representable * n_bins:
-            gran_step = float(np.median(non_zero_diffs))
-        else:
-            hist, bin_edges = np.histogram(
-                non_zero_diffs, bins=n_bins, range=(range_min, range_max)
-            )
-            if len(hist) > 0:
-                most_frequent_bin = int(np.argmax(hist))
-                gran_step = (
-                    float(
-                        bin_edges[most_frequent_bin] + bin_edges[most_frequent_bin + 1]
-                    )
-                    / 2.0
-                )
-            else:
-                gran_step = float(np.min(non_zero_diffs))
-
-        # Calculate decimal places
-        if gran_step > 0:
-            # Count decimal places by finding the smallest power of 10 that makes the number an integer
-            decimal_places = 0
-            temp = gran_step
-            while abs(temp - round(temp)) > 1e-10 and decimal_places < 10:
-                temp *= 10
-                decimal_places += 1
-        else:
-            decimal_places = None
+        # Decimal places: how many tenths before the step is a whole number.
+        # Relative to the step, so 1e-15 is not mistaken for zero decimals.
+        decimal_places: int | None = None
+        for places in range(0, 13):
+            scaled = gran_step * 10.0**places
+            if round(scaled) >= 1 and abs(scaled - round(scaled)) <= 1e-9 * scaled:
+                decimal_places = places
+                break
 
         return float(gran_step), decimal_places
+
+    @staticmethod
+    def _lattice_step(diffs: np.ndarray, values: np.ndarray) -> float | None:
+        """The largest step every gap is a whole multiple of, or ``None``.
+
+        A tolerant Euclid over the smallest distinct gaps, then a check against
+        all of them. The tolerance has two parts: a relative one on the step,
+        and the rounding noise of subtracting two values of this magnitude.
+        """
+        smallest = float(np.min(diffs))
+        noise = float(np.spacing(float(np.max(np.abs(values))))) * 8.0
+        tol = max(smallest * 1e-6, noise)
+        if tol >= smallest / 4.0:
+            # The gaps are no larger than the arithmetic can resolve.
+            return smallest
+
+        step = smallest
+        for gap in np.unique(diffs)[:256]:
+            a, b = float(gap), step
+            while b > tol:
+                a, b = b, a % b
+            step = a if a > tol else step
+        if step < smallest / 100.0:
+            return None
+
+        ratio = diffs / step
+        off = np.abs(ratio - np.rint(ratio)) * step
+        if float(np.mean(off <= tol * 4.0)) < 0.99:
+            return None
+        # The Euclid above lands on 0.00999999989 for cents near a million.
+        # Report the shortest figure that is still the same step within the
+        # arithmetic's own noise, so the card says 0.01.
+        slack = max(tol * 4.0, step * 1e-6)
+        for digits in range(1, 13):
+            nice = float(f"{step:.{digits}g}")
+            if abs(nice - step) <= slack:
+                return nice
+        return float(step)
 
     def _compute_heaping_percentage(self, values: np.ndarray) -> float:
         """Compute heaping percentage (percentage of values ending in 0 or 5).

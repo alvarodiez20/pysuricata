@@ -308,3 +308,138 @@ class TestTheMarginIsFormattedToWhatItKnows:
 
     def test_a_count_margin_rounds_up(self):
         assert "± 4<" in count_margin_html(100, 97, 104)
+
+
+class TestIQRInterval:
+    """The IQR is a difference of two quartiles read from one sample, so its
+    interval comes from theirs combined at their correlation, not independently."""
+
+    def test_correlation_makes_it_narrower_than_independent_quartiles(self):
+        from pysuricata.accumulators.margins import iqr_interval
+
+        # Quartiles 10 and 20, each good to +/- 1: the gap is 10.
+        lo, hi = iqr_interval(10.0, 20.0, (9.0, 11.0), (19.0, 21.0))
+        independent = 2.0**0.5  # what a sum of variances would claim
+        correlated = (2.0 - 2.0 / 3.0) ** 0.5
+        assert hi - 10.0 == pytest.approx(correlated)
+        assert 10.0 - lo == pytest.approx(correlated)
+        assert correlated < independent
+
+    def test_exact_quartiles_give_an_exact_iqr(self):
+        from pysuricata.accumulators.margins import iqr_interval
+
+        assert iqr_interval(1.0, 4.0, (1.0, 1.0), (4.0, 4.0)) == (3.0, 3.0)
+
+    def test_a_missing_quartile_interval_gives_nan(self):
+        import math
+
+        from pysuricata.accumulators.margins import iqr_interval
+
+        lo, hi = iqr_interval(1.0, 4.0, (float("nan"), float("nan")), (4.0, 4.0))
+        assert math.isnan(lo) and math.isnan(hi)
+
+    def test_coverage_on_a_sampled_column(self):
+        """Roughly 95% of runs must bracket the true IQR."""
+        import numpy as np
+        import pandas as pd
+
+        from pysuricata import summarize
+
+        true_iqr = 1.3489795003921634  # standard normal
+        hits, runs = 0, 120
+        for seed in range(runs):
+            rng = np.random.default_rng(seed)
+            frame = pd.DataFrame({"x": rng.standard_normal(30_000)})
+            col = summarize(frame, seed=seed, sample=2_000)["columns"]["x"]
+            hits += col["iqr_ci_lo"] <= true_iqr <= col["iqr_ci_hi"]
+        assert hits / runs >= 0.88, hits / runs
+
+
+class TestCorrelationInterval:
+    """Fisher's z: asymmetric in r, bounded by [-1, 1], narrowing with n."""
+
+    def test_the_interval_brackets_the_estimate_and_stays_in_range(self):
+        from pysuricata.compute.analysis.correlation import fisher_interval
+
+        lo, hi = fisher_interval(0.95, 50)
+        assert -1.0 < lo < 0.95 < hi < 1.0
+        # Asymmetric: the arm toward 1 is the shorter one.
+        assert (0.95 - lo) > (hi - 0.95)
+
+    def test_more_rows_narrow_it(self):
+        from pysuricata.compute.analysis.correlation import fisher_interval
+
+        narrow = fisher_interval(0.5, 10_000)
+        wide = fisher_interval(0.5, 30)
+        assert (narrow[1] - narrow[0]) < (wide[1] - wide[0])
+
+    def test_too_few_rows_give_no_interval(self):
+        import math
+
+        from pysuricata.compute.analysis.correlation import fisher_interval
+
+        assert all(math.isnan(v) for v in fisher_interval(0.5, 3))
+
+    def test_a_perfect_correlation_is_its_own_interval(self):
+        from pysuricata.compute.analysis.correlation import fisher_interval
+
+        assert fisher_interval(1.0, 100) == (1.0, 1.0)
+
+    def test_the_payload_publishes_one_interval_per_partner(self):
+        import numpy as np
+        import pandas as pd
+
+        from pysuricata import summarize
+
+        rng = np.random.default_rng(0)
+        x = rng.standard_normal(2_000)
+        frame = pd.DataFrame({"a": x, "b": x + rng.standard_normal(2_000) * 0.5})
+        col = summarize(frame, seed=0)["columns"]["a"]
+        assert [p[0] for p in col["corr_top"]] == [p[0] for p in col["corr_top_ci"]]
+        (_, r), (_, lo, hi) = col["corr_top"][0], col["corr_top_ci"][0]
+        assert lo < r < hi
+
+    def test_the_card_prints_it_beside_the_coefficient(self):
+        import numpy as np
+        import pandas as pd
+
+        from pysuricata import profile
+
+        rng = np.random.default_rng(0)
+        x = rng.standard_normal(2_000)
+        frame = pd.DataFrame({"a": x, "b": x + rng.standard_normal(2_000) * 0.5})
+        html = profile(frame, seed=0).html
+        import re
+
+        assert re.search(r'class="corr-partner__value">[^<]*<span class="moe"', html), (
+            "the interval sits inside the coefficient's own cell"
+        )
+
+
+class TestModeShareIsAFloor:
+    """`Mode %` is a Misra-Gries count over the column, and those counts only
+    ever fall short -- so the share carries a ceiling, never a `±`."""
+
+    def _card(self, uncertainty, mode_n=2_000, count=10_000):
+        from types import SimpleNamespace
+
+        from pysuricata.render.categorical_card import CategoricalCardRenderer
+
+        stats = SimpleNamespace(
+            count=count,
+            top_items=[("a", mode_n)],
+            top_items_uncertainty=uncertainty,
+        )
+        return CategoricalCardRenderer()._compute_categorical_stats(stats)
+
+    def test_the_ceiling_adds_the_shortfall(self):
+        card = self._card(uncertainty=500)
+        assert card["mode_pct"] == pytest.approx(20.0)
+        assert card["mode_pct_hi"] == pytest.approx(25.0)
+
+    def test_an_exact_sketch_has_no_ceiling_above_the_figure(self):
+        card = self._card(uncertainty=0)
+        assert card["mode_pct_hi"] == card["mode_pct"]
+
+    def test_the_ceiling_cannot_pass_a_hundred_percent(self):
+        assert self._card(uncertainty=50_000)["mode_pct_hi"] == 100.0

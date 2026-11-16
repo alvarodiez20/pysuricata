@@ -188,6 +188,7 @@ _DEFINED_WHEN_EMPTY = frozenset(
         "approx",
         # collections whose correct value is empty
         "corr_top",
+        "corr_top_ci",
         "top_values",
         "top_items",
         "min_items",
@@ -356,6 +357,7 @@ class ReportOrchestrator:
                 threshold=0.0,
                 max_per_col=self.config.corr_max_cols,
             )
+            interval_map = corr_est.top_intervals(top_map)
             for name in kinds.numeric:
                 acc = accs.get(name)
                 if acc is None:
@@ -363,6 +365,11 @@ class ReportOrchestrator:
                 if hasattr(acc, "set_corr_top"):
                     try:
                         acc.set_corr_top(top_map.get(name, []))
+                    except Exception:
+                        pass
+                if hasattr(acc, "set_corr_intervals"):
+                    try:
+                        acc.set_corr_intervals(interval_map.get(name, []))
                     except Exception:
                         pass
                 if hasattr(acc, "set_corr_threshold"):
@@ -461,6 +468,13 @@ class ReportOrchestrator:
                     "corr_top": [
                         (str(other), float(r)) for other, r in (s.corr_top or [])
                     ],
+                    # Fisher-z 95% interval on each of the above, same order.
+                    # `[partner, lo, hi]`; the bounds are null when the pair had
+                    # too few rows for one.
+                    "corr_top_ci": [
+                        (str(other), _f(lo), _f(hi))
+                        for other, lo, hi in (s.corr_top_ci or [])
+                    ],
                     "mono_inc": bool(s.mono_inc),
                     "mono_dec": bool(s.mono_dec),
                     "int_like": bool(s.int_like),
@@ -510,6 +524,8 @@ class ReportOrchestrator:
                     "median_ci_hi": _f(s.median_ci_hi),
                     "q3_ci_lo": _f(s.q3_ci_lo),
                     "q3_ci_hi": _f(s.q3_ci_hi),
+                    "iqr_ci_lo": _f(s.iqr_ci_lo),
+                    "iqr_ci_hi": _f(s.iqr_ci_hi),
                     "outliers_iqr_ci_lo": _i(s.outliers_iqr_ci_lo),
                     "outliers_iqr_ci_hi": _i(s.outliers_iqr_ci_hi),
                     "jb_chi2": _f(s.jb_chi2),

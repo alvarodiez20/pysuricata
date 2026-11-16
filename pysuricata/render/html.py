@@ -8,6 +8,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .._version import resolve_version as _resolve_pysuricata_version
+from ..accumulators.margins import normal_half_width_95
 from ..compute.core.types import ColumnKinds
 from ..utils import (
     embed_favicon,
@@ -245,7 +246,7 @@ def render_html_snapshot(
         if degraded:
             duplicates_note = "partial hash · overestimate"
         elif dup_sigma:
-            duplicates_note = f"± {dup_sigma:,} · KMV sketch"
+            duplicates_note = f"± {normal_half_width_95(dup_sigma):,} · KMV sketch"
         else:
             duplicates_note = "exact"
         duplicates_overall = f"{dup_rows:,} ({dup_pct:.1f}%)"

@@ -407,6 +407,12 @@
                   "type": "array"
                 }
               },
+              "corr_top_ci": {
+                "type": "array",
+                "items": {
+                  "type": "array"
+                }
+              },
               "mono_inc": {
                 "type": "boolean"
               },
@@ -494,6 +500,12 @@
               "q3_ci_hi": {
                 "type": "number"
               },
+              "iqr_ci_lo": {
+                "type": "number"
+              },
+              "iqr_ci_hi": {
+                "type": "number"
+              },
               "outliers_iqr_ci_lo": {
                 "type": "integer"
               },
@@ -516,10 +528,16 @@
                 "type": "boolean"
               },
               "gran_decimals": {
-                "type": "integer"
+                "type": [
+                  "integer",
+                  "null"
+                ]
               },
               "gran_step": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "unique_ratio_approx": {
                 "type": "number"
@@ -549,6 +567,7 @@
               "ci_hi",
               "ci_lo",
               "corr_top",
+              "corr_top_ci",
               "count",
               "cv",
               "dtype",
@@ -559,6 +578,8 @@
               "inf",
               "int_like",
               "iqr",
+              "iqr_ci_hi",
+              "iqr_ci_lo",
               "jb_chi2",
               "kurtosis",
               "mad",

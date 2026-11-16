@@ -78,6 +78,17 @@ _T95 = (
 )
 
 
+def normal_half_width_95(sigma: float) -> int:
+    """A 95% half-width, in whole rows, from one standard deviation.
+
+    Rounded *up*, so the published interval is never narrower than the one
+    computed. Zero stays zero: an exact count has no interval.
+    """
+    if not sigma or sigma <= 0 or not math.isfinite(float(sigma)):
+        return 0
+    return math.ceil(Z95 * float(sigma))
+
+
 def t_critical_95(df: int) -> float:
     """The two-sided 95% critical value of Student's t.
 
@@ -183,6 +194,45 @@ def quantile_interval(
     lo = max(0, int(math.floor(centre - half)))
     hi = min(n - 1, int(math.ceil(centre + half)))
     return float(sorted_sample[lo]), float(sorted_sample[hi])
+
+
+#: Asymptotic correlation of the sample 25th and 75th percentiles. It does not
+#: depend on the distribution: Cov(q_p, q_r) = p (1 - r) / (n f(q_p) f(q_r)), and
+#: each variance is p (1 - p) / (n f^2), so the density cancels and
+#: rho = sqrt(p (1 - r) / (r (1 - p))) = sqrt(0.25 * 0.25 / (0.75 * 0.75)) = 1/3.
+_QUARTILE_CORRELATION = 1.0 / 3.0
+
+
+def iqr_interval(
+    q1: float,
+    q3: float,
+    q1_ci: tuple[float, float],
+    q3_ci: tuple[float, float],
+) -> tuple[float, float]:
+    """95% interval on `q3 - q1`, from the two quartiles' own intervals.
+
+    The two quartiles come from one sample, so their errors are not independent
+    and adding their variances overstates the spread of the difference: when the
+    sample runs high, both quartiles run high, and the gap barely moves. They
+    are correlated at 1/3 whatever the distribution, so each side of the
+    interval combines the arms that *widen* it -- `q3` high with `q1` low for the
+    upper side -- as `sqrt(a^2 + b^2 - 2 rho a b)`.
+
+    Returns `(iqr, iqr)` when both quartiles are exact, and NaNs when either
+    interval is not finite.
+    """
+    iqr = q3 - q1
+    arms = (q1 - q1_ci[0], q1_ci[1] - q1, q3 - q3_ci[0], q3_ci[1] - q3)
+    if not all(math.isfinite(v) for v in (iqr, *arms)):
+        return float("nan"), float("nan")
+    q1_below, q1_above, q3_below, q3_above = (max(0.0, a) for a in arms)
+
+    def combine(a: float, b: float) -> float:
+        return math.sqrt(max(0.0, a * a + b * b - 2.0 * _QUARTILE_CORRELATION * a * b))
+
+    lo = max(0.0, iqr - combine(q3_below, q1_above))
+    hi = iqr + combine(q3_above, q1_below)
+    return min(lo, iqr), max(hi, iqr)
 
 
 def scaled_count_interval(hits: int, sample_n: int, population: int) -> tuple[int, int]:

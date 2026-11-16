@@ -713,6 +713,14 @@
   column-gap: 0.6ch;
 }
 
+/* ...and a margin that is itself wider than the cell -- `(19,098 – 20,000)` in
+   a ~135px half-card -- breaks at its own spaces instead of being clipped
+   mid-number. The cell's `nowrap` is inherited, so it has to be undone here. */
+#pysuricata-report .vstat__val:has(.moe) > .moe {
+  min-width: 0;
+  white-space: normal;
+}
+
 #pysuricata-report .vstat.is-warn .vstat__val {
   color: var(--q-warn-text);
 }
@@ -776,6 +784,14 @@
 
   #pysuricata-report .vstat-row > .vstat:last-child:nth-child(2n) {
     grid-column: auto;
+  }
+
+  /* Two tracks leave a cell ~135px, and a timestamp is wider than that:
+     `2020-01-01 00:00:00` was cut to `2020-01-01 00…`, the time of day the
+     reader came for. Wrapping at its own space keeps every digit. */
+  #pysuricata-report .vstat__val {
+    white-space: normal;
+    text-overflow: clip;
   }
 }
 
@@ -1924,7 +1940,7 @@
 
 #pysuricata-report .qstrip__ladder {
   position: relative;
-  height: 52px;
+  height: 66px;
   margin-top: 2px;
 }
 
@@ -1959,7 +1975,10 @@
 #pysuricata-report .qstrip__label[data-row="3"],
 #pysuricata-report .qstrip__label[data-row="5"],
 #pysuricata-report .qstrip__label[data-row="7"] {
-  top: 30px;
+  /* A label is ~27px tall (9.5px name over a 12px figure at 1.25), so the
+     second row sits 28px under the first. At 22px two neighbours in different
+     rows overlapped by 5px -- `P1`'s figure ran into `P50`'s name. */
+  top: 36px;
 }
 
 #pysuricata-report .qstrip__label[data-anchor="start"] {
@@ -1968,6 +1987,12 @@
 
 #pysuricata-report .qstrip__label[data-anchor="end"] {
   transform: translateX(-100%);
+}
+
+@media (max-width: 1024px) {
+  #pysuricata-report .qstrip__label[data-tier="tail"] {
+    display: none;
+  }
 }
 
 #pysuricata-report .qstrip__name {
