@@ -2296,9 +2296,19 @@ the numbers mean.</p>
 <td><strong>From the reservoir sample</strong></td>
 </tr>
 <tr>
+<td><code>iqr_ci_lo</code>, <code>iqr_ci_hi</code></td>
+<td>float</td>
+<td>95% interval on <code>iqr</code>, from the two quartile intervals at their asymptotic correlation of 1/3. Equal to <code>iqr</code> when the reservoir held every value</td>
+</tr>
+<tr>
+<td><code>q1_ci_lo</code>, <code>q1_ci_hi</code>, <code>median_ci_lo</code>, <code>median_ci_hi</code>, <code>q3_ci_lo</code>, <code>q3_ci_hi</code></td>
+<td>float</td>
+<td>95% interval on each quartile — two values from the sample that bracket the column's true one. Equal to the quartile when the reservoir held every value</td>
+</tr>
+<tr>
 <td><code>ci_lo</code>, <code>ci_hi</code></td>
 <td>float</td>
-<td>95% confidence interval for the mean</td>
+<td>95% confidence interval for the mean, Student's t</td>
 </tr>
 <tr>
 <td><code>jb_chi2</code></td>
@@ -2338,6 +2348,11 @@ the numbers mean.</p>
 <td>Whether <code>unique_est</code> is exact rather than a sketch estimate</td>
 </tr>
 <tr>
+<td><code>unique_ci_lo</code>, <code>unique_ci_hi</code></td>
+<td>int</td>
+<td>95% interval on <code>unique_est</code>. Equal to it when the count is exact; never below the sketch size nor above <code>count</code></td>
+</tr>
+<tr>
 <td><code>unique_ratio_approx</code></td>
 <td>float</td>
 <td><strong>Approximate.</strong> <code>unique_est / count</code></td>
@@ -2356,6 +2371,11 @@ the numbers mean.</p>
 <td><code>outliers_iqr_est</code>, <code>outliers_mod_zscore_est</code></td>
 <td>int</td>
 <td><strong>Approximate.</strong> Counted in the sample, scaled to the column</td>
+</tr>
+<tr>
+<td><code>outliers_iqr_ci_lo</code>, <code>outliers_iqr_ci_hi</code></td>
+<td>int</td>
+<td>95% interval on <code>outliers_iqr_est</code>, in rows. Equal to it when nothing was scaled</td>
 </tr>
 <tr>
 <td><code>mono_inc</code>, <code>mono_dec</code></td>
@@ -2380,12 +2400,17 @@ the numbers mean.</p>
 <tr>
 <td><code>gran_decimals</code>, <code>gran_step</code></td>
 <td>int, float</td>
-<td>Inferred granularity</td>
+<td>The step the values sit on (<code>0.5</code>, <code>5</code>, <code>0.01</code>) and how many decimals it takes to write. <code>null</code> when the column is continuous and sits on no step, or has fewer than two distinct values</td>
 </tr>
 <tr>
 <td><code>corr_top</code></td>
 <td>list</td>
 <td><code>(other_column, r)</code> above the threshold</td>
+</tr>
+<tr>
+<td><code>corr_top_ci</code></td>
+<td>list</td>
+<td><code>(other_column, lo, hi)</code> for each entry of <code>corr_top</code>, in the same order: the 95% interval on that correlation (Fisher's z, which assumes independent rows). <code>lo</code> and <code>hi</code> are <code>null</code> when the pair had fewer than four rows</td>
 </tr>
 <tr>
 <td><code>approx</code></td>
@@ -2459,6 +2484,11 @@ tracked and nothing was frequent enough.</p>
 <td>Whether <code>unique_est</code> above is exact rather than a sketch estimate</td>
 </tr>
 <tr>
+<td><code>unique_ci_lo</code>, <code>unique_ci_hi</code></td>
+<td>int</td>
+<td>95% interval on <code>unique_est</code>. Equal to it when the count is exact</td>
+</tr>
+<tr>
 <td><code>approx</code>, <code>dtype</code></td>
 <td>bool, str</td>
 <td></td>
@@ -2492,6 +2522,16 @@ means some values differ only by case or by surrounding whitespace.</p>
 <td><code>unique_est</code></td>
 <td>int</td>
 <td><strong>Approximate</strong></td>
+</tr>
+<tr>
+<td><code>unique_est_exact</code></td>
+<td>bool</td>
+<td>Whether <code>unique_est</code> is exact rather than a sketch estimate</td>
+</tr>
+<tr>
+<td><code>unique_ci_lo</code>, <code>unique_ci_hi</code></td>
+<td>int</td>
+<td>95% interval on <code>unique_est</code>. Equal to it when the count is exact</td>
 </tr>
 <tr>
 <td><code>time_span_days</code></td>
@@ -2592,6 +2632,54 @@ that matter:</p>
 <p><code>approx</code> on a numeric column tells you whether sampling was involved for that
 column at all: below the sample size, the reservoir holds every value and the
 quantiles are exact.</p>
+<p>Those percentages are rules of thumb. <strong>The interval for the column in front of
+you is published beside each estimate</strong>, as a <code>_ci_lo</code> / <code>_ci_hi</code> pair at 95%,
+and it is the same one the HTML report prints after the figure:</p>
+<table>
+<thead>
+<tr>
+<th>estimate</th>
+<th>interval</th>
+<th>where it comes from</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>unique_est</code></td>
+<td><code>unique_ci_lo</code>, <code>unique_ci_hi</code></td>
+<td>KMV's relative standard error, <code>1/√(k − 2)</code>. Clipped to what the sketch knows: never below <code>k</code>, never above <code>count</code></td>
+</tr>
+<tr>
+<td><code>q1</code>, <code>median</code>, <code>q3</code></td>
+<td><code>q1_ci_lo</code> … <code>q3_ci_hi</code></td>
+<td>The two order statistics of the reservoir that bracket the true quantile. Distribution-free, so it is asymmetric on skewed data, and it narrows as the reservoir approaches the column's length</td>
+</tr>
+<tr>
+<td><code>iqr</code></td>
+<td><code>iqr_ci_lo</code>, <code>iqr_ci_hi</code></td>
+<td>The quartiles' own intervals combined at their asymptotic correlation of 1/3 — not as if independent, which would overstate the spread of a difference taken from one sample. Zero-width when the reservoir held every value</td>
+</tr>
+<tr>
+<td><code>outliers_iqr_est</code></td>
+<td><code>outliers_iqr_ci_lo</code>, <code>outliers_iqr_ci_hi</code></td>
+<td>Wilson's interval on the sampled share. Sampling error only — the fence itself is fitted in the same sample</td>
+</tr>
+</tbody>
+</table>
+<p><strong>A zero-width interval means the figure was counted, not estimated.</strong>
+<code>lo == hi == value</code> is the whole test; there is no second flag to consult.</p>
+<p>Three things have no interval, deliberately. <code>mad</code> is a median of deviations
+from another median, and its sampling error depends on the density at three
+points that a reservoir cannot estimate well; an interval from a guessed density
+would be wrong in the confident direction, so it is left out rather than faked.
+<code>outliers_mod_zscore_est</code> is defined against the sample's own median and MAD.
+And everything exact — <code>mean</code>, <code>min</code>, <code>max</code>, the counts — has no sketch error
+to report; <code>ci_lo</code> / <code>ci_hi</code> on the mean is a statement about the population
+the column was drawn from, not about the profiler's arithmetic.</p>
+<p>The dataset-level <code>duplicate_rows_lo</code> / <code>duplicate_rows_hi</code> are also 95%:
+<code>duplicate_rows_est ± ⌈1.96 × duplicate_rows_uncertainty⌉</code>. They were one
+standard deviation until this release. <code>duplicate_rows_uncertainty</code> itself is
+still one sigma, so a consumer can apply any multiple of its own.</p>
 <p><code>top_items</code> and <code>top_values</code> come from Misra-Gries counters. Their counts are
 <strong>lower bounds</strong> — a reported count never overstates, and the counters neither
 partition the column nor sum to the row count.</p>

@@ -2822,13 +2822,118 @@ quoted when both sides were measured in the same round-robin run.</p>
 <h2 id="unreleased"><a href="https://github.com/alvarodiez20/pysuricata/compare/v0.2.0...HEAD">Unreleased</a></h2>
 <h3 id="added">Added</h3>
 <ul>
-<li><strong>The payload contract is checked against the payload</strong> (#251).
+<li><strong>Margins on the rest of what is estimated.</strong> The intervals above covered the
+  quartiles, distinct counts and outlier counts; four more figures now carry one,
+  each from the method that suits it:</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>figure</th>
+<th>payload keys</th>
+<th>from</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>iqr</code></td>
+<td><code>iqr_ci_lo</code>, <code>iqr_ci_hi</code></td>
+<td>the two quartile intervals combined at their asymptotic correlation of 1/3 — not as independent, which overstates the spread of a difference read from one sample</td>
+</tr>
+<tr>
+<td>each entry of <code>corr_top</code></td>
+<td><code>corr_top_ci</code> — <code>[partner, lo, hi]</code>, same order</td>
+<td>Fisher's z over every row the pair shared; assumes independent rows</td>
+</tr>
+<tr>
+<td>categorical <code>Mode %</code></td>
+<td>— (report only)</td>
+<td>a ceiling: Misra-Gries counts only fall short, so the share is a floor, printed as a range and never as <code>±</code></td>
+</tr>
+<tr>
+<td><code>duplicate_rows_lo</code> / <code>duplicate_rows_hi</code></td>
+<td>existing keys</td>
+<td>now 95% — see <strong>Changed</strong></td>
+</tr>
+</tbody>
+</table>
+<p>Measured: the IQR interval covers the true value in 382 of 400 runs (95.5%) on
+  a 2,000-value reservoir over 30,000 standard-normal rows. <code>mad</code> has no interval, deliberately:
+  its error depends on densities at three points a reservoir cannot estimate.</p>
+<ul>
+<li>
+<p><strong><code>pysuricata check</code> stops gating on noise it can see.</strong> A mean, median or
+  distinct-count threshold fires only when the move exceeds the limit <strong>and</strong> the
+  baseline's and the current run's 95% intervals do not overlap. It never
+  produces a finding the old rule would not have; a baseline written without
+  intervals gates exactly as before.</p>
+</li>
+<li>
+<p><strong>Approximate figures say how approximate.</strong> <code>(≈)</code> told a reader that a
+  number was an estimate and nothing about how good one, and the readings it
+  invites are a factor of four apart: a median from 20,000 of 60,000 values is
+  good to about 1% of the spread, a distinct count from a 2,048-hash sketch to
+  about 4% of itself. Every estimate now carries a <strong>95% interval</strong>, printed
+  after the figure in the report (<code>19.99 ± 0.38</code>) and published beside it in
+  <code>summarize()</code> as a <code>_ci_lo</code> / <code>_ci_hi</code> pair:</p>
+</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>estimate</th>
+<th>payload keys</th>
+<th>from</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>distinct count, all column kinds</td>
+<td><code>unique_ci_lo</code>, <code>unique_ci_hi</code></td>
+<td>KMV's relative standard error, clipped to <code>[k, count]</code></td>
+</tr>
+<tr>
+<td><code>q1</code>, <code>median</code>, <code>q3</code> (and P1–P99 in the report)</td>
+<td><code>q1_ci_lo</code> … <code>q3_ci_hi</code></td>
+<td>the reservoir's own order statistics — distribution-free, with the finite-population correction</td>
+</tr>
+<tr>
+<td><code>outliers_iqr_est</code></td>
+<td><code>outliers_iqr_ci_lo</code>, <code>outliers_iqr_ci_hi</code></td>
+<td>Wilson's interval on the sampled share</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Measured, not assumed:</strong> over 200 independently drawn 60,000-row columns
+  per estimate, each interval is asserted to contain an exact computation of
+  the same quantity at least 90% of the time
+  (<code>tests/test_error_margins.py</code>); a 300-column run while building it gave
+  95.7%, 95.0% and 97.7% for the three quartiles and 95.3% for the outlier
+  count.</p>
+<p>An exact figure prints no margin and publishes a zero-width interval, so
+  <code>lo == hi</code> is the test for "counted". A key column's interval is one-sided
+  and printed as its bounds — <code>126,000 (120,541 – 126,000)</code> — because the
+  sketch cannot certify a key is unique, and <code>Duplicates 0</code> alone said it had.
+  Nothing exact gained a margin: <code>Min</code>, <code>Max</code>, <code>Mean</code> and the counts see every
+  value. <code>iqr</code>, <code>mad</code> and <code>outliers_mod_zscore_est</code> have none either, on
+  purpose — see <code>docs/summary-schema.md</code>.</p>
+<p>Adding keys does not move <code>schema_version</code>.</p>
+<ul>
+<li>
+<p><strong>Top-k counts are captioned as lower bounds in the report.</strong> The bound has
+  been in the payload since #328 (<code>top_items_uncertainty</code>); the Common values
+  table printed the counts beside it with nothing. One line under the table,
+  once, when the counters evicted.</p>
+</li>
+<li>
+<p><strong>The payload contract is checked against the payload</strong> (#251).
   <code>docs/summary-schema.md</code> is the one copy of "what each column kind reports"
   that is meant to be tied to the code, and nothing tied it. <code>check_docs.py</code>
   now compares the per-kind key tables against a real <code>summarize()</code> call over a
   frame carrying all four kinds — deliberately not the checker's existing
   two-column frame, which has no datetime and no boolean column, so half the
-  contract could have said anything.</li>
+  contract could have said anything.</p>
+</li>
 </ul>
 <p>Both directions, because they fail differently. A key in the payload and not
   in the table is an undocumented promise: <strong>three were</strong>, and one of them is
@@ -2849,14 +2954,28 @@ quoted when both sides were measured in the same round-robin run.</p>
   until a mention in someone else's note satisfies it. All three are pinned.</p>
 <h3 id="changed">Changed</h3>
 <ul>
-<li><strong>The self-download is tested by downloading the report and re-opening it</strong>
+<li>
+<p><strong><code>duplicate_rows_lo</code> / <code>duplicate_rows_hi</code> and the duplicates tile are 95%.</strong>
+  They were one standard deviation, the only interval on the page that was, so
+  <code>± 2,730</code> beside a duplicate count read as the same confidence as the 95% beside
+  the quartiles. Both are now <code>rows ± ⌈1.96 σ⌉</code>. <code>duplicate_rows_uncertainty</code> is
+  still one sigma, so a consumer can apply any multiple of its own. A gate on
+  <code>duplicate_rows_hi</code> sees a slightly higher bound than before.</p>
+</li>
+<li>
+<p><strong><code>gran_step</code> and <code>gran_decimals</code> are <code>null</code> on a continuous column.</strong> See
+  <strong>Fixed</strong>.</p>
+</li>
+<li>
+<p><strong>The self-download is tested by downloading the report and re-opening it</strong>
   (#39, first acceptance box). The download button does not ask the renderer
   what it emitted — it re-serialises the live DOM, keeping <code>&lt;style&gt;</code> elements
   whose text matches <code>#pysuricata-report|suricata-standalone</code> and the <em>first</em>
   <code>&lt;script&gt;</code> matching <code>toggleDarkMode</code>. #39 says any restructuring breaks that
   silently, and it is right: four JS files are concatenated into one tag today,
   so all four survive only because they ride on the one element that happens to
-  contain <code>toggleDarkMode</code>.</li>
+  contain <code>toggleDarkMode</code>.</p>
+</li>
 </ul>
 <p>The guard is an equivalence rather than a feature checklist — every <code>&lt;style&gt;</code>
   and every <code>&lt;script&gt;</code> the live report carries must appear in the downloaded
@@ -2934,11 +3053,63 @@ quoted when both sides were measured in the same round-robin run.</p>
   copies during assembly. That half of #207's exit is #39's subject.</p>
 <h3 id="fixed">Fixed</h3>
 <ul>
-<li><strong>The chunk-metadata suite stops asserting wall-clock noise</strong> (#354).
+<li><strong>Granularity was a histogram artefact, and printed on every float column.</strong>
+  The step was the midpoint of the busiest bin of a histogram of the gaps, so a
+  continuous column reported <code>Granularity 35.881109943719636 (decimals: 10)</code> — a
+  fact about the histogram. It is now the largest step every gap is a whole
+  multiple of, checked against all of them, and <code>null</code> when the values sit on none
+  (<code>0.5</code>, <code>5</code> and <code>0.01</code> are found; a normal or lognormal sample reports nothing).
+  The card prints a dash instead of seventeen digits. <code>gran_step</code> and
+  <code>gran_decimals</code> are now <code>number | null</code> and <code>integer | null</code> in the schema.</li>
+<li><strong>The mean's interval was printed to four significant figures in prose</strong>
+  (<code>±0.4209</code>). A margin's third digit is not information; it is two.</li>
+<li><strong>The Outliers pane and the card disagreed with no explanation.</strong> The card
+  scales the reservoir's count to the column and the pane counts in the sample,
+  which differ by the sampling ratio. The footnote said so, below the fold and only
+  when rows were listed; the pane's header now carries both, in the form <code>A of B
+  sampled values · ≈N across all M</code>.</li>
+<li><strong>Quantile-strip labels overlapped, and the narrow layout clipped digits.</strong> Label
+  rows were 22px apart and a label is ~27px tall, so neighbours in different rows
+  overlapped by 5px at every width. Below 1,024px the strip keeps <code>Q1</code>, <code>P50</code> and
+  <code>Q3</code> and drops the tail captions, whose percentage gap knows nothing of pixels
+  (the ticks stay and the table lists every value). A datetime stat cell at 390px
+  cut <code>2020-01-01 00:46:32</code> to <code>2020-01-01 00…</code>, and a distinct-count margin was
+  cut mid-number; both now wrap at their own space. Costs 19px on the tallest
+  datetime card at 390px, recorded in <code>test_report_layout.py</code>.</li>
+<li>
+<p><strong>The fingerprint dropped any figure with a margin beside it.</strong> A cell reading
+  <code>5.2% (5.2% – 6.5%)</code> is not a number, so <code>scripts/report_fingerprint.py</code> discarded
+  the fact: every cell that gained an interval silently left the set of facts the
+  invariance harness checks. Margins are now stripped before a cell is read, and
+  the regenerated fingerprint equals <code>main</code>'s apart from <code>(≈)</code> labels.</p>
+</li>
+<li>
+<p><strong>The mean's 95% interval used 1.96 at every sample size.</strong> The code had a
+  branch for <code>n &lt; 30</code> that assigned the same constant, while
+  <code>docs/stats/numeric.md</code> documented Student's t. At five values the right
+  multiplier is 2.776, so <code>ci_lo</code> / <code>ci_hi</code> were 29% too narrow exactly where
+  the mean is least pinned down. Unchanged to four figures above a few hundred
+  rows.</p>
+</li>
+<li><strong>Exact figures labelled approximate.</strong> The six tail percentiles in the
+  Quantiles pane carried <code>(≈)</code> unconditionally and the three quartiles beside
+  them never did; the datetime card's <code>Unique</code> read an <code>approx</code> field its
+  summary did not have and defaulted to "approximate"; the identifier card's
+  <code>Distinct</code> and <code>Duplicates</code> were marked always. All four now follow whether
+  the figure was sampled or sketched. Datetime columns publish
+  <code>unique_est_exact</code>, as the other kinds already did.</li>
+<li>
+<p><strong><code>Outliers 0</code> from a sample was presented as a count.</strong> Zero sampled hits
+  scales to zero and so looked unscaled; it now carries <code>(≈)</code> and its interval,
+  <code>(0 – 21)</code> on a 126,000-row column.</p>
+</li>
+<li>
+<p><strong>The chunk-metadata suite stops asserting wall-clock noise</strong> (#354).
   <code>test_performance_impact</code> compared one timed run per side against a 1.5x
   bound, and it failed <code>test-pandas3</code> on a PR that never touched the
   accumulator. It is now <code>test_chunk_metadata_overhead_is_not_gross</code>, which is
-  what a loose bound can honestly assert.</li>
+  what a loose bound can honestly assert.</p>
+</li>
 </ul>
 <p>The measurement was of the wrong thing. <code>np.random.randn</code> sat <em>inside</em> the
   timed region, so both sides were dominated by generating 100,000 random

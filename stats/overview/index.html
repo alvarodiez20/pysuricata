@@ -2151,17 +2151,27 @@ every missing-value count.</p>
 <tr>
 <td>quantiles (<code>q1</code>, <code>median</code>, <code>q3</code>, and IQR/MAD)</td>
 <td>reservoir sample</td>
-<td><span class="arithmatex">\(\approx 1/\sqrt{k}\)</span> — about <strong>0.7%</strong> at the default 20,000, and 3.2% at 1,000. <strong>Exact</strong> below the sample size, and <code>approx</code> says which</td>
+<td><span class="arithmatex">\(\approx 1/\sqrt{k}\)</span> — about <strong>0.7%</strong> at the default 20,000, and 3.2% at 1,000. <strong>Exact</strong> below the sample size, and <code>approx</code> says which. Published per column as a 95% bracket: <code>q1_ci_lo</code> … <code>q3_ci_hi</code></td>
 </tr>
 <tr>
 <td><code>unique_est</code>, variant counts</td>
 <td>KMV sketch</td>
-<td><span class="arithmatex">\(\approx 1/\sqrt{k}\)</span> — about <strong>2.2%</strong> at the default <code>uniques_k=2048</code></td>
+<td><span class="arithmatex">\(\approx 1/\sqrt{k}\)</span> — about <strong>2.2%</strong> at the default <code>uniques_k=2048</code>. Published per column as <code>unique_ci_lo</code> / <code>unique_ci_hi</code>, 95%</td>
 </tr>
 <tr>
 <td><code>duplicate_rows_est</code></td>
 <td>KMV over row hashes</td>
 <td>reported with <code>duplicate_rows_uncertainty</code></td>
+</tr>
+<tr>
+<td><code>iqr</code></td>
+<td>sample quartile difference</td>
+<td><code>iqr_ci_lo</code> / <code>iqr_ci_hi</code>, 95% — quartiles combined at correlation 1/3</td>
+</tr>
+<tr>
+<td><code>outliers_iqr_est</code></td>
+<td>sample count, scaled</td>
+<td><code>outliers_iqr_ci_lo</code> / <code>outliers_iqr_ci_hi</code>, 95% — sampling error only</td>
 </tr>
 <tr>
 <td><code>top_items</code> counts</td>
