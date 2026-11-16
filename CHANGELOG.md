@@ -212,8 +212,9 @@ quoted when both sides were measured in the same round-robin run.
   datetime card at 390px, recorded in `test_report_layout.py`.
 - **The fingerprint dropped any figure with a margin beside it.** A cell reading
   `5.2% (5.2% – 6.5%)` is not a number, so `scripts/report_fingerprint.py` discarded
-  the fact — the regenerated fixture from the margins' first commit could not have
-  shown it. Margins are now stripped before the cell is read.
+  the fact: every cell that gained an interval silently left the set of facts the
+  invariance harness checks. Margins are now stripped before a cell is read, and
+  the regenerated fingerprint equals `main`'s apart from `(≈)` labels.
 
 - **The mean's 95% interval used 1.96 at every sample size.** The code had a
   branch for `n < 30` that assigned the same constant, while
