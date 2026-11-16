@@ -3,12 +3,19 @@
     "age": {
       "approx": true,
       "bimodal": false,
-      "ci_hi": 42.82497157032833,
-      "ci_lo": 39.80353572484563,
+      "ci_hi": 42.827001035753035,
+      "ci_lo": 39.801506259420925,
       "corr_top": [
         [
           "fare",
           0.032234525252866464
+        ]
+      ],
+      "corr_top_ci": [
+        [
+          "fare",
+          -0.033513832224111535,
+          0.09770508179101128
         ]
       ],
       "count": 891,
@@ -21,6 +28,8 @@
       "inf": 0,
       "int_like": true,
       "iqr": 39.0,
+      "iqr_ci_hi": 39.0,
+      "iqr_ci_lo": 39.0,
       "jb_chi2": 53.747176688644885,
       "kurtosis": -1.1930020637460756,
       "mad": 20.0,
@@ -49,6 +58,8 @@
       ],
       "mean": 41.31425364758698,
       "median": 42.0,
+      "median_ci_hi": 42.0,
+      "median_ci_lo": 42.0,
       "mem_bytes": 7128,
       "min": 1.0,
       "min_items": [
@@ -78,11 +89,17 @@
       "mono_dec": false,
       "mono_inc": false,
       "negatives": 0,
+      "outliers_iqr_ci_hi": 0,
+      "outliers_iqr_ci_lo": 0,
       "outliers_iqr_est": 0,
       "outliers_mod_zscore": 0,
       "outliers_mod_zscore_est": 0,
       "q1": 22.0,
+      "q1_ci_hi": 22.0,
+      "q1_ci_lo": 22.0,
       "q3": 61.0,
+      "q3_ci_hi": 61.0,
+      "q3_ci_lo": 61.0,
       "se": 0.7707744503782383,
       "skew": -0.07823278551595537,
       "std": 23.00732684907321,
@@ -321,6 +338,8 @@
         79.0
       ],
       "type": "numeric",
+      "unique_ci_hi": 79,
+      "unique_ci_lo": 79,
       "unique_est": 79,
       "unique_est_exact": true,
       "unique_ratio_approx": 0.08866442199775533,
@@ -395,7 +414,10 @@
       "source_timezone": null,
       "time_span_days": 37.083333333333336,
       "type": "datetime",
+      "unique_ci_hi": 891,
+      "unique_ci_lo": 891,
       "unique_est": 891,
+      "unique_est_exact": true,
       "weekend_ratio": 0.2727272727272727
     },
     "cabin": {
@@ -407,11 +429,13 @@
       "dtype": "object",
       "empty_zero": 0,
       "entropy": 0.9854976183205397,
+      "exact_levels": 2,
       "gini_impurity": 0.4899814432559788,
       "len_p90": 3,
       "mem_bytes": 10495,
       "missing": 672,
       "most_common_ratio": 0.5707762557077626,
+      "singleton_levels": 0,
       "top_items": [
         [
           "C85",
@@ -425,10 +449,10 @@
       "top_items_uncertainty": 0,
       "trim_variants_est": 2,
       "type": "categorical",
+      "unique_ci_hi": 2,
+      "unique_ci_lo": 2,
       "unique_est": 2,
-      "unique_est_exact": true,
-      "singleton_levels": 0,
-      "exact_levels": 2
+      "unique_est_exact": true
     },
     "empty": {
       "approx": false,
@@ -439,41 +463,52 @@
       "dtype": "object",
       "empty_zero": null,
       "entropy": null,
+      "exact_levels": null,
       "gini_impurity": null,
       "len_p90": null,
       "mem_bytes": 10692,
       "missing": 891,
       "most_common_ratio": null,
+      "singleton_levels": null,
       "top_items": [],
       "top_items_uncertainty": null,
       "trim_variants_est": null,
       "type": "categorical",
+      "unique_ci_hi": 0,
+      "unique_ci_lo": 0,
       "unique_est": 0,
-      "unique_est_exact": null,
-      "singleton_levels": null,
-      "exact_levels": null
+      "unique_est_exact": null
     },
     "fare": {
       "approx": true,
       "bimodal": false,
-      "ci_hi": 41.88302747799928,
-      "ci_lo": 38.15394947371168,
+      "ci_hi": 41.88553225892556,
+      "ci_lo": 38.1514446927854,
       "corr_top": [
         [
           "age",
           0.032234525252866464
         ]
       ],
+      "corr_top_ci": [
+        [
+          "age",
+          -0.033513832224111535,
+          0.09770508179101128
+        ]
+      ],
       "count": 891,
       "cv": 0.7095672654595863,
       "dtype": "float64",
       "gmean": 30.26050270851528,
-      "gran_decimals": 10,
-      "gran_step": 0.14612157448464427,
+      "gran_decimals": null,
+      "gran_step": null,
       "heap_pct": 12.457912457912458,
       "inf": 0,
       "int_like": false,
       "iqr": 35.15303066962548,
+      "iqr_ci_hi": 35.15303066962548,
+      "iqr_ci_lo": 35.15303066962548,
       "jb_chi2": 424.0803935327893,
       "kurtosis": 2.143438492588885,
       "mad": 16.40626539377703,
@@ -502,6 +537,8 @@
       ],
       "mean": 40.01848847585548,
       "median": 33.45567440783571,
+      "median_ci_hi": 33.45567440783571,
+      "median_ci_lo": 33.45567440783571,
       "mem_bytes": 7128,
       "min": 0.38832608652739126,
       "min_items": [
@@ -531,11 +568,17 @@
       "mono_dec": false,
       "mono_inc": false,
       "negatives": 0,
+      "outliers_iqr_ci_hi": 26,
+      "outliers_iqr_ci_lo": 26,
       "outliers_iqr_est": 26,
       "outliers_mod_zscore": 17,
       "outliers_mod_zscore_est": 17,
       "q1": 19.07572822689805,
+      "q1_ci_hi": 19.07572822689805,
+      "q1_ci_lo": 19.07572822689805,
       "q3": 54.22875889652353,
+      "q3_ci_hi": 54.22875889652353,
+      "q3_ci_lo": 54.22875889652353,
       "se": 0.9512954092570426,
       "skew": 1.306590250588187,
       "std": 28.39580943563874,
@@ -694,6 +737,8 @@
         176.26553911408652
       ],
       "type": "numeric",
+      "unique_ci_hi": 891,
+      "unique_ci_lo": 891,
       "unique_est": 891,
       "unique_est_exact": true,
       "unique_ratio_approx": 1.0,
@@ -709,11 +754,13 @@
       "dtype": "object",
       "empty_zero": 0,
       "entropy": 2.9275862035280227,
+      "exact_levels": 599,
       "gini_impurity": 0.8328385840594975,
       "len_p90": 13,
       "mem_bytes": 14256,
       "missing": 0,
       "most_common_ratio": 0.051627384960718295,
+      "singleton_levels": 589,
       "top_items": [
         [
           "common 0",
@@ -787,10 +834,10 @@
       "top_items_uncertainty": 14,
       "trim_variants_est": 599,
       "type": "categorical",
+      "unique_ci_hi": 599,
+      "unique_ci_lo": 599,
       "unique_est": 599,
-      "unique_est_exact": true,
-      "singleton_levels": 589,
-      "exact_levels": 599
+      "unique_est_exact": true
     },
     "sex": {
       "approx": false,
@@ -801,11 +848,13 @@
       "dtype": "object",
       "empty_zero": 0,
       "entropy": 0.9998900524545518,
+      "exact_levels": 2,
       "gini_impurity": 0.49992379210486204,
       "len_p90": 6,
       "mem_bytes": 11636,
       "missing": 0,
       "most_common_ratio": 0.5061728395061729,
+      "singleton_levels": 0,
       "top_items": [
         [
           "male",
@@ -819,10 +868,10 @@
       "top_items_uncertainty": 0,
       "trim_variants_est": 2,
       "type": "categorical",
+      "unique_ci_hi": 2,
+      "unique_ci_lo": 2,
       "unique_est": 2,
-      "unique_est_exact": true,
-      "singleton_levels": 0,
-      "exact_levels": 2
+      "unique_est_exact": true
     },
     "survived": {
       "count": 891,

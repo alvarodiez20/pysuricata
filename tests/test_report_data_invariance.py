@@ -70,6 +70,20 @@ Deliberate fact changes so far, each with the reason it was allowed:
   same interval the report already computed. **2 facts added, 0 changed, 0
   removed**, both `0` on every fixture here since none of the three frames has
   an unresolved or resolved duplicate count to bound.
+
+* **The 95% intervals, and three labels that claimed too much doubt.** Every
+  estimate now publishes a `_ci_lo` / `_ci_hi` pair beside it. All three frames
+  here are short enough to be counted rather than sketched, so every pair is
+  zero-width and **no number in the report moved**; the payload gains the keys
+  and nothing else. What the fingerprint records is 14 *labels* losing `(≈)`:
+  the six tail percentiles on `age` and on `fare`, which carried the marker
+  unconditionally while the quartiles beside them never did, and `unique` /
+  `unique timestamps` on `booked`, which read an `approx` field the datetime
+  summary did not have and fell back to "approximate". 891 rows, every one of
+  those figures exact. **0 values changed, 0 facts removed** -- each of the 14
+  reappears under the unmarked label. The six `attr::` lines and the key
+  reordering in the JSON are the fixtures catching up with commits that added
+  facts without regenerating; additions do not fail this file.
 """
 
 from __future__ import annotations

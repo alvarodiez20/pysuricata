@@ -795,7 +795,7 @@ class TestTheThresholdsAreSpent:
         html = self._renderer()._shape_prose(
             _stats(mean=29.7, ci_lo=28.634, ci_hi=30.766)
         )
-        assert "±1.066" in html
+        assert "±1.1 95% interval" in html
 
     def test_std_dev_is_printed_once(self):
         """It was in both tables — a moment and an order statistic at the same

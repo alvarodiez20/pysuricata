@@ -292,8 +292,10 @@ class TestTheIntervalIsPublished:
         stats = summarize(_frame(200_000, 50_000), seed=0)["dataset"]
 
         est, sigma = stats["duplicate_rows_est"], stats["duplicate_rows_uncertainty"]
-        assert stats["duplicate_rows_lo"] == max(0, est - sigma)
-        assert stats["duplicate_rows_hi"] == est + sigma
+        # 95%, like every other interval in the payload: 1.96 sigma, rounded up.
+        half = math.ceil(1.959963984540054 * sigma)
+        assert stats["duplicate_rows_lo"] == max(0, est - half)
+        assert stats["duplicate_rows_hi"] == est + half
         assert stats["duplicate_rows_lo"] <= est <= stats["duplicate_rows_hi"]
 
     def test_an_exact_count_has_no_interval_around_it(self):

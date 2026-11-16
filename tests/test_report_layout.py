@@ -284,7 +284,17 @@ class TestTheReportIsOneFile:
 #: Titanic is the *least* improved shape, because it has three of the four
 #: kinds. A boolean-only frame saves 17,830 bytes and a numeric-only one
 #: 17,189.
-BYTES_BASELINE = 482_000
+#:
+#: 482,000 -> 483,000 for the error margins. Every estimate the report prints
+#: now carries its 95% interval where it is not exact: the IQR, each
+#: correlation partner's coefficient, the categorical `Mode %` ceiling and the
+#: distinct count, each a `<span class="moe">` of ~45 bytes, plus the rules that
+#: let a margin wrap instead of being clipped at 390px and the quantile-strip
+#: label tiers. Titanic measures 482,523. The margins are not presentation: a
+#: figure printed without its uncertainty is the thing CLAUDE.md's "approximate
+#: values must be labelled approximate" forbids, and #39 is where bytes come
+#: back, not here.
+BYTES_BASELINE = 483_000
 
 #: The widest card. #124 wants 400; #206 ("six pre-rendered histograms are 65%
 #: of a numeric column's report bytes") is the issue that gets there.
@@ -725,12 +735,20 @@ def _summary_ceiling(width: int) -> tuple[int, str]:
 #: suppressed the statistics it could not say, and #319 took the padded 180px
 #: chart container out from under it. Numeric and datetime are what run tall.
 #:
+#: Datetime at 390px, 868 -> 890. A half-card cell there is ~135px, and
+#: `2020-01-01 00:46:32` was clipped to `2020-01-01 00…` -- the time of day cut
+#: off -- while the distinct count's margin, `(19,133 – 20,000)`, was cut
+#: mid-number. Both now wrap at their own space and keep every digit, at the
+#: price of a second line in two cells: 887px measured. The other kinds and the
+#: other widths did not move, which is the check that this is the cost of the
+#: wrap and not of something else.
+#:
 #: These are a developer machine's readings, and #309 records that such a
 #: machine measures 2-7px *taller* than CI. That direction is the safe one for
 #: an upper bound -- CI reads under it, and by well under the 6% `_SLACK`, so
 #: the lower branch does not fire either.
 _CARD_HEIGHT_BASELINE = {
-    390: {"Numeric": 883, "Categorical": 480, "Boolean": 343, "Datetime": 868},
+    390: {"Numeric": 883, "Categorical": 480, "Boolean": 343, "Datetime": 890},
     768: {"Numeric": 803, "Categorical": 449, "Boolean": 332, "Datetime": 849},
     1240: {"Numeric": 578, "Categorical": 405, "Boolean": 314, "Datetime": 551},
 }

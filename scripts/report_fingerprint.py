@@ -50,7 +50,16 @@ _NUMBER = re.compile(
 )
 
 
+#: A margin printed beside a figure (`<span class="moe">± 0.31</span>`). It
+#: qualifies the figure and is not part of it: left in, the cell reads
+#: `5.2% (5.2% - 6.5%)`, which is not a number, and the fact is discarded -- a
+#: fingerprint that loses a figure because its uncertainty was added beside it
+#: has stopped checking exactly the cells that gained information.
+_MARGIN = re.compile(r'<span class="moe"[^>]*>.*?</span>', re.S)
+
+
 def _text(fragment: str) -> str:
+    fragment = _MARGIN.sub("", fragment)
     return _WS.sub(" ", htmllib.unescape(_TAG.sub(" ", fragment))).strip()
 
 

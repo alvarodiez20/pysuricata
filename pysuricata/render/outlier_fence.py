@@ -773,7 +773,7 @@ def render_quantile_strip(fence: Fence, quantiles, fmt) -> str:
     ladder = _ladder(fence, quantiles)
     ticks = "".join(
         f'<span class="qstrip__tick" style="left:{pct:.3f}%"></span>'
-        f'<span class="qstrip__label" data-row="{row}"{_anchor(pct)} '
+        f'<span class="qstrip__label" data-row="{row}"{_tier(name)}{_anchor(pct)} '
         f'style="left:{pct:.3f}%">'
         f'<span class="qstrip__name">{escape(name)}</span>'
         f'<span class="qstrip__figure">{escape(fmt(value))}</span></span>'
@@ -809,6 +809,19 @@ def render_quantile_strip(fence: Fence, quantiles, fmt) -> str:
 #: reason -- a range with no middle says nothing about whether the distribution
 #: is centred, and the median is the one figure a reader looks for first.
 _LADDER_ANCHORS = frozenset({"P1", "P50", "P99"})
+
+#: The labels a narrow layout keeps. A ladder label is ~35px wide and the axis
+#: is ~234px at 390px and ~600px at 768px, so nine of them cannot share it however the rows alternate -- the
+#: percentage gap above is a fraction of the axis and knows nothing of pixels.
+#: The quartiles and the median are what the strip exists to show; the tails
+#: keep their ticks and lose their captions below `1024px`, and the table under
+#: the strip still lists every value.
+_NARROW_KEEP = frozenset({"Q1", "P50", "Q3"})
+
+
+def _tier(name: str) -> str:
+    """`data-tier="tail"` for a label the narrow layout hides, else nothing."""
+    return "" if name in _NARROW_KEEP else ' data-tier="tail"'
 
 
 def _ladder(fence: Fence, quantiles) -> list[tuple[str, float, float]]:

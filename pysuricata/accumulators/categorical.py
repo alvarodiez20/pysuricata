@@ -15,6 +15,7 @@ import numpy as np
 
 from .chunking import ChunkTracker
 from .config import CategoricalConfig
+from .margins import distinct_interval
 from .protocols import AccumulatorKind, PicklableAccumulator
 from .sketches import KMV, MisraGries, ReservoirSampler, SingletonCounter
 
@@ -46,6 +47,10 @@ class CategoricalSummary:
     #: the same overclaim as #328 pointing the other way. Per statistic, not
     #: per column.
     unique_est_exact: bool = False
+    #: 95% interval on `unique_est`, zero-width when it is exact. From the
+    #: sketch's own error, not the data's -- see `accumulators/margins.py`.
+    unique_ci_lo: int = 0
+    unique_ci_hi: int = 0
     # extras for alignment
     mem_bytes: int = 0
     avg_len: float | None = None
@@ -592,13 +597,20 @@ class CategoricalAccumulator(PicklableAccumulator):
         # counters never evicted, which is the case the report may call exact.
         top_items_uncertainty = self._topk.error_bound
 
+        # Clamped: see the note in numeric.py. A distinct count above the row
+        # count is impossible and costs the reader's trust in the page.
+        unique_est = min(self._uniques.estimate(), self.count)
+        unique_ci_lo, unique_ci_hi = distinct_interval(
+            unique_est, self._uniques.k, self._uniques.is_exact, self.count
+        )
+
         return CategoricalSummary(
             name=self.name,
             count=self.count,
             missing=self.missing,
-            # Clamped: see the note in numeric.py. A distinct count above the
-            # row count is impossible and costs the reader's trust in the page.
-            unique_est=min(self._uniques.estimate(), self.count),
+            unique_est=unique_est,
+            unique_ci_lo=unique_ci_lo,
+            unique_ci_hi=unique_ci_hi,
             top_items=top_items,
             approx=approx,
             top_items_uncertainty=top_items_uncertainty,

@@ -176,6 +176,8 @@ _DEFINED_WHEN_EMPTY = frozenset(
         "count",
         "missing",
         "unique_est",
+        "unique_ci_lo",
+        "unique_ci_hi",
         "inf",
         "zeros",
         "negatives",
@@ -186,6 +188,7 @@ _DEFINED_WHEN_EMPTY = frozenset(
         "approx",
         # collections whose correct value is empty
         "corr_top",
+        "corr_top_ci",
         "top_values",
         "top_items",
         "min_items",
@@ -354,6 +357,7 @@ class ReportOrchestrator:
                 threshold=0.0,
                 max_per_col=self.config.corr_max_cols,
             )
+            interval_map = corr_est.top_intervals(top_map)
             for name in kinds.numeric:
                 acc = accs.get(name)
                 if acc is None:
@@ -363,6 +367,8 @@ class ReportOrchestrator:
                         acc.set_corr_top(top_map.get(name, []))
                     except Exception:
                         pass
+                if hasattr(acc, "set_corr_intervals"):
+                    acc.set_corr_intervals(interval_map.get(name, []))
                 if hasattr(acc, "set_corr_threshold"):
                     try:
                         acc.set_corr_threshold(self.config.corr_threshold)
@@ -459,6 +465,13 @@ class ReportOrchestrator:
                     "corr_top": [
                         (str(other), float(r)) for other, r in (s.corr_top or [])
                     ],
+                    # Fisher-z 95% interval on each of the above, same order.
+                    # `[partner, lo, hi]`; the bounds are null when the pair had
+                    # too few rows for one.
+                    "corr_top_ci": [
+                        (str(other), _f(lo), _f(hi))
+                        for other, lo, hi in (s.corr_top_ci or [])
+                    ],
                     "mono_inc": bool(s.mono_inc),
                     "mono_dec": bool(s.mono_dec),
                     "int_like": bool(s.int_like),
@@ -496,6 +509,22 @@ class ReportOrchestrator:
                     "mad": _f(s.mad),
                     "ci_lo": _f(s.ci_lo),
                     "ci_hi": _f(s.ci_hi),
+                    # 95% intervals on the estimates above, the same ones the
+                    # card prints beside them. Zero-width when the figure is
+                    # exact, so `lo == hi` is the test for "counted, not
+                    # estimated" -- no second flag to keep in step.
+                    "unique_ci_lo": _i(s.unique_ci_lo),
+                    "unique_ci_hi": _i(s.unique_ci_hi),
+                    "q1_ci_lo": _f(s.q1_ci_lo),
+                    "q1_ci_hi": _f(s.q1_ci_hi),
+                    "median_ci_lo": _f(s.median_ci_lo),
+                    "median_ci_hi": _f(s.median_ci_hi),
+                    "q3_ci_lo": _f(s.q3_ci_lo),
+                    "q3_ci_hi": _f(s.q3_ci_hi),
+                    "iqr_ci_lo": _f(s.iqr_ci_lo),
+                    "iqr_ci_hi": _f(s.iqr_ci_hi),
+                    "outliers_iqr_ci_lo": _i(s.outliers_iqr_ci_lo),
+                    "outliers_iqr_ci_hi": _i(s.outliers_iqr_ci_hi),
                     "jb_chi2": _f(s.jb_chi2),
                     "outliers_mod_zscore_est": int(s.outliers_mod_zscore),
                     # The pre-0.1.6 name, kept beside the new one. Renaming a
@@ -537,6 +566,8 @@ class ReportOrchestrator:
                     # instead of a confident wrong 37. Zero means exact (#328).
                     "top_items_uncertainty": _i(s.top_items_uncertainty),
                     "unique_est_exact": bool(s.unique_est_exact),
+                    "unique_ci_lo": _i(s.unique_ci_lo),
+                    "unique_ci_hi": _i(s.unique_ci_hi),
                     "approx": bool(s.approx),
                     "mem_bytes": _i(s.mem_bytes),
                     "dtype": str(s.dtype_str),
@@ -571,6 +602,9 @@ class ReportOrchestrator:
                     "mem_bytes": _i(s.mem_bytes),
                     "dtype": str(s.dtype_str),
                     "unique_est": _i(s.unique_est),
+                    "unique_est_exact": bool(s.unique_est_exact),
+                    "unique_ci_lo": _i(s.unique_ci_lo),
+                    "unique_ci_hi": _i(s.unique_ci_hi),
                     "mono_inc": bool(s.mono_inc),
                     "mono_dec": bool(s.mono_dec),
                     "time_span_days": _f(s.time_span_days),

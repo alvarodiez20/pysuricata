@@ -15,6 +15,7 @@ import numpy as np
 
 from .algorithms import MonotonicityDetector
 from .config import DatetimeConfig
+from .margins import distinct_interval
 from .protocols import AccumulatorKind, PicklableAccumulator
 from .sketches import KMV, ReservoirSampler
 
@@ -112,6 +113,13 @@ class DatetimeSummary:
     source_timezone: str | None = None
     # Missing fields for renderer compatibility
     unique_est: int = 0
+    #: Whether `unique_est` was counted rather than sketched. The card used to
+    #: read a field this summary never had and fall back to "approximate",
+    #: so 891 distinct timestamps in 891 rows rendered as `Unique (≈)`.
+    unique_est_exact: bool = False
+    #: 95% interval on `unique_est`, zero-width when it is exact.
+    unique_ci_lo: int = 0
+    unique_ci_hi: int = 0
     chunk_metadata: Sequence[tuple[int, int, int]] | None = None
 
 
@@ -503,6 +511,12 @@ class DatetimeAccumulator(PicklableAccumulator):
         sample_vals = self._sample.values()
         sample_ts = [int(ts) for ts in sample_vals] if len(sample_vals) else None
 
+        # Clamped: see the note in numeric.py.
+        unique_est = min(self._uniques.estimate(), self.count)
+        unique_ci_lo, unique_ci_hi = distinct_interval(
+            unique_est, self._uniques.k, self._uniques.is_exact, self.count
+        )
+
         return DatetimeSummary(
             name=self.name,
             count=self.count,
@@ -526,8 +540,10 @@ class DatetimeAccumulator(PicklableAccumulator):
             business_hours_ratio=business_hours_ratio,
             seasonal_pattern=seasonal_pattern,
             source_timezone=self._source_timezone,
-            # Clamped: see the note in numeric.py.
-            unique_est=min(self._uniques.estimate(), self.count),
+            unique_est=unique_est,
+            unique_est_exact=self._uniques.is_exact,
+            unique_ci_lo=unique_ci_lo,
+            unique_ci_hi=unique_ci_hi,
             chunk_metadata=chunk_metadata,
         )
 

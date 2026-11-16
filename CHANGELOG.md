@@ -16,6 +16,63 @@ quoted when both sides were measured in the same round-robin run.
 
 ### Added
 
+- **Margins on the rest of what is estimated.** The intervals above covered the
+  quartiles, distinct counts and outlier counts; four more figures now carry one,
+  each from the method that suits it:
+
+  | figure | payload keys | from |
+  |---|---|---|
+  | `iqr` | `iqr_ci_lo`, `iqr_ci_hi` | the two quartile intervals combined at their asymptotic correlation of 1/3 — not as independent, which overstates the spread of a difference read from one sample |
+  | each entry of `corr_top` | `corr_top_ci` — `[partner, lo, hi]`, same order | Fisher's z over every row the pair shared; assumes independent rows |
+  | categorical `Mode %` | — (report only) | a ceiling: Misra-Gries counts only fall short, so the share is a floor, printed as a range and never as `±` |
+  | `duplicate_rows_lo` / `duplicate_rows_hi` | existing keys | now 95% — see **Changed** |
+
+  Measured: the IQR interval covers the true value in 382 of 400 runs (95.5%) on
+  a 2,000-value reservoir over 30,000 standard-normal rows. `mad` has no interval, deliberately:
+  its error depends on densities at three points a reservoir cannot estimate.
+
+- **`pysuricata check` stops gating on noise it can see.** A mean, median or
+  distinct-count threshold fires only when the move exceeds the limit **and** the
+  baseline's and the current run's 95% intervals do not overlap. It never
+  produces a finding the old rule would not have; a baseline written without
+  intervals gates exactly as before.
+
+- **Approximate figures say how approximate.** `(≈)` told a reader that a
+  number was an estimate and nothing about how good one, and the readings it
+  invites are a factor of four apart: a median from 20,000 of 60,000 values is
+  good to about 1% of the spread, a distinct count from a 2,048-hash sketch to
+  about 4% of itself. Every estimate now carries a **95% interval**, printed
+  after the figure in the report (`19.99 ± 0.38`) and published beside it in
+  `summarize()` as a `_ci_lo` / `_ci_hi` pair:
+
+  | estimate | payload keys | from |
+  |---|---|---|
+  | distinct count, all column kinds | `unique_ci_lo`, `unique_ci_hi` | KMV's relative standard error, clipped to `[k, count]` |
+  | `q1`, `median`, `q3` (and P1–P99 in the report) | `q1_ci_lo` … `q3_ci_hi` | the reservoir's own order statistics — distribution-free, with the finite-population correction |
+  | `outliers_iqr_est` | `outliers_iqr_ci_lo`, `outliers_iqr_ci_hi` | Wilson's interval on the sampled share |
+
+  **Measured, not assumed:** over 200 independently drawn 60,000-row columns
+  per estimate, each interval is asserted to contain an exact computation of
+  the same quantity at least 90% of the time
+  (`tests/test_error_margins.py`); a 300-column run while building it gave
+  95.7%, 95.0% and 97.7% for the three quartiles and 95.3% for the outlier
+  count.
+
+  An exact figure prints no margin and publishes a zero-width interval, so
+  `lo == hi` is the test for "counted". A key column's interval is one-sided
+  and printed as its bounds — `126,000 (120,541 – 126,000)` — because the
+  sketch cannot certify a key is unique, and `Duplicates 0` alone said it had.
+  Nothing exact gained a margin: `Min`, `Max`, `Mean` and the counts see every
+  value. `iqr`, `mad` and `outliers_mod_zscore_est` have none either, on
+  purpose — see `docs/summary-schema.md`.
+
+  Adding keys does not move `schema_version`.
+
+- **Top-k counts are captioned as lower bounds in the report.** The bound has
+  been in the payload since #328 (`top_items_uncertainty`); the Common values
+  table printed the counts beside it with nothing. One line under the table,
+  once, when the counters evicted.
+
 - **The payload contract is checked against the payload** (#251).
   `docs/summary-schema.md` is the one copy of "what each column kind reports"
   that is meant to be tied to the code, and nothing tied it. `check_docs.py`
@@ -46,6 +103,16 @@ quoted when both sides were measured in the same round-robin run.
   until a mention in someone else's note satisfies it. All three are pinned.
 
 ### Changed
+
+- **`duplicate_rows_lo` / `duplicate_rows_hi` and the duplicates tile are 95%.**
+  They were one standard deviation, the only interval on the page that was, so
+  `± 2,730` beside a duplicate count read as the same confidence as the 95% beside
+  the quartiles. Both are now `rows ± ⌈1.96 σ⌉`. `duplicate_rows_uncertainty` is
+  still one sigma, so a consumer can apply any multiple of its own. A gate on
+  `duplicate_rows_hi` sees a slightly higher bound than before.
+
+- **`gran_step` and `gran_decimals` are `null` on a continuous column.** See
+  **Fixed**.
 
 - **The self-download is tested by downloading the report and re-opening it**
   (#39, first acceptance box). The download button does not ask the renderer
@@ -119,6 +186,52 @@ quoted when both sides were measured in the same round-robin run.
   copies during assembly. That half of #207's exit is #39's subject.
 
 ### Fixed
+
+- **Granularity was a histogram artefact, and printed on every float column.**
+  The step was the midpoint of the busiest bin of a histogram of the gaps, so a
+  continuous column reported `Granularity 35.881109943719636 (decimals: 10)` — a
+  fact about the histogram. It is now the largest step every gap is a whole
+  multiple of, checked against all of them, and `null` when the values sit on none
+  (`0.5`, `5` and `0.01` are found; a normal or lognormal sample reports nothing).
+  The card prints a dash instead of seventeen digits. `gran_step` and
+  `gran_decimals` are now `number | null` and `integer | null` in the schema.
+- **The mean's interval was printed to four significant figures in prose**
+  (`±0.4209`). A margin's third digit is not information; it is two.
+- **The Outliers pane and the card disagreed with no explanation.** The card
+  scales the reservoir's count to the column and the pane counts in the sample,
+  which differ by the sampling ratio. The footnote said so, below the fold and only
+  when rows were listed; the pane's header now carries both, in the form `A of B
+  sampled values · ≈N across all M`.
+- **Quantile-strip labels overlapped, and the narrow layout clipped digits.** Label
+  rows were 22px apart and a label is ~27px tall, so neighbours in different rows
+  overlapped by 5px at every width. Below 1,024px the strip keeps `Q1`, `P50` and
+  `Q3` and drops the tail captions, whose percentage gap knows nothing of pixels
+  (the ticks stay and the table lists every value). A datetime stat cell at 390px
+  cut `2020-01-01 00:46:32` to `2020-01-01 00…`, and a distinct-count margin was
+  cut mid-number; both now wrap at their own space. Costs 19px on the tallest
+  datetime card at 390px, recorded in `test_report_layout.py`.
+- **The fingerprint dropped any figure with a margin beside it.** A cell reading
+  `5.2% (5.2% – 6.5%)` is not a number, so `scripts/report_fingerprint.py` discarded
+  the fact: every cell that gained an interval silently left the set of facts the
+  invariance harness checks. Margins are now stripped before a cell is read, and
+  the regenerated fingerprint equals `main`'s apart from `(≈)` labels.
+
+- **The mean's 95% interval used 1.96 at every sample size.** The code had a
+  branch for `n < 30` that assigned the same constant, while
+  `docs/stats/numeric.md` documented Student's t. At five values the right
+  multiplier is 2.776, so `ci_lo` / `ci_hi` were 29% too narrow exactly where
+  the mean is least pinned down. Unchanged to four figures above a few hundred
+  rows.
+- **Exact figures labelled approximate.** The six tail percentiles in the
+  Quantiles pane carried `(≈)` unconditionally and the three quartiles beside
+  them never did; the datetime card's `Unique` read an `approx` field its
+  summary did not have and defaulted to "approximate"; the identifier card's
+  `Distinct` and `Duplicates` were marked always. All four now follow whether
+  the figure was sampled or sketched. Datetime columns publish
+  `unique_est_exact`, as the other kinds already did.
+- **`Outliers 0` from a sample was presented as a count.** Zero sampled hits
+  scales to zero and so looked unscaled; it now carries `(≈)` and its interval,
+  `(0 – 21)` on a 126,000-row column.
 
 - **The chunk-metadata suite stops asserting wall-clock noise** (#354).
   `test_performance_impact` compared one timed run per side against a 1.5x

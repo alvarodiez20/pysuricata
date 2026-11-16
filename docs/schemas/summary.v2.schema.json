@@ -147,6 +147,12 @@
               "unique_est_exact": {
                 "type": "boolean"
               },
+              "unique_ci_lo": {
+                "type": "integer"
+              },
+              "unique_ci_hi": {
+                "type": "integer"
+              },
               "approx": {
                 "type": "boolean"
               },
@@ -210,6 +216,8 @@
               "top_items_uncertainty",
               "trim_variants_est",
               "type",
+              "unique_ci_hi",
+              "unique_ci_lo",
               "unique_est",
               "unique_est_exact"
             ]
@@ -242,6 +250,15 @@
                 "type": "string"
               },
               "unique_est": {
+                "type": "integer"
+              },
+              "unique_est_exact": {
+                "type": "boolean"
+              },
+              "unique_ci_lo": {
+                "type": "integer"
+              },
+              "unique_ci_hi": {
                 "type": "integer"
               },
               "mono_inc": {
@@ -322,7 +339,10 @@
               "source_timezone",
               "time_span_days",
               "type",
+              "unique_ci_hi",
+              "unique_ci_lo",
               "unique_est",
+              "unique_est_exact",
               "weekend_ratio"
             ]
           },
@@ -382,6 +402,12 @@
                 "type": "integer"
               },
               "corr_top": {
+                "type": "array",
+                "items": {
+                  "type": "array"
+                }
+              },
+              "corr_top_ci": {
                 "type": "array",
                 "items": {
                   "type": "array"
@@ -450,6 +476,42 @@
               "ci_hi": {
                 "type": "number"
               },
+              "unique_ci_lo": {
+                "type": "integer"
+              },
+              "unique_ci_hi": {
+                "type": "integer"
+              },
+              "q1_ci_lo": {
+                "type": "number"
+              },
+              "q1_ci_hi": {
+                "type": "number"
+              },
+              "median_ci_lo": {
+                "type": "number"
+              },
+              "median_ci_hi": {
+                "type": "number"
+              },
+              "q3_ci_lo": {
+                "type": "number"
+              },
+              "q3_ci_hi": {
+                "type": "number"
+              },
+              "iqr_ci_lo": {
+                "type": "number"
+              },
+              "iqr_ci_hi": {
+                "type": "number"
+              },
+              "outliers_iqr_ci_lo": {
+                "type": "integer"
+              },
+              "outliers_iqr_ci_hi": {
+                "type": "integer"
+              },
               "jb_chi2": {
                 "type": "number"
               },
@@ -466,10 +528,16 @@
                 "type": "boolean"
               },
               "gran_decimals": {
-                "type": "integer"
+                "type": [
+                  "integer",
+                  "null"
+                ]
               },
               "gran_step": {
-                "type": "number"
+                "type": [
+                  "number",
+                  "null"
+                ]
               },
               "unique_ratio_approx": {
                 "type": "number"
@@ -499,6 +567,7 @@
               "ci_hi",
               "ci_lo",
               "corr_top",
+              "corr_top_ci",
               "count",
               "cv",
               "dtype",
@@ -509,6 +578,8 @@
               "inf",
               "int_like",
               "iqr",
+              "iqr_ci_hi",
+              "iqr_ci_lo",
               "jb_chi2",
               "kurtosis",
               "mad",
@@ -516,6 +587,8 @@
               "max_items",
               "mean",
               "median",
+              "median_ci_hi",
+              "median_ci_lo",
               "mem_bytes",
               "min",
               "min_items",
@@ -524,11 +597,17 @@
               "mono_dec",
               "mono_inc",
               "negatives",
+              "outliers_iqr_ci_hi",
+              "outliers_iqr_ci_lo",
               "outliers_iqr_est",
               "outliers_mod_zscore",
               "outliers_mod_zscore_est",
               "q1",
+              "q1_ci_hi",
+              "q1_ci_lo",
               "q3",
+              "q3_ci_hi",
+              "q3_ci_lo",
               "se",
               "skew",
               "std",
@@ -537,6 +616,8 @@
               "true_histogram_counts",
               "true_histogram_edges",
               "type",
+              "unique_ci_hi",
+              "unique_ci_lo",
               "unique_est",
               "unique_est_exact",
               "unique_ratio_approx",
