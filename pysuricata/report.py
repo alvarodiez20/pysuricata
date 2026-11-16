@@ -368,10 +368,7 @@ class ReportOrchestrator:
                     except Exception:
                         pass
                 if hasattr(acc, "set_corr_intervals"):
-                    try:
-                        acc.set_corr_intervals(interval_map.get(name, []))
-                    except Exception:
-                        pass
+                    acc.set_corr_intervals(interval_map.get(name, []))
                 if hasattr(acc, "set_corr_threshold"):
                     try:
                         acc.set_corr_threshold(self.config.corr_threshold)

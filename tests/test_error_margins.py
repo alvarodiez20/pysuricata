@@ -443,3 +443,36 @@ class TestModeShareIsAFloor:
 
     def test_the_ceiling_cannot_pass_a_hundred_percent(self):
         assert self._card(uncertainty=50_000)["mode_pct_hi"] == 100.0
+
+
+class TestEdgesOfTheHelpers:
+    def test_a_margin_that_is_not_finite_prints_a_dash(self):
+        from pysuricata.render.margin import format_margin
+
+        assert format_margin(float("nan")) == "—"
+        assert format_margin(float("inf")) == "—"
+
+    def test_a_few_off_lattice_gaps_beyond_the_ones_examined_are_not_a_grid(self):
+        """Euclid reads only the 256 smallest distinct gaps. Here those are all
+        whole numbers, so it settles on a step of 1 -- and the check against
+        *every* gap is what notices that one gap in eight is not a multiple."""
+        import numpy as np
+
+        from pysuricata.accumulators.numeric import NumericAccumulator
+
+        on_grid = np.cumsum(np.arange(1, 301, dtype=float))
+        off_grid = on_grid[-1] + np.cumsum(
+            np.random.default_rng(0).uniform(1_000, 2_000, 40)
+        )
+        values = np.concatenate([on_grid, off_grid])
+
+        step, decimals = NumericAccumulator("c")._compute_granularity(values)
+        assert (step, decimals) == (None, None)
+
+    def test_a_step_is_reported_as_the_figure_it_was_recovered_from(self):
+        import numpy as np
+
+        from pysuricata.accumulators.numeric import NumericAccumulator
+
+        cents = np.round(np.random.default_rng(3).normal(1e6, 1.0, 3_000), 2)
+        assert NumericAccumulator("c")._compute_granularity(cents) == (0.01, 2)

@@ -1123,12 +1123,17 @@ class NumericAccumulator(PicklableAccumulator):
         # The Euclid above lands on 0.00999999989 for cents near a million.
         # Report the shortest figure that is still the same step within the
         # arithmetic's own noise, so the card says 0.01.
+        # Seven figures are always within `slack` (relative error <= 5e-7), so
+        # the default is for the type and never reached.
         slack = max(tol * 4.0, step * 1e-6)
-        for digits in range(1, 13):
-            nice = float(f"{step:.{digits}g}")
-            if abs(nice - step) <= slack:
-                return nice
-        return float(step)
+        return next(
+            (
+                nice
+                for digits in range(1, 8)
+                if abs((nice := float(f"{step:.{digits}g}")) - step) <= slack
+            ),
+            step,
+        )
 
     def _compute_heaping_percentage(self, values: np.ndarray) -> float:
         """Compute heaping percentage (percentage of values ending in 0 or 5).

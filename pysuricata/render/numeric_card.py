@@ -449,9 +449,10 @@ class NumericCardRenderer(CardRenderer):
         n = ordered.size
         out = {}
         for name, p in _TAIL_PERCENTILES:
-            interval = quantile_interval(ordered, p, count)
-            if interval is None:
-                continue
+            # `count > n` here (the guard above returns otherwise), so the
+            # interval always exists; `or` is for the type, and an interval of
+            # zero width renders as nothing.
+            interval = quantile_interval(ordered, p, count) or (0.0, 0.0)
             # The same interpolation `_compute_quantiles_from_sample` uses, so
             # the symmetry test in `margin_html` sees the figure that is shown.
             value = float(np.interp((n - 1) * p, np.arange(n), ordered))

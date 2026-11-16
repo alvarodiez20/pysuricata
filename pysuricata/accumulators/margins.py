@@ -151,9 +151,11 @@ def distinct_interval(
 
 
 def _finite_population_correction(sample_n: int, population: int) -> float:
-    """The variance factor for sampling without replacement."""
-    if population <= 1 or sample_n >= population:
-        return 0.0
+    """The variance factor for sampling without replacement.
+
+    Callers return before this when the sample is the whole population, so
+    `population > sample_n >= 1` and the denominator is at least one.
+    """
     return (population - sample_n) / (population - 1)
 
 
