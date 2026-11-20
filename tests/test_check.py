@@ -714,3 +714,48 @@ class TestMissingStatisticsAreSkipped:
         after = summarize(pd.DataFrame({"k": np.ones(2_000) * 2}), seed=0)
         result = compare(after, before)
         assert all(f.kind != "distribution" for f in result.findings)
+
+
+def _numeric_summary(**stats):
+    base = {"type": "numeric", "std": 1.0, "count": 100, "missing": 0}
+    return {"dataset": {"rows": 100}, "columns": {"x": {**base, **stats}}}
+
+
+class TestADriftInsideItsMarginIsNotDrift:
+    """A threshold fires on a move the two estimates can tell apart, not on one
+    their own 95% intervals cover. The same data twice must stay quiet at any
+    threshold; a move past the interval must still fire."""
+
+    LIMITS = Thresholds(max_mean_shift_sigma=0.1)
+
+    def test_overlapping_intervals_do_not_fire(self):
+        old = _numeric_summary(mean=0.0, ci_lo=-0.5, ci_hi=0.5)
+        new = _numeric_summary(mean=0.3, ci_lo=-0.2, ci_hi=0.8)
+        assert compare(new, old, self.LIMITS).passed
+
+    def test_disjoint_intervals_fire(self):
+        old = _numeric_summary(mean=0.0, ci_lo=-0.1, ci_hi=0.1)
+        new = _numeric_summary(mean=0.5, ci_lo=0.3, ci_hi=0.7)
+        kinds = [f.kind for f in compare(new, old, self.LIMITS).findings]
+        assert kinds == ["distribution"]
+
+    def test_a_baseline_without_intervals_gates_on_the_point_estimate(self):
+        old = _numeric_summary(mean=0.0)
+        new = _numeric_summary(mean=0.5)
+        assert not compare(new, old, self.LIMITS).passed
+
+    def test_the_median_is_judged_by_its_own_interval(self):
+        limits = Thresholds(max_median_shift_sigma=0.1)
+        old = _numeric_summary(median=0.0, median_ci_lo=-0.4, median_ci_hi=0.4)
+        near = _numeric_summary(median=0.3, median_ci_lo=-0.1, median_ci_hi=0.7)
+        far = _numeric_summary(median=2.0, median_ci_lo=1.6, median_ci_hi=2.4)
+        assert compare(near, old, limits).passed
+        assert not compare(far, old, limits).passed
+
+    def test_a_distinct_count_inside_the_sketch_error_does_not_fire(self):
+        limits = Thresholds(max_unique_drift_pct=3.0)
+        old = _numeric_summary(unique_est=1000, unique_ci_lo=950, unique_ci_hi=1050)
+        near = _numeric_summary(unique_est=1040, unique_ci_lo=990, unique_ci_hi=1090)
+        far = _numeric_summary(unique_est=1500, unique_ci_lo=1430, unique_ci_hi=1570)
+        assert compare(near, old, limits).passed
+        assert not compare(far, old, limits).passed

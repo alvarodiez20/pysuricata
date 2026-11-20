@@ -14,6 +14,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .margin import count_margin_html
+
 # The distinct-count estimate is a KMV sketch, so it does not land exactly on
 # the row count for a real key -- at k=2048 the standard error is about 2.2%.
 # Requiring equality would mean no column above the sketch size ever qualified.
@@ -81,10 +83,24 @@ def identifier_facts(stats: Any) -> list[tuple[str, str]]:
     maximum = getattr(stats, "max", None)
 
     duplicates = max(0, count - unique_est)
+    # A key is the column where the clamp above binds, so its interval is
+    # one-sided: `126,000 (120,541 – 126,000)`. That is the finding, not a
+    # formatting accident -- a 2,048-hash sketch cannot certify that a key is
+    # unique, and `Duplicates 0` on its own said that it had.
+    exact = bool(getattr(stats, "unique_est_exact", False))
+    lo = getattr(stats, "unique_ci_lo", None)
+    hi = getattr(stats, "unique_ci_hi", None)
+    if exact or lo is None or hi is None:
+        distinct_margin = duplicate_margin = ""
+    else:
+        lo, hi = min(int(lo), unique_est), min(int(hi), count)
+        distinct_margin = count_margin_html(unique_est, lo, hi)
+        duplicate_margin = count_margin_html(duplicates, count - hi, count - lo)
+    approx = "" if exact else " (≈)"
     facts: list[tuple[str, str]] = [
         ("Rows", f"{count:,}"),
-        ("Distinct (≈)", f"{unique_est:,}"),
-        ("Duplicates (≈)", f"{duplicates:,}"),
+        (f"Distinct{approx}", f"{unique_est:,}{distinct_margin}"),
+        (f"Duplicates{approx}", f"{duplicates:,}{duplicate_margin}"),
         ("Missing", f"{int(getattr(stats, 'missing', 0) or 0):,}"),
     ]
 

@@ -735,6 +735,29 @@ def _missing_drift(
     ]
 
 
+def _distinguishable(
+    old: Mapping[str, Any], new: Mapping[str, Any], lo_key: str, hi_key: str
+) -> bool:
+    """Whether two estimates of the same statistic are apart beyond their margins.
+
+    A move larger than the threshold can still be nothing: the baseline and the
+    current run each estimated this figure from a sketch or a sample, and two
+    95% intervals that overlap are two readings of one value. Gating on the
+    point estimates alone fires on that noise -- the more so the tighter the
+    threshold, which is what `Thresholds.warnings()` could only tell the user.
+
+    Falls back to ``True`` -- the point-estimate behaviour -- whenever either
+    side has no interval, so a baseline written before intervals existed gates
+    exactly as it always did. An interval of zero width is an exact figure and
+    overlaps only an equal one.
+    """
+    bounds = [_number(m.get(k)) for m in (old, new) for k in (lo_key, hi_key)]
+    if any(b is None for b in bounds):
+        return True
+    old_lo, old_hi, new_lo, new_hi = bounds  # type: ignore[misc]
+    return new_lo > old_hi or old_lo > new_hi
+
+
 def _cardinality_drift(
     name: str,
     old: Mapping[str, Any],
@@ -773,6 +796,9 @@ def _cardinality_drift(
         return []
     count_drift = abs(after - before) / before * 100.0
     if count_drift <= limits.max_unique_drift_pct:
+        return []
+    if not _distinguishable(old, new, "unique_ci_lo", "unique_ci_hi"):
+        # Past the threshold, but inside what the two sketches cannot tell apart.
         return []
 
     if old_rows and new_rows:
@@ -816,7 +842,10 @@ def _numeric_drift(
         if before is None or after is None:
             continue
         shift = abs(after - before) / sigma
-        if shift > limit:
+        lo_key, hi_key = (
+            ("ci_lo", "ci_hi") if key == "mean" else (f"{key}_ci_lo", f"{key}_ci_hi")
+        )
+        if shift > limit and _distinguishable(old, new, lo_key, hi_key):
             out.append(
                 Finding(
                     kind="distribution",

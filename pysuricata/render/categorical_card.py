@@ -10,6 +10,7 @@ from .card_config import DEFAULT_CAT_CONFIG, DEFAULT_CHART_DIMS
 from .card_types import BarData, CategoricalStats, QualityFlags
 from .flag_reference import even_split_pct
 from .format_utils import ordinal_number
+from .margin import count_margin_html, lower_bound_note, margin_html
 from .triage import annotate_flags
 
 # Top-5 coverage below this means a bar chart of the top values would be a row
@@ -359,6 +360,15 @@ class CategoricalCardRenderer(CardRenderer):
         mode_label, mode_n = items[0] if items else ("—", 0)
         safe_mode_label = self.safe_html_escape(str(mode_label))
         mode_pct = (mode_n / max(1, total)) * 100.0 if total else 0.0
+        # Misra-Gries counts only ever fall short, by at most the weight the
+        # sketch shed. The share inherits that: it is a floor, and the ceiling
+        # is the same count plus the shortfall. A one-sided interval, which
+        # `margin_html` prints as a range because `±` would claim it could also
+        # be lower.
+        shortfall = int(getattr(stats, "top_items_uncertainty", 0) or 0)
+        mode_pct_hi = (
+            min(100.0, (mode_n + shortfall) / max(1, total) * 100.0) if total else 0.0
+        )
 
         # Every figure below is computed from the top-k sketch, and the sketch
         # can legitimately come back **empty**. Misra-Gries only guarantees a
@@ -416,6 +426,7 @@ class CategoricalCardRenderer(CardRenderer):
             "safe_mode_label": safe_mode_label,
             "mode_n": int(mode_n),
             "mode_pct": float(mode_pct),
+            "mode_pct_hi": float(mode_pct_hi),
             "entropy": entropy,
             "rare_count": int(rare_count),
             "rare_cov": float(rare_cov),
@@ -536,7 +547,12 @@ class CategoricalCardRenderer(CardRenderer):
             ("Count", f"{int(getattr(stats, 'count', 0)):,}", "num"),
             (
                 f"Unique{'' if getattr(stats, 'unique_est_exact', False) else ' (≈)'}",
-                f"{int(getattr(stats, 'unique_est', 0)):,}",
+                f"{int(getattr(stats, 'unique_est', 0)):,}"
+                + count_margin_html(
+                    getattr(stats, "unique_est", None),
+                    getattr(stats, "unique_ci_lo", None),
+                    getattr(stats, "unique_ci_hi", None),
+                ),
                 "num",
             ),
             (
@@ -554,7 +570,17 @@ class CategoricalCardRenderer(CardRenderer):
                     "no value repeats often enough to be tracked in the top-k sketch"
                 )
                 if not cat_stats.get("tracked", True)
-                else f"{cat_stats['mode_pct']:.1f}%",
+                else f"{cat_stats['mode_pct']:.1f}%"
+                + margin_html(
+                    cat_stats["mode_pct"],
+                    cat_stats["mode_pct"],
+                    # A ceiling that rounds to the figure beside it says nothing.
+                    cat_stats["mode_pct_hi"]
+                    if f"{cat_stats['mode_pct_hi']:.1f}"
+                    != f"{cat_stats['mode_pct']:.1f}"
+                    else None,
+                    fmt=lambda v: f"{v:.1f}%",
+                ),
                 "num",
             ),
             (
@@ -1573,7 +1599,7 @@ class CategoricalCardRenderer(CardRenderer):
             '<table class="common-values-table enhanced">'
             "<thead><tr><th>Rank</th><th>Value</th><th>Count</th><th>Frequency</th><th>Distribution</th></tr></thead>"
             f"<tbody>{body}</tbody>"
-            "</table>"
+            "</table>" + lower_bound_note(getattr(stats, "top_items_uncertainty", 0))
         )
 
     def _build_missing_values_table(

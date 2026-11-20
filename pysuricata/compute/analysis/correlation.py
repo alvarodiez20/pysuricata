@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Sequence
 
 import numpy as np
@@ -168,3 +169,44 @@ class StreamingCorr:
             col_map[c].sort(key=lambda t: abs(t[1]), reverse=True)
             col_map[c] = col_map[c][: int(max_per_col)]
         return col_map
+
+    def top_intervals(
+        self, top_map: dict[str, list[tuple[str, float]]]
+    ) -> dict[str, list[tuple[str, float, float]]]:
+        """95% intervals for every pair in a `top_map`, in the same order.
+
+        Fisher's z: `atanh(r)` is approximately normal with standard error
+        `1 / sqrt(n - 3)`, so the interval is built there and mapped back with
+        `tanh`. It is asymmetric in `r` by construction and cannot leave
+        `[-1, 1]`, which is why it is used and `r +/- 1.96 se` is not.
+
+        `n` is the number of rows both columns were present in -- every one of
+        them, not a sample -- so this is the interval for the correlation of the
+        *population the rows were drawn from*, and assumes the rows are
+        independent. A pair with fewer than four rows has none, and a
+        correlation of exactly +/-1 is degenerate and returns itself.
+        """
+        out: dict[str, list[tuple[str, float, float]]] = {}
+        for col, partners in top_map.items():
+            rows: list[tuple[str, float, float]] = []
+            for other, r in partners:
+                st = self.pairs.get((col, other)) or self.pairs.get((other, col))
+                n = float(st["n"]) if st else 0.0
+                rows.append((other, *fisher_interval(r, n)))
+            out[col] = rows
+        return out
+
+
+def fisher_interval(r: float, n: float) -> tuple[float, float]:
+    """95% interval on a Pearson correlation of `r` from `n` pairs.
+
+    Returns `(nan, nan)` when there are too few pairs to say anything, which
+    callers read as "no interval" rather than "no uncertainty".
+    """
+    if not (n > 3) or not math.isfinite(r):
+        return float("nan"), float("nan")
+    if abs(r) >= 1.0:
+        return r, r
+    centre = math.atanh(r)
+    half = 1.959963984540054 / math.sqrt(n - 3.0)
+    return math.tanh(centre - half), math.tanh(centre + half)

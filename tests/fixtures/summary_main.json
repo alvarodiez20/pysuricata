@@ -3,12 +3,19 @@
     "age": {
       "approx": true,
       "bimodal": false,
-      "ci_hi": 42.8249715703,
-      "ci_lo": 39.8035357248,
+      "ci_hi": 42.8270010358,
+      "ci_lo": 39.8015062594,
       "corr_top": [
         [
           "fare",
           0.0322345252529
+        ]
+      ],
+      "corr_top_ci": [
+        [
+          "fare",
+          -0.0335138322241,
+          0.097705081791
         ]
       ],
       "count": 891,
@@ -21,6 +28,8 @@
       "inf": 0,
       "int_like": true,
       "iqr": 39.0,
+      "iqr_ci_hi": 39.0,
+      "iqr_ci_lo": 39.0,
       "jb_chi2": 53.7471766886,
       "kurtosis": -1.19300206375,
       "mad": 20.0,
@@ -34,6 +43,8 @@
       ],
       "mean": 41.3142536476,
       "median": 42.0,
+      "median_ci_hi": 42.0,
+      "median_ci_lo": 42.0,
       "min": 1.0,
       "min_items": [
         1.0,
@@ -47,11 +58,17 @@
       "mono_dec": false,
       "mono_inc": false,
       "negatives": 0,
+      "outliers_iqr_ci_hi": 0,
+      "outliers_iqr_ci_lo": 0,
       "outliers_iqr_est": 0,
       "outliers_mod_zscore": 0,
       "outliers_mod_zscore_est": 0,
       "q1": 22.0,
+      "q1_ci_hi": 22.0,
+      "q1_ci_lo": 22.0,
       "q3": 61.0,
+      "q3_ci_hi": 61.0,
+      "q3_ci_lo": 61.0,
       "se": 0.770774450378,
       "skew": -0.078232785516,
       "std": 23.0073268491,
@@ -130,6 +147,8 @@
         79.0
       ],
       "type": "numeric",
+      "unique_ci_hi": 79,
+      "unique_ci_lo": 79,
       "unique_est": 79,
       "unique_est_exact": true,
       "unique_ratio_approx": 0.0886644219978,
@@ -203,7 +222,10 @@
       "source_timezone": null,
       "time_span_days": 37.0833333333,
       "type": "datetime",
+      "unique_ci_hi": 891,
+      "unique_ci_lo": 891,
       "unique_est": 891,
+      "unique_est_exact": true,
       "weekend_ratio": 0.272727272727
     },
     "cabin": {
@@ -234,6 +256,8 @@
       "top_items_uncertainty": 0,
       "trim_variants_est": 2,
       "type": "categorical",
+      "unique_ci_hi": 2,
+      "unique_ci_lo": 2,
       "unique_est": 2,
       "unique_est_exact": true
     },
@@ -256,30 +280,41 @@
       "top_items_uncertainty": null,
       "trim_variants_est": null,
       "type": "categorical",
+      "unique_ci_hi": 0,
+      "unique_ci_lo": 0,
       "unique_est": 0,
       "unique_est_exact": null
     },
     "fare": {
       "approx": true,
       "bimodal": false,
-      "ci_hi": 41.883027478,
-      "ci_lo": 38.1539494737,
+      "ci_hi": 41.8855322589,
+      "ci_lo": 38.1514446928,
       "corr_top": [
         [
           "age",
           0.0322345252529
         ]
       ],
+      "corr_top_ci": [
+        [
+          "age",
+          -0.0335138322241,
+          0.097705081791
+        ]
+      ],
       "count": 891,
       "cv": 0.70956726546,
       "dtype": "float64",
       "gmean": 30.2605027085,
-      "gran_decimals": 10,
-      "gran_step": 0.146121574485,
+      "gran_decimals": null,
+      "gran_step": null,
       "heap_pct": 12.4579124579,
       "inf": 0,
       "int_like": false,
       "iqr": 35.1530306696,
+      "iqr_ci_hi": 35.1530306696,
+      "iqr_ci_lo": 35.1530306696,
       "jb_chi2": 424.080393533,
       "kurtosis": 2.14343849259,
       "mad": 16.4062653938,
@@ -293,6 +328,8 @@
       ],
       "mean": 40.0184884759,
       "median": 33.4556744078,
+      "median_ci_hi": 33.4556744078,
+      "median_ci_lo": 33.4556744078,
       "min": 0.388326086527,
       "min_items": [
         0.388326086527,
@@ -306,11 +343,17 @@
       "mono_dec": false,
       "mono_inc": false,
       "negatives": 0,
+      "outliers_iqr_ci_hi": 26,
+      "outliers_iqr_ci_lo": 26,
       "outliers_iqr_est": 26,
       "outliers_mod_zscore": 17,
       "outliers_mod_zscore_est": 17,
       "q1": 19.0757282269,
+      "q1_ci_hi": 19.0757282269,
+      "q1_ci_lo": 19.0757282269,
       "q3": 54.2287588965,
+      "q3_ci_hi": 54.2287588965,
+      "q3_ci_lo": 54.2287588965,
       "se": 0.951295409257,
       "skew": 1.30659025059,
       "std": 28.3958094356,
@@ -372,6 +415,8 @@
         176.265539114
       ],
       "type": "numeric",
+      "unique_ci_hi": 891,
+      "unique_ci_lo": 891,
       "unique_est": 891,
       "unique_est_exact": true,
       "unique_ratio_approx": 1.0,
@@ -426,6 +471,8 @@
       "top_items_uncertainty": 14,
       "trim_variants_est": 599,
       "type": "categorical",
+      "unique_ci_hi": 599,
+      "unique_ci_lo": 599,
       "unique_est": 599,
       "unique_est_exact": true
     },
@@ -457,6 +504,8 @@
       "top_items_uncertainty": 0,
       "trim_variants_est": 2,
       "type": "categorical",
+      "unique_ci_hi": 2,
+      "unique_ci_lo": 2,
       "unique_est": 2,
       "unique_est_exact": true
     },

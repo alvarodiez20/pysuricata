@@ -148,7 +148,9 @@ Shape and position:
 | `min`, `max` | float | Exact — from the extreme tracker, which sees every value |
 | `min_positive` | float \| null | Exact — the smallest strictly positive value, or `null` when the column has none. Where a log axis begins |
 | `q1`, `median`, `q3`, `iqr`, `mad` | float | **From the reservoir sample** |
-| `ci_lo`, `ci_hi` | float | 95% confidence interval for the mean |
+| `iqr_ci_lo`, `iqr_ci_hi` | float | 95% interval on `iqr`, from the two quartile intervals at their asymptotic correlation of 1/3. Equal to `iqr` when the reservoir held every value |
+| `q1_ci_lo`, `q1_ci_hi`, `median_ci_lo`, `median_ci_hi`, `q3_ci_lo`, `q3_ci_hi` | float | 95% interval on each quartile — two values from the sample that bracket the column's true one. Equal to the quartile when the reservoir held every value |
+| `ci_lo`, `ci_hi` | float | 95% confidence interval for the mean, Student's t |
 | `jb_chi2` | float | Jarque–Bera statistic |
 | `min_items`, `max_items` | list | `(row_index, value)`, most extreme first |
 | `true_histogram_edges`, `true_histogram_counts` | list | The distribution, exact counts |
@@ -159,16 +161,19 @@ Quality and structure:
 |---|---|---|
 | `unique_est` | int | **Approximate.** KMV sketch |
 | `unique_est_exact` | bool | Whether `unique_est` is exact rather than a sketch estimate |
+| `unique_ci_lo`, `unique_ci_hi` | int | 95% interval on `unique_est`. Equal to it when the count is exact; never below the sketch size nor above `count` |
 | `unique_ratio_approx` | float | **Approximate.** `unique_est / count` |
 | `top_values` | list \| None | `(value, count)`. **`None` means not tracked** |
 | `top_values_uncertainty` | int | **Approximate.** How far below the truth each count above may sit. `0` means exact |
 | `outliers_iqr_est`, `outliers_mod_zscore_est` | int | **Approximate.** Counted in the sample, scaled to the column |
+| `outliers_iqr_ci_lo`, `outliers_iqr_ci_hi` | int | 95% interval on `outliers_iqr_est`, in rows. Equal to it when nothing was scaled |
 | `mono_inc`, `mono_dec` | bool | Monotonic over the stream as it arrived |
 | `int_like` | bool | Every value is a whole number |
 | `heap_pct` | float | Share sitting on round numbers — heaping |
 | `bimodal` | bool | Two modes detected in the histogram |
-| `gran_decimals`, `gran_step` | int, float | Inferred granularity |
+| `gran_decimals`, `gran_step` | int, float | The step the values sit on (`0.5`, `5`, `0.01`) and how many decimals it takes to write. `null` when the column is continuous and sits on no step, or has fewer than two distinct values |
 | `corr_top` | list | `(other_column, r)` above the threshold |
+| `corr_top_ci` | list | `(other_column, lo, hi)` for each entry of `corr_top`, in the same order: the 95% interval on that correlation (Fisher's z, which assumes independent rows). `lo` and `hi` are `null` when the pair had fewer than four rows |
 | `approx` | bool | Whether sampling was involved at all |
 | `dtype` | str | The source dtype |
 
@@ -190,6 +195,7 @@ tracked and nothing was frequent enough.
 | `case_variants_est`, `trim_variants_est` | int | **Approximate.** Distinct counts after folding case / trimming whitespace |
 | `singleton_levels`, `exact_levels` | int \| null | Exact — levels occurring exactly once, and the total that count is out of. `null` together when the column had more levels than the counter's capacity: unknown, never zero |
 | `unique_est_exact` | bool | Whether `unique_est` above is exact rather than a sketch estimate |
+| `unique_ci_lo`, `unique_ci_hi` | int | 95% interval on `unique_est`. Equal to it when the count is exact |
 | `approx`, `dtype` | bool, str | |
 
 The two variant estimates are what the report's "looks like a case variant"
@@ -203,6 +209,8 @@ means some values differ only by case or by surrounding whitespace.
 | `count`, `missing` | int | Exact |
 | `min_ts`, `max_ts` | float | **Epoch nanoseconds**, UTC |
 | `unique_est` | int | **Approximate** |
+| `unique_est_exact` | bool | Whether `unique_est` is exact rather than a sketch estimate |
+| `unique_ci_lo`, `unique_ci_hi` | int | 95% interval on `unique_est`. Equal to it when the count is exact |
 | `time_span_days` | float | `max_ts − min_ts`, in days |
 | `avg_interval_seconds`, `interval_std_seconds` | float | Between consecutive values |
 | `weekend_ratio`, `business_hours_ratio` | float | Share of values in each |
@@ -245,6 +253,34 @@ that matter:
 `approx` on a numeric column tells you whether sampling was involved for that
 column at all: below the sample size, the reservoir holds every value and the
 quantiles are exact.
+
+Those percentages are rules of thumb. **The interval for the column in front of
+you is published beside each estimate**, as a `_ci_lo` / `_ci_hi` pair at 95%,
+and it is the same one the HTML report prints after the figure:
+
+| estimate | interval | where it comes from |
+|---|---|---|
+| `unique_est` | `unique_ci_lo`, `unique_ci_hi` | KMV's relative standard error, `1/√(k − 2)`. Clipped to what the sketch knows: never below `k`, never above `count` |
+| `q1`, `median`, `q3` | `q1_ci_lo` … `q3_ci_hi` | The two order statistics of the reservoir that bracket the true quantile. Distribution-free, so it is asymmetric on skewed data, and it narrows as the reservoir approaches the column's length |
+| `iqr` | `iqr_ci_lo`, `iqr_ci_hi` | The quartiles' own intervals combined at their asymptotic correlation of 1/3 — not as if independent, which would overstate the spread of a difference taken from one sample. Zero-width when the reservoir held every value |
+| `outliers_iqr_est` | `outliers_iqr_ci_lo`, `outliers_iqr_ci_hi` | Wilson's interval on the sampled share. Sampling error only — the fence itself is fitted in the same sample |
+
+**A zero-width interval means the figure was counted, not estimated.**
+`lo == hi == value` is the whole test; there is no second flag to consult.
+
+Three things have no interval, deliberately. `mad` is a median of deviations
+from another median, and its sampling error depends on the density at three
+points that a reservoir cannot estimate well; an interval from a guessed density
+would be wrong in the confident direction, so it is left out rather than faked.
+`outliers_mod_zscore_est` is defined against the sample's own median and MAD.
+And everything exact — `mean`, `min`, `max`, the counts — has no sketch error
+to report; `ci_lo` / `ci_hi` on the mean is a statement about the population
+the column was drawn from, not about the profiler's arithmetic.
+
+The dataset-level `duplicate_rows_lo` / `duplicate_rows_hi` are also 95%:
+`duplicate_rows_est ± ⌈1.96 × duplicate_rows_uncertainty⌉`. They were one
+standard deviation until this release. `duplicate_rows_uncertainty` itself is
+still one sigma, so a consumer can apply any multiple of its own.
 
 `top_items` and `top_values` come from Misra-Gries counters. Their counts are
 **lower bounds** — a reported count never overstates, and the counters neither

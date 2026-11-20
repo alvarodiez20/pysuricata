@@ -47,6 +47,10 @@ _DYNAMIC_KEY_OBJECTS = {"by_year"}
 #: contract instead.
 _NULLABLE_TYPES = {
     "min_positive": "number",
+    # `null` on a continuous column, which sits on no step; the exemplar's own
+    # columns are all continuous or all on one, so a sample cannot say.
+    "gran_step": "number",
+    "gran_decimals": "integer",
     "seasonal_pattern": "string",
     "source_timezone": "string",
     "top_values": "array",
